@@ -15,14 +15,8 @@ public:
     Block(TextureRepository *t_texRepo, float X, float Y, float Z);
     ~Block();
 
-    void update(const Pad &t_pad, const Camera &t_camera);
-    void move(Pad &t_pad);
-
 private:
     TextureRepository *texRepo;
-    Vector3 *getNextPosition(const Pad &t_pad, const Camera &t_camera);
-    void rotate(const Pad &t_pad);
-    float speed;
 };
 
 #endif

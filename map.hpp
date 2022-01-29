@@ -8,8 +8,8 @@ private:
 public:
     Map(Engine *t_engine);
     ~Map();
-
+    
     Chunck *chunck;
 
-    void update(const Pad &t_pad, Camera &camera);
+    void update(Pad &t_pad, Camera &camera);
 };

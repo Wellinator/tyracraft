@@ -9,6 +9,6 @@ Map::~Map()
 {
 }
 
-void Map::update(const Pad &t_pad, Camera &camera){
+void Map::update(Pad &t_pad, Camera &camera){
     chunck->update(t_pad, camera);
 };

@@ -12,23 +12,27 @@
 #include "camera.hpp"
 #include "map.hpp"
 
-class Start: public Game
+class Start : public Game, AudioListener
 {
-    private:
-        void setBgColorAndAmbientColor();
-        Map *map;
-        Player *player;
-        Camera camera;
-        TextureRepository *texRepo;
+private:
+    void setBgColorAndAmbientColor();
+    Map *map;
+    Player *player;
+    Camera camera;
+    TextureRepository *texRepo;
+    u32 audioTicks;
+    u8 skip1Beat;
 
-    public:
-        Start(Engine *t_engine);
-        ~Start();
+public:
+    Start(Engine *t_engine);
+    ~Start();
 
-        void onInit();
-        void onUpdate();
+    void onInit();
+    void onUpdate();
+    void onAudioTick();
+    void onAudioFinish();
 
-        Engine *engine;
+    Engine *engine;
 };
 
 #endif
