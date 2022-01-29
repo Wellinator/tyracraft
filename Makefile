@@ -6,6 +6,8 @@ EE_OBJS =											\
 	managers/terrain_generator.o					\
 	objects/Block.o									\
 	objects/chunck.o								\
+	objects/player.o								\
+	utils.o											\
 	camera.o										\
 	map.o											\
 	start.o											\
