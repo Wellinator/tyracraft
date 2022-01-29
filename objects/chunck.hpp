@@ -1,7 +1,7 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
-#define CHUNCK_SIZE 4
+#define CHUNCK_SIZE 2
 
 #include <engine.hpp>
 #include <tamtypes.h>
@@ -16,12 +16,14 @@ class Chunck
 public:
     Chunck(Engine *t_engine, float offsetX, float offsetY, float offsetZ);
     ~Chunck();
-    Mesh **getMeshes() { return meshes; }
-    void update(const Pad &t_pad, Camera &camera);
     
+    Mesh **getMeshes() { return meshes; }
+    inline u8 getMeshesCount() { return CHUNCK_SIZE * 3; }
+    void update(Pad &t_pad, Camera &camera);
+
 private:
     Mesh **meshes;
-    Block* blocks[CHUNCK_SIZE*CHUNCK_SIZE*CHUNCK_SIZE];
+    Block *blocks[CHUNCK_SIZE * 3];
     TextureRepository *texRepo;
     Engine *engine;
 };
