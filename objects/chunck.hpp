@@ -1,13 +1,15 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
+#define CHUNCK_SIZE 4
+
 #include <engine.hpp>
 #include <tamtypes.h>
 #include <modules/timer.hpp>
 #include <modules/pad.hpp>
 #include "../camera.hpp"
 #include "modules/texture_repository.hpp"
-#include "Block.hpp"
+#include "./Block.hpp"
 
 class Chunck
 {

@@ -1,8 +1,7 @@
 #ifndef _TERRAIN_GENERATOR_
 #define _TERRAIN_GENERATOR_
 
-#include "modules/texture_repository.hpp"
-#include "camera.hpp"
+#include <modules/texture_repository.hpp>
 #include "../objects/chunck.hpp"
 class Engine;
 class TerrainGenerator
