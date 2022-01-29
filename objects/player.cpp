@@ -67,7 +67,7 @@ void Player::update(const Pad &t_pad, const Camera &t_camera)
 {
     Vector3 *nextPos = getNextPosition(t_pad, t_camera);
     updatePosition(t_pad, t_camera, *nextPos);
-    updateGravity();
+    //updateGravity();
 }
 
 Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
