@@ -4,12 +4,12 @@ Chunck::Chunck(Engine *t_engine, float offsetX, float offsetY, float offsetZ)
 {
     engine = t_engine;
     texRepo = t_engine->renderer->getTextureRepository();
-    meshes = new Mesh *[CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE];
+    meshes = new Mesh *[CHUNCK_SIZE * CHUNCK_SIZE];
 
     int mashIndex = 0;
     for (int i = 0; i < CHUNCK_SIZE; i++)
     {
-        for (int j = 0; j < CHUNCK_SIZE; j++)
+        for (int j = 0; j < 1; j++)
         {
             for (int k = 0; k < CHUNCK_SIZE; k++)
             {
@@ -27,11 +27,11 @@ Chunck::Chunck(Engine *t_engine, float offsetX, float offsetY, float offsetZ)
 
 void Chunck::update(const Pad &t_pad, Camera &camera)
 {
-    for (int i = 0; i < CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; i++)
+    for (int i = 0; i < CHUNCK_SIZE * CHUNCK_SIZE; i++)
     {
         // TODO -> Implemente occusion culling;
         blocks[i]->update(t_pad, camera);
         camera.update(engine->pad, blocks[i]->mesh);
     }
-    engine->renderer->draw(meshes, CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE  );
+    engine->renderer->draw(meshes, CHUNCK_SIZE * CHUNCK_SIZE  );
 };
