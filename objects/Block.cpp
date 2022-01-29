@@ -6,11 +6,11 @@
 Block::Block(TextureRepository *t_texRepo, float X, float Y, float Z)
 {
     texRepo = t_texRepo;
-    speed = 1.000001F;
+    speed = 1.0F;
 
     mesh.loadObj("meshes/cube/", "cube", 7.0F, true);
     mesh.shouldBeFrustumCulled = true;
-    mesh.shouldBeBackfaceCulled = true;
+    mesh.shouldBeBackfaceCulled = false;
     mesh.shouldBeLighted = false;
     mesh.position.set(X, Y, Z);
     mesh.rotation.x = 0; //-1.566F;
