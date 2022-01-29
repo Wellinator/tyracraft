@@ -11,14 +11,18 @@ Start::~Start()
     return;
 }
 
-void Start::onInit(){
+void Start::onInit()
+{
     map = new Map(engine);
+    player = new Player(&engine->audio, engine->renderer->getTextureRepository());
     setBgColorAndAmbientColor();
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
 }
 
-void Start::onUpdate(){
+void Start::onUpdate()
+{
     map->update(engine->pad, camera);
+    player->update(engine->pad, camera);
 }
 
 void Start::setBgColorAndAmbientColor()
@@ -31,4 +35,3 @@ void Start::setBgColorAndAmbientColor()
     Vector3 ambient = Vector3(0.004F, 0.004F, 0.004F);
     engine->renderer->setAmbientLight(ambient);
 }
-
