@@ -13,7 +13,7 @@
 #include <utils/debug.hpp>
 #include <fastmath.h>
 
-const float CAMERA_Y = 30.0F;
+const float CAMERA_Y = 40.0F;
 
 // ----
 // Constructors/Destructors
