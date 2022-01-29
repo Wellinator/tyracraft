@@ -1,13 +1,11 @@
 #ifndef _BLOCK_
 #define _BLOCK_
 
-#define CHUNCK_SIZE 10
-
 #include "../camera.hpp"
 #include <tamtypes.h>
 #include <modules/pad.hpp>
 #include <modules/timer.hpp>
-#include "modules/texture_repository.hpp"
+#include <modules/texture_repository.hpp>
 
 /** Block 3D object class  */
 class Block
