@@ -8,6 +8,7 @@
 #include "managers/terrain_generator.hpp"
 #include "objects/chunck.hpp"
 #include "objects/Block.hpp"
+#include "objects/player.hpp"
 #include "camera.hpp"
 #include "map.hpp"
 
@@ -16,6 +17,7 @@ class Start: public Game
     private:
         void setBgColorAndAmbientColor();
         Map *map;
+        Player *player;
         Camera camera;
         TextureRepository *texRepo;
 
