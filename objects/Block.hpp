@@ -1,7 +1,7 @@
 #ifndef _BLOCK_
 #define _BLOCK_
 
-#define CHUNCK_SIZE 5
+#define CHUNCK_SIZE 10
 
 #include "../camera.hpp"
 #include <tamtypes.h>
