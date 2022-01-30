@@ -1,7 +1,7 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
-#define CHUNCK_SIZE 32  
+#define CHUNCK_SIZE 16 
 
 #include <engine.hpp>
 #include <tamtypes.h>
