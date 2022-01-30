@@ -23,6 +23,7 @@ void Start::onInit()
     
     // Load models and textures;
     skybox.loadObj("meshes/skybox/", "skybox", 400.0F, false);
+    texRepo->addByMesh("meshes/skybox/", skybox, BMP);
     skybox.shouldBeFrustumCulled = false;
 
     // Set camera definitions
@@ -41,7 +42,7 @@ void Start::onUpdate()
     player->update(engine->pad, camera);
     camera.update(engine->pad, player->mesh);
     
-    //engine->renderer->draw(skybox);
+    engine->renderer->draw(skybox);
     engine->renderer->draw(player->mesh);
 }
 
