@@ -1,14 +1,15 @@
 #include "map.hpp"
 
-Map::Map(Engine *t_engine)
+Map::Map(TextureRepository *t_texRepo)
 {
-    chunck = new Chunck(t_engine, 100.0F, 0.0F, 0.0F);
+    chunck = new Chunck(t_texRepo, 0.0F, 0.0F, 0.0F);
 }
 
 Map::~Map()
 {
 }
 
-void Map::update(Pad &t_pad, Camera &camera){
-    chunck->update(t_pad, camera);
+void Map::update(Engine *t_engine)
+{
+    chunck->update(t_engine);
 };

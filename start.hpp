@@ -17,6 +17,7 @@ class Start : public Game, AudioListener
 private:
     void setBgColorAndAmbientColor();
     Map *map;
+    Mesh skybox;
     Player *player;
     Camera camera;
     TextureRepository *texRepo;

@@ -6,10 +6,10 @@ class Map
 private:
     /* data */
 public:
-    Map(Engine *t_engine);
+    Map( TextureRepository *t_texRepo);
     ~Map();
     
     Chunck *chunck;
 
-    void update(Pad &t_pad, Camera &camera);
+    void update(Engine *t_engine);
 };
