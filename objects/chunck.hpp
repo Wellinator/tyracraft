@@ -1,31 +1,36 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
-#define CHUNCK_SIZE 2
+#define CHUNCK_SIZE 32  
 
 #include <engine.hpp>
 #include <tamtypes.h>
 #include <modules/timer.hpp>
 #include <modules/pad.hpp>
+#include <modules/texture_repository.hpp>
 #include "../camera.hpp"
-#include "modules/texture_repository.hpp"
-#include "./Block.hpp"
+
+#include "Block.hpp"
 
 class Chunck
 {
 public:
-    Chunck(Engine *t_engine, float offsetX, float offsetY, float offsetZ);
+    Chunck(TextureRepository *t_texRepo, float offsetX, float offsetY, float offsetZ);
     ~Chunck();
-    
-    Mesh **getMeshes() { return meshes; }
-    inline u8 getMeshesCount() { return CHUNCK_SIZE * 3; }
-    void update(Pad &t_pad, Camera &camera);
+
+    Mesh **meshes;
+    TextureRepository *texRepo;
+    int chunckSize;
+    int blockIndex;
+    Block blocks[CHUNCK_SIZE * CHUNCK_SIZE];
+    Block *baseBlobk;
+    void update(Engine *t_engine);
+    inline Mesh **getMeshes() const { return meshes; }
+    inline int getMeshesLength() const { return CHUNCK_SIZE * CHUNCK_SIZE; }
 
 private:
-    Mesh **meshes;
-    Block *blocks[CHUNCK_SIZE * 3];
-    TextureRepository *texRepo;
-    Engine *engine;
+    float initialPosition;
+    void initChunck();
 };
 
 #endif
