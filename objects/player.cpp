@@ -35,9 +35,10 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     isWalkingAnimationSet = false;
     isJumpingAnimationSet = false;
     isFightingAnimationSet = false;
+    mesh.loadMD2("meshes/player/", "warrior", 0.4F, true);
 
-    mesh.loadMD2("meshes/player/", "warrior", 0.2F, true);
-    mesh.position.set(0.00F, 40.00F, 0.00F);
+    //Set player in the middle of the chunck
+    mesh.position.set(112.0F, 8.00F, -112.0F);
     mesh.rotation.x = -1.566F;
     mesh.rotation.z = 1.566F;
     mesh.shouldBeBackfaceCulled = false;
@@ -101,6 +102,17 @@ Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
 
 void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &t_nextPos)
 {
+
+    //Left Stick controls
+    if (t_pad.lJoyH >= 200)
+        mesh.position.x += 0.5F * speed;
+    else if (t_pad.lJoyH <= 100)
+        mesh.position.x -= 0.5F * speed;
+    if (t_pad.lJoyV >= 200)
+        mesh.position.z += 0.5F * speed;
+    else if (t_pad.lJoyV <= 100)
+        mesh.position.z -= 0.5F * speed;
+
     if (t_pad.rJoyH >= 200)
         mesh.rotation.z += 0.08;
     else if (t_pad.rJoyH <= 100)
