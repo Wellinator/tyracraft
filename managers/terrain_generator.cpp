@@ -2,7 +2,7 @@
 
 TerrainGenerator::TerrainGenerator()
 {
-   
+    
 }
 
 TerrainGenerator::~TerrainGenerator()
