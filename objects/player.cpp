@@ -69,6 +69,7 @@ void Player::update(const Pad &t_pad, const Camera &t_camera)
     Vector3 *nextPos = getNextPosition(t_pad, t_camera);
     updatePosition(t_pad, t_camera, *nextPos);
     //updateGravity();
+    delete nextPos;
 }
 
 Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
@@ -102,16 +103,6 @@ Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
 
 void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &t_nextPos)
 {
-
-    //Left Stick controls
-    if (t_pad.lJoyH >= 200)
-        mesh.position.x += 0.5F * speed;
-    else if (t_pad.lJoyH <= 100)
-        mesh.position.x -= 0.5F * speed;
-    if (t_pad.lJoyV >= 200)
-        mesh.position.z += 0.5F * speed;
-    else if (t_pad.lJoyV <= 100)
-        mesh.position.z -= 0.5F * speed;
 
     if (t_pad.rJoyH >= 200)
         mesh.rotation.z += 0.08;
@@ -160,6 +151,9 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
         audio->playADPCM(jumpAdpcm);
         jumpCounter++;
     }
+
+    mesh.position.x = t_nextPos.x;
+    mesh.position.z = t_nextPos.z;
 }
 
 /** Update player position by gravity and update index of current floor */
