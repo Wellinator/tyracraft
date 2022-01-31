@@ -43,7 +43,7 @@ void Start::onUpdate()
     camera.update(engine->pad, player->mesh);
     
     engine->renderer->draw(skybox);
-    engine->renderer->draw(player->mesh);
+    //engine->renderer->draw(player->mesh);
 }
 
 void Start::setBgColorAndAmbientColor()
