@@ -5,7 +5,10 @@
 
 #include "Block.hpp"
 
-Block::Block(){};
+Block::Block()
+{
+    this->mesh.position.set(0, 0, 0);
+};
 
 Block::~Block(){};
 

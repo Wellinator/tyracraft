@@ -6,8 +6,7 @@
 #include <modules/pad.hpp>
 #include <modules/timer.hpp>
 #include <modules/texture_repository.hpp>
-
-#define BOCK_SIZE 7.00F
+#include "../include/contants.hpp"
 
 /** Block 3D object class  */
 class Block
