@@ -16,3 +16,9 @@ void Block::init(Mesh &mother, float X, float Y, float Z)
     // this->mesh.shouldBeLighted = false;
     // this->mesh.shouldBeFrustumCulled = false;
 }
+
+bool Block::shouldBeDrawn()
+{
+    //Clip if its hidden or if its an Air Block
+    return !this->isHidden;
+}

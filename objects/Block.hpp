@@ -14,10 +14,15 @@ class Block
 {
 public:
     Mesh mesh;
+    bool isHidden;
+    int block_type;
 
     Block();
     ~Block();
     void init(Mesh &mother, float X, float Y, float Z);
+    bool shouldBeDrawn();
+private:
+
 };
 
 #endif
