@@ -5,7 +5,7 @@
 #include <tamtypes.h>
 #include <game.hpp>
 #include <engine.hpp>
-#include "managers/terrain_generator.hpp"
+#include "managers/terrain_manager.hpp"
 #include "objects/chunck.hpp"
 #include "objects/Block.hpp"
 #include "objects/player.hpp"
