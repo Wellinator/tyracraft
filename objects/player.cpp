@@ -38,7 +38,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     mesh.loadMD2("meshes/player/", "warrior", 0.4F, true);
 
     //Set player in the middle of the chunck
-    mesh.position.set(112.0F, 8.00F, -112.0F);
+    mesh.position.set(56.0F, 8.00F, -56.0F);
     mesh.rotation.x = -1.566F;
     mesh.rotation.z = 1.566F;
     mesh.shouldBeBackfaceCulled = false;
