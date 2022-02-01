@@ -1,7 +1,7 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
-#define CHUNCK_SIZE 16 
+#define CHUNCK_SIZE 8 
 
 #include <engine.hpp>
 #include <tamtypes.h>
@@ -26,7 +26,7 @@ public:
     Block *baseBlobk;
     void update(Engine *t_engine);
     inline Mesh **getMeshes() const { return meshes; }
-    inline int getMeshesLength() const { return CHUNCK_SIZE * CHUNCK_SIZE; }
+    inline int getMeshesLength() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; }
 
 private:
     float initialPosition;

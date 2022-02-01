@@ -34,7 +34,16 @@ void Chunck::initChunck()
         {
             for (size_t z = 0; z < CHUNCK_SIZE; z++)
             {
-                blocks[blockIndex].init(baseBlobk->mesh, x * BOCK_SIZE * 2, y * -(BOCK_SIZE * 2), z * -(BOCK_SIZE * 2));
+                blocks[blockIndex].init(
+                    baseBlobk->mesh,
+                    x * BOCK_SIZE * 2,
+                    y * -(BOCK_SIZE * 2),
+                    z * -(BOCK_SIZE * 2));
+                blocks[blockIndex].isHidden = !(
+                    x == 0 or x == (CHUNCK_SIZE - 1) or
+                    y == 0 or y == (CHUNCK_SIZE - 1) or
+                    z == 0 or z == (CHUNCK_SIZE - 1));
+
                 texRepo->getBySpriteOrMesh(baseBlobk->mesh.getMaterial(0).getId())->addLink(blocks[blockIndex].mesh.getMaterial(0).getId());
                 meshes[blockIndex] = &blocks[blockIndex].mesh;
                 blockIndex++;
@@ -48,6 +57,7 @@ void Chunck::update(Engine *t_engine)
 {
     for (size_t i = 0; i < (CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE); i++)
     {
-        t_engine->renderer->draw(blocks[i].mesh);
+        if (blocks[i].shouldBeDrawn())
+            t_engine->renderer->draw(blocks[i].mesh);
     }
 };
