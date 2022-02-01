@@ -1,8 +1,6 @@
 #ifndef _CHUNCK_
 #define _CHUNCK_
 
-#define CHUNCK_SIZE 8 
-
 #include <engine.hpp>
 #include <tamtypes.h>
 #include <modules/timer.hpp>
@@ -10,6 +8,7 @@
 #include <modules/texture_repository.hpp>
 #include "../camera.hpp"
 
+#include "../include/contants.hpp"
 #include "Block.hpp"
 
 class Chunck
