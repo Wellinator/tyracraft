@@ -22,7 +22,7 @@ public:
     TextureRepository *texRepo;
     int chunckSize;
     int blockIndex;
-    Block blocks[CHUNCK_SIZE * CHUNCK_SIZE];
+    Block blocks[CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE];
     Block *baseBlobk;
     void update(Engine *t_engine);
     inline Mesh **getMeshes() const { return meshes; }

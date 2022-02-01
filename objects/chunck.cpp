@@ -6,7 +6,7 @@
 
 Chunck::Chunck(TextureRepository *t_texRepo, float offsetX, float offsetY, float offsetZ)
 {
-    meshes = new Mesh *[CHUNCK_SIZE * CHUNCK_SIZE];
+    meshes = new Mesh *[CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE];
     texRepo = t_texRepo;
     baseBlobk = new Block();
     initChunck();
@@ -28,14 +28,17 @@ void Chunck::initChunck()
     baseBlobk->mesh.shouldBeLighted = false;
 
     blockIndex = 0;
-    for (size_t i = 0; i < CHUNCK_SIZE; i++)
+    for (size_t x = 0; x < CHUNCK_SIZE; x++)
     {
-        for (size_t j = 0; j < CHUNCK_SIZE; j++)
+        for (size_t y = 0; y < CHUNCK_SIZE; y++)
         {
-            blocks[blockIndex].init(baseBlobk->mesh, i * BOCK_SIZE * 2, 1, j * -(BOCK_SIZE * 2));
-            texRepo->getBySpriteOrMesh(baseBlobk->mesh.getMaterial(0).getId())->addLink(blocks[blockIndex].mesh.getMaterial(0).getId());
-            meshes[blockIndex] = &blocks[blockIndex].mesh;
-            blockIndex++;
+            for (size_t z = 0; z < CHUNCK_SIZE; z++)
+            {
+                blocks[blockIndex].init(baseBlobk->mesh, x * BOCK_SIZE * 2, y * -(BOCK_SIZE * 2), z * -(BOCK_SIZE * 2));
+                texRepo->getBySpriteOrMesh(baseBlobk->mesh.getMaterial(0).getId())->addLink(blocks[blockIndex].mesh.getMaterial(0).getId());
+                meshes[blockIndex] = &blocks[blockIndex].mesh;
+                blockIndex++;
+            }
         }
     }
     PRINT_LOG("Chunck initialized!");
@@ -43,7 +46,7 @@ void Chunck::initChunck()
 
 void Chunck::update(Engine *t_engine)
 {
-    for (size_t i = 0; i < (CHUNCK_SIZE * CHUNCK_SIZE); i++)
+    for (size_t i = 0; i < (CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE); i++)
     {
         t_engine->renderer->draw(blocks[i].mesh);
     }
