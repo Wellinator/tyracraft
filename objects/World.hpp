@@ -7,6 +7,8 @@
 #include <modules/pad.hpp>
 #include <modules/texture_repository.hpp>
 #include "chunck.hpp"
+#include "../managers/terrain_manager.hpp"
+#include "../include/contants.hpp"
 
 class World
 {
@@ -20,6 +22,7 @@ public:
 
 private:
     Chunck *chunck;
+    TerrainManager *terrainManager = new TerrainManager();
 };
 
 #endif

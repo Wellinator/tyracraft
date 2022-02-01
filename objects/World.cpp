@@ -3,8 +3,9 @@
 
 void World::init()
 {
+    this->terrainManager->generateNewTerrain(WORLD_SIZE);
+    
     //TODO:
-    //Generate terrain
     //Create initial chunk by terrain position offset
     return;
 };
