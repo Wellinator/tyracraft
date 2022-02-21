@@ -1,27 +1,26 @@
 #ifndef _BLOCK_
 #define _BLOCK_
 
-#include "../camera.hpp"
 #include <tamtypes.h>
-#include <modules/pad.hpp>
-#include <modules/timer.hpp>
-#include <modules/texture_repository.hpp>
+#include <engine.hpp>
 #include "../include/contants.hpp"
 
 /** Block 3D object class  */
-class Block
+class Block : public Mesh
 {
 public:
-    Mesh mesh;
     bool isHidden;
     int block_type;
+    int xIndex = 0;
+    int yIndex = 0;
+    int zIndex = 0;
 
     Block();
     ~Block();
-    void init(Mesh &mother, float X, float Y, float Z);
+    void init(int block_type, float X, float Y, float Z);
     bool shouldBeDrawn();
+    void getTextureByBlockType();
 private:
-
 };
 
 #endif
