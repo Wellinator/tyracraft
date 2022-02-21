@@ -6,6 +6,7 @@
 #include <modules/timer.hpp>
 #include <modules/pad.hpp>
 #include <modules/texture_repository.hpp>
+#include <vector>
 #include "../camera.hpp"
 
 #include "../include/contants.hpp"
@@ -14,22 +15,17 @@
 class Chunck
 {
 public:
-    Chunck(TextureRepository *t_texRepo, float offsetX, float offsetY, float offsetZ);
+    Chunck();
     ~Chunck();
 
-    Mesh **meshes;
+    Engine *engine;
     TextureRepository *texRepo;
-    int chunckSize;
-    int blockIndex;
-    Block blocks[CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE];
-    Block *baseBlobk;
-    void update(Engine *t_engine);
-    inline Mesh **getMeshes() const { return meshes; }
-    inline int getMeshesLength() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; }
+    void renderer();
+    inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
+    void pushBlock(Block block);
 
 private:
-    float initialPosition;
-    void initChunck();
+    std::vector<Block> blocks;
 };
 
 #endif

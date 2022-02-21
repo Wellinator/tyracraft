@@ -4,6 +4,7 @@ EE_BIN = tyracraft.elf
 
 EE_OBJS =											\
 	managers/terrain_manager.o						\
+	managers/block_manager.o						\
 	objects/World.o									\
 	objects/Block.o									\
 	objects/chunck.o								\

@@ -18,10 +18,9 @@ public:
 
     void init();
     void update();
-    void render(Engine *t_engine);
 
 private:
-    Chunck *chunck;
+    Engine *engine;
     TerrainManager *terrainManager = new TerrainManager();
 };
 

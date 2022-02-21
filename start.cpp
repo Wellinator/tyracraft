@@ -4,6 +4,7 @@ Start::Start(Engine *t_engine)
     : engine(t_engine), camera(&t_engine->screen)
 {
     PRINT_LOG("Initing game");
+    world = new World(engine);
     // Load World
 }
 
@@ -16,7 +17,6 @@ void Start::onInit()
 {
     texRepo = engine->renderer->getTextureRepository();
     player = new Player(&engine->audio, texRepo);
-    map = new Map(texRepo);
     
     setBgColorAndAmbientColor();
     engine->renderer->disableVSync();
@@ -25,6 +25,8 @@ void Start::onInit()
     skybox.loadObj("meshes/skybox/", "skybox", 400.0F, false);
     texRepo->addByMesh("meshes/skybox/", skybox, BMP);
     skybox.shouldBeFrustumCulled = false;
+    
+    world->init();
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
@@ -38,12 +40,12 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
-    map->update(engine);
     player->update(engine->pad, camera);
     camera.update(engine->pad, player->mesh);
     
     engine->renderer->draw(skybox);
-    //engine->renderer->draw(player->mesh);
+    engine->renderer->draw(player->mesh);
+    world->update();
 }
 
 void Start::setBgColorAndAmbientColor()

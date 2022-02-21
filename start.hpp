@@ -9,6 +9,7 @@
 #include "objects/chunck.hpp"
 #include "objects/Block.hpp"
 #include "objects/player.hpp"
+#include "objects/World.hpp"
 #include "camera.hpp"
 #include "map.hpp"
 
@@ -16,7 +17,7 @@ class Start : public Game, AudioListener
 {
 private:
     void setBgColorAndAmbientColor();
-    Map *map;
+    World *world;
     Mesh skybox;
     Player *player;
     Camera camera;
