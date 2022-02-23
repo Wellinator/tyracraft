@@ -16,8 +16,10 @@ void Block::init(Mesh &mother, float X, float Y, float Z)
 {
     this->mesh.position.set(X, Y, Z);
     this->mesh.loadFrom(mother);
-    // this->mesh.shouldBeLighted = false;
-    // this->mesh.shouldBeFrustumCulled = false;
+    this->mesh.shouldBeLighted = false;
+    this->mesh.shouldBeFrustumCulled = true;
+    //TODO: Check glich when backfaceculled
+    this->mesh.shouldBeBackfaceCulled = false;
 }
 
 bool Block::shouldBeDrawn()

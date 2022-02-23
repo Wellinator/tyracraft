@@ -20,12 +20,9 @@ void Chunck::initChunck()
 {
     PRINT_LOG("Initializing chunck");
     PRINT_LOG("Creating base block");
-    baseBlobk->mesh.loadObj("meshes/cube/", "cube", BOCK_SIZE, true);
+    baseBlobk->mesh.loadObj("meshes/cube/", "cube", BOCK_SIZE, false);
     baseBlobk->mesh.position.set(0, 0, 0);
     texRepo->addByMesh("meshes/cube/", baseBlobk->mesh, PNG);
-    baseBlobk->mesh.shouldBeFrustumCulled = true;
-    baseBlobk->mesh.shouldBeBackfaceCulled = true;
-    baseBlobk->mesh.shouldBeLighted = false;
 
     blockIndex = 0;
     for (size_t x = 0; x < CHUNCK_SIZE; x++)
