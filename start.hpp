@@ -11,7 +11,6 @@
 #include "objects/player.hpp"
 #include "objects/World.hpp"
 #include "camera.hpp"
-#include "map.hpp"
 
 class Start : public Game, AudioListener
 {

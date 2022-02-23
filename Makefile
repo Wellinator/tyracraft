@@ -11,7 +11,6 @@ EE_OBJS =											\
 	objects/player.o								\
 	utils.o											\
 	camera.o										\
-	map.o											\
 	start.o											\
 	main.o
 
