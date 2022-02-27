@@ -6,7 +6,7 @@ Block::~Block(){};
 
 void Block::init(int block_type, float X, float Y, float Z)
 {
-    this->position.set(X, Y, Z);
+    this->mesh.position.set(X, Y, Z);
     this->block_type = block_type;
 }
 

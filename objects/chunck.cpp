@@ -4,7 +4,10 @@
 
 #include "chunck.hpp"
 
-Chunck::Chunck(){};
+Chunck::Chunck(Engine *t_engine)
+{
+    this->engine = t_engine;
+};
 
 Chunck::~Chunck()
 {
@@ -14,14 +17,19 @@ void Chunck::renderer()
 {
     for (size_t i = 0; i < this->blocks.size(); i++)
     {
-        if (this->blocks[i].isDataLoaded() && engine->renderer->getTextureRepository()->getBySpriteOrMesh(this->blocks[i].getMaterial(0).getId()))
+        if (this->blocks[i]->mesh.isDataLoaded())
         {
-            engine->renderer->draw(this->blocks[i]);
+            engine->renderer->draw(this->blocks[i]->mesh);
         }
     }
 };
 
-void Chunck::pushBlock(Block block)
+void Chunck::add(Block *block)
 {
     this->blocks.push_back(block);
 };
+
+void Chunck::clear()
+{
+    this->blocks.clear();
+}

@@ -1,37 +1,39 @@
 #ifndef _TERRAIN_MANAGER_
 #define _TERRAIN_MANAGER_
 
+#include <tamtypes.h>
+#include <engine.hpp>
+#include <game.hpp>
 #include <modules/texture_repository.hpp>
-#include "block_manager.hpp"
 #include "../objects/Block.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
 #include "../include/contants.hpp"
-#include <engine.hpp>
-#include <tamtypes.h>
-#include <models/texture.hpp>
-#include <models/mesh.hpp>
 
 class TerrainManager
 {
 public:
     TerrainManager();
     ~TerrainManager();
-    void init(TextureRepository *t_repository);
+    void init(Engine *t_engine);
     void generateNewTerrain(int terrainLength);
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
-    void initChunk();
+    void buildChunk(int offsetX, int offsetY, int offsetZ);
     inline Block *getTerrain() { return terrain; }
-    void render(Engine *t_engine);
+    void update();
+    Mesh &getMeshByBlockType(int blockType);
+    void linkTextureByBlockType(int blockType, const u32 t_meshId);
+    void loadBlocks();
 
     TextureRepository *texRepo;
-    BlockManager *blockManager;
+    Engine *engine;
 
 private:
     int blockIndex;
     Chunck *chunck;
     Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
+    Mesh dirtBlock;
 };
 
 #endif
