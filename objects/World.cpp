@@ -11,8 +11,8 @@ World::~World() {}
 void World::init()
 {
     PRINT_LOG("Creating World");
-    this->terrainManager->init(engine->renderer->getTextureRepository());
-
+    this->terrainManager->init(engine);
+    this->chunck = this->terrainManager->getChunck(0, 0, 0);
     // TODO:
     // Update get chunck by player position
 
@@ -22,8 +22,7 @@ void World::init()
 
 void World::update()
 {
-    // TODO:
-    // Update chunck through terrain while player change position
-    this->terrainManager->render(engine);
+    this->terrainManager->update();
+    this->chunck->renderer();
     return;
 };

@@ -22,11 +22,12 @@ void Start::onInit()
     engine->renderer->disableVSync();
     
     // Load models and textures;
+    world->init();
     skybox.loadObj("meshes/skybox/", "skybox", 400.0F, false);
     texRepo->addByMesh("meshes/skybox/", skybox, BMP);
     skybox.shouldBeFrustumCulled = false;
+    skybox.shouldBeBackfaceCulled = false;
     
-    world->init();
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
@@ -44,7 +45,7 @@ void Start::onUpdate()
     camera.update(engine->pad, player->mesh);
     
     engine->renderer->draw(skybox);
-    engine->renderer->draw(player->mesh);
+    //engine->renderer->draw(player->mesh);
     world->update();
 }
 

@@ -2,30 +2,23 @@
 
 TerrainManager::TerrainManager()
 {
-    this->chunck = new Chunck();
 }
 
 TerrainManager::~TerrainManager() {}
 
-void TerrainManager::init(TextureRepository *t_repository)
+void TerrainManager::init(Engine *t_engine)
 {
-    this->texRepo = t_repository;
-    this->blockManager = new BlockManager(t_repository);
+    engine = t_engine;
+    texRepo = t_engine->renderer->getTextureRepository();
+    this->chunck = new Chunck(engine);
+    this->loadBlocks();
     this->generateNewTerrain(WORLD_SIZE);
-    this->initChunk();
 }
 
 void TerrainManager::generateNewTerrain(int terrainLength)
 {
     PRINT_LOG("Generating terrain");
-    int blockIndex = 1;
-
-    PRINT_LOG("Loading Blocks");
-    terrain[0].loadObj("meshes/cube/", "cube", BLOCK_SIZE, false);
-    terrain[0].shouldBeBackfaceCulled = false;
-    terrain[0].shouldBeFrustumCulled = false;
-    terrain[0].position.set(0, 0, 0);
-    texRepo->addByMesh("meshes/cube/", terrain[0], PNG);
+    int blockIndex = 0;
 
     PRINT_LOG("Adding Blocks Textures");
     for (int x = 0; x < terrainLength; x++)
@@ -34,30 +27,15 @@ void TerrainManager::generateNewTerrain(int terrainLength)
         {
             for (int z = 0; z < terrainLength; z++)
             {
-
-                terrain[blockIndex].loadFrom(terrain[0]);
-                terrain[blockIndex].shouldBeFrustumCulled = false;
-                terrain[blockIndex].shouldBeBackfaceCulled = false;
-                texRepo->getBySpriteOrMesh(terrain[0].getId())->addLink(terrain[blockIndex].getId());
-                terrain[0].position.set(x * BLOCK_SIZE * 2,
-                    y * -(BLOCK_SIZE * 2),
-                    z * -(BLOCK_SIZE * 2));
-                // // terrain[blockIndex].init(
-                // //     DIRTY_BLOCK,
-                // //     x * BLOCK_SIZE * 2,
-                // //     y * -(BLOCK_SIZE * 2),
-                // //     z * -(BLOCK_SIZE * 2));
-
-                // terrain[blockIndex].isHidden = false;
-                // terrain[blockIndex].xIndex = x;
-                // terrain[blockIndex].yIndex = y;
-                // terrain[blockIndex].zIndex = z;
-
-                // bool const isDataLoaded = terrain[blockIndex].isDataLoaded();
-                // bool const isMother = terrain[blockIndex].isMother();
-                // printf("Is data loaded: %d | Is Mother %d\n", isDataLoaded, isMother);
-                printf("Primary mesh ID: %d;\nCurrent mesh ID: %d\n", terrain[0].getMaterial(0).getId(), terrain[blockIndex].getMaterial(0).getId());
-
+                terrain[blockIndex].init(DIRTY_BLOCK, x * BLOCK_SIZE * 2, y * -(BLOCK_SIZE * 2), z * -(BLOCK_SIZE * 2));
+                terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(DIRTY_BLOCK));
+                terrain[blockIndex].mesh.shouldBeFrustumCulled = false;
+                terrain[blockIndex].mesh.shouldBeBackfaceCulled = false;
+                linkTextureByBlockType(DIRTY_BLOCK, terrain[blockIndex].mesh.getMaterial(0).getId());
+                terrain[blockIndex].isHidden = false;
+                terrain[blockIndex].xIndex = x;
+                terrain[blockIndex].yIndex = y;
+                terrain[blockIndex].zIndex = z;
                 blockIndex++;
             }
         }
@@ -71,27 +49,47 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
 
 Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 {
+    this->chunck->clear();
+    this->buildChunk(offsetX, offsetY, offsetZ);
     return this->chunck;
 }
 
-void TerrainManager::initChunk()
+void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
-    for (size_t index = 0; index < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; index++)
+    for (int i = 0; i < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
     {
-        if (terrain[blockIndex].xIndex == index || terrain[blockIndex].yIndex == index || terrain[blockIndex].zIndex == index)
+        if (
+            (terrain[i].xIndex >= offsetX && terrain[i].xIndex < CHUNCK_SIZE) &&
+            (terrain[i].yIndex >= offsetY && terrain[i].yIndex < CHUNCK_SIZE) && 
+            (terrain[i].zIndex >= offsetZ && terrain[i].zIndex < CHUNCK_SIZE))
         {
-            this->chunck->pushBlock(terrain[blockIndex]);
+            printf("Adding block to chunck %d \n", i);
+            this->chunck->add(&terrain[i]);
         }
     }
 }
 
-void TerrainManager::render(Engine *t_engine)
-{
-    for (size_t index = 0; index < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; index++)
-    {
-        if (terrain[blockIndex].xIndex == index || terrain[blockIndex].yIndex == index || terrain[blockIndex].zIndex == index)
-        {
-            t_engine->renderer->draw(terrain[blockIndex]);
-        }
-    }
+void TerrainManager::update(){
+    // TODO: If player move, then update chunck by player position;
+    // TODO: Render the chunck;
 };
+
+void TerrainManager::loadBlocks()
+{
+    dirtBlock.loadObj("meshes/cube/", "cube", BLOCK_SIZE, false);
+    texRepo->addByMesh("meshes/cube/", dirtBlock, PNG);
+}
+
+void TerrainManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
+{
+    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(0).getId())->addLink(t_meshId);
+}
+
+Mesh &TerrainManager::getMeshByBlockType(int blockType)
+{
+    if (blockType == DIRTY_BLOCK)
+        return dirtBlock;
+
+    // Should return an invalid texture
+    return dirtBlock;
+}

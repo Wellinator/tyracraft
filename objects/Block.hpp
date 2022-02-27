@@ -6,9 +6,10 @@
 #include "../include/contants.hpp"
 
 /** Block 3D object class  */
-class Block : public Mesh
+class Block
 {
 public:
+    Mesh mesh;
     bool isHidden;
     int block_type;
     int xIndex = 0;
@@ -19,7 +20,6 @@ public:
     ~Block();
     void init(int block_type, float X, float Y, float Z);
     bool shouldBeDrawn();
-    void getTextureByBlockType();
 private:
 };
 

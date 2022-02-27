@@ -18,6 +18,7 @@ public:
 
     void init();
     void update();
+    Chunck *chunck;
 
 private:
     Engine *engine;
