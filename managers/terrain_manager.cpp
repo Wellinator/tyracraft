@@ -28,7 +28,7 @@ void TerrainManager::generateNewTerrain(int terrainLength)
         {
             for (int z = 0; z < terrainLength; z++)
             {
-                int blockType = y < 3  ? AIR_BLOCK : DIRTY_BLOCK;
+                int blockType = y < 3 ? AIR_BLOCK : DIRTY_BLOCK;
                 terrain[blockIndex].init(blockType, x * BLOCK_SIZE * 2, y * -(BLOCK_SIZE * 2), z * -(BLOCK_SIZE * 2));
                 terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(blockType));
                 terrain[blockIndex].mesh.shouldBeFrustumCulled = true;
@@ -48,7 +48,7 @@ void TerrainManager::optimizeTerrain()
     printf("Optimizing Terrain\n");
     for (int i = 0; i <= WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
     {
-        //If some nighbor block is AIR_BLOCK set block to visible
+        // If some nighbor block is AIR_BLOCK set block to visible
         if (
             // Front block
             terrain[i].zIndex < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
@@ -63,7 +63,6 @@ void TerrainManager::optimizeTerrain()
             // Left block
             terrain[i].xIndex > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
         {
-            printf("Block not hidden\n");
             terrain[i].isHidden = false;
         }
     }
@@ -85,7 +84,19 @@ Block *TerrainManager::getBlockByIndex(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    player->getPosition();
+    if (player->isWalking)
+    {
+        const Vector3 pos = player->getPosition();
+        this->chunck->clear();
+        this->buildChunk(
+            pos.x / (BLOCK_SIZE * 2),
+            pos.y / -(BLOCK_SIZE * 2),
+            pos.z / -(BLOCK_SIZE * 2));
+        printf("Updating Chunck: %f, %f, %f\n",
+               pos.x / (BLOCK_SIZE * 2),
+               pos.y / -(BLOCK_SIZE * 2),
+               pos.z / -(BLOCK_SIZE * 2));
+    }
 }
 
 Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
@@ -102,18 +113,18 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
         if (
             // Check if block is inside chunck;
             terrain[i].shouldBeDrawn() &&
-            (terrain[i].xIndex >= offsetX && terrain[i].xIndex < CHUNCK_SIZE) &&
-            (terrain[i].yIndex >= offsetY && terrain[i].yIndex < CHUNCK_SIZE) &&
-            (terrain[i].zIndex >= offsetZ && terrain[i].zIndex < CHUNCK_SIZE))
+            (terrain[i].xIndex >= offsetX && terrain[i].xIndex < offsetX + CHUNCK_SIZE) &&
+            (terrain[i].yIndex >= offsetY && terrain[i].yIndex < offsetY + CHUNCK_SIZE) &&
+            (terrain[i].zIndex >= offsetZ && terrain[i].zIndex < offsetZ + CHUNCK_SIZE))
         {
             this->chunck->add(&terrain[i]);
         }
     }
 }
 
-void TerrainManager::update(){
-    // TODO: If player move, then update chunck by player position;
-    // TODO: Render the chunck;
+void TerrainManager::update()
+{
+    return;
 };
 
 void TerrainManager::loadBlocks()

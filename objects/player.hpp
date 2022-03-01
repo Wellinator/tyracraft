@@ -32,13 +32,13 @@ public:
     void update(const Pad &t_pad, const Camera &t_camera);
     const inline u32 &getJumpCount() const { return jumpCounter; }
     inline const Vector3 &getPosition() const { return mesh.position; }
+    u8 isFighting, isWalking;
 
 private:
     TextureRepository *texRepo;
     u32 jumpCounter;
     Vector3 *getNextPosition(const Pad &t_pad, const Camera &t_camera);
     u8 isWalkingAnimationSet, isJumpingAnimationSet, isFightingAnimationSet;
-    u8 isFighting, isWalking;
     Audio *audio;
     Timer walkTimer, fightTimer;
     audsrv_adpcm_t *walkAdpcm, *jumpAdpcm, *boomAdpcm;

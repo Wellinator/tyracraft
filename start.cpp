@@ -46,7 +46,7 @@ void Start::onUpdate()
     
     engine->renderer->draw(skybox);
     //engine->renderer->draw(player->mesh);
-    world->update();
+    world->update(player);
 }
 
 void Start::setBgColorAndAmbientColor()
