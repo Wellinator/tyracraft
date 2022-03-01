@@ -12,6 +12,7 @@
 #define _PLAYER_
 
 #include "../camera.hpp"
+#include "../include/contants.hpp"
 #include <modules/pad.hpp>
 #include <modules/timer.hpp>
 #include <tamtypes.h>
