@@ -23,7 +23,7 @@ void Start::onInit()
     
     // Load models and textures;
     world->init();
-    skybox.loadObj("meshes/skybox/", "skybox", 400.0F, false);
+    skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
     texRepo->addByMesh("meshes/skybox/", skybox, BMP);
     skybox.shouldBeFrustumCulled = false;
     skybox.shouldBeBackfaceCulled = false;
