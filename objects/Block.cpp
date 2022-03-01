@@ -7,11 +7,11 @@ Block::~Block(){};
 void Block::init(int block_type, float X, float Y, float Z)
 {
     this->mesh.position.set(X, Y, Z);
-    this->block_type = block_type;
+    this->blockType = block_type;
 }
 
 bool Block::shouldBeDrawn()
 {
     //Clip if its hidden or if its an Air Block
-    return !this->isHidden;
+    return !this->isHidden && this->mesh.isDataLoaded() && this->blockType != AIR_BLOCK;
 }

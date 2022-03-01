@@ -10,8 +10,8 @@ class Block
 {
 public:
     Mesh mesh;
-    bool isHidden;
-    int block_type;
+    bool isHidden = true;
+    int blockType;
     int xIndex = 0;
     int yIndex = 0;
     int zIndex = 0;
