@@ -22,13 +22,13 @@ void TerrainManager::generateNewTerrain(int terrainLength)
     int blockIndex = 0;
 
     PRINT_LOG("Adding Blocks Textures");
-    for (int x = 0; x < terrainLength; x++)
+    for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
     {
-        for (int y = 0; y < terrainLength; y++)
+        for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
         {
-            for (int z = 0; z < terrainLength; z++)
+            for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
             {
-                int blockType = y < 3 ? AIR_BLOCK : DIRTY_BLOCK;
+                int blockType = y > 0 ? AIR_BLOCK : DIRTY_BLOCK;
                 terrain[blockIndex].init(blockType, x * BLOCK_SIZE * 2, y * -(BLOCK_SIZE * 2), z * -(BLOCK_SIZE * 2));
                 terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(blockType));
                 terrain[blockIndex].mesh.shouldBeFrustumCulled = true;
@@ -108,14 +108,15 @@ Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
+    const int halfChunk = CHUNCK_SIZE / 2;
     for (int i = 0; i < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
     {
         if (
             // Check if block is inside chunck;
             terrain[i].shouldBeDrawn() &&
-            (terrain[i].xIndex >= offsetX && terrain[i].xIndex < offsetX + CHUNCK_SIZE) &&
-            (terrain[i].yIndex >= offsetY && terrain[i].yIndex < offsetY + CHUNCK_SIZE) &&
-            (terrain[i].zIndex >= offsetZ && terrain[i].zIndex < offsetZ + CHUNCK_SIZE))
+            (terrain[i].xIndex >= offsetX - halfChunk && terrain[i].xIndex < offsetX + halfChunk) &&
+            (terrain[i].yIndex >= offsetY - halfChunk && terrain[i].yIndex < offsetY + halfChunk) &&
+            (terrain[i].zIndex >= offsetZ - halfChunk && terrain[i].zIndex < offsetZ + halfChunk))
         {
             this->chunck->add(&terrain[i]);
         }
