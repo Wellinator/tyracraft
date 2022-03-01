@@ -5,6 +5,7 @@
 #include <engine.hpp>
 #include <game.hpp>
 #include <modules/texture_repository.hpp>
+#include <fastmath.h>
 #include "../objects/Block.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
@@ -25,6 +26,8 @@ public:
     Mesh &getMeshByBlockType(int blockType);
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     void loadBlocks();
+    void optimizeTerrain();
+    Block *getBlockByIndex(int offsetX, int offsetY, int offsetZ);
 
     TextureRepository *texRepo;
     Engine *engine;
