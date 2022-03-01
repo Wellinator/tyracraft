@@ -92,10 +92,6 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
             pos.x / (BLOCK_SIZE * 2),
             pos.y / -(BLOCK_SIZE * 2),
             pos.z / -(BLOCK_SIZE * 2));
-        printf("Updating Chunck: %f, %f, %f\n",
-               pos.x / (BLOCK_SIZE * 2),
-               pos.y / -(BLOCK_SIZE * 2),
-               pos.z / -(BLOCK_SIZE * 2));
     }
 }
 
