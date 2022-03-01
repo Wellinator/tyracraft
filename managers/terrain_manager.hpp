@@ -17,22 +17,22 @@ public:
     TerrainManager();
     ~TerrainManager();
     void init(Engine *t_engine);
+    void update();
     void generateNewTerrain(int terrainLength);
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
-    void buildChunk(int offsetX, int offsetY, int offsetZ);
     inline Block *getTerrain() { return terrain; }
-    void update();
-    Mesh &getMeshByBlockType(int blockType);
-    void linkTextureByBlockType(int blockType, const u32 t_meshId);
-    void loadBlocks();
-    void optimizeTerrain();
-    Block *getBlockByIndex(int offsetX, int offsetY, int offsetZ);
 
     TextureRepository *texRepo;
     Engine *engine;
 
 private:
+    void buildChunk(int offsetX, int offsetY, int offsetZ);
+    Block *getBlockByIndex(int offsetX, int offsetY, int offsetZ);
+    void optimizeTerrain();
+    void loadBlocks();
+    void linkTextureByBlockType(int blockType, const u32 t_meshId);
+    Mesh &getMeshByBlockType(int blockType);
     int blockIndex;
     Chunck *chunck;
     Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
