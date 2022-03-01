@@ -17,7 +17,7 @@ void Chunck::renderer()
 {
     for (size_t i = 0; i < this->blocks.size(); i++)
     {
-        if (this->blocks[i]->mesh.isDataLoaded())
+        if (this->blocks[i]->shouldBeDrawn())
         {
             engine->renderer->draw(this->blocks[i]->mesh);
         }
