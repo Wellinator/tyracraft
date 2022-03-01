@@ -37,6 +37,7 @@ private:
     Chunck *chunck;
     Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
     Mesh dirtBlock;
+    Vector3 lastPlayerPosition;
 };
 
 #endif

@@ -84,14 +84,17 @@ Block *TerrainManager::getBlockByIndex(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    if (player->isWalking)
+    //Update chunck when player moves three blocks
+    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * 3)
     {
-        const Vector3 pos = player->getPosition();
+        printf("Player moved %f\n", this->lastPlayerPosition.distanceTo(player->getPosition()));
+        this->lastPlayerPosition = player->getPosition();
         this->chunck->clear();
         this->buildChunk(
-            pos.x / (BLOCK_SIZE * 2),
-            pos.y / -(BLOCK_SIZE * 2),
-            pos.z / -(BLOCK_SIZE * 2));
+            player->getPosition().x / (BLOCK_SIZE * 2),
+            player->getPosition().y / -(BLOCK_SIZE * 2),
+            player->getPosition().z / -(BLOCK_SIZE * 2));
+        this->lastPlayerPosition = player->getPosition();
     }
 }
 
