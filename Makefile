@@ -17,7 +17,6 @@ EE_LIBS = -ltyra
 
 all: $(EE_BIN)
 	$(EE_STRIP) --strip-all $(EE_BIN)
-	mv $(EE_BIN) bin/$(EE_BIN)
 	rm $(EE_OBJS)
 
 rebuild-engine: 
@@ -34,7 +33,6 @@ run: $(EE_BIN)
 	ps2client reset
 	ps2client reset
 	$(EE_STRIP) --strip-all $(EE_BIN)
-	mv $(EE_BIN) bin/$(EE_BIN)
 	rm $(EE_OBJS)
 	cd bin/ && ps2client execee host:$(EE_BIN)
 

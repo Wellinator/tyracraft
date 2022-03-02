@@ -18,10 +18,10 @@ void TerrainManager::init(Engine *t_engine)
 
 void TerrainManager::generateNewTerrain(int terrainLength)
 {
-    PRINT_LOG("Generating terrain");
+    consoleLog("Generating terrain");
     int blockIndex = 0;
 
-    PRINT_LOG("Adding Blocks Textures");
+    consoleLog("Adding Blocks Textures");
     for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
     {
         for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)

@@ -3,7 +3,7 @@
 Start::Start(Engine *t_engine)
     : engine(t_engine), camera(&t_engine->screen)
 {
-    PRINT_LOG("Initing game");
+    consoleLog("Initing game");
     world = new World(engine);
     // Load World
 }
