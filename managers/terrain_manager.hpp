@@ -5,8 +5,10 @@
 #include <engine.hpp>
 #include <game.hpp>
 #include <modules/texture_repository.hpp>
+#include <models/mesh.hpp>
 #include <fastmath.h>
 #include "../objects/Block.hpp"
+#include "../objects/Node.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
 #include "../include/contants.hpp"
@@ -35,7 +37,6 @@ private:
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     Mesh &getMeshByBlockType(int blockType);
     int getBlock(int x, int y, int z);
-    int blockIndex;
     Chunck *chunck;
     Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
     Mesh dirtBlock;

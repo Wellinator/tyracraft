@@ -33,7 +33,7 @@ void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool
     if (!makeFlat)
     {
         PRINT_LOG("Adding Blocks Textures");
-
+        int blockIndex = 0;
         for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
         {
             for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
@@ -41,18 +41,7 @@ void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool
                 for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
                 {
                     int blockType = this->getBlock(x, y, z);
-                    terrain[blockIndex].init(
-                        blockType,
-                        x * BLOCK_SIZE * 2,
-                        y * -(BLOCK_SIZE * 2),
-                        z * -(BLOCK_SIZE * 2));
-                    terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(blockType));
-                    terrain[blockIndex].mesh.shouldBeFrustumCulled = true;
-                    terrain[blockIndex].mesh.shouldBeBackfaceCulled = false;
-                    linkTextureByBlockType(blockType, terrain[blockIndex].mesh.getMaterial(0).getId());
-                    terrain[blockIndex].xIndex = x;
-                    terrain[blockIndex].yIndex = y;
-                    terrain[blockIndex].zIndex = z;
+                    terrain[blockIndex].init(blockType, x, y, z);
                     blockIndex++;
                 }
             }
@@ -71,10 +60,10 @@ int TerrainManager::getBlock(int x, int y, int z)
 
     const int octaves = static_cast<int>(5 + std::log(scale));               // Estimate number of octaves needed for the current scale
     const SimplexNoise simplex(0.1f / 400.f, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
-    //const float noise = simplex.fractal(octaves, x, z) + offset_z;
-    double noise = (simplex.fractal(octaves, x, z) * 45); //(pn.noise(x, 0.8, z) * 20) - 7;
+    // const float noise = simplex.fractal(octaves, x, z) + offset_z;
+    double noise = (simplex.fractal(octaves, x, z) * 45) + 5; //(pn.noise(x, 0.8, z) * 20) - 7;
 
-    printf("Noise n: %f\n", noise);
+    // printf("Noise n: %f\n", noise);
 
     int blockType = y < noise ? DIRTY_BLOCK : AIR_BLOCK;
     // if (j == - 1)
@@ -94,17 +83,17 @@ void TerrainManager::optimizeTerrain()
         // If some nighbor block is AIR_BLOCK set block to visible
         if (
             // Front block
-            terrain[i].zIndex < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
+            terrain[i].position.z < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
             // Back block
-            terrain[i].zIndex > 0 && terrain[i - 1].blockType == AIR_BLOCK ||
+            terrain[i].position.z > 0 && terrain[i - 1].blockType == AIR_BLOCK ||
             // Down block
-            terrain[i].yIndex < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE].blockType == AIR_BLOCK ||
+            terrain[i].position.y < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE].blockType == AIR_BLOCK ||
             // Up block
-            terrain[i].yIndex > 0 && terrain[i - WORLD_SIZE].blockType == AIR_BLOCK ||
+            terrain[i].position.y > 0 && terrain[i - WORLD_SIZE].blockType == AIR_BLOCK ||
             // Right block
-            terrain[i].xIndex < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK ||
+            terrain[i].position.x < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK ||
             // Left block
-            terrain[i].xIndex > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
+            terrain[i].position.x > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
         {
             terrain[i].isHidden = false;
         }
@@ -116,9 +105,9 @@ Block *TerrainManager::getBlockByIndex(int offsetX, int offsetY, int offsetZ)
     for (int i = 0; i < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
     {
         if (
-            terrain[i].xIndex == offsetX &&
-            terrain[i].yIndex == offsetY &&
-            terrain[i].zIndex == offsetZ)
+            terrain[i].position.x == offsetX &&
+            terrain[i].position.y == offsetY &&
+            terrain[i].position.z == offsetZ)
         {
             return &terrain[i];
         }
@@ -156,19 +145,25 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
         if (
             // Check if block is inside chunck;
             terrain[i].shouldBeDrawn() &&
-            (terrain[i].xIndex >= offsetX - halfChunk && terrain[i].xIndex < offsetX + halfChunk) &&
-            (terrain[i].yIndex >= offsetY - halfChunk && terrain[i].yIndex < offsetY + halfChunk) &&
-            (terrain[i].zIndex >= offsetZ - halfChunk && terrain[i].zIndex < offsetZ + halfChunk))
+            (terrain[i].position.x >= offsetX - halfChunk && terrain[i].position.x < offsetX + halfChunk) &&
+            (terrain[i].position.y >= offsetY - halfChunk && terrain[i].position.y < offsetY + halfChunk) &&
+            (terrain[i].position.z >= offsetZ - halfChunk && terrain[i].position.z < offsetZ + halfChunk))
         {
-            this->chunck->add(&terrain[i]);
+            Node *tempNode = new Node();
+            tempNode->mesh.position.set(
+                terrain[i].position.x * BLOCK_SIZE * 2,
+                terrain[i].position.y * -(BLOCK_SIZE * 2),
+                terrain[i].position.z * -(BLOCK_SIZE * 2));
+            tempNode->mesh.loadFrom(getMeshByBlockType(terrain[i].blockType));
+            tempNode->mesh.shouldBeFrustumCulled = true;
+            tempNode->mesh.shouldBeBackfaceCulled = false;
+            linkTextureByBlockType(terrain[i].blockType, tempNode->mesh.getMaterial(0).getId());
+            this->chunck->add(tempNode);
         }
     }
 }
 
-void TerrainManager::update()
-{
-    return;
-};
+void TerrainManager::update(){};
 
 void TerrainManager::loadBlocks()
 {

@@ -7,6 +7,7 @@ EE_OBJS =											\
 	managers/terrain_manager.o						\
 	objects/World.o									\
 	objects/Block.o									\
+	objects/Node.o									\
 	objects/chunck.o								\
 	objects/player.o								\
 	utils.o											\

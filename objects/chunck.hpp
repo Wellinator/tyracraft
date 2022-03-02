@@ -4,7 +4,7 @@
 #include <engine.hpp>
 #include <vector>
 #include "../include/contants.hpp"
-#include "Block.hpp"
+#include "Node.hpp"
 
 class Chunck
 {
@@ -16,9 +16,9 @@ public:
     TextureRepository *texRepo;
     void renderer();
     inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
-    void add(Block *block);
+    void add(Node *t_node);
     void clear();
-    std::vector<Block *> blocks;
+    std::vector<Node *> nodes;
 
 private:
 };

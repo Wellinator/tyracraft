@@ -2,19 +2,16 @@
 #define _BLOCK_
 
 #include <tamtypes.h>
-#include <engine.hpp>
+#include <models/math/vector3.hpp>
 #include "../include/contants.hpp"
 
 /** Block 3D object class  */
 class Block
 {
 public:
-    Mesh mesh;
+    Vector3 position;
     bool isHidden = true;
     int blockType;
-    int xIndex = 0;
-    int yIndex = 0;
-    int zIndex = 0;
 
     Block();
     ~Block();
