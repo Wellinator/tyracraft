@@ -3,6 +3,7 @@ EE_BIN = tyracraft.elf
 # TYRA_DIR = ./../../engine #Reads from ENV: $TYRA_DIR
 
 EE_OBJS =											\
+	3libs/SimplexNoise.o							\
 	managers/terrain_manager.o						\
 	objects/World.o									\
 	objects/Block.o									\

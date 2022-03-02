@@ -10,37 +10,80 @@ void TerrainManager::init(Engine *t_engine)
 {
     engine = t_engine;
     texRepo = t_engine->renderer->getTextureRepository();
+
+    int terrainType = 0;
+    int testterrain = rand() % 10;
+    if (testterrain < 4)
+        terrainType = 0;
+    if (testterrain >= 4 && testterrain < 7)
+        terrainType = 1;
+    if (testterrain >= 7)
+        terrainType = 2;
+
     this->chunck = new Chunck(engine);
     this->loadBlocks();
-    this->generateNewTerrain(WORLD_SIZE);
+    this->generateNewTerrain(WORLD_SIZE, terrainType, false, false, false, false);
     this->optimizeTerrain();
 }
 
-void TerrainManager::generateNewTerrain(int terrainLength)
+void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
 {
     PRINT_LOG("Generating terrain");
-    int blockIndex = 0;
 
-    PRINT_LOG("Adding Blocks Textures");
-    for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
+    if (!makeFlat)
     {
-        for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
+        PRINT_LOG("Adding Blocks Textures");
+
+        for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
         {
-            for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
+            for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
             {
-                int blockType = y > 0 ? AIR_BLOCK : DIRTY_BLOCK;
-                terrain[blockIndex].init(blockType, x * BLOCK_SIZE * 2, y * -(BLOCK_SIZE * 2), z * -(BLOCK_SIZE * 2));
-                terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(blockType));
-                terrain[blockIndex].mesh.shouldBeFrustumCulled = true;
-                terrain[blockIndex].mesh.shouldBeBackfaceCulled = false;
-                linkTextureByBlockType(blockType, terrain[blockIndex].mesh.getMaterial(0).getId());
-                terrain[blockIndex].xIndex = x;
-                terrain[blockIndex].yIndex = y;
-                terrain[blockIndex].zIndex = z;
-                blockIndex++;
+                for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
+                {
+                    int blockType = this->getBlock(x, y, z);
+                    terrain[blockIndex].init(
+                        blockType,
+                        x * BLOCK_SIZE * 2,
+                        y * -(BLOCK_SIZE * 2),
+                        z * -(BLOCK_SIZE * 2));
+                    terrain[blockIndex].mesh.loadFrom(getMeshByBlockType(blockType));
+                    terrain[blockIndex].mesh.shouldBeFrustumCulled = true;
+                    terrain[blockIndex].mesh.shouldBeBackfaceCulled = false;
+                    linkTextureByBlockType(blockType, terrain[blockIndex].mesh.getMaterial(0).getId());
+                    terrain[blockIndex].xIndex = x;
+                    terrain[blockIndex].yIndex = y;
+                    terrain[blockIndex].zIndex = z;
+                    blockIndex++;
+                }
             }
         }
     }
+}
+
+int TerrainManager::getBlock(int x, int y, int z)
+{
+    float scale = 400.f;
+    float offset_x = 5.9f;
+    float offset_y = 5.1f;
+    float offset_z = 0.05f;
+    float lacunarity = 1.99f;
+    float persistance = 0.5f;
+
+    const int octaves = static_cast<int>(5 + std::log(scale));               // Estimate number of octaves needed for the current scale
+    const SimplexNoise simplex(0.1f / 400.f, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
+    //const float noise = simplex.fractal(octaves, x, z) + offset_z;
+    double noise = (simplex.fractal(octaves, x, z) * 45); //(pn.noise(x, 0.8, z) * 20) - 7;
+
+    printf("Noise n: %f\n", noise);
+
+    int blockType = y < noise ? DIRTY_BLOCK : AIR_BLOCK;
+    // if (j == - 1)
+    //     blockType = DIRTY_BLOCK; // grass
+    // else if (j < - 3)
+    //     blockType = DIRTY_BLOCK; // rock;
+    // else
+    //     blockType = AIR_BLOCK; // dirt;
+    return blockType;
 }
 
 void TerrainManager::optimizeTerrain()
@@ -84,7 +127,7 @@ Block *TerrainManager::getBlockByIndex(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    //Update chunck when player moves three blocks
+    // Update chunck when player moves three blocks
     if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * 3)
     {
         printf("Player moved %f\n", this->lastPlayerPosition.distanceTo(player->getPosition()));

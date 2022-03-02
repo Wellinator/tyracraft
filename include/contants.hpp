@@ -7,6 +7,8 @@
 
 #define AIR_BLOCK 0
 #define DIRTY_BLOCK 1
-
+#define GRASS_BLOCK 2
+#define ROCK_BLOCK 3
+#define WATER_BLOCK 4
 
 #endif
