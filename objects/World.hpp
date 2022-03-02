@@ -7,6 +7,7 @@
 #include <modules/pad.hpp>
 #include <modules/texture_repository.hpp>
 #include "chunck.hpp"
+#include "player.hpp"
 #include "../managers/terrain_manager.hpp"
 #include "../include/contants.hpp"
 
@@ -17,11 +18,11 @@ public:
     ~World();
 
     void init();
-    void update();
-    void render(Engine *t_engine);
+    void update(Player *t_player);
+    Chunck *chunck;
 
 private:
-    Chunck *chunck;
+    Engine *engine;
     TerrainManager *terrainManager = new TerrainManager();
 };
 
