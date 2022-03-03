@@ -30,6 +30,23 @@ public:
     Engine *engine;
 
 private:
+    Chunck *chunck;
+    Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
+    Vector3 lastPlayerPosition;
+    
+    //TODO: Refactor to BlockManager entity;
+    //Blocks meshes
+    Mesh stoneBlock;
+    Mesh dirtBlock;
+    Mesh grassBlock;
+
+    // Params for noise generation;
+    float frequency = .07f;
+    float amplitude = 0.5f;
+    float lacunarity = 1.99f;
+    float persistance = 0.5;
+    unsigned int seed = rand() % 10000; // 237;
+
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     Block *getBlockByIndex(int offsetX, int offsetY, int offsetZ);
     void optimizeTerrain();
@@ -37,12 +54,7 @@ private:
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     Mesh &getMeshByBlockType(int blockType);
     int getBlock(int x, int y, int z);
-    Chunck *chunck;
-    Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
-    Mesh dirtBlock;
-    Vector3 lastPlayerPosition;
-    
-    unsigned int seed = rand() % 10000; //237;
+    SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);
 };
 
 #endif

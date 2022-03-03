@@ -34,11 +34,11 @@ void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool
     {
         PRINT_LOG("Adding Blocks Textures");
         int blockIndex = 0;
-        for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
+        for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
         {
-            for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
+            for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
             {
-                for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
+                for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
                 {
                     int blockType = this->getBlock(x, y, z);
                     terrain[blockIndex].init(blockType, x, y, z);
@@ -51,28 +51,32 @@ void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool
 
 int TerrainManager::getBlock(int x, int y, int z)
 {
-    float scale = 400.f;
-    float offset_x = 5.9f;
-    float offset_y = 5.1f;
-    float offset_z = 0.05f;
-    float lacunarity = 1.99f;
-    float persistance = 0.5f;
+    int octaves = 1;
+    const int scale = 3;
 
-    const int octaves = static_cast<int>(5 + std::log(scale));               // Estimate number of octaves needed for the current scale
-    const SimplexNoise simplex(0.1f / 400.f, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
-    // const float noise = simplex.fractal(octaves, x, z) + offset_z;
-    double noise = (simplex.fractal(octaves, x, z) * 45) + 5; //(pn.noise(x, 0.8, z) * 20) - 7;
+    double noiseLayer1 = simplex->fractal(octaves, x, z);
+    double noiseLayer2 = simplex->fractal(octaves += 5, x, z);
+    double noiseLayer3 = simplex->fractal(octaves += 10, x, z);
+    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
+    printf("Noise n: %f\n", noise);
 
-    // printf("Noise n: %f\n", noise);
-
-    int blockType = y < noise ? DIRTY_BLOCK : AIR_BLOCK;
-    // if (j == - 1)
-    //     blockType = DIRTY_BLOCK; // grass
-    // else if (j < - 3)
-    //     blockType = DIRTY_BLOCK; // rock;
-    // else
-    //     blockType = AIR_BLOCK; // dirt;
-    return blockType;
+    if (y == noise)
+    {
+        printf("Seting block GRASS_BLOCK\n");
+        return GRASS_BLOCK;
+    };
+    if (y > noise && y <= noise + 2)
+    {
+        printf("Seting block DIRTY_BLOCK\n");
+        return DIRTY_BLOCK;
+    }
+    if (y > noise + 2)
+    {
+        printf("Seting block STONE_BLOCK\n");
+        return STONE_BLOCK;
+    }
+    printf("Seting block AIR_BLOCK\n");
+    return AIR_BLOCK;
 }
 
 void TerrainManager::optimizeTerrain()
@@ -167,8 +171,18 @@ void TerrainManager::update(){};
 
 void TerrainManager::loadBlocks()
 {
-    dirtBlock.loadObj("meshes/cube/", "cube", BLOCK_SIZE, false);
-    texRepo->addByMesh("meshes/cube/", dirtBlock, PNG);
+    char *MODELS_PATH = "meshes/block/";
+    char *TEXTURES_PATH = "assets/textures/block/";
+
+    // Load models:
+    stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, false);
+    dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, false);
+    grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, false);
+
+    // Load model's Textures:
+    texRepo->addByMesh(TEXTURES_PATH, stoneBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, dirtBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
 }
 
 void TerrainManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
@@ -178,9 +192,13 @@ void TerrainManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
 
 Mesh &TerrainManager::getMeshByBlockType(int blockType)
 {
-    if (blockType == DIRTY_BLOCK)
+    switch (blockType)
+    {
+    case DIRTY_BLOCK:
         return dirtBlock;
-
-    // Should return an invalid texture
-    return dirtBlock;
+    case STONE_BLOCK:
+        return stoneBlock;
+    case GRASS_BLOCK:
+        return grassBlock;
+    }
 }
