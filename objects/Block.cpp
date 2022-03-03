@@ -13,5 +13,5 @@ void Block::init(int block_type, float X, float Y, float Z)
 bool Block::shouldBeDrawn()
 {
     //Clip if its hidden or if its an Air Block
-    return !this->isHidden && this->blockType != AIR_BLOCK;
+    return this->blockType != AIR_BLOCK && !this->isHidden;
 }
