@@ -6,6 +6,7 @@
 #include <game.hpp>
 #include <modules/texture_repository.hpp>
 #include <models/mesh.hpp>
+#include <models/math/vector3.hpp>
 #include <fastmath.h>
 #include "../objects/Block.hpp"
 #include "../objects/Node.hpp"
@@ -21,21 +22,20 @@ public:
     ~TerrainManager();
     void init(Engine *t_engine);
     void update();
-    void generateNewTerrain(int terrainLength, int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
+    void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
-    inline Block *getTerrain() { return terrain; }
 
     TextureRepository *texRepo;
     Engine *engine;
 
 private:
     Chunck *chunck;
-    Block terrain[WORLD_SIZE * WORLD_SIZE * WORLD_SIZE];
+    unsigned int *terrain = new unsigned int[OVERWORLD_SIZE];
     Vector3 lastPlayerPosition;
-    
-    //TODO: Refactor to BlockManager entity;
-    //Blocks meshes
+
+    // TODO: Refactor to BlockManager entity;
+    // Blocks meshes
     Mesh stoneBlock;
     Mesh dirtBlock;
     Mesh grassBlock;
@@ -48,7 +48,9 @@ private:
     unsigned int seed = rand() % 10000; // 237;
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
-    Block *getBlockByIndex(int offsetX, int offsetY, int offsetZ);
+    int getBlockTypeByPosition(int x, int y, int z);
+    unsigned int getIndexByPosition(int x, int y, int z);
+    Vector3 *getPositionByIndex(unsigned int index);
     void optimizeTerrain();
     void loadBlocks();
     void linkTextureByBlockType(int blockType, const u32 t_meshId);

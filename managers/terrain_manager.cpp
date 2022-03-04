@@ -22,27 +22,25 @@ void TerrainManager::init(Engine *t_engine)
 
     this->chunck = new Chunck(engine);
     this->loadBlocks();
-    this->generateNewTerrain(WORLD_SIZE, terrainType, false, false, false, false);
+    this->generateNewTerrain(terrainType, false, false, false, false);
     this->optimizeTerrain();
 }
 
-void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
+void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
 {
-    PRINT_LOG("Generating terrain");
+    PRINT_LOG("Generating terrain...");
 
     if (!makeFlat)
     {
-        PRINT_LOG("Adding Blocks Textures");
-        int blockIndex = 0;
-        for (int z = -(terrainLength / 2); z < terrainLength / 2; z++)
+        int index = 0;
+        for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
         {
-            for (int x = -(terrainLength / 2); x < terrainLength / 2; x++)
+            for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++)
             {
-                for (int y = -(terrainLength / 2); y < terrainLength / 2; y++)
+                for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++)
                 {
-                    int blockType = this->getBlock(x, y, z);
-                    terrain[blockIndex].init(blockType, x, y, z);
-                    blockIndex++;
+                    this->terrain[index] = this->getBlock(x, y, z);
+                    index++;
                 }
             }
         }
@@ -52,70 +50,101 @@ void TerrainManager::generateNewTerrain(int terrainLength, int terrainType, bool
 int TerrainManager::getBlock(int x, int y, int z)
 {
     int octaves = 1;
-    const int scale = 3;
+    const int scale = 5;
 
     double noiseLayer1 = simplex->fractal(octaves, x, z);
     double noiseLayer2 = simplex->fractal(octaves += 5, x, z);
     double noiseLayer3 = simplex->fractal(octaves += 10, x, z);
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
-    printf("Noise n: %f\n", noise);
+    //printf("Noise n: %f, y = %d \n", noise, y);
 
     if (y == noise)
     {
-        printf("Seting block GRASS_BLOCK\n");
         return GRASS_BLOCK;
     };
     if (y > noise && y <= noise + 2)
     {
-        printf("Seting block DIRTY_BLOCK\n");
         return DIRTY_BLOCK;
     }
     if (y > noise + 2)
     {
-        printf("Seting block STONE_BLOCK\n");
         return STONE_BLOCK;
     }
-    printf("Seting block AIR_BLOCK\n");
+
     return AIR_BLOCK;
 }
 
 void TerrainManager::optimizeTerrain()
 {
     printf("Optimizing Terrain\n");
-    for (int i = 0; i <= WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
+    for (int i = 0; i <= OVERWORLD_SIZE; i++)
     {
+        // TODO: refactor to new overworld params OVERWORLD_H_DISTANCE x OVERWORLD_V_DISTANCE;
         // If some nighbor block is AIR_BLOCK set block to visible
-        if (
-            // Front block
-            terrain[i].position.z < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
-            // Back block
-            terrain[i].position.z > 0 && terrain[i - 1].blockType == AIR_BLOCK ||
-            // Down block
-            terrain[i].position.y < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE].blockType == AIR_BLOCK ||
-            // Up block
-            terrain[i].position.y > 0 && terrain[i - WORLD_SIZE].blockType == AIR_BLOCK ||
-            // Right block
-            terrain[i].position.x < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK ||
-            // Left block
-            terrain[i].position.x > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
-        {
-            terrain[i].isHidden = false;
-        }
+        // if (
+        //     // Front block
+        //     terrain[i].position.z < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
+        //     // Back block
+        //     terrain[i].position.z > 0 && terrain[i - 1].blockType == AIR_BLOCK ||
+        //     // Down block
+        //     terrain[i].position.y < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE].blockType == AIR_BLOCK ||
+        //     // Up block
+        //     terrain[i].position.y > 0 && terrain[i - WORLD_SIZE].blockType == AIR_BLOCK ||
+        //     // Right block
+        //     terrain[i].position.x < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK ||
+        //     // Left block
+        //     terrain[i].position.x > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
+        // {
+        //     terrain[i].isHidden = false;
+        // }
     }
 }
 
-Block *TerrainManager::getBlockByIndex(int offsetX, int offsetY, int offsetZ)
+int TerrainManager::getBlockTypeByPosition(int x, int y, int z)
 {
-    for (int i = 0; i < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
+    return terrain[this->getIndexByPosition(x, y, z)];
+}
+
+unsigned int TerrainManager::getIndexByPosition(int x, int y, int z)
+{
+    int offsetZ = z + HALF_OVERWORLD_H_DISTANCE;
+    int offsetX = x + HALF_OVERWORLD_H_DISTANCE;
+    int offsetY = y + HALF_OVERWORLD_V_DISTANCE;
+
+    int _z = offsetZ > 0 && z < HALF_OVERWORLD_H_DISTANCE ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE : 0;
+    int _x = offsetX > 0 && x < HALF_OVERWORLD_H_DISTANCE ? offsetX * OVERWORLD_V_DISTANCE : 0;
+    int _y = offsetY > 0 && y < HALF_OVERWORLD_V_DISTANCE ? offsetY : 0;
+
+    return _z + _x + _y;
+}
+
+Vector3 *TerrainManager::getPositionByIndex(unsigned int index)
+{
+    Vector3 *pos = new Vector3();
+    int mod = index;
+    int z = OVERWORLD_MIN_DISTANCE;
+    int x = OVERWORLD_MIN_DISTANCE;
+    int y = OVERWORLD_MIN_HEIGH;
+
+    if (mod >= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)
     {
-        if (
-            terrain[i].position.x == offsetX &&
-            terrain[i].position.y == offsetY &&
-            terrain[i].position.z == offsetZ)
-        {
-            return &terrain[i];
-        }
+        z = floor(mod / (OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)) - HALF_OVERWORLD_H_DISTANCE;
+        mod = mod % (OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
     }
+
+    if (mod >= OVERWORLD_V_DISTANCE)
+    {
+        x = floor(mod / OVERWORLD_V_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
+        mod = mod % OVERWORLD_H_DISTANCE;
+    }
+
+    if (mod < OVERWORLD_V_DISTANCE)
+    {
+        y = mod - HALF_OVERWORLD_V_DISTANCE;
+    }
+
+    pos->set(x, y, z);
+    return pos;
 }
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
@@ -123,13 +152,13 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     // Update chunck when player moves three blocks
     if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * 3)
     {
-        printf("Player moved %f\n", this->lastPlayerPosition.distanceTo(player->getPosition()));
+        printf("(Re)Building chunck...\n");
         this->lastPlayerPosition = player->getPosition();
         this->chunck->clear();
         this->buildChunk(
-            player->getPosition().x / (BLOCK_SIZE * 2),
-            player->getPosition().y / -(BLOCK_SIZE * 2),
-            player->getPosition().z / -(BLOCK_SIZE * 2));
+            floor(player->getPosition().x / (BLOCK_SIZE * 2)),
+            floor(player->getPosition().y / -(BLOCK_SIZE * 2)),
+            floor(player->getPosition().z / -(BLOCK_SIZE * 2)));
         this->lastPlayerPosition = player->getPosition();
     }
 }
@@ -143,26 +172,40 @@ Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
-    const int halfChunk = CHUNCK_SIZE / 2;
-    for (int i = 0; i < WORLD_SIZE * WORLD_SIZE * WORLD_SIZE; i++)
+    for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++)
     {
-        if (
-            // Check if block is inside chunck;
-            terrain[i].shouldBeDrawn() &&
-            (terrain[i].position.x >= offsetX - halfChunk && terrain[i].position.x < offsetX + halfChunk) &&
-            (terrain[i].position.y >= offsetY - halfChunk && terrain[i].position.y < offsetY + halfChunk) &&
-            (terrain[i].position.z >= offsetZ - halfChunk && terrain[i].position.z < offsetZ + halfChunk))
+        for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++)
         {
-            Node *tempNode = new Node();
-            tempNode->mesh.position.set(
-                terrain[i].position.x * BLOCK_SIZE * 2,
-                terrain[i].position.y * -(BLOCK_SIZE * 2),
-                terrain[i].position.z * -(BLOCK_SIZE * 2));
-            tempNode->mesh.loadFrom(getMeshByBlockType(terrain[i].blockType));
-            tempNode->mesh.shouldBeFrustumCulled = true;
-            tempNode->mesh.shouldBeBackfaceCulled = false;
-            linkTextureByBlockType(terrain[i].blockType, tempNode->mesh.getMaterial(0).getId());
-            this->chunck->add(tempNode);
+            for (int y = -HALF_CHUNCK_SIZE; y < HALF_CHUNCK_SIZE; y++)
+            {
+                if (
+                    // Is chunck node coordinates in world range?
+                    (offsetX + x >= OVERWORLD_MIN_DISTANCE && offsetX + x < OVERWORLD_MAX_DISTANCE) &&
+                    (offsetY + y >= OVERWORLD_MIN_HEIGH && offsetY + y < OVERWORLD_MAX_HEIGH) &&
+                    (offsetZ + z >= OVERWORLD_MIN_DISTANCE && offsetZ + z < OVERWORLD_MAX_DISTANCE))
+                {
+                    int block_type = this->getBlockTypeByPosition(
+                        offsetX + x,
+                        offsetY + y,
+                        offsetZ + z);
+
+                    // Isn't air block?
+                    // TODO: Check if block id hidden;
+                    if (block_type != AIR_BLOCK)
+                    {
+                        Node *tempNode = new Node();
+                        tempNode->mesh.position.set(
+                            (offsetX + x) * BLOCK_SIZE * 2,
+                            (offsetY + y) * -(BLOCK_SIZE * 2),
+                            (offsetZ + z) * -(BLOCK_SIZE * 2));
+                        tempNode->mesh.loadFrom(getMeshByBlockType(block_type));
+                        tempNode->mesh.shouldBeFrustumCulled = true;
+                        tempNode->mesh.shouldBeBackfaceCulled = false;
+                        linkTextureByBlockType(block_type, tempNode->mesh.getMaterial(0).getId());
+                        this->chunck->add(tempNode);
+                    }
+                }
+            }
         }
     }
 }
