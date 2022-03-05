@@ -39,6 +39,7 @@ private:
     Mesh stoneBlock;
     Mesh dirtBlock;
     Mesh grassBlock;
+    Mesh waterBlock;
 
     // Params for noise generation;
     float frequency = .07f;
@@ -51,7 +52,7 @@ private:
     int getBlockTypeByPosition(int x, int y, int z);
     unsigned int getIndexByPosition(int x, int y, int z);
     Vector3 *getPositionByIndex(unsigned int index);
-    void optimizeTerrain();
+    bool isBlockHidden(int x, int y, int z);
     void loadBlocks();
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     Mesh &getMeshByBlockType(int blockType);

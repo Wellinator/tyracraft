@@ -23,7 +23,6 @@ void TerrainManager::init(Engine *t_engine)
     this->chunck = new Chunck(engine);
     this->loadBlocks();
     this->generateNewTerrain(terrainType, false, false, false, false);
-    this->optimizeTerrain();
 }
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
@@ -56,8 +55,11 @@ int TerrainManager::getBlock(int x, int y, int z)
     double noiseLayer2 = simplex->fractal(octaves += 5, x, z);
     double noiseLayer3 = simplex->fractal(octaves += 10, x, z);
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
-    //printf("Noise n: %f, y = %d \n", noise, y);
 
+    if (y < noise)
+    {
+        return AIR_BLOCK;
+    }
     if (y == noise)
     {
         return GRASS_BLOCK;
@@ -71,33 +73,34 @@ int TerrainManager::getBlock(int x, int y, int z)
         return STONE_BLOCK;
     }
 
+    if (y > 0)
+    {
+        return WATER_BLOCK;
+    }
+
     return AIR_BLOCK;
 }
 
-void TerrainManager::optimizeTerrain()
+bool TerrainManager::isBlockHidden(int x, int y, int z)
 {
-    printf("Optimizing Terrain\n");
-    for (int i = 0; i <= OVERWORLD_SIZE; i++)
+    // If some nighbor block is AIR_BLOCK set block to visible
+    if (
+        // Front block
+        z < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x, y, z + 1) == AIR_BLOCK ||
+        // Back block
+        z > OVERWORLD_MIN_DISTANCE && this->getBlockTypeByPosition(x, y, z - 1) == AIR_BLOCK ||
+        // Down block
+        y < OVERWORLD_MAX_HEIGH - 1 && this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
+        // Up block
+        y > OVERWORLD_MIN_HEIGH && this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
+        // Right block
+        x < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x + 1, y, z) == AIR_BLOCK ||
+        // Left block
+        x > OVERWORLD_MIN_DISTANCE && this->getBlockTypeByPosition(x - 1, y, z) == AIR_BLOCK)
     {
-        // TODO: refactor to new overworld params OVERWORLD_H_DISTANCE x OVERWORLD_V_DISTANCE;
-        // If some nighbor block is AIR_BLOCK set block to visible
-        // if (
-        //     // Front block
-        //     terrain[i].position.z < WORLD_SIZE - 1 && terrain[i + 1].blockType == AIR_BLOCK ||
-        //     // Back block
-        //     terrain[i].position.z > 0 && terrain[i - 1].blockType == AIR_BLOCK ||
-        //     // Down block
-        //     terrain[i].position.y < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE].blockType == AIR_BLOCK ||
-        //     // Up block
-        //     terrain[i].position.y > 0 && terrain[i - WORLD_SIZE].blockType == AIR_BLOCK ||
-        //     // Right block
-        //     terrain[i].position.x < WORLD_SIZE - 1 && terrain[i + WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK ||
-        //     // Left block
-        //     terrain[i].position.x > 0 && terrain[i - WORLD_SIZE * WORLD_SIZE].blockType == AIR_BLOCK)
-        // {
-        //     terrain[i].isHidden = false;
-        // }
+        return false;
     }
+    return true;
 }
 
 int TerrainManager::getBlockTypeByPosition(int x, int y, int z)
@@ -191,7 +194,9 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                     // Isn't air block?
                     // TODO: Check if block id hidden;
-                    if (block_type != AIR_BLOCK)
+                    if (
+                        this->isBlockHidden(offsetX + x, offsetY + y, offsetZ + z) &&
+                        block_type != AIR_BLOCK)
                     {
                         Node *tempNode = new Node();
                         tempNode->mesh.position.set(
@@ -221,11 +226,13 @@ void TerrainManager::loadBlocks()
     stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, false);
     dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, false);
     grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, false);
+    waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, false);
 
     // Load model's Textures:
     texRepo->addByMesh(TEXTURES_PATH, stoneBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, dirtBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, waterBlock, PNG);
 }
 
 void TerrainManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
@@ -243,5 +250,7 @@ Mesh &TerrainManager::getMeshByBlockType(int blockType)
         return stoneBlock;
     case GRASS_BLOCK:
         return grassBlock;
+    case WATER_BLOCK:
+        return waterBlock;
     }
 }
