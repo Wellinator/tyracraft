@@ -53,6 +53,7 @@ private:
     unsigned int getIndexByPosition(int x, int y, int z);
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
+    inline bool isBlockVisible(int x, int y, int z){return !isBlockHidden(x, y, z);};
     void loadBlocks();
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     Mesh &getMeshByBlockType(int blockType);

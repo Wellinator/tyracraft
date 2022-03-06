@@ -195,8 +195,8 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     // Isn't air block?
                     // TODO: Check if block id hidden;
                     if (
-                        this->isBlockHidden(offsetX + x, offsetY + y, offsetZ + z) &&
-                        block_type != AIR_BLOCK)
+                        block_type != AIR_BLOCK && 
+                        this->isBlockVisible(offsetX + x, offsetY + y, offsetZ + z))
                     {
                         Node *tempNode = new Node();
                         tempNode->mesh.position.set(
