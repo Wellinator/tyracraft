@@ -51,9 +51,9 @@ int TerrainManager::getBlock(int x, int y, int z)
     int octaves = 1;
     const int scale = 5;
 
-    double noiseLayer1 = simplex->fractal(octaves, x, z);
-    double noiseLayer2 = simplex->fractal(octaves += 5, x, z);
-    double noiseLayer3 = simplex->fractal(octaves += 10, x, z);
+    double noiseLayer1 = simplex->fractal(octaves, x * this->seed, z * this->seed);
+    double noiseLayer2 = simplex->fractal(octaves += 5, x * this->seed, z * this->seed);
+    double noiseLayer3 = simplex->fractal(octaves += 10, x * this->seed, z * this->seed);
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
 
     if (y < noise)
@@ -192,10 +192,8 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         offsetY + y,
                         offsetZ + z);
 
-                    // Isn't air block?
-                    // TODO: Check if block id hidden;
                     if (
-                        block_type != AIR_BLOCK && 
+                        block_type != AIR_BLOCK &&
                         this->isBlockVisible(offsetX + x, offsetY + y, offsetZ + z))
                     {
                         Node *tempNode = new Node();
