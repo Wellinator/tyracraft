@@ -27,8 +27,6 @@ void TerrainManager::init(Engine *t_engine)
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
 {
-    PRINT_LOG("Generating terrain...");
-
     if (!makeFlat)
     {
         int index = 0;

@@ -3,9 +3,7 @@
 Start::Start(Engine *t_engine)
     : engine(t_engine), camera(&t_engine->screen)
 {
-    PRINT_LOG("Initing game");
     world = new World(engine);
-    // Load World
 }
 
 Start::~Start()
@@ -23,10 +21,12 @@ void Start::onInit()
     
     // Load models and textures;
     world->init();
-    skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
-    texRepo->addByMesh("meshes/skybox/", skybox, BMP);
-    skybox.shouldBeFrustumCulled = false;
-    skybox.shouldBeBackfaceCulled = false;
+
+    //Load skybox (temp);
+    // skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
+    // texRepo->addByMesh("meshes/skybox/", skybox, BMP);
+    // skybox.shouldBeFrustumCulled = true;
+    // skybox.shouldBeBackfaceCulled = false;
     
 
     // Set camera definitions
@@ -44,7 +44,7 @@ void Start::onUpdate()
     player->update(engine->pad, camera);
     camera.update(engine->pad, player->mesh);
     
-    engine->renderer->draw(skybox);
+    //engine->renderer->draw(skybox);
     //engine->renderer->draw(player->mesh);
     world->update(player);
 }
