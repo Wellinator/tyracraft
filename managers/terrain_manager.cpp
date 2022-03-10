@@ -180,7 +180,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
             for (int y = -HALF_CHUNCK_SIZE; y < HALF_CHUNCK_SIZE; y++)
             {
                 if (
-                    // Is chunck node coordinates in world range?
+                    // Are block's coordinates in world range?
                     (offsetX + x >= OVERWORLD_MIN_DISTANCE && offsetX + x < OVERWORLD_MAX_DISTANCE) &&
                     (offsetY + y >= OVERWORLD_MIN_HEIGH && offsetY + y < OVERWORLD_MAX_HEIGH) &&
                     (offsetZ + z >= OVERWORLD_MIN_DISTANCE && offsetZ + z < OVERWORLD_MAX_DISTANCE))
@@ -194,16 +194,16 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         block_type != AIR_BLOCK &&
                         this->isBlockVisible(offsetX + x, offsetY + y, offsetZ + z))
                     {
-                        Node *tempNode = new Node();
-                        tempNode->mesh.position.set(
+                        Block *tempBlock = new Block(block_type);
+                        tempBlock->mesh.position.set(
                             (offsetX + x) * BLOCK_SIZE * 2,
                             (offsetY + y) * -(BLOCK_SIZE * 2),
                             (offsetZ + z) * -(BLOCK_SIZE * 2));
-                        tempNode->mesh.loadFrom(getMeshByBlockType(block_type));
-                        tempNode->mesh.shouldBeFrustumCulled = true;
-                        tempNode->mesh.shouldBeBackfaceCulled = false;
-                        linkTextureByBlockType(block_type, tempNode->mesh.getMaterial(0).getId());
-                        this->chunck->add(tempNode);
+                        tempBlock->mesh.loadFrom(getMeshByBlockType(block_type));
+                        tempBlock->mesh.shouldBeFrustumCulled = true;
+                        tempBlock->mesh.shouldBeBackfaceCulled = false;
+                        linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(0).getId());
+                        this->chunck->add(tempBlock);
                     }
                 }
             }

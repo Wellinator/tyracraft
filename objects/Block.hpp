@@ -3,20 +3,18 @@
 
 #include <tamtypes.h>
 #include <models/math/vector3.hpp>
+#include <models/mesh.hpp>
 #include "../include/contants.hpp"
 
 /** Block 3D object class  */
 class Block
 {
 public:
-    Vector3 position;
-    bool isHidden = true;
-    int blockType;
+    int block_type;
+    Mesh mesh;
 
-    Block();
+    Block(int block_type);
     ~Block();
-    void init(int block_type, float X, float Y, float Z);
-    bool shouldBeDrawn();
 private:
 };
 

@@ -9,7 +9,6 @@
 #include <models/math/vector3.hpp>
 #include <fastmath.h>
 #include "../objects/Block.hpp"
-#include "../objects/Node.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
 #include "../include/contants.hpp"
@@ -31,7 +30,7 @@ public:
 
 private:
     Chunck *chunck;
-    unsigned int *terrain = new unsigned int[OVERWORLD_SIZE];
+    u64 *terrain = new u64[OVERWORLD_SIZE];
     Vector3 lastPlayerPosition;
 
     // TODO: Refactor to BlockManager entity;

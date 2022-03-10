@@ -7,7 +7,6 @@ EE_OBJS =											\
 	managers/terrain_manager.o						\
 	objects/World.o									\
 	objects/Block.o									\
-	objects/Node.o									\
 	objects/chunck.o								\
 	objects/player.o								\
 	utils.o											\
@@ -15,21 +14,21 @@ EE_OBJS =											\
 	start.o											\
 	main.o
 
-EE_LIBS = -ltyra 
+EE_LIBS = -ltyra
 
 all: $(EE_BIN)
 	$(EE_STRIP) --strip-all $(EE_BIN)
 	mv $(EE_BIN) bin/$(EE_BIN)
 	rm $(EE_OBJS)
 
-rebuild-engine: 
+rebuild-engine:
 	cd $(TYRA_DIR) && make clean && make
 
 clean:
 	rm -f $(EE_OBJS)
 
 rebuild:
-	make clean && make all	
+	make clean && make all
 
 run: $(EE_BIN)
 	killall -v ps2client || true

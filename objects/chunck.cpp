@@ -16,23 +16,23 @@ Chunck::~Chunck()
 void Chunck::renderer()
 {
     // TODO: draw with mesh array as Tyra Engine recommends;
-    for (size_t i = 0; i < this->nodes.size(); i++)
+    for (size_t i = 0; i < this->blocks.size(); i++)
     {
-        engine->renderer->draw(this->nodes[i]->mesh);
+        engine->renderer->draw(this->blocks[i]->mesh);
     }
 };
 
-void Chunck::add(Node *t_node)
+void Chunck::add(Block *t_block)
 {
-    this->nodes.push_back(t_node);
+    this->blocks.push_back(t_block);
 };
 
 void Chunck::clear()
 {
-    for (size_t i = 0; i < this->nodes.size(); i++)
+    for (size_t i = 0; i < this->blocks.size(); i++)
     {
-        delete this->nodes[i];
+        delete this->blocks[i];
     }
-    this->nodes.clear();
-    this->nodes.shrink_to_fit();
+    this->blocks.clear();
+    this->blocks.shrink_to_fit();
 }

@@ -1,17 +1,7 @@
 #include "Block.hpp"
 
-Block::Block(){};
+Block::Block(int block_type){
+  this->block_type = block_type;
+};
 
 Block::~Block(){};
-
-void Block::init(int block_type, float X, float Y, float Z)
-{
-    this->position.set(X, Y, Z);
-    this->blockType = block_type;
-}
-
-bool Block::shouldBeDrawn()
-{
-    //Clip if its hidden or if its an Air Block
-    return this->blockType != AIR_BLOCK && !this->isHidden;
-}
