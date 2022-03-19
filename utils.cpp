@@ -12,6 +12,15 @@
 
 #include <fastmath.h>
 
+/** Degrees to Radian conversion 
+ * @param degress Value in degress
+ * @returns Value in radians
+*/
+float Utils::degreesToRadian(float degress)
+{
+    return degress * ( Math::PI / 180 );
+}
+
 /** Exponential ease-in-out animation 
  * @param t Time
  * @param b Start value
@@ -68,3 +77,4 @@ void Utils::getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max)
             t_max.z = calc.z;
     }
 }
+
