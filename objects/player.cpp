@@ -103,9 +103,9 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
 {
 
     if (t_pad.rJoyH >= 200)
-        mesh.rotation.z += 0.08;
-    else if (t_pad.rJoyH <= 100)
         mesh.rotation.z -= 0.08;
+    else if (t_pad.rJoyH <= 100)
+        mesh.rotation.z += 0.08;
 
     isWalking = mesh.position.x != t_nextPos.x || mesh.position.z != t_nextPos.z;
     isFighting = isFighting || t_pad.isCircleClicked;
