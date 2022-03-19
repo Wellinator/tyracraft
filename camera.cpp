@@ -7,11 +7,7 @@
 # Licenced under Apache License 2.0
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
-
 #include "camera.hpp"
-
-#include <utils/debug.hpp>
-#include <fastmath.h>
 
 const float CAMERA_Y = 40.0F;
 
@@ -21,7 +17,9 @@ const float CAMERA_Y = 40.0F;
 
 Camera::Camera(ScreenSettings *t_screen) : CameraBase(t_screen, &position)
 {
-    verticalLevel = 80.0F;
+    verticalLevel = BLOCK_SIZE * 4;
+    pitch = 0.0F;
+    yaw = 270.0F;
 }
 
 Camera::~Camera() {}
@@ -33,8 +31,9 @@ Camera::~Camera() {}
 void Camera::update(Pad &t_pad, Mesh &t_mesh)
 {
     rotate(t_pad);
+    updateUnitCirclePosition();
     followBy(t_mesh);
-    lookAt(t_mesh.position);
+    pointCamera(t_pad, t_mesh);
 }
 
 /** Set camera rotation by pad right joy and update unit circle
@@ -44,13 +43,12 @@ void Camera::update(Pad &t_pad, Mesh &t_mesh)
 void Camera::rotate(Pad &t_pad)
 {
     if (t_pad.rJoyH <= 100)
-        horizontalLevel -= 0.08;
+        horizontalLevel += 0.08F;
     else if (t_pad.rJoyH >= 200)
-        horizontalLevel += 0.08;
-    if (t_pad.rJoyV <= 50 && verticalLevel > 25.0F)
-        verticalLevel -= 0.9F;
-    else if (t_pad.rJoyV >= 200 && verticalLevel < 80.0F)
-        verticalLevel += 0.9F;
+        horizontalLevel -= 0.08F;
+}
+
+void Camera::updateUnitCirclePosition(){
     unitCirclePosition.x = (sin(horizontalLevel) * verticalLevel);
     unitCirclePosition.y = CAMERA_Y;
     unitCirclePosition.z = (cos(horizontalLevel) * verticalLevel);
@@ -59,7 +57,35 @@ void Camera::rotate(Pad &t_pad)
 /** Rotate camera around 3D object */
 void Camera::followBy(Mesh &t_mesh)
 {
-    position.x = unitCirclePosition.x + t_mesh.position.x;
     position.y = unitCirclePosition.y + t_mesh.position.y;
-    position.z = unitCirclePosition.z + t_mesh.position.z;
+    if (camera_type == FIRST_PERSON_CAM){
+        position.x = t_mesh.position.x;
+        position.z = t_mesh.position.z;
+    } else {
+        position.x = t_mesh.position.x + unitCirclePosition.x;
+        position.z = t_mesh.position.z + unitCirclePosition.z;
+    }
+}
+
+/** Point the camera to a specific position */
+void Camera::pointCamera(Pad &t_pad, Mesh &t_mesh)
+{
+    if (t_pad.rJoyH <= 100)
+        yaw -= _sensitivity;
+    else if (t_pad.rJoyH >= 200)
+        yaw += _sensitivity;
+    else if (t_pad.rJoyV <= 100)
+        pitch += _sensitivity / 3;
+    else if (t_pad.rJoyV >= 200)
+        pitch -= _sensitivity / 3;
+    
+    if(pitch > 89.0F) pitch = 89.0F; 
+    if(pitch < -89.0F) pitch = -89.0F; 
+
+    lookPos.x = cos(Utils::degreesToRadian(yaw)) * cos(Utils::degreesToRadian(pitch));
+    lookPos.y = sin(Utils::degreesToRadian(pitch));
+    lookPos.z = sin(Utils::degreesToRadian(yaw)) * cos(Utils::degreesToRadian(pitch));
+
+    lookPos += position;
+    lookAt(lookPos);
 }
