@@ -45,7 +45,10 @@ void Start::onUpdate()
     camera.update(engine->pad, player->mesh);
     
     //engine->renderer->draw(skybox);
+    
+    //TODO: Should render only if is third person Cam;
     //engine->renderer->draw(player->mesh);
+
     world->update(player);
 }
 
