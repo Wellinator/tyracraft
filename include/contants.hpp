@@ -1,8 +1,8 @@
 #ifndef _CONSTANTS_
 #define _CONSTANTS_
 
-#define OVERWORLD_H_DISTANCE 256                           // Total horizontal overworld distance;
-#define OVERWORLD_V_DISTANCE 64                            // Total vertical overworld distance;
+#define OVERWORLD_H_DISTANCE 256/2                           // Total horizontal overworld distance;
+#define OVERWORLD_V_DISTANCE 64/2                            // Total vertical overworld distance;
 #define HALF_OVERWORLD_H_DISTANCE OVERWORLD_H_DISTANCE / 2 // Half horizontal overworld distance;
 #define HALF_OVERWORLD_V_DISTANCE OVERWORLD_V_DISTANCE / 2 // Half vertical overworld distance;
 #define OVERWORLD_MIN_DISTANCE -HALF_OVERWORLD_H_DISTANCE  // Min overworld width;
