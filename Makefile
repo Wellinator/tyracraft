@@ -10,6 +10,7 @@ EE_OBJS =											\
 	objects/chunck.o								\
 	objects/player.o								\
 	utils.o											\
+	ui.o											\
 	camera.o										\
 	start.o											\
 	main.o

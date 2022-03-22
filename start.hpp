@@ -11,11 +11,13 @@
 #include "objects/player.hpp"
 #include "objects/World.hpp"
 #include "camera.hpp"
+#include "ui.hpp"
 
 class Start : public Game, AudioListener
 {
 private:
     void setBgColorAndAmbientColor();
+    Ui *ui;
     World *world;
     Mesh skybox;
     Player *player;

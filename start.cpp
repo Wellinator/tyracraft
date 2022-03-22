@@ -14,6 +14,7 @@ Start::~Start()
 void Start::onInit()
 {
     texRepo = engine->renderer->getTextureRepository();
+    ui = new Ui(texRepo);
     player = new Player(&engine->audio, texRepo);
     
     setBgColorAndAmbientColor();
@@ -41,15 +42,19 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
+    ui->update(*player);
     player->update(engine->pad, camera);
     camera.update(engine->pad, player->mesh);
     
     //engine->renderer->draw(skybox);
     
     //TODO: Should render only if is third person Cam;
-    //engine->renderer->draw(player->mesh);
+    // engine->renderer->draw(player->mesh);
 
     world->update(player);
+
+    //Render UI
+    ui->render(engine->renderer);
 }
 
 void Start::setBgColorAndAmbientColor()
