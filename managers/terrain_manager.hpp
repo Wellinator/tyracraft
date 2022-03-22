@@ -41,11 +41,12 @@ private:
     Mesh waterBlock;
 
     // Params for noise generation;
-    float frequency = .07f;
-    float amplitude = 0.5f;
-    float lacunarity = 1.99f;
-    float persistance = 0.5;
-    unsigned int seed = rand() % 10000; // 237;
+    const float scale =  10;//32.0f;
+    const float frequency = 0.007;
+    const float amplitude = 0.5f;
+    const float lacunarity = 2.4f;
+    const float persistance = .45f;
+    const unsigned int seed = rand() % 10000; // 237;
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     int getBlockTypeByPosition(int x, int y, int z);

@@ -46,13 +46,12 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
 
 int TerrainManager::getBlock(int x, int y, int z)
 {
-    int octaves = 1;
-    const int scale = 5;
+    int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
-    double noiseLayer1 = simplex->fractal(octaves, x * this->seed, z * this->seed);
-    double noiseLayer2 = simplex->fractal(octaves += 5, x * this->seed, z * this->seed);
-    double noiseLayer3 = simplex->fractal(octaves += 10, x * this->seed, z * this->seed);
-    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
+    double noiseLayer1 = simplex->fractal(octaves, x + seed, z + seed);
+    double noiseLayer2 = simplex->fractal(octaves /= 2, x + seed, z + seed);
+    double noiseLayer3 = simplex->fractal(octaves /= 2, x + seed, z + seed);
+    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale ));
 
     if (y < noise)
     {
