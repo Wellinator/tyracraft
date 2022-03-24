@@ -27,11 +27,11 @@ public:
 
     TextureRepository *texRepo;
     Engine *engine;
-
 private:
     Chunck *chunck;
     u64 *terrain = new u64[OVERWORLD_SIZE];
     Vector3 lastPlayerPosition;
+    std::vector<Block *> tempBlocks;
 
     // TODO: Refactor to BlockManager entity;
     // Blocks meshes
@@ -55,6 +55,7 @@ private:
     bool isBlockHidden(int x, int y, int z);
     inline bool isBlockVisible(int x, int y, int z){return !isBlockHidden(x, y, z);};
     void loadBlocks();
+    void clearTempBlocks();
     void linkTextureByBlockType(int blockType, const u32 t_meshId);
     Mesh &getMeshByBlockType(int blockType);
     int getBlock(int x, int y, int z);

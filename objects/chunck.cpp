@@ -29,10 +29,6 @@ void Chunck::add(Block *t_block)
 
 void Chunck::clear()
 {
-    for (size_t i = 0; i < this->blocks.size(); i++)
-    {
-        delete this->blocks[i];
-    }
     this->blocks.clear();
     this->blocks.shrink_to_fit();
 }

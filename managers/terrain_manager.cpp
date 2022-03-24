@@ -51,7 +51,7 @@ int TerrainManager::getBlock(int x, int y, int z)
     double noiseLayer1 = simplex->fractal(octaves, x + seed, z + seed);
     double noiseLayer2 = simplex->fractal(octaves /= 2, x + seed, z + seed);
     double noiseLayer3 = simplex->fractal(octaves /= 2, x + seed, z + seed);
-    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale ));
+    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
 
     if (y < noise)
     {
@@ -153,6 +153,7 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * CHUNCK_SIZE / 4)
     {
         this->lastPlayerPosition = player->getPosition();
+        this->clearTempBlocks();
         this->chunck->clear();
         this->buildChunk(
             floor(player->getPosition().x / (BLOCK_SIZE * 2)),
@@ -202,12 +203,26 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         tempBlock->mesh.shouldBeBackfaceCulled = false;
                         linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(0).getId());
                         this->chunck->add(tempBlock);
+                        this->tempBlocks.push_back(tempBlock);
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * @brief Clear temp blocks ref before rebuild chunck to prevent memory leak;
+ */
+void TerrainManager::clearTempBlocks()
+{
+    for (size_t i = 0; i < this->tempBlocks.size(); i++)
+    {
+        delete this->tempBlocks[i];
+    }
+    this->tempBlocks.clear();
+    this->tempBlocks.shrink_to_fit();
+};
 
 void TerrainManager::update(){};
 
