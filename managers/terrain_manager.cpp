@@ -149,10 +149,9 @@ Vector3 *TerrainManager::getPositionByIndex(unsigned int index)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    // Update chunck when player moves three blocks
-    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * 3)
+    // Update chunck when player moves a quarter chunck
+    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * CHUNCK_SIZE / 4)
     {
-        printf("(Re)Building chunck...\n");
         this->lastPlayerPosition = player->getPosition();
         this->chunck->clear();
         this->buildChunk(
