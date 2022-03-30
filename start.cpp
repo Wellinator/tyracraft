@@ -60,9 +60,9 @@ void Start::onUpdate()
 void Start::setBgColorAndAmbientColor()
 {
     color_t bgColor;
-    bgColor.r = 0x87;
-    bgColor.g = 0xCE;
-    bgColor.b = 0xFA;
+    bgColor.r = 0xC0;
+    bgColor.g = 0xD8;
+    bgColor.b = 0xFF;
     engine->renderer->setWorldColor(bgColor);
     Vector3 ambient = Vector3(0.004F, 0.004F, 0.004F);
     engine->renderer->setAmbientLight(ambient);

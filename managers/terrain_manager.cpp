@@ -184,20 +184,24 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     (offsetY + y >= OVERWORLD_MIN_HEIGH && offsetY + y < OVERWORLD_MAX_HEIGH) &&
                     (offsetZ + z >= OVERWORLD_MIN_DISTANCE && offsetZ + z < OVERWORLD_MAX_DISTANCE))
                 {
+                    Vector3 *tempBlockPos = new Vector3(offsetX + x,
+                                                        offsetY + y,
+                                                        offsetZ + z);
+
                     int block_type = this->getBlockTypeByPosition(
-                        offsetX + x,
-                        offsetY + y,
-                        offsetZ + z);
+                        tempBlockPos->x,
+                        tempBlockPos->y,
+                        tempBlockPos->z);
 
                     if (
                         block_type != AIR_BLOCK &&
                         this->isBlockVisible(offsetX + x, offsetY + y, offsetZ + z))
                     {
                         Block *tempBlock = new Block(block_type);
-                        tempBlock->mesh.position.set(
-                            (offsetX + x) * BLOCK_SIZE * 2,
-                            (offsetY + y) * -(BLOCK_SIZE * 2),
-                            (offsetZ + z) * -(BLOCK_SIZE * 2));
+
+                        tempBlock->mesh.position.set((tempBlockPos->x) * BLOCK_SIZE * 2,
+                                                     (tempBlockPos->y) * -(BLOCK_SIZE * 2),
+                                                     (tempBlockPos->z) * -(BLOCK_SIZE * 2));
                         tempBlock->mesh.loadFrom(getMeshByBlockType(block_type));
                         tempBlock->mesh.shouldBeFrustumCulled = true;
                         tempBlock->mesh.shouldBeBackfaceCulled = false;
@@ -205,6 +209,8 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         this->chunck->add(tempBlock);
                         this->tempBlocks.push_back(tempBlock);
                     }
+
+                    delete tempBlockPos;
                 }
             }
         }

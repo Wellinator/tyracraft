@@ -3,8 +3,12 @@
 
 #include <engine.hpp>
 #include <vector>
+#include <models/math/vector3.hpp>
+#include <fastmath.h>
 #include "../include/contants.hpp"
+#include "../utils.hpp"
 #include "Block.hpp"
+#include "player.hpp"
 
 class Chunck
 {
@@ -14,11 +18,13 @@ public:
 
     Engine *engine;
     TextureRepository *texRepo;
-    void renderer();
+    std::vector<Block *> blocks;
+
+    void renderer(Player *t_player);
     inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
     void add(Block *t_node);
     void clear();
-    std::vector<Block *> blocks;
+    float getVisibityByPosition(float d);
 
 private:
 };

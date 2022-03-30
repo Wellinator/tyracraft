@@ -19,5 +19,5 @@ void World::update(Player *t_player)
 {
     this->terrainManager->updateChunkByPlayerPosition(t_player);
     this->terrainManager->update();
-    this->chunck->renderer();
+    this->chunck->renderer(t_player);
 };
