@@ -28,7 +28,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     gravity = 0.1F;
     lift = -1.0F;
     jumpCounter = 0;
-    speed = 1.0F;
+    speed = 4.0F;
     isWalking = false;
     isFighting = false;
     isWalkingAnimationSet = false;
