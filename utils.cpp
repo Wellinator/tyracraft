@@ -1,7 +1,7 @@
 /*
 # ______       ____   ___
-#   |     \/   ____| |___|    
-#   |     |   |   \  |   |       
+#   |     \/   ____| |___|
+#   |     |   |   \  |   |
 #-----------------------------------------------------------------------
 # Copyright 2020, tyra - https://github.com/h4570/tyra
 # Licenced under Apache License 2.0
@@ -12,22 +12,22 @@
 
 #include <fastmath.h>
 
-/** Degrees to Radian conversion 
+/** Degrees to Radian conversion
  * @param degress Value in degress
  * @returns Value in radians
-*/
+ */
 float Utils::degreesToRadian(float degress)
 {
-    return degress * ( Math::PI / 180 );
+    return degress * (Math::PI / 180);
 }
 
-/** Exponential ease-in-out animation 
+/** Exponential ease-in-out animation
  * @param t Time
  * @param b Start value
  * @param c Change
  * @param d Duration
  * @returns Current animation position
-*/
+ */
 float Utils::expoEaseInOut(float t, float b, float c, float d)
 {
     if (t == 0)
@@ -78,3 +78,29 @@ void Utils::getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max)
     }
 }
 
+float Utils::clamp(const float value, float min, float max)
+{
+    return ((value < min) * (min - value)) + ((value > max) * (max - value));
+}
+
+float Utils::FOG_LINEAR(float d, float start, float end, float offset = 0.0F)
+{
+    if (d <= offset)
+        return end - start;
+    return end - d / end - start;
+}
+
+float Utils::FOG_EXP(float d, float density)
+{
+    return exp(-(d * density));
+}
+
+float Utils::FOG_EXP2(float d, float density)
+{
+    return exp(-pow((d * density), 2));
+}
+
+float Utils::FOG_EXP_GRAD(float d, float density, float gradient)
+{
+    return exp(-pow((d * density), gradient));
+}
