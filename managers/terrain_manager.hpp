@@ -13,6 +13,7 @@
 #include "../objects/player.hpp"
 #include "../include/contants.hpp"
 #include "../3libs/SimplexNoise.h"
+#include "./block_manager.hpp"
 
 class TerrainManager
 {
@@ -32,13 +33,7 @@ private:
     u64 *terrain = new u64[OVERWORLD_SIZE];
     Vector3 lastPlayerPosition;
     std::vector<Block *> tempBlocks;
-
-    // TODO: Refactor to BlockManager entity;
-    // Blocks meshes
-    Mesh stoneBlock;
-    Mesh dirtBlock;
-    Mesh grassBlock;
-    Mesh waterBlock;
+    BlockManager *blockManager = new BlockManager();
 
     // Params for noise generation;
     const float scale =  10;//32.0f;
@@ -54,10 +49,9 @@ private:
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
     inline bool isBlockVisible(int x, int y, int z){return !isBlockHidden(x, y, z);};
-    void loadBlocks();
+    
     void clearTempBlocks();
-    void linkTextureByBlockType(int blockType, const u32 t_meshId);
-    Mesh &getMeshByBlockType(int blockType);
+    
     int getBlock(int x, int y, int z);
     SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);
 };

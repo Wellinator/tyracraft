@@ -21,7 +21,7 @@ void TerrainManager::init(Engine *t_engine)
         terrainType = 2;
 
     this->chunck = new Chunck(engine);
-    this->loadBlocks();
+    this->blockManager->init(texRepo);
     this->generateNewTerrain(terrainType, false, false, false, false);
 }
 
@@ -202,10 +202,10 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         tempBlock->mesh.position.set((tempBlockPos->x) * BLOCK_SIZE * 2,
                                                      (tempBlockPos->y) * -(BLOCK_SIZE * 2),
                                                      (tempBlockPos->z) * -(BLOCK_SIZE * 2));
-                        tempBlock->mesh.loadFrom(getMeshByBlockType(block_type));
+                        tempBlock->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         tempBlock->mesh.shouldBeFrustumCulled = true;
                         tempBlock->mesh.shouldBeBackfaceCulled = false;
-                        linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(0).getId());
+                        this->blockManager->linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(0).getId());
                         this->chunck->add(tempBlock);
                         this->tempBlocks.push_back(tempBlock);
                     }
@@ -231,41 +231,3 @@ void TerrainManager::clearTempBlocks()
 };
 
 void TerrainManager::update(){};
-
-void TerrainManager::loadBlocks()
-{
-    char *MODELS_PATH = "meshes/block/";
-    char *TEXTURES_PATH = "assets/textures/block/";
-
-    // Load models:
-    stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, false);
-    dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, false);
-    grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, false);
-    waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, false);
-
-    // Load model's Textures:
-    texRepo->addByMesh(TEXTURES_PATH, stoneBlock, PNG);
-    texRepo->addByMesh(TEXTURES_PATH, dirtBlock, PNG);
-    texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
-    texRepo->addByMesh(TEXTURES_PATH, waterBlock, PNG);
-}
-
-void TerrainManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
-{
-    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(0).getId())->addLink(t_meshId);
-}
-
-Mesh &TerrainManager::getMeshByBlockType(int blockType)
-{
-    switch (blockType)
-    {
-    case DIRTY_BLOCK:
-        return dirtBlock;
-    case STONE_BLOCK:
-        return stoneBlock;
-    case GRASS_BLOCK:
-        return grassBlock;
-    case WATER_BLOCK:
-        return waterBlock;
-    }
-}
