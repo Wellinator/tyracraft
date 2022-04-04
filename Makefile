@@ -22,6 +22,9 @@ all: $(EE_BIN)
 	mv $(EE_BIN) bin/$(EE_BIN)
 	rm $(EE_OBJS)
 
+sync-assets:
+	cp -a assets/* bin
+
 rebuild-engine:
 	cd $(TYRA_DIR) && make clean && make
 
