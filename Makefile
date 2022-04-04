@@ -32,7 +32,7 @@ clean:
 	rm -f $(EE_OBJS)
 
 rebuild:
-	make clean && make all
+	make clean && make all && make sync-assets
 
 run: $(EE_BIN)
 	killall -v ps2client || true
