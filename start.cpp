@@ -1,7 +1,6 @@
 #include "start.hpp"
 
-Start::Start(Engine *t_engine)
-    : engine(t_engine), camera(&t_engine->screen)
+Start::Start(Engine *t_engine) : engine(t_engine), camera(&t_engine->screen)
 {
     world = new World(engine);
 }

@@ -4,7 +4,9 @@ TerrainManager::TerrainManager()
 {
 }
 
-TerrainManager::~TerrainManager() {}
+TerrainManager::~TerrainManager() 
+{   
+}
 
 void TerrainManager::init(Engine *t_engine)
 {

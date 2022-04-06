@@ -51,7 +51,6 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     jumpAdpcm = audio->loadADPCM("sounds/jump.adpcm");
     boomAdpcm = audio->loadADPCM("sounds/boom.adpcm");
     audio->setADPCMVolume(70, 0);
-
 }
 
 Player::~Player()
