@@ -1,6 +1,4 @@
-EE_BIN = bin/tyracraft.elf
-
-TYRA_DIR = $(TYRA)
+EE_BIN = tyracraft.elf
 
 EE_OBJS =											\
 	3libs/SimplexNoise.o							\
@@ -20,28 +18,28 @@ EE_LIBS = -ltyra
 
 all: $(EE_BIN)
 	$(EE_STRIP) --strip-all $(EE_BIN)
-#	mv $(EE_BIN) bin/$(EE_BIN) 
-	rm $(EE_OBJS)
-
-sync-assets:
-	cp -a assets/* bin/
+	mkdir bin/
+	mv $(EE_BIN) bin/$(EE_BIN) 
+	cp -a assets/* bin/ 
 
 rebuild-engine:
-	cd $(TYRA_DIR) && make clean && make
+	cd $(TYRA) && make all
 
 clean:
-	rm -f $(EE_OBJS)
+	rm -fr bin/ $(EE_OBJS)
 
-rebuild:
-	make clean && make all && make sync-assets
+rebuild: rebuild-engine all 
 
 run: $(EE_BIN)
 	killall -v ps2client || true
 	ps2client reset
 	ps2client reset
 	$(EE_STRIP) --strip-all $(EE_BIN)
-#	mv $(EE_BIN) bin/$(EE_BIN)
-	rm $(EE_OBJS)
+	mkdir -p bin/
+	mv $(EE_BIN) bin/$(EE_BIN)
+	cp -a assets/* bin/
+	rm -fr $(EE_OBJS) 
 	cd bin/ && ps2client execee host:$(EE_BIN)
 
-include ./Makefile.pref
+include $(TYRA)/src/engine/Makefile.pref
+
