@@ -30,7 +30,7 @@ public:
     Engine *engine;
 private:
     Chunck *chunck;
-    u64 *terrain = new u64[OVERWORLD_SIZE];
+    u8 *terrain = new u8[OVERWORLD_SIZE];
     Vector3 lastPlayerPosition;
     std::vector<Block *> tempBlocks;
     BlockManager *blockManager = new BlockManager();
