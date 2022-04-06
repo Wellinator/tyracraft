@@ -1,6 +1,6 @@
 EE_BIN = tyracraft.elf
 
-# TYRA_DIR = ./../../engine #Reads from ENV: $TYRA_DIR
+TYRA_DIR = $(TYRA)
 
 EE_OBJS =											\
 	3libs/SimplexNoise.o							\
