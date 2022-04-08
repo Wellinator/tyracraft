@@ -17,7 +17,7 @@ void Start::onInit()
     player = new Player(&engine->audio, texRepo);
     
     setBgColorAndAmbientColor();
-    engine->renderer->disableVSync();
+    //engine->renderer->disableVSync();
     
     // Load models and textures;
     world->init();
@@ -50,7 +50,7 @@ void Start::onUpdate()
     //TODO: Should render only if is third person Cam;
     // engine->renderer->draw(player->mesh);
 
-    world->update(player);
+    world->update(player, &camera);
 
     //Render UI
     ui->render(engine->renderer);
