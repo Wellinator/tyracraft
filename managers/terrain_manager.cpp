@@ -234,6 +234,12 @@ void TerrainManager::clearTempBlocks()
 
 void TerrainManager::update(Player *t_player, Camera *t_camera)
 {
+    this->chunck->update(t_player);
+    this->updateTargetBlock(t_player, t_camera);
+};
+
+void TerrainManager::updateTargetBlock(Player *t_player, Camera *t_camera)
+{
     Vector3 currentBoxIntersection;
     Vector3 targetPos;
     Block *targetBlock;
@@ -269,3 +275,15 @@ void TerrainManager::update(Player *t_player, Camera *t_camera)
         targetBlock->mesh.getMaterial(0).color.g = 200;
     }
 };
+
+void TerrainManager::removeBlock(Vector3 *position)
+{
+    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    this->shouldUpdateChunck = 1;
+}
+
+void TerrainManager::putBlock(Vector3 *position, u8 &blockType)
+{
+    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    this->shouldUpdateChunck = 1;
+}

@@ -19,8 +19,11 @@ public:
     Engine *engine;
     TextureRepository *texRepo;
     std::vector<Block *> blocks;
+    Mesh **meshes;
+    u16 meshesCount = 10;
 
-    void renderer(Player *t_player);
+    void renderer();
+    void update(Player *t_player);
     inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
     void add(Block *t_node);
     void clear();

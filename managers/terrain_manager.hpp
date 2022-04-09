@@ -27,13 +27,22 @@ public:
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 
+
+    void updateTargetBlock(Player *t_player, Camera *t_camera);
+    void removeBlock(Vector3 *position);
+    void putBlock(Vector3 *position, u8 &blockType);
+
     TextureRepository *texRepo;
     Engine *engine;
 
 private:
-    Chunck *chunck;
     Ray ray;
+    u8 shouldUpdateChunck = 0;
+
+    //TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
+    Chunck *chunck;
     u8 *terrain = new u8[OVERWORLD_SIZE];
+
     Vector3 lastPlayerPosition;
     std::vector<Block *> tempBlocks;
     BlockManager *blockManager = new BlockManager();
