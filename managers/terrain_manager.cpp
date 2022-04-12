@@ -8,10 +8,9 @@ TerrainManager::~TerrainManager()
 {
 }
 
-void TerrainManager::init(Engine *t_engine)
+void TerrainManager::init(TextureRepository *t_texRepo)
 {
-    engine = t_engine;
-    texRepo = t_engine->renderer->getTextureRepository();
+    texRepo = t_texRepo;
 
     int terrainType = 0;
     int testterrain = rand() % 10;
@@ -22,7 +21,7 @@ void TerrainManager::init(Engine *t_engine)
     if (testterrain >= 7)
         terrainType = 2;
 
-    this->chunck = new Chunck(engine);
+    this->chunck = new Chunck();
     this->blockManager->init(texRepo);
     this->generateNewTerrain(terrainType, false, false, false, false);
 }

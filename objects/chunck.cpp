@@ -2,10 +2,7 @@
 #include <loaders/obj_loader.hpp>
 #include "chunck.hpp"
 
-Chunck::Chunck(Engine *t_engine)
-{
-    this->engine = t_engine;
-};
+Chunck::Chunck(){};
 
 Chunck::~Chunck()
 {
@@ -21,13 +18,13 @@ void Chunck::update(Player *t_player)
     }
 }
 
-void Chunck::renderer()
+void Chunck::renderer(Renderer *t_renderer)
 {
     // Draw mesh
     // TODO: draw with mesh array as Tyra Engine recommends;
     for (u16 i = 0; i < this->blocks.size(); i++)
     {
-        engine->renderer->draw(this->blocks[i]->mesh);
+        t_renderer->draw(this->blocks[i]->mesh);
     }
 };
 

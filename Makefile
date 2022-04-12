@@ -6,6 +6,7 @@ EE_OBJS =											\
 	3libs/SimplexNoise.o							\
 	managers/terrain_manager.o						\
 	managers/block_manager.o						\
+	managers/state_manager.o						\
 	objects/World.o									\
 	objects/Block.o									\
 	objects/chunck.o								\
@@ -13,6 +14,7 @@ EE_OBJS =											\
 	utils.o											\
 	ui.o											\
 	camera.o										\
+	splash_screen.o									\
 	start.o											\
 	main.o
 

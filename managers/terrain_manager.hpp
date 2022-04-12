@@ -21,7 +21,7 @@ class TerrainManager
 public:
     TerrainManager();
     ~TerrainManager();
-    void init(Engine *t_engine);
+    void init(TextureRepository *t_texRepo);
     void update(Player *t_player, Camera *t_camera);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);

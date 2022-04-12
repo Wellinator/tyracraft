@@ -2,7 +2,6 @@
 
 Start::Start(Engine *t_engine) : engine(t_engine), camera(&t_engine->screen)
 {
-    world = new World(engine);
 }
 
 Start::~Start()
@@ -13,25 +12,25 @@ Start::~Start()
 void Start::onInit()
 {
     texRepo = engine->renderer->getTextureRepository();
-    ui = new Ui(texRepo);
-    player = new Player(&engine->audio, texRepo);
+
+    stateManager.init(texRepo, engine->renderer, &engine->audio);
+    splashScreen = new SplashScreen(texRepo, &engine->screen);
     
     setBgColorAndAmbientColor();
-    //engine->renderer->disableVSync();
-    
-    // Load models and textures;
-    world->init();
 
-    //Load skybox (temp);
-    // skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
-    // texRepo->addByMesh("meshes/skybox/", skybox, BMP);
-    // skybox.shouldBeFrustumCulled = true;
-    // skybox.shouldBeBackfaceCulled = false;
-    
+    engine->renderer->disableVSync();
+
+    // Load models and textures;
+
+    // Load skybox (temp);
+    //  skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
+    //  texRepo->addByMesh("meshes/skybox/", skybox, BMP);
+    //  skybox.shouldBeFrustumCulled = true;
+    //  skybox.shouldBeBackfaceCulled = false;
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
-    
+
     // Load MENU song
     engine->audio.addSongListener(this);
     engine->audio.loadSong("sounds/menu.wav");
@@ -41,19 +40,16 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
-    ui->update(*player);
-    player->update(engine->pad, camera);
-    camera.update(engine->pad, player->mesh);
-    
-    //engine->renderer->draw(skybox);
-    
-    //TODO: Should render only if is third person Cam;
-    // engine->renderer->draw(player->mesh);
+    // stateManager.update(engine->pad, camera);
 
-    world->update(player, &camera);
+    
+    // engine->renderer->draw(skybox);
 
-    //Render UI
-    ui->render(engine->renderer);
+    // TODO: Should render only if is third person Cam;
+    //  engine->renderer->draw(player->mesh);
+
+    // Render UI
+    splashScreen->render(engine->renderer);
 }
 
 void Start::setBgColorAndAmbientColor()
