@@ -1,9 +1,10 @@
 #include "splash_screen.hpp"
 #include <utils/debug.hpp>
 
-SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen)
+SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen, u8 *t_state)
 {
     this->t_texRepo = t_texRepo;
+    this->t_state = t_state;
     u8 index = 0;
     for (u8 row = 0; row < 4; row++)
     {
@@ -18,7 +19,14 @@ SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_scree
                 floor(t_screen->width / 4 * col),
                 floor(t_screen->height / 4 * row));
 
+            tyra_grid[index].setMode(MODE_STRETCH);
+            tyra_grid[index].size.set(t_screen->width / 4, t_screen->height / 4);
+            tyra_grid[index].position.set(
+                floor(t_screen->width / 4 * col),
+                floor(t_screen->height / 4 * row));
+
             t_texRepo->add("assets/splash_screen/tyracraft/", image_index, PNG)->addLink(tyracraft_grid[index].getId());
+            t_texRepo->add("assets/splash_screen/tyra/", image_index, PNG)->addLink(tyra_grid[index].getId());
             index++;
         }
     }
@@ -29,22 +37,17 @@ SplashScreen::~SplashScreen()
     for (u8 index = 0; index < 16; index++)
     {
         t_texRepo->removeById(tyracraft_grid[index].getId());
+        t_texRepo->removeById(tyra_grid[index].getId());
     }
-    delete []tyracraft_grid;
+    delete[] tyracraft_grid;
+    delete[] tyra_grid;
 }
 
 void SplashScreen::render(Renderer *t_renderer)
 {
     setBgColorBlack(t_renderer);
 
-    if (isFading == 1)
-    {
-        alpha -= 1;
-    }
-    else
-    {
-        alpha += 1;
-    }
+    alpha = isFading ? alpha - 1 : alpha + 1;
 
     if (alpha == 255)
     {
@@ -56,10 +59,43 @@ void SplashScreen::render(Renderer *t_renderer)
         isFading = 0;
     }
 
+    if(!hasShowedTyraCraft)
+    {
+        renderTyraCraftSplash(t_renderer);
+        return;
+    }
+    if(!hasShowedTyra)
+    {
+        renderTyraSplash(t_renderer);
+        return;
+    }
+
+    if (hasShowedTyraCraft && hasShowedTyra)
+    {
+        consoleLog("Changing state to MENU");
+        t_state = MAIN_MENU;
+    }
+}
+
+void SplashScreen::renderTyraSplash(Renderer *t_renderer)
+{
+    for (u8 index = 0; index < 16; index++)
+    {
+        tyra_grid[index].color.a = alpha;
+        t_renderer->draw(tyra_grid[index]);
+        if (alpha == 0)
+            hasShowedTyra = 1;
+    }
+}
+
+void SplashScreen::renderTyraCraftSplash(Renderer *t_renderer)
+{
     for (u8 index = 0; index < 16; index++)
     {
         tyracraft_grid[index].color.a = alpha;
         t_renderer->draw(tyracraft_grid[index]);
+        if (alpha == 0)
+            hasShowedTyraCraft = 1;
     }
 }
 

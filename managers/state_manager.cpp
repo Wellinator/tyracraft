@@ -12,7 +12,7 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
     this->t_renderer = t_renderer;
     this->t_audio = t_audio;
 
-    splashScreen = new SplashScreen(t_texRepo, t_screen);
+    splashScreen = new SplashScreen(t_texRepo, t_screen, &_state);
 }
 
 void StateManager::update(Pad &t_pad, Camera camera)
