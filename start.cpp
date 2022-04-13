@@ -13,8 +13,7 @@ void Start::onInit()
 {
     texRepo = engine->renderer->getTextureRepository();
 
-    stateManager.init(texRepo, engine->renderer, &engine->audio);
-    splashScreen = new SplashScreen(texRepo, &engine->screen);
+    stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
     
     setBgColorAndAmbientColor();
 
@@ -40,16 +39,13 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
-    // stateManager.update(engine->pad, camera);
+    stateManager.update(engine->pad, camera);
 
-    
+    //TODO: fix skybox; 
     // engine->renderer->draw(skybox);
 
-    // TODO: Should render only if is third person Cam;
-    //  engine->renderer->draw(player->mesh);
-
-    // Render UI
-    splashScreen->render(engine->renderer);
+    //TODO: Should render only if is third person Cam;
+    //engine->renderer->draw(player->mesh);
 }
 
 void Start::setBgColorAndAmbientColor()

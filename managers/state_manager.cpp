@@ -6,15 +6,22 @@ StateManager::StateManager()
 
 StateManager::~StateManager() {}
 
-void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio)
+void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio, ScreenSettings *t_screen)
 {
     this->t_texRepo = t_texRepo;
     this->t_renderer = t_renderer;
     this->t_audio = t_audio;
+
+    splashScreen = new SplashScreen(t_texRepo, t_screen);
 }
 
 void StateManager::update(Pad &t_pad, Camera camera)
 {
+    if(_state == SPLASH_SCREEN)
+    {
+        splashScreen->render(t_renderer);
+    }
+
     if (_state == IN_GAME)
     {
         player->update(t_pad, camera);

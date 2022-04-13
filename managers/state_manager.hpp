@@ -9,13 +9,15 @@
 #include "../include/contants.hpp"
 #include "ui.hpp"
 #include <models/mesh.hpp>
+#include "../splash_screen.hpp"
+
 class StateManager
 {
 public:
     StateManager();
     ~StateManager();
 
-    void init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio);
+    void init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio, ScreenSettings *t_screen);
     void update(Pad &t_pad, Camera camera);
 
     u8 currentState();
@@ -35,6 +37,8 @@ private:
     TextureRepository *t_texRepo;
     Renderer *t_renderer;
     Audio *t_audio;
+    SplashScreen *splashScreen;
+
 };
 
 #endif
