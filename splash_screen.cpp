@@ -73,7 +73,7 @@ void SplashScreen::render(Renderer *t_renderer)
     if (hasShowedTyraCraft && hasShowedTyra)
     {
         consoleLog("Changing state to MENU");
-        t_state = MAIN_MENU;
+        *t_state = MAIN_MENU;
     }
 }
 
