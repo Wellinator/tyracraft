@@ -1,10 +1,9 @@
 #include "splash_screen.hpp"
 #include <utils/debug.hpp>
 
-SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen, u8 *t_state)
+SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen)
 {
     this->t_texRepo = t_texRepo;
-    this->t_state = t_state;
     u8 index = 0;
     for (u8 row = 0; row < 4; row++)
     {
@@ -39,8 +38,6 @@ SplashScreen::~SplashScreen()
         t_texRepo->removeById(tyracraft_grid[index].getId());
         t_texRepo->removeById(tyra_grid[index].getId());
     }
-    delete[] tyracraft_grid;
-    delete[] tyra_grid;
 }
 
 void SplashScreen::render(Renderer *t_renderer)
@@ -59,21 +56,15 @@ void SplashScreen::render(Renderer *t_renderer)
         isFading = 0;
     }
 
-    if(!hasShowedTyraCraft)
+    if (!hasShowedTyraCraft)
     {
         renderTyraCraftSplash(t_renderer);
         return;
     }
-    if(!hasShowedTyra)
+    if (!hasShowedTyra)
     {
         renderTyraSplash(t_renderer);
         return;
-    }
-
-    if (hasShowedTyraCraft && hasShowedTyra)
-    {
-        consoleLog("Changing state to MENU");
-        *t_state = MAIN_MENU;
     }
 }
 
@@ -106,4 +97,14 @@ void SplashScreen::setBgColorBlack(Renderer *t_renderer)
     bgColor.g = 0x00;
     bgColor.b = 0x00;
     t_renderer->setWorldColor(bgColor);
+}
+
+u8 SplashScreen::hasFinished()
+{
+    return hasShowedTyraCraft && hasShowedTyra;
+}
+
+u8 SplashScreen::shouldBeDestroyed()
+{
+    return this->hasFinished();
 }

@@ -29,20 +29,21 @@ class SplashScreen
 {
 
 public:
-    SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen, u8 *t_state);
+    SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen);
     ~SplashScreen();
 
     void render(Renderer *t_renderer);
+    u8 shouldBeDestroyed();
 
 private:
     void setBgColorBlack(Renderer *t_renderer);
     void renderTyraSplash(Renderer *t_renderer);
     void renderTyraCraftSplash(Renderer *t_renderer);
+    u8 hasFinished();
 
     TextureRepository *t_texRepo;
     Sprite tyracraft_grid[16];
     Sprite tyra_grid[16];
-    u8 *t_state;
     u8 alpha = 1;
     u8 isFading = 0;
     u8 hasShowedTyraCraft = 0;
