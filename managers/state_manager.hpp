@@ -10,6 +10,7 @@
 #include "ui.hpp"
 #include <models/mesh.hpp>
 #include "../splash_screen.hpp"
+#include "menu_manager.hpp"
 
 class StateManager
 {
@@ -33,12 +34,14 @@ public:
 private:
     void loadGame();
 
-    u8 _state = SPLASH_SCREEN;
+    u8 _state = MAIN_MENU;
     TextureRepository *t_texRepo;
     Renderer *t_renderer;
     Audio *t_audio;
-    SplashScreen *splashScreen;
+    ScreenSettings *t_screen;
 
+    SplashScreen *splashScreen;
+    MainMenu *mainMenu;
 };
 
 #endif

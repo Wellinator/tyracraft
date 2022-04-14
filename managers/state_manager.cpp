@@ -11,8 +11,10 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
     this->t_texRepo = t_texRepo;
     this->t_renderer = t_renderer;
     this->t_audio = t_audio;
+    this->t_screen = t_screen;
 
     splashScreen = new SplashScreen(t_texRepo, t_screen);
+    mainMenu = new MainMenu(t_texRepo, t_screen);
 }
 
 void StateManager::update(Pad &t_pad, Camera camera)
@@ -26,8 +28,11 @@ void StateManager::update(Pad &t_pad, Camera camera)
     else if(splashScreen->shouldBeDestroyed())
     {
         delete splashScreen;
+    }
 
-        //TODO: load the main MENU;
+    if(_state == MAIN_MENU && mainMenu)
+    {
+        mainMenu->render(t_renderer);
     }
 
     if (_state == IN_GAME)

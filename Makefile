@@ -7,6 +7,7 @@ EE_OBJS =											\
 	managers/terrain_manager.o						\
 	managers/block_manager.o						\
 	managers/state_manager.o						\
+	managers/menu_manager.o							\
 	objects/World.o									\
 	objects/Block.o									\
 	objects/chunck.o								\
