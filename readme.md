@@ -1,6 +1,10 @@
-
-[![Contributors][contributors-shield]][contributors-url]
-[![MIT License][license-shield]][license-url]
+[![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Wellinator/tyracraft/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub commits](https://badgen.net/github/commits/Wellinator/tyracraft/)](https://github.com/Wellinator/tyracraft/commit/)
+[![GitHub latest commit](https://badgen.net/github/last-commit/Wellinator/tyracraft)](https://github.com/Wellinator/tyracraft/commit/)
+[![GitHub forks](https://badgen.net/github/forks/Wellinator/tyracraft/)](https://github.com/Wellinator/tyracraft/network/)
+[![GitHub stars](https://badgen.net/github/stars/Wellinator/tyracraft)](https://github.com/Wellinator/tyracraft/stargazers/)
+[![GitHub watchers](https://badgen.net/github/watchers/Wellinator/tyracraft/)](https://GitHub.com/Wellinator/tyracraft/watchers/)
 [![Discord](https://img.shields.io/badge/discord-Tyra-brightgreen?logo=discord)](https://discord.gg/NhhTmg3Gm5)
 [![Discord](https://img.shields.io/badge/discord-PS2--Scene-brightgreen?logo=discord)](https://discord.gg/7dCr6ThSN5)
 
