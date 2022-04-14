@@ -1,4 +1,28 @@
 
+[![Contributors][contributors-shield]][contributors-url]
+[![MIT License][license-shield]][license-url]
+[![Discord](https://img.shields.io/badge/discord-Tyra-brightgreen?logo=discord)](https://discord.gg/NhhTmg3Gm5)
+[![Discord](https://img.shields.io/badge/discord-PS2--Scene-brightgreen?logo=discord)](https://discord.gg/7dCr6ThSN5)
+
+<br />
+<p align="center">
+  <a href="https://github.com/Wellinator/tyracraft">
+    <img src="https://i.ibb.co/nbDpRhy/Tyra-Craft-Banner.png" alt="Logo" width="100%" height="auto">
+  </a>
+
+  <h3 align="center">TyraChaft - alpha version</h3>
+
+  <p align="center">
+    Open source game for PlayStation 2™ powered by 
+    <a href="https://github.com/h4570/tyra">Tyra engine</a>
+    
+    <br />
+    <a href="https://github.com/Wellinator/tyracraft/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/Wellinator/tyracraft/issues">Request Feature</a>
+  </p>
+</p>  
+
 # TyraCraft (Alpha version)
 
 It's an Minecraft for Play Station 2 built with Tyra Engine!
