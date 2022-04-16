@@ -4,8 +4,8 @@ TerrainManager::TerrainManager()
 {
 }
 
-TerrainManager::~TerrainManager() 
-{   
+TerrainManager::~TerrainManager()
+{
 }
 
 void TerrainManager::init(Engine *t_engine)
@@ -232,4 +232,58 @@ void TerrainManager::clearTempBlocks()
     this->tempBlocks.shrink_to_fit();
 };
 
-void TerrainManager::update(){};
+void TerrainManager::update(Player *t_player, Camera *t_camera)
+{
+    this->chunck->update(t_player);
+    this->updateTargetBlock(t_player, t_camera);
+};
+
+void TerrainManager::updateTargetBlock(Player *t_player, Camera *t_camera)
+{
+    Vector3 currentBoxIntersection;
+    Vector3 targetPos;
+    Block *targetBlock;
+
+    ray.set(
+        t_camera->position,
+        t_camera->lookPos - t_camera->position);
+
+    for (u16 i = 0; i < this->tempBlocks.size(); i++)
+    {
+        this->tempBlocks[i]->mesh.getMaterial(0).color.g = 128;
+        if (
+            t_player->getPosition().distanceTo(this->tempBlocks[i]->mesh.position) <= MAX_RANGE_PICKER)
+        {
+            Vector3 min;
+            Vector3 max;
+            this->tempBlocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
+
+            currentBoxIntersection = ray.intersectBox(&min, &max);
+
+            if (
+                t_player->getPosition().distanceTo(currentBoxIntersection) <
+                t_player->getPosition().distanceTo(targetPos))
+            {
+                targetPos.set(currentBoxIntersection);
+                targetBlock = this->tempBlocks[i];
+            }
+        }
+    }
+
+    if (targetPos.length() > 0)
+    {
+        targetBlock->mesh.getMaterial(0).color.g = 200;
+    }
+};
+
+void TerrainManager::removeBlock(Vector3 *position)
+{
+    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    this->shouldUpdateChunck = 1;
+}
+
+void TerrainManager::putBlock(Vector3 *position, u8 &blockType)
+{
+    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    this->shouldUpdateChunck = 1;
+}

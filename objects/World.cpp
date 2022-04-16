@@ -15,9 +15,10 @@ void World::init()
     return;
 };
 
-void World::update(Player *t_player)
+void World::update(Player *t_player, Camera *t_camera)
 {
     this->terrainManager->updateChunkByPlayerPosition(t_player);
-    this->terrainManager->update();
-    this->chunck->renderer(t_player);
+    this->terrainManager->update(t_player, t_camera);
+    
+    this->chunck->renderer();
 };

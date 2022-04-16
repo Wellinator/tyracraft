@@ -18,7 +18,7 @@ public:
     ~World();
 
     void init();
-    void update(Player *t_player);
+    void update(Player *t_player, Camera *t_camera);
     Chunck *chunck;
 
 private:
