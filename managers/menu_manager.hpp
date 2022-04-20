@@ -55,6 +55,9 @@ private:
 
     //Texts
     Sprite textPlayGame;
+
+    //Buttons
+    Sprite btnCross;
 };
 
 #endif

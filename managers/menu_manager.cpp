@@ -65,6 +65,13 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     subtitle.position.set((halfWidth) - (130 / 2), 164);
 
     t_texRepo->add("assets/textures/menu/", "sub_title", PNG)->addLink(subtitle.getId());
+    
+    //Buttons
+    btnCross.setMode(MODE_STRETCH);
+    btnCross.size.set(45, 45);
+    btnCross.position.set(30, t_screen->height - 60);
+
+    t_texRepo->add("assets/textures/ui/", "btn_cross", PNG)->addLink(btnCross.getId());
 
     // Load slots
     slot[0].setMode(MODE_STRETCH);
@@ -133,6 +140,9 @@ void MainMenu::render(Renderer *t_renderer)
 
     //Texts
     t_renderer->draw(textPlayGame);
+
+    //Buttons
+    t_renderer->draw(btnCross);
 
 }
 
