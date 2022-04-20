@@ -24,6 +24,10 @@
 #include <string>
 #include "./include/contants.hpp"
 
+//MENU_OPTIONS
+#define PLAY_GAME 0
+#define ABOUT 1
+
 class MainMenu
 {
 
@@ -34,18 +38,23 @@ public:
     void render(Renderer *t_renderer);
     u8 shouldBeDestroyed();
 
+    //Rotating skybox
+    Mesh menuSkybox;
 private:
     u8 hasFinished();
+    u8 selectedOption = PLAY_GAME;
 
     TextureRepository *t_texRepo;
-    // Mesh menuSkybox;
 
-    //Array of options [original, hovered, selected]
+    Sprite title[2];
+    Sprite background[4];
+    Sprite subtitle;
+  
+    //Array of options [original, active, selected]
     Sprite slot[3];
 
-    //Array of options [original, hovered]
-    Sprite optionPlay[2];
-    Sprite optionAbout[2];
+    //Texts
+    Sprite textPlayGame;
 };
 
 #endif

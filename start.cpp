@@ -17,7 +17,7 @@ void Start::onInit()
     
     setBgColorAndAmbientColor();
 
-    engine->renderer->disableVSync();
+    // engine->renderer->disableVSync();
 
     // Load models and textures;
 

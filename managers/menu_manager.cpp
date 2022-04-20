@@ -14,30 +14,78 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
      * */
     this->t_texRepo = t_texRepo;
 
+    const float halfWidth = t_screen->width / 2;
+    const float halfHeight = t_screen->height / 2;
 
-    //Load slots
+    // Background
+    background[0].setMode(MODE_STRETCH);
+    background[0].size.set(halfWidth, halfHeight);
+    background[0].position.set(0.0F, 0.0F);
+    background[1].setMode(MODE_STRETCH);
+    background[1].size.set(halfWidth, halfHeight);
+    background[1].position.set(halfWidth, 0.0F);
+    background[2].setMode(MODE_STRETCH);
+    background[2].size.set(halfWidth, halfHeight);
+    background[2].position.set(0.0F, halfHeight);
+    background[3].setMode(MODE_STRETCH);
+    background[3].size.set(halfWidth, halfHeight);
+    background[3].position.set(halfWidth, halfHeight);
+
+    t_texRepo->add("assets/textures/menu/", "background_tl", PNG)->addLink(background[0].getId());
+    t_texRepo->add("assets/textures/menu/", "background_tr", PNG)->addLink(background[1].getId());
+    t_texRepo->add("assets/textures/menu/", "background_bl", PNG)->addLink(background[2].getId());
+    t_texRepo->add("assets/textures/menu/", "background_br", PNG)->addLink(background[3].getId());
+
+    // Load title
+    // TYRA
+    title[0].setMode(MODE_STRETCH);
+    title[0].size.set(196, 64);
+    title[0].position.set((halfWidth) - (434 / 2), 32);
+    t_texRepo->add("assets/textures/menu/", "title_tyra", PNG)->addLink(title[0].getId());
+    // CRAFT
+    title[1].setMode(MODE_STRETCH);
+    title[1].size.set(238, 64);
+    title[1].position.set(((halfWidth) - (434 / 2)) + 196, 32);
+    t_texRepo->add("assets/textures/menu/", "title_craft", PNG)->addLink(title[1].getId());
+    // Alpha Version
+    subtitle.setMode(MODE_STRETCH);
+    subtitle.size.set(130, 16);
+    subtitle.position.set((halfWidth) - (130 / 2), 100);
+    t_texRepo->add("assets/textures/menu/", "sub_title", PNG)->addLink(subtitle.getId());
+
+    // Load slots
     slot[0].setMode(MODE_STRETCH);
-    slot[0].size.set(150, 25);
-    slot[0].position.set(150, 25);
+    slot[0].size.set(200, 25);
+    slot[0].position.set((halfWidth) - 100, 265);
     slot[1].setMode(MODE_STRETCH);
-    slot[1].size.set(150, 25);
-    slot[1].position.set(150, 25 + 30);
+    slot[1].size.set(200, 25);
+    slot[1].position.set((halfWidth) - 100, 265 + 30);
     slot[2].setMode(MODE_STRETCH);
-    slot[2].size.set(150, 25);
-    slot[2].position.set(150, 25 + 60);
+    slot[2].size.set(200, 25);
+    slot[2].position.set((halfWidth) - 100, 265 + 60);
 
     t_texRepo->add("assets/textures/menu/", "slot", PNG)->addLink(slot[0].getId());
     t_texRepo->add("assets/textures/menu/", "hovered_slot", PNG)->addLink(slot[1].getId());
     t_texRepo->add("assets/textures/menu/", "selected_slot", PNG)->addLink(slot[2].getId());
 
-
-
+    // Texts
+    textPlayGame.setMode(MODE_STRETCH);
+    textPlayGame.size.set(80, 15);
+    textPlayGame.position.set((halfWidth) - 40, 265 + 35);
+    
+    if(this->selectedOption == PLAY_GAME)
+    {
+        textPlayGame.color.r = 255;
+        textPlayGame.color.g = 255;
+        textPlayGame.color.b = 0;
+    }
+    
+    t_texRepo->add("assets/textures/menu/", "play_game", PNG)->addLink(textPlayGame.getId());
 
     // TODO: Load menuSkybox;
-    // menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 600.0F, true);
-    // t_texRepo->addByMesh("meshes/menu-skybox/", menuSkybox, BMP);
-    // menuSkybox.shouldBeFrustumCulled = false;
-    // menuSkybox.shouldBeBackfaceCulled = false;
+    menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 100.0F, false);
+    menuSkybox.shouldBeFrustumCulled = false;
+    t_texRepo->addByMesh("meshes/menu-skybox/", menuSkybox, BMP);
 }
 
 MainMenu::~MainMenu()
@@ -46,9 +94,31 @@ MainMenu::~MainMenu()
 
 void MainMenu::render(Renderer *t_renderer)
 {
-    t_renderer->draw(slot[0]);
+    // Meshes
+    menuSkybox.rotation.x += 1;
+    t_renderer->draw(menuSkybox);
+
+    // Sprites
+
+    // Background
+    t_renderer->draw(background[0]);
+    t_renderer->draw(background[1]);
+    t_renderer->draw(background[2]);
+    t_renderer->draw(background[3]);
+
+    // Title & Subtitle
+    t_renderer->draw(title[0]);
+    t_renderer->draw(title[1]);
+    t_renderer->draw(subtitle);
+
+    // Slots
     t_renderer->draw(slot[1]);
-    t_renderer->draw(slot[2]);
+    // t_renderer->draw(slot[1]);
+    // t_renderer->draw(slot[2]);
+
+    //Texts
+    t_renderer->draw(textPlayGame);
+
 }
 
 u8 MainMenu::shouldBeDestroyed()
