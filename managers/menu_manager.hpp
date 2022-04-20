@@ -46,7 +46,7 @@ private:
 
     TextureRepository *t_texRepo;
 
-    Sprite title[2];
+    Sprite title[4];
     Sprite background[4];
     Sprite subtitle;
   

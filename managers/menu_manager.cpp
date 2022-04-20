@@ -37,20 +37,33 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     t_texRepo->add("assets/textures/menu/", "background_br", PNG)->addLink(background[3].getId());
 
     // Load title
-    // TYRA
+    //Title
     title[0].setMode(MODE_STRETCH);
-    title[0].size.set(196, 64);
-    title[0].position.set((halfWidth) - (434 / 2), 32);
-    t_texRepo->add("assets/textures/menu/", "title_tyra", PNG)->addLink(title[0].getId());
-    // CRAFT
+    title[0].size.set(128, 96);
+    title[0].position.set((halfWidth) - 256, 64);
+    
     title[1].setMode(MODE_STRETCH);
-    title[1].size.set(238, 64);
-    title[1].position.set(((halfWidth) - (434 / 2)) + 196, 32);
-    t_texRepo->add("assets/textures/menu/", "title_craft", PNG)->addLink(title[1].getId());
+    title[1].size.set(128, 96);
+    title[1].position.set(halfWidth - 128, 64);
+    
+    title[2].setMode(MODE_STRETCH);
+    title[2].size.set(128, 96);
+    title[2].position.set(halfWidth , 64);
+    
+    title[3].setMode(MODE_STRETCH);
+    title[3].size.set(128, 96);
+    title[3].position.set(halfWidth + 128, 64);
+    
+    t_texRepo->add("assets/textures/menu/", "title_1", PNG)->addLink(title[0].getId());
+    t_texRepo->add("assets/textures/menu/", "title_2", PNG)->addLink(title[1].getId());
+    t_texRepo->add("assets/textures/menu/", "title_3", PNG)->addLink(title[2].getId());
+    t_texRepo->add("assets/textures/menu/", "title_4", PNG)->addLink(title[3].getId());
+
     // Alpha Version
     subtitle.setMode(MODE_STRETCH);
     subtitle.size.set(130, 16);
-    subtitle.position.set((halfWidth) - (130 / 2), 100);
+    subtitle.position.set((halfWidth) - (130 / 2), 164);
+
     t_texRepo->add("assets/textures/menu/", "sub_title", PNG)->addLink(subtitle.getId());
 
     // Load slots
@@ -109,6 +122,8 @@ void MainMenu::render(Renderer *t_renderer)
     // Title & Subtitle
     t_renderer->draw(title[0]);
     t_renderer->draw(title[1]);
+    t_renderer->draw(title[2]);
+    t_renderer->draw(title[3]);
     t_renderer->draw(subtitle);
 
     // Slots
