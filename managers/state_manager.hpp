@@ -34,7 +34,7 @@ public:
 private:
     void loadGame();
 
-    u8 _state = MAIN_MENU;
+    u8 _state = SPLASH_SCREEN;
     TextureRepository *t_texRepo;
     Renderer *t_renderer;
     Audio *t_audio;

@@ -19,21 +19,23 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
 
 void StateManager::update(Pad &t_pad, Camera camera)
 {
-
     // Splash Screen
     if (_state == SPLASH_SCREEN)
     {
         splashScreen->render(t_renderer);
-    }
-    else if (splashScreen->shouldBeDestroyed())
-    {
-        delete splashScreen;
+        if (splashScreen->shouldBeDestroyed())
+        {
+            delete splashScreen;
+            _state = MAIN_MENU;
+        }
+        return;
     }
 
-    if (_state == MAIN_MENU && mainMenu)
+    if (_state == MAIN_MENU)
     {
         camera.update(t_pad, mainMenu->menuSkybox);
         mainMenu->render(t_renderer);
+        return;
     }
 
     if (_state == IN_GAME)

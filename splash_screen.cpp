@@ -33,11 +33,6 @@ SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_scree
 
 SplashScreen::~SplashScreen()
 {
-    for (u8 index = 0; index < 16; index++)
-    {
-        t_texRepo->removeById(tyracraft_grid[index].getId());
-        t_texRepo->removeById(tyra_grid[index].getId());
-    }
 }
 
 void SplashScreen::render(Renderer *t_renderer)
