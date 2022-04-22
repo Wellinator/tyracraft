@@ -14,16 +14,15 @@
 class World
 {
 public:
-    World(TextureRepository *t_texRepo);
+    World();
     ~World();
 
-    void init();
+    void init(TextureRepository *t_texRepo);
     void update(Player *t_player, Camera *t_camera);
     void render(Renderer *t_renderer);
     Chunck *chunck;
 
 private:
-    TextureRepository *t_texRepo;
     TerrainManager *terrainManager = new TerrainManager();
 };
 

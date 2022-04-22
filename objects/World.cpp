@@ -1,14 +1,13 @@
 
 #include "World.hpp"
 
-World::World(TextureRepository *t_texRepo)
+World::World()
 {
-    this->t_texRepo = t_texRepo;
 }
 
 World::~World() {}
 
-void World::init()
+void World::init(TextureRepository *t_texRepo)
 {
     this->terrainManager->init(t_texRepo);
     this->chunck = this->terrainManager->getChunck(0, 0, 0);

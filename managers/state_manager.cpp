@@ -79,11 +79,11 @@ void StateManager::loadInGameMenu()
 
 void StateManager::loadGame()
 {
-    world = new World(t_texRepo);
+    world = new World();
     ui = new Ui(t_texRepo);
     player = new Player(t_audio, t_texRepo);
 
-    world->init();
+    world->init(t_texRepo);
 }
 
 void StateManager::play()
