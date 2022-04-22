@@ -108,7 +108,7 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     t_texRepo->add("assets/textures/menu/", "select", PNG)->addLink(textSelect.getId());
 
     // TODO: Load menuSkybox;
-    menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 100.0F, false);
+    menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 400.0F, false);
     menuSkybox.shouldBeFrustumCulled = false;
     t_texRepo->addByMesh("meshes/menu-skybox/", menuSkybox, BMP);
 }
@@ -126,16 +126,16 @@ void MainMenu::update(Pad &t_pad)
 void MainMenu::render(Renderer *t_renderer)
 {
     // Meshes
-    menuSkybox.rotation.x += 1;
+    menuSkybox.rotation.y += .001F;
     t_renderer->draw(menuSkybox);
 
     // Sprites
 
     // Background
-    t_renderer->draw(background[0]);
-    t_renderer->draw(background[1]);
-    t_renderer->draw(background[2]);
-    t_renderer->draw(background[3]);
+    // t_renderer->draw(background[0]);
+    // t_renderer->draw(background[1]);
+    // t_renderer->draw(background[2]);
+    // t_renderer->draw(background[3]);
 
     // Title & Subtitle
     t_renderer->draw(title[0]);
