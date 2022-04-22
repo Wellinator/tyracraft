@@ -15,9 +15,13 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
 
     splashScreen = new SplashScreen(t_texRepo, t_screen);
     mainMenu = new MainMenu(t_texRepo, t_screen);
+
+    world = new World();
+    ui = new Ui(t_texRepo);
+    player = new Player(t_audio, t_texRepo);
 }
 
-void StateManager::update(Pad &t_pad, Camera camera)
+void StateManager::update(Pad &t_pad, Camera &camera)
 {
     // Splash Screen
     if (_state == SPLASH_SCREEN)
@@ -49,14 +53,15 @@ void StateManager::update(Pad &t_pad, Camera camera)
     // In game
     if (_state == IN_GAME)
     {
-        player->update(t_pad, camera);
-        camera.update(t_pad, player->mesh);
-        world->update(player, &camera);
         ui->update(*player);
+        player->update(t_pad, camera);
+        world->update(player, &camera);
+        camera.update(t_pad, player->mesh);
+
+        player->getPosition().print();
 
         world->render(t_renderer);
         ui->render(t_renderer);
-        return;
     }
 }
 
@@ -80,10 +85,6 @@ void StateManager::loadInGameMenu()
 void StateManager::loadGame()
 {
     setBgColorAndAmbientColor();
-    world = new World();
-    ui = new Ui(t_texRepo);
-    player = new Player(t_audio, t_texRepo);
-
     world->init(t_texRepo);
 }
 

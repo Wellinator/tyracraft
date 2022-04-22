@@ -11,6 +11,7 @@
 #ifndef _MAIN_MENU_
 #define _MAIN_MENU_
 
+#include <utils/debug.hpp>
 #include <modules/texture_repository.hpp>
 #include <modules/renderer.hpp>
 #include <modules/pad.hpp>
@@ -24,6 +25,7 @@
 #include <math.h>
 #include <string>
 #include "./include/contants.hpp"
+#include "../camera.hpp"
 
 //MENU_OPTIONS
 #define PLAY_GAME 1
