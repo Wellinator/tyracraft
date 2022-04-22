@@ -14,8 +14,6 @@ void Start::onInit()
     texRepo = engine->renderer->getTextureRepository();
 
     stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
-    
-    setBgColorAndAmbientColor();
 
     // engine->renderer->disableVSync();
 
@@ -46,17 +44,6 @@ void Start::onUpdate()
 
     //TODO: Should render only if is third person Cam;
     //engine->renderer->draw(player->mesh);
-}
-
-void Start::setBgColorAndAmbientColor()
-{
-    color_t bgColor;
-    bgColor.r = 0xC0;
-    bgColor.g = 0xD8;
-    bgColor.b = 0xFF;
-    engine->renderer->setWorldColor(bgColor);
-    Vector3 ambient = Vector3(0.004F, 0.004F, 0.004F);
-    engine->renderer->setAmbientLight(ambient);
 }
 
 void Start::onAudioTick()

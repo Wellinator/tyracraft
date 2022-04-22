@@ -79,6 +79,7 @@ void StateManager::loadInGameMenu()
 
 void StateManager::loadGame()
 {
+    setBgColorAndAmbientColor();
     world = new World();
     ui = new Ui(t_texRepo);
     player = new Player(t_audio, t_texRepo);
@@ -89,4 +90,15 @@ void StateManager::loadGame()
 void StateManager::play()
 {
     loadGame();
+}
+
+void StateManager::setBgColorAndAmbientColor()
+{
+    color_t bgColor;
+    bgColor.r = 0xC0;
+    bgColor.g = 0xD8;
+    bgColor.b = 0xFF;
+    t_renderer->setWorldColor(bgColor);
+    Vector3 ambient = Vector3(0.004F, 0.004F, 0.004F);
+    t_renderer->setAmbientLight(ambient);
 }

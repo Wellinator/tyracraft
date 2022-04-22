@@ -27,6 +27,8 @@ public:
     void loadInGameMenu();
     void play();
 
+    void setBgColorAndAmbientColor();
+
     World *world;
     Ui *ui;
     Player *player;
