@@ -92,7 +92,7 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     textPlayGame.setMode(MODE_STRETCH);
     textPlayGame.size.set(80, 15);
     textPlayGame.position.set((halfWidth) - 40, 265 + 35);
-    
+
     if(this->selectedOption == PLAY_GAME)
     {
         textPlayGame.color.r = 255;
@@ -101,6 +101,12 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     }
     
     t_texRepo->add("assets/textures/menu/", "play_game", PNG)->addLink(textPlayGame.getId());
+
+
+    textSelect.setMode(MODE_STRETCH);
+    textSelect.size.set(64, 16);
+    textSelect.position.set(30 + 40, t_screen->height - 47);
+    t_texRepo->add("assets/textures/menu/", "select", PNG)->addLink(textSelect.getId());
 
     // TODO: Load menuSkybox;
     menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 100.0F, false);
@@ -140,6 +146,7 @@ void MainMenu::render(Renderer *t_renderer)
 
     //Texts
     t_renderer->draw(textPlayGame);
+    t_renderer->draw(textSelect);
 
     //Buttons
     t_renderer->draw(btnCross);

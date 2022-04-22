@@ -55,6 +55,7 @@ private:
 
     //Texts
     Sprite textPlayGame;
+    Sprite textSelect;
 
     //Buttons
     Sprite btnCross;
