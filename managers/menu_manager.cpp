@@ -37,23 +37,23 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     t_texRepo->add("assets/textures/menu/", "background_br", PNG)->addLink(background[3].getId());
 
     // Load title
-    //Title
+    // Title
     title[0].setMode(MODE_STRETCH);
     title[0].size.set(128, 96);
-    title[0].position.set((halfWidth) - 256, 64);
-    
+    title[0].position.set((halfWidth)-256, 64);
+
     title[1].setMode(MODE_STRETCH);
     title[1].size.set(128, 96);
     title[1].position.set(halfWidth - 128, 64);
-    
+
     title[2].setMode(MODE_STRETCH);
     title[2].size.set(128, 96);
-    title[2].position.set(halfWidth , 64);
-    
+    title[2].position.set(halfWidth, 64);
+
     title[3].setMode(MODE_STRETCH);
     title[3].size.set(128, 96);
     title[3].position.set(halfWidth + 128, 64);
-    
+
     t_texRepo->add("assets/textures/menu/", "title_1", PNG)->addLink(title[0].getId());
     t_texRepo->add("assets/textures/menu/", "title_2", PNG)->addLink(title[1].getId());
     t_texRepo->add("assets/textures/menu/", "title_3", PNG)->addLink(title[2].getId());
@@ -65,8 +65,8 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     subtitle.position.set((halfWidth) - (130 / 2), 164);
 
     t_texRepo->add("assets/textures/menu/", "sub_title", PNG)->addLink(subtitle.getId());
-    
-    //Buttons
+
+    // Buttons
     btnCross.setMode(MODE_STRETCH);
     btnCross.size.set(45, 45);
     btnCross.position.set(30, t_screen->height - 60);
@@ -76,13 +76,13 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     // Load slots
     slot[0].setMode(MODE_STRETCH);
     slot[0].size.set(200, 25);
-    slot[0].position.set((halfWidth) - 100, 265);
+    slot[0].position.set((halfWidth)-100, 265);
     slot[1].setMode(MODE_STRETCH);
     slot[1].size.set(200, 25);
-    slot[1].position.set((halfWidth) - 100, 265 + 30);
+    slot[1].position.set((halfWidth)-100, 265 + 30);
     slot[2].setMode(MODE_STRETCH);
     slot[2].size.set(200, 25);
-    slot[2].position.set((halfWidth) - 100, 265 + 60);
+    slot[2].position.set((halfWidth)-100, 265 + 60);
 
     t_texRepo->add("assets/textures/menu/", "slot", PNG)->addLink(slot[0].getId());
     t_texRepo->add("assets/textures/menu/", "hovered_slot", PNG)->addLink(slot[1].getId());
@@ -91,17 +91,16 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     // Texts
     textPlayGame.setMode(MODE_STRETCH);
     textPlayGame.size.set(80, 15);
-    textPlayGame.position.set((halfWidth) - 40, 265 + 35);
+    textPlayGame.position.set((halfWidth)-40, 265 + 35);
 
-    if(this->selectedOption == PLAY_GAME)
+    if (this->activeOption == PLAY_GAME)
     {
         textPlayGame.color.r = 255;
         textPlayGame.color.g = 255;
         textPlayGame.color.b = 0;
     }
-    
-    t_texRepo->add("assets/textures/menu/", "play_game", PNG)->addLink(textPlayGame.getId());
 
+    t_texRepo->add("assets/textures/menu/", "play_game", PNG)->addLink(textPlayGame.getId());
 
     textSelect.setMode(MODE_STRETCH);
     textSelect.size.set(64, 16);
@@ -116,6 +115,12 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
 
 MainMenu::~MainMenu()
 {
+}
+
+void MainMenu::update(Pad &t_pad)
+{
+    if (t_pad.isCrossClicked)
+        this->selectedOption = this->activeOption;
 }
 
 void MainMenu::render(Renderer *t_renderer)
@@ -144,16 +149,15 @@ void MainMenu::render(Renderer *t_renderer)
     // t_renderer->draw(slot[1]);
     // t_renderer->draw(slot[2]);
 
-    //Texts
+    // Texts
     t_renderer->draw(textPlayGame);
     t_renderer->draw(textSelect);
 
-    //Buttons
+    // Buttons
     t_renderer->draw(btnCross);
-
 }
 
-u8 MainMenu::shouldBeDestroyed()
+u8 MainMenu::shouldInitGame()
 {
-    return 0;
+    return this->selectedOption == PLAY_GAME;
 }

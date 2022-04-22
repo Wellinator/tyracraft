@@ -31,13 +31,22 @@ void StateManager::update(Pad &t_pad, Camera camera)
         return;
     }
 
+    // Main menu
     if (_state == MAIN_MENU)
     {
         camera.update(t_pad, mainMenu->menuSkybox);
+        mainMenu->update(t_pad);
         mainMenu->render(t_renderer);
+        if (mainMenu->shouldInitGame())
+        {
+            delete mainMenu;
+            this->loadGame(); // TODO: implement loading screen
+            _state = IN_GAME;
+        }
         return;
     }
 
+    // In game
     if (_state == IN_GAME)
     {
         player->update(t_pad, camera);
@@ -47,6 +56,7 @@ void StateManager::update(Pad &t_pad, Camera camera)
 
         world->render(t_renderer);
         ui->render(t_renderer);
+        return;
     }
 }
 
