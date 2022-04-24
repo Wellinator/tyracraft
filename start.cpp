@@ -27,10 +27,6 @@ void Start::onInit()
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
-
-    // Load MENU song
-    // TODO: Move song control to state manger
-    // FIXME: song glich on start game;
     engine->audio.addSongListener(this);
 }
 
