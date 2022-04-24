@@ -14,7 +14,7 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
     this->t_screen = t_screen;
 
     splashScreen = new SplashScreen(t_texRepo, t_screen);
-    mainMenu = new MainMenu(t_texRepo, t_screen);
+    mainMenu = new MainMenu();
 
     world = new World();
     ui = new Ui(t_texRepo);
@@ -30,6 +30,7 @@ void StateManager::update(Pad &t_pad, Camera &camera)
         if (splashScreen->shouldBeDestroyed())
         {
             delete splashScreen;
+            this->mainMenu->init(t_texRepo, t_screen, t_audio);
             _state = MAIN_MENU;
         }
         return;

@@ -29,21 +29,17 @@ void Start::onInit()
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
 
     // Load MENU song
+    // TODO: Move song control to state manger
+    // FIXME: song glich on start game;
     engine->audio.addSongListener(this);
-    engine->audio.loadSong("sounds/menu.wav");
-    engine->audio.playSong();
-    engine->audio.setSongVolume(100);
 }
 
 void Start::onUpdate()
 {
     stateManager.update(engine->pad, camera);
-
-    //TODO: fix skybox; 
-    // engine->renderer->draw(skybox);
-
-    //TODO: Should render only if is third person Cam;
-    //engine->renderer->draw(player->mesh);
+    
+    // TODO: Should render only if is third person Cam;
+    // engine->renderer->draw(player->mesh);
 }
 
 void Start::onAudioTick()

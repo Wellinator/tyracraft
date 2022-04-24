@@ -1,18 +1,27 @@
 #include "menu_manager.hpp"
 #include <utils/debug.hpp>
 
-MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
+MainMenu::MainMenu()
+{
+}
+
+MainMenu::~MainMenu()
+{
+    t_audio->stopSong();
+    t_audio->setSongLoop(1);
+}
+
+void MainMenu::init(TextureRepository *t_texRepo, ScreenSettings *t_screen, Audio *t_audio)
 {
     /**
      * TODO: ->
-     * - Load rotating skybox
-     * - Load tyracraft sprite
      * - Load menu option
-     *      - Play Game
+     *      - Play Game (DONE!)
      *      - How to play
      *      - About
      * */
     this->t_texRepo = t_texRepo;
+    this->t_audio = t_audio;
 
     const float halfWidth = t_screen->width / 2;
     const float halfHeight = t_screen->height / 2;
@@ -107,14 +116,15 @@ MainMenu::MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen)
     textSelect.position.set(30 + 40, t_screen->height - 47);
     t_texRepo->add("assets/textures/menu/", "select", PNG)->addLink(textSelect.getId());
 
-    // TODO: Load menuSkybox;
     menuSkybox.loadObj("meshes/menu-skybox/", "skybox", 400.0F, false);
     menuSkybox.shouldBeFrustumCulled = false;
     t_texRepo->addByMesh("meshes/menu-skybox/", menuSkybox, BMP);
-}
 
-MainMenu::~MainMenu()
-{
+    // Load song
+    t_audio->loadSong("sounds/menu.wav");
+    t_audio->playSong();
+    t_audio->setSongLoop(1);
+    t_audio->setSongVolume(100);
 }
 
 void MainMenu::update(Pad &t_pad)
@@ -129,7 +139,9 @@ void MainMenu::render(Renderer *t_renderer)
     menuSkybox.rotation.y += .001F;
     t_renderer->draw(menuSkybox);
 
-    // Sprites
+    /**
+     * --------------- Sprites ---------------
+     * */
 
     // Background
     // t_renderer->draw(background[0]);

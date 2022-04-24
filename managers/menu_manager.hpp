@@ -15,6 +15,7 @@
 #include <modules/texture_repository.hpp>
 #include <modules/renderer.hpp>
 #include <modules/pad.hpp>
+#include <modules/audio.hpp>
 #include <models/mesh.hpp>
 #include <models/sprite.hpp>
 #include <models/screen_settings.hpp>
@@ -35,9 +36,10 @@ class MainMenu
 {
 
 public:
-    MainMenu(TextureRepository *t_texRepo, ScreenSettings *t_screen);
+    MainMenu();
     ~MainMenu();
 
+    void init(TextureRepository *t_texRepo, ScreenSettings *t_screen, Audio *t_audio);
     void update(Pad &t_pad);
     void render(Renderer *t_renderer);
     u8 shouldInitGame();
@@ -45,6 +47,8 @@ public:
     //Rotating skybox
     Mesh menuSkybox;
 private:
+    Audio *t_audio;
+
     u8 hasFinished();
     u8 activeOption = PLAY_GAME;
     u8 selectedOption = 0;
