@@ -29,7 +29,7 @@ public:
 
 
     void updateTargetBlock(Player *t_player, Camera *t_camera);
-    void removeBlock(int index);
+    void removeBlockAtIndex(int index);
     void putBlock(Vector3 *position, u8 &blockType);
 
     TextureRepository *texRepo;

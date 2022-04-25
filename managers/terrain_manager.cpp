@@ -311,7 +311,7 @@ void TerrainManager::updateTargetBlock(Player *t_player, Camera *t_camera)
     }
 };
 
-void TerrainManager::removeBlock(int index)
+void TerrainManager::removeBlockAtIndex(int index)
 {
     terrain[index] = AIR_BLOCK;
     this->shouldUpdateChunck = 1;
@@ -319,7 +319,7 @@ void TerrainManager::removeBlock(int index)
 
 void TerrainManager::putBlock(Vector3 *position, u8 &blockType)
 {
-    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = STONE_BLOCK;//blockType;
     this->shouldUpdateChunck = 1;
 }
 
@@ -327,7 +327,7 @@ void TerrainManager::handlePadControls(const Pad &t_pad)
 {
     if (t_pad.isL2Clicked)
     {
-        removeBlock(targetBlock->index);
+        this->removeBlockAtIndex(targetBlock->index);
     }
     if (t_pad.isR2Clicked)
         printf("Put block\n");
