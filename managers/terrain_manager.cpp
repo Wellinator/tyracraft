@@ -106,15 +106,36 @@ int TerrainManager::getBlockTypeByPosition(int x, int y, int z)
     return terrain[this->getIndexByPosition(x, y, z)];
 }
 
+unsigned int TerrainManager::getIndexByPosition(Vector3 *pos)
+{
+    int nX = pos->x; // / BLOCK_SIZE * 2;
+    int nY = pos->y; // / -(BLOCK_SIZE * 2);
+    int nZ = pos->z; // / -(BLOCK_SIZE * 2);
+
+    int offsetZ = nZ + HALF_OVERWORLD_H_DISTANCE;
+    int offsetX = nX + HALF_OVERWORLD_H_DISTANCE;
+    int offsetY = nY + HALF_OVERWORLD_V_DISTANCE;
+
+    int _z = offsetZ > 0 && nZ < OVERWORLD_MAX_DISTANCE ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE : 0;
+    int _x = offsetX > 0 && nX < OVERWORLD_MAX_DISTANCE ? offsetX * OVERWORLD_V_DISTANCE : 0;
+    int _y = offsetY > 0 && nY < HALF_OVERWORLD_V_DISTANCE ? offsetY : 0;
+
+    return _z + _x + _y;
+}
+
 unsigned int TerrainManager::getIndexByPosition(int x, int y, int z)
 {
-    int offsetZ = z + HALF_OVERWORLD_H_DISTANCE;
-    int offsetX = x + HALF_OVERWORLD_H_DISTANCE;
-    int offsetY = y + HALF_OVERWORLD_V_DISTANCE;
+    int nX = x; // / BLOCK_SIZE * 2;
+    int nY = y; // / -(BLOCK_SIZE * 2);
+    int nZ = z; // / -(BLOCK_SIZE * 2);
 
-    int _z = offsetZ > 0 && z < HALF_OVERWORLD_H_DISTANCE ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE : 0;
-    int _x = offsetX > 0 && x < HALF_OVERWORLD_H_DISTANCE ? offsetX * OVERWORLD_V_DISTANCE : 0;
-    int _y = offsetY > 0 && y < HALF_OVERWORLD_V_DISTANCE ? offsetY : 0;
+    int offsetZ = nZ + HALF_OVERWORLD_H_DISTANCE;
+    int offsetX = nX + HALF_OVERWORLD_H_DISTANCE;
+    int offsetY = nY + HALF_OVERWORLD_V_DISTANCE;
+
+    int _z = offsetZ > 0 && nZ < OVERWORLD_MAX_DISTANCE ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE : 0;
+    int _x = offsetX > 0 && nX < OVERWORLD_MAX_DISTANCE ? offsetX * OVERWORLD_V_DISTANCE : 0;
+    int _y = offsetY > 0 && nY < HALF_OVERWORLD_V_DISTANCE ? offsetY : 0;
 
     return _z + _x + _y;
 }
@@ -162,6 +183,17 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
             floor(player->getPosition().z / -(BLOCK_SIZE * 2)));
         this->lastPlayerPosition = player->getPosition();
     }
+
+    if (shouldUpdateChunck)
+    {
+        this->shouldUpdateChunck = 0;
+        this->clearTempBlocks();
+        this->chunck->clear();
+        this->buildChunk(
+            floor(this->lastPlayerPosition.x / (BLOCK_SIZE * 2)),
+            floor(this->lastPlayerPosition.y / -(BLOCK_SIZE * 2)),
+            floor(this->lastPlayerPosition.z / -(BLOCK_SIZE * 2)));
+    }
 }
 
 Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
@@ -188,21 +220,23 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     Vector3 *tempBlockPos = new Vector3(offsetX + x,
                                                         offsetY + y,
                                                         offsetZ + z);
-
-                    int block_type = this->getBlockTypeByPosition(
-                        tempBlockPos->x,
-                        tempBlockPos->y,
-                        tempBlockPos->z);
+                    int blockIndex = this->getIndexByPosition(tempBlockPos->x,
+                                                              tempBlockPos->y,
+                                                              tempBlockPos->z);
+                    int block_type = terrain[blockIndex];
 
                     if (
                         block_type != AIR_BLOCK &&
-                        this->isBlockVisible(offsetX + x, offsetY + y, offsetZ + z))
+                        this->isBlockVisible(offsetX + x,
+                                             offsetY + y,
+                                             offsetZ + z))
                     {
                         Block *tempBlock = new Block(block_type);
 
                         tempBlock->mesh.position.set((tempBlockPos->x) * BLOCK_SIZE * 2,
                                                      (tempBlockPos->y) * -(BLOCK_SIZE * 2),
                                                      (tempBlockPos->z) * -(BLOCK_SIZE * 2));
+                        tempBlock->index = blockIndex;
                         tempBlock->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         tempBlock->mesh.shouldBeFrustumCulled = true;
                         tempBlock->mesh.shouldBeBackfaceCulled = false;
@@ -231,8 +265,10 @@ void TerrainManager::clearTempBlocks()
     this->tempBlocks.shrink_to_fit();
 };
 
-void TerrainManager::update(Player *t_player, Camera *t_camera)
+void TerrainManager::update(Player *t_player, Camera *t_camera, const Pad &t_pad)
 {
+    this->handlePadControls(t_pad);
+    this->updateChunkByPlayerPosition(t_player);
     this->chunck->update(t_player);
     this->updateTargetBlock(t_player, t_camera);
 };
@@ -241,7 +277,6 @@ void TerrainManager::updateTargetBlock(Player *t_player, Camera *t_camera)
 {
     Vector3 currentBoxIntersection;
     Vector3 targetPos;
-    Block *targetBlock;
 
     ray.set(
         t_camera->position,
@@ -271,13 +306,14 @@ void TerrainManager::updateTargetBlock(Player *t_player, Camera *t_camera)
 
     if (targetPos.length() > 0)
     {
+        targetBlock->isTarget = 1;
         targetBlock->mesh.getMaterial(0).color.g = 200;
     }
 };
 
-void TerrainManager::removeBlock(Vector3 *position)
+void TerrainManager::removeBlock(int index)
 {
-    terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
+    terrain[index] = AIR_BLOCK;
     this->shouldUpdateChunck = 1;
 }
 
@@ -285,4 +321,14 @@ void TerrainManager::putBlock(Vector3 *position, u8 &blockType)
 {
     terrain[this->getIndexByPosition(position->x, position->y, position->z)] = AIR_BLOCK;
     this->shouldUpdateChunck = 1;
+}
+
+void TerrainManager::handlePadControls(const Pad &t_pad)
+{
+    if (t_pad.isL2Clicked)
+    {
+        removeBlock(targetBlock->index);
+    }
+    if (t_pad.isR2Clicked)
+        printf("Put block\n");
 }

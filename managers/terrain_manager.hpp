@@ -22,14 +22,14 @@ public:
     TerrainManager();
     ~TerrainManager();
     void init(TextureRepository *t_texRepo);
-    void update(Player *t_player, Camera *t_camera);
+    void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 
 
     void updateTargetBlock(Player *t_player, Camera *t_camera);
-    void removeBlock(Vector3 *position);
+    void removeBlock(int index);
     void putBlock(Vector3 *position, u8 &blockType);
 
     TextureRepository *texRepo;
@@ -38,6 +38,7 @@ public:
 private:
     Ray ray;
     u8 shouldUpdateChunck = 0;
+    Block *targetBlock;
 
     //TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
     Chunck *chunck;
@@ -58,6 +59,7 @@ private:
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     int getBlockTypeByPosition(int x, int y, int z);
     unsigned int getIndexByPosition(int x, int y, int z);
+    unsigned int getIndexByPosition(Vector3 *pos);
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
     inline bool isBlockVisible(int x, int y, int z) { return !isBlockHidden(x, y, z); };
@@ -66,6 +68,8 @@ private:
 
     int getBlock(int x, int y, int z);
     SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);
+
+    void handlePadControls(const Pad &t_pad);
 };
 
 #endif

@@ -14,10 +14,9 @@ void World::init(TextureRepository *t_texRepo)
     return;
 };
 
-void World::update(Player *t_player, Camera *t_camera)
+void World::update(Player *t_player, Camera *t_camera, const Pad &t_pad)
 {
-    this->terrainManager->updateChunkByPlayerPosition(t_player);
-    this->terrainManager->update(t_player, t_camera);
+    this->terrainManager->update(t_player, t_camera, t_pad);
 };
 
 void World::render(Renderer *t_renderer)

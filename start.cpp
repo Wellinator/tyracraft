@@ -15,7 +15,7 @@ void Start::onInit()
 
     stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
 
-    // engine->renderer->disableVSync();
+    engine->renderer->disableVSync();
 
     // Load models and textures;
 

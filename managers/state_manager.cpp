@@ -56,7 +56,7 @@ void StateManager::update(Pad &t_pad, Camera &camera)
     {
         ui->update(*player);
         player->update(t_pad, camera);
-        world->update(player, &camera);
+        world->update(player, &camera, t_pad);
         camera.update(t_pad, player->mesh);
 
         world->render(t_renderer);

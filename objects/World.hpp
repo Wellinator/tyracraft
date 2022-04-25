@@ -18,7 +18,7 @@ public:
     ~World();
 
     void init(TextureRepository *t_texRepo);
-    void update(Player *t_player, Camera *t_camera);
+    void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void render(Renderer *t_renderer);
     Chunck *chunck;
 

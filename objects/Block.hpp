@@ -13,6 +13,7 @@ public:
     Mesh mesh;
     
     u8 block_type = AIR_BLOCK;  //Init as air
+    int index;//Index at terrain;
     
     //Block state
     u8 isTarget = 0;
