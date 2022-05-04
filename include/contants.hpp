@@ -26,7 +26,7 @@
 #define FIRST_PERSON_CAM 1
 #define THIRD_PERSON_CAM 2
 
-#define MAX_RANGE_PICKER (BLOCK_SIZE * 16.0F) // How far the player can pick a block
+#define MAX_RANGE_PICKER (DUBLE_BLOCK_SIZE * 8.0F) // How far the player can pick a block
 
 // Game states
 #define MAIN_MENU 0
