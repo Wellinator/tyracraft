@@ -28,25 +28,22 @@ void TerrainManager::init(TextureRepository *t_texRepo)
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
 {
-    if (!makeFlat)
+    int index = 0;
+    for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
     {
-        int index = 0;
-        for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
+        for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++)
         {
-            for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++)
+            for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++)
             {
-                for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++)
+                if (makeFlat)
                 {
-                    if (makeFlat)
-                    {
-                        this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
-                    }
-                    else
-                    {
-                        this->terrain[index] = this->getBlock(x, y, z);
-                    }
-                    index++;
+                    this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
                 }
+                else
+                {
+                    this->terrain[index] = this->getBlock(x, y, z);
+                }
+                index++;
             }
         }
     }
@@ -61,7 +58,7 @@ int TerrainManager::getBlock(int x, int y, int z)
     double noiseLayer3 = simplex->fractal(octaves /= 2, x + seed, z + seed);
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
 
-    if (y < noise)
+    if (y > noise)
     {
         return AIR_BLOCK;
     }
@@ -69,16 +66,16 @@ int TerrainManager::getBlock(int x, int y, int z)
     {
         return GRASS_BLOCK;
     };
-    if (y > noise && y <= noise + 2)
+    if (y >= noise - 2)
     {
         return DIRTY_BLOCK;
     }
-    if (y > noise + 2)
+    if (y < noise - 2)
     {
         return STONE_BLOCK;
     }
 
-    if (y > 0)
+    if (y < 0)
     {
         return WATER_BLOCK;
     }
