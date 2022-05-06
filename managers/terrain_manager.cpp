@@ -37,10 +37,14 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
             {
                 for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++)
                 {
-                    if(makeFlat)
-                        return y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
-                    
-                    this->terrain[index] = this->getBlock(x, y, z);
+                    if (makeFlat)
+                    {
+                        this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
+                    }
+                    else
+                    {
+                        this->terrain[index] = this->getBlock(x, y, z);
+                    }
                     index++;
                 }
             }
@@ -343,13 +347,12 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
         index = this->getIndexByPosition(worldPos);
         blockType = terrain[index];
 
-        if(terrain[index] == AIR_BLOCK)
+        if (terrain[index] == AIR_BLOCK)
         {
             terrain[index] = blockToPlace;
             this->shouldUpdateChunck = 1;
         }
     }
-    
 }
 
 void TerrainManager::handlePadControls(const Pad &t_pad)
