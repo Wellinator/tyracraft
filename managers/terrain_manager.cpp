@@ -275,7 +275,10 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 {
     Block *blockToRemove;
     float distance = -1.0f;
-    ray.set(t_camera->position, t_camera->lookPos - t_camera->position);
+    Vector3 rayDir = t_camera->lookPos - t_camera->position;
+    rayDir.normalize();
+
+    ray.set(t_camera->position, rayDir);
 
     for (u16 i = 0; i < this->tempBlocks.size(); i++)
     {
@@ -311,6 +314,8 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
     Vector3 nextPos;
     Vector3 prevPos;
     Vector3 *worldPos;
+    Vector3 rayDir = t_camera->lookPos - t_camera->position;
+    rayDir.normalize();
     u8 blockType;
     int index;
     float distance = -1.0f;
