@@ -27,24 +27,28 @@ public:
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 
-
-    void updateTargetBlock(Player *t_player, Camera *t_camera);
-    void removeBlockAtIndex(int index);
-    void putBlock(Vector3 *position, u8 &blockType);
+    void removeBlock(Player *t_player, Camera *t_camera);
+    void putBlock(Player *t_player, Camera *t_camera, u8 blockType);
 
     TextureRepository *texRepo;
     Engine *engine;
 
+
 private:
     Ray ray;
     u8 shouldUpdateChunck = 0;
-    Block *targetBlock;
+
+    Player *t_player;
+    Camera *t_camera;
 
     //TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
     Chunck *chunck;
     u8 *terrain = new u8[OVERWORLD_SIZE];
 
     Vector3 lastPlayerPosition;
+    int blockToRemoveIndex;
+    int blockToPlaceIndex;
+
     std::vector<Block *> tempBlocks;
     BlockManager *blockManager = new BlockManager();
 
@@ -58,7 +62,7 @@ private:
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     int getBlockTypeByPosition(int x, int y, int z);
-    unsigned int getIndexByPosition(int x, int y, int z);
+    unsigned int getIndexByOffset(int x, int y, int z);
     unsigned int getIndexByPosition(Vector3 *pos);
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
@@ -70,6 +74,7 @@ private:
     SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);
 
     void handlePadControls(const Pad &t_pad);
+    Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);
 };
 
 #endif
