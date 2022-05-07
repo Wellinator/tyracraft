@@ -304,50 +304,82 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 
 void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlace)
 {
-    Vector3 nextPos;
-    Vector3 prevPos;
+    Vector3 hitPosition;
     Vector3 *worldPos;
+    Vector3 *tempWorldPos;
+    int index;
+    int tempIndex;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
     rayDir.normalize();
     u8 blockType;
-    int index;
-    float distance = -1.0f;
-    ray.set(t_camera->position, t_camera->lookPos - t_camera->position);
+    ray.set(t_camera->position, rayDir);
 
-    for (u16 i = 0; i < this->tempBlocks.size(); i++)
+    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.15f)
     {
-        if (t_player->getPosition().distanceTo(this->tempBlocks[i]->mesh.position) <= MAX_RANGE_PICKER)
-        {
-            Vector3 min;
-            Vector3 max;
-            float tempDistance = -1.0f;
+        hitPosition.set(ray.at(distance + 0.15f));
+        worldPos = this->normalizeWorldBlockPosition(&hitPosition);
+        index = this->getIndexByPosition(worldPos);
+        if(tempIndex != index){
+            tempIndex = index;
+            blockType = terrain[index];
 
-            this->tempBlocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-            if (ray.intersectBox(&min, &max, tempDistance))
+            if (blockType != AIR_BLOCK)
             {
-                if (distance == -1.0f)
-                    distance = tempDistance;
-                if (tempDistance < distance)
-                {
-                    distance = tempDistance;
-                }
+                hitPosition.set(ray.at(distance));
+                worldPos = this->normalizeWorldBlockPosition(&hitPosition);
+                index = this->getIndexByPosition(worldPos);
+
+                terrain[index] = blockToPlace;
+                this->shouldUpdateChunck = 1;
+                break;
             }
         }
     }
 
-    if (distance >= 0)
-    {
-        prevPos = ray.at(distance * 0.9f);
-        worldPos = this->normalizeWorldBlockPosition(&prevPos);
-        index = this->getIndexByPosition(worldPos);
-        blockType = terrain[index];
+    // Vector3 nextPos;
+    // Vector3 prevPos;
+    // Vector3 *worldPos;
+    // Vector3 rayDir = t_camera->lookPos - t_camera->position;
+    // rayDir.normalize();
+    // u8 blockType;
+    // int index;
+    // float distance = -1.0f;
+    // ray.set(t_camera->position, t_camera->lookPos - t_camera->position);
 
-        if (terrain[index] == AIR_BLOCK)
-        {
-            terrain[index] = blockToPlace;
-            this->shouldUpdateChunck = 1;
-        }
-    }
+    // for (u16 i = 0; i < this->tempBlocks.size(); i++)
+    // {
+    //     if (t_player->getPosition().distanceTo(this->tempBlocks[i]->mesh.position) <= MAX_RANGE_PICKER)
+    //     {
+    //         Vector3 min;
+    //         Vector3 max;
+    //         float tempDistance = -1.0f;
+
+    //         this->tempBlocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
+    //         if (ray.intersectBox(&min, &max, tempDistance))
+    //         {
+    //             if (distance == -1.0f)
+    //                 distance = tempDistance;
+    //             if (tempDistance < distance)
+    //             {
+    //                 distance = tempDistance;
+    //             }
+    //         }
+    //     }
+    // }
+
+    // if (distance >= 0)
+    // {
+    //     prevPos = ray.at(distance * 0.9f);
+    //     worldPos = this->normalizeWorldBlockPosition(&prevPos);
+    //     index = this->getIndexByPosition(worldPos);
+    //     blockType = terrain[index];
+
+    //     if (terrain[index] == AIR_BLOCK)
+    //     {
+    //         terrain[index] = blockToPlace;
+    //         this->shouldUpdateChunck = 1;
+    //     }
+    // }
 }
 
 void TerrainManager::handlePadControls(const Pad &t_pad)
