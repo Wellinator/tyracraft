@@ -273,39 +273,32 @@ void TerrainManager::update(Player *t_player, Camera *t_camera, const Pad &t_pad
 
 void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 {
-    Block *blockToRemove;
-    float distance = -1.0f;
+    Vector3 hitPosition;
+    Vector3 *worldPos;
+    Vector3 *tempWorldPos;
+    int index;
+    int tempIndex;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
     rayDir.normalize();
-
+    u8 blockType;
     ray.set(t_camera->position, rayDir);
 
-    for (u16 i = 0; i < this->tempBlocks.size(); i++)
+    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.15f)
     {
-        if (t_player->getPosition().distanceTo(this->tempBlocks[i]->mesh.position) <= MAX_RANGE_PICKER)
-        {
-            Vector3 min;
-            Vector3 max;
-            float tempDistance = -1.0f;
+        hitPosition.set(ray.at(distance));
+        worldPos = this->normalizeWorldBlockPosition(&hitPosition);
+        index = this->getIndexByPosition(worldPos);
+        if(tempIndex != index){
+            tempIndex = index;
+            blockType = terrain[index];
 
-            this->tempBlocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-            if (ray.intersectBox(&min, &max, tempDistance))
+            if (blockType != AIR_BLOCK)
             {
-                if (distance == -1.0f)
-                    distance = tempDistance;
-                if (tempDistance < distance)
-                {
-                    distance = tempDistance;
-                    blockToRemove = this->tempBlocks[i];
-                }
+                terrain[index] = AIR_BLOCK;
+                this->shouldUpdateChunck = 1;
+                break;
             }
         }
-    }
-
-    if (distance >= 0)
-    {
-        terrain[blockToRemove->index] = AIR_BLOCK;
-        this->shouldUpdateChunck = 1;
     }
 }
 
@@ -344,7 +337,7 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
 
     if (distance >= 0)
     {
-        prevPos = ray.at(distance - DUBLE_BLOCK_SIZE);
+        prevPos = ray.at(distance * 0.9f);
         worldPos = this->normalizeWorldBlockPosition(&prevPos);
         index = this->getIndexByPosition(worldPos);
         blockType = terrain[index];
