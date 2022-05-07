@@ -13,8 +13,11 @@ void Chunck::update(Player *t_player)
     for (u16 i = 0; i < this->blocks.size(); i++)
     {
         float visibility = 255 * this->getVisibityByPosition(
-                                     t_player->getPosition().distanceTo(this->blocks[i]->mesh.position));
-        this->blocks[i]->mesh.getMaterial(0).color.a = visibility;
+            t_player->getPosition().distanceTo(this->blocks[i]->mesh.position));
+        for (u16 materialIndex = 0; materialIndex < this->blocks[i]->mesh.getMaterialsCount(); materialIndex++)
+        {
+            this->blocks[i]->mesh.getMaterial(materialIndex).color.a = visibility;
+        }
     }
 }
 

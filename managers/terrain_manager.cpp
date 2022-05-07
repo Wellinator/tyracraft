@@ -240,7 +240,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                         if (tempBlock->mesh.getMaterialsCount() > 0)
                         {
-                            for (u32 materialIndex = 0; materialIndex < tempBlock->mesh.getMaterialsCount(); materialIndex++)
+                            for (u16 materialIndex = 0; materialIndex < tempBlock->mesh.getMaterialsCount(); materialIndex++)
                             {
                                 this->blockManager->linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(materialIndex).getId(), materialIndex);
                             }

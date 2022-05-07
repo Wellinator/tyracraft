@@ -15,9 +15,9 @@ void BlockManager::loadBlocks()
     char *TEXTURES_PATH = "assets/textures/block/";
 
     // Load models:
-    stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, false);
-    dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, false);
-    waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, false);
+    stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, true);
+    dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, true);
+    waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, true);
     grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, true);
 
     // Load model's Textures:
