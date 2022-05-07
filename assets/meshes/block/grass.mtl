@@ -1,8 +1,8 @@
-# Blender MTL File: 'Grass Block.blend'
-# Material Count: 1
+# Blender 3.1.0 MTL File: 'None'
+# www.blender.org
 
-newmtl grass
-Ns 0.000000
+newmtl grass_side
+Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
@@ -10,4 +10,15 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd C:\\Users\\FrontEnd\\Pictures\\grass.png
+map_Kd grass_side.png
+
+newmtl grass_top
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd grass_top.png
