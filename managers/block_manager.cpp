@@ -17,19 +17,20 @@ void BlockManager::loadBlocks()
     // Load models:
     stoneBlock.loadObj(MODELS_PATH, "stone", BLOCK_SIZE, false);
     dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, false);
-    grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, false);
     waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, false);
+    grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, true);
 
     // Load model's Textures:
     texRepo->addByMesh(TEXTURES_PATH, stoneBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, dirtBlock, PNG);
-    texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, waterBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
 }
 
-void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId)
+void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
 {
-    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(0).getId())->addLink(t_meshId);
+    
+    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(materialIndex).getId())->addLink(t_meshId);
 }
 
 Mesh &BlockManager::getMeshByBlockType(int blockType)

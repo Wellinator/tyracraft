@@ -14,7 +14,7 @@ public:
     BlockManager();
     ~BlockManager();
     void init(TextureRepository *t_texRepo);
-    void linkTextureByBlockType(int blockType, const u32 t_meshId);
+    void linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex);
     Mesh &getMeshByBlockType(int blockType);
 private:
     // Blocks meshes

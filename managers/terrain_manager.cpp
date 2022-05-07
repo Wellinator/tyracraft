@@ -237,7 +237,15 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         tempBlock->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         tempBlock->mesh.shouldBeFrustumCulled = true;
                         tempBlock->mesh.shouldBeBackfaceCulled = false;
-                        this->blockManager->linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(0).getId());
+
+                        if (tempBlock->mesh.getMaterialsCount() > 0)
+                        {
+                            for (u32 materialIndex = 0; materialIndex < tempBlock->mesh.getMaterialsCount(); materialIndex++)
+                            {
+                                this->blockManager->linkTextureByBlockType(block_type, tempBlock->mesh.getMaterial(materialIndex).getId(), materialIndex);
+                            }
+                        }
+
                         this->chunck->add(tempBlock);
                         this->tempBlocks.push_back(tempBlock);
                     }
@@ -288,7 +296,8 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
         hitPosition.set(ray.at(distance));
         worldPos = this->normalizeWorldBlockPosition(&hitPosition);
         index = this->getIndexByPosition(worldPos);
-        if(tempIndex != index){
+        if (tempIndex != index)
+        {
             tempIndex = index;
             blockType = terrain[index];
 
@@ -319,7 +328,8 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
         hitPosition.set(ray.at(distance + 0.15f));
         worldPos = this->normalizeWorldBlockPosition(&hitPosition);
         index = this->getIndexByPosition(worldPos);
-        if(tempIndex != index){
+        if (tempIndex != index)
+        {
             tempIndex = index;
             blockType = terrain[index];
 
