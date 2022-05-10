@@ -49,7 +49,6 @@ private:
     int blockToRemoveIndex;
     int blockToPlaceIndex;
 
-    std::vector<Block *> tempBlocks;
     BlockManager *blockManager = new BlockManager();
 
     // Params for noise generation;
@@ -67,8 +66,6 @@ private:
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
     inline bool isBlockVisible(int x, int y, int z) { return !isBlockHidden(x, y, z); };
-
-    void clearTempBlocks();
 
     int getBlock(int x, int y, int z);
     SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);

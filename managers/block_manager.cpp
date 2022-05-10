@@ -33,6 +33,12 @@ void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId, u8 
     texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(materialIndex).getId())->addLink(t_meshId);
 }
 
+void BlockManager::removeTextureLinkByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
+{
+    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(materialIndex).getId())->removeLinkById(t_meshId);
+}
+
+
 Mesh &BlockManager::getMeshByBlockType(int blockType)
 {
     switch (blockType)

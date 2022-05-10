@@ -21,7 +21,10 @@
 #define STONE_BLOCK 1
 #define GRASS_BLOCK 2
 #define DIRTY_BLOCK 3
-#define WATER_BLOCK 9
+#define WATER_BLOCK 4
+
+//Should be updated avery time a new block is added;
+#define BLOCKS_COUNTER 5
 
 #define FIRST_PERSON_CAM 1
 #define THIRD_PERSON_CAM 2
