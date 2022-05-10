@@ -21,6 +21,7 @@ void TerrainManager::init(TextureRepository *t_texRepo)
     if (testterrain >= 7)
         terrainType = 2;
 
+    this->initNoise();
     this->blockManager->init(texRepo);
     this->chunck = new Chunck(this->blockManager);
     this->generateNewTerrain(terrainType, false, false, false, false);
@@ -49,13 +50,29 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
     }
 }
 
-int TerrainManager::getBlock(int x, int y, int z)
+void TerrainManager::initNoise()
 {
-    int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+    // Fast Noise Lite
+    this->noise = new FastNoiseLite(seed);
+    this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    this->noise->SetFractalType(FastNoiseLite::FractalType_None);
+    this->noise->SetFractalOctaves(this->octaves);
+    this->noise->SetFractalLacunarity(this->lacunarity);
+    this->noise->SetFrequency(this->frequency);
+}
 
-    double noiseLayer1 = simplex->fractal(octaves, x + seed, z + seed);
-    double noiseLayer2 = simplex->fractal(octaves /= 2, x + seed, z + seed);
-    double noiseLayer3 = simplex->fractal(octaves /= 2, x + seed, z + seed);
+u8 TerrainManager::getBlock(int x, int y, int z)
+{
+    float xNoiseOffset = (float)((x + seed));
+    float zNoiseOffset = (float)((z + seed));
+
+    this->noise->SetFractalOctaves(this->octaves);
+    double noiseLayer1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    this->noise->SetFractalOctaves(this->octaves / 2);
+    double noiseLayer2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    this->noise->SetFractalOctaves(this->octaves / 4);
+    double noiseLayer3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
 
     if (y > noise)

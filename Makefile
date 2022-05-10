@@ -3,7 +3,6 @@ EE_BIN = bin/tyracraft.elf
 TYRA_DIR = $(TYRA)
 
 EE_OBJS =											\
-	3libs/SimplexNoise.o							\
 	managers/terrain_manager.o						\
 	managers/block_manager.o						\
 	managers/state_manager.o						\

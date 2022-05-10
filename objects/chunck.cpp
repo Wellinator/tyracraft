@@ -32,6 +32,7 @@ void Chunck::update(Player *t_player)
 
 void Chunck::renderer(Renderer *t_renderer)
 {
+    if(this->waitForClear) return; 
     for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
     {
         if (blockTypeIndex != AIR_BLOCK && this->blocksMeshes[blockTypeIndex].size())
@@ -49,6 +50,7 @@ float Chunck::getVisibityByPosition(float d)
 
 void Chunck::clear()
 {
+    this->waitForClear = 1;
     for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
     {
         if (this->blocksMeshes[blockTypeIndex].size())
@@ -71,6 +73,7 @@ void Chunck::clear()
 
     delete[] mesheCounters;
     mesheCounters = new u8[BLOCKS_COUNTER];
+    this->waitForClear = 0;
 }
 
 void Chunck::addMeshByBlockType(u8 blockType, Mesh *t_mesh)

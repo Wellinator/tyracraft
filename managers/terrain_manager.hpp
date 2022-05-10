@@ -13,7 +13,7 @@
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
 #include "../include/contants.hpp"
-#include "../3libs/SimplexNoise.h"
+#include "../3libs/FastNoiseLite/FastNoiseLite.h"
 #include "./block_manager.hpp"
 
 class TerrainManager
@@ -51,13 +51,18 @@ private:
 
     BlockManager *blockManager = new BlockManager();
 
-    // Params for noise generation;
+    //Params for noise generation;
     const float scale = 10; // 32.0f;
     const float frequency = 0.007;
     const float amplitude = 0.5f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
     const unsigned int seed = rand() % 10000; // 237;
+    int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+
+    void initNoise();
+    u8 getBlock(int x, int y, int z);
+    FastNoiseLite *noise;
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     int getBlockTypeByPosition(int x, int y, int z);
@@ -66,9 +71,6 @@ private:
     Vector3 *getPositionByIndex(unsigned int index);
     bool isBlockHidden(int x, int y, int z);
     inline bool isBlockVisible(int x, int y, int z) { return !isBlockHidden(x, y, z); };
-
-    int getBlock(int x, int y, int z);
-    SimplexNoise *simplex = new SimplexNoise(frequency, amplitude, lacunarity, persistance);
 
     void handlePadControls(const Pad &t_pad);
     Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);

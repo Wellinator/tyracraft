@@ -38,6 +38,7 @@ public:
 
 private:
     BlockManager *blockManager;
+    u8 waitForClear = 0;
 };
 
 #endif
