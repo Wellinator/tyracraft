@@ -11,6 +11,27 @@
 #include "../managers/block_manager.hpp"
 #include "../utils.hpp"
 
+/**
+ * Struct containing world block position and terrain index
+ * Chunk cache.
+ */
+struct ChunckCache
+{
+    ChunckCache(u16 index, Vector3 *t_worldPosition)
+    {
+        terrainIndex = index;
+        worldPosition = t_worldPosition;
+    }
+
+    ~ChunckCache()
+    {
+        delete worldPosition;
+    }
+
+    u16 terrainIndex;
+    Vector3 *worldPosition;
+};
+
 class Chunck
 {
 public:
@@ -18,27 +39,29 @@ public:
     ~Chunck();
 
     //Should be length of bocks types;
-    u8 *mesheCounters = new u8[BLOCKS_COUNTER];
-
-    //Should be length of bocks types;
     //Init all chunck's meshes empty;
     std::vector<Mesh *> blocksMeshes[BLOCKS_COUNTER];
 
-    TextureRepository *texRepo;
-    Mesh **grassMeshes;
+    //Cache
+    std::vector<ChunckCache *> chunckCache[CHUNCK_SIZE*3];
+
+    inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
 
     void renderer(Renderer *t_renderer);
     void update(Player *t_player);
-    inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
     void clear();
-    float getVisibityByPosition(float d);
 
     //Block mesh controllers
     void addMeshByBlockType(u8 blockType, Mesh *t_mesh);
 
+    //Cache control
+    void addToCache(u16 index, Vector3 *t_worldPosition);
+
 private:
+    TextureRepository *texRepo;
     BlockManager *blockManager;
-    u8 waitForClear = 0;
+
+    float getVisibityByPosition(float d);
 };
 
 #endif

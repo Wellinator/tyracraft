@@ -32,12 +32,19 @@ void Chunck::update(Player *t_player)
 
 void Chunck::renderer(Renderer *t_renderer)
 {
-    if(this->waitForClear) return; 
     for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
     {
-        if (blockTypeIndex != AIR_BLOCK && this->blocksMeshes[blockTypeIndex].size())
-            t_renderer->draw(this->blocksMeshes[blockTypeIndex].data(), this->blocksMeshes[blockTypeIndex].size());
+        if (blockTypeIndex != AIR_BLOCK && this->blocksMeshes[blockTypeIndex].size() > 0)
+        {
+            for (u16 meshIndex = 0; meshIndex < this->blocksMeshes[blockTypeIndex].size(); meshIndex++)
+                t_renderer->draw(*this->blocksMeshes[blockTypeIndex][meshIndex], NULL, 0);
+        }
     }
+    // for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
+    // {
+    //     if (blockTypeIndex != AIR_BLOCK && this->blocksMeshes[blockTypeIndex].size() > 0)
+    //         t_renderer->draw(this->blocksMeshes[blockTypeIndex].data(), this->blocksMeshes[blockTypeIndex].size());
+    // }
 };
 
 /**
@@ -50,7 +57,7 @@ float Chunck::getVisibityByPosition(float d)
 
 void Chunck::clear()
 {
-    this->waitForClear = 1;
+    //Clear chunck data
     for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
     {
         if (this->blocksMeshes[blockTypeIndex].size())
@@ -71,12 +78,22 @@ void Chunck::clear()
         }
     }
 
-    delete[] mesheCounters;
-    mesheCounters = new u8[BLOCKS_COUNTER];
-    this->waitForClear = 0;
+
+    //Clear cache
+    for (u16 cacheIndex = 0; cacheIndex < this->blocksMeshes[blockTypeIndex].size(); cacheIndex++)
+    {
+        delete this->chunckCache[cacheIndex];
+    }
+    this->chunckCache[blockTypeIndex].clear();
+    this->chunckCache[blockTypeIndex].shrink_to_fit();
 }
 
 void Chunck::addMeshByBlockType(u8 blockType, Mesh *t_mesh)
 {
     this->blocksMeshes[blockType].push_back(t_mesh);
+}
+
+void Chunck::addToCache(u16 index, Vector3 *t_worldPosition)
+{
+    this->chunckCache->push_back(new ChunckCache(index, t_worldPosition));
 }
