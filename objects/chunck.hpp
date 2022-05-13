@@ -11,26 +11,6 @@
 #include "../managers/block_manager.hpp"
 #include "../utils.hpp"
 
-/**
- * Struct containing world block position and terrain index
- * Chunk cache.
- */
-struct ChunckCache
-{
-    ChunckCache(u16 index, Vector3 *t_worldPosition)
-    {
-        terrainIndex = index;
-        worldPosition = t_worldPosition;
-    }
-
-    ~ChunckCache()
-    {
-        delete worldPosition;
-    }
-
-    u16 terrainIndex;
-    Vector3 *worldPosition;
-};
 
 class Chunck
 {
@@ -40,10 +20,7 @@ public:
 
     //Should be length of bocks types;
     //Init all chunck's meshes empty;
-    std::vector<Mesh *> blocksMeshes[BLOCKS_COUNTER];
-
-    //Cache
-    std::vector<ChunckCache *> chunckCache[CHUNCK_SIZE*3];
+    std::vector<Block *> blocks;
 
     inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
 
@@ -51,12 +28,9 @@ public:
     void update(Player *t_player);
     void clear();
 
-    //Block mesh controllers
-    void addMeshByBlockType(u8 blockType, Mesh *t_mesh);
-
-    //Cache control
-    void addToCache(u16 index, Vector3 *t_worldPosition);
-
+    //Block controllers
+    void addBlock(Block *t_block);
+    
 private:
     TextureRepository *texRepo;
     BlockManager *blockManager;

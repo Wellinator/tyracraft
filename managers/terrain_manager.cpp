@@ -187,8 +187,7 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     // Update chunck when player moves a quarter chunck
     if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * CHUNCK_SIZE / 4)
     {
-        this->lastPlayerPosition = player->getPosition();
-        this->chunck->clear();
+        this->lastPlayerPosition.set(player->getPosition());
         this->buildChunk(
             floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
             floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
@@ -199,7 +198,6 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     if (shouldUpdateChunck)
     {
         this->shouldUpdateChunck = 0;
-        this->chunck->clear();
         this->buildChunk(
             floor(this->lastPlayerPosition.x / DUBLE_BLOCK_SIZE),
             floor(this->lastPlayerPosition.y / DUBLE_BLOCK_SIZE),
@@ -209,13 +207,13 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
 
 Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 {
-    this->chunck->clear();
     this->buildChunk(offsetX, offsetY, offsetZ);
     return this->chunck;
 }
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
+    this->chunck->clear();
     for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++)
     {
         for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++)
@@ -234,34 +232,38 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
                                                             tempBlockOffset->y,
                                                             tempBlockOffset->z);
-                    int block_type = terrain[blockIndex];
+                    u8 block_type = terrain[blockIndex];
 
-                    if (
-                        block_type != AIR_BLOCK &&
-                        this->isBlockVisible(tempBlockOffset->x,
-                                             tempBlockOffset->y,
-                                             tempBlockOffset->z))
+                    Block *block = new Block(block_type);
+                    block->position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
+                                        (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
+                                        (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
+
+                    block->isHidden = this->isBlockHidden(tempBlockOffset->x,
+                                                          tempBlockOffset->y,
+                                                          tempBlockOffset->z);
+
+                    if (block_type != AIR_BLOCK && !block->isHidden)
                     {
-                        Mesh *tempMesh = new Mesh();
-                        tempMesh->position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
-                                               (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
-                                               (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
+                        block->mesh.position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
+                                                 (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
+                                                 (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
 
-                        tempMesh->loadFrom(this->blockManager->getMeshByBlockType(block_type));
-                        tempMesh->shouldBeFrustumCulled = true;
-                        tempMesh->shouldBeBackfaceCulled = false;
+                        block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
+                        block->mesh.shouldBeFrustumCulled = true;
+                        block->mesh.shouldBeLighted = true;
+                        block->mesh.shouldBeBackfaceCulled = false;
 
-                        if (tempMesh->getMaterialsCount() > 0)
+                        if (block->mesh.getMaterialsCount() > 0)
                         {
-                            for (u16 materialIndex = 0; materialIndex < tempMesh->getMaterialsCount(); materialIndex++)
+                            for (u16 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
                             {
-                                this->blockManager->linkTextureByBlockType(block_type, tempMesh->getMaterial(materialIndex).getId(), materialIndex);
+                                this->blockManager->linkTextureByBlockType(block_type, block->mesh.getMaterial(materialIndex).getId(), materialIndex);
                             }
                         }
-
-                        this->chunck->addMeshByBlockType(block_type, tempMesh);
                     }
 
+                    this->chunck->addBlock(block);
                     delete tempBlockOffset;
                 }
             }
