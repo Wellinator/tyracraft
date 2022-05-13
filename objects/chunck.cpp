@@ -13,21 +13,25 @@ Chunck::~Chunck()
 
 void Chunck::update(Player *t_player)
 {
-    // for (u8 blockTypeIndex = 0; blockTypeIndex < BLOCKS_COUNTER; blockTypeIndex++)
-    // {
-    //     if (blockTypeIndex != AIR_BLOCK && this->blocks[blockTypeIndex].size())
-    //     {
-    //         for (u16 blockIndex = 0; blockIndex < this->blocks[blockTypeIndex].size(); blockIndex++)
-    //         {
-    //             float visibility = 255 * this->getVisibityByPosition(
-    //                                          t_player->getPosition().distanceTo(this->blocks[blockTypeIndex][blockIndex]->mesh.position));
-    //             for (u16 materialIndex = 0; materialIndex < this->blocks[blockTypeIndex][blockIndex]->mesh.getMaterialsCount(); materialIndex++)
-    //             {
-    //                 this->blocks[blockTypeIndex][blockIndex]->mesh.getMaterial(materialIndex).color.a = visibility;
-    //             }
-    //         }
-    //     }
-    // }
+
+    this->applyFOG(t_player->getPosition());
+}
+
+void Chunck::applyFOG(Vector3 originPosition)
+{
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+    {
+        if (this->blocks[blockIndex]->type != AIR_BLOCK &&
+            !this->blocks[blockIndex]->isHidden &&
+            this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        {
+            float visibility = 255 * this->getVisibityByPosition(originPosition.distanceTo(this->blocks[blockIndex]->position));
+            for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
+            {
+                this->blocks[blockIndex]->mesh.getMaterial(materialIndex).color.a = visibility;
+            }
+        }
+    }
 }
 
 void Chunck::renderer(Renderer *t_renderer)

@@ -36,6 +36,7 @@ private:
     BlockManager *blockManager;
 
     float getVisibityByPosition(float d);
+    void applyFOG(Vector3 originPosition);
 };
 
 #endif
