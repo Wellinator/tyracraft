@@ -235,6 +235,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     u8 block_type = terrain[blockIndex];
 
                     Block *block = new Block(block_type);
+                    block->index = blockIndex;
                     block->position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
                                         (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
                                         (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
@@ -283,32 +284,41 @@ void TerrainManager::update(Player *t_player, Camera *t_camera, const Pad &t_pad
 void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 {
     Vector3 hitPosition;
-    Vector3 *worldPos;
-    Vector3 *tempWorldPos;
-    int index;
-    int tempIndex;
+    Vector3 minCorner;
+    Vector3 maxCorner;
+    Block *targetBlock;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
     rayDir.normalize();
-    u8 blockType;
     ray.set(t_camera->position, rayDir);
+    u8 hitedABlock = 0;
 
-    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.15f)
+    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.25f)
     {
         hitPosition.set(ray.at(distance));
-        worldPos = this->normalizeWorldBlockPosition(&hitPosition);
-        index = this->getIndexByPosition(worldPos);
-        if (tempIndex != index)
+        for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
         {
-            tempIndex = index;
-            blockType = terrain[index];
-
-            if (blockType != AIR_BLOCK)
+            if (this->chunck->blocks[blockIndex]->type != AIR_BLOCK &&
+                !this->chunck->blocks[blockIndex]->isHidden &&
+                t_player->getPosition().distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
             {
-                terrain[index] = AIR_BLOCK;
-                this->shouldUpdateChunck = 1;
-                break;
+                this->chunck->blocks[blockIndex]->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
+                if (hitPosition.collidesBox(minCorner, maxCorner))
+                {
+                    targetBlock = this->chunck->blocks[blockIndex];
+                    hitedABlock = 1;
+                }
             }
+            if (hitedABlock)
+                break;
         }
+        if (hitedABlock)
+            break;
+    }
+
+    if (hitedABlock)
+    {
+        terrain[targetBlock->index] = AIR_BLOCK;
+        this->shouldUpdateChunck = 1;
     }
 }
 
