@@ -62,7 +62,7 @@ void StateManager::update(Pad &t_pad, Camera &camera)
         world->render(t_renderer);
         
         // TODO: Should render only if is third person Cam;
-        t_renderer->draw(player->mesh);
+        // t_renderer->draw(player->mesh);
 
         ui->render(t_renderer);
     }
