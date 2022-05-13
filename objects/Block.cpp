@@ -7,5 +7,5 @@ Block::Block(int block_type)
 
 Block::~Block()
 {
-
+  delete this->position;
 };
