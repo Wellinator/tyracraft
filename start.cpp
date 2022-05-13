@@ -33,9 +33,6 @@ void Start::onInit()
 void Start::onUpdate()
 {
     stateManager.update(engine->pad, camera);
-    
-    // TODO: Should render only if is third person Cam;
-    // engine->renderer->draw(player->mesh);
 }
 
 void Start::onAudioTick()
