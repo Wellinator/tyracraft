@@ -283,7 +283,7 @@ void TerrainManager::update(Player *t_player, Camera *t_camera, const Pad &t_pad
 
 void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 {
-    Vector3 hitPosition;
+    Vector3 playerPosition = t_player->getPosition();
     Vector3 minCorner;
     Vector3 maxCorner;
     Block *targetBlock;
@@ -291,28 +291,25 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
     rayDir.normalize();
     ray.set(t_camera->position, rayDir);
     u8 hitedABlock = 0;
+    float distance = -1.0f;
 
-    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.25f)
+    for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
     {
-        hitPosition.set(ray.at(distance));
-        for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
+        if (this->chunck->blocks[blockIndex]->type != AIR_BLOCK &&
+            !this->chunck->blocks[blockIndex]->isHidden &&
+            playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
         {
-            if (this->chunck->blocks[blockIndex]->type != AIR_BLOCK &&
-                !this->chunck->blocks[blockIndex]->isHidden &&
-                t_player->getPosition().distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
+            this->chunck->blocks[blockIndex]->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
+            if (ray.intersectBox(&minCorner, &maxCorner, distance))
             {
-                this->chunck->blocks[blockIndex]->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
-                if (hitPosition.collidesBox(minCorner, maxCorner))
+                hitedABlock = 1;
+                if (distance == -1.0f ||
+                    playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) < playerPosition.distanceTo(targetBlock->position))
                 {
                     targetBlock = this->chunck->blocks[blockIndex];
-                    hitedABlock = 1;
                 }
             }
-            if (hitedABlock)
-                break;
         }
-        if (hitedABlock)
-            break;
     }
 
     if (hitedABlock)
@@ -372,7 +369,7 @@ void TerrainManager::handlePadControls(const Pad &t_pad)
 
 Vector3 *TerrainManager::normalizeWorldBlockPosition(Vector3 *worldPosition)
 {
-    return new Vector3((worldPosition->x == 0 ? 0 : std::trunc(worldPosition->x / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
-                       (worldPosition->y == 0 ? 0 : std::trunc(worldPosition->y / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
-                       (worldPosition->z == 0 ? 0 : std::trunc(worldPosition->z / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE));
+    return new Vector3((worldPosition->x == 0 ? 0 : std::trunc((worldPosition->x + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
+                       (worldPosition->y == 0 ? 0 : std::trunc((worldPosition->y + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
+                       (worldPosition->z == 0 ? 0 : std::trunc((worldPosition->z + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE));
 }
