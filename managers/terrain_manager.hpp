@@ -6,6 +6,7 @@
 #include <game.hpp>
 #include <modules/texture_repository.hpp>
 #include <models/mesh.hpp>
+#include <models/bounding_box.hpp>
 #include <models/math/vector3.hpp>
 #include <models/math/ray.hpp>
 #include <fastmath.h>

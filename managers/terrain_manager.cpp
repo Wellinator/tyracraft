@@ -314,6 +314,7 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 
     if (hitedABlock)
     {
+        printf("Removed index %d\n", targetBlock->index);
         terrain[targetBlock->index] = AIR_BLOCK;
         this->shouldUpdateChunck = 1;
     }
@@ -321,36 +322,75 @@ void TerrainManager::removeBlock(Player *t_player, Camera *t_camera)
 
 void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlace)
 {
-    Vector3 hitPosition;
-    Vector3 *worldPos;
-    Vector3 *tempWorldPos;
-    int index;
-    int tempIndex;
+    Vector3 playerPosition = t_player->getPosition();
+    Vector3 minCorner;
+    Vector3 maxCorner;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
     rayDir.normalize();
-    u8 blockType;
     ray.set(t_camera->position, rayDir);
+    u8 hitedABlock = 0;
+    Block *targetBlock;
+    float targetDistance;
+    float distance = -1.0f;
 
-    for (float distance = -1.0f; distance <= MAX_RANGE_PICKER; distance += 0.15f)
+    for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
     {
-        hitPosition.set(ray.at(distance + 0.15f));
-        worldPos = this->normalizeWorldBlockPosition(&hitPosition);
-        index = this->getIndexByPosition(worldPos);
-        if (tempIndex != index)
+        if (this->chunck->blocks[blockIndex]->type != AIR_BLOCK &&
+            !this->chunck->blocks[blockIndex]->isHidden &&
+            playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
         {
-            tempIndex = index;
-            blockType = terrain[index];
-
-            if (blockType != AIR_BLOCK)
+            this->chunck->blocks[blockIndex]->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
+            if (ray.intersectBox(&minCorner, &maxCorner, distance))
             {
-                hitPosition.set(ray.at(distance));
-                worldPos = this->normalizeWorldBlockPosition(&hitPosition);
-                index = this->getIndexByPosition(worldPos);
-
-                terrain[index] = blockToPlace;
-                this->shouldUpdateChunck = 1;
-                break;
+                hitedABlock = 1;
+                if (distance == -1.0f ||
+                    playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) < playerPosition.distanceTo(targetBlock->position))
+                {
+                    targetBlock = this->chunck->blocks[blockIndex];
+                    targetDistance = distance;
+                }
             }
+        }
+    }
+
+
+    if (hitedABlock)
+    {
+        // Detect face
+        const BoundingBox *blockCenterPos = targetBlock->mesh.getCurrentBoundingBox();
+        Vector3 hitPosition = ray.at(targetDistance);
+        Vector3 targetPos = targetBlock->position - hitPosition;
+        unsigned int terrainIndex = targetBlock->index;
+
+        if (std::round(targetPos.z) == blockCenterPos->getFrontFace().axisPosition)
+        {
+            terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+        }
+        if (std::round(targetPos.z) == blockCenterPos->getBackFace().axisPosition)
+        {
+            terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+        }
+        if (std::round(targetPos.x) == blockCenterPos->getRightFace().axisPosition)
+        {
+            terrainIndex -= OVERWORLD_V_DISTANCE;
+        }
+        if (std::round(targetPos.x) == blockCenterPos->getLeftFace().axisPosition)
+        {
+            terrainIndex += OVERWORLD_V_DISTANCE;
+        }
+        if (std::round(targetPos.y) == blockCenterPos->getTopFace().axisPosition)
+        {
+            terrainIndex -= 1;
+        }
+        if (std::round(targetPos.y) == blockCenterPos->getBottomFace().axisPosition)
+        {
+            terrainIndex += 1;
+        }
+
+        if(terrainIndex <= OVERWORLD_SIZE)
+        {
+            terrain[terrainIndex] = blockToPlace;
+            this->shouldUpdateChunck = 1;
         }
     }
 }
