@@ -54,6 +54,8 @@ void StateManager::update(Pad &t_pad, Camera &camera)
     // In game
     if (_state == IN_GAME)
     {
+        this->controlGameMode(t_pad);
+
         //Updates
         world->update(player, &camera, t_pad);
         player->update(t_pad,
@@ -110,4 +112,17 @@ void StateManager::setBgColorAndAmbientColor()
     t_renderer->setWorldColor(bgColor);
     Vector3 ambient = Vector3(0.004F, 0.004F, 0.004F);
     t_renderer->setAmbientLight(ambient);
+}
+
+void StateManager::controlGameMode(Pad &t_pad)
+{
+    if(t_pad.isDpadUpPressed && t_pad.isCrossClicked)
+    {
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(this->lastTimeCrossWasClicked - std::chrono::steady_clock::now()).count() <= 350)
+        {
+            printf("GAME_MODE changed to %d", this->gameMode);
+            this->gameMode = this->gameMode == CREATIVE ? SURVIVAL : CREATIVE;
+        }
+        this->lastTimeCrossWasClicked = std::chrono::steady_clock::now();
+    }
 }

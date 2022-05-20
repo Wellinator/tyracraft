@@ -11,6 +11,7 @@
 #include <models/mesh.hpp>
 #include "../splash_screen.hpp"
 #include "menu_manager.hpp"
+#include <chrono>
 
 class StateManager
 {
@@ -36,6 +37,8 @@ public:
 private:
     void loadGame();
 
+    GAME_MODE gameMode = SURVIVAL;
+
     u8 _state = SPLASH_SCREEN;
     TextureRepository *t_texRepo;
     Renderer *t_renderer;
@@ -44,6 +47,11 @@ private:
 
     SplashScreen *splashScreen;
     MainMenu *mainMenu;
+
+    //Control game mode change
+    //Control Cross click debounce for changing game mode
+    std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
+    void controlGameMode(Pad &t_pad);
 };
 
 #endif

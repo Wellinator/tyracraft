@@ -37,4 +37,6 @@
 #define IN_GAME_MENU 2
 #define SPLASH_SCREEN 3
 
+enum GAME_MODE { SURVIVAL, CREATIVE };
+
 #endif
