@@ -1,7 +1,7 @@
 /*
 # ______       ____   ___
-#   |     \/   ____| |___|    
-#   |     |   |   \  |   |       
+#   |     \/   ____| |___|
+#   |     |   |   \  |   |
 #-----------------------------------------------------------------------
 # Copyright 2020, tyra - https://github.com/h4570/tyra
 # Licenced under Apache License 2.0
@@ -10,7 +10,6 @@
 
 #include "player.hpp"
 #include "../utils.hpp"
-
 #include <loaders/mdl_loader.hpp>
 #include <loaders/bmp_loader.hpp>
 #include <modules/gif_sender.hpp>
@@ -25,8 +24,8 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
-    gravity = 0.1F;
-    lift = -1.0F;
+    gravity = 0.2F;
+    lift = -3.0F;
     jumpCounter = 0;
     speed = 4.0F;
     isWalking = false;
@@ -36,7 +35,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     isFightingAnimationSet = false;
     mesh.loadMD2("meshes/player/", "warrior", 0.4F, true);
 
-    //Set player in the middle of the world
+    // Set player in the middle of the world
     mesh.position.set(0, BLOCK_SIZE, 0);
     mesh.rotation.x = -1.566F;
     mesh.rotation.z = 1.566F;
@@ -61,11 +60,13 @@ Player::~Player()
 // Methods
 // ----
 
-void Player::update(const Pad &t_pad, const Camera &t_camera)
+void Player::update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount)
 {
     Vector3 *nextPos = getNextPosition(t_pad, t_camera);
-    updatePosition(t_pad, t_camera, *nextPos);
-    //updateGravity();
+    BlocksCheck *blocksCheck = this->checkBlocks(t_blocks, blocks_ammount, *nextPos);
+    this->updatePosition(t_pad, t_camera, *nextPos, blocksCheck);
+    this->updateGravity(blocksCheck);
+    delete blocksCheck;
     delete nextPos;
 }
 
@@ -75,6 +76,7 @@ Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
     Vector3 normalizedCamera = Vector3(t_camera.unitCirclePosition);
     normalizedCamera.normalize();
     normalizedCamera *= speed;
+
     if (t_pad.lJoyV <= 100)
     {
         result->x += -normalizedCamera.x;
@@ -95,10 +97,11 @@ Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
         result->x += normalizedCamera.z;
         result->z += -normalizedCamera.x;
     }
+
     return result;
 }
 
-void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &t_nextPos)
+void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &t_nextPos, BlocksCheck *t_blocksCheck)
 {
 
     if (t_pad.rJoyH >= 200)
@@ -125,43 +128,89 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
     }
     else if (isWalking)
     {
-        if (!isWalkingAnimationSet)
-        {
-            isWalkingAnimationSet = true;
-            this->mesh.playAnimation(1, 8);
-        }
+        // if (!isWalkingAnimationSet)
+        // {
+        //     isWalkingAnimationSet = true;
+        //     this->mesh.playAnimation(1, 8);
+        // }
         if (walkTimer.getTimeDelta() > 8000)
         {
             walkTimer.prime();
             audio->playADPCM(walkAdpcm, 0);
         }
     }
-    else
-    {
-        isWalkingAnimationSet = false;
-        mesh.playAnimation(0, 0);
-    }
+    // else
+    // {
+    //     isWalkingAnimationSet = false;
+    //     mesh.playAnimation(0, 0);
+    // }
 
-    if (t_pad.isCrossClicked == 1)
+    if (t_pad.isCrossClicked == 1 && this->isOnGround)
     {
         velocity = lift;
-        audio->playADPCM(jumpAdpcm);
+        // audio->playADPCM(jumpAdpcm);
         jumpCounter++;
+        this->isOnGround = 0;
     }
 
-    mesh.position.x = t_nextPos.x;
-    mesh.position.z = t_nextPos.z;
+    if (t_blocksCheck->willCollideBlock == NULL)
+    {
+        mesh.position.x = t_nextPos.x;
+        mesh.position.z = t_nextPos.z;
+    }
 }
 
-/** Update player position by gravity and update index of current floor */
-void Player::updateGravity()
+/** Update player position by gravity and update index of current block */
+void Player::updateGravity(BlocksCheck *t_blocksCheck)
 {
     this->velocity += this->gravity;
     this->mesh.position.y -= this->velocity;
+    this->isOnBlock = t_blocksCheck->currentBlock != NULL && mesh.position.y < t_blocksCheck->currBlockMax.y;
 
-    if (this->mesh.position.y >= 60.0F || mesh.position.y < -60.0F)
+    if (this->mesh.position.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || mesh.position.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
-        this->mesh.position.y = 60.0F;
+        this->mesh.position.y = t_blocksCheck->currBlockMax.y;
         this->velocity = 0;
     }
+    else if (this->isOnBlock)
+    {
+        this->mesh.position.y = t_blocksCheck->currBlockMax.y;
+        this->velocity = 0;
+        this->isOnGround = 1;
+    }
+}
+
+BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos)
+{
+    BlocksCheck *result = new BlocksCheck();
+    result->currentBlock = NULL;
+    result->willCollideBlock = NULL;
+    Vector3 min = Vector3();
+    Vector3 max = Vector3();
+
+    for (int i = 0; i < blocks_ammount; i++)
+    {
+        if (t_blocks[i]->type != AIR_BLOCK &&
+            this->getPosition().distanceTo(t_blocks[i]->position) <= MAX_RANGE_PICKER)
+        {
+            t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
+            if (result->currentBlock == NULL && this->mesh.position.isOnBox(min, max))
+            {
+                result->currentBlock = t_blocks[i];
+                result->currBlockMin.set(min);
+                result->currBlockMax.set(max);
+            }
+            if (result->willCollideBlock == NULL && 
+                mesh.position.y < max.y
+                && t_nextPos.collidesBox(min, max))
+            {
+                result->willCollideBlock = t_blocks[i];
+                result->willCollideBlockMin.set(min);
+                result->willCollideBlockMax.set(max);
+            }
+            if (result->currentBlock != NULL && result->willCollideBlock != NULL)
+                break;
+        }
+    }
+    return result;
 }

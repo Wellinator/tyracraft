@@ -54,16 +54,21 @@ void StateManager::update(Pad &t_pad, Camera &camera)
     // In game
     if (_state == IN_GAME)
     {
-        ui->update(*player);
-        player->update(t_pad, camera);
+        //Updates
         world->update(player, &camera, t_pad);
+        player->update(t_pad,
+                       camera,
+                       world->terrainManager->getChunck()->blocks.data(),
+                       world->terrainManager->getChunck()->blocks.size());
+        ui->update(*player);
         camera.update(t_pad, player->mesh);
 
+        //Render
         world->render(t_renderer);
-        
         // TODO: Should render only if is third person Cam;
         // t_renderer->draw(player->mesh);
 
+        //Lest spet is 2D drawing
         ui->render(t_renderer);
     }
 }

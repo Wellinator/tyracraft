@@ -25,6 +25,7 @@ public:
     void init(TextureRepository *t_texRepo);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
+    inline Chunck *getChunck(){ return this->chunck; };
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 

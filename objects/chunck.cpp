@@ -13,7 +13,6 @@ Chunck::~Chunck()
 
 void Chunck::update(Player *t_player)
 {
-
     this->applyFOG(t_player->getPosition());
 }
 
