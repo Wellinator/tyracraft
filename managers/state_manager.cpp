@@ -114,6 +114,7 @@ void StateManager::setBgColorAndAmbientColor()
     t_renderer->setAmbientLight(ambient);
 }
 
+//TODO: Check the delay to change
 void StateManager::controlGameMode(Pad &t_pad)
 {
     if(t_pad.isDpadUpPressed && t_pad.isCrossClicked)
