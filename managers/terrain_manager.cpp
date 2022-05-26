@@ -2,15 +2,19 @@
 
 TerrainManager::TerrainManager()
 {
+    printf("\n\n|-----------SEED---------|");
+    printf("\n|           %d         |\n", seed);
+    printf("|------------------------|\n\n");
 }
 
 TerrainManager::~TerrainManager()
 {
 }
 
-void TerrainManager::init(TextureRepository *t_texRepo)
+void TerrainManager::init(TextureRepository *t_texRepo, Player *t_player)
 {
     texRepo = t_texRepo;
+    t_player = t_player;
 
     int terrainType = 0;
     int testterrain = rand() % 10;
@@ -25,6 +29,7 @@ void TerrainManager::init(TextureRepository *t_texRepo)
     this->blockManager->init(texRepo);
     this->chunck = new Chunck(this->blockManager);
     this->generateNewTerrain(terrainType, false, false, false, false);
+    this->defineSpawnArea();
 }
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
@@ -65,12 +70,17 @@ u8 TerrainManager::getBlock(int x, int y, int z)
 {
     float xNoiseOffset = (float)((x + seed));
     float zNoiseOffset = (float)((z + seed));
-
     this->noise->SetFractalOctaves(this->octaves);
     double noiseLayer1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
-    this->noise->SetFractalOctaves(this->octaves / 2);
+
+    xNoiseOffset += 10;
+    zNoiseOffset += 10;
+    this->noise->SetFractalOctaves(this->octaves * 2);
     double noiseLayer2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
-    this->noise->SetFractalOctaves(this->octaves / 4);
+
+    xNoiseOffset += 20;
+    zNoiseOffset += 20;
+    this->noise->SetFractalOctaves(this->octaves * 8);
     double noiseLayer3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
     double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
@@ -353,7 +363,6 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
         }
     }
 
-
     if (hitedABlock)
     {
         // Detect face
@@ -387,7 +396,7 @@ void TerrainManager::putBlock(Player *t_player, Camera *t_camera, u8 blockToPlac
             terrainIndex += 1;
         }
 
-        if(terrainIndex <= OVERWORLD_SIZE)
+        if (terrainIndex <= OVERWORLD_SIZE)
         {
             terrain[terrainIndex] = blockToPlace;
             this->shouldUpdateChunck = 1;
@@ -412,4 +421,45 @@ Vector3 *TerrainManager::normalizeWorldBlockPosition(Vector3 *worldPosition)
     return new Vector3((worldPosition->x == 0 ? 0 : std::trunc((worldPosition->x + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
                        (worldPosition->y == 0 ? 0 : std::trunc((worldPosition->y + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE),
                        (worldPosition->z == 0 ? 0 : std::trunc((worldPosition->z + DUBLE_BLOCK_SIZE) / DUBLE_BLOCK_SIZE) * DUBLE_BLOCK_SIZE));
+}
+
+void TerrainManager::defineSpawnArea()
+{
+    // Pick a X and Z coordinates based on the seed;
+    float offsetX;
+    float offsetZ;
+    Vector3 spawPos = this->calcSpawOffset();
+    this->worldSpawnArea.set(spawPos);
+    this->t_player->setSpawnArea(this->worldSpawnArea);
+}
+
+Vector3 TerrainManager::calcSpawOffset(int bias)
+{
+    u8 found = 0;
+    u8 airBlockCounter = 0;
+    int posX = ((seed + bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
+    int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
+    Vector3 result;
+
+    for (float posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--)
+    {
+        int index = this->getIndexByOffset(posX, posY, posZ);
+        u8 type = this->terrain[index];
+        if (type == GRASS_BLOCK && airBlockCounter >= 2)
+        {
+            found = 1;
+            result = Vector3(posX, posY + 32.0f, posZ);
+            break;
+        }
+
+        if (type == AIR_BLOCK)
+            airBlockCounter++;
+        else
+            airBlockCounter = 0;
+    }
+
+    if (found)
+        return result * DUBLE_BLOCK_SIZE;
+    else
+        return calcSpawOffset(bias + 1);
 }

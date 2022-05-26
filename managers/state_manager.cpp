@@ -95,7 +95,7 @@ void StateManager::loadInGameMenu()
 void StateManager::loadGame()
 {
     setBgColorAndAmbientColor();
-    world->init(t_texRepo);
+    world->init(t_texRepo, player);
 }
 
 void StateManager::play()

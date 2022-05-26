@@ -22,7 +22,7 @@ class TerrainManager
 public:
     TerrainManager();
     ~TerrainManager();
-    void init(TextureRepository *t_texRepo);
+    void init(TextureRepository *t_texRepo, Player *t_player);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     inline Chunck *getChunck(){ return this->chunck; };
@@ -59,7 +59,7 @@ private:
     const float amplitude = 0.5f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
-    const unsigned int seed = rand() % 10000; // 237;
+    const unsigned int seed = rand() % 10000;
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
     void initNoise();
@@ -76,6 +76,11 @@ private:
 
     void handlePadControls(const Pad &t_pad);
     Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);
+
+    Vector3 worldSpawnArea;
+    Vector3 spawnArea;
+    void defineSpawnArea();
+    Vector3 calcSpawOffset(int bias = 0);
 };
 
 #endif
