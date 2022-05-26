@@ -24,8 +24,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
-    gravity = 0.2F;
-    lift = -3.0F;
+    lift = -4.2F;
     jumpCounter = 0;
     speed = 4.0F;
     isWalking = false;
@@ -33,7 +32,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     isWalkingAnimationSet = false;
     isJumpingAnimationSet = false;
     isFightingAnimationSet = false;
-    mesh.loadMD2("meshes/player/", "warrior", 0.4F, true);
+    mesh.loadMD2("meshes/player/", "warrior", 0.35F, true);
 
     // Set player in the middle of the world
     mesh.position.set(0, BLOCK_SIZE, 0);
@@ -163,7 +162,7 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(BlocksCheck *t_blocksCheck)
 {
-    this->velocity += this->gravity;
+    this->velocity += GRAVITY;
     this->mesh.position.y -= this->velocity;
     this->isOnBlock = t_blocksCheck->currentBlock != NULL && mesh.position.y < t_blocksCheck->currBlockMax.y;
 

@@ -37,6 +37,9 @@
 #define IN_GAME_MENU 2
 #define SPLASH_SCREEN 3
 
+//World constants
+#define GRAVITY 0.5F;
+
 enum GAME_MODE { SURVIVAL, CREATIVE };
 
 #endif

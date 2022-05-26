@@ -32,7 +32,7 @@ class Player
 {
 
 public:
-    float gravity, velocity, lift;
+    float velocity, lift;
     Mesh mesh;
     Player(Audio *t_audio, TextureRepository *t_texRepo);
     ~Player();

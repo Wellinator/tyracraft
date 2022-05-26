@@ -9,7 +9,7 @@
 */
 #include "camera.hpp"
 
-const float CAMERA_Y = 40.0F;
+const float CAMERA_Y = 25.0F;
 
 // ----
 // Constructors/Destructors
@@ -17,7 +17,7 @@ const float CAMERA_Y = 40.0F;
 
 Camera::Camera(ScreenSettings *t_screen) : CameraBase(t_screen, &position)
 {
-    verticalLevel = BLOCK_SIZE * 4;
+    verticalLevel = DUBLE_BLOCK_SIZE * 2;
     pitch = 0.0F;
     yaw = 270.0F;
 }
