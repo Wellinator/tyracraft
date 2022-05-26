@@ -54,9 +54,9 @@ private:
     BlockManager *blockManager = new BlockManager();
 
     //Params for noise generation;
-    const float scale = 10; // 32.0f;
-    const float frequency = 0.007;
-    const float amplitude = 0.5f;
+    const float scale = 8.5f; // 32.0f;
+    const float frequency = 0.01;
+    const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
     const unsigned int seed = rand() % 10000;
