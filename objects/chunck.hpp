@@ -36,8 +36,9 @@ private:
     BlockManager *blockManager;
 
     float getVisibityByPosition(float d);
-    void applyFOG(Vector3 originPosition);
-    void highLightTargetBlock();
+    void applyFOG(Mesh *t_mesh, const Vector3 &originPosition);
+    void highLightTargetBlock(Mesh *t_mesh, u8 &isTarget);
+    void updateBlocks(const Vector3 &playerPosition);
 };
 
 #endif
