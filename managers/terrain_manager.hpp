@@ -29,8 +29,10 @@ public:
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 
-    void removeBlock(Player *t_player, Camera *t_camera);
-    void putBlock(Player *t_player, Camera *t_camera, u8 blockType);
+    Block *targetBlock = NULL;
+    void getTargetBlock(const Vector3 &playerPosition, Camera *t_camera);
+    void removeBlock();
+    void putBlock(u8 blockType);
 
     TextureRepository *texRepo;
     Engine *engine;

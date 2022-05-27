@@ -14,6 +14,7 @@ Chunck::~Chunck()
 void Chunck::update(Player *t_player)
 {
     this->applyFOG(t_player->getPosition());
+    this->highLightTargetBlock();
 }
 
 void Chunck::applyFOG(Vector3 originPosition)
@@ -28,6 +29,24 @@ void Chunck::applyFOG(Vector3 originPosition)
             for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
             {
                 this->blocks[blockIndex]->mesh.getMaterial(materialIndex).color.a = visibility;
+            }
+        }
+    }
+}
+
+void Chunck::highLightTargetBlock()
+{
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+    {
+        if (this->blocks[blockIndex]->type != AIR_BLOCK &&
+            !this->blocks[blockIndex]->isHidden &&
+            this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        {
+            for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
+            {
+                this->blocks[blockIndex]->mesh.getMaterial(materialIndex).color.r = this->blocks[blockIndex]->isTarget ? 160 : 128;
+                this->blocks[blockIndex]->mesh.getMaterial(materialIndex).color.g = this->blocks[blockIndex]->isTarget ? 160 : 128;
+                this->blocks[blockIndex]->mesh.getMaterial(materialIndex).color.b = this->blocks[blockIndex]->isTarget ? 160 : 128;
             }
         }
     }

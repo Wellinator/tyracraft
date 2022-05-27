@@ -190,7 +190,8 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
     for (int i = 0; i < blocks_ammount; i++)
     {
         if (t_blocks[i]->type != AIR_BLOCK &&
-            this->getPosition().distanceTo(t_blocks[i]->position) <= MAX_RANGE_PICKER)
+            !t_blocks[i]->isHidden &&
+            this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
             if (result->currentBlock == NULL && this->mesh.position.isOnBox(min, max))
@@ -200,8 +201,8 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
                 result->currBlockMax.set(max);
             }
             if (result->willCollideBlock == NULL && 
-                mesh.position.y < max.y
-                && t_nextPos.collidesBox(min, max))
+                mesh.position.y < max.y && 
+                t_nextPos.collidesBox(min, max))
             {
                 result->willCollideBlock = t_blocks[i];
                 result->willCollideBlockMin.set(min);

@@ -37,6 +37,7 @@ private:
 
     float getVisibityByPosition(float d);
     void applyFOG(Vector3 originPosition);
+    void highLightTargetBlock();
 };
 
 #endif
