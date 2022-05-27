@@ -58,6 +58,8 @@ It's an Minecraft for Play Station 2 built with Tyra Engine!
 
 - [@Wellinator](https://github.com/wellinator)
 
+## Contribuitors
+- [@Wolf3s](https://github.com/wolfysdl)
 
 ## References
 
