@@ -35,7 +35,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     mesh.loadMD2("meshes/player/", "warrior", 0.35F, true);
 
     // Set player in the middle of the world
-    mesh.position.set(0, BLOCK_SIZE, 0);
+    mesh.position.set(this->spawnArea);
     mesh.rotation.x = -1.566F;
     mesh.rotation.z = 1.566F;
     mesh.shouldBeBackfaceCulled = false;
@@ -152,6 +152,14 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
         this->isOnGround = 0;
     }
 
+    // Check if is at the world's edge
+    if (
+        t_nextPos.x < OVERWORLD_MIN_DISTANCE * DUBLE_BLOCK_SIZE ||
+        t_nextPos.z < OVERWORLD_MIN_DISTANCE * DUBLE_BLOCK_SIZE ||
+        t_nextPos.x > OVERWORLD_MAX_DISTANCE * DUBLE_BLOCK_SIZE ||
+        t_nextPos.z > OVERWORLD_MAX_DISTANCE * DUBLE_BLOCK_SIZE)
+        return;
+
     if (t_blocksCheck->willCollideBlock == NULL)
     {
         mesh.position.x = t_nextPos.x;
@@ -200,8 +208,8 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
                 result->currBlockMin.set(min);
                 result->currBlockMax.set(max);
             }
-            if (result->willCollideBlock == NULL && 
-                mesh.position.y < max.y && 
+            if (result->willCollideBlock == NULL &&
+                mesh.position.y < max.y &&
                 t_nextPos.collidesBox(min, max))
             {
                 result->willCollideBlock = t_blocks[i];
@@ -213,4 +221,8 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
         }
     }
     return result;
+}
+
+void Player::setSpawnArea(Vector3 &spawnPosition) { 
+    this->spawnArea.set(spawnPosition); 
 }

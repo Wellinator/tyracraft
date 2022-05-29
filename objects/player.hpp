@@ -40,7 +40,7 @@ public:
     void update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount);
     const inline u32 &getJumpCount() const { return jumpCounter; }
     inline const Vector3 &getPosition() const { return mesh.position; }
-    inline void setSpawnArea(Vector3 &spawnPosition) { mesh.position.set(spawnPosition); }
+    void setSpawnArea(Vector3 &spawnPosition);
     u8 isFighting, isWalking, isOnGround;
 
 private:
@@ -57,6 +57,7 @@ private:
     void updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &nextPos, BlocksCheck *t_blocksCheck);
     void updateGravity(BlocksCheck *t_blocksCheck);
     BlocksCheck *checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos);
+    Vector3 spawnArea;
 };
 
 #endif

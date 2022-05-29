@@ -256,9 +256,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                     Block *block = new Block(block_type);
                     block->index = blockIndex;
-                    block->position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
-                                        (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
-                                        (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
+                    block->position = Vector3(*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
                     block->isHidden = this->isBlockHidden(tempBlockOffset->x,
                                                           tempBlockOffset->y,
@@ -266,9 +264,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                     if (block_type != AIR_BLOCK && !block->isHidden)
                     {
-                        block->mesh.position.set((tempBlockOffset->x) * DUBLE_BLOCK_SIZE,
-                                                 (tempBlockOffset->y) * DUBLE_BLOCK_SIZE,
-                                                 (tempBlockOffset->z) * DUBLE_BLOCK_SIZE);
+                        block->mesh.position = Vector3(*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
                         block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         block->mesh.shouldBeFrustumCulled = true;
@@ -342,10 +338,8 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
 
 void TerrainManager::removeBlock()
 {
-    printf("Asked to remove%d\n", targetBlock->index);
     if (this->targetBlock != NULL)
     {
-        printf("Removed index %d\n", targetBlock->index);
         terrain[this->targetBlock->index] = AIR_BLOCK;
         this->shouldUpdateChunck = 1;
     }
@@ -410,18 +404,16 @@ Vector3 *TerrainManager::normalizeWorldBlockPosition(Vector3 *worldPosition)
 
 void TerrainManager::defineSpawnArea()
 {
-    // Pick a X and Z coordinates based on the seed;
-    float offsetX;
-    float offsetZ;
-    Vector3 spawPos = this->calcSpawOffset();
-    this->worldSpawnArea.set(spawPos);
+    Vector3 const spawPos = this->calcSpawOffset();
+    this->worldSpawnArea = spawPos;
     this->t_player->setSpawnArea(this->worldSpawnArea);
 }
 
-Vector3 TerrainManager::calcSpawOffset(int bias)
+const Vector3 TerrainManager::calcSpawOffset (int bias)
 {
     u8 found = 0;
     u8 airBlockCounter = 0;
+    // Pick a X and Z coordinates based on the seed;
     int posX = ((seed + bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
     int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
     Vector3 result;

@@ -61,7 +61,7 @@ private:
     const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
-    const unsigned int seed = rand() % 10000;
+    const unsigned int seed = 6118;//rand() % 10000;
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
     void initNoise();
@@ -82,7 +82,7 @@ private:
     Vector3 worldSpawnArea;
     Vector3 spawnArea;
     void defineSpawnArea();
-    Vector3 calcSpawOffset(int bias = 0);
+    const Vector3 calcSpawOffset (int bias = 0);
 };
 
 #endif
