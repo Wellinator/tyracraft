@@ -46,4 +46,5 @@ run: $(EE_BIN)
 	rm $(EE_OBJS)
 	cd bin/ && ps2client execee host:$(EE_BIN)
 
-include ./Makefile.pref
+include $(TYRA)/src/engine/Makefile.pref
+
