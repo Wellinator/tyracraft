@@ -84,7 +84,7 @@ void Chunck::updateBlocks(const Vector3 &playerPosition)
             !this->blocks[blockIndex]->isHidden &&
             this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
         {
-            this->applyFOG(&this->blocks[blockIndex]->mesh, playerPosition);
+            // this->applyFOG(&this->blocks[blockIndex]->mesh, playerPosition);
             this->highLightTargetBlock(&this->blocks[blockIndex]->mesh, this->blocks[blockIndex]->isTarget);
         }
     }
