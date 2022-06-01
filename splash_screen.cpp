@@ -41,7 +41,7 @@ void SplashScreen::render(Renderer *t_renderer)
 
     alpha = isFading ? alpha - 1 : alpha + 1;
 
-    if (alpha == 255)
+    if (alpha == 128)
     {
         sleep(2);
         isFading = 1;
