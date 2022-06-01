@@ -11,10 +11,9 @@ TerrainManager::~TerrainManager()
 {
 }
 
-void TerrainManager::init(TextureRepository *t_texRepo, Player *t_player)
+void TerrainManager::init(TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
-    t_player = t_player;
 
     int terrainType = 0;
     int testterrain = rand() % 10;
@@ -404,9 +403,9 @@ Vector3 *TerrainManager::normalizeWorldBlockPosition(Vector3 *worldPosition)
 
 void TerrainManager::defineSpawnArea()
 {
-    Vector3 const spawPos = this->calcSpawOffset();
-    this->worldSpawnArea = spawPos;
-    this->t_player->setSpawnArea(this->worldSpawnArea);
+    Vector3 spawPos = this->calcSpawOffset();
+    worldSpawnArea.set(spawPos);
+    spawnArea.set(spawPos);
 }
 
 const Vector3 TerrainManager::calcSpawOffset (int bias)

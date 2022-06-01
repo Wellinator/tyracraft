@@ -24,7 +24,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
-    lift = -4.2F;
+    lift = -4.3F;
     jumpCounter = 0;
     speed = 4.0F;
     isWalking = false;
@@ -32,10 +32,9 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     isWalkingAnimationSet = false;
     isJumpingAnimationSet = false;
     isFightingAnimationSet = false;
-    mesh.loadMD2("meshes/player/", "warrior", 0.35F, true);
 
-    // Set player in the middle of the world
-    mesh.position.set(this->spawnArea);
+    mesh.loadMD2("meshes/player/", "warrior", 0.35F, true);
+    mesh.position.set(0.00F, 0.00F, 0.00F);
     mesh.rotation.x = -1.566F;
     mesh.rotation.z = 1.566F;
     mesh.shouldBeBackfaceCulled = false;
@@ -176,7 +175,8 @@ void Player::updateGravity(BlocksCheck *t_blocksCheck)
 
     if (this->mesh.position.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || mesh.position.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
-        this->mesh.position.y = t_blocksCheck->currBlockMax.y;
+        // Maybe has died, teleport to spaw area
+        this->mesh.position.set(this->spawnArea);
         this->velocity = 0;
     }
     else if (this->isOnBlock)
@@ -221,8 +221,4 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
         }
     }
     return result;
-}
-
-void Player::setSpawnArea(Vector3 &spawnPosition) { 
-    this->spawnArea.set(spawnPosition); 
 }

@@ -95,7 +95,8 @@ void StateManager::loadInGameMenu()
 void StateManager::loadGame()
 {
     setBgColorAndAmbientColor();
-    world->init(t_texRepo, player);
+    world->init(t_texRepo);
+    player->mesh.position.set(world->terrainManager->worldSpawnArea);
 }
 
 void StateManager::play()
@@ -119,7 +120,7 @@ void StateManager::controlGameMode(Pad &t_pad)
 {
     if(t_pad.isDpadUpPressed && t_pad.isCrossClicked)
     {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(this->lastTimeCrossWasClicked - std::chrono::steady_clock::now()).count() <= 220)
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(this->lastTimeCrossWasClicked - std::chrono::steady_clock::now()).count() <= 500)
         {
             printf("GAME_MODE changed to %d\n", this->gameMode);
             this->gameMode = this->gameMode == CREATIVE ? SURVIVAL : CREATIVE;

@@ -7,12 +7,12 @@ World::World()
 
 World::~World() {}
 
-void World::init(TextureRepository *t_texRepo, Player *t_player)
+void World::init(TextureRepository *t_texRepo)
 {
-    this->terrainManager->init(t_texRepo, t_player);
-    this->chunck = this->terrainManager->getChunck( t_player->getPosition().x, 
-                                                    t_player->getPosition().y, 
-                                                    t_player->getPosition().z);
+    this->terrainManager->init(t_texRepo);
+    this->chunck = this->terrainManager->getChunck(this->terrainManager->worldSpawnArea.x,
+                                                   this->terrainManager->worldSpawnArea.y,
+                                                   this->terrainManager->worldSpawnArea.z);
     return;
 };
 

@@ -22,7 +22,7 @@ class TerrainManager
 public:
     TerrainManager();
     ~TerrainManager();
-    void init(TextureRepository *t_texRepo, Player *t_player);
+    void init(TextureRepository *t_texRepo);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     inline Chunck *getChunck(){ return this->chunck; };
@@ -37,6 +37,10 @@ public:
     TextureRepository *texRepo;
     Engine *engine;
 
+    Vector3 worldSpawnArea;
+    Vector3 spawnArea;
+    void defineSpawnArea();
+    const Vector3 calcSpawOffset (int bias = 0);
 
 private:
     Ray ray;
@@ -78,11 +82,6 @@ private:
 
     void handlePadControls(const Pad &t_pad);
     Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);
-
-    Vector3 worldSpawnArea;
-    Vector3 spawnArea;
-    void defineSpawnArea();
-    const Vector3 calcSpawOffset (int bias = 0);
 };
 
 #endif
