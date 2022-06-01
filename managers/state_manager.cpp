@@ -97,6 +97,7 @@ void StateManager::loadGame()
     setBgColorAndAmbientColor();
     world->init(t_texRepo);
     player->mesh.position.set(world->terrainManager->worldSpawnArea);
+    player->spawnArea.set(world->terrainManager->worldSpawnArea);
 }
 
 void StateManager::play()

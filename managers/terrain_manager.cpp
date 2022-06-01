@@ -305,7 +305,7 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
             !this->chunck->blocks[blockIndex]->isHidden &&
             playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
         {
-            //Reset block state 
+            // Reset block state
             this->chunck->blocks[blockIndex]->isTarget = 0;
             this->chunck->blocks[blockIndex]->distance = 0.0f;
 
@@ -357,19 +357,24 @@ void TerrainManager::putBlock(u8 blockToPlace)
         if (std::round(targetPos.z) == blockCenterPos->getFrontFace().axisPosition)
         {
             terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-        } else if (std::round(targetPos.z) == blockCenterPos->getBackFace().axisPosition)
+        }
+        else if (std::round(targetPos.z) == blockCenterPos->getBackFace().axisPosition)
         {
             terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-        } else if (std::round(targetPos.x) == blockCenterPos->getRightFace().axisPosition)
+        }
+        else if (std::round(targetPos.x) == blockCenterPos->getRightFace().axisPosition)
         {
             terrainIndex -= OVERWORLD_V_DISTANCE;
-        } else if (std::round(targetPos.x) == blockCenterPos->getLeftFace().axisPosition)
+        }
+        else if (std::round(targetPos.x) == blockCenterPos->getLeftFace().axisPosition)
         {
             terrainIndex += OVERWORLD_V_DISTANCE;
-        } else if (std::round(targetPos.y) == blockCenterPos->getTopFace().axisPosition)
+        }
+        else if (std::round(targetPos.y) == blockCenterPos->getTopFace().axisPosition)
         {
             terrainIndex -= 1;
-        } else if (std::round(targetPos.y) == blockCenterPos->getBottomFace().axisPosition)
+        }
+        else if (std::round(targetPos.y) == blockCenterPos->getBottomFace().axisPosition)
         {
             terrainIndex += 1;
         }
@@ -404,11 +409,13 @@ Vector3 *TerrainManager::normalizeWorldBlockPosition(Vector3 *worldPosition)
 void TerrainManager::defineSpawnArea()
 {
     Vector3 spawPos = this->calcSpawOffset();
+    printf("\nCalculated spawn area:\n");
+    spawPos.print();
     worldSpawnArea.set(spawPos);
     spawnArea.set(spawPos);
 }
 
-const Vector3 TerrainManager::calcSpawOffset (int bias)
+const Vector3 TerrainManager::calcSpawOffset(int bias)
 {
     u8 found = 0;
     u8 airBlockCounter = 0;
@@ -421,10 +428,10 @@ const Vector3 TerrainManager::calcSpawOffset (int bias)
     {
         int index = this->getIndexByOffset(posX, posY, posZ);
         u8 type = this->terrain[index];
-        if (type == GRASS_BLOCK && airBlockCounter >= 2)
+        if (type == GRASS_BLOCK && airBlockCounter >= 4)
         {
             found = 1;
-            result = Vector3(posX, posY + 32.0f, posZ);
+            result = Vector3(posX, posY + 2, posZ);
             break;
         }
 

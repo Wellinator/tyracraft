@@ -176,6 +176,8 @@ void Player::updateGravity(BlocksCheck *t_blocksCheck)
     if (this->mesh.position.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || mesh.position.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
         // Maybe has died, teleport to spaw area
+        printf("\nReseting player position to:\n");
+        this->spawnArea.print();
         this->mesh.position.set(this->spawnArea);
         this->velocity = 0;
     }
