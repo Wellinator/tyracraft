@@ -24,6 +24,7 @@ public:
     u8 visibility = 255;
     u8 isHidden = 1;
 
+
     //Distance to hit point when isTarget is true;
     float distance = 0.0f;
 
@@ -31,6 +32,16 @@ public:
     ~Block();
 private:
     //Block props
+
+    //Terrain generation params
+    float continentalness = 0.0;
+    float erosion = 0.0;
+    float peaks_and_valleys = 0.0;
+    float density = 0.0;
+
+    //Biom's params
+    float temperature = 0.0;
+    float humidity = 0.0;
 };
 
 #endif
