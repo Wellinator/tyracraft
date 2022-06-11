@@ -44,10 +44,13 @@ void TerrainManager::update(Player *t_player, Camera *t_camera, const Pad &t_pad
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves)
 {
     int index = 0;
+    int noise = 0;
+
     for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
     {
         for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++)
         {
+            noise = getNoise(x, z);
             for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++)
             {
                 if (makeFlat)
@@ -56,7 +59,7 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
                 }
                 else
                 {
-                    this->terrain[index] = this->getBlock(x, y, z);
+                    this->terrain[index] = this->getBlock(noise, y);
                 }
                 index++;
             }
@@ -69,31 +72,46 @@ void TerrainManager::initNoise()
     // Fast Noise Lite
     this->noise = new FastNoiseLite(seed);
     this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    this->noise->SetFractalType(FastNoiseLite::FractalType_None);
+    this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
     this->noise->SetFractalOctaves(this->octaves);
     this->noise->SetFractalLacunarity(this->lacunarity);
     this->noise->SetFrequency(this->frequency);
 }
 
-u8 TerrainManager::getBlock(int x, int y, int z)
+int TerrainManager::getNoise(int x, int z)
 {
     float xNoiseOffset = (float)((x + seed));
     float zNoiseOffset = (float)((z + seed));
+    this->noise->SetFrequency(this->frequency);
     this->noise->SetFractalOctaves(this->octaves);
-    double noiseLayer1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    double y1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
-    xNoiseOffset += 10;
-    zNoiseOffset += 10;
-    this->noise->SetFractalOctaves(this->octaves * 2);
-    double noiseLayer2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    // xNoiseOffset += 1;
+    // zNoiseOffset += 1;
+    this->noise->SetFrequency(this->frequency + 0.01f);
+    this->noise->SetFractalOctaves(this->octaves / 4);
+    double y2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
-    xNoiseOffset += 20;
-    zNoiseOffset += 20;
-    this->noise->SetFractalOctaves(this->octaves * 8);
-    double noiseLayer3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    // xNoiseOffset += 2;
+    // zNoiseOffset += 2;
+    this->noise->SetFrequency(this->frequency + 0.02f);
+    this->noise->SetFractalOctaves(this->octaves / 16);
+    double y3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
-    double noise = floor((((noiseLayer1 + noiseLayer2 + noiseLayer3) / 3) * scale));
+    return (int)floor((((y1 + y2 + y3) / 3) * scale));
+}
 
+u8 TerrainManager::getBlock(int noise, int y)
+{
+    if (y <= noise)
+        return STONE_BLOCK;
+
+    if (y < 0)
+        return WATER_BLOCK;
+
+    return AIR_BLOCK;
+
+    /*
     if (y > noise)
     {
         return AIR_BLOCK;
@@ -117,6 +135,7 @@ u8 TerrainManager::getBlock(int x, int y, int z)
     }
 
     return AIR_BLOCK;
+    */
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z)
@@ -267,7 +286,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                         block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         block->mesh.shouldBeFrustumCulled = true;
-                        block->mesh.shouldBeLighted = true;
+                        block->mesh.shouldBeLighted = false;
                         block->mesh.shouldBeBackfaceCulled = false;
 
                         if (block->mesh.getMaterialsCount() > 0)
@@ -428,7 +447,7 @@ const Vector3 TerrainManager::calcSpawOffset(int bias)
     {
         int index = this->getIndexByOffset(posX, posY, posZ);
         u8 type = this->terrain[index];
-        if (type == GRASS_BLOCK && airBlockCounter >= 4)
+        if (type != AIR_BLOCK && airBlockCounter >= 4)
         {
             found = 1;
             result = Vector3(posX, posY + 2, posZ);

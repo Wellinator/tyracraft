@@ -25,7 +25,7 @@ public:
     void init(TextureRepository *t_texRepo);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
-    inline Chunck *getChunck(){ return this->chunck; };
+    inline Chunck *getChunck() { return this->chunck; };
     Chunck *getChunck(int offsetX, int offsetY, int offsetZ);
     void updateChunkByPlayerPosition(Player *player);
 
@@ -40,7 +40,9 @@ public:
     Vector3 worldSpawnArea;
     Vector3 spawnArea;
     void defineSpawnArea();
-    const Vector3 calcSpawOffset (int bias = 0);
+    const Vector3 calcSpawOffset(int bias = 0);
+
+    int getNoise(int x, int z);
 
 private:
     Ray ray;
@@ -49,7 +51,7 @@ private:
     Player *t_player;
     Camera *t_camera;
 
-    //TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
+    // TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
     Chunck *chunck;
     u8 *terrain = new u8[OVERWORLD_SIZE];
 
@@ -59,8 +61,8 @@ private:
 
     BlockManager *blockManager = new BlockManager();
 
-    //Params for noise generation;
-    const float scale = 8.5f; // 32.0f;
+    // Params for noise generation;
+    const float scale = 20.0f;
     const float frequency = 0.01;
     const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
@@ -69,7 +71,7 @@ private:
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
     void initNoise();
-    u8 getBlock(int x, int y, int z);
+    u8 getBlock(int noise, int y);
     FastNoiseLite *noise;
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
