@@ -84,6 +84,13 @@ private:
 
     void handlePadControls(const Pad &t_pad);
     Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);
+
+    float getContinentalness(int x, int z);
+    float getErosion(int x, int z);
+    float getPeaksAndValleys(int x, int z);
+    float getDensity(int x, int y, int z);
+    float getTemperature(int x, int z);
+    float getHumidity(int x, int z);
 };
 
 #endif

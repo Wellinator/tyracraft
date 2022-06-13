@@ -45,6 +45,7 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
 {
     int index = 0;
     int noise = 0;
+    float density;
 
     for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
     {
@@ -59,7 +60,15 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
                 }
                 else
                 {
-                    this->terrain[index] = this->getBlock(noise, y);
+                    density = getDensity(x, y, z);
+                    if (density <= 0)
+                    {
+                        this->terrain[index] = AIR_BLOCK;
+                    }
+                    else
+                    {
+                        this->terrain[index] = this->getBlock(noise, y);
+                    }
                 }
                 index++;
             }
@@ -103,15 +112,14 @@ int TerrainManager::getNoise(int x, int z)
 
 u8 TerrainManager::getBlock(int noise, int y)
 {
-    if (y <= noise)
-        return STONE_BLOCK;
+    // if (y <= noise)
+    //     return STONE_BLOCK;
 
-    if (y < 0)
-        return WATER_BLOCK;
+    // if (y < 0)
+    //     return WATER_BLOCK;
 
-    return AIR_BLOCK;
+    // return AIR_BLOCK;
 
-    /*
     if (y > noise)
     {
         return AIR_BLOCK;
@@ -135,7 +143,6 @@ u8 TerrainManager::getBlock(int noise, int y)
     }
 
     return AIR_BLOCK;
-    */
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z)
@@ -283,7 +290,6 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     if (block_type != AIR_BLOCK && !block->isHidden)
                     {
                         block->mesh.position = Vector3(*tempBlockOffset * DUBLE_BLOCK_SIZE);
-
                         block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         block->mesh.shouldBeFrustumCulled = true;
                         block->mesh.shouldBeLighted = false;
@@ -464,4 +470,53 @@ const Vector3 TerrainManager::calcSpawOffset(int bias)
         return result * DUBLE_BLOCK_SIZE;
     else
         return calcSpawOffset(bias + 1);
+}
+
+float TerrainManager::getContinentalness(int x, int z)
+{
+    this->noise->SetFrequency(this->frequency);
+    this->noise->SetFractalOctaves(1);
+
+    return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+}
+
+float TerrainManager::getErosion(int x, int z)
+{
+    this->noise->SetFrequency(this->frequency);
+    this->noise->SetFractalOctaves(2);
+
+    return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+}
+
+float TerrainManager::getPeaksAndValleys(int x, int z)
+{
+    this->noise->SetFrequency(this->frequency);
+    this->noise->SetFractalOctaves(1);
+
+    return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+}
+
+float TerrainManager::getDensity(int x, int y, int z)
+{
+    this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+    this->noise->SetFrequency(0.0001);
+    this->noise->SetFractalLacunarity(1.5);
+    this->noise->SetFractalOctaves(8);
+    return this->noise->GetNoise((float)(x + seed), (float)(y + seed), (float)(z + seed));
+}
+
+float TerrainManager::getTemperature(int x, int z)
+{
+    this->noise->SetFrequency(this->frequency);
+    this->noise->SetFractalOctaves(1);
+
+    return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+}
+
+float TerrainManager::getHumidity(int x, int z)
+{
+    this->noise->SetFrequency(this->frequency);
+    this->noise->SetFractalOctaves(1);
+
+    return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
 }
