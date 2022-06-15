@@ -149,14 +149,14 @@ bool TerrainManager::isBlockHidden(int x, int y, int z)
 {
     // If some nighbor block is AIR_BLOCK set block to visible
     if (
+        // Up block
+        y > OVERWORLD_MIN_HEIGH && this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
+        // Down block
+        y < OVERWORLD_MAX_HEIGH - 1 && this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
         // Front block
         z < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x, y, z + 1) == AIR_BLOCK ||
         // Back block
         z > OVERWORLD_MIN_DISTANCE && this->getBlockTypeByPosition(x, y, z - 1) == AIR_BLOCK ||
-        // Down block
-        y < OVERWORLD_MAX_HEIGH - 1 && this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
-        // Up block
-        y > OVERWORLD_MIN_HEIGH && this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
         // Right block
         x < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x + 1, y, z) == AIR_BLOCK ||
         // Left block
@@ -229,19 +229,26 @@ Vector3 *TerrainManager::getPositionByIndex(unsigned int index)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
+    // Init lastPlayerPosition value needed for chunck cliping;
+    if (this->lastPlayerPosition.length() == 0)
+        this->lastPlayerPosition.set(worldSpawnArea);
+
     // Update chunck when player moves a quarter chunck
-    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > BLOCK_SIZE * CHUNCK_SIZE / 4)
+    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > (DUBLE_BLOCK_SIZE * CHUNCK_SIZE / 3))
     {
+        Vector3 origin = Vector3(floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
+                                 floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
+                                 floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
+
+        // Clip chunck (remove blocks whitch aren't inside new chunck position)
+        this->chunck->sanitize(origin * DUBLE_BLOCK_SIZE);
+        this->buildChunk(origin.x, origin.y, origin.z);
         this->lastPlayerPosition.set(player->getPosition());
-        this->buildChunk(
-            floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
-            floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
-            floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
-        this->lastPlayerPosition = player->getPosition();
     }
 
     if (shouldUpdateChunck)
     {
+        this->chunck->clear();
         this->shouldUpdateChunck = 0;
         this->buildChunk(
             floor(this->lastPlayerPosition.x / DUBLE_BLOCK_SIZE),
@@ -252,13 +259,23 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
 
 Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 {
+    this->chunck->clear();
     this->buildChunk(offsetX, offsetY, offsetZ);
     return this->chunck;
 }
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
-    this->chunck->clear();
+    printf("Rebuilding chunck...");
+    // Min and Max position to insert missing chunck's blocks;
+    Vector3 minOldChunckPos = Vector3(this->lastPlayerPosition.x - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
+                                      this->lastPlayerPosition.y - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
+                                      this->lastPlayerPosition.z - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE));
+
+    Vector3 maxOldChunckPos = Vector3(this->lastPlayerPosition.x + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
+                                      this->lastPlayerPosition.y + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
+                                      this->lastPlayerPosition.z + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE));
+
     for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++)
     {
         for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++)
@@ -268,7 +285,12 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                 Vector3 *tempBlockOffset = new Vector3(offsetX + x,
                                                        offsetY + y,
                                                        offsetZ + z);
+
+                Vector3 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
+
                 if (
+                    // Is the block still in the chunck?
+                    !blockPosition.collidesBox(minOldChunckPos, maxOldChunckPos) &&
                     // Are block's coordinates in world range?
                     (tempBlockOffset->x >= OVERWORLD_MIN_DISTANCE && tempBlockOffset->x < OVERWORLD_MAX_DISTANCE) &&
                     (tempBlockOffset->y >= OVERWORLD_MIN_HEIGH && tempBlockOffset->y < OVERWORLD_MAX_HEIGH) &&
@@ -281,7 +303,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                     Block *block = new Block(block_type);
                     block->index = blockIndex;
-                    block->position = Vector3(*tempBlockOffset * DUBLE_BLOCK_SIZE);
+                    block->position.set(blockPosition);
 
                     block->isHidden = this->isBlockHidden(tempBlockOffset->x,
                                                           tempBlockOffset->y,
@@ -289,7 +311,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                     if (block_type != AIR_BLOCK && !block->isHidden)
                     {
-                        block->mesh.position = Vector3(*tempBlockOffset * DUBLE_BLOCK_SIZE);
+                        block->mesh.position.set(blockPosition);
                         block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
                         block->mesh.shouldBeFrustumCulled = true;
                         block->mesh.shouldBeLighted = false;

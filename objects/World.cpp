@@ -10,9 +10,9 @@ World::~World() {}
 void World::init(TextureRepository *t_texRepo)
 {
     this->terrainManager->init(t_texRepo);
-    this->chunck = this->terrainManager->getChunck(this->terrainManager->worldSpawnArea.x,
-                                                   this->terrainManager->worldSpawnArea.y,
-                                                   this->terrainManager->worldSpawnArea.z);
+    this->chunck = this->terrainManager->getChunck(floor(this->terrainManager->worldSpawnArea.x / DUBLE_BLOCK_SIZE),
+                                                   floor(this->terrainManager->worldSpawnArea.y / DUBLE_BLOCK_SIZE),
+                                                   floor(this->terrainManager->worldSpawnArea.z / DUBLE_BLOCK_SIZE));
     return;
 };
 
