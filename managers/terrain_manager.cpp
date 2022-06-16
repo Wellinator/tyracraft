@@ -5,6 +5,9 @@ TerrainManager::TerrainManager()
     printf("\n\n|-----------SEED---------|");
     printf("\n|           %d         |\n", seed);
     printf("|------------------------|\n\n");
+
+    this->minWorldPos.set(OVERWORLD_MIN_DISTANCE, OVERWORLD_MIN_HEIGH, OVERWORLD_MIN_DISTANCE);
+    this->maxWorldPos.set(OVERWORLD_MAX_DISTANCE, OVERWORLD_MAX_HEIGH, OVERWORLD_MAX_DISTANCE);
 }
 
 TerrainManager::~TerrainManager()
@@ -229,31 +232,25 @@ Vector3 *TerrainManager::getPositionByIndex(unsigned int index)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    // Init lastPlayerPosition value needed for chunck cliping;
     if (this->lastPlayerPosition.length() == 0)
         this->lastPlayerPosition.set(worldSpawnArea);
 
     // Update chunck when player moves a quarter chunck
-    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > (DUBLE_BLOCK_SIZE * CHUNCK_SIZE / 3))
+    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > CHUNCK_DISTANCE / 3)
     {
-        Vector3 origin = Vector3(floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
-                                 floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
-                                 floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
-
-        // Clip chunck (remove blocks whitch aren't inside new chunck position)
-        this->chunck->sanitize(origin * DUBLE_BLOCK_SIZE);
-        this->buildChunk(origin.x, origin.y, origin.z);
         this->lastPlayerPosition.set(player->getPosition());
+        this->buildChunk(floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
+                         floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
+                         floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
     }
 
     if (shouldUpdateChunck)
     {
-        this->chunck->clear();
-        this->shouldUpdateChunck = 0;
         this->buildChunk(
             floor(this->lastPlayerPosition.x / DUBLE_BLOCK_SIZE),
             floor(this->lastPlayerPosition.y / DUBLE_BLOCK_SIZE),
             floor(this->lastPlayerPosition.z / DUBLE_BLOCK_SIZE));
+        this->shouldUpdateChunck = 0;
     }
 }
 
@@ -266,16 +263,8 @@ Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
-    printf("Rebuilding chunck...");
-    // Min and Max position to insert missing chunck's blocks;
-    Vector3 minOldChunckPos = Vector3(this->lastPlayerPosition.x - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
-                                      this->lastPlayerPosition.y - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
-                                      this->lastPlayerPosition.z - (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE));
-
-    Vector3 maxOldChunckPos = Vector3(this->lastPlayerPosition.x + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
-                                      this->lastPlayerPosition.y + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE),
-                                      this->lastPlayerPosition.z + (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE));
-
+    this->chunck->clear();
+    printf("Rebuilding chunck...\n");
     for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++)
     {
         for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++)
@@ -288,13 +277,8 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                 Vector3 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-                if (
-                    // Is the block still in the chunck?
-                    !blockPosition.collidesBox(minOldChunckPos, maxOldChunckPos) &&
-                    // Are block's coordinates in world range?
-                    (tempBlockOffset->x >= OVERWORLD_MIN_DISTANCE && tempBlockOffset->x < OVERWORLD_MAX_DISTANCE) &&
-                    (tempBlockOffset->y >= OVERWORLD_MIN_HEIGH && tempBlockOffset->y < OVERWORLD_MAX_HEIGH) &&
-                    (tempBlockOffset->z >= OVERWORLD_MIN_DISTANCE && tempBlockOffset->z < OVERWORLD_MAX_DISTANCE))
+                // Are block's coordinates in world range?
+                if (tempBlockOffset->collidesBox(minWorldPos, maxWorldPos))
                 {
                     int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
                                                             tempBlockOffset->y,
@@ -327,8 +311,9 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     }
 
                     this->chunck->addBlock(block);
-                    delete tempBlockOffset;
                 }
+
+                delete tempBlockOffset;
             }
         }
     }

@@ -54,6 +54,8 @@ private:
     // TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
     Chunck *chunck;
     u8 *terrain = new u8[OVERWORLD_SIZE];
+    Vector3 minWorldPos;
+    Vector3 maxWorldPos;
 
     Vector3 lastPlayerPosition;
     int blockToRemoveIndex;
