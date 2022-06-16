@@ -37,9 +37,7 @@ void Chunck::highLightTargetBlock(Mesh *t_mesh, u8 &isTarget)
 
 void Chunck::renderer(Renderer *t_renderer)
 {
-    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
-        if (this->blocks[blockIndex]->type != AIR_BLOCK && !this->blocks[blockIndex]->isHidden)
-            t_renderer->draw(this->blocks[blockIndex]->mesh, NULL, 0);
+    t_renderer->draw(this->meshes.data(), this->meshes.size());
 };
 
 /**
@@ -55,9 +53,7 @@ void Chunck::clear()
     // Clear chunck data
     for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
     {
-        if (this->blocks[blockIndex]->type != AIR_BLOCK &&
-            !this->blocks[blockIndex]->isHidden &&
-            this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
         {
             for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
             {
@@ -69,6 +65,12 @@ void Chunck::clear()
 
     this->blocks.clear();
     this->blocks.shrink_to_fit();
+
+    for (u16 i = 0; i < this->blocks.size(); i++)
+        delete meshes[i];
+
+    this->meshes.clear();
+    this->meshes.shrink_to_fit();
 }
 
 void Chunck::addBlock(Block *t_block)
@@ -80,9 +82,7 @@ void Chunck::updateBlocks(const Vector3 &playerPosition)
 {
     for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
     {
-        if (this->blocks[blockIndex]->type != AIR_BLOCK &&
-            !this->blocks[blockIndex]->isHidden &&
-            this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
         {
             // this->applyFOG(&this->blocks[blockIndex]->mesh, playerPosition);
             this->highLightTargetBlock(&this->blocks[blockIndex]->mesh, this->blocks[blockIndex]->isTarget);
@@ -96,9 +96,7 @@ void Chunck::sanitize(Vector3 currentPlayerPos)
     {
         if (this->blocks[blockIndex]->position.distanceTo(currentPlayerPos) > CHUNCK_DISTANCE)
         {
-            if (this->blocks[blockIndex]->type != AIR_BLOCK &&
-                !this->blocks[blockIndex]->isHidden &&
-                this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+            if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
             {
                 for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
                 {

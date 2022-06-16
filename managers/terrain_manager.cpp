@@ -264,7 +264,6 @@ Chunck *TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ)
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 {
     this->chunck->clear();
-    printf("Rebuilding chunck...\n");
     for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++)
     {
         for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++)
@@ -277,39 +276,37 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                 Vector3 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
+                int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
+                                                        tempBlockOffset->y,
+                                                        tempBlockOffset->z);
+                u8 block_type = terrain[blockIndex];
+                u8 isHidden = this->isBlockHidden(tempBlockOffset->x,
+                                                  tempBlockOffset->y,
+                                                  tempBlockOffset->z);
+
                 // Are block's coordinates in world range?
-                if (tempBlockOffset->collidesBox(minWorldPos, maxWorldPos))
+                if (tempBlockOffset->collidesBox(minWorldPos, maxWorldPos) && block_type != AIR_BLOCK && !isHidden)
                 {
-                    int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
-                                                            tempBlockOffset->y,
-                                                            tempBlockOffset->z);
-                    u8 block_type = terrain[blockIndex];
 
                     Block *block = new Block(block_type);
                     block->index = blockIndex;
                     block->position.set(blockPosition);
+                    block->isHidden = isHidden;
+                    block->mesh.position.set(blockPosition);
+                    block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
+                    block->mesh.shouldBeFrustumCulled = true;
+                    block->mesh.shouldBeLighted = false;
+                    block->mesh.shouldBeBackfaceCulled = false;
 
-                    block->isHidden = this->isBlockHidden(tempBlockOffset->x,
-                                                          tempBlockOffset->y,
-                                                          tempBlockOffset->z);
-
-                    if (block_type != AIR_BLOCK && !block->isHidden)
+                    if (block->mesh.getMaterialsCount() > 0)
                     {
-                        block->mesh.position.set(blockPosition);
-                        block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
-                        block->mesh.shouldBeFrustumCulled = true;
-                        block->mesh.shouldBeLighted = false;
-                        block->mesh.shouldBeBackfaceCulled = false;
-
-                        if (block->mesh.getMaterialsCount() > 0)
+                        for (u16 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
                         {
-                            for (u16 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
-                            {
-                                this->blockManager->linkTextureByBlockType(block_type, block->mesh.getMaterial(materialIndex).getId(), materialIndex);
-                            }
+                            this->blockManager->linkTextureByBlockType(block_type, block->mesh.getMaterial(materialIndex).getId(), materialIndex);
                         }
                     }
 
+                    this->chunck->meshes.push_back(&block->mesh);
                     this->chunck->addBlock(block);
                 }
 
@@ -333,9 +330,7 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
 
     for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
     {
-        if (this->chunck->blocks[blockIndex]->type != AIR_BLOCK &&
-            !this->chunck->blocks[blockIndex]->isHidden &&
-            playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
+        if (playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
         {
             // Reset block state
             this->chunck->blocks[blockIndex]->isTarget = 0;

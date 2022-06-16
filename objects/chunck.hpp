@@ -22,6 +22,7 @@ public:
     //Should be length of bocks types;
     //Init all chunck's meshes empty;
     std::vector<Block *> blocks;
+    std::vector<Mesh *> meshes;
 
     inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
 
