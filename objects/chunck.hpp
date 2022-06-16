@@ -5,6 +5,7 @@
 #include <models/math/vector3.hpp>
 #include <modules/renderer.hpp>
 #include <fastmath.h>
+#include <algorithm>
 #include "Block.hpp"
 #include "player.hpp"
 #include "../include/contants.hpp"
@@ -26,7 +27,7 @@ public:
 
     void renderer(Renderer *t_renderer);
     void update(Player *t_player);
-    void sanitize(Vector3 playerPos);
+    void sanitize(Vector3 currentPlayerPos);
     void clear();
 
     //Block controllers
