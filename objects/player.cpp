@@ -169,24 +169,30 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(BlocksCheck *t_blocksCheck)
 {
+    float newYPosition = mesh.position.y - this->velocity;
     this->velocity += GRAVITY;
-    this->mesh.position.y -= this->velocity;
-    this->isOnBlock = t_blocksCheck->currentBlock != NULL && mesh.position.y < t_blocksCheck->currBlockMax.y;
+    this->isOnBlock = t_blocksCheck->currentBlock != NULL && newYPosition <= t_blocksCheck->currBlockMax.y;
 
-    if (this->mesh.position.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || mesh.position.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
+    if (newYPosition >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
         // Maybe has died, teleport to spaw area
         printf("\nReseting player position to:\n");
         this->spawnArea.print();
         this->mesh.position.set(this->spawnArea);
         this->velocity = 0;
+        return;
     }
-    else if (this->isOnBlock)
+    
+    if (this->isOnBlock)
     {
-        this->mesh.position.y = t_blocksCheck->currBlockMax.y;
+        newYPosition = t_blocksCheck->currBlockMax.y;
         this->velocity = 0;
         this->isOnGround = 1;
+        return;
     }
+
+    //Finally updates gravity after checks
+    mesh.position.y = newYPosition;
 }
 
 BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos)
@@ -199,9 +205,7 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        if (t_blocks[i]->type != AIR_BLOCK &&
-            !t_blocks[i]->isHidden &&
-            this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
+        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
         {
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
             if (result->currentBlock == NULL && this->mesh.position.isOnBox(min, max))
@@ -210,9 +214,7 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
                 result->currBlockMin.set(min);
                 result->currBlockMax.set(max);
             }
-            if (result->willCollideBlock == NULL &&
-                mesh.position.y < max.y &&
-                t_nextPos.collidesBox(min, max))
+            if (result->willCollideBlock == NULL && t_nextPos.collidesBox(min, max))
             {
                 result->willCollideBlock = t_blocks[i];
                 result->willCollideBlockMin.set(min);
