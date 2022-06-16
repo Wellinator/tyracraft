@@ -96,19 +96,21 @@ int TerrainManager::getNoise(int x, int z)
     float zNoiseOffset = (float)((z + seed));
     this->noise->SetFrequency(this->frequency);
     this->noise->SetFractalOctaves(this->octaves);
-    double y1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    float y1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
     // xNoiseOffset += 1;
     // zNoiseOffset += 1;
     this->noise->SetFrequency(this->frequency + 0.01f);
     this->noise->SetFractalOctaves(this->octaves / 4);
-    double y2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    float y2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
 
     // xNoiseOffset += 2;
     // zNoiseOffset += 2;
     this->noise->SetFrequency(this->frequency + 0.02f);
     this->noise->SetFractalOctaves(this->octaves / 16);
-    double y3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+    float y3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+
+    float scale = getHeightScale(x, z);
 
     return (int)floor((((y1 + y2 + y3) / 3) * scale));
 }
@@ -146,6 +148,38 @@ u8 TerrainManager::getBlock(int noise, int y)
     }
 
     return AIR_BLOCK;
+}
+
+float TerrainManager::getHeightScale(int x, int z)
+{
+    float continentalnes = this->getContinentalness(x, z);
+    float erosion = this->getErosion(x, z);
+    float pv = this->getPeaksAndValleys(x, z);
+
+    float noise = continentalnes + pv - erosion;
+    //Clamp between -1 and 1
+    if (noise < -1.0f)
+        noise = -1.0;
+    if (noise > 1.0f)
+        noise = 1.0;
+
+    //Scale based on noise;
+    if (noise <= -0.9f)
+        return 30.0f;
+    if (noise > -0.9f && noise <= -0.7f)
+        return 2.0f;
+    if (noise > -0.7f && noise <= -0.6f)
+        return 9.0f;
+    if (noise > -0.6f && noise <= -0.2f)
+        return 11.0f;
+    if (noise > -0.2f && noise <= -0.0f)
+        return 12.0f;
+    if (noise > 0.0f && noise <= 0.8f)
+        return 20.0f;
+    if (noise > 0.8f && noise <= 0.9f)
+        return 25.0f;
+    if (noise <= 1.0f)
+        return 30.0f;
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z)

@@ -64,7 +64,6 @@ private:
     BlockManager *blockManager = new BlockManager();
 
     // Params for noise generation;
-    const float scale = 20.0f;
     const float frequency = 0.01;
     const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
@@ -72,9 +71,16 @@ private:
     const unsigned int seed = 5215; //rand() % 100000;
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
+    FastNoiseLite *noise;
     void initNoise();
     u8 getBlock(int noise, int y);
-    FastNoiseLite *noise;
+    float getContinentalness(int x, int z);
+    float getErosion(int x, int z);
+    float getPeaksAndValleys(int x, int z);
+    float getDensity(int x, int y, int z);
+    float getTemperature(int x, int z);
+    float getHumidity(int x, int z);
+    float getHeightScale(int x, int z);
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
     int getBlockTypeByPosition(int x, int y, int z);
@@ -86,13 +92,6 @@ private:
 
     void handlePadControls(const Pad &t_pad);
     Vector3 *normalizeWorldBlockPosition(Vector3 *worldPosition);
-
-    float getContinentalness(int x, int z);
-    float getErosion(int x, int z);
-    float getPeaksAndValleys(int x, int z);
-    float getDensity(int x, int y, int z);
-    float getTemperature(int x, int z);
-    float getHumidity(int x, int z);
 };
 
 #endif
