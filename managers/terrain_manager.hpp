@@ -68,7 +68,7 @@ private:
     const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
-    const unsigned int seed = rand() % 100000;//5215;
+    const unsigned int seed = 5215;//rand() % 100000;
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
     FastNoiseLite *noise;

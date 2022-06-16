@@ -7,10 +7,12 @@ EE_OBJS =											\
 	managers/block_manager.o						\
 	managers/state_manager.o						\
 	managers/menu_manager.o							\
+	managers/items_repository.o						\
 	objects/World.o									\
 	objects/Block.o									\
 	objects/chunck.o								\
 	objects/player.o								\
+	objects/item.o									\
 	utils.o											\
 	ui.o											\
 	camera.o										\
