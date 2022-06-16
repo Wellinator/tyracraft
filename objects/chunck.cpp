@@ -37,7 +37,9 @@ void Chunck::highLightTargetBlock(Mesh *t_mesh, u8 &isTarget)
 
 void Chunck::renderer(Renderer *t_renderer)
 {
-    t_renderer->draw(this->meshes.data(), this->meshes.size());
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+        if (this->blocks[blockIndex]->type != AIR_BLOCK && !this->blocks[blockIndex]->isHidden)
+            t_renderer->draw(this->blocks[blockIndex]->mesh, NULL, 0);
 };
 
 /**
