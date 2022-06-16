@@ -15,6 +15,7 @@
 #define HALF_CHUNCK_SIZE (CHUNCK_SIZE / 2)
 #define BLOCK_SIZE 7.0F
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
+#define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
 // Define blocks ids baseds on https://minecraft.fandom.com/wiki/;
 #define AIR_BLOCK 0
