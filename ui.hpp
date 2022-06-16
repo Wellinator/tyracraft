@@ -13,7 +13,7 @@ public:
     Ui(TextureRepository *t_texRepo);
     ~Ui();
 
-    void update(const Player &player);
+    void update(Player *t_player);
     void render(Renderer *t_renderer);
 
     void loadlHud();
@@ -30,6 +30,11 @@ private:
     Sprite hungry[10];
     Sprite armor[10];
     Sprite breath[10];
+
+    const float FIRST_SLOT_X_POS = 224.0f;
+    const float FIRST_SLOT_Y_POS = 446.0f;
+
+    void updateHud(Player *t_player);
 };
 
 #endif

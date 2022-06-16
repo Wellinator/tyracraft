@@ -43,4 +43,6 @@
 
 enum GAME_MODE { SURVIVAL, CREATIVE };
 
+#define INVENTORY_SIZE 9
+
 #endif

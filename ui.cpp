@@ -9,9 +9,9 @@ Ui::Ui(TextureRepository *t_texRepo)
 
 Ui::~Ui() {}
 
-void Ui::update(const Player &player)
+void Ui::update(Player *t_player)
 {
-    return;
+    this->updateHud(t_player);
 }
 
 void Ui::render(Renderer *t_renderer)
@@ -22,7 +22,7 @@ void Ui::render(Renderer *t_renderer)
     t_renderer->draw(xp_bar_full);
     for (u8 i = 0; i < 10; i++)
     {
-        t_renderer->draw(armor[i]); //TODO: Daw only when wearing an armor
+        t_renderer->draw(armor[i]); // TODO: Daw only when wearing an armor
         t_renderer->draw(health[i]);
         t_renderer->draw(hungry[i]);
         t_renderer->draw(breath[i]);
@@ -36,7 +36,7 @@ void Ui::loadlHud()
     crosshair.position.set(320.0f, 240.0f);
     t_texRepo->add("assets/textures/ui/", "crosshair", PNG)->addLink(crosshair.getId());
 
-    //Items slots
+    // Items slots
     empty_slots.setMode(MODE_STRETCH);
     empty_slots.size.set(192.0f, 32.0f);
     empty_slots.position.set(224.0f, 446.0f);
@@ -58,7 +58,7 @@ void Ui::loadlHud()
         health[i].size.set(8.0f, 8.0f);
         health[i].position.set(224.0f + (i * 8.0f), 446.0f - 20.0f);
         t_texRepo->add("assets/hud/", "health_full", PNG)->addLink(health[i].getId());
-        
+
         armor[i].setMode(MODE_STRETCH);
         armor[i].size.set(8.0f, 8.0f);
         armor[i].position.set(224.0f + (i * 8.0f), 446.0f - 28.0f);
@@ -73,7 +73,13 @@ void Ui::loadlHud()
         breath[i].size.set(8.0f, 8.0f);
         breath[i].position.set(330.66f + (i * 8.0f), 446.0f - 29.0f);
         t_texRepo->add("assets/hud/", "breath_full", PNG)->addLink(breath[i].getId());
-
     }
-    
+}
+
+void Ui::updateHud(Player *t_player)
+{
+    // Set selected slot position
+    u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
+    selected_slot.position.set(FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
+                               FIRST_SLOT_Y_POS);
 }

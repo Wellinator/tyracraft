@@ -60,12 +60,21 @@ Player::~Player()
 
 void Player::update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount)
 {
+    this->handleInputCommands(t_pad);
     Vector3 *nextPos = getNextPosition(t_pad, t_camera);
     BlocksCheck *blocksCheck = this->checkBlocks(t_blocks, blocks_ammount, *nextPos);
     this->updatePosition(t_pad, t_camera, *nextPos, blocksCheck);
     this->updateGravity(blocksCheck);
     delete blocksCheck;
     delete nextPos;
+}
+
+void Player::handleInputCommands(const Pad &t_pad)
+{
+    if (t_pad.isL1Clicked)
+        this->moveSelectorToTheLeft();
+    if (t_pad.isR1Clicked)
+        this->moveSelectorToTheRight();
 }
 
 Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
@@ -182,7 +191,7 @@ void Player::updateGravity(BlocksCheck *t_blocksCheck)
         this->velocity = 0;
         return;
     }
-    
+
     if (this->isOnBlock)
     {
         newYPosition = t_blocksCheck->currBlockMax.y;
@@ -191,7 +200,7 @@ void Player::updateGravity(BlocksCheck *t_blocksCheck)
         return;
     }
 
-    //Finally updates gravity after checks
+    // Finally updates gravity after checks
     mesh.position.y = newYPosition;
 }
 
@@ -225,4 +234,37 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
         }
     }
     return result;
+}
+
+/**
+ * Inventory controllers
+ *
+ */
+
+u8 Player::getSelectedInventoryItem()
+{
+    return this->inventory[this->selectedInventoryIndex];
+}
+
+/**
+ * @brief Return selected slot - int between 1 and 9
+ *
+ */
+u8 Player::getSelectedInventorySlot()
+{
+    return this->selectedInventoryIndex + 1;
+}
+
+void Player::moveSelectorToTheLeft()
+{
+    selectedInventoryIndex--;
+    if (selectedInventoryIndex < 0)
+        selectedInventoryIndex = INVENTORY_SIZE - 1;
+}
+
+void Player::moveSelectorToTheRight()
+{
+    selectedInventoryIndex++;
+    if (selectedInventoryIndex > INVENTORY_SIZE - 1)
+        selectedInventoryIndex = 0;
 }

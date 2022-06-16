@@ -62,7 +62,7 @@ void StateManager::update(Pad &t_pad, Camera &camera)
                        camera,
                        world->terrainManager->getChunck()->blocks.data(),
                        world->terrainManager->getChunck()->blocks.size());
-        ui->update(*player);
+        ui->update(player);
         camera.update(t_pad, player->mesh);
 
         //Render

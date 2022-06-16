@@ -43,6 +43,10 @@ public:
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
 
+    //Inventory
+    u8 getSelectedInventoryItem();
+    u8 getSelectedInventorySlot();
+
 private:
     TextureRepository *texRepo;
     u32 jumpCounter;
@@ -57,6 +61,13 @@ private:
     void updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &nextPos, BlocksCheck *t_blocksCheck);
     void updateGravity(BlocksCheck *t_blocksCheck);
     BlocksCheck *checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos);
+    void handleInputCommands(const Pad &t_pad);
+
+    //Inventory
+    u8 inventory[INVENTORY_SIZE - 1];//Starts from 0
+    short int selectedInventoryIndex = 0;
+    void moveSelectorToTheLeft();
+    void moveSelectorToTheRight();
 };
 
 #endif
