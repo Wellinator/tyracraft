@@ -153,17 +153,17 @@ bool TerrainManager::isBlockHidden(int x, int y, int z)
     // If some nighbor block is AIR_BLOCK set block to visible
     if (
         // Up block
-        y > OVERWORLD_MIN_HEIGH && this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
+        this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
         // Down block
-        y < OVERWORLD_MAX_HEIGH - 1 && this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
+        this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
         // Front block
-        z < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x, y, z + 1) == AIR_BLOCK ||
+        this->getBlockTypeByPosition(x, y, z + 1) == AIR_BLOCK ||
         // Back block
-        z > OVERWORLD_MIN_DISTANCE && this->getBlockTypeByPosition(x, y, z - 1) == AIR_BLOCK ||
+        this->getBlockTypeByPosition(x, y, z - 1) == AIR_BLOCK ||
         // Right block
-        x < OVERWORLD_MAX_DISTANCE - 1 && this->getBlockTypeByPosition(x + 1, y, z) == AIR_BLOCK ||
+        this->getBlockTypeByPosition(x + 1, y, z) == AIR_BLOCK ||
         // Left block
-        x > OVERWORLD_MIN_DISTANCE && this->getBlockTypeByPosition(x - 1, y, z) == AIR_BLOCK)
+        this->getBlockTypeByPosition(x - 1, y, z) == AIR_BLOCK)
     {
         return false;
     }
