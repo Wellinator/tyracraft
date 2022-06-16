@@ -15,14 +15,14 @@ SplashScreen::SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_scree
             tyracraft_grid[index].setMode(MODE_STRETCH);
             tyracraft_grid[index].size.set(t_screen->width / 4, t_screen->height / 4);
             tyracraft_grid[index].position.set(
-                floor(t_screen->width / 4 * col),
-                floor(t_screen->height / 4 * row));
+                floor((t_screen->width / 4 * col) + col),
+                floor((t_screen->height / 4 * row) + row));
 
             tyra_grid[index].setMode(MODE_STRETCH);
             tyra_grid[index].size.set(t_screen->width / 4, t_screen->height / 4);
             tyra_grid[index].position.set(
-                floor(t_screen->width / 4 * col),
-                floor(t_screen->height / 4 * row));
+                floor((t_screen->width / 4 * col) + col),
+                floor((t_screen->height / 4 * row) + row));
 
             t_texRepo->add("assets/splash_screen/tyracraft/", image_index, PNG)->addLink(tyracraft_grid[index].getId());
             t_texRepo->add("assets/splash_screen/tyra/", image_index, PNG)->addLink(tyra_grid[index].getId());
