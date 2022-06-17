@@ -5,8 +5,9 @@
 #include <modules/texture_repository.hpp>
 #include <models/sprite.hpp>
 #include <models/texture.hpp>
-#include "../include/contants.hpp"
 #include "../objects/item.hpp"
+#include "../include/contants.hpp"
+
 class ItemRepository
 {
 public:
@@ -15,7 +16,7 @@ public:
     ItemRepository();
     ~ItemRepository();
     void init(TextureRepository *t_texRepo);
-    Item *getItemById(u16 itemId);
+    Item *getItemById(ITEM_TYPES &itemId);
 
     void linkTextureByItemType(ITEM_TYPES itemType, const u32 t_spriteId);
     void removeTextureLinkByBlockType(ITEM_TYPES itemType, const u32 t_spriteId);

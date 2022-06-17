@@ -13,7 +13,7 @@ void ItemRepository::loadItems()
 {
     char *TEXTURES_PATH = "assets/textures/items/";
     consoleLog("\n\nLoading items repository...\n\n");
-    
+
     // Dirt block item
     dirt.id = ITEM_TYPES::DIRT;
     dirt.blockId = DIRTY_BLOCK;
@@ -21,7 +21,6 @@ void ItemRepository::loadItems()
     dirt.sprite.size.set(20.0f, 20.0f);
     texRepo->add(TEXTURES_PATH, "dirt", PNG)->addLink(dirt.sprite.getId());
     this->items.push_back(&dirt);
-
 
     // Stone
     stone.id = ITEM_TYPES::STONE;
@@ -41,17 +40,17 @@ void ItemRepository::loadItems()
     // this->items.push_back(stripped_oak_wood);
 }
 
-Item *ItemRepository::getItemById(u16 itemId)
+Item *ItemRepository::getItemById(ITEM_TYPES &itemId)
 {
     for (int i = 0; i < items.size(); i++)
         if (items[i]->id == itemId)
             return items[i];
+    return NULL;
 }
-
 
 void ItemRepository::linkTextureByItemType(ITEM_TYPES itemType, const u32 t_spriteId)
 {
-    
+
     texRepo->getBySpriteOrMesh(getSpriteByItemType(itemType).getId())->addLink(t_spriteId);
 }
 
@@ -59,7 +58,7 @@ void ItemRepository::removeTextureLinkByBlockType(ITEM_TYPES itemType, const u32
 {
     Texture *tex = texRepo->getBySpriteOrMesh(getSpriteByItemType(itemType).getId());
     s32 index = tex->getIndexOfLink(t_spriteId);
-    if(index != -1)
+    if (index != -1)
         tex->removeLinkByIndex(index);
 }
 

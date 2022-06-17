@@ -13,16 +13,18 @@
 #include "../objects/Block.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
+#include "../objects/item.hpp"
 #include "../include/contants.hpp"
 #include "../3libs/FastNoiseLite/FastNoiseLite.h"
 #include "./block_manager.hpp"
+#include "./items_repository.hpp"
 
 class TerrainManager
 {
 public:
     TerrainManager();
     ~TerrainManager();
-    void init(TextureRepository *t_texRepo);
+    void init(TextureRepository *t_texRepo, ItemRepository *itemRepository);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees, bool makeWater, bool makeCaves);
     inline Chunck *getChunck() { return this->chunck; };
@@ -50,6 +52,7 @@ private:
 
     Player *t_player;
     Camera *t_camera;
+    ItemRepository *t_itemRepository;
 
     // TODO: Refactor to region and cache it. See https://minecraft.fandom.com/el/wiki/Region_file_format;
     Chunck *chunck;

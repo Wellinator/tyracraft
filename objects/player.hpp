@@ -14,6 +14,7 @@
 #include "../camera.hpp"
 #include "../include/contants.hpp"
 #include "../objects/Block.hpp"
+#include "../objects/item.hpp"
 #include <modules/pad.hpp>
 #include <models/math/vector3.hpp>
 #include <modules/timer.hpp>
@@ -47,7 +48,7 @@ public:
     // Inventory
     u8 inventoryHasChanged = 1;
     u8 selectedSlotHasChanged = 1;
-    u8 getSelectedInventoryItemType();
+    ITEM_TYPES getSelectedInventoryItemType();
     u8 getSelectedInventorySlot();
     ITEM_TYPES *getInventoryData() { return inventory; };
 

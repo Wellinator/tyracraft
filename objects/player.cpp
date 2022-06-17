@@ -241,7 +241,7 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
  *
  */
 
-u8 Player::getSelectedInventoryItemType()
+ITEM_TYPES Player::getSelectedInventoryItemType()
 {
     return this->inventory[this->selectedInventoryIndex];
 }

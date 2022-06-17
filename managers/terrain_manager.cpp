@@ -14,9 +14,10 @@ TerrainManager::~TerrainManager()
 {
 }
 
-void TerrainManager::init(TextureRepository *t_texRepo)
+void TerrainManager::init(TextureRepository *t_texRepo, ItemRepository *itemRepository)
 {
     texRepo = t_texRepo;
+    t_itemRepository = itemRepository;
 
     int terrainType = 0;
     int testterrain = rand() % 10;
@@ -157,13 +158,13 @@ float TerrainManager::getHeightScale(int x, int z)
     float pv = this->getPeaksAndValleys(x, z);
 
     float noise = continentalnes + pv - erosion;
-    //Clamp between -1 and 1
+    // Clamp between -1 and 1
     if (noise < -1.0f)
         noise = -1.0;
     if (noise > 1.0f)
         noise = 1.0;
 
-    //Scale based on noise;
+    // Scale based on noise;
     if (noise <= -0.9f)
         return 30.0f;
     if (noise > -0.9f && noise <= -0.7f)
@@ -456,7 +457,13 @@ void TerrainManager::handlePadControls(const Pad &t_pad)
     }
     if (t_pad.isR2Clicked)
     {
-        this->putBlock(STONE_BLOCK);
+        ITEM_TYPES activeItemType = this->t_player->getSelectedInventoryItemType();
+        if (activeItemType)
+        {
+            int blockid = this->t_itemRepository->getItemById(activeItemType)->blockId;
+            if (blockid != AIR_BLOCK)
+                this->putBlock(blockid);
+        }
     }
 }
 

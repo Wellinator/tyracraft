@@ -110,7 +110,7 @@ void Ui::updatePlayerInventory(Player *t_player)
     const float BASE_X = FIRST_SLOT_X_POS + 4;
     const float BASE_Y = FIRST_SLOT_Y_POS + 7;
 
-    const ITEM_TYPES *inventoryData = this->t_player->getInventoryData();
+    ITEM_TYPES *inventoryData = this->t_player->getInventoryData();
     for (u8 i = 0; i < INVENTORY_SIZE; i++)
     {
         t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());

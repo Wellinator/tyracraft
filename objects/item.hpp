@@ -14,7 +14,7 @@ public:
     ITEM_TYPES id;
 
     /** Block id to render mesh of sprite. */
-    u8 blockId;
+    int blockId;
 
     /** Sprite to be renderer. */
     Sprite sprite;

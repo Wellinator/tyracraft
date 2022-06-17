@@ -99,7 +99,7 @@ void StateManager::loadGame()
 
     itemRepository->init(t_texRepo);
     ui->init(t_texRepo, itemRepository, player);
-    world->init(t_texRepo);
+    world->init(t_texRepo, itemRepository);
     
     player->mesh.position.set(world->terrainManager->worldSpawnArea);
     player->spawnArea.set(world->terrainManager->worldSpawnArea);

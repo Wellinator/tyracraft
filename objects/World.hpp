@@ -9,6 +9,7 @@
 #include "chunck.hpp"
 #include "player.hpp"
 #include "../managers/terrain_manager.hpp"
+#include "../managers/items_repository.hpp"
 #include "../include/contants.hpp"
 
 class World
@@ -17,7 +18,7 @@ public:
     World();
     ~World();
 
-    void init(TextureRepository *t_texRepo);
+    void init(TextureRepository *t_texRepo, ItemRepository *itemRepository);
     void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
     void render(Renderer *t_renderer);
     Chunck *chunck;
