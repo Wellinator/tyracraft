@@ -11,6 +11,7 @@
 #include <models/mesh.hpp>
 #include "../splash_screen.hpp"
 #include "menu_manager.hpp"
+#include "items_repository.hpp"
 #include <chrono>
 
 class StateManager
@@ -33,6 +34,7 @@ public:
     World *world;
     Ui *ui;
     Player *player;
+    ItemRepository *itemRepository;
 
 private:
     void loadGame();

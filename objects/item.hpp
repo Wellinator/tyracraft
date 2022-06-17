@@ -11,13 +11,13 @@ public:
     ~Item();
 
     /** Block id to render mesh of sprite. */
-    u8 id;
+    ITEM_TYPES id;
 
     /** Block id to render mesh of sprite. */
     u8 blockId;
 
     /** Sprite to be renderer. */
-    Sprite *sprite;
+    Sprite sprite;
 };
 
 #endif

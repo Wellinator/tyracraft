@@ -1,7 +1,7 @@
 /*
 # ______       ____   ___
-#   |     \/   ____| |___|    
-#   |     |   |   \  |   |       
+#   |     \/   ____| |___|
+#   |     |   |   \  |   |
 #-----------------------------------------------------------------------
 # Copyright 2020, tyra - https://github.com/h4570/tyra
 # Licenced under Apache License 2.0
@@ -20,6 +20,7 @@
 #include <tamtypes.h>
 #include <modules/audio.hpp>
 #include <modules/texture_repository.hpp>
+#include "../managers/items_repository.hpp"
 
 struct BlocksCheck
 {
@@ -43,9 +44,10 @@ public:
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
 
-    //Inventory
+    // Inventory
     u8 getSelectedInventoryItem();
     u8 getSelectedInventorySlot();
+    ITEM_TYPES *getInventoryData() { return inventory; };
 
 private:
     TextureRepository *texRepo;
@@ -63,8 +65,9 @@ private:
     BlocksCheck *checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos);
     void handleInputCommands(const Pad &t_pad);
 
-    //Inventory
-    u8 inventory[INVENTORY_SIZE - 1];//Starts from 0
+    // Inventory
+
+    ITEM_TYPES inventory[INVENTORY_SIZE] = {ITEM_TYPES::DIRT, ITEM_TYPES::STONE, ITEM_TYPES::DIRT, ITEM_TYPES::STONE, ITEM_TYPES::DIRT, ITEM_TYPES::STONE, ITEM_TYPES::DIRT, ITEM_TYPES::STONE, ITEM_TYPES::DIRT}; // Starts from 0
     short int selectedInventoryIndex = 0;
     void moveSelectorToTheLeft();
     void moveSelectorToTheRight();

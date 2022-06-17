@@ -1,17 +1,21 @@
 #include "ui.hpp"
 #include <utils/debug.hpp>
 
-Ui::Ui(TextureRepository *t_texRepo)
-{
-    this->t_texRepo = t_texRepo;
-    this->loadlHud();
-}
+Ui::Ui() {}
 
 Ui::~Ui() {}
 
-void Ui::update(Player *t_player)
+void Ui::init(TextureRepository *t_texRepo, ItemRepository *itemRepository, Player *t_player)
 {
-    this->updateHud(t_player);
+    this->t_texRepo = t_texRepo;
+    this->t_itemRepository = itemRepository;
+    this->t_player = t_player;
+    this->loadlHud();
+}
+
+void Ui::update()
+{
+    this->updateHud(this->t_player);
 }
 
 void Ui::render(Renderer *t_renderer)
@@ -27,6 +31,11 @@ void Ui::render(Renderer *t_renderer)
         t_renderer->draw(hungry[i]);
         t_renderer->draw(breath[i]);
     }
+
+    // Draw itens from player inventory
+    for (u8 i = 0; i < INVENTORY_SIZE; i++)
+        if (playerInventory[i] != NULL)
+            t_renderer->draw(*playerInventory[i]);
 }
 
 void Ui::loadlHud()
@@ -38,12 +47,12 @@ void Ui::loadlHud()
 
     // Items slots
     empty_slots.setMode(MODE_STRETCH);
-    empty_slots.size.set(192.0f, 32.0f);
+    empty_slots.size.set(192.0f, 28.0f);
     empty_slots.position.set(224.0f, 446.0f);
     t_texRepo->add("assets/hud/", "empty_slots", PNG)->addLink(empty_slots.getId());
 
     selected_slot.setMode(MODE_STRETCH);
-    selected_slot.size.set(22.0f, 32.0f);
+    selected_slot.size.set(22.0f, 28.0f);
     selected_slot.position.set(224.0f, 446.0f);
     t_texRepo->add("assets/hud/", "selected_slot", PNG)->addLink(selected_slot.getId());
 
@@ -79,7 +88,38 @@ void Ui::loadlHud()
 void Ui::updateHud(Player *t_player)
 {
     // Set selected slot position
+    // TODO: update only if selection has changed;
     u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
     selected_slot.position.set(FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
                                FIRST_SLOT_Y_POS);
+
+    // TODO: update only if inventory has changed;
+    this->updatePlayerInventory(t_player);
+}
+
+void Ui::updatePlayerInventory(Player *t_player)
+{
+    const float BASE_WIDTH = 14.0f;
+    const float BASE_HEIGHT = 14.0f;
+    const float BASE_X = FIRST_SLOT_X_POS + 4;
+    const float BASE_Y = FIRST_SLOT_Y_POS + 7;
+
+    const ITEM_TYPES *inventoryData = this->t_player->getInventoryData();
+    for (u8 i = 0; i < INVENTORY_SIZE; i++)
+    {
+        t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
+        delete playerInventory[i];
+        if (inventoryData[i] != NULL)
+        {
+            Sprite baseItemSprite = this->t_itemRepository->getItemById(inventoryData[i])->sprite;
+            Sprite *tempItemSprite = new Sprite();
+
+            tempItemSprite->setMode(MODE_STRETCH);
+            tempItemSprite->size.set(BASE_WIDTH, BASE_HEIGHT);
+            tempItemSprite->position.set(BASE_X + (empty_slots.size.x / 9 * i), BASE_Y);
+            t_itemRepository->linkTextureByItemType(inventoryData[i], tempItemSprite->getId());
+
+            playerInventory[i] = tempItemSprite;
+        }
+    }
 }

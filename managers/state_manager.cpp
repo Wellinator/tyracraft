@@ -15,10 +15,6 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
 
     splashScreen = new SplashScreen(t_texRepo, t_screen);
     mainMenu = new MainMenu();
-
-    world = new World();
-    ui = new Ui(t_texRepo);
-    player = new Player(t_audio, t_texRepo);
 }
 
 void StateManager::update(Pad &t_pad, Camera &camera)
@@ -62,7 +58,7 @@ void StateManager::update(Pad &t_pad, Camera &camera)
                        camera,
                        world->terrainManager->getChunck()->blocks.data(),
                        world->terrainManager->getChunck()->blocks.size());
-        ui->update(player);
+        ui->update();
         camera.update(t_pad, player->mesh);
 
         //Render
@@ -94,8 +90,17 @@ void StateManager::loadInGameMenu()
 
 void StateManager::loadGame()
 {
+    world = new World();
+    player = new Player(t_audio, t_texRepo);
+    itemRepository = new ItemRepository();
+    ui = new Ui();
+
     setBgColorAndAmbientColor();
+
+    itemRepository->init(t_texRepo);
+    ui->init(t_texRepo, itemRepository, player);
     world->init(t_texRepo);
+    
     player->mesh.position.set(world->terrainManager->worldSpawnArea);
     player->spawnArea.set(world->terrainManager->worldSpawnArea);
 }

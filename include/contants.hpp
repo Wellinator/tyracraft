@@ -43,6 +43,13 @@
 
 enum GAME_MODE { SURVIVAL, CREATIVE };
 
+enum ITEM_TYPES
+{
+    DIRT = 1,
+    STONE,
+    STRIPPED_OAK_WOOD
+};
+
 #define INVENTORY_SIZE 9
 
 #endif

@@ -4,16 +4,9 @@
 #include <tamtypes.h>
 #include <modules/texture_repository.hpp>
 #include <models/sprite.hpp>
+#include <models/texture.hpp>
 #include "../include/contants.hpp"
 #include "../objects/item.hpp"
-
-enum ITEM_TYPES
-{
-    DIRT,
-    STONE,
-    STRIPPED_OAK_WOOD
-};
-
 class ItemRepository
 {
 public:
@@ -24,10 +17,17 @@ public:
     void init(TextureRepository *t_texRepo);
     Item *getItemById(u16 itemId);
 
+    void linkTextureByItemType(ITEM_TYPES itemType, const u32 t_spriteId);
+    void removeTextureLinkByBlockType(ITEM_TYPES itemType, const u32 t_spriteId);
+    Sprite &getSpriteByItemType(ITEM_TYPES itemType);
+
 private:
-    const char *TEXTURES_PATH = "assets/textures/items/";
     std::vector<Item *> items;
     void loadItems();
+
+    //Items reg
+    Item dirt;
+    Item stone;
 };
 
 #endif
