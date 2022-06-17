@@ -23,6 +23,7 @@ private:
     Mesh dirtBlock;
     Mesh grassBlock;
     Mesh waterBlock;
+    Mesh strippedOakWoodBlock;
 
     void loadBlocks();
 };

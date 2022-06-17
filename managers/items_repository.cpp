@@ -31,13 +31,12 @@ void ItemRepository::loadItems()
     this->items.push_back(&stone);
 
     // Stripped Oak Wood
-    // Item *stripped_oak_wood = new Item();
-    // stripped_oak_wood->id = ITEM_TYPES::STRIPPED_OAK_WOOD;
-    // stripped_oak_wood->blockId = DIRTY_BLOCK;
-    // stripped_oak_wood->sprite->setMode(MODE_STRETCH);
-    // stripped_oak_wood->sprite->size.set(20.0f, 20.0f);
-    // texRepo->add(TEXTURES_PATH, "stripped_oak_wood", PNG)->addLink(stripped_oak_wood->sprite->getId());
-    // this->items.push_back(stripped_oak_wood);
+    stripped_oak_wood.id = ITEM_TYPES::STRIPPED_OAK_WOOD;
+    stripped_oak_wood.blockId = STRIPPED_OAK_WOOD_BLOCK;
+    stripped_oak_wood.sprite.setMode(MODE_STRETCH);
+    stripped_oak_wood.sprite.size.set(20.0f, 20.0f);
+    texRepo->add(TEXTURES_PATH, "stripped_oak_wood", PNG)->addLink(stripped_oak_wood.sprite.getId());
+    this->items.push_back(&stripped_oak_wood);
 }
 
 Item *ItemRepository::getItemById(ITEM_TYPES &itemId)

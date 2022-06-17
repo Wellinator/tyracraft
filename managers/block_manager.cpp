@@ -19,12 +19,14 @@ void BlockManager::loadBlocks()
     dirtBlock.loadObj(MODELS_PATH, "dirt", BLOCK_SIZE, true);
     waterBlock.loadObj(MODELS_PATH, "water", BLOCK_SIZE, true);
     grassBlock.loadObj(MODELS_PATH, "grass", BLOCK_SIZE, true);
+    strippedOakWoodBlock.loadObj(MODELS_PATH, "stripped_oak_log", BLOCK_SIZE, true);
 
     // Load model's Textures:
     texRepo->addByMesh(TEXTURES_PATH, stoneBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, dirtBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, waterBlock, PNG);
     texRepo->addByMesh(TEXTURES_PATH, grassBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, strippedOakWoodBlock, PNG);
 }
 
 void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
@@ -51,5 +53,7 @@ Mesh &BlockManager::getMeshByBlockType(int blockType)
         return grassBlock;
     case WATER_BLOCK:
         return waterBlock;
+    case STRIPPED_OAK_WOOD_BLOCK:
+        return strippedOakWoodBlock;
     }
 }

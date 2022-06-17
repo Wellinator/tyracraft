@@ -29,6 +29,7 @@ private:
     //Items reg
     Item dirt;
     Item stone;
+    Item stripped_oak_wood;
 };
 
 #endif

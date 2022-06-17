@@ -23,6 +23,7 @@
 #define GRASS_BLOCK 2
 #define DIRTY_BLOCK 3
 #define WATER_BLOCK 4
+#define STRIPPED_OAK_WOOD_BLOCK 5
 
 //Should be updated avery time a new block is added;
 #define BLOCKS_COUNTER 5
