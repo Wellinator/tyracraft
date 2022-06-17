@@ -43,6 +43,7 @@ private:
 
     void updateHud(Player *t_player);
     void updatePlayerInventory(Player *t_player);
+    void updateSelectedSlot(Player *t_player);
 };
 
 #endif

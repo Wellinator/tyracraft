@@ -87,14 +87,20 @@ void Ui::loadlHud()
 
 void Ui::updateHud(Player *t_player)
 {
-    // Set selected slot position
-    // TODO: update only if selection has changed;
-    u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
-    selected_slot.position.set(FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
-                               FIRST_SLOT_Y_POS);
+    if (t_player->selectedSlotHasChanged)
+        this->updateSelectedSlot(t_player);
+    
 
     if (t_player->inventoryHasChanged)
         this->updatePlayerInventory(t_player);
+}
+
+void Ui::updateSelectedSlot(Player *t_player)
+{
+    u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
+    selected_slot.position.set(FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
+                               FIRST_SLOT_Y_POS);
+    t_player->selectedSlotHasChanged = 0;
 }
 
 void Ui::updatePlayerInventory(Player *t_player)

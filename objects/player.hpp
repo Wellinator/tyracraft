@@ -46,6 +46,7 @@ public:
 
     // Inventory
     u8 inventoryHasChanged = 1;
+    u8 selectedSlotHasChanged = 1;
     u8 getSelectedInventoryItem();
     u8 getSelectedInventorySlot();
     ITEM_TYPES *getInventoryData() { return inventory; };

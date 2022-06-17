@@ -260,6 +260,7 @@ void Player::moveSelectorToTheLeft()
     selectedInventoryIndex--;
     if (selectedInventoryIndex < 0)
         selectedInventoryIndex = INVENTORY_SIZE - 1;
+    selectedSlotHasChanged = 1;
 }
 
 void Player::moveSelectorToTheRight()
@@ -267,4 +268,5 @@ void Player::moveSelectorToTheRight()
     selectedInventoryIndex++;
     if (selectedInventoryIndex > INVENTORY_SIZE - 1)
         selectedInventoryIndex = 0;
+    selectedSlotHasChanged = 1;
 }
