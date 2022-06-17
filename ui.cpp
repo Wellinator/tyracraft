@@ -93,8 +93,8 @@ void Ui::updateHud(Player *t_player)
     selected_slot.position.set(FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
                                FIRST_SLOT_Y_POS);
 
-    // TODO: update only if inventory has changed;
-    this->updatePlayerInventory(t_player);
+    if (t_player->inventoryHasChanged)
+        this->updatePlayerInventory(t_player);
 }
 
 void Ui::updatePlayerInventory(Player *t_player)
@@ -122,4 +122,6 @@ void Ui::updatePlayerInventory(Player *t_player)
             playerInventory[i] = tempItemSprite;
         }
     }
+
+    t_player->inventoryHasChanged = 0;
 }
