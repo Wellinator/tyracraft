@@ -89,7 +89,6 @@ void Ui::updateHud(Player *t_player)
 {
     if (t_player->selectedSlotHasChanged)
         this->updateSelectedSlot(t_player);
-    
 
     if (t_player->inventoryHasChanged)
         this->updatePlayerInventory(t_player);
@@ -113,10 +112,11 @@ void Ui::updatePlayerInventory(Player *t_player)
     ITEM_TYPES *inventoryData = this->t_player->getInventoryData();
     for (u8 i = 0; i < INVENTORY_SIZE; i++)
     {
-        t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
-        delete playerInventory[i];
-        if (inventoryData[i] != NULL)
+        if (inventoryData[i] != ITEM_TYPES::EMPTY)
         {
+            t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
+            delete playerInventory[i];
+            
             Sprite baseItemSprite = this->t_itemRepository->getItemById(inventoryData[i])->sprite;
             Sprite *tempItemSprite = new Sprite();
 

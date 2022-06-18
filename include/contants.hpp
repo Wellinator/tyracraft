@@ -46,7 +46,8 @@ enum GAME_MODE { SURVIVAL, CREATIVE };
 
 enum ITEM_TYPES
 {
-    DIRT = 1,
+    EMPTY,
+    DIRT,
     STONE,
     STRIPPED_OAK_WOOD
 };

@@ -458,7 +458,7 @@ void TerrainManager::handlePadControls(const Pad &t_pad)
     if (t_pad.isR2Clicked)
     {
         ITEM_TYPES activeItemType = this->t_player->getSelectedInventoryItemType();
-        if (activeItemType)
+        if (activeItemType != EMPTY)
         {
             int blockid = this->t_itemRepository->getItemById(activeItemType)->blockId;
             if (blockid != AIR_BLOCK)
