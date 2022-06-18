@@ -17,16 +17,44 @@
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
-// Define blocks ids baseds on https://minecraft.fandom.com/wiki/;
+/**
+ * Define blocks IDs
+ **/
 #define AIR_BLOCK 0
+
+// Blocks
 #define STONE_BLOCK 1
 #define GRASS_BLOCK 2
 #define DIRTY_BLOCK 3
 #define WATER_BLOCK 4
-#define STRIPPED_OAK_WOOD_BLOCK 5
+#define BEDROCK_BLOCK 5
+#define SAND_BLOCK 6
+#define GLASS_BLOCK 7
+#define BRICKS_BLOCK 8
 
-// Should be updated avery time a new block is added;
-#define BLOCKS_COUNTER 5
+// Ores and Minerals
+#define GOLD_ORE_BLOCK 9
+#define IRON_ORE_BLOCK 10
+#define COAL_ORE_BLOCK 11
+#define DIAMOND_ORE_BLOCK 12
+#define REDSTONE_ORE_BLOCK 13
+#define EMERALD_ORE_BLOCK 14
+
+// Wood Planks
+#define OAK_PLANKS_BLOCK 15
+#define SPRUCE_PLANKS_BLOCK 16
+#define BIRCH_PLANKS_BLOCK 17
+#define ACACIA_PLANKS_BLOCK 18
+
+//Stone bricks
+#define STONE_BRICK_BLOCK 19
+#define CRACKED_STONE_BRICKS_BLOCK 20
+#define MOSSY_STONE_BRICKS_BLOCK 21
+#define CHISELED_STONE_BRICKS_BLOCK 22
+
+// Woods
+#define STRIPPED_OAK_WOOD_BLOCK 23
+/*---------------------------------------------*/
 
 #define FIRST_PERSON_CAM 1
 #define THIRD_PERSON_CAM 2
