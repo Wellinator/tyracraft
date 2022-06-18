@@ -112,7 +112,7 @@ void Ui::updatePlayerInventory(Player *t_player)
     ITEM_TYPES *inventoryData = this->t_player->getInventoryData();
     for (u8 i = 0; i < INVENTORY_SIZE; i++)
     {
-        if (inventoryData[i] != ITEM_TYPES::EMPTY)
+        if (inventoryData[i] != ITEM_TYPES::empty)
         {
             t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
             delete playerInventory[i];

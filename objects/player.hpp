@@ -71,15 +71,15 @@ private:
     // Inventory
 
     ITEM_TYPES inventory[INVENTORY_SIZE] = {
-        ITEM_TYPES::DIRT,
-        ITEM_TYPES::STONE,
-        ITEM_TYPES::STRIPPED_OAK_WOOD,
-        ITEM_TYPES::EMPTY,
-        ITEM_TYPES::EMPTY,
-        ITEM_TYPES::EMPTY,
-        ITEM_TYPES::EMPTY,
-        ITEM_TYPES::EMPTY,
-        ITEM_TYPES::EMPTY}; // Starts from 0
+        ITEM_TYPES::dirt,
+        ITEM_TYPES::stone,
+        ITEM_TYPES::stripped_oak_wood,
+        ITEM_TYPES::empty,
+        ITEM_TYPES::empty,
+        ITEM_TYPES::empty,
+        ITEM_TYPES::empty,
+        ITEM_TYPES::empty,
+        ITEM_TYPES::empty}; // Starts from 0
     short int selectedInventoryIndex = 0;
     void moveSelectorToTheLeft();
     void moveSelectorToTheRight();

@@ -15,7 +15,7 @@ void ItemRepository::loadItems()
     consoleLog("\n\nLoading items repository...\n\n");
 
     // Dirt block item
-    dirt.id = ITEM_TYPES::DIRT;
+    dirt.id = ITEM_TYPES::dirt;
     dirt.blockId = DIRTY_BLOCK;
     dirt.sprite.setMode(MODE_STRETCH);
     dirt.sprite.size.set(20.0f, 20.0f);
@@ -23,7 +23,7 @@ void ItemRepository::loadItems()
     this->items.push_back(&dirt);
 
     // Stone
-    stone.id = ITEM_TYPES::STONE;
+    stone.id = ITEM_TYPES::stone;
     stone.blockId = STONE_BLOCK;
     stone.sprite.setMode(MODE_STRETCH);
     stone.sprite.size.set(20.0f, 20.0f);
@@ -31,7 +31,7 @@ void ItemRepository::loadItems()
     this->items.push_back(&stone);
 
     // Stripped Oak Wood
-    stripped_oak_wood.id = ITEM_TYPES::STRIPPED_OAK_WOOD;
+    stripped_oak_wood.id = ITEM_TYPES::stripped_oak_wood;
     stripped_oak_wood.blockId = STRIPPED_OAK_WOOD_BLOCK;
     stripped_oak_wood.sprite.setMode(MODE_STRETCH);
     stripped_oak_wood.sprite.size.set(20.0f, 20.0f);
