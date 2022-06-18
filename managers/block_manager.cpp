@@ -1,7 +1,13 @@
 #include "./block_manager.hpp"
 
 BlockManager::BlockManager() {}
-BlockManager::~BlockManager() {}
+
+BlockManager::~BlockManager() 
+{
+    for (u8 i = 0; i < blockItems.size(); i++)
+        delete blockItems[i];
+    this->blockItems.clear();
+}
 
 void BlockManager::init(TextureRepository *t_texRepo)
 {
