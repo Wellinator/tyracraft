@@ -82,7 +82,6 @@ enum ITEM_TYPES
     empty,
 
     // Blocks
-    bedrock,
     dirt,
     sand,
     stone,
@@ -90,12 +89,12 @@ enum ITEM_TYPES
     glass,
 
     // Ores and Minerals
-    coal_ore,
-    diamond_ore,
-    iron_ore,
-    gold_ore,
-    redstone_ore,
-    emerald_ore,
+    coal_ore_block,
+    diamond_ore_block,
+    iron_ore_block,
+    gold_ore_block,
+    redstone_ore_block,
+    emerald_ore_block,
 
     // Wood Planks
     oak_planks,

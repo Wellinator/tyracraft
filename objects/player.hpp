@@ -73,13 +73,14 @@ private:
     ITEM_TYPES inventory[INVENTORY_SIZE] = {
         ITEM_TYPES::dirt,
         ITEM_TYPES::stone,
-        ITEM_TYPES::stripped_oak_wood,
-        ITEM_TYPES::empty,
-        ITEM_TYPES::empty,
-        ITEM_TYPES::empty,
-        ITEM_TYPES::empty,
-        ITEM_TYPES::empty,
-        ITEM_TYPES::empty}; // Starts from 0
+        ITEM_TYPES::sand,
+        ITEM_TYPES::bricks,
+        ITEM_TYPES::glass,
+        ITEM_TYPES::oak_planks,
+        ITEM_TYPES::spruce_planks,
+        ITEM_TYPES::stone_brick,
+        ITEM_TYPES::chiseled_stone_bricks
+        }; // Starts from 0
     short int selectedInventoryIndex = 0;
     void moveSelectorToTheLeft();
     void moveSelectorToTheRight();
