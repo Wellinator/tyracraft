@@ -36,7 +36,7 @@ void ItemRepository::loadItems()
     texRepo->add(TEXTURES_PATH, "bricks", PNG)->addLink(bricks.sprite.getId());
 
     glass.id = ITEM_TYPES::glass;
-    glass.blockId = BRICKS_BLOCK;
+    glass.blockId = GLASS_BLOCK;
     this->items.push_back(&glass);
     texRepo->add(TEXTURES_PATH, "glass", PNG)->addLink(glass.sprite.getId());
 
