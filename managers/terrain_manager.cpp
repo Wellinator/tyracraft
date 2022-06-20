@@ -185,20 +185,27 @@ float TerrainManager::getHeightScale(int x, int z)
 
 bool TerrainManager::isBlockHidden(int x, int y, int z)
 {
+    u8 upBlock = this->getBlockTypeByPosition(x, y - 1, z);
+    u8 downBlock = this->getBlockTypeByPosition(x, y + 1, z);
+    u8 frontBlock = this->getBlockTypeByPosition(x, y, z + 1);
+    u8 backBlock = this->getBlockTypeByPosition(x, y, z - 1);
+    u8 rightBlock = this->getBlockTypeByPosition(x + 1, y, z);
+    u8 leftBlock = this->getBlockTypeByPosition(x - 1, y, z);
+
     // If some nighbor block is AIR_BLOCK set block to visible
     if (
         // Up block
-        this->getBlockTypeByPosition(x, y - 1, z) == AIR_BLOCK ||
+        upBlock == AIR_BLOCK || upBlock == GLASS_BLOCK ||
         // Down block
-        this->getBlockTypeByPosition(x, y + 1, z) == AIR_BLOCK ||
+        downBlock == AIR_BLOCK || downBlock == GLASS_BLOCK ||
         // Front block
-        this->getBlockTypeByPosition(x, y, z + 1) == AIR_BLOCK ||
+        frontBlock == AIR_BLOCK || frontBlock == GLASS_BLOCK ||
         // Back block
-        this->getBlockTypeByPosition(x, y, z - 1) == AIR_BLOCK ||
+        backBlock == AIR_BLOCK || backBlock == GLASS_BLOCK ||
         // Right block
-        this->getBlockTypeByPosition(x + 1, y, z) == AIR_BLOCK ||
+        rightBlock == AIR_BLOCK || rightBlock == GLASS_BLOCK ||
         // Left block
-        this->getBlockTypeByPosition(x - 1, y, z) == AIR_BLOCK)
+        leftBlock == AIR_BLOCK || leftBlock == GLASS_BLOCK)
     {
         return false;
     }
