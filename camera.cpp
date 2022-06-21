@@ -49,9 +49,9 @@ void Camera::rotate(Pad &t_pad)
 }
 
 void Camera::updateUnitCirclePosition(){
-    unitCirclePosition.x = (sin(horizontalLevel) * verticalLevel);
+    unitCirclePosition.x = (Math::sin(horizontalLevel) * verticalLevel);
     unitCirclePosition.y = CAMERA_Y;
-    unitCirclePosition.z = (cos(horizontalLevel) * verticalLevel);
+    unitCirclePosition.z = (Math::cos(horizontalLevel) * verticalLevel);
 }
 
 /** Rotate camera around 3D object */
@@ -82,9 +82,9 @@ void Camera::pointCamera(Pad &t_pad, Mesh &t_mesh)
     if(pitch > 89.0F) pitch = 89.0F; 
     if(pitch < -89.0F) pitch = -89.0F; 
 
-    lookPos.x = cos(Utils::degreesToRadian(yaw)) * cos(Utils::degreesToRadian(pitch));
-    lookPos.y = sin(Utils::degreesToRadian(pitch));
-    lookPos.z = sin(Utils::degreesToRadian(yaw)) * cos(Utils::degreesToRadian(pitch));
+    lookPos.x = Math::cos(Utils::degreesToRadian(yaw)) * Math::cos(Utils::degreesToRadian(pitch));
+    lookPos.y = Math::sin(Utils::degreesToRadian(pitch));
+    lookPos.z = Math::sin(Utils::degreesToRadian(yaw)) * Math::cos(Utils::degreesToRadian(pitch));
 
     lookPos += position;
     lookAt(lookPos);
