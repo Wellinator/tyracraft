@@ -23,7 +23,7 @@ EE_OBJS =											\
 EE_LIBS = -ltyra
 
 all: $(EE_BIN)
-# 	$(EE_STRIP) --strip-all $(EE_BIN)
+	$(EE_STRIP) --strip-all $(EE_BIN)
 #	mv $(EE_BIN) bin/$(EE_BIN) 
 	rm $(EE_OBJS)
 
