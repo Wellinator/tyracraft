@@ -40,7 +40,6 @@ public:
     ~Player();
 
     void update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount);
-    const inline u32 &getJumpCount() const { return jumpCounter; }
     inline const Vector3 &getPosition() const { return mesh.position; }
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
@@ -54,7 +53,6 @@ public:
 
 private:
     TextureRepository *texRepo;
-    u32 jumpCounter;
     Vector3 *getNextPosition(const Pad &t_pad, const Camera &t_camera);
     u8 isWalkingAnimationSet, isJumpingAnimationSet, isFightingAnimationSet;
     u8 isOnBlock, isUnderBlock;

@@ -24,9 +24,8 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
-    lift = -4.3F;
-    jumpCounter = 0;
-    speed = 4.0F;
+    lift = -5.0F;
+    speed = 4.5F;
     isWalking = false;
     isFighting = false;
     isWalkingAnimationSet = false;
@@ -75,6 +74,12 @@ void Player::handleInputCommands(const Pad &t_pad)
         this->moveSelectorToTheLeft();
     if (t_pad.isR1Clicked)
         this->moveSelectorToTheRight();
+    if (t_pad.isCrossClicked && this->isOnGround)
+    {
+        velocity = lift;
+        // audio->playADPCM(jumpAdpcm);
+        this->isOnGround = 0;
+    }
 }
 
 Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
@@ -151,14 +156,6 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
     //     isWalkingAnimationSet = false;
     //     mesh.playAnimation(0, 0);
     // }
-
-    if (t_pad.isCrossClicked == 1 && this->isOnGround)
-    {
-        velocity = lift;
-        // audio->playADPCM(jumpAdpcm);
-        jumpCounter++;
-        this->isOnGround = 0;
-    }
 
     // Check if is at the world's edge
     if (
