@@ -1,6 +1,8 @@
 #ifndef _CONSTANTS_
 #define _CONSTANTS_
 
+#include <models/math/vector3.hpp>
+
 #define OVERWORLD_H_DISTANCE 256                             // Total horizontal overworld distance;
 #define OVERWORLD_V_DISTANCE 128                             // Total vertical overworld distance;
 #define HALF_OVERWORLD_H_DISTANCE (OVERWORLD_H_DISTANCE / 2) // Half horizontal overworld distance;
@@ -46,7 +48,7 @@
 #define BIRCH_PLANKS_BLOCK 17
 #define ACACIA_PLANKS_BLOCK 18
 
-//Stone bricks
+// Stone bricks
 #define STONE_BRICK_BLOCK 19
 #define CRACKED_STONE_BRICKS_BLOCK 20
 #define MOSSY_STONE_BRICKS_BLOCK 21
@@ -113,5 +115,8 @@ enum ITEM_TYPES
 };
 
 #define INVENTORY_SIZE 9
+
+#define MIN_WORLD_POS Vector3(OVERWORLD_MIN_DISTANCE *DUBLE_BLOCK_SIZE, OVERWORLD_MIN_HEIGH *DUBLE_BLOCK_SIZE, OVERWORLD_MIN_DISTANCE *DUBLE_BLOCK_SIZE)
+#define MAX_WORLD_POS Vector3(OVERWORLD_MAX_DISTANCE *DUBLE_BLOCK_SIZE, OVERWORLD_MAX_HEIGH *DUBLE_BLOCK_SIZE, OVERWORLD_MAX_DISTANCE *DUBLE_BLOCK_SIZE)
 
 #endif
