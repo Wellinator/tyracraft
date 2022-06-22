@@ -10,6 +10,7 @@
 #include <models/math/vector3.hpp>
 #include <models/math/ray.hpp>
 #include <fastmath.h>
+#include <draw_sampling.h>
 #include "../objects/Block.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
