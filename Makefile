@@ -8,6 +8,7 @@ EE_OBJS =											\
 	managers/state_manager.o						\
 	managers/menu_manager.o							\
 	managers/items_repository.o						\
+	managers/collision_manager.o					\
 	objects/World.o									\
 	objects/Block.o									\
 	objects/chunck.o								\
