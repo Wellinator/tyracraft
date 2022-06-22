@@ -60,12 +60,19 @@ Player::~Player()
 void Player::update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount)
 {
     this->handleInputCommands(t_pad);
-    Vector3 *nextPos = getNextPosition(t_pad, t_camera);
-    BlocksCheck *blocksCheck = this->checkBlocks(t_blocks, blocks_ammount, *nextPos);
-    this->updatePosition(t_pad, t_camera, *nextPos, blocksCheck);
-    this->updateGravity(blocksCheck);
-    delete blocksCheck;
-    delete nextPos;
+
+    if (requestedToMove)
+    {
+        nextPlayerPos = getNextPosition(t_pad, t_camera);
+        this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
+        this->updatePosition(t_pad, t_camera);
+    }
+
+    this->checkIfIsOnBlock(t_blocks, blocks_ammount);
+    this->updateGravity();
+
+    requestedToMove = 0;
+    delete nextPlayerPos;
 }
 
 void Player::handleInputCommands(const Pad &t_pad)
@@ -80,6 +87,9 @@ void Player::handleInputCommands(const Pad &t_pad)
         // audio->playADPCM(jumpAdpcm);
         this->isOnGround = 0;
     }
+
+    if (t_pad.lJoyV <= 100 || t_pad.lJoyV >= 200 || t_pad.lJoyH <= 100 || t_pad.lJoyH >= 200)
+        requestedToMove = 1;
 }
 
 Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
@@ -113,7 +123,7 @@ Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
     return result;
 }
 
-void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &t_nextPos, BlocksCheck *t_blocksCheck)
+void Player::updatePosition(const Pad &t_pad, const Camera &t_camera)
 {
 
     if (t_pad.rJoyH >= 200)
@@ -121,7 +131,7 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
     else if (t_pad.rJoyH <= 100)
         mesh.rotation.z += 0.08;
 
-    isWalking = mesh.position.x != t_nextPos.x || mesh.position.z != t_nextPos.z;
+    isWalking = mesh.position.x != nextPlayerPos->x || mesh.position.z != nextPlayerPos->z;
     isFighting = isFighting || t_pad.isCircleClicked;
 
     if (isFighting)
@@ -158,23 +168,23 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera, const Vect
     // }
 
     // Check if is at the world's edge
-    if (!t_nextPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
+    if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
         return;
 
-    if(t_blocksCheck->willCollideBlock != NULL)
+    if (this->willCollideBlock != NULL)
         return;
 
-    //Apply new position;
-    mesh.position.x = t_nextPos.x;
-    mesh.position.z = t_nextPos.z;
+    // Apply new position;
+    mesh.position.x = nextPlayerPos->x;
+    mesh.position.z = nextPlayerPos->z;
 }
 
 /** Update player position by gravity and update index of current block */
-void Player::updateGravity(BlocksCheck *t_blocksCheck)
+void Player::updateGravity()
 {
     float newYPosition = mesh.position.y - this->velocity;
     this->velocity += GRAVITY;
-    this->isOnBlock = t_blocksCheck->currentBlock != NULL && newYPosition <= t_blocksCheck->currBlockMax.y;
+    this->isOnBlock = this->currentBlock != NULL && newYPosition <= this->currBlockMax.y;
 
     if (newYPosition >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
@@ -198,15 +208,36 @@ void Player::updateGravity(BlocksCheck *t_blocksCheck)
     mesh.position.y = newYPosition;
 }
 
-BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos)
+void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 {
-    BlocksCheck *result = new BlocksCheck();
-    result->currentBlock = NULL;
-    result->willCollideBlock = NULL;
+    this->willCollideBlock = NULL;
+    Vector3 min = Vector3();
+    Vector3 max = Vector3();
+    Block *tempWillCollideBlock = NULL;
+
+    for (int i = 0; i < blocks_ammount; i++)
+    {
+        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
+        {
+            t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
+            if (requestedToMove && this->willCollideBlock == NULL &&
+                t_blocks[i]->mesh.position.y > this->mesh.position.y &&
+                CollisionManager::willCollideAt(&this->mesh, &t_blocks[i]->mesh, nextPlayerPos))
+            {
+                this->willCollideBlock = t_blocks[i];
+                this->willCollideBlockMin.set(min);
+                this->willCollideBlockMax.set(max);
+            }
+        }
+    }
+}
+
+void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
+{
+    this->currentBlock = NULL;
     Vector3 min = Vector3();
     Vector3 max = Vector3();
     Block *tempCurrentBlock = NULL;
-    Block *tempWillCollideBlock = NULL;
 
     for (int i = 0; i < blocks_ammount; i++)
     {
@@ -216,41 +247,23 @@ BlocksCheck *Player::checkBlocks(Block *t_blocks[], int blocks_ammount, const Ve
             if (this->mesh.position.isOnBox(min, max))
             {
                 tempCurrentBlock = t_blocks[i];
-                if (result->currentBlock == NULL)
+                if (this->currentBlock == NULL)
                 {
-                    result->currentBlock = t_blocks[i];
-                    result->currBlockMin.set(min);
-                    result->currBlockMax.set(max);
+                    this->currentBlock = t_blocks[i];
+                    this->currBlockMin.set(min);
+                    this->currBlockMax.set(max);
                 }
                 else if (this->mesh.position.distanceTo(tempCurrentBlock->position) <
-                         this->mesh.position.distanceTo(result->currentBlock->position))
+                         this->mesh.position.distanceTo(this->currentBlock->position))
                 {
-                    result->currentBlock = t_blocks[i];
-                    result->currBlockMin.set(min);
-                    result->currBlockMax.set(max);
+                    this->currentBlock = t_blocks[i];
+                    this->currBlockMin.set(min);
+                    this->currBlockMax.set(max);
                 }
-            }
-            if (t_nextPos.collidesBox(min, max))
-            {
-                tempWillCollideBlock = t_blocks[i];
-                if (result->willCollideBlock == NULL)
-                {
-                    result->willCollideBlock = t_blocks[i];
-                    result->willCollideBlockMin.set(min);
-                    result->willCollideBlockMax.set(max);
-                }
-                else if (this->mesh.position.distanceTo(tempWillCollideBlock->position) <
-                         this->mesh.position.distanceTo(result->currentBlock->position))
-                {
-                    result->willCollideBlock = t_blocks[i];
-                    result->willCollideBlockMin.set(min);
-                    result->willCollideBlockMax.set(max);
-                }
+                continue;
             }
         }
     }
-
-    return result;
 }
 
 /**

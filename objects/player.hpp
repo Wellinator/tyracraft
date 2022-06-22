@@ -22,12 +22,7 @@
 #include <modules/audio.hpp>
 #include <modules/texture_repository.hpp>
 #include "../managers/items_repository.hpp"
-
-struct BlocksCheck
-{
-    const Block *currentBlock, *willCollideBlock;
-    Vector3 currBlockMin, willCollideBlockMin, currBlockMax, willCollideBlockMax;
-};
+#include "../managers/collision_manager.hpp"
 
 /** Player 3D object class  */
 class Player
@@ -43,6 +38,12 @@ public:
     inline const Vector3 &getPosition() const { return mesh.position; }
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
+
+    u8 requestedToMove;
+    //Valid when requestedToMove is true;
+    Vector3 *nextPlayerPos;
+    const Block *currentBlock, *willCollideBlock;
+    Vector3 currBlockMin, willCollideBlockMin, currBlockMax, willCollideBlockMax;
 
     // Inventory
     u8 inventoryHasChanged = 1;
@@ -61,9 +62,10 @@ private:
     audsrv_adpcm_t *walkAdpcm, *jumpAdpcm, *boomAdpcm;
     float speed;
     void getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max);
-    void updatePosition(const Pad &t_pad, const Camera &t_camera, const Vector3 &nextPos, BlocksCheck *t_blocksCheck);
-    void updateGravity(BlocksCheck *t_blocksCheck);
-    BlocksCheck *checkBlocks(Block *t_blocks[], int blocks_ammount, const Vector3 &t_nextPos);
+    void updatePosition(const Pad &t_pad, const Camera &t_camera);
+    void updateGravity();
+    void checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount);
+    void checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount);
     void handleInputCommands(const Pad &t_pad);
 
     // Inventory
