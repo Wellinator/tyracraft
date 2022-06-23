@@ -25,7 +25,9 @@ EE_LIBS = -ltyra
 
 all: $(EE_BIN)
 	$(EE_STRIP) --strip-all $(EE_BIN)
-#	mv $(EE_BIN) bin/$(EE_BIN) 
+	rm $(EE_OBJS)
+
+dbg: $(EE_BIN)
 	rm $(EE_OBJS)
 
 sync-assets:
@@ -39,13 +41,18 @@ clean:
 
 rebuild:
 	make clean && make all && make sync-assets
+	
+rebuild-dbg:
+	make clean && make dbg && make sync-assets
+	
+build-release:
+	make rebuild-engine && make clean && make rebuild && make sync-assets
 
 run: $(EE_BIN)
 	killall -v ps2client || true
 	ps2client reset
 	ps2client reset
-	$(EE_STRIP) --strip-all $(EE_BIN)
-#	mv $(EE_BIN) bin/$(EE_BIN)
+	make rebuild-dbg
 	rm $(EE_OBJS)
 	cd bin/ && ps2client execee host:$(EE_BIN)
 
