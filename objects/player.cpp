@@ -24,7 +24,8 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
-    lift = -5.0F;
+    lift = -100.0F;
+    velocity = 0.0F;
     speed = 4.5F;
     isWalking = false;
     isFighting = false;
@@ -57,7 +58,7 @@ Player::~Player()
 // Methods
 // ----
 
-void Player::update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount)
+void Player::update(float deltaTime, const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount)
 {
     this->handleInputCommands(t_pad);
 
@@ -69,7 +70,7 @@ void Player::update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[],
     }
 
     this->checkIfIsOnBlock(t_blocks, blocks_ammount);
-    this->updateGravity();
+    this->updateGravity(deltaTime);
 
     requestedToMove = 0;
     delete nextPlayerPos;
@@ -180,10 +181,11 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera)
 }
 
 /** Update player position by gravity and update index of current block */
-void Player::updateGravity()
+void Player::updateGravity(float deltaTime)
 {
-    float newYPosition = mesh.position.y - this->velocity;
     this->velocity += GRAVITY;
+    float newYPosition = mesh.position.y - (deltaTime * this->velocity);
+
     this->isOnBlock = this->currentBlock != NULL && newYPosition <= this->currBlockMax.y;
 
     if (newYPosition >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)

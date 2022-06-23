@@ -17,7 +17,7 @@ void StateManager::init(TextureRepository *t_texRepo, Renderer *t_renderer, Audi
     mainMenu = new MainMenu();
 }
 
-void StateManager::update(Pad &t_pad, Camera &camera)
+void StateManager::update(float deltaTime, Pad &t_pad, Camera &camera)
 {
     // Splash Screen
     if (_state == SPLASH_SCREEN)
@@ -52,21 +52,22 @@ void StateManager::update(Pad &t_pad, Camera &camera)
     {
         this->controlGameMode(t_pad);
 
-        //Updates
+        // Updates
         world->update(player, &camera, t_pad);
-        player->update(t_pad,
+        player->update(deltaTime,
+                       t_pad,
                        camera,
                        world->terrainManager->getChunck()->blocks.data(),
                        world->terrainManager->getChunck()->blocks.size());
         ui->update();
         camera.update(t_pad, player->mesh);
 
-        //Render
+        // Render
         world->render(t_renderer);
         // TODO: Should render only if is third person Cam;
         // t_renderer->draw(player->mesh);
 
-        //Lest spet is 2D drawing
+        // Lest spet is 2D drawing
         ui->render(t_renderer);
     }
 }
@@ -100,7 +101,7 @@ void StateManager::loadGame()
     itemRepository->init(t_texRepo);
     ui->init(t_texRepo, itemRepository, player);
     world->init(t_texRepo, itemRepository);
-    
+
     player->mesh.position.set(world->terrainManager->worldSpawnArea);
     player->spawnArea.set(world->terrainManager->worldSpawnArea);
 }
@@ -121,12 +122,12 @@ void StateManager::setBgColorAndAmbientColor()
     t_renderer->setAmbientLight(ambient);
 }
 
-//TODO: Check the delay to change
+// TODO: Check the delay to change
 void StateManager::controlGameMode(Pad &t_pad)
 {
-    if(t_pad.isDpadUpPressed && t_pad.isCrossClicked)
+    if (t_pad.isDpadUpPressed && t_pad.isCrossClicked)
     {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(this->lastTimeCrossWasClicked - std::chrono::steady_clock::now()).count() <= 500)
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(this->lastTimeCrossWasClicked - std::chrono::steady_clock::now()).count() <= 500)
         {
             printf("GAME_MODE changed to %d\n", this->gameMode);
             this->gameMode = this->gameMode == CREATIVE ? SURVIVAL : CREATIVE;

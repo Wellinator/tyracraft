@@ -34,13 +34,13 @@ public:
     Player(Audio *t_audio, TextureRepository *t_texRepo);
     ~Player();
 
-    void update(const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount);
+    void update(float deltaTime, const Pad &t_pad, const Camera &t_camera, Block *t_blocks[], unsigned int blocks_ammount);
     inline const Vector3 &getPosition() const { return mesh.position; }
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
 
     u8 requestedToMove;
-    //Valid when requestedToMove is true;
+    // Valid when requestedToMove is true;
     Vector3 *nextPlayerPos;
     const Block *currentBlock, *willCollideBlock;
     Vector3 currBlockMin, willCollideBlockMin, currBlockMax, willCollideBlockMax;
@@ -63,7 +63,7 @@ private:
     float speed;
     void getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max);
     void updatePosition(const Pad &t_pad, const Camera &t_camera);
-    void updateGravity();
+    void updateGravity(float deltaTime);
     void checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount);
     void checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount);
     void handleInputCommands(const Pad &t_pad);
@@ -79,8 +79,7 @@ private:
         ITEM_TYPES::oak_planks,
         ITEM_TYPES::spruce_planks,
         ITEM_TYPES::stone_brick,
-        ITEM_TYPES::chiseled_stone_bricks
-        }; // Starts from 0
+        ITEM_TYPES::chiseled_stone_bricks}; // Starts from 0
     short int selectedInventoryIndex = 0;
     void moveSelectorToTheLeft();
     void moveSelectorToTheRight();

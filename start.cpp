@@ -32,7 +32,7 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
-    stateManager.update(engine->pad, camera);
+    stateManager.update(1 / engine->fps, engine->pad, camera);
 }
 
 void Start::onAudioTick()

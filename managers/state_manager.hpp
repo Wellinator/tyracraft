@@ -21,7 +21,7 @@ public:
     ~StateManager();
 
     void init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio, ScreenSettings *t_screen);
-    void update(Pad &t_pad, Camera &camera);
+    void update(float deltaTime, Pad &t_pad, Camera &camera);
 
     u8 currentState();
     void loadSplashScreen();
