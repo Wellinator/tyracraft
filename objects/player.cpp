@@ -24,9 +24,12 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
 {
     texRepo = t_texRepo;
     audio = t_audio;
+
+    // Phisycs values
     lift = -100.0F;
+    speed = 165.0F;
     velocity = 0.0F;
-    speed = 4.5F;
+
     isWalking = false;
     isFighting = false;
     isWalkingAnimationSet = false;
@@ -64,7 +67,7 @@ void Player::update(float deltaTime, const Pad &t_pad, const Camera &t_camera, B
 
     if (requestedToMove)
     {
-        nextPlayerPos = getNextPosition(t_pad, t_camera);
+        nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
         this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
         this->updatePosition(t_pad, t_camera);
     }
@@ -93,12 +96,13 @@ void Player::handleInputCommands(const Pad &t_pad)
         requestedToMove = 1;
 }
 
-Vector3 *Player::getNextPosition(const Pad &t_pad, const Camera &t_camera)
+Vector3 *Player::getNextPosition(float deltaTime, const Pad &t_pad, const Camera &t_camera)
 {
     Vector3 *result = new Vector3(mesh.position);
-    Vector3 normalizedCamera = Vector3(t_camera.unitCirclePosition);
+    Vector3 normalizedCamera;
+    normalizedCamera.set(t_camera.unitCirclePosition);
     normalizedCamera.normalize();
-    normalizedCamera *= speed;
+    normalizedCamera *= (speed * deltaTime);
 
     if (t_pad.lJoyV <= 100)
     {
@@ -200,7 +204,7 @@ void Player::updateGravity(float deltaTime)
 
     if (this->isOnBlock)
     {
-        // newYPosition = t_blocksCheck->currBlockMax.y;
+        newYPosition = this->currBlockMax.y;
         this->velocity = 0;
         this->isOnGround = 1;
         return;
@@ -229,6 +233,7 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
                 this->willCollideBlock = t_blocks[i];
                 this->willCollideBlockMin.set(min);
                 this->willCollideBlockMax.set(max);
+                break;
             }
         }
     }
@@ -249,20 +254,21 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
             if (this->mesh.position.isOnBox(min, max))
             {
                 tempCurrentBlock = t_blocks[i];
+
                 if (this->currentBlock == NULL)
                 {
                     this->currentBlock = t_blocks[i];
                     this->currBlockMin.set(min);
                     this->currBlockMax.set(max);
                 }
-                else if (this->mesh.position.distanceTo(tempCurrentBlock->position) <
-                         this->mesh.position.distanceTo(this->currentBlock->position))
+                else if (this->currentBlock != NULL &&
+                         (this->mesh.position.distanceTo(tempCurrentBlock->position) <
+                          this->mesh.position.distanceTo(this->currentBlock->position)))
                 {
                     this->currentBlock = t_blocks[i];
                     this->currBlockMin.set(min);
                     this->currBlockMax.set(max);
                 }
-                continue;
             }
         }
     }

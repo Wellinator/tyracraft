@@ -54,7 +54,7 @@ public:
 
 private:
     TextureRepository *texRepo;
-    Vector3 *getNextPosition(const Pad &t_pad, const Camera &t_camera);
+    Vector3 *getNextPosition(float deltaTime, const Pad &t_pad, const Camera &t_camera);
     u8 isWalkingAnimationSet, isJumpingAnimationSet, isFightingAnimationSet;
     u8 isOnBlock, isUnderBlock;
     Audio *audio;
