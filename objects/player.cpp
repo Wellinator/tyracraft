@@ -26,7 +26,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     audio = t_audio;
 
     // Phisycs values
-    lift = -100.0F;
+    lift = -135.0F;
     speed = 165.0F;
     velocity = 0.0F;
 
