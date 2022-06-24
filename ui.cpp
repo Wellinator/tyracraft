@@ -114,9 +114,12 @@ void Ui::updatePlayerInventory(Player *t_player)
     {
         if (inventoryData[i] != ITEM_TYPES::empty)
         {
-            t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
-            delete playerInventory[i];
-            
+            if (playerInventory[i] != NULL)
+            {
+                t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
+                delete playerInventory[i];
+            }
+
             Sprite *tempItemSprite = new Sprite();
 
             tempItemSprite->setMode(MODE_STRETCH);
