@@ -214,6 +214,15 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
     {
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
+            /**
+             * TODO:
+             * Get all the collidable boxes;
+             * Calculate the distance from current mesh bounding box nad the closest collidable box;
+             * Calc the time to hit the target box; (DistanceOflayerMeshToTargetBox / Speed)
+             * if -> elapsedTime is greater than timeToHit, then -> put mesh at hitPosition
+             * if -> closest hitPosition is closest to nextPlayerPos, then ->  put mesh at hitPosition
+             * else -> move to nextPlayerPos;
+             */
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
             if ( t_blocks[i]->mesh.position.y > this->mesh.position.y && CollisionManager::willCollideAt(&this->mesh, &t_blocks[i]->mesh, nextPlayerPos))
             {
