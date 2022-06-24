@@ -39,8 +39,6 @@ public:
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
 
-    u8 requestedToMove;
-    // Valid when requestedToMove is true;
     Vector3 *nextPlayerPos;
     const Block *currentBlock, *willCollideBlock;
     Vector3 currBlockMin, willCollideBlockMin, currBlockMax, willCollideBlockMax;

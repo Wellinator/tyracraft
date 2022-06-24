@@ -65,18 +65,15 @@ void Player::update(float deltaTime, const Pad &t_pad, const Camera &t_camera, B
 {
     this->handleInputCommands(t_pad);
 
-    if (requestedToMove)
-    {
-        nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-        this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
-        this->updatePosition(t_pad, t_camera);
-    }
-
+    this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
+    this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
     this->checkIfIsOnBlock(t_blocks, blocks_ammount);
-    this->updateGravity(deltaTime);
 
-    requestedToMove = 0;
+    this->updatePosition(t_pad, t_camera);
+    this->updateGravity(deltaTime);    
+
     delete nextPlayerPos;
+    nextPlayerPos = NULL;
 }
 
 void Player::handleInputCommands(const Pad &t_pad)
@@ -91,9 +88,6 @@ void Player::handleInputCommands(const Pad &t_pad)
         // audio->playADPCM(jumpAdpcm);
         this->isOnGround = 0;
     }
-
-    if (t_pad.lJoyV <= 100 || t_pad.lJoyV >= 200 || t_pad.lJoyH <= 100 || t_pad.lJoyH >= 200)
-        requestedToMove = 1;
 }
 
 Vector3 *Player::getNextPosition(float deltaTime, const Pad &t_pad, const Camera &t_camera)
