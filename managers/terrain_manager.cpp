@@ -274,13 +274,13 @@ Vector3 *TerrainManager::getPositionByIndex(unsigned int index)
 
 void TerrainManager::updateChunkByPlayerPosition(Player *player)
 {
-    if (this->lastPlayerPosition.length() == 0)
-        this->lastPlayerPosition.set(worldSpawnArea);
+    if (this->lastPlayerPosition == NULL)
+        this->lastPlayerPosition = new Vector3();
 
     // Update chunck when player moves a quarter chunck
-    if (this->lastPlayerPosition.distanceTo(player->getPosition()) > CHUNCK_DISTANCE / 3)
+    if (this->lastPlayerPosition->distanceTo(player->getPosition()) > CHUNCK_DISTANCE / 3)
     {
-        this->lastPlayerPosition.set(player->getPosition());
+        this->lastPlayerPosition->set(player->getPosition());
         this->buildChunk(floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
                          floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
                          floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
@@ -289,9 +289,9 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     if (shouldUpdateChunck)
     {
         this->buildChunk(
-            floor(this->lastPlayerPosition.x / DUBLE_BLOCK_SIZE),
-            floor(this->lastPlayerPosition.y / DUBLE_BLOCK_SIZE),
-            floor(this->lastPlayerPosition.z / DUBLE_BLOCK_SIZE));
+            floor(this->lastPlayerPosition->x / DUBLE_BLOCK_SIZE),
+            floor(this->lastPlayerPosition->y / DUBLE_BLOCK_SIZE),
+            floor(this->lastPlayerPosition->z / DUBLE_BLOCK_SIZE));
         this->shouldUpdateChunck = 0;
     }
 }
@@ -340,13 +340,6 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     block->mesh.shouldBeLighted = false;
                     block->mesh.shouldBeBackfaceCulled = false;
 
-                    //Reduce texture quality
-                    if(blockPosition.distanceTo(t_player->getPosition()) >= MAX_RANGE_PICKER){
-                        block->mesh.lod.max_level = 100;
-                        block->mesh.lod.mag_filter = LOD_MAG_LINEAR;
-                        block->mesh.lod.min_filter = LOD_MIN_LINEAR;
-                    }
-
                     if (block->mesh.getMaterialsCount() > 0)
                     {
                         for (u16 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
@@ -355,7 +348,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                         }
                     }
 
-                    this->chunck->meshes.push_back(&block->mesh);
+                    // this->chunck->meshes.push_back(&block->mesh);
                     this->chunck->addBlock(block);
                 }
 

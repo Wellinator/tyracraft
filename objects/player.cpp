@@ -190,8 +190,6 @@ void Player::updateGravity(float deltaTime)
     this->velocity += GRAVITY;
     float newYPosition = mesh.position.y - (deltaTime * this->velocity);
 
-    this->isOnBlock = this->currentBlock != NULL && newYPosition <= this->currBlockMax.y;
-
     if (newYPosition >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
         // Maybe has died, teleport to spaw area
@@ -202,12 +200,11 @@ void Player::updateGravity(float deltaTime)
         return;
     }
 
-    if (this->isOnBlock)
+    if (this->currentBlock != NULL && newYPosition < this->currBlockMax.y)
     {
         newYPosition = this->currBlockMax.y;
         this->velocity = 0;
         this->isOnGround = 1;
-        return;
     }
 
     // Finally updates gravity after checks
@@ -219,16 +216,13 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
     this->willCollideBlock = NULL;
     Vector3 min = Vector3();
     Vector3 max = Vector3();
-    Block *tempWillCollideBlock = NULL;
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
+        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-            if (requestedToMove && this->willCollideBlock == NULL &&
-                t_blocks[i]->mesh.position.y > this->mesh.position.y &&
-                CollisionManager::willCollideAt(&this->mesh, &t_blocks[i]->mesh, nextPlayerPos))
+            if ( t_blocks[i]->mesh.position.y > this->mesh.position.y && CollisionManager::willCollideAt(&this->mesh, &t_blocks[i]->mesh, nextPlayerPos))
             {
                 this->willCollideBlock = t_blocks[i];
                 this->willCollideBlockMin.set(min);
@@ -244,7 +238,6 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
     this->currentBlock = NULL;
     Vector3 min = Vector3();
     Vector3 max = Vector3();
-    Block *tempCurrentBlock = NULL;
 
     for (int i = 0; i < blocks_ammount; i++)
     {
@@ -253,17 +246,16 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
             if (this->mesh.position.isOnBox(min, max))
             {
-                tempCurrentBlock = t_blocks[i];
-
                 if (this->currentBlock == NULL)
                 {
                     this->currentBlock = t_blocks[i];
                     this->currBlockMin.set(min);
                     this->currBlockMax.set(max);
+                    continue;
                 }
-                else if (this->currentBlock != NULL &&
-                         (this->mesh.position.distanceTo(tempCurrentBlock->position) <
-                          this->mesh.position.distanceTo(this->currentBlock->position)))
+
+                if (this->mesh.position.distanceTo(t_blocks[i]->position) <
+                    this->mesh.position.distanceTo(this->currentBlock->position))
                 {
                     this->currentBlock = t_blocks[i];
                     this->currBlockMin.set(min);

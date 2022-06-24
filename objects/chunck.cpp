@@ -38,7 +38,7 @@ void Chunck::highLightTargetBlock(Mesh *t_mesh, u8 &isTarget)
 void Chunck::renderer(Renderer *t_renderer)
 {
     for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
-        if (this->blocks[blockIndex]->type != AIR_BLOCK && !this->blocks[blockIndex]->isHidden)
+        if (this->blocks[blockIndex]->mesh.isDataLoaded())
             t_renderer->draw(this->blocks[blockIndex]->mesh, NULL, 0);
 };
 
@@ -62,17 +62,16 @@ void Chunck::clear()
                 this->blockManager->removeTextureLinkByBlockType(this->blocks[blockIndex]->type, this->blocks[blockIndex]->mesh.getMaterial(materialIndex).getId(), materialIndex);
             }
         }
-        delete this->blocks[blockIndex];
+
+        if (this->blocks[blockIndex] != NULL && this->blocks[blockIndex] != nullptr)
+        {
+            delete this->blocks[blockIndex];
+        }
     }
 
+    printf("Clearing vector...\n");
     this->blocks.clear();
     this->blocks.shrink_to_fit();
-
-    for (u16 i = 0; i < this->blocks.size(); i++)
-        delete meshes[i];
-
-    this->meshes.clear();
-    this->meshes.shrink_to_fit();
 }
 
 void Chunck::addBlock(Block *t_block)

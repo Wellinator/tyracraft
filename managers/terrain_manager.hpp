@@ -61,7 +61,7 @@ private:
     Vector3 minWorldPos;
     Vector3 maxWorldPos;
 
-    Vector3 lastPlayerPosition;
+    Vector3 *lastPlayerPosition = NULL;
     int blockToRemoveIndex;
     int blockToPlaceIndex;
 
