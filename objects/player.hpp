@@ -29,7 +29,6 @@ class Player
 {
 
 public:
-    float velocity, lift;
     Mesh mesh;
     Player(Audio *t_audio, TextureRepository *t_texRepo);
     ~Player();
@@ -58,7 +57,11 @@ private:
     Audio *audio;
     Timer walkTimer, fightTimer;
     audsrv_adpcm_t *walkAdpcm, *jumpAdpcm, *boomAdpcm;
-    float speed;
+
+    //Forces values
+    float speed = 100;
+    Vector3 velocity, lift;
+    
     void getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max);
     void updatePosition(const Pad &t_pad, const Camera &t_camera);
     void updateGravity(float deltaTime);

@@ -26,9 +26,8 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     audio = t_audio;
 
     // Phisycs values
-    lift = -135.0F;
-    speed = 165.0F;
-    velocity = 0.0F;
+    lift = Vector3(0.0f, -135.0F, 0.0f);
+    velocity = Vector3(0.0f, 0.0f, 0.0f);
 
     isWalking = false;
     isFighting = false;
@@ -84,9 +83,9 @@ void Player::handleInputCommands(const Pad &t_pad)
         this->moveSelectorToTheRight();
     if (t_pad.isCrossClicked && this->isOnGround)
     {
-        velocity = lift;
-        // audio->playADPCM(jumpAdpcm);
+        this->velocity = this->lift;
         this->isOnGround = 0;
+        // audio->playADPCM(jumpAdpcm);
     }
 }
 
@@ -96,7 +95,7 @@ Vector3 *Player::getNextPosition(float deltaTime, const Pad &t_pad, const Camera
     Vector3 normalizedCamera;
     normalizedCamera.set(t_camera.unitCirclePosition);
     normalizedCamera.normalize();
-    normalizedCamera *= (speed * deltaTime);
+    normalizedCamera *= (this->speed * deltaTime);
 
     if (t_pad.lJoyV <= 100)
     {
@@ -181,28 +180,28 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera)
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(float deltaTime)
 {
-    this->velocity += GRAVITY;
-    float newYPosition = mesh.position.y - (deltaTime * this->velocity);
+    this->velocity += Vector3(0.0f, GRAVITY, 0.0f);//Negative gravity to decrease Y axis
+    Vector3 newYPosition = mesh.position - (this->velocity * deltaTime);
 
-    if (newYPosition >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
+    if (newYPosition.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
     {
         // Maybe has died, teleport to spaw area
         printf("\nReseting player position to:\n");
         this->spawnArea.print();
         this->mesh.position.set(this->spawnArea);
-        this->velocity = 0;
+        this->velocity = Vector3(0.0f, 0.0f, 0.0f);
         return;
     }
 
-    if (this->currentBlock != NULL && newYPosition < this->currBlockMax.y)
+    if (this->currentBlock != NULL && newYPosition.y < this->currBlockMax.y)
     {
-        newYPosition = this->currBlockMax.y;
-        this->velocity = 0;
+        newYPosition.y = this->currBlockMax.y;
+        this->velocity = Vector3(0.0f, 0.0f, 0.0f);
         this->isOnGround = 1;
     }
 
     // Finally updates gravity after checks
-    mesh.position.y = newYPosition;
+    mesh.position.set(newYPosition);
 }
 
 void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
