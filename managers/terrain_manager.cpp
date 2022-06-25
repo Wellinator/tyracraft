@@ -353,6 +353,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                 }
 
                 delete tempBlockOffset;
+                tempBlockOffset = NULL;
             }
         }
     }

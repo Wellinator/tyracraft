@@ -66,6 +66,7 @@ void Chunck::clear()
         if (this->blocks[blockIndex] != NULL && this->blocks[blockIndex] != nullptr)
         {
             delete this->blocks[blockIndex];
+            this->blocks[blockIndex] = NULL;
         }
     }
 
@@ -104,7 +105,7 @@ void Chunck::sanitize(Vector3 currentPlayerPos)
                 }
             }
             delete this->blocks[blockIndex];
-            this->blocks[blockIndex] = nullptr;
+            this->blocks[blockIndex] = NULL;
         }
     }
 

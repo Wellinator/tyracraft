@@ -17,6 +17,7 @@ struct BlockItem {
     ~BlockItem()
     {
         delete t_mesh;
+        t_mesh = NULL;
     };
 
     Mesh *t_mesh;

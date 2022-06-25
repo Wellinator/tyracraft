@@ -26,6 +26,7 @@ void StateManager::update(float deltaTime, Pad &t_pad, Camera &camera)
         if (splashScreen->shouldBeDestroyed())
         {
             delete splashScreen;
+            splashScreen = NULL;
             this->mainMenu->init(t_texRepo, t_screen, t_audio);
             _state = MAIN_MENU;
         }
@@ -41,6 +42,7 @@ void StateManager::update(float deltaTime, Pad &t_pad, Camera &camera)
         if (mainMenu->shouldInitGame())
         {
             delete mainMenu;
+            mainMenu = NULL;
             this->loadGame(); // TODO: implement loading screen
             _state = IN_GAME;
         }

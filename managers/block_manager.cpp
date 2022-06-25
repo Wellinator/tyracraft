@@ -5,7 +5,10 @@ BlockManager::BlockManager() {}
 BlockManager::~BlockManager() 
 {
     for (u8 i = 0; i < blockItems.size(); i++)
+    {
         delete blockItems[i];
+        blockItems[i] = NULL;
+    }
     this->blockItems.clear();
 }
 

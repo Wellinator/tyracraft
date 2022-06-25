@@ -118,6 +118,7 @@ void Ui::updatePlayerInventory(Player *t_player)
             {
                 t_itemRepository->removeTextureLinkByBlockType(inventoryData[i], playerInventory[i]->getId());
                 delete playerInventory[i];
+                playerInventory[i] = NULL;
             }
 
             Sprite *tempItemSprite = new Sprite();
