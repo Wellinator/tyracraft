@@ -76,6 +76,8 @@ private:
 
     // Woods
     Mesh strippedOakWoodBlock;
+    Mesh oakLogBlock;
+    Mesh oakLeavesBlock;
     /*-------------------------------*/
 
     void loadBlocks();

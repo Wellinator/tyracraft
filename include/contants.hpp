@@ -56,6 +56,8 @@
 
 // Woods
 #define STRIPPED_OAK_WOOD_BLOCK 23
+#define OAK_LOG_BLOCK 24
+#define OAK_LEAVES_BLOCK 25
 /*---------------------------------------------*/
 
 #define FIRST_PERSON_CAM 1

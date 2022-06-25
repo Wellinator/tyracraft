@@ -57,6 +57,8 @@ void BlockManager::loadBlocks()
 
     // Woods
     strippedOakWoodBlock.loadObj(MODELS_PATH, "stripped_oak_log", BLOCK_SIZE, true);
+    oakLogBlock.loadObj(MODELS_PATH, "oak_log", BLOCK_SIZE, true);
+    oakLeavesBlock.loadObj(MODELS_PATH, "oak_leaves", BLOCK_SIZE, true);
 
     // Load model's Textures:
     // Blocks
@@ -91,6 +93,8 @@ void BlockManager::loadBlocks()
 
     // Woods
     texRepo->addByMesh(TEXTURES_PATH, strippedOakWoodBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, oakLogBlock, PNG);
+    texRepo->addByMesh(TEXTURES_PATH, oakLeavesBlock, PNG);
 }
 
 void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
@@ -138,6 +142,8 @@ void BlockManager::pushItems()
 
     // Woods
     this->blockItems.push_back(new BlockItem(&strippedOakWoodBlock, STRIPPED_OAK_WOOD_BLOCK));
+    this->blockItems.push_back(new BlockItem(&oakLogBlock, OAK_LOG_BLOCK));
+    this->blockItems.push_back(new BlockItem(&oakLeavesBlock, OAK_LEAVES_BLOCK));
 }
 
 Mesh &BlockManager::getMeshByBlockType(int blockType)
