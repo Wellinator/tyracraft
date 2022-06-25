@@ -26,7 +26,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     audio = t_audio;
 
     // Phisycs values
-    lift = Vector3(0.0f, -185.0F, 0.0f);
+    lift = Vector3(0.0f, -200.0F, 0.0f);
     velocity = Vector3(0.0f, 0.0f, 0.0f);
 
     isWalking = false;
