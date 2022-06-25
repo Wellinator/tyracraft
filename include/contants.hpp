@@ -70,7 +70,7 @@
 #define SPLASH_SCREEN 3
 
 // World constants
-#define GRAVITY 15.5f
+#define GRAVITY Vector3(0.0f, 25.5f, 0.0f)
 
 enum GAME_MODE
 {

@@ -69,7 +69,6 @@ void Chunck::clear()
         }
     }
 
-    printf("Clearing vector...\n");
     this->blocks.clear();
     this->blocks.shrink_to_fit();
 }

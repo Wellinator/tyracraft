@@ -18,6 +18,7 @@
 #include <modules/pad.hpp>
 #include <models/math/vector3.hpp>
 #include <modules/timer.hpp>
+#include <models/math/ray.hpp>
 #include <tamtypes.h>
 #include <modules/audio.hpp>
 #include <modules/texture_repository.hpp>
@@ -38,9 +39,13 @@ public:
     u8 isFighting, isWalking, isOnGround;
     Vector3 spawnArea;
 
+    //Phisycs variables
+    Ray ray;
     Vector3 *nextPlayerPos;
     const Block *currentBlock, *willCollideBlock;
-    Vector3 currBlockMin, willCollideBlockMin, currBlockMax, willCollideBlockMax;
+    Vector3 currBlockMin, currBlockMax;
+    Vector3 willCollideBlockMin, willCollideBlockMax, hitPosition;
+    float distanceToHit = -1.0f;
 
     // Inventory
     u8 inventoryHasChanged = 1;
@@ -63,7 +68,7 @@ private:
     Vector3 velocity, lift;
     
     void getMinMax(const Mesh &t_mesh, Vector3 &t_min, Vector3 &t_max);
-    void updatePosition(const Pad &t_pad, const Camera &t_camera);
+    void updatePosition(float deltaTime, const Pad &t_pad, const Camera &t_camera);
     void updateGravity(float deltaTime);
     void checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount);
     void checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount);

@@ -26,7 +26,7 @@ Player::Player(Audio *t_audio, TextureRepository *t_texRepo)
     audio = t_audio;
 
     // Phisycs values
-    lift = Vector3(0.0f, -135.0F, 0.0f);
+    lift = Vector3(0.0f, -185.0F, 0.0f);
     velocity = Vector3(0.0f, 0.0f, 0.0f);
 
     isWalking = false;
@@ -67,9 +67,8 @@ void Player::update(float deltaTime, const Pad &t_pad, const Camera &t_camera, B
     this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
     this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
     this->checkIfIsOnBlock(t_blocks, blocks_ammount);
-
-    this->updatePosition(t_pad, t_camera);
-    this->updateGravity(deltaTime);    
+    this->updateGravity(deltaTime);
+    this->updatePosition(deltaTime, t_pad, t_camera);
 
     delete nextPlayerPos;
     nextPlayerPos = NULL;
@@ -87,6 +86,11 @@ void Player::handleInputCommands(const Pad &t_pad)
         this->isOnGround = 0;
         // audio->playADPCM(jumpAdpcm);
     }
+
+    if (t_pad.rJoyH >= 200)
+        this->mesh.rotation.z -= 0.08;
+    else if (t_pad.rJoyH <= 100)
+        this->mesh.rotation.z += 0.08;
 }
 
 Vector3 *Player::getNextPosition(float deltaTime, const Pad &t_pad, const Camera &t_camera)
@@ -121,56 +125,19 @@ Vector3 *Player::getNextPosition(float deltaTime, const Pad &t_pad, const Camera
     return result;
 }
 
-void Player::updatePosition(const Pad &t_pad, const Camera &t_camera)
+void Player::updatePosition(float deltaTime, const Pad &t_pad, const Camera &t_camera)
 {
-
-    if (t_pad.rJoyH >= 200)
-        mesh.rotation.z -= 0.08;
-    else if (t_pad.rJoyH <= 100)
-        mesh.rotation.z += 0.08;
-
-    isWalking = mesh.position.x != nextPlayerPos->x || mesh.position.z != nextPlayerPos->z;
-    isFighting = isFighting || t_pad.isCircleClicked;
-
-    if (isFighting)
-    {
-        if (!isFightingAnimationSet)
-        {
-            isFightingAnimationSet = true;
-            mesh.playAnimation(8, 19, 0);
-            fightTimer.prime();
-        }
-        if (fightTimer.getTimeDelta() > 25000)
-        { // end of fighting
-            isFightingAnimationSet = false;
-            isFighting = false;
-        }
-    }
-    else if (isWalking)
-    {
-        // if (!isWalkingAnimationSet)
-        // {
-        //     isWalkingAnimationSet = true;
-        //     this->mesh.playAnimation(1, 8);
-        // }
-        if (walkTimer.getTimeDelta() > 8000)
-        {
-            walkTimer.prime();
-            audio->playADPCM(walkAdpcm, 0);
-        }
-    }
-    // else
-    // {
-    //     isWalkingAnimationSet = false;
-    //     mesh.playAnimation(0, 0);
-    // }
-
     // Check if is at the world's edge
     if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
         return;
 
-    if (this->willCollideBlock != NULL)
-        return;
+    // Will collide
+    if (distanceToHit > -1.0f)
+    {
+        float timeToHit = distanceToHit / this->speed;
+        if (timeToHit <= deltaTime || distanceToHit < this->mesh.position.distanceTo(*nextPlayerPos))
+            return;
+    }
 
     // Apply new position;
     mesh.position.x = nextPlayerPos->x;
@@ -180,7 +147,7 @@ void Player::updatePosition(const Pad &t_pad, const Camera &t_camera)
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(float deltaTime)
 {
-    this->velocity += Vector3(0.0f, GRAVITY, 0.0f);//Negative gravity to decrease Y axis
+    this->velocity += GRAVITY;// Negative gravity to decrease Y axis
     Vector3 newYPosition = mesh.position - (this->velocity * deltaTime);
 
     if (newYPosition.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
@@ -206,32 +173,43 @@ void Player::updateGravity(float deltaTime)
 
 void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 {
-    this->willCollideBlock = NULL;
+    this->distanceToHit = -1.0f;
     Vector3 min = Vector3();
     Vector3 max = Vector3();
+
+    // Get the direction
+    Vector3 rayDir = *nextPlayerPos - this->mesh.position;
+    rayDir.normalize();
+    ray.set(this->mesh.position, rayDir);
+
+    float distanceToNextPosition = this->mesh.position.distanceTo(*nextPlayerPos);
+    float finalHitDistance = -1.0f;
+    float tempHitDistance = -1.0f;
 
     for (int i = 0; i < blocks_ammount; i++)
     {
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
-            /**
-             * TODO:
-             * Get all the collidable boxes;
-             * Calculate the distance from current mesh bounding box nad the closest collidable box;
-             * Calc the time to hit the target box; (DistanceOflayerMeshToTargetBox / Speed)
-             * if -> elapsedTime is greater than timeToHit, then -> put mesh at hitPosition
-             * if -> closest hitPosition is closest to nextPlayerPos, then ->  put mesh at hitPosition
-             * else -> move to nextPlayerPos;
-             */
+            // Calc min and max
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-            if ( t_blocks[i]->mesh.position.y > this->mesh.position.y && CollisionManager::willCollideAt(&this->mesh, &t_blocks[i]->mesh, nextPlayerPos))
+
+            // Project ray
+            ray.intersectBox(&min, &max, tempHitDistance);
+
+            if (tempHitDistance > 0)
             {
-                this->willCollideBlock = t_blocks[i];
-                this->willCollideBlockMin.set(min);
-                this->willCollideBlockMax.set(max);
-                break;
+                if (finalHitDistance == -1.0f)
+                    finalHitDistance = tempHitDistance;
+                else if (tempHitDistance < finalHitDistance)
+                    finalHitDistance = tempHitDistance;
             }
         }
+    }
+
+    if (finalHitDistance > -1.0f)
+    {
+        this->hitPosition.set(this->ray.at(finalHitDistance));
+        this->distanceToHit = finalHitDistance;
     }
 }
 
