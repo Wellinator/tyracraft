@@ -360,6 +360,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
 void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_camera)
 {
+    this->targetBlock = NULL;
     Vector3 minCorner;
     Vector3 maxCorner;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
@@ -398,61 +399,64 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
         this->targetBlock->isTarget = 1;
         this->targetBlock->distance = tempDistance;
     }
-    else
-    {
-        this->targetBlock = NULL;
-    }
 }
 
 void TerrainManager::removeBlock()
 {
-    if (this->targetBlock != NULL)
-    {
-        terrain[this->targetBlock->index] = AIR_BLOCK;
-        this->shouldUpdateChunck = 1;
-    }
+    if (this->targetBlock == NULL)
+        return;
+
+    terrain[this->targetBlock->index] = AIR_BLOCK;
+    this->shouldUpdateChunck = 1;
 }
 
 void TerrainManager::putBlock(u8 blockToPlace)
 {
-    if (this->targetBlock != NULL)
+    if (this->targetBlock == NULL)
+        return;
+
+    // Prevent to put a block at the player position;
+    Vector3 minCorner;
+    Vector3 maxCorner;
+    this->targetBlock->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
+    if (this->t_player->getPosition().collidesBox(minCorner, maxCorner))
+        return;
+
+    // Detect face
+    const BoundingBox *blockCenterPos = this->targetBlock->mesh.getCurrentBoundingBox();
+    Vector3 hitPosition = ray.at(this->targetBlock->distance);
+    Vector3 targetPos = this->targetBlock->position - hitPosition;
+    int terrainIndex = this->targetBlock->index;
+
+    if (std::round(targetPos.z) == blockCenterPos->getFrontFace().axisPosition)
     {
-        // Detect face
-        const BoundingBox *blockCenterPos = this->targetBlock->mesh.getCurrentBoundingBox();
-        Vector3 hitPosition = ray.at(this->targetBlock->distance);
-        Vector3 targetPos = this->targetBlock->position - hitPosition;
-        int terrainIndex = this->targetBlock->index;
+        terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    }
+    else if (std::round(targetPos.z) == blockCenterPos->getBackFace().axisPosition)
+    {
+        terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    }
+    else if (std::round(targetPos.x) == blockCenterPos->getRightFace().axisPosition)
+    {
+        terrainIndex -= OVERWORLD_V_DISTANCE;
+    }
+    else if (std::round(targetPos.x) == blockCenterPos->getLeftFace().axisPosition)
+    {
+        terrainIndex += OVERWORLD_V_DISTANCE;
+    }
+    else if (std::round(targetPos.y) == blockCenterPos->getTopFace().axisPosition)
+    {
+        terrainIndex -= 1;
+    }
+    else if (std::round(targetPos.y) == blockCenterPos->getBottomFace().axisPosition)
+    {
+        terrainIndex += 1;
+    }
 
-        if (std::round(targetPos.z) == blockCenterPos->getFrontFace().axisPosition)
-        {
-            terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-        }
-        else if (std::round(targetPos.z) == blockCenterPos->getBackFace().axisPosition)
-        {
-            terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-        }
-        else if (std::round(targetPos.x) == blockCenterPos->getRightFace().axisPosition)
-        {
-            terrainIndex -= OVERWORLD_V_DISTANCE;
-        }
-        else if (std::round(targetPos.x) == blockCenterPos->getLeftFace().axisPosition)
-        {
-            terrainIndex += OVERWORLD_V_DISTANCE;
-        }
-        else if (std::round(targetPos.y) == blockCenterPos->getTopFace().axisPosition)
-        {
-            terrainIndex -= 1;
-        }
-        else if (std::round(targetPos.y) == blockCenterPos->getBottomFace().axisPosition)
-        {
-            terrainIndex += 1;
-        }
-
-        if (terrainIndex <= OVERWORLD_SIZE && terrainIndex != this->targetBlock->index)
-        {
-            terrain[terrainIndex] = blockToPlace;
-            this->shouldUpdateChunck = 1;
-        }
+    if (terrainIndex <= OVERWORLD_SIZE && terrainIndex != this->targetBlock->index)
+    {
+        terrain[terrainIndex] = blockToPlace;
+        this->shouldUpdateChunck = 1;
     }
 }
 
