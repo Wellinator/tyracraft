@@ -32,12 +32,13 @@ public:
     BlockManager();
     ~BlockManager();
     void init(TextureRepository *t_texRepo);
-    void linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex);
-    void removeTextureLinkByBlockType(int blockType, const u32 t_meshId, u8 materialIndex);
-    Mesh &getMeshByBlockType(int blockType);
+    void linkTextureByBlockType(u8 blockType, const u32 t_meshId, u8 materialIndex);
+    void removeTextureLinkByBlockType(u8 blockType, const u32 t_meshId, u8 materialIndex);
+    Mesh *getMeshByBlockType(u8 blockType);
 
 private:
     void pushItems();
+    void loadBlocks();
 
     std::vector<BlockItem *> blockItems;
 
@@ -79,8 +80,6 @@ private:
     Mesh oakLogBlock;
     Mesh oakLeavesBlock;
     /*-------------------------------*/
-
-    void loadBlocks();
 };
 
 #endif

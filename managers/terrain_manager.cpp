@@ -31,7 +31,7 @@ void TerrainManager::init(TextureRepository *t_texRepo, ItemRepository *itemRepo
     this->initNoise();
     this->blockManager->init(texRepo);
     this->chunck = new Chunck(this->blockManager);
-    this->generateNewTerrain(terrainType, false, false, false, false);
+    this->generateNewTerrain(terrainType, false, true, false, false);
     this->defineSpawnArea();
 }
 
@@ -78,6 +78,9 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat, bool mak
             }
         }
     }
+
+    if (makeTrees)
+        this->generateTrees();
 }
 
 void TerrainManager::initNoise()
@@ -212,7 +215,7 @@ bool TerrainManager::isBlockHidden(int x, int y, int z)
     return true;
 }
 
-int TerrainManager::getBlockTypeByPosition(int x, int y, int z)
+u8 TerrainManager::getBlockTypeByPosition(int x, int y, int z)
 {
     return terrain[this->getIndexByOffset(x, y, z)];
 }
@@ -318,24 +321,23 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 
                 Vector3 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-                int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
-                                                        tempBlockOffset->y,
-                                                        tempBlockOffset->z);
-                u8 block_type = terrain[blockIndex];
+                unsigned int blockIndex = this->getIndexByOffset(tempBlockOffset->x,
+                                                                 tempBlockOffset->y,
+                                                                 tempBlockOffset->z);
+                u8 block_type = this->terrain[blockIndex];
                 u8 isHidden = this->isBlockHidden(tempBlockOffset->x,
                                                   tempBlockOffset->y,
                                                   tempBlockOffset->z);
 
                 // Are block's coordinates in world range?
-                if (tempBlockOffset->collidesBox(minWorldPos, maxWorldPos) && block_type != AIR_BLOCK && !isHidden)
+                if (block_type != AIR_BLOCK && !isHidden && tempBlockOffset->collidesBox(minWorldPos, maxWorldPos))
                 {
-
                     Block *block = new Block(block_type);
                     block->index = blockIndex;
                     block->position.set(blockPosition);
                     block->isHidden = isHidden;
                     block->mesh.position.set(blockPosition);
-                    block->mesh.loadFrom(this->blockManager->getMeshByBlockType(block_type));
+                    block->mesh.loadFrom(*this->blockManager->getMeshByBlockType(block_type));
                     block->mesh.shouldBeFrustumCulled = true;
                     block->mesh.shouldBeLighted = false;
                     block->mesh.shouldBeBackfaceCulled = false;
@@ -456,7 +458,7 @@ void TerrainManager::putBlock(u8 blockToPlace)
 
     if (terrainIndex <= OVERWORLD_SIZE && terrainIndex != this->targetBlock->index)
     {
-        terrain[terrainIndex] = blockToPlace;
+        this->terrain[terrainIndex] = blockToPlace;
         this->shouldUpdateChunck = 1;
     }
 }
@@ -504,7 +506,7 @@ const Vector3 TerrainManager::calcSpawOffset(int bias)
     int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
     Vector3 result;
 
-    for (float posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--)
+    for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--)
     {
         int index = this->getIndexByOffset(posX, posY, posZ);
         u8 type = this->terrain[index];
@@ -574,4 +576,76 @@ float TerrainManager::getHumidity(int x, int z)
     this->noise->SetFractalOctaves(1);
 
     return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+}
+
+void TerrainManager::generateTrees()
+{
+    consoleLog("Generating trees...");
+
+    this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpIndependent);
+    this->noise->SetFractalOctaves(this->octaves);
+    this->noise->SetFractalLacunarity(10.0f);
+    this->noise->SetFrequency(1.0f);
+
+    for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++)
+    {
+        for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++)
+        {
+            int noise = floor(this->noise->GetNoise((float)(x + seed), (float)(z + seed)) * 7.6);
+            int modX = noise % 3;
+            int modZ = noise % 9;
+            u8 treeHeight;
+            u8 shouldPutATree = noise > 5 && (modX == 1 || modZ == 7) ? 1 : 0;
+
+            if (noise < 10 && noise > 5)
+                treeHeight = noise;
+            else if (noise < 6)
+                treeHeight = 6;
+            else if (noise > 9)
+                treeHeight = 9;
+
+            if (shouldPutATree)
+                this->placeTreeAt(x, z, treeHeight);
+        }
+    }
+}
+
+void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight)
+{
+    for (int y = OVERWORLD_MAX_HEIGH - 1; y >= OVERWORLD_MIN_HEIGH; y--)
+    {
+        int index = this->getIndexByOffset(x, y, z);
+        u8 type = this->terrain[index];
+
+        if (type != AIR_BLOCK && (type == GRASS_BLOCK || type == DIRTY_BLOCK))
+        {
+            for (int j = 0; j <= treeHeight; j++)
+            {
+                u32 treeBlockIndex = this->getIndexByOffset(x, y + j, z);
+
+                // Place logs
+                if (this->terrain[treeBlockIndex] == AIR_BLOCK)
+                    this->terrain[treeBlockIndex] = OAK_LOG_BLOCK;
+
+                // Place leaves
+                if (j >= treeHeight - 2)
+                {
+                    for (int k = -2; k < 3; k++)
+                    {
+                        u32 treeLeaveBlockIndex;
+
+                        treeLeaveBlockIndex = this->getIndexByOffset(x + k, y + j, z);
+                        if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK)
+                            this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
+
+                        treeLeaveBlockIndex = this->getIndexByOffset(x, y + j, z + k);
+                        if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK)
+                            this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
+                    }
+                }
+            }
+            break;
+        }
+    }
 }

@@ -97,23 +97,23 @@ void BlockManager::loadBlocks()
     texRepo->addByMesh(TEXTURES_PATH, oakLeavesBlock, PNG);
 }
 
-void BlockManager::linkTextureByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
+void BlockManager::linkTextureByBlockType(u8 blockType, const u32 t_meshId, u8 materialIndex)
 {
 
-    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(materialIndex).getId())->addLink(t_meshId);
+    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType)->getMaterial(materialIndex).getId())->addLink(t_meshId);
 }
 
-void BlockManager::removeTextureLinkByBlockType(int blockType, const u32 t_meshId, u8 materialIndex)
+void BlockManager::removeTextureLinkByBlockType(u8 blockType, const u32 t_meshId, u8 materialIndex)
 {
-    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType).getMaterial(materialIndex).getId())->removeLinkById(t_meshId);
+    texRepo->getBySpriteOrMesh(getMeshByBlockType(blockType)->getMaterial(materialIndex).getId())->removeLinkById(t_meshId);
 }
 
 void BlockManager::pushItems()
 {
     // Blocks
-    this->blockItems.push_back(new BlockItem(&stoneBlock, STONE_BLOCK));
     this->blockItems.push_back(new BlockItem(&grassBlock, GRASS_BLOCK));
     this->blockItems.push_back(new BlockItem(&dirtBlock, DIRTY_BLOCK));
+    this->blockItems.push_back(new BlockItem(&stoneBlock, STONE_BLOCK));
     this->blockItems.push_back(new BlockItem(&waterBlock, WATER_BLOCK));
     this->blockItems.push_back(new BlockItem(&bedrockBlock, BEDROCK_BLOCK));
     this->blockItems.push_back(new BlockItem(&sandBlock, SAND_BLOCK));
@@ -146,9 +146,10 @@ void BlockManager::pushItems()
     this->blockItems.push_back(new BlockItem(&oakLeavesBlock, OAK_LEAVES_BLOCK));
 }
 
-Mesh &BlockManager::getMeshByBlockType(int blockType)
+Mesh *BlockManager::getMeshByBlockType(u8 blockType)
 {
-    for (u8 i = 0; i < blockItems.size(); i++)
+    for (int i = 0; i < blockItems.size(); i++)
         if (blockItems[i]->blockId == blockType)
-            return *blockItems[i]->t_mesh;
+            return blockItems[i]->t_mesh;
+    return NULL;
 }

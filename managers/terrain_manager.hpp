@@ -11,11 +11,11 @@
 #include <models/math/ray.hpp>
 #include <fastmath.h>
 #include <draw_sampling.h>
+#include "../include/contants.hpp"
 #include "../objects/Block.hpp"
 #include "../objects/chunck.hpp"
 #include "../objects/player.hpp"
 #include "../objects/item.hpp"
-#include "../include/contants.hpp"
 #include "../3libs/FastNoiseLite/FastNoiseLite.h"
 #include "./block_manager.hpp"
 #include "./items_repository.hpp"
@@ -72,11 +72,13 @@ private:
     const float amplitude = 0.65f;
     const float lacunarity = 2.4f;
     const float persistance = .45f;
-    const unsigned int seed = rand() % 100000;//5215
+    const unsigned int seed = 52485;//rand() % 100000;//5215
     int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
     FastNoiseLite *noise;
     void initNoise();
+    void generateTrees();
+    void placeTreeAt(int x, int z, u8 treeHeight);
     u8 getBlock(int noise, int y);
     float getContinentalness(int x, int z);
     float getErosion(int x, int z);
@@ -87,7 +89,7 @@ private:
     float getHeightScale(int x, int z);
 
     void buildChunk(int offsetX, int offsetY, int offsetZ);
-    int getBlockTypeByPosition(int x, int y, int z);
+    u8 getBlockTypeByPosition(int x, int y, int z);
     unsigned int getIndexByOffset(int x, int y, int z);
     unsigned int getIndexByPosition(Vector3 *pos);
     Vector3 *getPositionByIndex(unsigned int index);
