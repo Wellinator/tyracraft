@@ -24,6 +24,8 @@ public:
     u8 visibility = 255;
     u8 isHidden = 1;
 
+    Vector3 minCorner;
+    Vector3 maxCorner;
 
     //Distance to hit point when isTarget is true;
     float distance = 0.0f;

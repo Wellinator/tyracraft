@@ -160,9 +160,9 @@ void Player::updateGravity(float deltaTime)
         return;
     }
 
-    if (this->currentBlock != NULL && newYPosition.y < this->currBlockMax.y)
+    if (this->currentBlock != NULL && newYPosition.y < this->currentBlock->maxCorner.y)
     {
-        newYPosition.y = this->currBlockMax.y;
+        newYPosition.y = this->currentBlock->maxCorner.y;
         this->velocity = Vector3(0.0f, 0.0f, 0.0f);
         this->isOnGround = 1;
     }
@@ -185,16 +185,10 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        Vector3 min = Vector3();
-        Vector3 max = Vector3();
-
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
-            // Calc min and max
-            t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-
             // Project ray
-            ray.intersectBox(&min, &max, tempHitDistance);
+            ray.intersectBox(&t_blocks[i]->minCorner, &t_blocks[i]->maxCorner, tempHitDistance);
 
             if (tempHitDistance > 0)
             {
@@ -219,19 +213,13 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        Vector3 min = Vector3();
-        Vector3 max = Vector3();
-
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
         {
-            t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);
-            if (this->mesh.position.isOnBox(min, max))
+            if (this->mesh.position.isOnBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner))
             {
                 if (this->currentBlock == NULL)
                 {
                     this->currentBlock = t_blocks[i];
-                    this->currBlockMin.set(min);
-                    this->currBlockMax.set(max);
                     continue;
                 }
 
@@ -239,8 +227,6 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
                     this->mesh.position.distanceTo(this->currentBlock->position))
                 {
                     this->currentBlock = t_blocks[i];
-                    this->currBlockMin.set(min);
-                    this->currBlockMax.set(max);
                 }
             }
         }

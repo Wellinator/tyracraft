@@ -341,14 +341,11 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
                     block->mesh.shouldBeFrustumCulled = true;
                     block->mesh.shouldBeLighted = false;
                     block->mesh.shouldBeBackfaceCulled = false;
+                    block->mesh.getMinMaxBoundingBox(&block->minCorner, &block->maxCorner);
 
                     if (block->mesh.getMaterialsCount() > 0)
-                    {
-                        for (u16 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
-                        {
+                        for (u8 materialIndex = 0; materialIndex < block->mesh.getMaterialsCount(); materialIndex++)
                             this->blockManager->linkTextureByBlockType(block_type, block->mesh.getMaterial(materialIndex).getId(), materialIndex);
-                        }
-                    }
 
                     // this->chunck->meshes.push_back(&block->mesh);
                     this->chunck->addBlock(block);
@@ -364,8 +361,6 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ)
 void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_camera)
 {
     this->targetBlock = NULL;
-    Vector3 minCorner;
-    Vector3 maxCorner;
     Vector3 rayDir = t_camera->lookPos - t_camera->position;
     rayDir.normalize();
     ray.set(t_camera->position, rayDir);
@@ -382,8 +377,9 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
             this->chunck->blocks[blockIndex]->isTarget = 0;
             this->chunck->blocks[blockIndex]->distance = 0.0f;
 
-            this->chunck->blocks[blockIndex]->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
-            if (ray.intersectBox(&minCorner, &maxCorner, distance))
+            if (ray.intersectBox(&this->chunck->blocks[blockIndex]->minCorner,
+                                 &this->chunck->blocks[blockIndex]->maxCorner,
+                                 distance))
             {
                 hitedABlock = 1;
                 if (distance == -1.0f ||
@@ -419,10 +415,7 @@ void TerrainManager::putBlock(u8 blockToPlace)
         return;
 
     // Prevent to put a block at the player position;
-    Vector3 minCorner;
-    Vector3 maxCorner;
-    this->targetBlock->mesh.getMinMaxBoundingBox(&minCorner, &maxCorner);
-    if (this->t_player->getPosition().collidesBox(minCorner, maxCorner))
+    if (this->t_player->getPosition().collidesBox(this->targetBlock->minCorner, this->targetBlock->maxCorner))
         return;
 
     // Detect face

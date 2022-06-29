@@ -43,7 +43,6 @@ public:
     Ray ray;
     Vector3 *nextPlayerPos;
     const Block *currentBlock, *willCollideBlock;
-    Vector3 currBlockMin, currBlockMax;
     Vector3 willCollideBlockMin, willCollideBlockMax, hitPosition;
     float distanceToHit = -1.0f;
 
