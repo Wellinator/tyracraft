@@ -147,7 +147,7 @@ void Player::updatePosition(float deltaTime, const Pad &t_pad, const Camera &t_c
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(float deltaTime)
 {
-    this->velocity += GRAVITY;// Negative gravity to decrease Y axis
+    this->velocity += GRAVITY; // Negative gravity to decrease Y axis
     Vector3 newYPosition = mesh.position - (this->velocity * deltaTime);
 
     if (newYPosition.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE || newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)
@@ -185,7 +185,7 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
+        if (CollisionManager::getManhattanDistance(this->mesh.position, t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
             // Project ray
             ray.intersectBox(&t_blocks[i]->minCorner, &t_blocks[i]->maxCorner, tempHitDistance);
@@ -213,7 +213,8 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
 
     for (int i = 0; i < blocks_ammount; i++)
     {
-        if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
+        float distanceToBlock = CollisionManager::getManhattanDistance(this->mesh.position, t_blocks[i]->position);
+        if (distanceToBlock <= (MAX_RANGE_PICKER / 4))
         {
             if (this->mesh.position.isOnBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner))
             {
@@ -223,11 +224,8 @@ void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
                     continue;
                 }
 
-                if (this->mesh.position.distanceTo(t_blocks[i]->position) <
-                    this->mesh.position.distanceTo(this->currentBlock->position))
-                {
+                if (distanceToBlock < CollisionManager::getManhattanDistance(this->mesh.position, this->currentBlock->position))
                     this->currentBlock = t_blocks[i];
-                }
             }
         }
     }

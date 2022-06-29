@@ -192,3 +192,21 @@ void CollisionManager::getMinMaxBoundingBoxAtPos(Vector3 *min, Vector3 *max, Mes
             max->z = calc.z;
     }
 }
+
+float CollisionManager::getManhattanDistance(Vector3 &v1, Vector3 &v2)
+{
+    float x_dif, y_dif, z_dif;
+
+    x_dif = v2.x - v1.x;
+    y_dif = v2.y - v1.y;
+    z_dif = v2.z - v1.z;
+
+    if (x_dif < 0)
+        x_dif = -x_dif;
+    if (y_dif < 0)
+        y_dif = -y_dif;
+    if (z_dif < 0)
+        z_dif = -z_dif;
+
+    return x_dif + y_dif + z_dif;
+}

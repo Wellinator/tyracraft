@@ -280,13 +280,13 @@ void TerrainManager::updateChunkByPlayerPosition(Player *player)
     if (this->lastPlayerPosition == NULL)
         this->lastPlayerPosition = new Vector3();
 
-    // Update chunck when player moves a quarter chunck
-    if (this->lastPlayerPosition->distanceTo(player->getPosition()) > CHUNCK_DISTANCE / 3)
+    Vector3 playerPos = player->getPosition();
+    if (CollisionManager::getManhattanDistance(*this->lastPlayerPosition, playerPos) > CHUNCK_DISTANCE / 2)
     {
-        this->lastPlayerPosition->set(player->getPosition());
-        this->buildChunk(floor(player->getPosition().x / DUBLE_BLOCK_SIZE),
-                         floor(player->getPosition().y / DUBLE_BLOCK_SIZE),
-                         floor(player->getPosition().z / DUBLE_BLOCK_SIZE));
+        this->lastPlayerPosition->set(playerPos);
+        this->buildChunk(floor(playerPos.x / DUBLE_BLOCK_SIZE),
+                         floor(playerPos.y / DUBLE_BLOCK_SIZE),
+                         floor(playerPos.z / DUBLE_BLOCK_SIZE));
     }
 
     if (shouldUpdateChunck)
@@ -368,10 +368,11 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
     float distance = -1.0f;
     float tempDistance;
     Block *tempTargetBlock;
+    Vector3 playerPos = playerPosition;
 
     for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size(); blockIndex++)
     {
-        if (playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
+        if (CollisionManager::getManhattanDistance(playerPos, this->chunck->blocks[blockIndex]->position) <= MAX_RANGE_PICKER)
         {
             // Reset block state
             this->chunck->blocks[blockIndex]->isTarget = 0;
@@ -383,7 +384,8 @@ void TerrainManager::getTargetBlock(const Vector3 &playerPosition, Camera *t_cam
             {
                 hitedABlock = 1;
                 if (distance == -1.0f ||
-                    playerPosition.distanceTo(this->chunck->blocks[blockIndex]->position) < playerPosition.distanceTo(tempTargetBlock->position))
+                    (CollisionManager::getManhattanDistance(playerPos, this->chunck->blocks[blockIndex]->position) <
+                     CollisionManager::getManhattanDistance(playerPos, tempTargetBlock->position)))
                 {
                     tempTargetBlock = this->chunck->blocks[blockIndex];
                     tempDistance = distance;

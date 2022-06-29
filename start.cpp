@@ -24,6 +24,7 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
+    // printf("%f\n", engine->fps);
     stateManager.update(1 / engine->fps, engine->pad, camera);
 }
 

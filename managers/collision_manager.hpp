@@ -43,6 +43,7 @@ public:
     static u8 willCollide(Mesh *meshA, Mesh *meshB, const Vector3 *nextPos);
     static u8 willCollideAt(Mesh *meshA, Mesh *meshB, const Vector3 *nextPos);
     static void getMinMaxBoundingBoxAtPos(Vector3 *min, Vector3 *max, Mesh *t_mesh, const Vector3 *nextPos);
+    static float getManhattanDistance(Vector3 &v1, Vector3 &v2);
     // static u8 isColliding(const BoundingBox &object, const BoundingBox &other);
     // static BoundingBox getSweptBroadphaseRect(const BoundingBox &object);
     // static float sweptAABB(const BoundingBox &object, const BoundingBox &other, eDirection &result);
