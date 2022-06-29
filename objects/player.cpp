@@ -174,20 +174,20 @@ void Player::updateGravity(float deltaTime)
 void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 {
     this->distanceToHit = -1.0f;
-    Vector3 min = Vector3();
-    Vector3 max = Vector3();
 
     // Get the direction
     Vector3 rayDir = *nextPlayerPos - this->mesh.position;
     rayDir.normalize();
     ray.set(this->mesh.position, rayDir);
 
-    float distanceToNextPosition = this->mesh.position.distanceTo(*nextPlayerPos);
     float finalHitDistance = -1.0f;
     float tempHitDistance = -1.0f;
 
     for (int i = 0; i < blocks_ammount; i++)
     {
+        Vector3 min = Vector3();
+        Vector3 max = Vector3();
+
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 2))
         {
             // Calc min and max
@@ -216,11 +216,12 @@ void Player::checkIfWillCollideBlock(Block *t_blocks[], int blocks_ammount)
 void Player::checkIfIsOnBlock(Block *t_blocks[], int blocks_ammount)
 {
     this->currentBlock = NULL;
-    Vector3 min = Vector3();
-    Vector3 max = Vector3();
 
     for (int i = 0; i < blocks_ammount; i++)
     {
+        Vector3 min = Vector3();
+        Vector3 max = Vector3();
+
         if (this->mesh.position.distanceTo(t_blocks[i]->position) <= (MAX_RANGE_PICKER / 4))
         {
             t_blocks[i]->mesh.getMinMaxBoundingBox(&min, &max);

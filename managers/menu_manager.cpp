@@ -26,25 +26,6 @@ void MainMenu::init(TextureRepository *t_texRepo, ScreenSettings *t_screen, Audi
     const float halfWidth = t_screen->width / 2;
     const float halfHeight = t_screen->height / 2;
 
-    // Background
-    background[0].setMode(MODE_STRETCH);
-    background[0].size.set(halfWidth, halfHeight);
-    background[0].position.set(0.0F, 0.0F);
-    background[1].setMode(MODE_STRETCH);
-    background[1].size.set(halfWidth, halfHeight);
-    background[1].position.set(halfWidth, 0.0F);
-    background[2].setMode(MODE_STRETCH);
-    background[2].size.set(halfWidth, halfHeight);
-    background[2].position.set(0.0F, halfHeight);
-    background[3].setMode(MODE_STRETCH);
-    background[3].size.set(halfWidth, halfHeight);
-    background[3].position.set(halfWidth, halfHeight);
-
-    t_texRepo->add("assets/textures/menu/", "background_tl", PNG)->addLink(background[0].getId());
-    t_texRepo->add("assets/textures/menu/", "background_tr", PNG)->addLink(background[1].getId());
-    t_texRepo->add("assets/textures/menu/", "background_bl", PNG)->addLink(background[2].getId());
-    t_texRepo->add("assets/textures/menu/", "background_br", PNG)->addLink(background[3].getId());
-
     // Load title
     // Title
     title[0].setMode(MODE_STRETCH);
@@ -142,12 +123,6 @@ void MainMenu::render(Renderer *t_renderer)
     /**
      * --------------- Sprites ---------------
      * */
-
-    // Background
-    // t_renderer->draw(background[0]);
-    // t_renderer->draw(background[1]);
-    // t_renderer->draw(background[2]);
-    // t_renderer->draw(background[3]);
 
     // Title & Subtitle
     t_renderer->draw(title[0]);

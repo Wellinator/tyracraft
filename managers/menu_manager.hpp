@@ -56,7 +56,6 @@ private:
     TextureRepository *t_texRepo;
 
     Sprite title[4];
-    Sprite background[4];
     Sprite subtitle;
   
     //Array of options [original, active, selected]

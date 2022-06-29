@@ -28,7 +28,6 @@ public:
 
     void renderer(Renderer *t_renderer);
     void update(Player *t_player);
-    void sanitize(Vector3 currentPlayerPos);
     void clear();
 
     //Block controllers

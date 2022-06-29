@@ -15,15 +15,7 @@ void Start::onInit()
 
     stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
 
-    engine->renderer->disableVSync();
-
-    // Load models and textures;
-
-    // Load skybox (temp);
-    //  skybox.loadObj("meshes/skybox/", "skybox", 800.0F, false);
-    //  texRepo->addByMesh("meshes/skybox/", skybox, BMP);
-    //  skybox.shouldBeFrustumCulled = true;
-    //  skybox.shouldBeBackfaceCulled = false;
+    // engine->renderer->disableVSync();
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
@@ -32,6 +24,7 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
+    printf("%f\n", engine->fps);
     stateManager.update(1 / engine->fps, engine->pad, camera);
 }
 

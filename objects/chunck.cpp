@@ -90,25 +90,3 @@ void Chunck::updateBlocks(const Vector3 &playerPosition)
         }
     }
 }
-
-void Chunck::sanitize(Vector3 currentPlayerPos)
-{
-    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
-    {
-        if (this->blocks[blockIndex]->position.distanceTo(currentPlayerPos) > CHUNCK_DISTANCE)
-        {
-            if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
-            {
-                for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
-                {
-                    this->blockManager->removeTextureLinkByBlockType(this->blocks[blockIndex]->type, this->blocks[blockIndex]->mesh.getMaterial(materialIndex).getId(), materialIndex);
-                }
-            }
-            delete this->blocks[blockIndex];
-            this->blocks[blockIndex] = NULL;
-        }
-    }
-
-    blocks.erase(std::remove(blocks.begin(), blocks.end(), nullptr), blocks.end());
-    blocks.shrink_to_fit();
-}
