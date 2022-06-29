@@ -15,7 +15,7 @@ void Start::onInit()
 
     stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
 
-    // engine->renderer->disableVSync();
+    engine->renderer->disableVSync();
 
     // Set camera definitions
     engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
@@ -24,7 +24,6 @@ void Start::onInit()
 
 void Start::onUpdate()
 {
-    printf("%f\n", engine->fps);
     stateManager.update(1 / engine->fps, engine->pad, camera);
 }
 
