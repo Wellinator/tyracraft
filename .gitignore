@@ -1,6 +1,5 @@
 .vscode/
 bin/**
-3libs/**
 fonts/**
 ./**/*.o
 ./**/*.s

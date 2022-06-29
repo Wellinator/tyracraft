@@ -1,11 +1,10 @@
 #include "Block.hpp"
 
-Block::Block(int block_type)
+Block::Block(u8 type)
 {
-  this->block_type = block_type;
+  this->type = type;
 };
 
 Block::~Block()
 {
-
 };

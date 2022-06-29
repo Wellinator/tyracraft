@@ -2,9 +2,9 @@
 #include <loaders/obj_loader.hpp>
 #include "chunck.hpp"
 
-Chunck::Chunck(Engine *t_engine)
+Chunck::Chunck(BlockManager *t_blockManager)
 {
-    this->engine = t_engine;
+    this->blockManager = t_blockManager;
 };
 
 Chunck::~Chunck()
@@ -13,34 +13,34 @@ Chunck::~Chunck()
 
 void Chunck::update(Player *t_player)
 {
-    for (u16 i = 0; i < this->blocks.size(); i++)
+    this->updateBlocks(t_player->getPosition());
+}
+
+void Chunck::applyFOG(Mesh *t_mesh, const Vector3 &originPosition)
+{
+    float visibility = 255 * this->getVisibityByPosition(originPosition.distanceTo(t_mesh->position));
+    for (u16 materialIndex = 0; materialIndex < t_mesh->getMaterialsCount(); materialIndex++)
     {
-        float visibility = 255 * this->getVisibityByPosition(
-                                     t_player->getPosition().distanceTo(this->blocks[i]->mesh.position));
-        this->blocks[i]->mesh.getMaterial(0).color.a = visibility;
+        t_mesh->getMaterial(materialIndex).color.a = visibility;
     }
 }
 
-void Chunck::renderer()
+void Chunck::highLightTargetBlock(Mesh *t_mesh, u8 &isTarget)
 {
-    // Draw mesh
-    // TODO: draw with mesh array as Tyra Engine recommends;
-    for (u16 i = 0; i < this->blocks.size(); i++)
+    for (u16 materialIndex = 0; materialIndex < t_mesh->getMaterialsCount(); materialIndex++)
     {
-        engine->renderer->draw(this->blocks[i]->mesh);
+        t_mesh->getMaterial(materialIndex).color.r = isTarget ? 160 : 128;
+        t_mesh->getMaterial(materialIndex).color.g = isTarget ? 160 : 128;
+        t_mesh->getMaterial(materialIndex).color.b = isTarget ? 160 : 128;
     }
-};
-
-void Chunck::add(Block *t_block)
-{
-    this->blocks.push_back(t_block);
-};
-
-void Chunck::clear()
-{
-    this->blocks.clear();
-    this->blocks.shrink_to_fit();
 }
+
+void Chunck::renderer(Renderer *t_renderer)
+{
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+        if (this->blocks[blockIndex]->mesh.isDataLoaded())
+            t_renderer->draw(this->blocks[blockIndex]->mesh, NULL, 0);
+};
 
 /**
  * Calculate the FOG by distance;
@@ -48,4 +48,67 @@ void Chunck::clear()
 float Chunck::getVisibityByPosition(float d)
 {
     return Utils::FOG_EXP_GRAD(d, 0.007F, 3.0F);
+}
+
+void Chunck::clear()
+{
+    // Clear chunck data
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+    {
+        if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        {
+            for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
+            {
+                this->blockManager->removeTextureLinkByBlockType(this->blocks[blockIndex]->type, this->blocks[blockIndex]->mesh.getMaterial(materialIndex).getId(), materialIndex);
+            }
+        }
+
+        if (this->blocks[blockIndex] != NULL && this->blocks[blockIndex] != nullptr)
+        {
+            delete this->blocks[blockIndex];
+            this->blocks[blockIndex] = NULL;
+        }
+    }
+
+    this->blocks.clear();
+    this->blocks.shrink_to_fit();
+}
+
+void Chunck::addBlock(Block *t_block)
+{
+    this->blocks.push_back(t_block);
+}
+
+void Chunck::updateBlocks(const Vector3 &playerPosition)
+{
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+    {
+        if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+        {
+            // this->applyFOG(&this->blocks[blockIndex]->mesh, playerPosition);
+            this->highLightTargetBlock(&this->blocks[blockIndex]->mesh, this->blocks[blockIndex]->isTarget);
+        }
+    }
+}
+
+void Chunck::sanitize(Vector3 currentPlayerPos)
+{
+    for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++)
+    {
+        if (this->blocks[blockIndex]->position.distanceTo(currentPlayerPos) > CHUNCK_DISTANCE)
+        {
+            if (this->blocks[blockIndex]->mesh.getMaterialsCount() > 0)
+            {
+                for (u16 materialIndex = 0; materialIndex < this->blocks[blockIndex]->mesh.getMaterialsCount(); materialIndex++)
+                {
+                    this->blockManager->removeTextureLinkByBlockType(this->blocks[blockIndex]->type, this->blocks[blockIndex]->mesh.getMaterial(materialIndex).getId(), materialIndex);
+                }
+            }
+            delete this->blocks[blockIndex];
+            this->blocks[blockIndex] = NULL;
+        }
+    }
+
+    blocks.erase(std::remove(blocks.begin(), blocks.end(), nullptr), blocks.end());
+    blocks.shrink_to_fit();
 }
