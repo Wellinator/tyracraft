@@ -1,60 +1,33 @@
-EE_BIN = bin/tyracraft.elf
+TARGET      := tyracraft.elf
+ENGINEDIR	:= /tyra/engine
 
-TYRA_DIR = $(TYRA)
+#The Directories, Source, Includes, Objects, Binary and Resources
+SRCDIR      := src
+INCDIR      := inc
+BUILDDIR    := obj
+TARGETDIR   := bin
+RESDIR      := res
+SRCEXT      := cpp
+VSMEXT		:= vsm
+VCLEXT		:= vcl
+VCLPPEXT	:= vclpp
+DEPEXT      := d
+OBJEXT      := o
 
-EE_OBJS =											\
-	managers/terrain_manager.o						\
-	managers/block_manager.o						\
-	managers/state_manager.o						\
-	managers/menu_manager.o							\
-	managers/items_repository.o						\
-	managers/collision_manager.o					\
-	objects/World.o									\
-	objects/Block.o									\
-	objects/chunck.o								\
-	objects/player.o								\
-	objects/item.o									\
-	utils.o											\
-	ui.o											\
-	camera.o										\
-	splash_screen.o									\
-	start.o											\
-	main.o
+#Flags, Libraries and Includes
+CFLAGS      := 
+LIB         := -ltyra
+LIBDIRS     := -L$(ENGINEDIR)/bin
+INC         := -I$(INCDIR) -I$(ENGINEDIR)/inc
+INCDEP      := -I$(INCDIR) -I$(ENGINEDIR)/inc
 
-EE_LIBS = -ltyra
+include /tyra/Makefile.base
 
-all: $(EE_BIN)
-	$(EE_STRIP) --strip-all $(EE_BIN)
-	rm $(EE_OBJS)
+clean-engine:
+	cd $(ENGINEDIR) && $(MAKE) cleaner
 
-dbg: $(EE_BIN)
-	rm $(EE_OBJS)
+build-engine:
+	cd $(ENGINEDIR) && $(MAKE)
 
-sync-assets:
-	cp -a assets/* bin/
-
-rebuild-engine:
-	cd $(TYRA_DIR) && make clean && make
-
-clean:
-	rm -f $(EE_OBJS)
-
-rebuild:
-	make clean && make all && make sync-assets
-	
-rebuild-dbg:
-	make clean && make dbg && make sync-assets
-	
-build-release:
-	make rebuild-engine && make clean && make rebuild && make sync-assets
-
-run: $(EE_BIN)
-	killall -v ps2client || true
-	ps2client reset
-	ps2client reset
-	make rebuild-dbg
-	rm $(EE_OBJS)
-	cd bin/ && ps2client execee host:$(EE_BIN)
-
-include $(TYRA)/src/engine/Makefile.pref
-
+build-release-engine:
+	cd $(ENGINEDIR) && $(MAKE) release
