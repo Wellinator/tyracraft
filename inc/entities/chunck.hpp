@@ -1,5 +1,4 @@
-#ifndef _CHUNCK_
-#define _CHUNCK_
+#pragma once
 
 #include <vector>
 #include <math/vec4.hpp>
@@ -12,6 +11,7 @@
 #include "managers/block_manager.hpp"
 #include "utils.hpp"
 
+using Tyra::Renderer;
 
 class Chunck
 {
@@ -42,5 +42,3 @@ private:
     void highLightTargetBlock(Mesh *t_mesh, u8 &isTarget);
     void updateBlocks(const Vec4 &playerPosition);
 };
-
-#endif

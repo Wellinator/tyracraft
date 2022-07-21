@@ -4,6 +4,7 @@
 #include <engine.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/3d/bbox/core_bbox.hpp>
+#include <renderer/3d/bbox/bbox.hpp>
 #include <math/vec4.hpp>
 #include <physics/ray.hpp>
 #include <fastmath.h>
@@ -16,13 +17,19 @@
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
 #include "managers/block_manager.hpp"
 #include "managers/items_repository.hpp"
+#include "debug/debug.hpp"
+
+using Tyra::Engine;
+using Tyra::Renderer;
+using Tyra::Vec4;
+using Tyra::BBox;
 
 class TerrainManager {
  public:
   TerrainManager();
   ~TerrainManager();
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
-  void update(Player* t_player, Camera* t_camera, const Pad& t_pad);
+  void update(Player* t_player, Camera* t_camera, Pad* t_pad);
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees,
                           bool makeWater, bool makeCaves);
   inline Chunck* getChunck() { return this->chunck; };
@@ -96,6 +103,6 @@ class TerrainManager {
     return !isBlockHidden(x, y, z);
   };
 
-  void handlePadControls(const Pad& t_pad);
+  void handlePadControls(Pad* t_pad);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
 };

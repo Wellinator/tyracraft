@@ -1,10 +1,14 @@
 #include "start.hpp"
+#include "engine.hpp"
+
+using Tyra::Engine;
+using Tyra::Mesh;
 
 int main()
 {
     Engine engine = Engine();
     Start game = Start(&engine);
-    game.engine->init(&game, 128);
+    engine.run(&game);
     SleepThread();
     return 0;
 }

@@ -1,44 +1,15 @@
 #include "start.hpp"
 
-Start::Start(Engine *t_engine) : engine(t_engine), camera(&t_engine->screen)
-{
+Start::Start(Engine* t_engine) : camera(engine->renderer.core.getSettings()) {
+  engine = t_engine;
 }
 
-Start::~Start()
-{
-    return;
-}
+Start::~Start() { return; }
 
-void Start::onInit()
-{
-    texRepo = engine->renderer->getTextureRepository();
+void Start::init() { stateManager.init(&engine->renderer, &engine->audio); }
 
-    stateManager.init(texRepo, engine->renderer, &engine->audio, &engine->screen);
-
-    engine->renderer->disableVSync();
-
-    // Set camera definitions
-    engine->renderer->setCameraDefinitions(&camera.view, &camera.unitCirclePosition, camera.planes);
-    engine->audio.addSongListener(this);
-}
-
-void Start::onUpdate()
-{
-    // printf("%f\n", engine->fps);
-    stateManager.update(1 / engine->fps, engine->pad, camera);
-}
-
-void Start::onAudioTick()
-{
-    if ((++audioTicks + 20) % 21 == 0)
-    {
-        skip1Beat = !skip1Beat;
-    }
-    if (audioTicks > 10000)
-        audioTicks = 0;
-}
-
-void Start::onAudioFinish()
-{
-    audioTicks = 0;
+void Start::loop() {
+  // printf("%f\n", engine->fps);
+  engine->renderer.beginFrame(CameraInfo3D(&camera.position, &camera.lookPos));
+  stateManager.update(1 / engine->info.getFps(), engine->pad, camera);
 }

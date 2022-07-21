@@ -12,17 +12,20 @@
 #include "managers/items_repository.hpp"
 #include "contants.hpp"
 
-class World
-{
-public:
-    World();
-    ~World();
+using Tyra::Renderer;
 
-    void init(TextureRepository *t_texRepo, ItemRepository *itemRepository);
-    void update(Player *t_player, Camera *t_camera, const Pad &t_pad);
-    void render(Renderer *t_renderer);
-    Chunck *chunck;
-    TerrainManager *terrainManager = new TerrainManager();
+class World {
+ public:
+  World();
+  ~World();
+
+  Renderer* t_renderer;
+  Chunck* chunck;
+  TerrainManager* terrainManager = new TerrainManager();
+
+  void init(Renderer* t_renderer, ItemRepository* itemRepository);
+  void update(Player* t_player, Camera* t_camera, Pad* t_pad);
+  void render();
 };
 
 #endif

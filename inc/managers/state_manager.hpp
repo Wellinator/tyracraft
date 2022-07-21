@@ -1,5 +1,4 @@
-#ifndef _STATE_MANAGER_
-#define _STATE_MANAGER_
+#pragma once
 
 #include <tamtypes.h>
 #include <pad/pad.hpp>
@@ -12,6 +11,13 @@
 #include "menu_manager.hpp"
 #include "items_repository.hpp"
 #include <chrono>
+#include <renderer/renderer.hpp>
+#include "renderer/renderer_settings.hpp"
+
+using Tyra::RendererSettings;
+using Tyra::Renderer;
+using Tyra::Audio;
+using Tyra::Pad;
 
 class StateManager
 {
@@ -19,7 +25,7 @@ public:
     StateManager();
     ~StateManager();
 
-    void init(TextureRepository *t_texRepo, Renderer *t_renderer, Audio *t_audio, ScreenSettings *t_screen);
+    void init(Renderer* t_renderer, Audio* t_audio);
     void update(float deltaTime, Pad &t_pad, Camera &camera);
 
     u8 currentState();
@@ -41,10 +47,8 @@ private:
     GAME_MODE gameMode = SURVIVAL;
 
     u8 _state = SPLASH_SCREEN;
-    TextureRepository *t_texRepo;
-    Renderer *t_renderer;
-    Audio *t_audio;
-    ScreenSettings *t_screen;
+    Renderer* t_renderer;
+    Audio* t_audio;
 
     SplashScreen *splashScreen;
     MainMenu *mainMenu;
@@ -54,5 +58,3 @@ private:
     std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
     void controlGameMode(Pad &t_pad);
 };
-
-#endif

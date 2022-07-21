@@ -1,4 +1,3 @@
-#pragma once
 
 #include <debug/debug.hpp>
 #include <tamtypes.h>
@@ -11,23 +10,24 @@
 #include "managers/terrain_manager.hpp"
 #include "managers/state_manager.hpp"
 
-class Start : public Game, AudioListener {
+#pragma once
+
+using Tyra::Audio;
+using Tyra::Game;
+using Tyra::Engine;
+
+class Start : public Game {
  private:
-  Mesh skybox;
   Camera camera;
-  TextureRepository* texRepo;
-  u32 audioTicks;
-  u8 skip1Beat;
   StateManager stateManager;
 
  public:
+  Engine* engine;
+
   Start(Engine* t_engine);
   ~Start();
 
-  void onInit();
-  void onUpdate();
-  void onAudioTick();
-  void onAudioFinish();
+  void init();
+  void loop();
 
-  Engine* engine;
 };

@@ -1,7 +1,7 @@
 /*
 # ______       ____   ___
-#   |     \/   ____| |___|    
-#   |     |   |   \  |   |       
+#   |     \/   ____| |___|
+#   |     |   |   \  |   |
 #-----------------------------------------------------------------------
 # Copyright 2020, tyra - https://github.com/h4570/tyra
 # Licenced under Apache License 2.0
@@ -22,29 +22,31 @@
 #include "contants.hpp"
 #include <debug/debug.hpp>
 #include <fastmath.h>
+#include "renderer/renderer_settings.hpp"
+
+using Tyra::CameraInfo3D;
+using Tyra::Pad;
+using Tyra::RendererSettings;
 
 /** 3D camera which follow by 3D object. Can be rotated via pad */
-class Camera : public CameraInfo3D
-{
+class Camera : public CameraInfo3D {
+ public:
+  Vec4 up, position, unitCirclePosition, lookPos;
+  float horizontalLevel, verticalLevel, pitch, yaw;
+  float const _sensitivity = 4.58425F;
+  u8 camera_type = FIRST_PERSON_CAM;
 
-public:
-    Vec4 up, position, unitCirclePosition, lookPos;
-    float horizontalLevel, verticalLevel, pitch, yaw;
-    float const _sensitivity = 4.58425F;
-    u8 camera_type = FIRST_PERSON_CAM;
+  Camera(const RendererSettings& t_screen);
+  ~Camera();
 
-    Camera(ScreenSettings *t_screen);
-    ~Camera();
+  void update(Pad& t_pad, Mesh& t_mesh);
+  void rotate(Pad& t_pad);
+  void updateUnitCirclePosition();
+  void followBy(Mesh& t_mesh);
+  void pointCamera(Pad& t_pad, Mesh& t_mesh);
 
-    void update(Pad &t_pad, Mesh &t_mesh);
-    void rotate(Pad &t_pad);
-    void updateUnitCirclePosition();
-    void followBy(Mesh &t_mesh);
-    void pointCamera(Pad &t_pad, Mesh &t_mesh);
-
-protected:
-    Vec4 *getPosition() { return &position; };
-    ScreenSettings screen;
+ protected:
+  Vec4* getPosition() { return &position; };
 };
 
 #endif

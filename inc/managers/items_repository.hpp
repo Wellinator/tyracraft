@@ -1,5 +1,4 @@
-#ifndef _ITEM_REPOSITORY_
-#define _ITEM_REPOSITORY_
+#pragma once
 
 #include <tamtypes.h>
 #include <renderer/renderer.hpp>
@@ -8,14 +7,17 @@
 #include "entities/item.hpp"
 #include "contants.hpp"
 
+using Tyra::TextureRepository;
+using Tyra::Renderer;
+
 class ItemRepository
 {
 public:
-    TextureRepository *texRepo;
+    Renderer* t_renderer;
 
     ItemRepository();
     ~ItemRepository();
-    void init(TextureRepository *t_texRepo);
+    void init(Renderer* t_renderer);
     Item *getItemById(ITEM_TYPES &itemId);
 
     void linkTextureByItemType(ITEM_TYPES itemType, const u32 t_spriteId);
@@ -57,5 +59,3 @@ private:
     // Stripped woods
     Item stripped_oak_wood;
 };
-
-#endif

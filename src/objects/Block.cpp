@@ -1,10 +1,8 @@
 #include "entities/Block.hpp"
+#include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 
-Block::Block(u8 type)
-{
-  this->type = type;
-};
+using Tyra::McpipBlock;
 
-Block::~Block()
-{
-};
+Block::Block(u8 type) : McpipBlock() { this->type = type; }
+
+Block::~Block(){}

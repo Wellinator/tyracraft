@@ -8,11 +8,9 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#ifndef _MAIN_MENU_
-#define _MAIN_MENU_
+#pragma once
 
 #include <debug/debug.hpp>
-#include <renderer/renderer.hpp>
 #include <renderer/renderer.hpp>
 #include <pad/pad.hpp>
 #include <audio/audio.hpp>
@@ -28,45 +26,47 @@
 #include "contants.hpp"
 #include "camera.hpp"
 
-//MENU_OPTIONS
+// MENU_OPTIONS
 #define PLAY_GAME 1
 #define ABOUT 2
 
-class MainMenu
-{
+using Tyra::Audio;
+using Tyra::Mesh;
+using Tyra::Renderer;
+using Tyra::Sprite;
 
-public:
-    MainMenu();
-    ~MainMenu();
+class MainMenu {
+ public:
+  MainMenu();
+  ~MainMenu();
 
-    void init(TextureRepository *t_texRepo, ScreenSettings *t_screen, Audio *t_audio);
-    void update(Pad &t_pad);
-    void render(Renderer *t_renderer);
-    u8 shouldInitGame();
+  void init(Renderer* t_renderer, Audio* t_audio);
+  void update(Pad& t_pad);
+  void render();
+  u8 shouldInitGame();
 
-    //Rotating skybox
-    Mesh menuSkybox;
-private:
-    Audio *t_audio;
+  // Rotating skybox
+//   Mesh menuSkybox;
 
-    u8 hasFinished();
-    u8 activeOption = PLAY_GAME;
-    u8 selectedOption = 0;
+ private:
+  Audio* t_audio;
 
-    TextureRepository *t_texRepo;
+  u8 hasFinished();
+  u8 activeOption = PLAY_GAME;
+  u8 selectedOption = 0;
 
-    Sprite title[4];
-    Sprite subtitle;
-  
-    //Array of options [original, active, selected]
-    Sprite slot[3];
+  Renderer* t_renderer;
 
-    //Texts
-    Sprite textPlayGame;
-    Sprite textSelect;
+  Sprite title[4];
+  Sprite subtitle;
 
-    //Buttons
-    Sprite btnCross;
+  // Array of options [original, active, selected]
+  Sprite slot[3];
+
+  // Texts
+  Sprite textPlayGame;
+  Sprite textSelect;
+
+  // Buttons
+  Sprite btnCross;
 };
-
-#endif

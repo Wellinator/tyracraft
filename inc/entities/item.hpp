@@ -1,8 +1,9 @@
-#ifndef _ITEM_
-#define _ITEM_
+#pragma once
 
 #include <renderer/core/2d/sprite/sprite.hpp>
 #include "contants.hpp"
+
+using Tyra::Sprite;
 
 class Item
 {
@@ -19,5 +20,3 @@ public:
     /** Sprite to be renderer. */
     Sprite sprite;
 };
-
-#endif

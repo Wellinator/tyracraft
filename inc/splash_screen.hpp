@@ -8,10 +8,8 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#ifndef _SPLASH_SCREEN_
-#define _SPLASH_SCREEN_
+#pragma once
 
-#include <renderer/renderer.hpp>
 #include <renderer/renderer.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/2d/sprite/sprite.hpp>
@@ -24,30 +22,28 @@
 #include <string>
 #include "contants.hpp"
 
-/** 3D camera which follow by 3D object. Can be rotated via pad */
-class SplashScreen
-{
+using Tyra::Renderer;
+using Tyra::Sprite;
 
-public:
-    SplashScreen(TextureRepository *t_texRepo, ScreenSettings *t_screen);
-    ~SplashScreen();
+class SplashScreen {
+ public:
+  SplashScreen(Renderer* renderer);
+  ~SplashScreen();
 
-    void render(Renderer *t_renderer);
-    u8 shouldBeDestroyed();
+  void render();
+  u8 shouldBeDestroyed();
 
-private:
-    void setBgColorBlack(Renderer *t_renderer);
-    void renderTyraSplash(Renderer *t_renderer);
-    void renderTyraCraftSplash(Renderer *t_renderer);
-    u8 hasFinished();
+ private:
+  void setBgColorBlack(Renderer* renderer);
+  void renderTyraSplash(Renderer* renderer);
+  void renderTyraCraftSplash(Renderer* renderer);
+  u8 hasFinished();
 
-    TextureRepository *t_texRepo;
-    Sprite tyracraft_grid[16];
-    Sprite tyra_grid[16];
-    u8 alpha = 1;
-    u8 isFading = 0;
-    u8 hasShowedTyraCraft = 0;
-    u8 hasShowedTyra = 0;
+  Renderer* t_renderer;
+  Sprite tyracraft_grid[16];
+  Sprite tyra_grid[16];
+  u8 alpha = 1;
+  u8 isFading = 0;
+  u8 hasShowedTyraCraft = 0;
+  u8 hasShowedTyra = 0;
 };
-
-#endif
