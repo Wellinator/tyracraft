@@ -8,8 +8,6 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#pragma once
-
 #include <renderer/renderer.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/2d/sprite/sprite.hpp>
@@ -21,6 +19,8 @@
 #include <math.h>
 #include <string>
 #include "contants.hpp"
+
+#pragma once
 
 using Tyra::Renderer;
 using Tyra::Sprite;
@@ -35,13 +35,14 @@ class SplashScreen {
 
  private:
   void setBgColorBlack(Renderer* renderer);
-  void renderTyraSplash(Renderer* renderer);
-  void renderTyraCraftSplash(Renderer* renderer);
+  void renderTyraSplash();
+  void renderTyraCraftSplash();
   u8 hasFinished();
 
   Renderer* t_renderer;
-  Sprite tyracraft_grid[16];
-  Sprite tyra_grid[16];
+  Sprite** tyracraft_grid = new Sprite*[16];
+  Sprite** tyra_grid = new Sprite*[16];
+  Sprite* sprite = new Sprite;
   u8 alpha = 1;
   u8 isFading = 0;
   u8 hasShowedTyraCraft = 0;
