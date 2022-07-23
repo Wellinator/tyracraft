@@ -18,7 +18,7 @@ void TyraCraftGame::init() {
 
 void TyraCraftGame::loop() {
   engine->renderer.beginFrame(CameraInfo3D(&camera.position, &camera.lookPos));
-  printf("%i\n", engine->info.getFps());
+  // printf("%i\n", engine->info.getFps());
   stateManager.update(1 / static_cast<float>(engine->info.getFps()), &camera);
   engine->renderer.endFrame();
 }
