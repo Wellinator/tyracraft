@@ -9,27 +9,26 @@ using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
 
-StateManager::StateManager() {}
+StateManager::StateManager() { sprite = new Sprite(); }
 
-StateManager::~StateManager() {}
+StateManager::~StateManager() { delete sprite; }
 
 void StateManager::init(Engine* t_engine) {
-  // this->t_renderer = t_engine->renderer;
-  // this->t_audio = &t_engine->audio;
+  renderer = &t_engine->renderer;
+  audio = &t_engine->audio;
 
   // splashScreen = new SplashScreen(t_renderer);
 
   sprite->size.set(128.0F, 128.0F);
   sprite->position.set(500.0F, 280.0F);
 
-  t_engine->renderer.core.texture.repository
+  renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/splash_screen/tyracraft/1.png"))
       ->addLink(sprite->getId());
 }
 
-void StateManager::update(Engine* t_engine, const float& deltaTime, Pad* t_pad,
-                          Camera* camera) {
-  t_engine->renderer.renderer2D.render(sprite);
+void StateManager::update(const float& deltaTime, Camera* camera) {
+  renderer->renderer2D.render(sprite);
 
   // // Splash Screen
   // if (_state == SPLASH_SCREEN) {
