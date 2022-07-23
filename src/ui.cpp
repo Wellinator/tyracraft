@@ -64,7 +64,7 @@ void Ui::loadlHud() {
       ->addLink(selected_slot.getId());
 
   std::string xp_bar_fullTexPath =
-      FileUtils::fromCwd("assets/hud/xp_bar_fullTexPath.png");
+      FileUtils::fromCwd("assets/hud/xp_bar_full.png");
   xp_bar_full.setMode(Tyra::MODE_STRETCH);
   xp_bar_full.size.set(192.0f, 8.0f);
   xp_bar_full.position.set(224.0f, 436.0f);
