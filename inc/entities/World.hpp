@@ -11,7 +11,9 @@
 #include "managers/terrain_manager.hpp"
 #include "managers/items_repository.hpp"
 #include "contants.hpp"
+#include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 
+using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 
 class World {
@@ -26,6 +28,9 @@ class World {
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad);
   void render();
+
+ private:
+  MinecraftPipeline mcPip;
 };
 
 #endif

@@ -7,6 +7,7 @@ World::~World() {}
 
 void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   this->t_renderer = t_renderer;
+  this->mcPip.init(t_renderer->core);
   this->terrainManager->init(t_renderer, itemRepository);
   this->chunck = this->terrainManager->getChunck(
       floor(this->terrainManager->worldSpawnArea.x / DUBLE_BLOCK_SIZE),
@@ -19,6 +20,4 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
   this->terrainManager->update(t_player, t_camera, t_pad);
 };
 
-void World::render() {
-  this->chunck->renderer(this->t_renderer);
-};
+void World::render() { this->chunck->renderer(this->t_renderer, this->mcPip); };

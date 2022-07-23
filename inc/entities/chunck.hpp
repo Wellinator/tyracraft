@@ -10,35 +10,35 @@
 #include "contants.hpp"
 #include "managers/block_manager.hpp"
 #include "utils.hpp"
+#include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 
+using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 
-class Chunck
-{
-public:
-    Chunck(BlockManager *t_blockManager);
-    ~Chunck();
+class Chunck {
+ public:
+  Chunck(BlockManager* t_blockManager);
+  ~Chunck();
 
-    //Should be length of bocks types;
-    //Init all chunck's meshes empty;
-    std::vector<Block *> blocks;
-    // std::vector<Mesh *> meshes;
+  std::vector<Block> singleTexBlocks;
+  std::vector<Block> multiTexBlocks;
 
-    inline int getChunckSize() const { return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; };
+  inline int getChunckSize() const {
+    return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE;
+  };
 
-    void renderer(Renderer *t_renderer);
-    void update(Player *t_player);
-    void clear();
+  void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip);
+  void update(Player* t_player);
+  void clear();
 
-    //Block controllers
-    void addBlock(Block *t_block);
-    
-private:
-    TextureRepository *texRepo;
-    BlockManager *blockManager;
+  // Block controllers
+  void addBlock(Block* t_block);
 
-    float getVisibityByPosition(float d);
-    void applyFOG(Mesh *t_mesh, const Vec4 &originPosition);
-    void highLightTargetBlock(Mesh *t_mesh, u8 &isTarget);
-    void updateBlocks(const Vec4 &playerPosition);
+ private:
+  BlockManager* blockManager;
+
+  float getVisibityByPosition(float d);
+  void applyFOG(Mesh* t_mesh, const Vec4& originPosition);
+  void highLightTargetBlock(Mesh* t_mesh, u8& isTarget);
+  void updateBlocks(const Vec4& playerPosition);
 };
