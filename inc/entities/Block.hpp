@@ -5,6 +5,7 @@
 #include "contants.hpp"
 #include "renderer/3d/mesh/mesh.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
+#include "managers/block_manager.hpp"
 
 using Tyra::McpipBlock;
 using Tyra::Mesh;
@@ -13,12 +14,9 @@ using Tyra::Vec4;
 /** Block 3D object class  */
 class Block : public McpipBlock {
  public:
-  Mesh* mesh;
-
   u8 type = AIR_BLOCK;  // Init as air
-
-  int index;      // Index at terrain;
-  Vec4 position;  // Index at terrain;
+  int index;            // Index at terrain;
+  Vec4 position;        // Index at terrain;
 
   // Block state
   u8 isTarget = 0;
@@ -26,6 +24,7 @@ class Block : public McpipBlock {
   u8 isEditable = 0;
   u8 visibility = 255;
   u8 isHidden = 1;
+  u8 isSingleTexture = 1;
 
   Vec4 minCorner;
   Vec4 maxCorner;
@@ -33,7 +32,7 @@ class Block : public McpipBlock {
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;
 
-  Block(u8 block_type);
+  Block(BlockInfo* blockInfo);
   ~Block();
 
  private:

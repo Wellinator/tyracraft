@@ -3,6 +3,10 @@
 
 using Tyra::McpipBlock;
 
-Block::Block(u8 type) : McpipBlock() { this->type = type; }
+Block::Block(BlockInfo* blockInfo) : McpipBlock() {
+  this->type = blockInfo->blockId;
+  this->isSingleTexture = blockInfo->_isSingle;
+  this->textureOffset = Vec4(blockInfo->_texOffssetX, blockInfo->_texOffssetY, 0.0F, 1.0F);
+}
 
-Block::~Block(){}
+Block::~Block() {}
