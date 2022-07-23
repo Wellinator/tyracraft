@@ -25,31 +25,31 @@ class StateManager {
   StateManager();
   ~StateManager();
 
-  Sprite* sprite;
   void init(Engine* t_engine);
-  void update(const float& deltaTime, Camera* camera);
+  void update(const float& deltaTime, Camera* t_camera);
 
-  // void setBgColorAndAmbientColor();
+  void setBgColorAndAmbientColor();
 
-  // World* world;
-  // Ui* ui;
-  // Player* player;
-  // ItemRepository* itemRepository;
+  World* world;
+  Ui* ui;
+  Player* player;
+  ItemRepository* itemRepository;
 
  private:
-  // void loadGame();
+  void loadGame();
 
-  // GAME_MODE gameMode = SURVIVAL;
+  GAME_MODE gameMode = SURVIVAL;
 
-  // u8 _state = SPLASH_SCREEN;
-  Renderer* renderer;
-  Audio* audio;
+  u8 _state = SPLASH_SCREEN;
+  Renderer* t_renderer;
+  Audio* t_audio;
+  Pad* t_pad;
 
-  // SplashScreen* splashScreen;
-  // MainMenu* mainMenu;
+  SplashScreen* splashScreen;
+  MainMenu* mainMenu;
 
   // Control game mode change
   // Control Cross click debounce for changing game mode
-  // std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
-  // void controlGameMode(Pad& t_pad);
+  std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
+  void controlGameMode(Pad& t_pad);
 };

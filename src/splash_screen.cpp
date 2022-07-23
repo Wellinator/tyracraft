@@ -22,49 +22,40 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   std::string tyraSplashBasePath =
       FileUtils::fromCwd("assets/splash_screen/tyra/");
 
-  sprite->size.set(128.0F, 128.0F);
-  sprite->position.set(500.0F, 280.0F);
+  u8 index = 0;
+  for (u8 row = 0; row < 4; row++) {
+    for (u8 col = 0; col < 4; col++) {
+      std::string image_index = std::to_string(index + 1) + std::string(".png");
 
-  t_renderer->core.texture.repository.add(FileUtils::fromCwd("reward.png"))
-      ->addLink(sprite->getId());
+      tyracraft_grid[index] = new Sprite;
+      tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
+      tyracraft_grid[index]->size.set(rendererSettings.getWidth() / 4,
+                                      rendererSettings.getHeight() / 4);
+      tyracraft_grid[index]->position.set(
+          floor((rendererSettings.getWidth() / 4 * col) + col),
+          floor((rendererSettings.getHeight() / 4 * row) + row));
 
-  // u8 index = 0;
-  // for (u8 row = 0; row < 4; row++) {
-  //   for (u8 col = 0; col < 4; col++) {
-  //     std::string image_index = std::to_string(index + 1) +
-  //     std::string(".png");
+      tyra_grid[index] = new Sprite;
+      tyra_grid[index]->setMode(Tyra::MODE_STRETCH);
+      tyra_grid[index]->size.set(rendererSettings.getWidth() / 4,
+                                 rendererSettings.getHeight() / 4);
+      tyra_grid[index]->position.set(
+          floor((rendererSettings.getWidth() / 4 * col) + col),
+          floor((rendererSettings.getHeight() / 4 * row) + row));
 
-  //     tyracraft_grid[index] = new Sprite;
-  //     tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
-  //     tyracraft_grid[index]->size.set(rendererSettings.getWidth() / 4,
-  //                                     rendererSettings.getHeight() / 4);
-  //     tyracraft_grid[index]->position.set(
-  //         floor((rendererSettings.getWidth() / 4 * col) + col),
-  //         floor((rendererSettings.getHeight() / 4 * row) + row));
-
-  //     tyra_grid[index] = new Sprite;
-  //     tyra_grid[index]->setMode(Tyra::MODE_STRETCH);
-  //     tyra_grid[index]->size.set(rendererSettings.getWidth() / 4,
-  //                                rendererSettings.getHeight() / 4);
-  //     tyra_grid[index]->position.set(
-  //         floor((rendererSettings.getWidth() / 4 * col) + col),
-  //         floor((rendererSettings.getHeight() / 4 * row) + row));
-
-  //     t_renderer->core.texture.repository
-  //         .add(tyracraftSplashBasePath + image_index)
-  //         ->addLink(tyracraft_grid[index]->getId());
-  //     t_renderer->core.texture.repository.add(tyraSplashBasePath +
-  //     image_index)
-  //         ->addLink(tyra_grid[index]->getId());
-  //     index++;
-  //   }
-  // }
+      t_renderer->core.texture.repository
+          .add(tyracraftSplashBasePath + image_index)
+          ->addLink(tyracraft_grid[index]->getId());
+      t_renderer->core.texture.repository.add(tyraSplashBasePath + image_index)
+          ->addLink(tyra_grid[index]->getId());
+      index++;
+    }
+  }
 }
 
 SplashScreen::~SplashScreen() {}
 
 void SplashScreen::render() {
-  // printf("Rendering splash screen\n");
   alpha = isFading ? alpha - 1 : alpha + 1;
 
   if (alpha == 128) {
@@ -74,17 +65,15 @@ void SplashScreen::render() {
     isFading = 0;
   }
 
-  // if (!hasShowedTyraCraft) {
-  //   renderTyraCraftSplash();
-  //   return;
-  // }
-  // if (!hasShowedTyra) {
-  //   renderTyraSplash();
-  //   return;
-  // }
+  if (!hasShowedTyra) {
+    renderTyraSplash();
+    return;
+  }
 
-  sprite->color.a = alpha;
-  this->t_renderer->renderer2D.render(sprite);
+  if (!hasShowedTyraCraft) {
+    renderTyraCraftSplash();
+    return;
+  }
 }
 
 void SplashScreen::renderTyraSplash() {
@@ -95,20 +84,18 @@ void SplashScreen::renderTyraSplash() {
   }
 }
 
-// void SplashScreen::renderTyraCraftSplash() {
-//   for (u8 index = 0; index < 16; index++) {
-//     tyracraft_grid[index]->color.a = alpha;
-//     this->t_renderer->renderer2D.render(tyracraft_grid[index]);
-//     if (alpha == 0) hasShowedTyraCraft = 1;
-//   }
-// }
+void SplashScreen::renderTyraCraftSplash() {
+  for (u8 index = 0; index < 16; index++) {
+    tyracraft_grid[index]->color.a = alpha;
+    this->t_renderer->renderer2D.render(tyracraft_grid[index]);
+    if (alpha == 0) hasShowedTyraCraft = 1;
+  }
+}
 
 void SplashScreen::setBgColorBlack(Renderer* renderer) {
   this->t_renderer->setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
 }
 
-u8 SplashScreen::hasFinished() { return hasShowedTyra; }
-// u8 SplashScreen::hasFinished() { return hasShowedTyraCraft && hasShowedTyra;
-// }
+u8 SplashScreen::hasFinished() { return hasShowedTyraCraft && hasShowedTyra; }
 
 u8 SplashScreen::shouldBeDestroyed() { return this->hasFinished(); }
