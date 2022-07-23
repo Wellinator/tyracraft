@@ -11,8 +11,8 @@ using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Texture;
 
-struct BlockTexOffset {
-  BlockTexOffset(u8 type, u8 isSingle, const float& texOffssetX,
+struct BlockInfo {
+  BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
                  const float& texOffssetY) {
     _texOffssetX = texOffssetX;
     _texOffssetY = texOffssetY;
@@ -20,7 +20,7 @@ struct BlockTexOffset {
     _isSingle = isSingle;
   };
 
-  ~BlockTexOffset(){};
+  ~BlockInfo(){};
 
   float _texOffssetX;
   float _texOffssetY;
@@ -33,7 +33,7 @@ class BlockManager {
   BlockManager();
   ~BlockManager();
   void init(Renderer* t_renderer);
-  BlockTexOffset* getBlockTexOffsetByType(u8 blockType);
+  BlockInfo* getBlockTexOffsetByType(u8 blockType);
 
  private:
   void registerBlocksTextureCoordinates();
@@ -41,5 +41,5 @@ class BlockManager {
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;
-  std::vector<BlockTexOffset*> blockItems;
+  std::vector<BlockInfo*> blockItems;
 };
