@@ -25,10 +25,9 @@ class StateManager {
   StateManager();
   ~StateManager();
 
-  Sprite* sprite = new Sprite;
-
+  Sprite* sprite;
   void init(Engine* t_engine);
-  void update(Engine* t_engine, const float& deltaTime, Pad* t_pad, Camera* camera);
+  void update(const float& deltaTime, Camera* camera);
 
   // void setBgColorAndAmbientColor();
 
@@ -43,8 +42,8 @@ class StateManager {
   // GAME_MODE gameMode = SURVIVAL;
 
   // u8 _state = SPLASH_SCREEN;
-  // Renderer* t_renderer;
-  // Audio* t_audio;
+  Renderer* renderer;
+  Audio* audio;
 
   // SplashScreen* splashScreen;
   // MainMenu* mainMenu;
