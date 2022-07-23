@@ -13,7 +13,7 @@ using Tyra::Texture;
 
 struct BlockInfo {
   BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
-                 const float& texOffssetY) {
+            const float& texOffssetY) {
     _texOffssetX = texOffssetX;
     _texOffssetY = texOffssetY;
     blockId = type;
@@ -34,6 +34,7 @@ class BlockManager {
   ~BlockManager();
   void init(Renderer* t_renderer);
   BlockInfo* getBlockTexOffsetByType(u8 blockType);
+  inline Texture* getBlocksTexture() { return blocksTexAtlas; };
 
  private:
   void registerBlocksTextureCoordinates();
