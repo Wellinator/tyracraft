@@ -50,25 +50,29 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
   }
 
   // In game
-  // if (_state == IN_GAME) {
-  //   this->controlGameMode(t_pad);
+  if (_state == IN_GAME) {
+    printf("Updating game...\n");
+    this->controlGameMode(*t_pad);
 
-  //   // Updates
-  //   // world->update(player, &camera, t_pad);
-  //   player->update(deltaTime, t_pad, camera,
-  //                  world->terrainManager->getChunck()->blocks.data(),
-  //                  world->terrainManager->getChunck()->blocks.size());
-  //   ui->update();
-  //   camera.update(t_pad, *player->mesh);
+    // Updates
+    {
+      world->update(player, t_camera, t_pad);
+      player->update(deltaTime, *t_pad, *t_camera,
+                     world->terrainManager->getChunck()->blocks.data(),
+                     world->terrainManager->getChunck()->blocks.size());
+      ui->update();
+      t_camera->update(*t_pad, *player->mesh);
+    }
 
-  //   // Render
-  //   world->render();
-  //   // TODO: Should render only if is third person Cam;
-  //   // t_renderer.draw(player->mesh);
+    // Render
+    world->render();
 
-  //   // Lest spet is 2D drawing
-  //   ui->render();
-  // }
+    // TODO: Should render only if is third person Cam;
+    // t_renderer.draw(player->mesh);
+
+    // Lest spet is 2D drawing
+    // ui->render();
+  }
 }
 
 void StateManager::loadGame() {
@@ -85,6 +89,8 @@ void StateManager::loadGame() {
 
   player->mesh->getPosition()->set(world->terrainManager->worldSpawnArea);
   player->spawnArea.set(world->terrainManager->worldSpawnArea);
+
+  printf("\nGAME LOADED\n");
 }
 
 void StateManager::setBgColorAndAmbientColor() {

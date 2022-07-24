@@ -58,13 +58,13 @@ Player::~Player() {}
 // ----
 
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-                    Block* t_blocks[], unsigned int blocks_ammount) {
+                    Block t_blocks[], unsigned int blocks_ammount) {
   this->handleInputCommands(t_pad);
 
   this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
   this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
-  this->updateGravity(deltaTime);
+  // this->updateGravity(deltaTime);
   this->updatePosition(deltaTime);
 
   delete nextPlayerPos;
@@ -155,7 +155,7 @@ void Player::updateGravity(const float& deltaTime) {
   mesh->getPosition()->set(newYPosition);
 }
 
-void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
+void Player::checkIfWillCollideBlock(Block t_blocks[], int blocks_ammount) {
   this->distanceToHit = -1.0f;
 
   // Get the direction
@@ -168,10 +168,10 @@ void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
 
   for (int i = 0; i < blocks_ammount; i++) {
     if (CollisionManager::getManhattanDistance(*this->mesh->getPosition(),
-                                               t_blocks[i]->position) <=
+                                               t_blocks[i].position) <=
         (MAX_RANGE_PICKER / 2)) {
       // Project ray
-      ray.intersectBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner,
+      ray.intersectBox(t_blocks[i].minCorner, t_blocks[i].maxCorner,
                        tempHitDistance);
 
       if (tempHitDistance > 0) {
@@ -189,24 +189,24 @@ void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
   }
 }
 
-void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
+void Player::checkIfIsOnBlock(Block t_blocks[], int blocks_ammount) {
   this->currentBlock = NULL;
 
   for (int i = 0; i < blocks_ammount; i++) {
     float distanceToBlock = CollisionManager::getManhattanDistance(
-        *this->mesh->getPosition(), t_blocks[i]->position);
+        *this->mesh->getPosition(), t_blocks[i].position);
     if (distanceToBlock <= (MAX_RANGE_PICKER / 4)) {
-      if (this->mesh->getPosition()->isOnBox(t_blocks[i]->minCorner,
-                                             t_blocks[i]->maxCorner)) {
+      if (this->mesh->getPosition()->isOnBox(t_blocks[i].minCorner,
+                                             t_blocks[i].maxCorner)) {
         if (this->currentBlock == NULL) {
-          this->currentBlock = t_blocks[i];
+          this->currentBlock = &t_blocks[i];
           continue;
         }
 
         if (distanceToBlock <
             CollisionManager::getManhattanDistance(
                 *this->mesh->getPosition(), this->currentBlock->position))
-          this->currentBlock = t_blocks[i];
+          this->currentBlock = &t_blocks[i];
       }
     }
   }

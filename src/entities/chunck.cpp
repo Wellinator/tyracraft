@@ -1,19 +1,25 @@
 #include "entities/chunck.hpp"
+#include <vector>
+#include <functional>
+#include <iterator>
+#include <algorithm>
 
 Chunck::Chunck(BlockManager* t_blockManager) {
   this->blockManager = t_blockManager;
-  mcPip.init(&engine->renderer.core);
 };
 
 Chunck::~Chunck() {}
 
 void Chunck::update(Player* t_player) {
+  if (this->hasChanged) {
+    this->filterSingleAndMultiBlocks();
+  }
   this->updateBlocks(*t_player->getPosition());
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
   t_block->color.a = 255 * this->getVisibityByPosition(
-                               originPosition.distanceTo(*t_block->position));
+                               originPosition.distanceTo(t_block->position));
 }
 
 void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
@@ -23,11 +29,13 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 }
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip) {
-  t_renderer->renderer3D.usePipeline(*mcPip);
-  mcPip->render(singleTexBlocks, singleTexBlocks.size(),
+  t_renderer->renderer3D.usePipeline(mcPip);
+  printf("singleTexBlocks: %i\n", singleTexBlocks.size());
+  printf("multiTexBlocks: %i\n", multiTexBlocks.size());
+  mcPip->render(this->singleTexBlocks.data(), singleTexBlocks.size(),
                 this->blockManager->getBlocksTexture(), false);
-  mcPip->render(multTexBlocks, multTexBlocks.size(),
-                this->blockManager->getBlocksTexture(), true);
+  // mcPip->render(this->multiTexBlocks.data(), multiTexBlocks.size(),
+  //               this->blockManager->getBlocksTexture(), true);
 };
 
 /**
@@ -38,31 +46,36 @@ float Chunck::getVisibityByPosition(float d) {
 }
 
 void Chunck::clear() {
-  // Clear chunck data
   this->singleTexBlocks.clear();
   this->singleTexBlocks.shrink_to_fit();
-  this->multTexBlocks.clear();
-  this->multTexBlocks.shrink_to_fit();
+  this->multiTexBlocks.clear();
+  this->multiTexBlocks.shrink_to_fit();
+  this->blocks.clear();
+  this->blocks.shrink_to_fit();
 }
 
 void Chunck::addBlock(Block* t_block) {
-  t_block->isSingleTexture ? this->singleTexBlocks.push_back(t_block)
-                           : this->multTexBlocks.push_back(t_block);
+  this->blocks.push_back(*t_block);
+  this->setToChanged();
 }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
-  // Single texture blocks
-  for (u16 blockIndex = 0; blockIndex < this->singleTexBlocks.size();
-       blockIndex++) {
-    this->applyFOG(&this->singleTexBlocks[blockIndex], playerPosition);
-    this->highLightTargetBlock(&this->singleTexBlocks[blockIndex],
-                               this->singleTexBlocks[blockIndex]->isTarget);
+  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
+    this->applyFOG(&this->blocks[blockIndex], playerPosition);
+    this->highLightTargetBlock(&this->blocks[blockIndex],
+                               this->blocks[blockIndex].isTarget);
   }
-  // Muilt texture blocks
-  for (u16 blockIndex = 0; blockIndex < this->multTexBlocks.size();
-       blockIndex++) {
-    this->applyFOG(&this->multTexBlocks[blockIndex], playerPosition);
-    this->highLightTargetBlock(&this->multTexBlocks[blockIndex],
-                               this->multTexBlocks[blockIndex]->isTarget);
-  }
+}
+
+void Chunck::setToChanged() { this->hasChanged = 1; }
+
+void Chunck::filterSingleAndMultiBlocks() {
+  std::copy_if(this->blocks.begin(), this->blocks.end(),
+               std::back_inserter(this->singleTexBlocks),
+               [](Block b) { return b.isSingleTexture; });
+  std::copy_if(this->blocks.begin(), this->blocks.end(),
+               std::back_inserter(this->multiTexBlocks),
+               [](Block b) { return !b.isSingleTexture; });
+  this->hasChanged = 0;
+  return;
 }
