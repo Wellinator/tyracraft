@@ -42,12 +42,5 @@ public:
     CollisionManager();
     ~CollisionManager();
 
-    static u8 isColliding(Mesh *meshA, Mesh *meshB);
-    static u8 willCollide(Mesh *meshA, Mesh *meshB, const Vec4 *nextPos);
-    // static void getMinMaxBoundingBoxAtPos(Vec4 *min, Vec4 *max, Mesh *t_mesh, const Vec4 *nextPos);
     static float getManhattanDistance(Vec4 &v1, Vec4 &v2);
-    // static u8 willCollideAt(Mesh *meshA, Mesh *meshB, const Vec4 *nextPos);
-    // static u8 isColliding(const BBox &object, const BBox &other);
-    // static BBox getSweptBroadphaseRect(const BBox &object);
-    // static float sweptAABB(const BBox &object, const BBox &other, eDirection &result);
 };
