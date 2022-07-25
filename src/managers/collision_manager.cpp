@@ -8,7 +8,7 @@ CollisionManager::CollisionManager() {}
 
 CollisionManager::~CollisionManager() {}
 
-float CollisionManager::getManhattanDistance(Vec4& v1, Vec4& v2) {
+float CollisionManager::getManhattanDistance(const Vec4 &v1, const Vec4 &v2) {
   float x_dif, y_dif, z_dif;
 
   x_dif = v2.x - v1.x;

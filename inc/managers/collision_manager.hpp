@@ -42,5 +42,5 @@ public:
     CollisionManager();
     ~CollisionManager();
 
-    static float getManhattanDistance(Vec4 &v1, Vec4 &v2);
+    static float getManhattanDistance(const Vec4 &v1, const Vec4 &v2);
 };
