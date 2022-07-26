@@ -162,7 +162,7 @@ void Player::checkIfWillCollideBlock(Block t_blocks[], int blocks_ammount) {
 
   for (int i = 0; i < blocks_ammount; i++) {
     if (CollisionManager::getManhattanDistance(*this->mesh->getPosition(),
-                                               t_blocks[i].position) <=
+                                              * t_blocks[i].getPosition()) <=
         (MAX_RANGE_PICKER / 2)) {
       // Project ray
       ray.intersectBox(t_blocks[i].minCorner, t_blocks[i].maxCorner,
@@ -188,7 +188,7 @@ void Player::checkIfIsOnBlock(Block t_blocks[], int blocks_ammount) {
 
   for (int i = 0; i < blocks_ammount; i++) {
     float distanceToBlock = CollisionManager::getManhattanDistance(
-        *this->mesh->getPosition(), t_blocks[i].position);
+        *this->mesh->getPosition(), *t_blocks[i].getPosition());
     if (distanceToBlock <= (MAX_RANGE_PICKER / 4)) {
       if (this->mesh->getPosition()->isOnBox(t_blocks[i].minCorner,
                                              t_blocks[i].maxCorner)) {
@@ -199,7 +199,7 @@ void Player::checkIfIsOnBlock(Block t_blocks[], int blocks_ammount) {
 
         if (distanceToBlock <
             CollisionManager::getManhattanDistance(
-                *this->mesh->getPosition(), this->currentBlock->position))
+                *this->mesh->getPosition(), *this->currentBlock->getPosition()))
           this->currentBlock = &t_blocks[i];
       }
     }

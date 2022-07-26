@@ -18,8 +18,9 @@ void Chunck::update(Player* t_player) {
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
-  t_block->color.a = 255 * this->getVisibityByPosition(
-                               originPosition.distanceTo(t_block->position));
+  t_block->color.a =
+      255 * this->getVisibityByPosition(
+                originPosition.distanceTo(*t_block->getPosition()));
 }
 
 void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
@@ -30,8 +31,9 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip) {
   t_renderer->renderer3D.usePipeline(mcPip);
-  printf("singleTexBlocks: %i\n", singleTexBlocks.size());
-  printf("multiTexBlocks: %i\n", multiTexBlocks.size());
+  // this->singleTexBlocks[0].model.print();
+  // printf("singleTexBlocks: %i\n", singleTexBlocks.size());
+  // printf("multiTexBlocks: %i\n", multiTexBlocks.size());
   mcPip->render(this->singleTexBlocks.data(), singleTexBlocks.size(),
                 this->blockManager->getBlocksTexture(), false);
   // mcPip->render(this->multiTexBlocks.data(), multiTexBlocks.size(),
