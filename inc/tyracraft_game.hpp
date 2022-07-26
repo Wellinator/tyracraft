@@ -10,7 +10,7 @@
 #include "camera.hpp"
 #include "managers/terrain_manager.hpp"
 #include "managers/state_manager.hpp"
-#include "renderer/3d/pipeline/std/std_pipeline.hpp"
+#include "renderer/3d/pipeline/static/static_pipeline.hpp"
 
 namespace TyraCraft {
 
