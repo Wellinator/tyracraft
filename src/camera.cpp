@@ -22,7 +22,8 @@ const float CAMERA_Y = 25.0F;
 // Constructors/Destructors
 // ----
 
-Camera::Camera(const RendererSettings& t_screen) : Tyra::CameraInfo3D(&position, &lookPos) {
+Camera::Camera(const RendererSettings& t_screen)
+    : Tyra::CameraInfo3D(&position, &lookPos) {
   verticalLevel = DUBLE_BLOCK_SIZE * 2;
   pitch = 0.0F;
   yaw = 270.0F;
@@ -91,5 +92,10 @@ void Camera::pointCamera(Pad& t_pad, Mesh& t_mesh) {
               Math::cos(Utils::degreesToRadian(pitch));
 
   lookPos += position;
-  //   lookAt(lookPos);
+
+  // t_mesh.getPosition()->print("Mesh");
+  // position.print("Position");
+  // lookPos.print("Look at");
+
+  // lookAt(lookPos);
 }

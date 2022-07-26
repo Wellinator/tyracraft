@@ -2,11 +2,13 @@
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
+#include <thread/threading.hpp>
 
 using Tyra::Audio;
 using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::RendererSettings;
+using Tyra::Threading;
 
 MainMenu::MainMenu() {}
 
@@ -182,6 +184,7 @@ void MainMenu::render() {
   this->t_renderer->renderer2D.render(&background[1]);
   this->t_renderer->renderer2D.render(&background[2]);
   this->t_renderer->renderer2D.render(&background[3]);
+  Threading::switchThread();
 
   // Title & Subtitle
   this->t_renderer->renderer2D.render(&title[0]);
@@ -189,11 +192,13 @@ void MainMenu::render() {
   this->t_renderer->renderer2D.render(&title[2]);
   this->t_renderer->renderer2D.render(&title[3]);
   this->t_renderer->renderer2D.render(&subtitle);
+  Threading::switchThread();
 
   // Slots
   this->t_renderer->renderer2D.render(&slot[0]);
   this->t_renderer->renderer2D.render(&slot[1]);
   this->t_renderer->renderer2D.render(&slot[2]);
+  Threading::switchThread();
 
   // Texts
   this->t_renderer->renderer2D.render(&textPlayGame);

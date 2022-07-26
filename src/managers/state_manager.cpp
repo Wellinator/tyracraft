@@ -84,6 +84,7 @@ void StateManager::loadGame() {
   ui->init(t_renderer, itemRepository, player);
   world->init(t_renderer, itemRepository);
 
+  world->terrainManager->worldSpawnArea.print("Spawn");
   player->mesh->getPosition()->set(world->terrainManager->worldSpawnArea);
   player->spawnArea.set(world->terrainManager->worldSpawnArea);
 

@@ -159,6 +159,8 @@ float TerrainManager::getHeightScale(int x, int z) {
   if (noise > 0.0f && noise <= 0.8f) return 20.0f;
   if (noise > 0.8f && noise <= 0.9f) return 25.0f;
   if (noise <= 1.0f) return 30.0f;
+
+  return 0.0f;
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z) {
@@ -304,7 +306,11 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
           if (blockInfo) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
-            block->position.set(blockPosition);
+            block->setPosition(blockPosition);
+
+            // Sandro: I dont know where to put this
+            block->updateModelMatrix();
+
             block->isHidden = isHidden;
             this->chunck->addBlock(block);
           }
@@ -332,7 +338,7 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
   for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size();
        blockIndex++) {
     if (CollisionManager::getManhattanDistance(
-            playerPosition, this->chunck->blocks[blockIndex].position) <=
+            playerPosition, *this->chunck->blocks[blockIndex].getPosition()) <=
         MAX_RANGE_PICKER) {
       // Reset block state
       this->chunck->blocks[blockIndex].isTarget = 0;
@@ -344,9 +350,10 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
         hitedABlock = 1;
         if (distance == -1.0f ||
             (CollisionManager::getManhattanDistance(
-                 playerPosition, this->chunck->blocks[blockIndex].position) <
+                 playerPosition,
+                 *this->chunck->blocks[blockIndex].getPosition()) <
              CollisionManager::getManhattanDistance(
-                 playerPosition, tempTargetBlock->position))) {
+                 playerPosition, *tempTargetBlock->getPosition()))) {
           tempTargetBlock = &this->chunck->blocks[blockIndex];
           tempDistance = distance;
         }
