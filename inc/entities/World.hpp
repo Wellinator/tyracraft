@@ -22,7 +22,6 @@ class World {
   ~World();
 
   Renderer* t_renderer;
-  Chunck* chunck;
   TerrainManager* terrainManager = new TerrainManager();
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
