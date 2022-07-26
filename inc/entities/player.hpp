@@ -58,7 +58,7 @@ class Player {
   u8 selectedSlotHasChanged = 0;
   ITEM_TYPES getSelectedInventoryItemType();
   u8 getSelectedInventorySlot();
-  ITEM_TYPES* getInventoryData() { return inventory; };
+  inline ITEM_TYPES* getInventoryData() { return inventory; };
 
  private:
   Renderer* t_renderer;
