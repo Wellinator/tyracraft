@@ -16,7 +16,7 @@ void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->loadlHud();
 }
 
-void Ui::update() { this->updateHud(this->t_player); }
+void Ui::update() { this->updateHud(); }
 
 void Ui::render() {
   this->t_renderer->renderer2D.render(&crosshair);
@@ -24,8 +24,8 @@ void Ui::render() {
   this->t_renderer->renderer2D.render(&selected_slot);
   this->t_renderer->renderer2D.render(&xp_bar_full);
   for (u8 i = 0; i < 10; i++) {
-    this->t_renderer->renderer2D.render(
-        &armor[i]);  // TODO: Daw only when wearing an armor
+    // TODO: Daw only when wearing an armor
+    this->t_renderer->renderer2D.render(&armor[i]);
     this->t_renderer->renderer2D.render(&health[i]);
     this->t_renderer->renderer2D.render(&hungry[i]);
     this->t_renderer->renderer2D.render(&breath[i]);
@@ -106,21 +106,21 @@ void Ui::loadlHud() {
   }
 }
 
-void Ui::updateHud(Player* t_player) {
-  if (t_player->selectedSlotHasChanged) this->updateSelectedSlot(t_player);
+void Ui::updateHud() {
+  if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
 
-  if (t_player->inventoryHasChanged) this->updatePlayerInventory(t_player);
+  if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
 }
 
-void Ui::updateSelectedSlot(Player* t_player) {
+void Ui::updateSelectedSlot() {
   u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
   selected_slot.position.set(
-      FIRST_SLOT_X_POS + (empty_slots.size.x / 9 * slotIndex),
+      FIRST_SLOT_X_POS + (empty_slots.size.x / INVENTORY_SIZE * slotIndex),
       FIRST_SLOT_Y_POS);
   t_player->selectedSlotHasChanged = 0;
 }
 
-void Ui::updatePlayerInventory(Player* t_player) {
+void Ui::updatePlayerInventory() {
   const float BASE_WIDTH = 14.0f;
   const float BASE_HEIGHT = 14.0f;
   const float BASE_X = FIRST_SLOT_X_POS + 4;
@@ -129,23 +129,23 @@ void Ui::updatePlayerInventory(Player* t_player) {
   ITEM_TYPES* inventoryData = this->t_player->getInventoryData();
   for (u8 i = 0; i < INVENTORY_SIZE; i++) {
     if (inventoryData[i] != ITEM_TYPES::empty) {
-      if (playerInventory[i] != NULL) {
-        t_itemRepository->removeTextureLinkByBlockType(
-            inventoryData[i], playerInventory[i]->getId());
-        delete playerInventory[i];
-        playerInventory[i] = NULL;
+      if (this->playerInventory[i] != NULL) {
+        printf("Item on inv at %i, clearing...\n", i);
+        this->t_itemRepository->removeTextureLinkByBlockType(
+            inventoryData[i], this->playerInventory[i]->getId());
+        delete this->playerInventory[i];
+        this->playerInventory[i] = NULL;
       }
 
       Sprite* tempItemSprite = new Sprite();
-
       tempItemSprite->setMode(Tyra::MODE_STRETCH);
       tempItemSprite->size.set(BASE_WIDTH, BASE_HEIGHT);
       tempItemSprite->position.set(BASE_X + (empty_slots.size.x / 9 * i),
                                    BASE_Y);
-      t_itemRepository->linkTextureByItemType(inventoryData[i],
-                                              tempItemSprite->getId());
+      this->t_itemRepository->linkTextureByItemType(inventoryData[i],
+                                                    tempItemSprite->getId());
 
-      playerInventory[i] = tempItemSprite;
+      this->playerInventory[i] = tempItemSprite;
     }
   }
 
