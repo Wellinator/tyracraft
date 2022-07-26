@@ -19,12 +19,12 @@
   <p align="center">
     Open source game for PlayStation 2™ powered by 
     <a href="https://github.com/h4570/tyra">Tyra engine</a>
-    
-    <br />
+    <br/>  
     <a href="https://github.com/Wellinator/tyracraft/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/Wellinator/tyracraft/issues">Request Feature</a>
-  </p>
+    |
+    <a href="https://github.com/Wellinator/tyracraft/issues">Request Feature</a>    
+    <br/>
+   </p>
 </p>  
 
 # TyraCraft (Alpha version)
@@ -58,6 +58,8 @@ It's an Minecraft for Play Station 2 built with Tyra Engine!
 
 - [@Wellinator](https://github.com/wellinator)
 
+## Contribuitors
+- [@Wolf3s](https://github.com/wolfysdl)
 
 ## References
 
