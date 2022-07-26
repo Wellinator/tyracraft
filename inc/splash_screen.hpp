@@ -34,6 +34,7 @@ class SplashScreen {
   u8 shouldBeDestroyed();
 
  private:
+  void unloadTextures();
   void setBgColorBlack(Renderer* renderer);
   void renderTyraSplash();
   void renderTyraCraftSplash();

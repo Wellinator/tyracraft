@@ -29,8 +29,9 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
 
       tyracraft_grid[index] = new Sprite;
       tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
-      tyracraft_grid[index]->size.set(rendererSettings.getWidth() / 4,
-                                      rendererSettings.getInterlacedHeightUI() / 4);
+      tyracraft_grid[index]->size.set(
+          rendererSettings.getWidth() / 4,
+          rendererSettings.getInterlacedHeightUI() / 4);
       tyracraft_grid[index]->position.set(
           floor((rendererSettings.getWidth() / 4 * col) + col),
           floor((rendererSettings.getInterlacedHeightUI() / 4 * row) + row));
@@ -53,7 +54,24 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   }
 }
 
-SplashScreen::~SplashScreen() {}
+SplashScreen::~SplashScreen() {
+  this->unloadTextures();
+}
+
+void SplashScreen::unloadTextures() {
+  u8 rows = 4;
+  u8 cols = 4;
+  for (u8 index = 0; index < rows * cols; index++) {
+    t_renderer->core.texture.repository.free(
+        t_renderer->core.texture.repository
+            .getBySpriteOrMesh(tyracraft_grid[index]->getId())
+            ->getId());
+    t_renderer->core.texture.repository.free(
+        t_renderer->core.texture.repository
+            .getBySpriteOrMesh(tyra_grid[index]->getId())
+            ->getId());
+  }
+}
 
 void SplashScreen::render() {
   alpha = isFading ? alpha - 1 : alpha + 1;
