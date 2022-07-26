@@ -23,9 +23,10 @@
 #include "managers/items_repository.hpp"
 #include <renderer/renderer.hpp>
 #include "managers/collision_manager.hpp"
+#include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
 
 using Tyra::Audio;
-using Tyra::Mesh;
+using Tyra::DynamicMesh;
 using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::TextureRepository;
@@ -35,7 +36,7 @@ using Tyra::Vec4;
 /** Player 3D object class  */
 class Player {
  public:
-  Mesh* mesh;
+  DynamicMesh* mesh;
   Player(Renderer* t_renderer, Audio* t_audio);
   ~Player();
 
@@ -73,6 +74,7 @@ class Player {
   float speed = 100;
   Vec4 velocity, lift;
 
+  void loadMesh();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updatePosition(const float& deltaTime);
   void updateGravity(const float& deltaTime);

@@ -10,11 +10,14 @@
 
 #include "entities/player.hpp"
 #include "utils.hpp"
-// #include <loaders/mdl_loader.hpp>
-// #include <loaders/bmp_loader.hpp>
-// #include <modules/gif_sender.hpp>
 #include <debug/debug.hpp>
 #include <math/math.hpp>
+#include "file/file_utils.hpp"
+#include "loaders/3d/md2/md2_loader.hpp"
+#include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
+
+using Tyra::FileUtils;
+using Tyra::MD2Loader;
 
 // ----
 // Constructors/Destructors
@@ -23,6 +26,8 @@
 Player::Player(Renderer* t_renderer, Audio* t_audio) {
   this->t_renderer = t_renderer;
   this->t_audio = t_audio;
+
+  this->loadMesh();
 
   // Phisycs values
   lift = Vec4(0.0f, -250.0F, 0.0f);
@@ -33,17 +38,6 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   isWalkingAnimationSet = false;
   isJumpingAnimationSet = false;
   isFightingAnimationSet = false;
-
-  // mesh->loadMD2("meshes/player/", "warrior", 0.35F, true);
-  // mesh->getPosition()->set(0.00F, 0.00F, 0.00F);
-  // mesh->rotation.x = -1.566F;
-  // mesh->rotation.z = 1.566F;
-  // mesh->shouldBeBackfaceCulled = false;
-  // mesh->shouldBeFrustumCulled = false;
-  // mesh->setAnimSpeed(0.17F);
-  // mesh->playAnimation(0, 0);
-
-  //   texRepo->addByMesh("meshes/player/", mesh, BMP);
 
   walkAdpcm = this->t_audio->loadADPCM("sounds/walk.adpcm");
   jumpAdpcm = this->t_audio->loadADPCM("sounds/jump.adpcm");
@@ -239,4 +233,20 @@ void Player::moveSelectorToTheRight() {
   selectedInventoryIndex++;
   if (selectedInventoryIndex > INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
+}
+
+void Player::loadMesh() {
+  MD2Loader loader;
+  auto* data =
+      loader.load(FileUtils::fromCwd("meshes/player/warrior.md2"), .35F, true);
+  this->mesh = new DynamicMesh(*data);
+  // result->translation.translateZ(-30.0F);
+  this->mesh->rotation.rotateX(-1.566F);
+  this->mesh->rotation.rotateZ(1.566F);
+  delete data;
+  this->t_renderer->core.texture.repository
+      .add(FileUtils::fromCwd("meshes/player/warrior.png"))
+      ->addLink(this->mesh->getId());
+  this->mesh->playAnimation(0, this->mesh->getFramesCount() - 1);
+  this->mesh->setAnimSpeed(0.17F);
 }
