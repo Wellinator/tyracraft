@@ -26,11 +26,11 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
   if (_state == SPLASH_SCREEN) {
     splashScreen->render();
     if (splashScreen->shouldBeDestroyed()) {
-      delete splashScreen;
-      splashScreen = NULL;
-      mainMenu = new MainMenu();
+      delete this->splashScreen;
+      this->splashScreen = NULL;
+      this->mainMenu = new MainMenu();
       this->mainMenu->init(t_renderer, t_audio);
-      _state = MAIN_MENU;
+      this->_state = MAIN_MENU;
     }
     return;
   }
@@ -51,11 +51,9 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
 
   // In game
   if (_state == IN_GAME) {
-    printf("Updating game...\n");
-    this->controlGameMode(*t_pad);
-
     // Updates
     {
+      this->controlGameMode(*t_pad);
       world->update(player, t_camera, t_pad);
       player->update(deltaTime, *t_pad, *t_camera,
                      world->terrainManager->getChunck()->blocks.data(),
@@ -65,13 +63,12 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
     }
 
     // Render
-    world->render();
-
-    // TODO: Should render only if is third person Cam;
-    // t_renderer.draw(player->mesh);
-
-    // Lest spet is 2D drawing
-    // ui->render();
+    {
+      world->render();
+      // TODO: Should render only if is third person Cam;
+      // t_renderer.draw(player->mesh);
+      ui->render();
+    }
   }
 }
 
