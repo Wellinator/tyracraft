@@ -30,18 +30,18 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
       tyracraft_grid[index] = new Sprite;
       tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
       tyracraft_grid[index]->size.set(rendererSettings.getWidth() / 4,
-                                      rendererSettings.getHeight() / 4);
+                                      rendererSettings.getInterlacedHeightUI() / 4);
       tyracraft_grid[index]->position.set(
           floor((rendererSettings.getWidth() / 4 * col) + col),
-          floor((rendererSettings.getHeight() / 4 * row) + row));
+          floor((rendererSettings.getInterlacedHeightUI() / 4 * row) + row));
 
       tyra_grid[index] = new Sprite;
       tyra_grid[index]->setMode(Tyra::MODE_STRETCH);
       tyra_grid[index]->size.set(rendererSettings.getWidth() / 4,
-                                 rendererSettings.getHeight() / 4);
+                                 rendererSettings.getInterlacedHeightUI() / 4);
       tyra_grid[index]->position.set(
           floor((rendererSettings.getWidth() / 4 * col) + col),
-          floor((rendererSettings.getHeight() / 4 * row) + row));
+          floor((rendererSettings.getInterlacedHeightUI() / 4 * row) + row));
 
       t_renderer->core.texture.repository
           .add(tyracraftSplashBasePath + image_index)
