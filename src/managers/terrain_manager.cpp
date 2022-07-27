@@ -304,8 +304,10 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
           if (blockInfo) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
-            block->position.set(blockPosition);
             block->isHidden = isHidden;
+            block->scale.scale(BLOCK_SIZE);
+            block->setPosition(blockPosition);
+            block->updateModelMatrix();
             this->chunck->addBlock(block);
           }
         }
@@ -332,7 +334,7 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
   for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size();
        blockIndex++) {
     if (CollisionManager::getManhattanDistance(
-            playerPosition, this->chunck->blocks[blockIndex].position) <=
+            playerPosition, *this->chunck->blocks[blockIndex].getPosition()) <=
         MAX_RANGE_PICKER) {
       // Reset block state
       this->chunck->blocks[blockIndex].isTarget = 0;
@@ -344,9 +346,10 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
         hitedABlock = 1;
         if (distance == -1.0f ||
             (CollisionManager::getManhattanDistance(
-                 playerPosition, this->chunck->blocks[blockIndex].position) <
+                 playerPosition,
+                 *this->chunck->blocks[blockIndex].getPosition()) <
              CollisionManager::getManhattanDistance(
-                 playerPosition, tempTargetBlock->position))) {
+                 playerPosition, *tempTargetBlock->getPosition()))) {
           tempTargetBlock = &this->chunck->blocks[blockIndex];
           tempDistance = distance;
         }
@@ -382,7 +385,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
   // // Detect face
   // BBox blockCenterPos = this->targetBlock->mesh->getCurrentBoundingBox();
   // Vec4 hitPosition = ray.at(this->targetBlock->distance);
-  // Vec4 targetPos = this->targetBlock->position - hitPosition;
+  // Vec4 targetPos = this->targetblock->getPosition() - hitPosition;
   // int terrainIndex = this->targetBlock->index;
 
   // if (std::round(targetPos.z) == blockCenterPos.getFrontFace().axisPosition)
