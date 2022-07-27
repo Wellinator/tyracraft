@@ -41,7 +41,7 @@ class Player {
   ~Player();
 
   void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-              Block t_blocks[], unsigned int blocks_ammount);
+              Block* t_blocks[], unsigned int blocks_ammount);
   inline Vec4* getPosition() { return mesh->getPosition(); };
   u8 isFighting, isWalking, isOnGround;
   Vec4 spawnArea;
@@ -78,8 +78,8 @@ class Player {
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updatePosition(const float& deltaTime);
   void updateGravity(const float& deltaTime);
-  void checkIfWillCollideBlock(Block t_blocks[], int blocks_ammount);
-  void checkIfIsOnBlock(Block t_blocks[], int blocks_ammount);
+  void checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount);
+  void checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount);
   void handleInputCommands(Pad& t_pad);
 
   // Inventory

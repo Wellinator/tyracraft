@@ -49,32 +49,47 @@ void Chunck::clear() {
   this->singleTexBlocks.shrink_to_fit();
   this->multiTexBlocks.clear();
   this->multiTexBlocks.shrink_to_fit();
+
+  // Delete pointer
+  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
+    if (this->blocks[blockIndex] != NULL &&
+        this->blocks[blockIndex] != nullptr) {
+      delete this->blocks[blockIndex];
+      this->blocks[blockIndex] = NULL;
+    }
+  }
+
   this->blocks.clear();
   this->blocks.shrink_to_fit();
 }
 
 void Chunck::addBlock(Block* t_block) {
-  this->blocks.push_back(*t_block);
+  this->blocks.push_back(t_block);
   this->setToChanged();
 }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    // this->applyFOG(&this->blocks[blockIndex], playerPosition);
-    this->highLightTargetBlock(&this->blocks[blockIndex],
-                               this->blocks[blockIndex].isTarget);
+    // this->applyFOG(this->blocks[blockIndex], playerPosition);
+    this->highLightTargetBlock(this->blocks[blockIndex],
+                               this->blocks[blockIndex]->isTarget);
   }
 }
 
 void Chunck::setToChanged() { this->hasChanged = 1; }
 
 void Chunck::filterSingleAndMultiBlocks() {
-  std::copy_if(this->blocks.begin(), this->blocks.end(),
-               std::back_inserter(this->singleTexBlocks),
-               [](Block b) { return b.isSingleTexture; });
-  std::copy_if(this->blocks.begin(), this->blocks.end(),
-               std::back_inserter(this->multiTexBlocks),
-               [](Block b) { return !b.isSingleTexture; });
+  this->singleTexBlocks.clear();
+  this->singleTexBlocks.shrink_to_fit();
+  this->multiTexBlocks.clear();
+  this->multiTexBlocks.shrink_to_fit();
+
+  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
+    this->blocks[blockIndex]->isSingleTexture
+        ? this->singleTexBlocks.push_back(*this->blocks[blockIndex])
+        : this->multiTexBlocks.push_back(*this->blocks[blockIndex]);
+  }
+
   this->hasChanged = 0;
   printf("singleTexBlocks: %i\n", singleTexBlocks.size());
   printf("multiTexBlocks: %i\n", multiTexBlocks.size());

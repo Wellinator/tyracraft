@@ -20,7 +20,7 @@ class Chunck {
   Chunck(BlockManager* t_blockManager);
   ~Chunck();
 
-  std::vector<Block> blocks;
+  std::vector<Block *> blocks;
 
   inline int getChunckSize() const {
     return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE;

@@ -334,23 +334,23 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
   for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size();
        blockIndex++) {
     if (CollisionManager::getManhattanDistance(
-            playerPosition, *this->chunck->blocks[blockIndex].getPosition()) <=
+            playerPosition, *this->chunck->blocks[blockIndex]->getPosition()) <=
         MAX_RANGE_PICKER) {
       // Reset block state
-      this->chunck->blocks[blockIndex].isTarget = 0;
-      this->chunck->blocks[blockIndex].distance = 0.0f;
+      this->chunck->blocks[blockIndex]->isTarget = 0;
+      this->chunck->blocks[blockIndex]->distance = 0.0f;
 
-      if (ray.intersectBox(this->chunck->blocks[blockIndex].minCorner,
-                           this->chunck->blocks[blockIndex].maxCorner,
+      if (ray.intersectBox(this->chunck->blocks[blockIndex]->minCorner,
+                           this->chunck->blocks[blockIndex]->maxCorner,
                            distance)) {
         hitedABlock = 1;
         if (distance == -1.0f ||
             (CollisionManager::getManhattanDistance(
                  playerPosition,
-                 *this->chunck->blocks[blockIndex].getPosition()) <
+                 *this->chunck->blocks[blockIndex]->getPosition()) <
              CollisionManager::getManhattanDistance(
                  playerPosition, *tempTargetBlock->getPosition()))) {
-          tempTargetBlock = &this->chunck->blocks[blockIndex];
+          tempTargetBlock = this->chunck->blocks[blockIndex];
           tempDistance = distance;
         }
       }
