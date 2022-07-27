@@ -38,11 +38,14 @@ void Ui::render() {
 }
 
 void Ui::loadlHud() {
+  const float width = t_renderer->core.getSettings().getWidth();
+  const float height = t_renderer->core.getSettings().getHeight();
+
   std::string crosshairTexPath =
       FileUtils::fromCwd("assets/textures/ui/crosshair.png");
   crosshair.setMode(Tyra::MODE_STRETCH);
   crosshair.size.set(8.0f, 8.0f);
-  crosshair.position.set(320.0f, 240.0f);
+  crosshair.position.set(width / 2, height / 2);
   this->t_renderer->core.texture.repository.add(crosshairTexPath)
       ->addLink(crosshair.getId());
 
@@ -51,7 +54,7 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("assets/hud/empty_slots.png");
   empty_slots.setMode(Tyra::MODE_STRETCH);
   empty_slots.size.set(192.0f, 28.0f);
-  empty_slots.position.set(224.0f, 446.0f);
+  empty_slots.position.set(224.0f, height - 44);
   this->t_renderer->core.texture.repository.add(emptySlotsTexPath)
       ->addLink(empty_slots.getId());
 
@@ -59,15 +62,15 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("assets/hud/selected_slot.png");
   selected_slot.setMode(Tyra::MODE_STRETCH);
   selected_slot.size.set(22.0f, 28.0f);
-  selected_slot.position.set(224.0f, 446.0f);
+  selected_slot.position.set(224.0f, height - 44);
   this->t_renderer->core.texture.repository.add(selectedSlotTexPath)
       ->addLink(selected_slot.getId());
 
   std::string xp_bar_fullTexPath =
       FileUtils::fromCwd("assets/hud/xp_bar_full.png");
   xp_bar_full.setMode(Tyra::MODE_STRETCH);
-  xp_bar_full.size.set(192.0f, 8.0f);
-  xp_bar_full.position.set(224.0f, 436.0f);
+  xp_bar_full.size.set(192.0f, 7.0f);
+  xp_bar_full.position.set(224.0f, height - 55);
   this->t_renderer->core.texture.repository.add(xp_bar_fullTexPath)
       ->addLink(xp_bar_full.getId());
 
@@ -76,7 +79,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/health_full.png");
     health[i].setMode(Tyra::MODE_STRETCH);
     health[i].size.set(8.0f, 8.0f);
-    health[i].position.set(224.0f + (i * 8.0f), 446.0f - 20.0f);
+    health[i].position.set(224.0f + (i * 8.0f), height - 64.0f);
     this->t_renderer->core.texture.repository.add(health_fullTexPath)
         ->addLink(health[i].getId());
 
@@ -84,7 +87,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/armor_full.png");
     armor[i].setMode(Tyra::MODE_STRETCH);
     armor[i].size.set(8.0f, 8.0f);
-    armor[i].position.set(224.0f + (i * 8.0f), 446.0f - 28.0f);
+    armor[i].position.set(224.0f + (i * 8.0f), height - 73.0f);
     this->t_renderer->core.texture.repository.add(armor_fullTexPath)
         ->addLink(armor[i].getId());
 
@@ -92,7 +95,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/hungry_full.png");
     hungry[i].setMode(Tyra::MODE_STRETCH);
     hungry[i].size.set(8.0f, 8.0f);
-    hungry[i].position.set(330.66f + (i * 8.0f), 446.0f - 20.0f);
+    hungry[i].position.set(330.66f + (i * 8.0f), height - 64.0f);
     this->t_renderer->core.texture.repository.add(hungry_fullTexPath)
         ->addLink(hungry[i].getId());
 
@@ -100,7 +103,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/breath_full.png");
     breath[i].setMode(Tyra::MODE_STRETCH);
     breath[i].size.set(8.0f, 8.0f);
-    breath[i].position.set(330.66f + (i * 8.0f), 446.0f - 29.0f);
+    breath[i].position.set(330.66f + (i * 8.0f), height - 73.0f);
     this->t_renderer->core.texture.repository.add(breath_fullTexPath)
         ->addLink(breath[i].getId());
   }

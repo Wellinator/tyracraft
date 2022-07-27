@@ -16,6 +16,8 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   this->setBgColorBlack(t_renderer);
 
   const RendererSettings& rendererSettings = t_renderer->core.getSettings();
+  const float width = rendererSettings.getWidth();
+  const float height = rendererSettings.getHeight();
 
   std::string tyracraftSplashBasePath =
       FileUtils::fromCwd("assets/splash_screen/tyracraft/");
@@ -29,20 +31,15 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
 
       tyracraft_grid[index] = new Sprite;
       tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
-      tyracraft_grid[index]->size.set(
-          rendererSettings.getWidth() / 4,
-          rendererSettings.getInterlacedHeightUI() / 4);
-      tyracraft_grid[index]->position.set(
-          floor((rendererSettings.getWidth() / 4 * col) + col),
-          floor((rendererSettings.getInterlacedHeightUI() / 4 * row) + row));
+      tyracraft_grid[index]->size.set(width / 4, height / 4);
+      tyracraft_grid[index]->position.set(floor((width / 4 * col) + col),
+                                          floor((height / 4 * row) + row));
 
       tyra_grid[index] = new Sprite;
       tyra_grid[index]->setMode(Tyra::MODE_STRETCH);
-      tyra_grid[index]->size.set(rendererSettings.getWidth() / 4,
-                                 rendererSettings.getInterlacedHeightUI() / 4);
-      tyra_grid[index]->position.set(
-          floor((rendererSettings.getWidth() / 4 * col) + col),
-          floor((rendererSettings.getInterlacedHeightUI() / 4 * row) + row));
+      tyra_grid[index]->size.set(width / 4, height / 4);
+      tyra_grid[index]->position.set(floor((width / 4 * col) + col),
+                                     floor((height / 4 * row) + row));
 
       t_renderer->core.texture.repository
           .add(tyracraftSplashBasePath + image_index)
@@ -54,9 +51,7 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   }
 }
 
-SplashScreen::~SplashScreen() {
-  this->unloadTextures();
-}
+SplashScreen::~SplashScreen() { this->unloadTextures(); }
 
 void SplashScreen::unloadTextures() {
   u8 rows = 4;
