@@ -3,12 +3,11 @@
 #include <tamtypes.h>
 #include <math/vec4.hpp>
 #include "contants.hpp"
-#include "renderer/3d/mesh/mesh.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "managers/block_manager.hpp"
 
+using Tyra::M4x4;
 using Tyra::McpipBlock;
-using Tyra::Mesh;
 using Tyra::Vec4;
 
 /** Block 3D object class  */
@@ -16,7 +15,7 @@ class Block : public McpipBlock {
  public:
   u8 type = AIR_BLOCK;  // Init as air
   int index;            // Index at terrain;
-  Vec4 position;        // Index at terrain;
+  // Vec4 position;        // Index at terrain;
 
   // Block state
   u8 isTarget = 0;
@@ -29,11 +28,22 @@ class Block : public McpipBlock {
   Vec4 minCorner;
   Vec4 maxCorner;
 
+  M4x4 translation, rotation, scale;
+
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;
 
   Block(BlockInfo* blockInfo);
   ~Block();
+
+  void updateModelMatrix();
+
+  void setPosition(const Vec4& v);
+
+  /** Get position from translation matrix */
+  inline Vec4* getPosition() {
+    return reinterpret_cast<Vec4*>(&translation.data[3 * 4]);
+  }
 
  private:
   // Block props
