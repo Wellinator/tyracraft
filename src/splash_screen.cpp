@@ -18,6 +18,9 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   const RendererSettings& rendererSettings = t_renderer->core.getSettings();
   const float width = rendererSettings.getWidth();
   const float height = rendererSettings.getHeight();
+  const float tileWidth = width / 5.0F;
+  const float tileHeight = height / 3.5F;
+  const float heightOffset = 32.0F;
 
   std::string tyracraftSplashBasePath =
       FileUtils::fromCwd("assets/splash_screen/tyracraft/");
@@ -25,21 +28,22 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
       FileUtils::fromCwd("assets/splash_screen/tyra/");
 
   u8 index = 0;
-  for (u8 row = 0; row < 4; row++) {
-    for (u8 col = 0; col < 4; col++) {
+  for (u8 row = 0; row < ROWS; row++) {
+    for (u8 col = 0; col < COLS; col++) {
+      
       std::string image_index = std::to_string(index + 1) + std::string(".png");
 
       tyracraft_grid[index] = new Sprite;
       tyracraft_grid[index]->setMode(Tyra::MODE_STRETCH);
-      tyracraft_grid[index]->size.set(width / 4, height / 4);
-      tyracraft_grid[index]->position.set(floor((width / 4 * col) + col),
-                                          floor((height / 4 * row) + row));
+      tyracraft_grid[index]->size.set(tileWidth, tileHeight);
+      tyracraft_grid[index]->position.set(
+          (col * tileWidth) + col, (row * tileHeight) + row + heightOffset);
 
       tyra_grid[index] = new Sprite;
       tyra_grid[index]->setMode(Tyra::MODE_STRETCH);
-      tyra_grid[index]->size.set(width / 4, height / 4);
-      tyra_grid[index]->position.set(floor((width / 4 * col) + col),
-                                     floor((height / 4 * row) + row));
+      tyra_grid[index]->size.set(tileWidth, tileHeight);
+      tyra_grid[index]->position.set((col * tileWidth) + col,
+                                     (row * tileHeight) + row + heightOffset);
 
       t_renderer->core.texture.repository
           .add(tyracraftSplashBasePath + image_index)
@@ -54,9 +58,7 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
 SplashScreen::~SplashScreen() { this->unloadTextures(); }
 
 void SplashScreen::unloadTextures() {
-  u8 rows = 4;
-  u8 cols = 4;
-  for (u8 index = 0; index < rows * cols; index++) {
+  for (u8 index = 0; index < ROWS * COLS; index++) {
     t_renderer->core.texture.repository.free(
         t_renderer->core.texture.repository
             .getBySpriteOrMesh(tyracraft_grid[index]->getId())
@@ -90,7 +92,7 @@ void SplashScreen::render() {
 }
 
 void SplashScreen::renderTyraSplash() {
-  for (u8 index = 0; index < 16; index++) {
+  for (u8 index = 0; index < ROWS * COLS; index++) {
     tyra_grid[index]->color.a = alpha;
     this->t_renderer->renderer2D.render(tyra_grid[index]);
     if (alpha == 0) hasShowedTyra = 1;
@@ -98,7 +100,7 @@ void SplashScreen::renderTyraSplash() {
 }
 
 void SplashScreen::renderTyraCraftSplash() {
-  for (u8 index = 0; index < 16; index++) {
+  for (u8 index = 0; index < ROWS * COLS; index++) {
     tyracraft_grid[index]->color.a = alpha;
     this->t_renderer->renderer2D.render(tyracraft_grid[index]);
     if (alpha == 0) hasShowedTyraCraft = 1;
