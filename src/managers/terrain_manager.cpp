@@ -1,6 +1,7 @@
 #include "managers/terrain_manager.hpp"
 
 using Tyra::BBox;
+using Tyra::Color;
 using Tyra::Pad;
 using Tyra::PadButtons;
 using Tyra::Ray;
@@ -35,7 +36,7 @@ void TerrainManager::init(Renderer* t_renderer,
   this->initNoise();
   this->blockManager->init(t_renderer);
   this->chunck = new Chunck(this->blockManager);
-  this->generateNewTerrain(terrainType, true, true, false, false);
+  this->generateNewTerrain(terrainType, true, false, true, false);
   this->defineSpawnArea();
 }
 
@@ -280,6 +281,7 @@ Chunck* TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ) {
 }
 
 void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
+  printf("(Re)building chunck...\n");
   this->chunck->clear();
 
   // TODO: Refactor to minecraft pipeline
@@ -305,8 +307,15 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
             block->isHidden = isHidden;
+            block->color = Color(128.0F, 128.0F, 128.0F, 128.0F);
+
+            block->translation.translateZ(blockPosition.z - DUBLE_BLOCK_SIZE);
+            block->translation.translateX(blockPosition.x - DUBLE_BLOCK_SIZE - DUBLE_BLOCK_SIZE);
+            block->translation.translateY(blockPosition.y);
+            // block->translation.translate(blockPosition);
+            // block->setPosition(blockPosition);
+
             block->scale.scale(BLOCK_SIZE);
-            block->setPosition(blockPosition);
             block->updateModelMatrix();
             this->chunck->addBlock(block);
           }
