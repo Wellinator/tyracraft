@@ -37,7 +37,7 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
 
   // Main menu
   if (_state == MAIN_MENU) {
-    // t_camera->update(*t_pad, mainMenu->menuSkybox);
+    t_camera->update(*t_pad, *mainMenu->menuSkybox);
     mainMenu->update(*t_pad);
     mainMenu->render();
     if (mainMenu->shouldInitGame()) {

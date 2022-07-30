@@ -25,6 +25,9 @@
 #include <string>
 #include "contants.hpp"
 #include "camera.hpp"
+#include "renderer/3d/mesh/static/static_mesh.hpp"
+#include "renderer/3d/pipeline/static/static_pipeline.hpp"
+#include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
 
 // MENU_OPTIONS
 #define PLAY_GAME 1
@@ -34,6 +37,9 @@ using Tyra::Audio;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::StaPipOptions;
+using Tyra::StaticMesh;
+using Tyra::StaticPipeline;
 
 class MainMenu {
  public:
@@ -46,28 +52,22 @@ class MainMenu {
   u8 shouldInitGame();
 
   // Rotating skybox
-//   Mesh menuSkybox;
+  StaticMesh* menuSkybox;
 
  private:
   Audio* t_audio;
-
-  u8 hasFinished();
   u8 activeOption = PLAY_GAME;
   u8 selectedOption = 0;
-
   Renderer* t_renderer;
-
   Sprite title[4];
-  Sprite background[4];
   Sprite subtitle;
-
-  // Array of options [original, active, selected]
   Sprite slot[3];
-
-  // Texts
   Sprite textPlayGame;
   Sprite textSelect;
-
-  // Buttons
   Sprite btnCross;
+  StaPipOptions* skyboxOptions;
+  StaticPipeline stapip;
+
+  u8 hasFinished();
+  void loadSkybox(Renderer* renderer);
 };
