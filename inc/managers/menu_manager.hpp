@@ -70,4 +70,5 @@ class MainMenu {
 
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
+  void unloadTextures(); 
 };

@@ -14,7 +14,8 @@ MainMenu::MainMenu() {}
 
 MainMenu::~MainMenu() {
   t_audio->stopSong();
-  t_audio->setSongLoop(1);
+  t_audio->setSongLoop(false);
+  this->unloadTextures();
 }
 
 void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
@@ -183,9 +184,42 @@ void MainMenu::loadSkybox(Renderer* renderer) {
       FileUtils::fromCwd("meshes/menu-skybox/skybox.tyrobj"), 1, 50.0F, true);
   this->menuSkybox = new StaticMesh(*data);
   this->menuSkybox->translation.translate(Vec4(0.0F, 25.0F, 0.0F, 1.0F));
-  //   this->menuSkybox->scale.scale(400.0F);
   delete data;
 
   renderer->core.texture.repository.addByMesh(
       this->menuSkybox, FileUtils::fromCwd("meshes/menu-skybox/"), "png");
+}
+
+void MainMenu::unloadTextures() {
+  for (u8 i = 0; i < menuSkybox->getMaterialsCount(); i++) {
+    t_renderer->core.texture.repository.free(
+        t_renderer->core.texture.repository
+            .getBySpriteOrMesh(menuSkybox->getMaterials()[i]->getId())
+            ->getId());
+  }
+  for (u8 i = 0; i < 4; i++) {
+    t_renderer->core.texture.repository.free(
+        t_renderer->core.texture.repository
+            .getBySpriteOrMesh(title[i].getId())
+            ->getId());
+  }
+  for (u8 i = 0; i < 3; i++) {
+    t_renderer->core.texture.repository.free(
+        t_renderer->core.texture.repository.getBySpriteOrMesh(slot[i].getId())
+            ->getId());
+  }
+  t_renderer->core.texture.repository.free(
+      t_renderer->core.texture.repository.getBySpriteOrMesh(subtitle.getId())
+          ->getId());
+  t_renderer->core.texture.repository.free(
+      t_renderer->core.texture.repository
+          .getBySpriteOrMesh(textPlayGame.getId())
+          ->getId());
+  t_renderer->core.texture.repository.free(
+      t_renderer->core.texture.repository
+          .getBySpriteOrMesh(textSelect.getId())
+          ->getId());
+  t_renderer->core.texture.repository.free(
+      t_renderer->core.texture.repository.getBySpriteOrMesh(btnCross.getId())
+          ->getId());
 }
