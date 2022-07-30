@@ -59,8 +59,7 @@ class MainMenu {
   u8 activeOption = PLAY_GAME;
   u8 selectedOption = 0;
   Renderer* t_renderer;
-  Sprite title[4];
-  Sprite subtitle;
+  Sprite title[2];
   Sprite slot[3];
   Sprite textPlayGame;
   Sprite textSelect;
@@ -70,5 +69,5 @@ class MainMenu {
 
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
-  void unloadTextures(); 
+  void unloadTextures();
 };
