@@ -54,7 +54,7 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("assets/hud/empty_slots.png");
   empty_slots.setMode(Tyra::MODE_STRETCH);
   empty_slots.size.set(192.0f, 28.0f);
-  empty_slots.position.set(224.0f, height - 44);
+  empty_slots.position.set(width / 2 - 96.0f, height - 37);
   this->t_renderer->core.texture.repository.add(emptySlotsTexPath)
       ->addLink(empty_slots.getId());
 
@@ -62,7 +62,7 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("assets/hud/selected_slot.png");
   selected_slot.setMode(Tyra::MODE_STRETCH);
   selected_slot.size.set(22.0f, 28.0f);
-  selected_slot.position.set(224.0f, height - 44);
+  selected_slot.position.set(width / 2 - 96.0f, height - 37);
   this->t_renderer->core.texture.repository.add(selectedSlotTexPath)
       ->addLink(selected_slot.getId());
 
@@ -70,7 +70,7 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("assets/hud/xp_bar_full.png");
   xp_bar_full.setMode(Tyra::MODE_STRETCH);
   xp_bar_full.size.set(192.0f, 7.0f);
-  xp_bar_full.position.set(224.0f, height - 55);
+  xp_bar_full.position.set(width / 2 - 96.0f, height - 47);
   this->t_renderer->core.texture.repository.add(xp_bar_fullTexPath)
       ->addLink(xp_bar_full.getId());
 
@@ -79,7 +79,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/health_full.png");
     health[i].setMode(Tyra::MODE_STRETCH);
     health[i].size.set(8.0f, 8.0f);
-    health[i].position.set(224.0f + (i * 8.0f), height - 64.0f);
+    health[i].position.set(width / 2 - 96.0f + (i * 8.0f), height - 57.0f);
     this->t_renderer->core.texture.repository.add(health_fullTexPath)
         ->addLink(health[i].getId());
 
@@ -87,7 +87,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/armor_full.png");
     armor[i].setMode(Tyra::MODE_STRETCH);
     armor[i].size.set(8.0f, 8.0f);
-    armor[i].position.set(224.0f + (i * 8.0f), height - 73.0f);
+    armor[i].position.set(width / 2 - 96.0f + (i * 8.0f), height - 67.0f);
     this->t_renderer->core.texture.repository.add(armor_fullTexPath)
         ->addLink(armor[i].getId());
 
@@ -95,7 +95,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/hungry_full.png");
     hungry[i].setMode(Tyra::MODE_STRETCH);
     hungry[i].size.set(8.0f, 8.0f);
-    hungry[i].position.set(330.66f + (i * 8.0f), height - 64.0f);
+    hungry[i].position.set(272.0f + (i * 8.0f), height - 57.0f);
     this->t_renderer->core.texture.repository.add(hungry_fullTexPath)
         ->addLink(hungry[i].getId());
 
@@ -103,7 +103,7 @@ void Ui::loadlHud() {
         FileUtils::fromCwd("assets/hud/breath_full.png");
     breath[i].setMode(Tyra::MODE_STRETCH);
     breath[i].size.set(8.0f, 8.0f);
-    breath[i].position.set(330.66f + (i * 8.0f), height - 73.0f);
+    breath[i].position.set(272.0f + (i * 8.0f), height - 67.0f);
     this->t_renderer->core.texture.repository.add(breath_fullTexPath)
         ->addLink(breath[i].getId());
   }
@@ -118,7 +118,7 @@ void Ui::updateHud() {
 void Ui::updateSelectedSlot() {
   u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
   selected_slot.position.set(
-      FIRST_SLOT_X_POS + (empty_slots.size.x / INVENTORY_SIZE * slotIndex),
+      FIRST_SLOT_X_POS + (192.0f / INVENTORY_SIZE * slotIndex),
       FIRST_SLOT_Y_POS);
   t_player->selectedSlotHasChanged = 0;
 }

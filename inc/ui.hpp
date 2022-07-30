@@ -40,8 +40,8 @@ class Ui {
   Sprite* playerInventory[INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
                                              NULL, NULL, NULL, NULL};
 
-  const float FIRST_SLOT_X_POS = 224.0f;
-  const float FIRST_SLOT_Y_POS = 446.0f;
+  const float FIRST_SLOT_X_POS = 160.0f;
+  const float FIRST_SLOT_Y_POS = 411.0f;
 
   void updateHud();
   void updatePlayerInventory();
