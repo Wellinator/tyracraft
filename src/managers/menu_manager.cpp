@@ -65,14 +65,14 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   // Load slots
   slot[0].setMode(Tyra::MODE_STRETCH);
-  slot[0].size.set(200, 25);
-  slot[0].position.set(halfWidth - 100, 265);
+  slot[0].size.set(SLOT_WIDTH, 25);
+  slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 265);
   slot[1].setMode(Tyra::MODE_STRETCH);
-  slot[1].size.set(200, 25);
-  slot[1].position.set(halfWidth - 100, 265 + 30);
+  slot[1].size.set(SLOT_WIDTH, 25);
+  slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 30);
   slot[2].setMode(Tyra::MODE_STRETCH);
-  slot[2].size.set(200, 25);
-  slot[2].position.set(halfWidth - 100, 265 + 60);
+  slot[2].size.set(SLOT_WIDTH, 25);
+  slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 60);
 
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/textures/menu/slot.png"))

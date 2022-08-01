@@ -67,6 +67,8 @@ class MainMenu {
   StaPipOptions* skyboxOptions;
   StaticPipeline stapip;
 
+  const float SLOT_WIDTH = 160;
+
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
