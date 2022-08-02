@@ -22,8 +22,9 @@ class LoadingScreen {
 
   void init(Renderer* t_renderer);
   void setState(LoadingState state);
-  void setPercent(float& completed);
+  void setPercent(float completed);
   void render();
+  void unload();
   u8 hasFinished();
   u8 shouldBeDestroyed();
 
@@ -35,7 +36,7 @@ class LoadingScreen {
   Sprite* loadingStateText;
   LoadingState _state = LoadingState::Loading;
   float _percent = 1.0F;
+  float BASE_HEIGHT;
 
   void setBgColorBlack(Renderer* renderer);
-  void unloadTextures();
 };

@@ -2,6 +2,8 @@
 #include "renderer/models/color.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/core/2d/sprite/sprite.hpp>
+#include <thread>
+#include <chrono>
 
 using Tyra::Audio;
 using Tyra::Color;
@@ -19,6 +21,7 @@ void StateManager::init(Engine* t_engine) {
   this->t_pad = &t_engine->pad;
 
   splashScreen = new SplashScreen(t_renderer);
+  loadingScreen = new LoadingScreen();
 }
 
 void StateManager::update(const float& deltaTime, Camera* t_camera) {
@@ -43,8 +46,23 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
     if (mainMenu->shouldInitGame()) {
       delete mainMenu;
       mainMenu = NULL;
-      this->loadGame();  // TODO: implement loading screen
+      loadingScreen->init(t_renderer);
+      _state = LOADING_SCREEN;
+    }
+    return;
+  }
+
+  // Main menu
+  if (_state == LOADING_SCREEN) {
+    if (loadingScreen->hasFinished()) {
+      printf("Unloading Loading Screen\n");
+      loadingScreen->unload();
       _state = IN_GAME;
+    } else {
+      printf("Loading game\n");
+      this->loadGame();
+      printf("Rendering Loading Screen\n");
+      loadingScreen->render();
     }
     return;
   }
@@ -73,25 +91,47 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
 }
 
 void StateManager::loadGame() {
-  world = new World();
-  player = new Player(t_renderer, t_audio);
-  itemRepository = new ItemRepository();
-  ui = new Ui();
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  if (this->shouldCreatedEntities) {
+    printf("Creating entities\n");
+    this->world = new World();
+    this->player = new Player(t_renderer, t_audio);
+    this->itemRepository = new ItemRepository();
+    this->ui = new Ui();
 
-  setBgColorAndAmbientColor();
-
-  itemRepository->init(t_renderer);
-  ui->init(t_renderer, itemRepository, player);
-  world->init(t_renderer, itemRepository);
-
-  player->mesh->getPosition()->set(world->terrainManager->worldSpawnArea);
-  player->spawnArea.set(world->terrainManager->worldSpawnArea);
+    this->loadingScreen->setPercent(25.0F);
+    this->shouldCreatedEntities = 0;
+    return;
+  } else if (this->shouldInitItemRepository) {
+    printf("Initing item repo\n");
+    this->itemRepository->init(t_renderer);
+    this->loadingScreen->setPercent(35.0F);
+    this->shouldInitItemRepository = 0;
+    return;
+  } else if (this->shouldInitUI) {
+    printf("Initing UI\n");
+    this->ui->init(t_renderer, this->itemRepository, this->player);
+    this->loadingScreen->setPercent(50.0F);
+    this->shouldInitUI = 0;
+    return;
+  } else if (this->shouldInitWorld) {
+    printf("Initing world\n");
+    this->world->init(t_renderer, this->itemRepository);
+    this->loadingScreen->setPercent(90.0F);
+    this->shouldInitWorld = 0;
+    return;
+  } else if (this->shouldInitPlayer) {
+    printf("Initing player\n");
+    this->player->mesh->getPosition()->set(
+        world->terrainManager->worldSpawnArea);
+    this->player->spawnArea.set(world->terrainManager->worldSpawnArea);
+    this->loadingScreen->setPercent(100.0F);
+    this->loadingScreen->setState(LoadingState::Complete);
+    this->shouldInitPlayer = 0;
+    return;
+  }
 
   printf("\nGAME LOADED\n");
-}
-
-void StateManager::setBgColorAndAmbientColor() {
-  t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
 }
 
 // TODO : Check the delay to change

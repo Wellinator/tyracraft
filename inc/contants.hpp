@@ -70,6 +70,7 @@
 #define IN_GAME 1
 #define IN_GAME_MENU 2
 #define SPLASH_SCREEN 3
+#define LOADING_SCREEN 4
 
 // World constants
 #define GRAVITY Vec4(0.0f, 25.5f, 0.0f)

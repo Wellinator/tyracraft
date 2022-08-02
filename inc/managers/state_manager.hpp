@@ -8,6 +8,7 @@
 #include <renderer/3d/mesh/mesh.hpp>
 #include "splash_screen.hpp"
 #include "menu_manager.hpp"
+#include "loading_screen.hpp"
 #include "items_repository.hpp"
 #include <chrono>
 #include <renderer/renderer.hpp>
@@ -28,8 +29,6 @@ class StateManager {
   void init(Engine* t_engine);
   void update(const float& deltaTime, Camera* t_camera);
 
-  void setBgColorAndAmbientColor();
-
   World* world;
   Ui* ui;
   Player* player;
@@ -47,6 +46,12 @@ class StateManager {
 
   SplashScreen* splashScreen;
   MainMenu* mainMenu;
+  LoadingScreen* loadingScreen;
+  u8 shouldCreatedEntities = 1;
+  u8 shouldInitWorld = 1;
+  u8 shouldInitItemRepository = 1;
+  u8 shouldInitUI = 1;
+  u8 shouldInitPlayer = 1;
 
   // Control game mode change
   // Control Cross click debounce for changing game mode

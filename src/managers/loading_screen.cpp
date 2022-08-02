@@ -10,7 +10,7 @@ using Tyra::Vec4;
 
 LoadingScreen::LoadingScreen() {}
 
-LoadingScreen::~LoadingScreen() { this->unloadTextures(); }
+LoadingScreen::~LoadingScreen() { this->unload(); }
 
 void LoadingScreen::init(Renderer* t_renderer) {
   this->t_renderer = t_renderer;
@@ -19,6 +19,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   const RendererSettings& rendererSettings = t_renderer->core.getSettings();
   const float width = rendererSettings.getWidth();
   const float height = rendererSettings.getHeight();
+  this->BASE_HEIGHT = height - 120;
 
   // Background
   std::string backgroundTex = FileUtils::fromCwd("loading/background.png");
@@ -29,13 +30,22 @@ void LoadingScreen::init(Renderer* t_renderer) {
   t_renderer->core.texture.repository.add(backgroundTex)
       ->addLink(background->getId());
 
+  // State desc
+  std::string stateLoadingText = FileUtils::fromCwd("loading/loading.png");
+  loadingStateText = new Sprite;
+  loadingStateText->setMode(Tyra::MODE_STRETCH);
+  loadingStateText->size.set(256, 16);
+  loadingStateText->position.set(width / 2 - 128, BASE_HEIGHT);
+  t_renderer->core.texture.repository.add(stateLoadingText)
+      ->addLink(loadingStateText->getId());
+
   // Loading slot
   std::string loadingSlotTex =
       FileUtils::fromCwd("loading/empty_loading_bar.png");
   loadingSlot = new Sprite;
   loadingSlot->setMode(Tyra::MODE_STRETCH);
   loadingSlot->size.set(256, 16);
-  loadingSlot->position.set(width / 2 - 128, height - 20);
+  loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 20);
   t_renderer->core.texture.repository.add(loadingSlotTex)
       ->addLink(loadingSlot->getId());
 
@@ -43,26 +53,17 @@ void LoadingScreen::init(Renderer* t_renderer) {
   std::string loadingprogressTex = FileUtils::fromCwd("loading/load.png");
   loadingprogress = new Sprite;
   loadingprogress->setMode(Tyra::MODE_STRETCH);
-  loadingprogress->size.set(this->_percent / 100 * 256, 16);
-  loadingprogress->position.set(width / 2 - 128, height - 14);
+  loadingprogress->size.set(this->_percent / 100 * 253, 9);
+  loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 23);
   t_renderer->core.texture.repository.add(loadingprogressTex)
       ->addLink(loadingprogress->getId());
-
-  // State desc
-  std::string stateLoadingText = FileUtils::fromCwd("loading/loading.png");
-  loadingStateText = new Sprite;
-  loadingStateText->setMode(Tyra::MODE_STRETCH);
-  loadingStateText->size.set(256, 16);
-  loadingStateText->position.set(width / 2 - 128, height - 37);
-  t_renderer->core.texture.repository.add(stateLoadingText)
-      ->addLink(loadingStateText->getId());
 }
 
 void LoadingScreen::setState(LoadingState state) { this->_state = state; }
 
-void LoadingScreen::setPercent(float& completed) {
+void LoadingScreen::setPercent(float completed) {
   this->_percent = completed;
-  this->loadingprogress->size.set(this->_percent / 100 * 256, 16);
+  this->loadingprogress->size.set(this->_percent / 100 * 253, 9);
 }
 
 void LoadingScreen::setBgColorBlack(Renderer* renderer) {
@@ -82,7 +83,7 @@ void LoadingScreen::render() {
   this->t_renderer->renderer2D.render(loadingStateText);
 }
 
-void LoadingScreen::unloadTextures() {
+void LoadingScreen::unload() {
   this->t_renderer->core.texture.repository.free(
       t_renderer->core.texture.repository
           .getBySpriteOrMesh(background->getId())
