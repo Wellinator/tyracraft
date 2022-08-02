@@ -41,10 +41,8 @@ class SplashScreen {
   u8 hasFinished();
 
   Renderer* t_renderer;
-  Sprite** tyracraft_grid = new Sprite*[15];
-  Sprite** tyra_grid = new Sprite*[15];
-  const u8 ROWS = 3;
-  const u8 COLS = 5;
+  Sprite* tyracraft = new Sprite;
+  Sprite* tyra = new Sprite;
   u8 alpha = 1;
   u8 isFading = 0;
   u8 hasShowedTyraCraft = 0;
