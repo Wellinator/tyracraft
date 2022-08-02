@@ -149,15 +149,15 @@ u8 MainMenu::shouldInitGame() { return this->selectedOption == PLAY_GAME; }
 
 void MainMenu::loadSkybox(Renderer* renderer) {
   this->skyboxOptions = new StaPipOptions();
-  this->skyboxOptions->fullClipChecks = true;
+  this->skyboxOptions->fullClipChecks = false;
   this->skyboxOptions->textureMappingType =
       Tyra::PipelineTextureMappingType::TyraNearest;
   this->skyboxOptions->frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
 
   TyrobjLoader loader;
-  auto* data = loader.load(
-      FileUtils::fromCwd("assets/menu/skybox.tyrobj"), 1, 250.0F, true);
+  auto* data = loader.load(FileUtils::fromCwd("assets/menu/skybox.obj"), 1,
+                           250.0F, true);
   data->normalsEnabled = false;
   this->menuSkybox = new StaticMesh(*data);
   delete data;
