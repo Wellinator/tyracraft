@@ -47,10 +47,10 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
   title[1].position.set(halfWidth, 64);
 
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/title_1.png"))
+      .add(FileUtils::fromCwd("assets/menu/title_1.png"))
       ->addLink(title[0].getId());
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/title_2.png"))
+      .add(FileUtils::fromCwd("assets/menu/title_2.png"))
       ->addLink(title[1].getId());
 
   // Buttons
@@ -75,13 +75,13 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
   slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 60);
 
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/slot.png"))
+      .add(FileUtils::fromCwd("assets/menu/slot.png"))
       ->addLink(slot[0].getId());
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/hovered_slot.png"))
+      .add(FileUtils::fromCwd("assets/menu/hovered_slot.png"))
       ->addLink(slot[1].getId());
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/selected_slot.png"))
+      .add(FileUtils::fromCwd("assets/menu/selected_slot.png"))
       ->addLink(slot[2].getId());
 
   // Texts
@@ -96,7 +96,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
   }
 
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/play_game.png"))
+      .add(FileUtils::fromCwd("assets/menu/play_game.png"))
       ->addLink(textPlayGame.getId());
 
   textSelect.setMode(Tyra::MODE_STRETCH);
@@ -104,7 +104,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
   textSelect.position.set(
       30 + 40, this->t_renderer->core.getSettings().getHeight() - 47);
   this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/textures/menu/select.png"))
+      .add(FileUtils::fromCwd("assets/menu/select.png"))
       ->addLink(textSelect.getId());
 
   // Load song
@@ -157,13 +157,13 @@ void MainMenu::loadSkybox(Renderer* renderer) {
 
   TyrobjLoader loader;
   auto* data = loader.load(
-      FileUtils::fromCwd("meshes/menu-skybox/skybox.tyrobj"), 1, 250.0F, true);
+      FileUtils::fromCwd("assets/menu/skybox.tyrobj"), 1, 250.0F, true);
   data->normalsEnabled = false;
   this->menuSkybox = new StaticMesh(*data);
   delete data;
 
   renderer->core.texture.repository.addByMesh(
-      this->menuSkybox, FileUtils::fromCwd("meshes/menu-skybox/"), "png");
+      this->menuSkybox, FileUtils::fromCwd("assets/menu/"), "png");
 }
 
 void MainMenu::unloadTextures() {
