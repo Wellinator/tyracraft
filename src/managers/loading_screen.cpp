@@ -45,7 +45,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   loadingSlot = new Sprite;
   loadingSlot->setMode(Tyra::MODE_STRETCH);
   loadingSlot->size.set(256, 16);
-  loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 20);
+  loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 25);
   t_renderer->core.texture.repository.add(loadingSlotTex)
       ->addLink(loadingSlot->getId());
 
@@ -54,7 +54,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   loadingprogress = new Sprite;
   loadingprogress->setMode(Tyra::MODE_STRETCH);
   loadingprogress->size.set(this->_percent / 100 * 253, 9);
-  loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 23);
+  loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 28);
   t_renderer->core.texture.repository.add(loadingprogressTex)
       ->addLink(loadingprogress->getId());
 }
