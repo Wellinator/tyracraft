@@ -5,7 +5,7 @@ using Tyra::BBox;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 
-Block::Block(BlockInfo* blockInfo) : McpipBlock() {
+Block::Block(BlockInfo* blockInfo) {
   this->type = blockInfo->blockId;
   this->isSingleTexture = blockInfo->_isSingle;
   this->textureOffset =

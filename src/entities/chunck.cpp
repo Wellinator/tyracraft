@@ -31,10 +31,10 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip) {
   t_renderer->renderer3D.usePipeline(mcPip);
-  mcPip->render(this->singleTexBlocks.data(), singleTexBlocks.size(),
-                this->blockManager->getBlocksTexture(), false);
-  mcPip->render(this->multiTexBlocks.data(), multiTexBlocks.size(),
-                this->blockManager->getBlocksTexture(), true);
+  mcPip->render(this->singleTexBlocks, this->blockManager->getBlocksTexture(),
+                false);
+  mcPip->render(this->multiTexBlocks, this->blockManager->getBlocksTexture(),
+                true);
 };
 
 /**
@@ -45,12 +45,9 @@ float Chunck::getVisibityByPosition(float d) {
 }
 
 void Chunck::clear() {
-  this->singleTexBlocks.clear();
-  this->singleTexBlocks.shrink_to_fit();
-  this->multiTexBlocks.clear();
-  this->multiTexBlocks.shrink_to_fit();
+  this->clearMcpipBlocks();
 
-  // Delete pointer
+  // Delete pointers
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
     if (this->blocks[blockIndex] != NULL &&
         this->blocks[blockIndex] != nullptr) {
@@ -79,19 +76,46 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
 void Chunck::setToChanged() { this->hasChanged = 1; }
 
 void Chunck::filterSingleAndMultiBlocks() {
-  this->singleTexBlocks.clear();
-  this->singleTexBlocks.shrink_to_fit();
-  this->multiTexBlocks.clear();
-  this->multiTexBlocks.shrink_to_fit();
+  this->clearMcpipBlocks();
 
-  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    this->blocks[blockIndex]->isSingleTexture
-        ? this->singleTexBlocks.push_back(*this->blocks[blockIndex])
-        : this->multiTexBlocks.push_back(*this->blocks[blockIndex]);
+  for (u16 i = 0; i < this->blocks.size(); i++) {
+    McpipBlock* tempMcpipBlock = new McpipBlock();
+    tempMcpipBlock->model = &this->blocks[i]->model;
+    tempMcpipBlock->color = &this->blocks[i]->color;
+    tempMcpipBlock->textureOffset = &this->blocks[i]->textureOffset;
+
+    if (this->blocks[i]->isSingleTexture) {
+      singleTexBlocks.push_back(tempMcpipBlock);
+    } else {
+      multiTexBlocks.push_back(tempMcpipBlock);
+    }
   }
 
   this->hasChanged = 0;
   printf("singleTexBlocks: %i\n", singleTexBlocks.size());
   printf("multiTexBlocks: %i\n", multiTexBlocks.size());
   return;
+}
+
+void Chunck::clearMcpipBlocks() {
+  for (u16 i = 0; i < this->singleTexBlocks.size(); i++) {
+    if (this->singleTexBlocks[i] != NULL &&
+        this->singleTexBlocks[i] != nullptr) {
+      delete this->singleTexBlocks[i];
+      this->singleTexBlocks[i] = NULL;
+    }
+  }
+
+  this->singleTexBlocks.clear();
+  this->singleTexBlocks.shrink_to_fit();
+
+  for (u16 i = 0; i < this->multiTexBlocks.size(); i++) {
+    if (this->multiTexBlocks[i] != NULL && this->multiTexBlocks[i] != nullptr) {
+      delete this->multiTexBlocks[i];
+      this->multiTexBlocks[i] = NULL;
+    }
+  }
+
+  this->multiTexBlocks.clear();
+  this->multiTexBlocks.shrink_to_fit();
 }

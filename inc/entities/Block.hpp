@@ -9,9 +9,10 @@
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::Vec4;
+using Tyra::Color;
 
 /** Block 3D object class  */
-class Block : public McpipBlock {
+class Block {
  public:
   u8 type = AIR_BLOCK;  // Init as air
   int index;            // Index at terrain;
@@ -29,6 +30,10 @@ class Block : public McpipBlock {
   Vec4 maxCorner;
 
   M4x4 translation, rotation, scale;
+
+  M4x4 model;
+  Color color;
+  Vec4 textureOffset;
 
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;

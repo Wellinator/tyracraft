@@ -36,7 +36,7 @@ void TerrainManager::init(Renderer* t_renderer,
   this->initNoise();
   this->blockManager->init(t_renderer);
   this->chunck = new Chunck(this->blockManager);
-  this->generateNewTerrain(terrainType, true, false, true, false);
+  this->generateNewTerrain(terrainType, false, true, true, false);
   this->defineSpawnArea();
 }
 
@@ -310,16 +310,12 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             block->isHidden = isHidden;
             block->color = Color(128.0F, 128.0F, 128.0F, 128.0F);
 
-            // block->translation.translateZ(blockPosition.z -
-            // DUBLE_BLOCK_SIZE); block->translation.translateX(blockPosition.x
-            // - DUBLE_BLOCK_SIZE - DUBLE_BLOCK_SIZE);
-            // block->translation.translateY(blockPosition.y);
-            // block->translation.translate(blockPosition);
-
             block->translation.identity();
             block->scale.identity();
             block->rotation.identity();
-            block->setPosition(blockPosition);
+
+            block->translation.translate(blockPosition);
+            // block->setPosition(blockPosition);
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
 
