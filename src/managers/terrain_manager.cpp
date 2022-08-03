@@ -308,17 +308,10 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
             block->isHidden = isHidden;
-            block->color = Color(128.0F, 128.0F, 128.0F, 128.0F);
-
-            block->translation.identity();
-            block->scale.identity();
-            block->rotation.identity();
-
-            block->translation.translate(blockPosition);
-            // block->setPosition(blockPosition);
+            block->color = Color(116.0F, 116.0F, 116.0F, 128.0F);
+            block->setPosition(blockPosition);
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
-
             this->chunck->addBlock(block);
           }
         }
