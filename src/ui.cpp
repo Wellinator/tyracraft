@@ -23,9 +23,7 @@ void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
 void Ui::update() { this->updateHud(); }
 
 void Ui::render() {
-  this->t_renderer->renderer2D.render(&crosshair);
   this->t_renderer->renderer2D.render(&empty_slots);
-  this->t_renderer->renderer2D.render(&selected_slot);
   this->t_renderer->renderer2D.render(&xp_bar_full);
   for (u8 i = 0; i < 10; i++) {
     // TODO: Daw only when wearing an armor
@@ -39,6 +37,9 @@ void Ui::render() {
   for (u8 i = 0; i < INVENTORY_SIZE; i++)
     if (playerInventory[i] != NULL)
       this->t_renderer->renderer2D.render(playerInventory[i]);
+
+  this->t_renderer->renderer2D.render(&selected_slot);
+  this->t_renderer->renderer2D.render(&crosshair);
 }
 
 void Ui::loadlHud() {
@@ -123,8 +124,8 @@ void Ui::updateHud() {
 void Ui::updateSelectedSlot() {
   u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
   selected_slot.position.set(
-      BASE_X_POS + (HUD_WIDTH / INVENTORY_SIZE * slotIndex) - slotIndex,
-      BASE_Y_POS);
+      BASE_X_POS + ((HUD_WIDTH) / 9.1 * slotIndex) - slotIndex,
+      BASE_Y_POS + 29);
   t_player->selectedSlotHasChanged = 0;
 }
 
