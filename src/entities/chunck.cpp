@@ -14,7 +14,7 @@ void Chunck::update(Player* t_player) {
   if (this->hasChanged) {
     this->filterSingleAndMultiBlocks();
   }
-  this->updateBlocks(*t_player->getPosition());
+  // this->updateBlocks(*t_player->getPosition());
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
@@ -67,7 +67,7 @@ void Chunck::addBlock(Block* t_block) {
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    // this->applyFOG(this->blocks[blockIndex], playerPosition);
+    this->applyFOG(this->blocks[blockIndex], playerPosition);
     this->highLightTargetBlock(this->blocks[blockIndex],
                                this->blocks[blockIndex]->isTarget);
   }
