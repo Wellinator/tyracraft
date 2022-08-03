@@ -317,10 +317,12 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             // block->translation.translate(blockPosition);
 
             block->translation.identity();
+            block->scale.identity();
+            block->rotation.identity();
             block->setPosition(blockPosition);
-
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
+
             this->chunck->addBlock(block);
           }
         }
