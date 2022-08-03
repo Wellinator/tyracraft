@@ -19,10 +19,10 @@
 #include "managers/items_repository.hpp"
 #include "debug/debug.hpp"
 
+using Tyra::BBox;
 using Tyra::Engine;
 using Tyra::Renderer;
 using Tyra::Vec4;
-using Tyra::BBox;
 
 class TerrainManager {
  public:
@@ -94,7 +94,7 @@ class TerrainManager {
   float getHeightScale(int x, int z);
 
   void buildChunk(int offsetX, int offsetY, int offsetZ);
-  u8 getBlockTypeByPosition(int x, int y, int z);
+  u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
   Vec4* getPositionByIndex(unsigned int index);

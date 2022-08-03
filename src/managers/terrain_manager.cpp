@@ -163,12 +163,12 @@ float TerrainManager::getHeightScale(int x, int z) {
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z) {
-  u8 upBlock = this->getBlockTypeByPosition(x, y - 1, z);
-  u8 downBlock = this->getBlockTypeByPosition(x, y + 1, z);
-  u8 frontBlock = this->getBlockTypeByPosition(x, y, z + 1);
-  u8 backBlock = this->getBlockTypeByPosition(x, y, z - 1);
-  u8 rightBlock = this->getBlockTypeByPosition(x + 1, y, z);
-  u8 leftBlock = this->getBlockTypeByPosition(x - 1, y, z);
+  u8 upBlock = this->getBlockTypeByOffset(x, y - 1, z);
+  u8 downBlock = this->getBlockTypeByOffset(x, y + 1, z);
+  u8 frontBlock = this->getBlockTypeByOffset(x, y, z + 1);
+  u8 backBlock = this->getBlockTypeByOffset(x, y, z - 1);
+  u8 rightBlock = this->getBlockTypeByOffset(x + 1, y, z);
+  u8 leftBlock = this->getBlockTypeByOffset(x - 1, y, z);
 
   // If some nighbor block is AIR_BLOCK set block to visible
   if (
@@ -189,7 +189,8 @@ bool TerrainManager::isBlockHidden(int x, int y, int z) {
   return true;
 }
 
-u8 TerrainManager::getBlockTypeByPosition(int x, int y, int z) {
+u8 TerrainManager::getBlockTypeByOffset(const int& x, const int& y,
+                                        const int& z) {
   return terrain[this->getIndexByOffset(x, y, z)];
 }
 
@@ -309,11 +310,14 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             block->isHidden = isHidden;
             block->color = Color(128.0F, 128.0F, 128.0F, 128.0F);
 
-            block->translation.translateZ(blockPosition.z - DUBLE_BLOCK_SIZE);
-            block->translation.translateX(blockPosition.x - DUBLE_BLOCK_SIZE - DUBLE_BLOCK_SIZE);
-            block->translation.translateY(blockPosition.y);
+            // block->translation.translateZ(blockPosition.z -
+            // DUBLE_BLOCK_SIZE); block->translation.translateX(blockPosition.x
+            // - DUBLE_BLOCK_SIZE - DUBLE_BLOCK_SIZE);
+            // block->translation.translateY(blockPosition.y);
             // block->translation.translate(blockPosition);
-            // block->setPosition(blockPosition);
+
+            block->translation.identity();
+            block->setPosition(blockPosition);
 
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
