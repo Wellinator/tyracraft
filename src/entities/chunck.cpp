@@ -84,6 +84,8 @@ void Chunck::filterSingleAndMultiBlocks() {
     tempMcpipBlock->color = &this->blocks[i]->color;
     tempMcpipBlock->textureOffset = &this->blocks[i]->textureOffset;
 
+    tempMcpipBlock->textureOffset->print();
+
     if (this->blocks[i]->isSingleTexture) {
       singleTexBlocks.push_back(tempMcpipBlock);
     } else {

@@ -12,12 +12,9 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   // Set color day
   // TODO: refector to day/light cycle;
   t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
-
   this->t_renderer = t_renderer;
-  printf("Init MCPipe\n");
   this->mcPip.setRenderer(&t_renderer->core);
-  printf("Init Terrain manager\n");
-  this->terrainManager->init(t_renderer, itemRepository);
+  this->terrainManager->init(t_renderer, itemRepository, &this->mcPip);
 };
 
 void World::update(Player* t_player, Camera* t_camera, Pad* t_pad) {

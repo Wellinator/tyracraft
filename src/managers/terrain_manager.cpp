@@ -22,7 +22,7 @@ TerrainManager::TerrainManager() {
 TerrainManager::~TerrainManager() {}
 
 void TerrainManager::init(Renderer* t_renderer,
-                          ItemRepository* itemRepository) {
+                          ItemRepository* itemRepository, MinecraftPipeline* mcPip) {
   printf("Iniating Terrain manger");
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
@@ -34,7 +34,7 @@ void TerrainManager::init(Renderer* t_renderer,
   if (testterrain >= 7) terrainType = 2;
 
   this->initNoise();
-  this->blockManager->init(t_renderer);
+  this->blockManager->init(t_renderer, mcPip);
   this->chunck = new Chunck(this->blockManager);
   this->generateNewTerrain(terrainType, false, true, true, false);
   this->defineSpawnArea();

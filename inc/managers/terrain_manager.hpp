@@ -16,11 +16,13 @@
 #include "entities/item.hpp"
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
 #include "managers/block_manager.hpp"
+#include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "managers/items_repository.hpp"
 #include "debug/debug.hpp"
 
 using Tyra::BBox;
 using Tyra::Engine;
+using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
@@ -28,7 +30,8 @@ class TerrainManager {
  public:
   TerrainManager();
   ~TerrainManager();
-  void init(Renderer* t_renderer, ItemRepository* itemRepository);
+  void init(Renderer* t_renderer, ItemRepository* itemRepository,
+            MinecraftPipeline* mcPip);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad);
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees,
                           bool makeWater, bool makeCaves);

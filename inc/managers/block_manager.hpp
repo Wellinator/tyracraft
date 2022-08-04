@@ -5,11 +5,13 @@
 #include <renderer/renderer.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/texture/models/texture.hpp>
+#include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "contants.hpp"
 
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Texture;
+using Tyra::MinecraftPipeline;
 
 struct BlockInfo {
   BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
@@ -32,12 +34,12 @@ class BlockManager {
  public:
   BlockManager();
   ~BlockManager();
-  void init(Renderer* t_renderer);
+  void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
   BlockInfo* getBlockTexOffsetByType(u8 blockType);
   inline Texture* getBlocksTexture() { return blocksTexAtlas; };
 
  private:
-  void registerBlocksTextureCoordinates();
+  void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
   void loadBlocksTextures();
 
   Texture* blocksTexAtlas;
