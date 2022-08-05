@@ -14,7 +14,7 @@ void Chunck::update(Player* t_player) {
   if (this->hasChanged) {
     this->filterSingleAndMultiBlocks();
   }
-  // this->updateBlocks(*t_player->getPosition());
+  this->updateBlocks(*t_player->getPosition());
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
@@ -67,7 +67,7 @@ void Chunck::addBlock(Block* t_block) {
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    this->applyFOG(this->blocks[blockIndex], playerPosition);
+    // this->applyFOG(this->blocks[blockIndex], playerPosition);
     this->highLightTargetBlock(this->blocks[blockIndex],
                                this->blocks[blockIndex]->isTarget);
   }
@@ -83,9 +83,6 @@ void Chunck::filterSingleAndMultiBlocks() {
     tempMcpipBlock->model = &this->blocks[i]->model;
     tempMcpipBlock->color = &this->blocks[i]->color;
     tempMcpipBlock->textureOffset = &this->blocks[i]->textureOffset;
-
-    tempMcpipBlock->textureOffset->print();
-
     if (this->blocks[i]->isSingleTexture) {
       singleTexBlocks.push_back(tempMcpipBlock);
     } else {
@@ -101,23 +98,16 @@ void Chunck::filterSingleAndMultiBlocks() {
 
 void Chunck::clearMcpipBlocks() {
   for (u16 i = 0; i < this->singleTexBlocks.size(); i++) {
-    if (this->singleTexBlocks[i] != NULL &&
-        this->singleTexBlocks[i] != nullptr) {
-      delete this->singleTexBlocks[i];
-      this->singleTexBlocks[i] = NULL;
-    }
+    delete this->singleTexBlocks[i];
+    this->singleTexBlocks[i] = NULL;
+  }
+  for (u16 i = 0; i < this->multiTexBlocks.size(); i++) {
+    delete this->multiTexBlocks[i];
+    this->multiTexBlocks[i] = NULL;
   }
 
   this->singleTexBlocks.clear();
   this->singleTexBlocks.shrink_to_fit();
-
-  for (u16 i = 0; i < this->multiTexBlocks.size(); i++) {
-    if (this->multiTexBlocks[i] != NULL && this->multiTexBlocks[i] != nullptr) {
-      delete this->multiTexBlocks[i];
-      this->multiTexBlocks[i] = NULL;
-    }
-  }
-
   this->multiTexBlocks.clear();
   this->multiTexBlocks.shrink_to_fit();
 }

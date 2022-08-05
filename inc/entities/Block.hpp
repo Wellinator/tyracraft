@@ -6,10 +6,11 @@
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "managers/block_manager.hpp"
 
+using Tyra::BBox;
+using Tyra::Color;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::Vec4;
-using Tyra::Color;
 
 /** Block 3D object class  */
 class Block {
@@ -34,6 +35,7 @@ class Block {
   M4x4 model;
   Color color;
   Vec4 textureOffset;
+  BBox* bbox = nullptr;
 
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;

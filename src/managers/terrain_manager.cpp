@@ -6,6 +6,7 @@ using Tyra::Pad;
 using Tyra::PadButtons;
 using Tyra::Ray;
 using Tyra::Renderer;
+using Tyra::Renderer3D;
 using Tyra::Vec4;
 
 TerrainManager::TerrainManager() {
@@ -21,8 +22,8 @@ TerrainManager::TerrainManager() {
 
 TerrainManager::~TerrainManager() {}
 
-void TerrainManager::init(Renderer* t_renderer,
-                          ItemRepository* itemRepository, MinecraftPipeline* mcPip) {
+void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
+                          MinecraftPipeline* mcPip) {
   printf("Iniating Terrain manger");
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
@@ -33,6 +34,7 @@ void TerrainManager::init(Renderer* t_renderer,
   if (testterrain >= 4 && testterrain < 7) terrainType = 1;
   if (testterrain >= 7) terrainType = 2;
 
+  this->calcRawBlockBBox(mcPip);
   this->initNoise();
   this->blockManager->init(t_renderer, mcPip);
   this->chunck = new Chunck(this->blockManager);
@@ -309,9 +311,18 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
             block->index = blockIndex;
             block->isHidden = isHidden;
             block->color = Color(116.0F, 116.0F, 116.0F, 128.0F);
+
             block->setPosition(blockPosition);
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
+
+            // Calc min and max corners
+            {
+              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+            }
+
             this->chunck->addBlock(block);
           }
         }
@@ -325,46 +336,57 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
 
 void TerrainManager::getTargetBlock(const Vec4& playerPosition,
                                     Camera* t_camera) {
+  u8 hitedABlock = 0;
+  float distance = -1.0f;
+  float tempTargetDistance = -1.0f;
+  float tempPlayerDistance = -1.0f;
+  Block* tempTargetBlock;
+  const auto* frustumPlanes =
+      this->t_renderer->core.renderer3D.frustumPlanes.getAll();
+
+  // Reset the current target block;
   this->targetBlock = NULL;
+
+  // Prepate the raycast
   Vec4 rayDir = t_camera->lookPos - t_camera->position;
   rayDir.normalize();
   ray.set(t_camera->position, rayDir);
-  u8 hitedABlock = 0;
-  float distance = -1.0f;
-  float tempDistance;
-  Block* tempTargetBlock;
 
-  // Check for single texture blocks
-  for (u16 blockIndex = 0; blockIndex < this->chunck->blocks.size();
-       blockIndex++) {
-    if (CollisionManager::getManhattanDistance(
-            playerPosition, *this->chunck->blocks[blockIndex]->getPosition()) <=
-        MAX_RANGE_PICKER) {
+  for (u16 i = 0; i < this->chunck->blocks.size(); i++) {
+    float distanceFromCurrentBlockToPlayer =
+        playerPosition.distanceTo(*this->chunck->blocks[i]->getPosition());
+
+    if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
       // Reset block state
-      this->chunck->blocks[blockIndex]->isTarget = 0;
-      this->chunck->blocks[blockIndex]->distance = 0.0f;
+      this->chunck->blocks[i]->isTarget = 0;
+      this->chunck->blocks[i]->distance = -1.0f;
 
-      if (ray.intersectBox(this->chunck->blocks[blockIndex]->minCorner,
-                           this->chunck->blocks[blockIndex]->maxCorner,
-                           distance)) {
+      if (ray.intersectBox(this->chunck->blocks[i]->minCorner,
+                           this->chunck->blocks[i]->maxCorner, distance)) {
+        printf("\nHited a block at %f ", distance);
+
         hitedABlock = 1;
-        if (distance == -1.0f ||
-            (CollisionManager::getManhattanDistance(
-                 playerPosition,
-                 *this->chunck->blocks[blockIndex]->getPosition()) <
-             CollisionManager::getManhattanDistance(
-                 playerPosition, *tempTargetBlock->getPosition()))) {
-          tempTargetBlock = this->chunck->blocks[blockIndex];
-          tempDistance = distance;
+        if (distance == -1.0f || tempPlayerDistance == -1.0f) {
+          tempTargetBlock = this->chunck->blocks[i];
+          tempTargetDistance = distance;
+          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+        } else if (distanceFromCurrentBlockToPlayer < tempPlayerDistance) {
+          tempTargetBlock = this->chunck->blocks[i];
+          tempTargetDistance = distance;
+          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
         }
       }
     }
+    // }
   }
 
   if (hitedABlock) {
+    printf("\nTarget block: ");
+    tempTargetBlock->getPosition()->print();
+
     this->targetBlock = tempTargetBlock;
     this->targetBlock->isTarget = 1;
-    this->targetBlock->distance = tempDistance;
+    this->targetBlock->distance = tempTargetDistance;
   }
 }
 
@@ -377,46 +399,43 @@ void TerrainManager::removeBlock() {
 
 void TerrainManager::putBlock(u8 blockToPlace) {
   printf("Put block\n");
-  // TODO: Implements
-  // if (this->targetBlock == NULL) return;
+  if (this->targetBlock == NULL || this->targetBlock == nullptr) return;
 
-  // // Prevent to put a block at the player position;
-  // if
-  // (this->t_player->getPosition()->collidesBox(this->targetBlock->minCorner,
-  //                                                this->targetBlock->maxCorner))
-  //   return;
+  // Prevent to put a block at the player position;
+  if (this->t_player->getPosition()->collidesBox(this->targetBlock->minCorner,
+                                                 this->targetBlock->maxCorner))
+    return;
 
-  // // Detect face
-  // BBox blockCenterPos = this->targetBlock->mesh->getCurrentBoundingBox();
-  // Vec4 hitPosition = ray.at(this->targetBlock->distance);
-  // Vec4 targetPos = this->targetblock->getPosition() - hitPosition;
-  // int terrainIndex = this->targetBlock->index;
+  // Detect face
+  Vec4 hitPosition = ray.at(this->targetBlock->distance);
+  Vec4 targetPos = *this->targetBlock->getPosition() - hitPosition;
+  int terrainIndex = this->targetBlock->index;
 
-  // if (std::round(targetPos.z) == blockCenterPos.getFrontFace().axisPosition)
-  // {
-  //   terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-  // } else if (std::round(targetPos.z) ==
-  //            blockCenterPos.getBackFace().axisPosition) {
-  //   terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-  // } else if (std::round(targetPos.x) ==
-  //            blockCenterPos.getRightFace().axisPosition) {
-  //   terrainIndex -= OVERWORLD_V_DISTANCE;
-  // } else if (std::round(targetPos.x) ==
-  //            blockCenterPos.getLeftFace().axisPosition) {
-  //   terrainIndex += OVERWORLD_V_DISTANCE;
-  // } else if (std::round(targetPos.y) ==
-  //            blockCenterPos.getTopFace().axisPosition) {
-  //   terrainIndex -= 1;
-  // } else if (std::round(targetPos.y) ==
-  //            blockCenterPos.getBottomFace().axisPosition) {
-  //   terrainIndex += 1;
-  // }
+  if (std::round(targetPos.z) ==
+      this->targetBlock->bbox->getFrontFace().axisPosition) {
+    terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+  } else if (std::round(targetPos.z) ==
+             this->targetBlock->bbox->getBackFace().axisPosition) {
+    terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+  } else if (std::round(targetPos.x) ==
+             this->targetBlock->bbox->getRightFace().axisPosition) {
+    terrainIndex -= OVERWORLD_V_DISTANCE;
+  } else if (std::round(targetPos.x) ==
+             this->targetBlock->bbox->getLeftFace().axisPosition) {
+    terrainIndex += OVERWORLD_V_DISTANCE;
+  } else if (std::round(targetPos.y) ==
+             this->targetBlock->bbox->getTopFace().axisPosition) {
+    terrainIndex -= 1;
+  } else if (std::round(targetPos.y) ==
+             this->targetBlock->bbox->getBottomFace().axisPosition) {
+    terrainIndex += 1;
+  }
 
-  // if (terrainIndex <= OVERWORLD_SIZE &&
-  //     terrainIndex != this->targetBlock->index) {
-  //   this->terrain[terrainIndex] = blockToPlace;
-  //   this->shouldUpdateChunck = 1;
-  // }
+  if (terrainIndex <= OVERWORLD_SIZE &&
+      terrainIndex != this->targetBlock->index) {
+    this->terrain[terrainIndex] = blockToPlace;
+    this->shouldUpdateChunck = 1;
+  }
 }
 
 void TerrainManager::handlePadControls(Pad* t_pad) {
@@ -594,4 +613,9 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
       break;
     }
   }
+}
+
+void TerrainManager::calcRawBlockBBox(MinecraftPipeline* mcPip) {
+  const auto& blockData = mcPip->getBlockData();
+  this->rawBlockBbox = new BBox(blockData.vertices, blockData.count);
 }

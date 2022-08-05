@@ -74,13 +74,14 @@ class TerrainManager {
   int blockToPlaceIndex;
 
   BlockManager* blockManager = new BlockManager();
+  BBox* rawBlockBbox;
 
   // Params for noise generation;
   const float frequency = 0.01;
   const float amplitude = 0.65f;
   const float lacunarity = 2.4f;
   const float persistance = .45f;
-  const unsigned int seed = rand() % 100000;  // 52485;
+  const unsigned int seed = 52485;  // rand() % 100000;
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
   FastNoiseLite* noise;
@@ -108,4 +109,5 @@ class TerrainManager {
 
   void handlePadControls(Pad* t_pad);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
+  void calcRawBlockBBox(MinecraftPipeline* mcPip);
 };
