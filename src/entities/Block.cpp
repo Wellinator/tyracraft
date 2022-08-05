@@ -13,11 +13,12 @@ Block::Block(BlockInfo* blockInfo) {
       Vec4(blockInfo->_texOffssetX, blockInfo->_texOffssetY, 0.0F, 1.0F);
 }
 
-Block::~Block() {}
-
-void Block::updateModelMatrix() {
-  model = translation * rotation * scale;
+Block::~Block() {
+  if (bbox) delete bbox;
+  bbox = NULL;
 }
+
+void Block::updateModelMatrix() { model = translation * rotation * scale; }
 
 void Block::setPosition(const Vec4& v) {
   TYRA_ASSERT(v.w == 1.0F, "Vec4 must be homogeneous");
