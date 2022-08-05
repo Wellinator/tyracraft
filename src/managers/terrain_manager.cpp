@@ -361,6 +361,15 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
       this->chunck->blocks[i]->isTarget = 0;
       this->chunck->blocks[i]->distance = -1.0f;
 
+      // Check if is in frustum
+      {
+        u8 isInFrustum = this->chunck->blocks[i]->bbox->isInFrustum(
+            frustumPlanes, this->chunck->blocks[i]->model, 0);
+        if (!isInFrustum) {
+          return;
+        }
+      }
+
       if (ray.intersectBox(this->chunck->blocks[i]->minCorner,
                            this->chunck->blocks[i]->maxCorner, distance)) {
         printf("\nHited a block at %f ", distance);
