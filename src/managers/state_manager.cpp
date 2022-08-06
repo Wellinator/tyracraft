@@ -25,6 +25,8 @@ void StateManager::init(Engine* t_engine) {
 }
 
 void StateManager::update(const float& deltaTime, Camera* t_camera) {
+  // TODO: Refctor to STATE pattern to prevent stealin FPS;
+
   // Splash Screen
   if (_state == SPLASH_SCREEN) {
     splashScreen->render();
@@ -36,10 +38,8 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
       this->_state = MAIN_MENU;
     }
     return;
-  }
-
-  // Main menu
-  if (_state == MAIN_MENU) {
+  } else if (_state == MAIN_MENU) {
+    // Main menu
     t_camera->update(*t_pad, *mainMenu->menuSkybox);
     mainMenu->update(*t_pad);
     mainMenu->render();
@@ -50,10 +50,8 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
       _state = LOADING_SCREEN;
     }
     return;
-  }
-
-  // Main menu
-  if (_state == LOADING_SCREEN) {
+  } else if (_state == LOADING_SCREEN) {
+    // Main menu
     if (loadingScreen->hasFinished()) {
       printf("Unloading Loading Screen\n");
       loadingScreen->unload();
@@ -65,10 +63,8 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
       loadingScreen->render();
     }
     return;
-  }
-
-  // In game
-  if (_state == IN_GAME) {
+  } else if (_state == IN_GAME) {
+    // In game
     // Updates
     {
       this->controlGameMode(*t_pad);
