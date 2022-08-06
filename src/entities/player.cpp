@@ -16,6 +16,7 @@
 #include "loaders/3d/md2/md2_loader.hpp"
 #include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
 
+using Tyra::BBox;
 using Tyra::FileUtils;
 using Tyra::MD2Loader;
 
@@ -54,7 +55,6 @@ Player::~Player() {}
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     Block* t_blocks[], unsigned int blocks_ammount) {
   this->handleInputCommands(t_pad);
-
   this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
   this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
@@ -151,17 +151,25 @@ void Player::updateGravity(const float& deltaTime) {
 
 void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
   this->distanceToHit = -1.0f;
+  Vec4 currentPlayerPos = *this->mesh->getPosition();
+  BBox playerBB = (BBox)this->mesh->getCurrentBoundingBox();
 
   // Get the direction
-  Vec4 rayDir = *nextPlayerPos - *this->mesh->getPosition();
+  Vec4 rayDir = *nextPlayerPos - currentPlayerPos;
   rayDir.normalize();
-  ray.set(*this->mesh->getPosition(), rayDir);
+  ray.set(currentPlayerPos, rayDir);
 
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
 
   for (int i = 0; i < blocks_ammount; i++) {
-    if (CollisionManager::getManhattanDistance(*this->mesh->getPosition(),
+    if (playerBB.getBottomFace().axisPosition >
+            t_blocks[i]->bbox->getTopFace().axisPosition ||
+        playerBB.getTopFace().axisPosition <
+            t_blocks[i]->bbox->getBottomFace().axisPosition)
+      return;
+
+    if (CollisionManager::getManhattanDistance(currentPlayerPos,
                                                *t_blocks[i]->getPosition()) <=
         MAX_RANGE_PICKER) {
       // Project ray
@@ -185,21 +193,22 @@ void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
 
 void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
   this->currentBlock = NULL;
+  Vec4 playerPos = *this->mesh->getPosition();
 
   for (int i = 0; i < blocks_ammount; i++) {
-    float distanceToBlock =
-        this->mesh->getPosition()->distanceTo(*t_blocks[i]->getPosition());
+    if (playerPos.y < t_blocks[i]->maxCorner.y) continue;
+
+    float distanceToBlock = playerPos.distanceTo(*t_blocks[i]->getPosition());
 
     if (distanceToBlock <= MAX_RANGE_PICKER) {
-      if (this->mesh->getPosition()->isOnBox(t_blocks[i]->minCorner,
-                                             t_blocks[i]->maxCorner)) {
+      if (playerPos.isOnBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner)) {
         if (this->currentBlock == NULL) {
           this->currentBlock = t_blocks[i];
           continue;
         }
 
-        if (distanceToBlock < this->mesh->getPosition()->distanceTo(
-                                  *this->currentBlock->getPosition())) {
+        if (distanceToBlock <
+            playerPos.distanceTo(*this->currentBlock->getPosition())) {
           this->currentBlock = t_blocks[i];
         }
       }
