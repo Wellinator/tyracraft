@@ -38,7 +38,7 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->initNoise();
   this->blockManager->init(t_renderer, mcPip);
   this->chunck = new Chunck(this->blockManager);
-  this->generateNewTerrain(terrainType, false, true, true, false);
+  this->generateNewTerrain(terrainType, true, true, true, false);
   this->defineSpawnArea();
 }
 
@@ -336,6 +336,16 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
 
 void TerrainManager::getTargetBlock(const Vec4& playerPosition,
                                     Camera* t_camera) {
+  // Prevent multiples checks if don't move
+  {
+    if (this->shouldUpdateTarget ||
+        (this->lastPlayerLookAtPosition->x == t_camera->lookPos.x,
+         this->lastPlayerLookAtPosition->y == t_camera->lookPos.y,
+         this->lastPlayerLookAtPosition->z == t_camera->lookPos.z)) {
+      return;
+    }
+  }
+
   u8 hitedABlock = 0;
   float distance = -1.0f;
   float tempTargetDistance = -1.0f;
@@ -375,18 +385,14 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
         printf("\nHited a block at %f ", distance);
 
         hitedABlock = 1;
-        if (distance == -1.0f || tempPlayerDistance == -1.0f) {
-          tempTargetBlock = this->chunck->blocks[i];
-          tempTargetDistance = distance;
-          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
-        } else if (distanceFromCurrentBlockToPlayer < tempPlayerDistance) {
+        if (tempTargetDistance == -1.0f ||
+            (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
           tempTargetBlock = this->chunck->blocks[i];
           tempTargetDistance = distance;
           tempPlayerDistance = distanceFromCurrentBlockToPlayer;
         }
       }
     }
-    // }
   }
 
   if (hitedABlock) {
@@ -397,6 +403,8 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
     this->targetBlock->isTarget = 1;
     this->targetBlock->distance = tempTargetDistance;
   }
+
+  this->lastPlayerLookAtPosition->set(t_camera->lookPos);
 }
 
 void TerrainManager::removeBlock() {
@@ -404,6 +412,7 @@ void TerrainManager::removeBlock() {
 
   terrain[this->targetBlock->index] = AIR_BLOCK;
   this->shouldUpdateChunck = 1;
+  this->shouldUpdateTarget = 1;
 }
 
 void TerrainManager::putBlock(u8 blockToPlace) {
@@ -444,6 +453,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
       terrainIndex != this->targetBlock->index) {
     this->terrain[terrainIndex] = blockToPlace;
     this->shouldUpdateChunck = 1;
+    this->shouldUpdateTarget = 1;
   }
 }
 

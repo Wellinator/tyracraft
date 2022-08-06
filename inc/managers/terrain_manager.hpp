@@ -57,6 +57,7 @@ class TerrainManager {
  private:
   Ray ray;
   u8 shouldUpdateChunck = 0;
+  u8 shouldUpdateTarget = 0;
 
   Player* t_player;
   Camera* t_camera;
@@ -70,6 +71,7 @@ class TerrainManager {
   Vec4 maxWorldPos;
 
   Vec4* lastPlayerPosition = NULL;
+  Vec4* lastPlayerLookAtPosition = new Vec4();
   int blockToRemoveIndex;
   int blockToPlaceIndex;
 
