@@ -24,7 +24,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
 
 void BlockManager::loadBlocksTextures() {
   blocksTexAtlas = t_renderer->core.texture.repository.add(
-      FileUtils::fromCwd("assets/textures/block/texture_atlas_debug.png"));
+      FileUtils::fromCwd("assets/textures/block/texture_atlas.png"));
 }
 
 void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
