@@ -10,9 +10,13 @@
 
 #include "./utils.hpp"
 #include <fastmath.h>
+#include <physics/ray.hpp>
+#include <renderer/3d/bbox/bbox.hpp>
 
+using Tyra::BBox;
 using Tyra::Math;
 using Tyra::Mesh;
+using Tyra::Ray;
 using Tyra::Vec4;
 
 /** Degrees to Radian conversion
@@ -84,4 +88,31 @@ float Utils::FOG_EXP2(float d, float density) {
 
 float Utils::FOG_EXP_GRAD(float d, float density, float gradient) {
   return exp(-pow((d * density), gradient));
+}
+
+float Utils::Raycast(Vec4* origin, Vec4* dir, Vec4* min, Vec4* max) {
+  float t1 = (min->x - origin->x) / dir->x;
+  float t2 = (max->x - origin->x) / dir->x;
+  float t3 = (min->y - origin->y) / dir->y;
+  float t4 = (max->y - origin->y) / dir->y;
+  float t5 = (min->z - origin->z) / dir->z;
+  float t6 = (max->z - origin->z) / dir->z;
+
+  float tmin = MAX(MAX(MIN(t1, t2), MIN(t3, t4)), MIN(t5, t6));
+  float tmax = MIN(MIN(MAX(t1, t2), MAX(t3, t4)), MAX(t5, t6));
+
+  // if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behing us
+  if (tmax < 0) {
+    return -1;
+  }
+
+  // if tmin > tmax, ray doesn't intersect AABB
+  if (tmin > tmax) {
+    return -1;
+  }
+
+  if (tmin < 0) {
+    return tmax;
+  }
+  return tmin;
 }
