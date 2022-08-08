@@ -71,8 +71,6 @@ class TerrainManager {
   Vec4 maxWorldPos;
 
   Vec4* lastPlayerPosition = NULL;
-  int blockToRemoveIndex;
-  int blockToPlaceIndex;
 
   BlockManager* blockManager = new BlockManager();
   BBox* rawBlockBbox;
