@@ -57,11 +57,11 @@ class TerrainManager {
  private:
   Ray ray;
   u8 shouldUpdateChunck = 0;
-  u8 shouldUpdateTarget = 0;
 
   Player* t_player;
   Camera* t_camera;
   ItemRepository* t_itemRepository;
+  MinecraftPipeline* t_mcPip;
 
   // TODO: Refactor to region and cache it. See
   // https://minecraft.fandom.com/el/wiki/Region_file_format;
@@ -71,7 +71,6 @@ class TerrainManager {
   Vec4 maxWorldPos;
 
   Vec4* lastPlayerPosition = NULL;
-  Vec4* lastPlayerLookAtPosition = new Vec4();
   int blockToRemoveIndex;
   int blockToPlaceIndex;
 
@@ -112,4 +111,5 @@ class TerrainManager {
   void handlePadControls(Pad* t_pad);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
+  void getBlockMinMax(Block* t_block);
 };
