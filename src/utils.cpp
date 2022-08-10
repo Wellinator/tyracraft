@@ -44,33 +44,6 @@ float Utils::expoEaseInOut(float t, float b, float c, float d) {
   return c / 2 * (-powf(2, -10 * --t) + 2) + b;
 }
 
-/** Calculates minimum and maximum X, Y, Z of mesh vertices + current position
- */
-// void Utils::getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max) {
-//   Vec4 calc = Vec4();
-//   u8 isInitialized = 0;
-//   const Vec4* BBox = t_mesh.getCurrentBoundingBox();
-//   for (u32 i = 0; i < 8; i++) {
-//     calc.set(BBox[i].x + t_mesh.getPosition().x,
-//              BBox[i].y + t_mesh.getPosition().y,
-//              BBox[i].z + t_mesh.getPosition().z);
-//     if (isInitialized == 0) {
-//       isInitialized = 1;
-//       t_min.set(calc);
-//       t_max.set(calc);
-//     }
-
-//     if (t_min.x > calc.x) t_min.x = calc.x;
-//     if (calc.x > t_max.x) t_max.x = calc.x;
-
-//     if (t_min.y > calc.y) t_min.y = calc.y;
-//     if (calc.y > t_max.y) t_max.y = calc.y;
-
-//     if (t_min.z > calc.z) t_min.z = calc.z;
-//     if (calc.z > t_max.z) t_max.z = calc.z;
-//   }
-// }
-
 float Utils::clamp(const float value, float min, float max) {
   return ((value < min) * (min - value)) + ((value > max) * (max - value));
 }
@@ -103,16 +76,25 @@ float Utils::Raycast(Vec4* origin, Vec4* dir, Vec4* min, Vec4* max) {
 
   // if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behing us
   if (tmax < 0) {
-    return -1;
+    return -1.0f;
   }
 
   // if tmin > tmax, ray doesn't intersect AABB
   if (tmin > tmax) {
-    return -1;
+    return -1.0f;
   }
 
   if (tmin < 0) {
     return tmax;
   }
   return tmin;
+}
+
+void Utils::GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
+                            const Vec4& BMin, const Vec4& BMax, Vec4* resultMin,
+                            Vec4* resultMax) {
+  // Width, Height, Depth
+  Vec4 aDimensions = Vec4(AMax - AMin) / 2;
+  resultMax->set(aDimensions + BMax);
+  resultMin->set(BMin - aDimensions);
 }

@@ -22,6 +22,26 @@ using Tyra::BBox;
 using Tyra::Mesh;
 using Tyra::Vec4;
 
+// enum eDirection { RIGHT, LEFT, UP, DOWN, FRONT, BACK };
+
+struct Rect {
+  Rect(const Vec4& _min, const Vec4& _max, const Vec4& _velocity) {
+    min.set(_min);
+    max.set(_max);
+    velocity.set(_velocity);
+  }
+
+  Rect(const Vec4& _min, const Vec4& _max) {
+    min.set(_min);
+    max.set(_max);
+    velocity = Vec4();
+  }
+
+  Vec4 min;
+  Vec4 max;
+  Vec4 velocity;
+};
+
 class Utils {
  public:
   static float degreesToRadian(float degress);
@@ -33,4 +53,7 @@ class Utils {
   static float FOG_EXP2(float d, float density);
   static float FOG_EXP_GRAD(float d, float density, float gradient);
   static float Raycast(Vec4* origin, Vec4* dir, Vec4* min, Vec4* max);
+  static void GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
+                              const Vec4& BMin, const Vec4& BMax,
+                              Vec4* resultMin, Vec4* resultMax);
 };
