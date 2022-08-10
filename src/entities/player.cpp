@@ -56,7 +56,7 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     Block* t_blocks[], unsigned int blocks_ammount) {
   this->handleInputCommands(t_pad);
   this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-  this->checkIfWillCollideBlock(t_blocks, blocks_ammount);
+  this->checkIfWillCollideBlock(t_blocks, blocks_ammount, deltaTime);
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
   this->updateGravity(deltaTime);
   this->updatePosition(deltaTime);
@@ -111,10 +111,17 @@ void Player::updatePosition(const float& deltaTime) {
   if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) return;
 
   // Will collide
-  if (distanceToHit > -1.0f) {
-    float timeToHit = distanceToHit / this->speed;
+  if (this->distanceToHit > -1.0f) {
+    float timeToHit = this->distanceToHit / this->speed;
+
+    // TODO: Implements fraction of movement;
+    // printf("timeToHit -> %f | deltaTime -> %f", timeToHit, deltaTime);
+    // printf("distanceToHit -> %f | distance -> %f", this->distanceToHit,
+    //        this->mesh->getPosition()->distanceTo(*nextPlayerPos));
+
     if (timeToHit <= deltaTime ||
-        distanceToHit < this->mesh->getPosition()->distanceTo(*nextPlayerPos))
+        this->distanceToHit <
+            this->mesh->getPosition()->distanceTo(*nextPlayerPos))
       return;
   }
 
@@ -139,7 +146,7 @@ void Player::updateGravity(const float& deltaTime) {
   }
 
   if (this->currentBlock != NULL &&
-      newYPosition.y < this->currentBlock->maxCorner.y) {
+      newYPosition.y < this->currentBlock->maxCorner.y + 1.0f) {
     newYPosition.y = this->currentBlock->maxCorner.y;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = 1;
@@ -149,44 +156,50 @@ void Player::updateGravity(const float& deltaTime) {
   mesh->getPosition()->set(newYPosition);
 }
 
-void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount) {
+void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount,
+                                     const float& deltaTime) {
   this->distanceToHit = -1.0f;
   Vec4 currentPlayerPos = *this->mesh->getPosition();
+  Vec4 playerMin = Vec4();
+  Vec4 playerMax = Vec4();
   BBox playerBB = (BBox)this->mesh->getCurrentBoundingBox();
-
-  // Get the direction
-  Vec4 rayDir = *nextPlayerPos - currentPlayerPos;
+  playerBB.getMinMax(&playerMin, &playerMax);
+  playerMin += currentPlayerPos;
+  playerMax += currentPlayerPos;
+  Vec4 rayOrigin = currentPlayerPos;
+  Vec4 rayDir = *this->nextPlayerPos - currentPlayerPos;
   rayDir.normalize();
-  ray.set(currentPlayerPos, rayDir);
-
+  Vec4 inflatedMin = Vec4();
+  Vec4 inflatedMax = Vec4();
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
+  float maxDistanceOfFrame = this->speed * deltaTime;
 
   for (int i = 0; i < blocks_ammount; i++) {
-    if (playerBB.getBottomFace().axisPosition >
-            t_blocks[i]->bbox->getTopFace().axisPosition ||
-        playerBB.getTopFace().axisPosition <
-            t_blocks[i]->bbox->getBottomFace().axisPosition)
-      return;
+    // Check if player would collide (Broad phase);
+    // TODO: filter the block that are beyond the max distance of frame;
+    if (playerMin.y >= t_blocks[i]->getPosition()->y) {
+      continue;
+    };
 
-    if (CollisionManager::getManhattanDistance(currentPlayerPos,
-                                               *t_blocks[i]->getPosition()) <=
-        MAX_RANGE_PICKER) {
-      // Project ray
-      ray.intersectBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner,
-                       tempHitDistance);
+    // Inflate bbox
+    // TODO: implement sliding on colide;
+    Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
+                           t_blocks[i]->maxCorner, &inflatedMin, &inflatedMax);
 
-      if (tempHitDistance > 0) {
-        if (finalHitDistance == -1.0f)
-          finalHitDistance = tempHitDistance;
-        else if (tempHitDistance < finalHitDistance)
-          finalHitDistance = tempHitDistance;
+    tempHitDistance =
+        Utils::Raycast(&rayOrigin, &rayDir, &inflatedMin, &inflatedMax);
+
+    if (tempHitDistance > -1.0f) {
+      if (tempHitDistance > -1.0f &&
+          (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance)) {
+        finalHitDistance = tempHitDistance;
       }
     }
   }
 
   if (finalHitDistance > -1.0f) {
-    this->hitPosition.set(this->ray.at(finalHitDistance));
+    this->hitPosition.set(rayDir * finalHitDistance);
     this->distanceToHit = finalHitDistance;
   }
 }

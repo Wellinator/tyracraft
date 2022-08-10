@@ -50,7 +50,7 @@ class Player {
   Ray ray;
   Vec4* nextPlayerPos;
   Block *currentBlock, *willCollideBlock;
-  Vec4 willCollideBlockMin, willCollideBlockMax, hitPosition;
+  Vec4 hitPosition;
   float distanceToHit = -1.0f;
 
   // Inventory
@@ -78,7 +78,8 @@ class Player {
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updatePosition(const float& deltaTime);
   void updateGravity(const float& deltaTime);
-  void checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount);
+  void checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount,
+                               const float& deltaTime);
   void checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount);
   void handleInputCommands(Pad& t_pad);
 
