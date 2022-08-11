@@ -55,11 +55,17 @@ Player::~Player() {}
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     Block* t_blocks[], unsigned int blocks_ammount) {
   this->handleInputCommands(t_pad);
+
   this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-  this->checkIfWillCollideBlock(t_blocks, blocks_ammount, deltaTime);
+  if (this->nextPlayerPos->x != this->mesh->getPosition()->x ||
+      this->nextPlayerPos->y != this->mesh->getPosition()->y ||
+      this->nextPlayerPos->z != this->mesh->getPosition()->z) {
+    this->handleBlocksCollisions(t_blocks, blocks_ammount, deltaTime);
+    this->updatePosition(deltaTime);
+  }
+
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
   this->updateGravity(deltaTime);
-  this->updatePosition(deltaTime);
 
   delete nextPlayerPos;
   nextPlayerPos = NULL;
@@ -156,8 +162,8 @@ void Player::updateGravity(const float& deltaTime) {
   mesh->getPosition()->set(newYPosition);
 }
 
-void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount,
-                                     const float& deltaTime) {
+u8 Player::handleBlocksCollisions(Block* t_blocks[], int blocks_ammount,
+                                  const float& deltaTime) {
   this->distanceToHit = -1.0f;
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
@@ -202,6 +208,8 @@ void Player::checkIfWillCollideBlock(Block* t_blocks[], int blocks_ammount,
     this->hitPosition.set(rayDir * finalHitDistance);
     this->distanceToHit = finalHitDistance;
   }
+
+  return finalHitDistance > -1.0f;
 }
 
 void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
