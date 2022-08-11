@@ -60,8 +60,7 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   if (this->nextPlayerPos->x != this->mesh->getPosition()->x ||
       this->nextPlayerPos->y != this->mesh->getPosition()->y ||
       this->nextPlayerPos->z != this->mesh->getPosition()->z) {
-    this->handleBlocksCollisions(t_blocks, blocks_ammount, deltaTime);
-    this->updatePosition(deltaTime);
+    this->updatePosition(t_blocks, blocks_ammount, deltaTime);
   }
 
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
@@ -112,30 +111,6 @@ Vec4* Player::getNextPosition(const float& deltaTime, Pad& t_pad,
   return result;
 }
 
-void Player::updatePosition(const float& deltaTime) {
-  // Check if is at the world's edge
-  if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) return;
-
-  // Will collide
-  if (this->distanceToHit > -1.0f) {
-    float timeToHit = this->distanceToHit / this->speed;
-
-    // TODO: Implements fraction of movement;
-    // printf("timeToHit -> %f | deltaTime -> %f", timeToHit, deltaTime);
-    // printf("distanceToHit -> %f | distance -> %f", this->distanceToHit,
-    //        this->mesh->getPosition()->distanceTo(*nextPlayerPos));
-
-    if (timeToHit <= deltaTime ||
-        this->distanceToHit <
-            this->mesh->getPosition()->distanceTo(*nextPlayerPos))
-      return;
-  }
-
-  // Apply new position;
-  mesh->getPosition()->x = nextPlayerPos->x;
-  mesh->getPosition()->z = nextPlayerPos->z;
-}
-
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime) {
   this->velocity += GRAVITY;  // Negative gravity to decrease Y axis
@@ -162,9 +137,11 @@ void Player::updateGravity(const float& deltaTime) {
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::handleBlocksCollisions(Block* t_blocks[], int blocks_ammount,
-                                  const float& deltaTime) {
-  this->distanceToHit = -1.0f;
+void Player::updatePosition(Block* t_blocks[], int blocks_ammount,
+                            const float& deltaTime) {
+  // Check if is at the world's edge
+  if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) return;
+
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
@@ -182,6 +159,9 @@ u8 Player::handleBlocksCollisions(Block* t_blocks[], int blocks_ammount,
   float maxDistanceOfFrame = this->speed * deltaTime;
 
   for (int i = 0; i < blocks_ammount; i++) {
+    Vec4 tempInflatedMin = Vec4();
+    Vec4 tempInflatedMax = Vec4();
+
     // Check if player would collide (Broad phase);
     // TODO: filter the block that are beyond the max distance of frame;
     if (playerMin.y >= t_blocks[i]->getPosition()->y) {
@@ -191,25 +171,46 @@ u8 Player::handleBlocksCollisions(Block* t_blocks[], int blocks_ammount,
     // Inflate bbox
     // TODO: implement sliding on colide;
     Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
-                           t_blocks[i]->maxCorner, &inflatedMin, &inflatedMax);
+                           t_blocks[i]->maxCorner, &tempInflatedMin,
+                           &tempInflatedMax);
 
     tempHitDistance =
-        Utils::Raycast(&rayOrigin, &rayDir, &inflatedMin, &inflatedMax);
+        Utils::Raycast(&rayOrigin, &rayDir, &tempInflatedMin, &tempInflatedMax);
 
-    if (tempHitDistance > -1.0f) {
-      if (tempHitDistance > -1.0f &&
-          (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance)) {
-        finalHitDistance = tempHitDistance;
-      }
+    if (tempHitDistance > -1.0f &&
+        (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance)) {
+      finalHitDistance = tempHitDistance;
+      inflatedMin.set(tempInflatedMin);
+      inflatedMax.set(tempInflatedMax);
     }
   }
 
+  // Updates position if collides;
+
   if (finalHitDistance > -1.0f) {
-    this->hitPosition.set(rayDir * finalHitDistance);
-    this->distanceToHit = finalHitDistance;
+    const float timeToHit = finalHitDistance / this->speed;
+    if (timeToHit <= deltaTime ||
+        finalHitDistance <
+            this->mesh->getPosition()->distanceTo(*nextPlayerPos)) {
+      // Slide on collision
+      const float friction = 0.8f;
+      const float remainingtime = deltaTime - timeToHit;
+      const Vec4 hitPosition = rayOrigin + (rayDir * finalHitDistance);
+      const Vec4 oldVel = *nextPlayerPos - currentPlayerPos;
+      Vec4 normal = Utils::GetNormalFromHitPosition(hitPosition, inflatedMin,
+                                                    inflatedMax);
+      Vec4 tempVector = oldVel.cross(normal);
+      Vec4 newVel = normal.cross(tempVector);
+      newVel.normalize();
+      newVel *= speed * friction * remainingtime;
+      mesh->getPosition()->set(currentPlayerPos + newVel);
+      return;
+    }
   }
 
-  return finalHitDistance > -1.0f;
+  // Apply new position;
+  mesh->getPosition()->x = nextPlayerPos->x;
+  mesh->getPosition()->z = nextPlayerPos->z;
 }
 
 void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
