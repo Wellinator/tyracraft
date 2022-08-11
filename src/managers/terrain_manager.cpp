@@ -410,28 +410,27 @@ void TerrainManager::putBlock(u8 blockToPlace) {
     return;
 
   // Detect face
-  Vec4 hitPosition = ray.at(this->targetBlock->distance);
-  Vec4 targetPos = *this->targetBlock->getPosition() - hitPosition;
+  Vec4 targetPos = ray.at(this->targetBlock->distance);
   int terrainIndex = this->targetBlock->index;
 
   if (std::round(targetPos.z) ==
       this->targetBlock->bbox->getFrontFace().axisPosition) {
-    terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
   } else if (std::round(targetPos.z) ==
              this->targetBlock->bbox->getBackFace().axisPosition) {
-    terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getRightFace().axisPosition) {
-    terrainIndex -= OVERWORLD_V_DISTANCE;
+    terrainIndex += OVERWORLD_V_DISTANCE;
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getLeftFace().axisPosition) {
-    terrainIndex += OVERWORLD_V_DISTANCE;
+    terrainIndex -= OVERWORLD_V_DISTANCE;
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getTopFace().axisPosition) {
-    terrainIndex -= 1;
+    terrainIndex += 1;
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getBottomFace().axisPosition) {
-    terrainIndex += 1;
+    terrainIndex -= 1;
   }
 
   if (terrainIndex <= OVERWORLD_SIZE &&
