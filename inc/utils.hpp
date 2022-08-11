@@ -53,6 +53,8 @@ class Utils {
   static float FOG_EXP2(float d, float density);
   static float FOG_EXP_GRAD(float d, float density, float gradient);
   static float Raycast(Vec4* origin, Vec4* dir, Vec4* min, Vec4* max);
+  static Vec4 GetNormalFromHitPosition(const Vec4& intersection,
+                                       const Vec4& min, const Vec4& max);
   static void GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
                               const Vec4& BMin, const Vec4& BMax,
                               Vec4* resultMin, Vec4* resultMax);

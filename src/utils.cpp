@@ -98,3 +98,22 @@ void Utils::GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
   resultMax->set(aDimensions + BMax);
   resultMin->set(BMin - aDimensions);
 }
+
+Vec4 Utils::GetNormalFromHitPosition(const Vec4& intersection,
+                                     const Vec4& boxMin, const Vec4& boxMax) {
+  Vec4 normal = Vec4(0, 0, 0);
+  if (intersection.z == boxMax.z) {
+    normal.set(0, 0, -1);
+  } else if (intersection.z == boxMin.z) {
+    normal.set(0, 0, 1);
+  } else if (intersection.x == boxMax.x) {
+    normal.set(1, 0, 0);
+  } else if (intersection.x == boxMin.x) {
+    normal.set(-1, 0, 0);
+  } else if (intersection.y == boxMax.y) {
+    normal.set(0, 1, 0);
+  } else if (intersection.y == boxMin.y) {
+    normal.set(0, -1, 0);
+  }
+  return normal;
+}
