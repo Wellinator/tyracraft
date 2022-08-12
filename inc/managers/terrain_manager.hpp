@@ -33,8 +33,7 @@ class TerrainManager {
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             MinecraftPipeline* mcPip);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad);
-  void generateNewTerrain(int terrainType, bool makeFlat, bool makeTrees,
-                          bool makeWater, bool makeCaves);
+  void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
   inline Chunck* getChunck() { return this->chunck; };
   Chunck* getChunck(int offsetX, int offsetY, int offsetZ);
   void updateChunkByPlayerPosition(Player* player);
@@ -86,6 +85,7 @@ class TerrainManager {
   FastNoiseLite* noise;
   void initNoise();
   void generateTrees();
+  void generateWater();
   void placeTreeAt(int x, int z, u8 treeHeight);
   u8 getBlock(int noise, int y);
   float getContinentalness(int x, int z);

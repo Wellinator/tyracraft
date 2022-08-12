@@ -39,7 +39,7 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->initNoise();
   this->blockManager->init(t_renderer, mcPip);
   this->chunck = new Chunck(this->blockManager);
-  this->generateNewTerrain(terrainType, true, true, true, false);
+  this->generateNewTerrain(terrainType, false, true);
   this->defineSpawnArea();
 }
 
@@ -53,7 +53,6 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
 };
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
-                                        bool makeTrees, bool makeWater,
                                         bool makeCaves) {
   int index = 0;
   int noise = 0;
@@ -78,7 +77,8 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
     }
   }
 
-  if (makeTrees) this->generateTrees();
+  this->generateWater();
+  this->generateTrees();
 }
 
 void TerrainManager::initNoise() {
@@ -116,14 +116,6 @@ int TerrainManager::getNoise(int x, int z) {
 }
 
 u8 TerrainManager::getBlock(int noise, int y) {
-  // if (y <= noise)
-  //     return STONE_BLOCK;
-
-  // if (y < 0)
-  //     return WATER_BLOCK;
-
-  // return AIR_BLOCK;
-
   if (y > noise) {
     return AIR_BLOCK;
   }
@@ -589,7 +581,8 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
     int index = this->getIndexByOffset(x, y, z);
     u8 type = this->terrain[index];
 
-    if (type != AIR_BLOCK && (type == GRASS_BLOCK || type == DIRTY_BLOCK)) {
+    if (y >= 0 && type != AIR_BLOCK &&
+        (type == GRASS_BLOCK || type == DIRTY_BLOCK)) {
       for (int j = 0; j <= treeHeight; j++) {
         u32 treeBlockIndex = this->getIndexByOffset(x, y + j, z);
 
@@ -620,4 +613,43 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
 void TerrainManager::calcRawBlockBBox(MinecraftPipeline* mcPip) {
   const auto& blockData = mcPip->getBlockData();
   this->rawBlockBbox = new BBox(blockData.vertices, blockData.count);
+}
+
+void TerrainManager::generateWater() {
+  int index = 0;
+  for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
+    for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
+      for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
+        if (this->terrain[index] != AIR_BLOCK) continue;
+
+        // If Y is lower than 0, then fill with water;
+        if (y < 0) this->terrain[index] = WATER_BLOCK;
+
+        // Place sand arround the watter;
+        u8 leftIndex = this->getBlockTypeByOffset(x - 1, y, z);
+        u8 rightIndex = this->getBlockTypeByOffset(x + 1, y, z);
+        u8 frontIndex = this->getBlockTypeByOffset(x, y, z - 1);
+        u8 backIndex = this->getBlockTypeByOffset(x, y, z + 1);
+
+        if (this->terrain[leftIndex] == DIRTY_BLOCK ||
+            this->terrain[leftIndex] == GRASS_BLOCK) {
+          this->terrain[leftIndex] = SAND_BLOCK;
+        }
+        if (this->terrain[rightIndex] == DIRTY_BLOCK ||
+            this->terrain[rightIndex] == GRASS_BLOCK) {
+          this->terrain[rightIndex] = SAND_BLOCK;
+        }
+        if (this->terrain[frontIndex] == DIRTY_BLOCK ||
+            this->terrain[frontIndex] == GRASS_BLOCK) {
+          this->terrain[frontIndex] = SAND_BLOCK;
+        }
+        if (this->terrain[backIndex] == DIRTY_BLOCK ||
+            this->terrain[backIndex] == GRASS_BLOCK) {
+          this->terrain[backIndex] = SAND_BLOCK;
+        }
+
+        index++;
+      }
+    }
+  }
 }
