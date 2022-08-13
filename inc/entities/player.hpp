@@ -69,7 +69,10 @@ class Player {
 
   // Forces values
   float speed = 100;
-  Vec4 velocity, lift;
+  
+  // Phisycs values
+  Vec4 lift = Vec4(0.0f, -4.0F, 0.0f);
+  Vec4 velocity = Vec4(0.0f, 0.0f, 0.0f);
 
   void loadMesh();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);

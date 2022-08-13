@@ -73,7 +73,7 @@
 #define LOADING_SCREEN 4
 
 // World constants
-#define GRAVITY Vec4(0.0f, 25.5f, 0.0f)
+#define GRAVITY Vec4(0.0f, 20.5f, 0.0f)
 
 enum GAME_MODE
 {

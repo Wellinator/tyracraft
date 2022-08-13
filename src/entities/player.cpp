@@ -30,10 +30,6 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
 
   this->loadMesh();
 
-  // Phisycs values
-  lift = Vec4(0.0f, -10.0F, 0.0f);
-  velocity = Vec4(0.0f, 0.0f, 0.0f);
-
   isWalking = false;
   isFighting = false;
   isWalkingAnimationSet = false;
@@ -67,7 +63,6 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 
   float terrainHeight =
       this->getTerrainHeightOnPlayerPosition(t_blocks, blocks_ammount);
-  printf("Terrain Height -> %f\n", terrainHeight);
   this->updateGravity(deltaTime, terrainHeight);
 }
 
@@ -75,7 +70,7 @@ void Player::handleInputCommands(Pad& t_pad) {
   if (t_pad.getClicked().L1) this->moveSelectorToTheLeft();
   if (t_pad.getClicked().R1) this->moveSelectorToTheRight();
   if (t_pad.getClicked().Cross && this->isOnGround) {
-    this->velocity = this->lift * this->speed;
+    this->velocity += this->lift * this->speed;
     this->isOnGround = 0;
     // this->t_audio->playADPCM(jumpAdpcm);
   }
