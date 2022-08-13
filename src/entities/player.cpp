@@ -31,7 +31,7 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   this->loadMesh();
 
   // Phisycs values
-  lift = Vec4(0.0f, -250.0F, 0.0f);
+  lift = Vec4(0.0f, -10.0F, 0.0f);
   velocity = Vec4(0.0f, 0.0f, 0.0f);
 
   isWalking = false;
@@ -56,25 +56,24 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     Block* t_blocks[], unsigned int blocks_ammount) {
   this->handleInputCommands(t_pad);
 
-  this->nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-  if (this->nextPlayerPos->x != this->mesh->getPosition()->x ||
-      this->nextPlayerPos->y != this->mesh->getPosition()->y ||
-      this->nextPlayerPos->z != this->mesh->getPosition()->z) {
-    this->updatePosition(t_blocks, blocks_ammount, deltaTime);
+  const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
+
+  if (nextPlayerPos.x != this->mesh->getPosition()->x ||
+      nextPlayerPos.y != this->mesh->getPosition()->y ||
+      nextPlayerPos.z != this->mesh->getPosition()->z) {
+    if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
+      this->updatePosition(t_blocks, blocks_ammount, deltaTime, nextPlayerPos);
   }
 
   this->checkIfIsOnBlock(t_blocks, blocks_ammount);
   this->updateGravity(deltaTime);
-
-  delete nextPlayerPos;
-  nextPlayerPos = NULL;
 }
 
 void Player::handleInputCommands(Pad& t_pad) {
   if (t_pad.getClicked().L1) this->moveSelectorToTheLeft();
   if (t_pad.getClicked().R1) this->moveSelectorToTheRight();
   if (t_pad.getClicked().Cross && this->isOnGround) {
-    this->velocity = this->lift;
+    this->velocity = this->lift * this->speed;
     this->isOnGround = 0;
     // this->t_audio->playADPCM(jumpAdpcm);
   }
@@ -85,27 +84,27 @@ void Player::handleInputCommands(Pad& t_pad) {
     this->mesh->rotation.rotateZ(0.08F);
 }
 
-Vec4* Player::getNextPosition(const float& deltaTime, Pad& t_pad,
-                              const Camera& t_camera) {
-  Vec4* result = new Vec4(*mesh->getPosition());
+Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
+                             const Camera& t_camera) {
+  Vec4 result = *mesh->getPosition();
   Vec4 normalizedCamera;
   normalizedCamera.set(t_camera.unitCirclePosition);
   normalizedCamera.normalize();
   normalizedCamera *= (this->speed * deltaTime);
 
   if (t_pad.getLeftJoyPad().v <= 100) {
-    result->x += -normalizedCamera.x;
-    result->z += -normalizedCamera.z;
+    result.x += -normalizedCamera.x;
+    result.z += -normalizedCamera.z;
   } else if (t_pad.getLeftJoyPad().v >= 200) {
-    result->x += normalizedCamera.x;
-    result->z += normalizedCamera.z;
+    result.x += normalizedCamera.x;
+    result.z += normalizedCamera.z;
   }
   if (t_pad.getLeftJoyPad().h <= 100) {
-    result->x += -normalizedCamera.z;
-    result->z += normalizedCamera.x;
+    result.x += -normalizedCamera.z;
+    result.z += normalizedCamera.x;
   } else if (t_pad.getLeftJoyPad().h >= 200) {
-    result->x += normalizedCamera.z;
-    result->z += -normalizedCamera.x;
+    result.x += normalizedCamera.z;
+    result.z += -normalizedCamera.x;
   }
 
   return result;
@@ -137,11 +136,9 @@ void Player::updateGravity(const float& deltaTime) {
   mesh->getPosition()->set(newYPosition);
 }
 
-void Player::updatePosition(Block* t_blocks[], int blocks_ammount,
-                            const float& deltaTime) {
-  // Check if is at the world's edge
-  if (!nextPlayerPos->collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) return;
-
+u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
+                          const float& deltaTime, const Vec4& nextPlayerPos,
+                          u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
@@ -150,7 +147,7 @@ void Player::updatePosition(Block* t_blocks[], int blocks_ammount,
   playerMin += currentPlayerPos;
   playerMax += currentPlayerPos;
   Vec4 rayOrigin = currentPlayerPos;
-  Vec4 rayDir = *this->nextPlayerPos - currentPlayerPos;
+  Vec4 rayDir = nextPlayerPos - currentPlayerPos;
   rayDir.normalize();
   Vec4 inflatedMin = Vec4();
   Vec4 inflatedMax = Vec4();
@@ -185,32 +182,37 @@ void Player::updatePosition(Block* t_blocks[], int blocks_ammount,
     }
   }
 
-  // Updates position if collides;
-
+  // Will collide somewhere;
   if (finalHitDistance > -1.0f) {
     const float timeToHit = finalHitDistance / this->speed;
-    if (timeToHit <= deltaTime ||
+
+    // Will collide this frame;
+    if (timeToHit < deltaTime ||
         finalHitDistance <
-            this->mesh->getPosition()->distanceTo(*nextPlayerPos)) {
-      // Slide on collision
-      const float friction = 0.8f;
-      const float remainingtime = deltaTime - timeToHit;
-      const Vec4 hitPosition = rayOrigin + (rayDir * finalHitDistance);
-      const Vec4 oldVel = *nextPlayerPos - currentPlayerPos;
-      Vec4 normal = Utils::GetNormalFromHitPosition(hitPosition, inflatedMin,
-                                                    inflatedMax);
-      Vec4 tempVector = oldVel.cross(normal);
-      Vec4 newVel = normal.cross(tempVector);
-      newVel.normalize();
-      newVel *= speed * friction * remainingtime;
-      mesh->getPosition()->set(currentPlayerPos + newVel);
-      return;
+            this->mesh->getPosition()->distanceTo(nextPlayerPos)) {
+      if (isColliding) return 0;
+
+      // Try to move in separated axis;
+      Vec4 moveOnXOnly =
+          Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
+      u8 couldMoveOnX = this->updatePosition(t_blocks, blocks_ammount,
+                                             deltaTime, moveOnXOnly, 1);
+      if (couldMoveOnX) return 1;
+
+      Vec4 moveOnZOnly =
+          Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
+      u8 couldMoveOnZ = this->updatePosition(t_blocks, blocks_ammount,
+                                             deltaTime, moveOnZOnly, 1);
+      if (couldMoveOnZ) return 1;
+
+      return 0;
     }
   }
 
   // Apply new position;
-  mesh->getPosition()->x = nextPlayerPos->x;
-  mesh->getPosition()->z = nextPlayerPos->z;
+  mesh->getPosition()->x = nextPlayerPos.x;
+  mesh->getPosition()->z = nextPlayerPos.z;
+  return 1;
 }
 
 void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
