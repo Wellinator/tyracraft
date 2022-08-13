@@ -620,33 +620,33 @@ void TerrainManager::generateWater() {
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
     for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
       for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
-        if (this->terrain[index] != AIR_BLOCK) continue;
+        if (this->terrain[index] == AIR_BLOCK) {
+          // If Y is lower than 0, then fill with water;
+          if (y < 0) this->terrain[index] = WATER_BLOCK;
 
-        // If Y is lower than 0, then fill with water;
-        if (y < 0) this->terrain[index] = WATER_BLOCK;
+          // Place sand arround the watter;
+          u8 leftIndex = this->getBlockTypeByOffset(x - 1, y, z);
+          u8 rightIndex = this->getBlockTypeByOffset(x + 1, y, z);
+          u8 frontIndex = this->getBlockTypeByOffset(x, y, z - 1);
+          u8 backIndex = this->getBlockTypeByOffset(x, y, z + 1);
 
-        // Place sand arround the watter;
-        u8 leftIndex = this->getBlockTypeByOffset(x - 1, y, z);
-        u8 rightIndex = this->getBlockTypeByOffset(x + 1, y, z);
-        u8 frontIndex = this->getBlockTypeByOffset(x, y, z - 1);
-        u8 backIndex = this->getBlockTypeByOffset(x, y, z + 1);
-
-        if (this->terrain[leftIndex] == DIRTY_BLOCK ||
-            this->terrain[leftIndex] == GRASS_BLOCK) {
-          this->terrain[leftIndex] = SAND_BLOCK;
-        }
-        if (this->terrain[rightIndex] == DIRTY_BLOCK ||
-            this->terrain[rightIndex] == GRASS_BLOCK) {
-          this->terrain[rightIndex] = SAND_BLOCK;
-        }
-        if (this->terrain[frontIndex] == DIRTY_BLOCK ||
-            this->terrain[frontIndex] == GRASS_BLOCK) {
-          this->terrain[frontIndex] = SAND_BLOCK;
-        }
-        if (this->terrain[backIndex] == DIRTY_BLOCK ||
-            this->terrain[backIndex] == GRASS_BLOCK) {
-          this->terrain[backIndex] = SAND_BLOCK;
-        }
+          if (this->terrain[leftIndex] == DIRTY_BLOCK ||
+              this->terrain[leftIndex] == GRASS_BLOCK) {
+            this->terrain[leftIndex] = SAND_BLOCK;
+          }
+          if (this->terrain[rightIndex] == DIRTY_BLOCK ||
+              this->terrain[rightIndex] == GRASS_BLOCK) {
+            this->terrain[rightIndex] = SAND_BLOCK;
+          }
+          if (this->terrain[frontIndex] == DIRTY_BLOCK ||
+              this->terrain[frontIndex] == GRASS_BLOCK) {
+            this->terrain[frontIndex] = SAND_BLOCK;
+          }
+          if (this->terrain[backIndex] == DIRTY_BLOCK ||
+              this->terrain[backIndex] == GRASS_BLOCK) {
+            this->terrain[backIndex] = SAND_BLOCK;
+          }
+        };
 
         index++;
       }
