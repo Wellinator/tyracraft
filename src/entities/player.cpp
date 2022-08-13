@@ -65,8 +65,10 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
       this->updatePosition(t_blocks, blocks_ammount, deltaTime, nextPlayerPos);
   }
 
-  this->checkIfIsOnBlock(t_blocks, blocks_ammount);
-  this->updateGravity(deltaTime);
+  float terrainHeight =
+      this->getTerrainHeightOnPlayerPosition(t_blocks, blocks_ammount);
+  printf("Terrain Height -> %f\n", terrainHeight);
+  this->updateGravity(deltaTime, terrainHeight);
 }
 
 void Player::handleInputCommands(Pad& t_pad) {
@@ -111,7 +113,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
 }
 
 /** Update player position by gravity and update index of current block */
-void Player::updateGravity(const float& deltaTime) {
+void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
   this->velocity += GRAVITY;  // Negative gravity to decrease Y axis
   Vec4 newYPosition = *mesh->getPosition() - (this->velocity * deltaTime);
 
@@ -125,9 +127,8 @@ void Player::updateGravity(const float& deltaTime) {
     return;
   }
 
-  if (this->currentBlock != NULL &&
-      newYPosition.y < this->currentBlock->maxCorner.y + 1.0f) {
-    newYPosition.y = this->currentBlock->maxCorner.y;
+  if (newYPosition.y < terrainHeight) {
+    newYPosition.y = terrainHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = 1;
   }
@@ -215,9 +216,17 @@ u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
   return 1;
 }
 
-void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
+float Player::getTerrainHeightOnPlayerPosition(Block* t_blocks[],
+                                               int blocks_ammount) {
   this->currentBlock = NULL;
   Vec4 playerPos = *this->mesh->getPosition();
+  BBox playerBB = (BBox)this->mesh->getCurrentBoundingBox();
+  Vec4 minPlayer, maxPlayer;
+  playerBB.getMinMax(&minPlayer, &maxPlayer);
+  minPlayer += playerPos;
+  maxPlayer += playerPos;
+  float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
+  u8 onBlocksCounter = 0;
 
   for (int i = 0; i < blocks_ammount; i++) {
     if (playerPos.y < t_blocks[i]->maxCorner.y) continue;
@@ -225,19 +234,22 @@ void Player::checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount) {
     float distanceToBlock = playerPos.distanceTo(*t_blocks[i]->getPosition());
 
     if (distanceToBlock <= MAX_RANGE_PICKER) {
-      if (playerPos.isOnBox(t_blocks[i]->minCorner, t_blocks[i]->maxCorner)) {
-        if (this->currentBlock == NULL) {
-          this->currentBlock = t_blocks[i];
-          continue;
-        }
+      u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
+                     maxPlayer.x > t_blocks[i]->minCorner.x &&
+                     minPlayer.z < t_blocks[i]->maxCorner.z &&
+                     maxPlayer.z > t_blocks[i]->minCorner.z;
 
-        if (distanceToBlock <
-            playerPos.distanceTo(*this->currentBlock->getPosition())) {
+      if (isOnBlock) {
+        onBlocksCounter++;
+        if (t_blocks[i]->maxCorner.y > higherY) {
+          higherY = t_blocks[i]->maxCorner.y;
           this->currentBlock = t_blocks[i];
         }
       }
     }
   }
+
+  return higherY;
 }
 
 /**

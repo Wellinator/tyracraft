@@ -73,11 +73,11 @@ class Player {
 
   void loadMesh();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  void updateGravity(const float& deltaTime);
+  void updateGravity(const float& deltaTime, const float terrainHeight);
   u8 updatePosition(Block* t_blocks[], int blocks_ammount,
                     const float& deltaTime, const Vec4& nextPlayerPos,
                     u8 isColliding = 0);
-  void checkIfIsOnBlock(Block* t_blocks[], int blocks_ammount);
+  float getTerrainHeightOnPlayerPosition(Block* t_blocks[], int blocks_ammount);
   void handleInputCommands(Pad& t_pad);
 
   // Inventory
