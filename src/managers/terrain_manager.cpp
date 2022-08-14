@@ -40,7 +40,6 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->blockManager->init(t_renderer, mcPip);
   this->chunck = new Chunck(this->blockManager, Vec4(), Vec4(), 500);
   this->generateNewTerrain(terrainType, false, true);
-  this->defineSpawnArea();
 }
 
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
@@ -465,12 +464,9 @@ Vec4* TerrainManager::normalizeWorldBlockPosition(Vec4* worldPosition) {
                              DUBLE_BLOCK_SIZE));
 }
 
-void TerrainManager::defineSpawnArea() {
+const Vec4 TerrainManager::defineSpawnArea() {
   Vec4 spawPos = this->calcSpawOffset();
-  printf("\nCalculated spawn area:\n");
-  spawPos.print();
-  worldSpawnArea.set(spawPos);
-  spawnArea.set(spawPos);
+  return spawPos;
 }
 
 const Vec4 TerrainManager::calcSpawOffset(int bias) {

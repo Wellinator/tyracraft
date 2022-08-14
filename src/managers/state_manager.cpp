@@ -118,9 +118,8 @@ void StateManager::loadGame() {
     return;
   } else if (this->shouldInitPlayer) {
     printf("Initing player\n");
-    this->player->mesh->getPosition()->set(
-        world->terrainManager->worldSpawnArea);
-    this->player->spawnArea.set(world->terrainManager->worldSpawnArea);
+    this->player->mesh->getPosition()->set(world->getGlobalSpawnArea());
+    this->player->spawnArea.set(world->getLocalSpawnArea());
     this->loadingScreen->setPercent(100.0F);
     this->loadingScreen->setState(LoadingState::Complete);
     this->shouldInitPlayer = 0;

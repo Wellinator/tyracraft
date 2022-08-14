@@ -48,9 +48,7 @@ class TerrainManager {
   BlockManager* blockManager = new BlockManager();
 
 
-  Vec4 worldSpawnArea;
-  Vec4 spawnArea;
-  void defineSpawnArea();
+  const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
 
   int getNoise(int x, int z);

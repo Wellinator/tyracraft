@@ -26,10 +26,15 @@ class World {
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad);
   void render();
+  inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
+  inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
 
  private:
   MinecraftPipeline mcPip;
-  std::vector<Chunck*> chuncks ;
+  std::vector<Chunck*> chuncks;
+
+  Vec4 worldSpawnArea;
+  Vec4 spawnArea;
 
   void generateChunks();
 };
