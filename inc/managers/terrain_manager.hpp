@@ -45,6 +45,8 @@ class TerrainManager {
 
   Renderer* t_renderer;
   Engine* engine;
+  BlockManager* blockManager = new BlockManager();
+
 
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
@@ -71,7 +73,6 @@ class TerrainManager {
 
   Vec4* lastPlayerPosition = NULL;
 
-  BlockManager* blockManager = new BlockManager();
   BBox* rawBlockBbox;
 
   // Params for noise generation;

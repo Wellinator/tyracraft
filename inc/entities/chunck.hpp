@@ -18,14 +18,16 @@ using Tyra::Renderer;
 
 class Chunck {
  public:
-  Chunck(BlockManager* t_blockManager);
+  Chunck(BlockManager* t_blockManager, const Vec4& minCorner,
+         const Vec4& maxCorner, const u16 id);
   ~Chunck();
 
+  u16 id;
   std::vector<Block*> blocks;
+  Vec4 minCorner;
+  Vec4 maxCorner;
 
-  inline int getChunckSize() const {
-    return CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE;
-  };
+  inline int getChunckSize() const { return CHUNCK_SIZE; };
 
   void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip);
   void update(Player* t_player);

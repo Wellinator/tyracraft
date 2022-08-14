@@ -1,5 +1,4 @@
-#ifndef _WORLD_
-#define _WORLD_
+#pragma once
 
 #include <engine.hpp>
 #include <tamtypes.h>
@@ -30,6 +29,7 @@ class World {
 
  private:
   MinecraftPipeline mcPip;
-};
+  std::vector<Chunck*> chuncks ;
 
-#endif
+  void generateChunks();
+};

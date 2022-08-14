@@ -4,8 +4,11 @@
 #include <iterator>
 #include <algorithm>
 
-Chunck::Chunck(BlockManager* t_blockManager) {
+Chunck::Chunck(BlockManager* t_blockManager, const Vec4& minCorner,
+         const Vec4& maxCorner, const u16 id) {
   this->blockManager = t_blockManager;
+  this->minCorner.set(minCorner);
+  this->maxCorner.set(maxCorner);
 };
 
 Chunck::~Chunck() {}

@@ -38,7 +38,7 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->calcRawBlockBBox(mcPip);
   this->initNoise();
   this->blockManager->init(t_renderer, mcPip);
-  this->chunck = new Chunck(this->blockManager);
+  this->chunck = new Chunck(this->blockManager, Vec4(), Vec4(), 500);
   this->generateNewTerrain(terrainType, false, true);
   this->defineSpawnArea();
 }
