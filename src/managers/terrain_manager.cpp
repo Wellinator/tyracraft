@@ -23,7 +23,7 @@ TerrainManager::TerrainManager() {
 TerrainManager::~TerrainManager() {}
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
-                          MinecraftPipeline* mcPip) {
+                          MinecraftPipeline* mcPip, BlockManager* blockManager) {
   printf("Iniating Terrain manger");
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
@@ -38,7 +38,6 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->calcRawBlockBBox(mcPip);
   this->initNoise();
   this->blockManager->init(t_renderer, mcPip);
-  this->chunck = new Chunck(this->blockManager, Vec4(), Vec4(), 500);
   this->generateNewTerrain(terrainType, false, true);
 }
 

@@ -31,7 +31,7 @@ class TerrainManager {
   TerrainManager();
   ~TerrainManager();
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
-            MinecraftPipeline* mcPip);
+            MinecraftPipeline* mcPip, BlockManager* blockManager);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad);
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
   inline Chunck* getChunck() { return this->chunck; };
@@ -45,7 +45,7 @@ class TerrainManager {
 
   Renderer* t_renderer;
   Engine* engine;
-  BlockManager* blockManager = new BlockManager();
+  BlockManager* blockManager;
 
 
   const Vec4 defineSpawnArea();
