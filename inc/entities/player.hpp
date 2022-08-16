@@ -41,10 +41,11 @@ class Player {
   ~Player();
 
   void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-              Block* t_blocks[], unsigned int blocks_ammount);
+              std::vector<Block*> loadedBlocks);
   inline Vec4* getPosition() { return mesh->getPosition(); };
   u8 isFighting, isWalking, isOnGround;
   Vec4 spawnArea;
+  u16 currentChunckId = 0;
 
   // Phisycs variables
   Ray ray;
@@ -69,7 +70,7 @@ class Player {
 
   // Forces values
   float speed = 100;
-  
+
   // Phisycs values
   Vec4 lift = Vec4(0.0f, -4.0F, 0.0f);
   Vec4 velocity = Vec4(0.0f, 0.0f, 0.0f);

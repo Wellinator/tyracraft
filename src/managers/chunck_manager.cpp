@@ -1,11 +1,28 @@
 #include "managers/chunck_manager.hpp"
 
-ChunckManager::ChunckManager() {}
-ChunckManager::~ChunckManager() {}
+using Tyra::Vec4;
 
-void ChunckManager::init(BlockManager* t_blockManager) {
-  this->t_blockManager = t_blockManager;
-  this->generateChunks();
+ChunckManager::ChunckManager() {}
+
+ChunckManager::~ChunckManager() {
+  for (u16 i = 0; i < this->chuncks.size(); i++) {
+    chuncks[i]->clear();
+    delete chuncks[i];
+    chuncks[i] = NULL;
+    this->chuncks.clear();
+  }
+}
+
+void ChunckManager::init() { this->generateChunks(); }
+
+void ChunckManager::update(Player* t_player) {
+  for (u16 i = 0; i < this->chuncks.size(); i++) chuncks[i]->update(t_player);
+}
+
+void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+                             BlockManager* t_blockManager) {
+  for (u16 i = 0; i < this->chuncks.size(); i++)
+    chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
 }
 
 void ChunckManager::generateChunks() {
@@ -17,10 +34,26 @@ void ChunckManager::generateChunks() {
       Vec4 tempMin = Vec4(x, OVERWORLD_MIN_HEIGH, z);
       Vec4 tempMax =
           Vec4(x + CHUNCK_SIZE, OVERWORLD_MAX_HEIGH, z + CHUNCK_SIZE);
-      Chunck* tempChunck =
-          new Chunck(this->t_blockManager, tempMin, tempMax, tempId);
+      Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
       this->chuncks.push_back(tempChunck);
       tempId++;
     }
   }
+  printf("Total of chuncks -> %i\n", tempId);
+};
+
+Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
+  for (u16 i = 0; i < this->chuncks.size(); i++)
+    if (position.collidesBox(*chuncks[i]->minCorner * DUBLE_BLOCK_SIZE,
+                             *chuncks[i]->maxCorner * DUBLE_BLOCK_SIZE)) {
+      printf("GetChunckByPosition -> %i\n", chuncks[i]->id);
+      return chuncks[i];
+    }
+  return nullptr;
+};
+
+Chunck* ChunckManager::getChunckById(const u16 id) {
+  for (u16 i = 0; i < this->chuncks.size(); i++)
+    if (chuncks[i]->id == id) return chuncks[i];
+  return nullptr;
 };

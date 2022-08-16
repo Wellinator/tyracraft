@@ -35,12 +35,12 @@ class BlockManager {
   BlockManager();
   ~BlockManager();
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
-  BlockInfo* getBlockTexOffsetByType(u8 blockType);
-  inline Texture* getBlocksTexture() { return blocksTexAtlas; };
+  BlockInfo* getBlockTexOffsetByType(const u8& blockType);
+  inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
 
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
-  void loadBlocksTextures();
+  void loadBlocksTextures(Renderer* t_renderer);
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;

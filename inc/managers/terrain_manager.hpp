@@ -32,30 +32,31 @@ class TerrainManager {
   ~TerrainManager();
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             MinecraftPipeline* mcPip, BlockManager* blockManager);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad);
+  void update(Player* t_player, Camera* t_camera, Pad* t_pad, std::vector<Chunck*> chuncks);
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
-  inline Chunck* getChunck() { return this->chunck; };
-  Chunck* getChunck(int offsetX, int offsetY, int offsetZ);
-  void updateChunkByPlayerPosition(Player* player);
 
   Block* targetBlock = NULL;
-  void getTargetBlock(const Vec4& playerPosition, Camera* t_camera);
+  void getTargetBlock(const Vec4& playerPosition, Camera* t_camera,
+                      std::vector<Chunck*> chuncks);
   void removeBlock();
   void putBlock(u8 blockType);
 
   Renderer* t_renderer;
   Engine* engine;
-  BlockManager* blockManager;
-
+  BlockManager* t_blockManager;
 
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
+  void buildChunk(Chunck* t_chunck);
+
+  inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
+  inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };
 
   int getNoise(int x, int z);
 
  private:
   Ray ray;
-  u8 shouldUpdateChunck = 0;
+  u8 _shouldUpdateChunck = 0;
 
   Player* t_player;
   Camera* t_camera;
@@ -64,13 +65,9 @@ class TerrainManager {
 
   // TODO: Refactor to region and cache it. See
   // https://minecraft.fandom.com/el/wiki/Region_file_format;
-  Chunck* chunck;
   u8* terrain = new u8[OVERWORLD_SIZE];
   Vec4 minWorldPos;
   Vec4 maxWorldPos;
-
-  Vec4* lastPlayerPosition = NULL;
-
   BBox* rawBlockBbox;
 
   // Params for noise generation;
@@ -95,7 +92,6 @@ class TerrainManager {
   float getHumidity(int x, int z);
   float getHeightScale(int x, int z);
 
-  void buildChunk(int offsetX, int offsetY, int offsetZ);
   u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);

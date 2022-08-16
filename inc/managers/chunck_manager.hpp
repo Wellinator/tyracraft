@@ -3,16 +3,16 @@
 #pragma once
 
 #include <debug/debug.hpp>
-#include <renderer/3d/mesh/mesh.hpp>
-#include <renderer/core/2d/sprite/sprite.hpp>
-#include <renderer/3d/bbox/bbox.hpp>
-#include <math/vec4.hpp>
-#include <math.h>
 #include "contants.hpp"
 #include "entities/chunck.hpp"
+#include "entities/player.hpp"
+#include "managers/block_manager.hpp"
+#include <math/vec4.hpp>
+#include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
+#include <vector>
 
-using Tyra::BBox;
-using Tyra::Mesh;
+using Tyra::MinecraftPipeline;
+using Tyra::Renderer;
 using Tyra::Vec4;
 
 class ChunckManager {
@@ -20,13 +20,16 @@ class ChunckManager {
   ChunckManager();
   ~ChunckManager();
 
-  Chunck* getChunckByPlayerPosition(Player* t_player);
+  Chunck* getChunckByPosition(const Vec4& position);
   Chunck* getChunckById(const u16 id);
-  void init(BlockManager* t_blockManager);
+  std::vector<Chunck*> getChuncks() { return this->chuncks; };
+  void init();
+  void update(Player* t_player);
+  void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+                BlockManager* t_blockManager);
 
  private:
   std::vector<Chunck*> chuncks;
-  BlockManager* t_blockManager;
 
   void generateChunks();
 };

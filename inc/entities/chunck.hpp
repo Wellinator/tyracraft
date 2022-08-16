@@ -15,21 +15,21 @@
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
+using Tyra::Vec4;
 
 class Chunck {
  public:
-  Chunck(BlockManager* t_blockManager, const Vec4& minCorner,
-         const Vec4& maxCorner, const u16 id);
+  Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id);
   ~Chunck();
 
-  u16 id;
+  u16 id = 0;
+  u8 isLoaded = 0;
   std::vector<Block*> blocks;
-  Vec4 minCorner;
-  Vec4 maxCorner;
+  Vec4* minCorner = new Vec4();
+  Vec4* maxCorner = new Vec4();
 
-  inline int getChunckSize() const { return CHUNCK_SIZE; };
-
-  void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip);
+  void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
+                BlockManager* t_blockManager);
   void update(Player* t_player);
   void clear();
   void setToChanged();
@@ -38,8 +38,7 @@ class Chunck {
   void addBlock(Block* t_block);
 
  private:
-  BlockManager* blockManager;
-  MinecraftPipeline mcPip;
+  Texture* texture;
   u8 hasChanged;
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;

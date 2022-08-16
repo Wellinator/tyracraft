@@ -64,14 +64,11 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
     }
     return;
   } else if (_state == IN_GAME) {
-    // In game
-    // Updates
+    // In game updates
     {
       this->controlGameMode(*t_pad);
       world->update(player, t_camera, t_pad);
-      player->update(deltaTime, *t_pad, *t_camera,
-                     world->terrainManager->getChunck()->blocks.data(),
-                     world->terrainManager->getChunck()->blocks.size());
+      player->update(deltaTime, *t_pad, *t_camera, world->getLoadedBlocks());
       ui->update();
       t_camera->update(*t_pad, *player->mesh);
     }
@@ -123,7 +120,7 @@ void StateManager::loadGame() {
     this->loadingScreen->setPercent(100.0F);
     this->loadingScreen->setState(LoadingState::Complete);
     this->shouldInitPlayer = 0;
-    return;
+    return; 
   }
 
   printf("\nGAME LOADED\n");

@@ -23,11 +23,13 @@ TerrainManager::TerrainManager() {
 TerrainManager::~TerrainManager() {}
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
-                          MinecraftPipeline* mcPip, BlockManager* blockManager) {
-  printf("Iniating Terrain manger");
+                          MinecraftPipeline* mcPip,
+                          BlockManager* blockManager) {
+  printf("Iniating Terrain manger\n");
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
   this->t_mcPip = mcPip;
+  this->t_blockManager = blockManager;
 
   int terrainType = 0;
   int testterrain = rand() % 10;
@@ -37,17 +39,15 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
   this->calcRawBlockBBox(mcPip);
   this->initNoise();
-  this->blockManager->init(t_renderer, mcPip);
   this->generateNewTerrain(terrainType, false, true);
 }
 
-void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
+void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
+                            std::vector<Chunck*> chuncks) {
   this->t_player = t_player;
   this->t_camera = t_camera;
-  this->updateChunkByPlayerPosition(t_player);
-  this->getTargetBlock(*t_player->getPosition(), t_camera);
+  this->getTargetBlock(*t_player->getPosition(), t_camera, chuncks);
   this->handlePadControls(t_pad);
-  this->chunck->update(t_player);
 };
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
@@ -248,42 +248,13 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
   return pos;
 }
 
-void TerrainManager::updateChunkByPlayerPosition(Player* player) {
-  if (!this->lastPlayerPosition) this->lastPlayerPosition = new Vec4();
+void TerrainManager::buildChunk(Chunck* t_chunck) {
+  t_chunck->clear();
 
-  Vec4 playerPos = *player->getPosition();
-  if (CollisionManager::getManhattanDistance(*this->lastPlayerPosition,
-                                             playerPos) > CHUNCK_DISTANCE / 2) {
-    this->lastPlayerPosition->set(playerPos);
-    this->buildChunk(floor(playerPos.x / DUBLE_BLOCK_SIZE),
-                     floor(playerPos.y / DUBLE_BLOCK_SIZE),
-                     floor(playerPos.z / DUBLE_BLOCK_SIZE));
-  }
-
-  if (shouldUpdateChunck) {
-    this->buildChunk(floor(this->lastPlayerPosition->x / DUBLE_BLOCK_SIZE),
-                     floor(this->lastPlayerPosition->y / DUBLE_BLOCK_SIZE),
-                     floor(this->lastPlayerPosition->z / DUBLE_BLOCK_SIZE));
-    this->shouldUpdateChunck = 0;
-  }
-}
-
-Chunck* TerrainManager::getChunck(int offsetX, int offsetY, int offsetZ) {
-  this->chunck->clear();
-  this->buildChunk(offsetX, offsetY, offsetZ);
-  return this->chunck;
-}
-
-void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
-  printf("(Re)building chunck...\n");
-  this->chunck->clear();
-
-  // TODO: Refactor to minecraft pipeline
-  for (int z = -HALF_CHUNCK_SIZE; z < HALF_CHUNCK_SIZE; z++) {
-    for (int x = -HALF_CHUNCK_SIZE; x < HALF_CHUNCK_SIZE; x++) {
-      for (int y = -HALF_CHUNCK_SIZE; y < HALF_CHUNCK_SIZE; y++) {
-        Vec4* tempBlockOffset = new Vec4(offsetX + x, offsetY + y, offsetZ + z);
-
+  for (int z = t_chunck->minCorner->z; z < CHUNCK_SIZE; z++) {
+    for (int x = t_chunck->minCorner->x; x < CHUNCK_SIZE; x++) {
+      for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
+        Vec4* tempBlockOffset = new Vec4(x, y, z);
         Vec4 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
         unsigned int blockIndex = this->getIndexByOffset(
@@ -296,8 +267,8 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
         if (block_type != AIR_BLOCK && !isHidden &&
             tempBlockOffset->collidesBox(minWorldPos, maxWorldPos)) {
           BlockInfo* blockInfo =
-              this->blockManager->getBlockTexOffsetByType(block_type);
-          if (blockInfo) {
+              this->t_blockManager->getBlockTexOffsetByType(block_type);
+          if (blockInfo != nullptr) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
             block->isHidden = isHidden;
@@ -314,7 +285,7 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
               block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
             }
 
-            this->chunck->addBlock(block);
+            t_chunck->addBlock(block);
           }
         }
 
@@ -323,10 +294,13 @@ void TerrainManager::buildChunk(int offsetX, int offsetY, int offsetZ) {
       }
     }
   }
+
+  t_chunck->isLoaded = 1;
 }
 
 void TerrainManager::getTargetBlock(const Vec4& playerPosition,
-                                    Camera* t_camera) {
+                                    Camera* t_camera,
+                                    std::vector<Chunck*> chuncks) {
   u8 hitedABlock = 0;
   float distance = -1.0f;
   float tempTargetDistance = -1.0f;
@@ -343,34 +317,37 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
   rayDir.normalize();
   ray.set(t_camera->position, rayDir);
 
-  for (u16 i = 0; i < this->chunck->blocks.size(); i++) {
-    float distanceFromCurrentBlockToPlayer =
-        playerPosition.distanceTo(*this->chunck->blocks[i]->getPosition());
+  for (u16 h = 0; h < chuncks.size(); h++) {
+    if (!chuncks[h]->isLoaded) continue;
+    for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
+      float distanceFromCurrentBlockToPlayer =
+          playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
 
-    if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
-      // Reset block state
-      this->chunck->blocks[i]->isTarget = 0;
-      this->chunck->blocks[i]->distance = -1.0f;
+      if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
+        // Reset block state
+        chuncks[h]->blocks[i]->isTarget = 0;
+        chuncks[h]->blocks[i]->distance = -1.0f;
 
-      // Check if is in frustum
-      {
-        u8 isInFrustum = this->chunck->blocks[i]->bbox->isInFrustum(
-            frustumPlanes, this->chunck->blocks[i]->model, 0);
-        if (!isInFrustum) {
-          return;
+        // Check if is in frustum
+        {
+          u8 isInFrustum = chuncks[h]->blocks[i]->bbox->isInFrustum(
+              frustumPlanes, chuncks[h]->blocks[i]->model, 0);
+          if (!isInFrustum) {
+            return;
+          }
         }
-      }
 
-      float intersectionPoint = Utils::Raycast(
-          &t_camera->position, &rayDir, &this->chunck->blocks[i]->minCorner,
-          &this->chunck->blocks[i]->maxCorner);
-      if (intersectionPoint > -1) {
-        hitedABlock = 1;
-        if (tempTargetDistance == -1.0f ||
-            (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-          tempTargetBlock = this->chunck->blocks[i];
-          tempTargetDistance = intersectionPoint;
-          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+        float intersectionPoint = Utils::Raycast(
+            &t_camera->position, &rayDir, &chuncks[h]->blocks[i]->minCorner,
+            &chuncks[h]->blocks[i]->maxCorner);
+        if (intersectionPoint > -1) {
+          hitedABlock = 1;
+          if (tempTargetDistance == -1.0f ||
+              (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
+            tempTargetBlock = chuncks[h]->blocks[i];
+            tempTargetDistance = intersectionPoint;
+            tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+          }
         }
       }
     }
@@ -387,7 +364,7 @@ void TerrainManager::removeBlock() {
   if (this->targetBlock == NULL) return;
 
   terrain[this->targetBlock->index] = AIR_BLOCK;
-  this->shouldUpdateChunck = 1;
+  this->_shouldUpdateChunck = 1;
 }
 
 void TerrainManager::putBlock(u8 blockToPlace) {
@@ -426,7 +403,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
   if (terrainIndex <= OVERWORLD_SIZE &&
       terrainIndex != this->targetBlock->index) {
     this->terrain[terrainIndex] = blockToPlace;
-    this->shouldUpdateChunck = 1;
+    this->_shouldUpdateChunck = 1;
   }
 }
 

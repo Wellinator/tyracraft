@@ -4,14 +4,16 @@
 #include <iterator>
 #include <algorithm>
 
-Chunck::Chunck(BlockManager* t_blockManager, const Vec4& minCorner,
-         const Vec4& maxCorner, const u16 id) {
-  this->blockManager = t_blockManager;
-  this->minCorner.set(minCorner);
-  this->maxCorner.set(maxCorner);
+Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
+  this->minCorner->set(minCorner);
+  this->maxCorner->set(maxCorner);
+  this->id = id;
 };
 
-Chunck::~Chunck() {}
+Chunck::~Chunck() {
+  delete this->minCorner;
+  delete this->maxCorner;
+};
 
 void Chunck::update(Player* t_player) {
   if (this->hasChanged) {
@@ -32,12 +34,11 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
   t_block->color.b = isTarget ? 160 : 128;
 }
 
-void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip) {
+void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
+                      BlockManager* t_blockManager) {
   t_renderer->renderer3D.usePipeline(mcPip);
-  mcPip->render(this->singleTexBlocks, this->blockManager->getBlocksTexture(),
-                false);
-  mcPip->render(this->multiTexBlocks, this->blockManager->getBlocksTexture(),
-                true);
+  mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(), false);
+  mcPip->render(this->multiTexBlocks, t_blockManager->getBlocksTexture(), true);
 };
 
 /**
@@ -61,6 +62,7 @@ void Chunck::clear() {
 
   this->blocks.clear();
   this->blocks.shrink_to_fit();
+  this->isLoaded = 0;
 }
 
 void Chunck::addBlock(Block* t_block) {

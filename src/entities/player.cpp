@@ -49,7 +49,7 @@ Player::~Player() {}
 // ----
 
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-                    Block* t_blocks[], unsigned int blocks_ammount) {
+                    std::vector<Block*> loadedBlocks) {
   this->handleInputCommands(t_pad);
 
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
@@ -58,11 +58,12 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
       nextPlayerPos.y != this->mesh->getPosition()->y ||
       nextPlayerPos.z != this->mesh->getPosition()->z) {
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
-      this->updatePosition(t_blocks, blocks_ammount, deltaTime, nextPlayerPos);
+      this->updatePosition(&loadedBlocks[0], loadedBlocks.size(), deltaTime,
+                           nextPlayerPos);
   }
 
-  float terrainHeight =
-      this->getTerrainHeightOnPlayerPosition(t_blocks, blocks_ammount);
+  float terrainHeight = this->getTerrainHeightOnPlayerPosition(
+      &loadedBlocks[0], loadedBlocks.size());
   this->updateGravity(deltaTime, terrainHeight);
 }
 

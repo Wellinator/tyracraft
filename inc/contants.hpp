@@ -2,7 +2,7 @@
 
 #include <math/vec4.hpp>
 
-#define OVERWORLD_H_DISTANCE 256                             // Total horizontal overworld distance;
+#define OVERWORLD_H_DISTANCE 128                             // Total horizontal overworld distance;
 #define OVERWORLD_V_DISTANCE 128                             // Total vertical overworld distance;
 #define HALF_OVERWORLD_H_DISTANCE (OVERWORLD_H_DISTANCE / 2) // Half horizontal overworld distance;
 #define HALF_OVERWORLD_V_DISTANCE (OVERWORLD_V_DISTANCE / 2) // Half vertical overworld distance;
@@ -13,6 +13,7 @@
 #define OVERWORLD_SIZE ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
+#define DRAW_DISTANCE_IN_CHUNKS 2
 #define CHUNCK_SIZE 16
 #define CHUNCK_HEIGHT OVERWORLD_V_DISTANCE
 #define CHUNCK_LENGTH ((CHUNCK_SIZE * CHUNCK_SIZE) * CHUNCK_HEIGHT)

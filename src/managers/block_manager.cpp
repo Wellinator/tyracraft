@@ -18,12 +18,12 @@ BlockManager::~BlockManager() {
 
 void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
   this->t_renderer = t_renderer;
-  this->loadBlocksTextures();
+  this->loadBlocksTextures(t_renderer);
   this->registerBlocksTextureCoordinates(mcPip);
 }
 
-void BlockManager::loadBlocksTextures() {
-  blocksTexAtlas = t_renderer->core.texture.repository.add(
+void BlockManager::loadBlocksTextures(Renderer* t_renderer) {
+  this->blocksTexAtlas = t_renderer->core.texture.repository.add(
       FileUtils::fromCwd("assets/textures/block/texture_atlas.png"));
 }
 
@@ -115,8 +115,8 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
                                            mcPip->getTextureOffset() * 11));
 }
 
-BlockInfo* BlockManager::getBlockTexOffsetByType(u8 blockType) {
-  for (int i = 0; i < blockItems.size(); i++)
+BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
+  for (u8 i = 0; i < blockItems.size(); i++)
     if (blockItems[i]->blockId == blockType) return blockItems[i];
-  return NULL;
+  return nullptr;
 }
