@@ -22,12 +22,9 @@ void ChunckManager::update(Player* t_player) {
 
 void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                              BlockManager* t_blockManager) {
-  const auto* frustumPlanes =
-      t_renderer->core.renderer3D.frustumPlanes.getAll();
-  for (u16 i = 0; i < this->chuncks.size(); i++) {
-    // if (chuncks[i]->bbox->isInFrustum(frustumPlanes, chuncks[i]->model))
+        // TODO: Implement chunk culling
+  for (u16 i = 0; i < this->chuncks.size(); i++)
     chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
-  }
 }
 
 void ChunckManager::generateChunks() {
