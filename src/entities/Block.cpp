@@ -11,6 +11,9 @@ Block::Block(BlockInfo* blockInfo) {
   this->isSingleTexture = blockInfo->_isSingle;
   this->textureOffset =
       Vec4(blockInfo->_texOffssetX, blockInfo->_texOffssetY, 0.0F, 1.0F);
+  this->scale.identity();
+  this->translation.identity();
+  this->rotation.identity();
 }
 
 Block::~Block() {
