@@ -315,7 +315,8 @@ void TerrainManager::getTargetBlock(const Vec4& playerPosition,
   // Prepate the raycast
   Vec4 rayDir = t_camera->lookPos - t_camera->position;
   rayDir.normalize();
-  ray.set(t_camera->position, rayDir);
+  ray.origin.set(t_camera->position);
+  ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     if (!chuncks[h]->isLoaded) continue;

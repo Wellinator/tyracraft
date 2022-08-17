@@ -52,7 +52,7 @@ void Ui::loadlHud() {
   crosshair.size.set(8.0f, 8.0f);
   crosshair.position.set(width / 2, height / 2);
   this->t_renderer->core.texture.repository.add(crosshairTexPath)
-      ->addLink(crosshair.getId());
+      ->addLink(crosshair.id);
 
   for (u8 i = 0; i < 10; i++) {
     std::string armor_fullTexPath =
@@ -61,7 +61,7 @@ void Ui::loadlHud() {
     armor[i].size.set(15.0f, 15.0f);
     armor[i].position.set(BASE_X_POS + (i * 8.0f), BASE_Y_POS);
     this->t_renderer->core.texture.repository.add(armor_fullTexPath)
-        ->addLink(armor[i].getId());
+        ->addLink(armor[i].id);
 
     std::string health_fullTexPath =
         FileUtils::fromCwd("assets/hud/health_full.png");
@@ -69,7 +69,7 @@ void Ui::loadlHud() {
     health[i].size.set(15.0f, 15.0f);
     health[i].position.set(BASE_X_POS + (i * 8.0f), BASE_Y_POS + 10);
     this->t_renderer->core.texture.repository.add(health_fullTexPath)
-        ->addLink(health[i].getId());
+        ->addLink(health[i].id);
 
     std::string breath_fullTexPath =
         FileUtils::fromCwd("assets/hud/breath_full.png");
@@ -78,7 +78,7 @@ void Ui::loadlHud() {
     breath[i].position.set(BASE_X_POS + (HUD_WIDTH - 10.0F * 9.0F) + (i * 8.0f),
                            BASE_Y_POS);
     this->t_renderer->core.texture.repository.add(breath_fullTexPath)
-        ->addLink(breath[i].getId());
+        ->addLink(breath[i].id);
 
     std::string hungry_fullTexPath =
         FileUtils::fromCwd("assets/hud/hungry_full.png");
@@ -87,7 +87,7 @@ void Ui::loadlHud() {
     hungry[i].position.set(BASE_X_POS + (HUD_WIDTH - 10.0F * 9.0F) + (i * 8.0f),
                            BASE_Y_POS + 10);
     this->t_renderer->core.texture.repository.add(hungry_fullTexPath)
-        ->addLink(hungry[i].getId());
+        ->addLink(hungry[i].id);
   }
 
   std::string xp_bar_fullTexPath =
@@ -96,7 +96,7 @@ void Ui::loadlHud() {
   xp_bar_full.size.set(256.0F, 8.0f);
   xp_bar_full.position.set(BASE_X_POS, BASE_Y_POS + 21);
   this->t_renderer->core.texture.repository.add(xp_bar_fullTexPath)
-      ->addLink(xp_bar_full.getId());
+      ->addLink(xp_bar_full.id);
 
   std::string emptySlotsTexPath =
       FileUtils::fromCwd("assets/hud/empty_slots.png");
@@ -104,7 +104,7 @@ void Ui::loadlHud() {
   empty_slots.size.set(256.0F, 32.0f);
   empty_slots.position.set(BASE_X_POS, BASE_Y_POS + 29);
   this->t_renderer->core.texture.repository.add(emptySlotsTexPath)
-      ->addLink(empty_slots.getId());
+      ->addLink(empty_slots.id);
 
   std::string selectedSlotTexPath =
       FileUtils::fromCwd("assets/hud/selected_slot.png");
@@ -112,7 +112,7 @@ void Ui::loadlHud() {
   selected_slot.size.set(31.0f, 31.0f);
   selected_slot.position.set(BASE_X_POS, BASE_Y_POS + 29);
   this->t_renderer->core.texture.repository.add(selectedSlotTexPath)
-      ->addLink(selected_slot.getId());
+      ->addLink(selected_slot.id);
 }
 
 void Ui::updateHud() {
@@ -141,7 +141,7 @@ void Ui::updatePlayerInventory() {
       if (this->playerInventory[i] != NULL) {
         printf("Item on inv at %i, clearing...\n", i);
         this->t_itemRepository->removeTextureLinkByBlockType(
-            inventoryData[i], this->playerInventory[i]->getId());
+            inventoryData[i], this->playerInventory[i]->id);
         delete this->playerInventory[i];
         this->playerInventory[i] = NULL;
       }
@@ -151,7 +151,7 @@ void Ui::updatePlayerInventory() {
       tempItemSprite->size.set(BASE_WIDTH, BASE_HEIGHT);
       tempItemSprite->position.set(BASE_X - i + (HUD_WIDTH / 9.1 * i), BASE_Y);
       this->t_itemRepository->linkTextureByItemType(inventoryData[i],
-                                                    tempItemSprite->getId());
+                                                    tempItemSprite->id);
 
       this->playerInventory[i] = tempItemSprite;
     }

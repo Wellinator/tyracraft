@@ -2,19 +2,20 @@
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
-#include "loaders/3d/tyrobj/tyrobj_loader.hpp"
+#include "loaders/3d/obj_loader/obj_loader.hpp"
 
 using Tyra::Audio;
 using Tyra::FileUtils;
+using Tyra::ObjLoader;
+using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
 using Tyra::RendererSettings;
-using Tyra::TyrobjLoader;
 
 MainMenu::MainMenu() {}
 
 MainMenu::~MainMenu() {
-  t_audio->stopSong();
-  t_audio->setSongLoop(false);
+  t_audio->song.stop();
+  t_audio->song.inLoop = false;
   this->unloadTextures();
 }
 
@@ -48,10 +49,10 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/title_1.png"))
-      ->addLink(title[0].getId());
+      ->addLink(title[0].id);
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/title_2.png"))
-      ->addLink(title[1].getId());
+      ->addLink(title[1].id);
 
   // Buttons
   btnCross.setMode(Tyra::MODE_STRETCH);
@@ -61,7 +62,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
-      ->addLink(btnCross.getId());
+      ->addLink(btnCross.id);
 
   // Load slots
   slot[0].setMode(Tyra::MODE_STRETCH);
@@ -76,13 +77,13 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/slot.png"))
-      ->addLink(slot[0].getId());
+      ->addLink(slot[0].id);
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/hovered_slot.png"))
-      ->addLink(slot[1].getId());
+      ->addLink(slot[1].id);
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/selected_slot.png"))
-      ->addLink(slot[2].getId());
+      ->addLink(slot[2].id);
 
   // Texts
   textPlayGame.setMode(Tyra::MODE_STRETCH);
@@ -97,7 +98,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/play_game.png"))
-      ->addLink(textPlayGame.getId());
+      ->addLink(textPlayGame.id);
 
   textSelect.setMode(Tyra::MODE_STRETCH);
   textSelect.size.set(64, 16);
@@ -105,13 +106,13 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
       30 + 40, this->t_renderer->core.getSettings().getHeight() - 47);
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("assets/menu/select.png"))
-      ->addLink(textSelect.getId());
+      ->addLink(textSelect.id);
 
   // Load song
-  t_audio->loadSong(FileUtils::fromCwd("sounds/menu.wav"));
-  t_audio->playSong();
-  t_audio->setSongLoop(1);
-  t_audio->setSongVolume(100);
+  t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
+  t_audio->song.play();
+  t_audio->song.inLoop = true;
+  t_audio->song.setVolume(100);
 }
 
 void MainMenu::update(Pad& t_pad) {
@@ -155,9 +156,13 @@ void MainMenu::loadSkybox(Renderer* renderer) {
   this->skyboxOptions->frustumCulling =
       Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
 
-  TyrobjLoader loader;
-  auto* data = loader.load(FileUtils::fromCwd("assets/menu/skybox.obj"), 1,
-                           250.0F, true);
+  ObjLoader loader;
+  ObjLoaderOptions objOptions;
+  objOptions.flipUVs = true;
+  objOptions.scale = 250.0F;
+
+  auto* data =
+      loader.load(FileUtils::fromCwd("assets/menu/skybox.obj"), objOptions);
   data->normalsEnabled = false;
   this->menuSkybox = new StaticMesh(*data);
   delete data;
@@ -167,30 +172,25 @@ void MainMenu::loadSkybox(Renderer* renderer) {
 }
 
 void MainMenu::unloadTextures() {
-  for (u8 i = 0; i < menuSkybox->getMaterialsCount(); i++) {
+  for (u8 i = 0; i < menuSkybox->materials.size(); i++) {
     t_renderer->core.texture.repository.free(
         t_renderer->core.texture.repository
-            .getBySpriteOrMesh(menuSkybox->getMaterials()[i]->getId())
-            ->getId());
+            .getBySpriteOrMesh(menuSkybox->materials[i]->id)
+            ->id);
   }
   for (u8 i = 0; i < 2; i++) {
     t_renderer->core.texture.repository.free(
-        t_renderer->core.texture.repository.getBySpriteOrMesh(title[i].getId())
-            ->getId());
+        t_renderer->core.texture.repository.getBySpriteOrMesh(title[i].id)->id);
   }
   for (u8 i = 0; i < 3; i++) {
     t_renderer->core.texture.repository.free(
-        t_renderer->core.texture.repository.getBySpriteOrMesh(slot[i].getId())
-            ->getId());
+        t_renderer->core.texture.repository.getBySpriteOrMesh(slot[i].id)->id);
   }
   t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository
-          .getBySpriteOrMesh(textPlayGame.getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(textPlayGame.id)
+          ->id);
   t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository.getBySpriteOrMesh(textSelect.getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(textSelect.id)->id);
   t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository.getBySpriteOrMesh(btnCross.getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(btnCross.id)->id);
 }

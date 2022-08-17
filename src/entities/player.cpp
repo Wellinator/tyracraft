@@ -13,12 +13,13 @@
 #include <debug/debug.hpp>
 #include <math/math.hpp>
 #include "file/file_utils.hpp"
-#include "loaders/3d/md2/md2_loader.hpp"
+#include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
 
 using Tyra::BBox;
 using Tyra::FileUtils;
 using Tyra::MD2Loader;
+using Tyra::MD2LoaderOptions;
 
 // ----
 // Constructors/Destructors
@@ -36,10 +37,10 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   isJumpingAnimationSet = false;
   isFightingAnimationSet = false;
 
-  walkAdpcm = this->t_audio->loadADPCM("sounds/walk.adpcm");
-  jumpAdpcm = this->t_audio->loadADPCM("sounds/jump.adpcm");
-  boomAdpcm = this->t_audio->loadADPCM("sounds/boom.adpcm");
-  this->t_audio->setADPCMVolume(70, 0);
+  walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
+  jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
+  boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
+  this->t_audio->adpcm.setVolume(70, 0);
 }
 
 Player::~Player() {}
@@ -279,8 +280,12 @@ void Player::moveSelectorToTheRight() {
 
 void Player::loadMesh() {
   MD2Loader loader;
+  MD2LoaderOptions options;
+  options.scale = .35F;
+  options.flipUVs = true;
+
   auto* data =
-      loader.load(FileUtils::fromCwd("meshes/player/warrior.md2"), .35F, true);
+      loader.load(FileUtils::fromCwd("meshes/player/warrior.md2"), options);
   this->mesh = new DynamicMesh(*data);
   // result->translation.translateZ(-30.0F);
   this->mesh->rotation.rotateX(-1.566F);
@@ -288,7 +293,7 @@ void Player::loadMesh() {
   delete data;
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("meshes/player/warrior.png"))
-      ->addLink(this->mesh->getId());
-  this->mesh->playAnimation(0, this->mesh->getFramesCount() - 1);
-  this->mesh->setAnimSpeed(0.17F);
+      ->addLink(this->mesh->id);
+  // this->mesh->animation. playAnimation(0, this->mesh->getFramesCount() - 1);
+  this->mesh->animation.speed = 0.17F;
 }

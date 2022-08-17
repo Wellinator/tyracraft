@@ -28,7 +28,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   background->size.set(512, 512);
   background->position.set(0, 0);
   t_renderer->core.texture.repository.add(backgroundTex)
-      ->addLink(background->getId());
+      ->addLink(background->id);
 
   // State desc
   std::string stateLoadingText = FileUtils::fromCwd("loading/loading.png");
@@ -37,7 +37,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   loadingStateText->size.set(256, 16);
   loadingStateText->position.set(width / 2 - 128, BASE_HEIGHT);
   t_renderer->core.texture.repository.add(stateLoadingText)
-      ->addLink(loadingStateText->getId());
+      ->addLink(loadingStateText->id);
 
   // Loading slot
   std::string loadingSlotTex =
@@ -47,7 +47,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   loadingSlot->size.set(256, 16);
   loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 25);
   t_renderer->core.texture.repository.add(loadingSlotTex)
-      ->addLink(loadingSlot->getId());
+      ->addLink(loadingSlot->id);
 
   // Loading bar
   std::string loadingprogressTex = FileUtils::fromCwd("loading/load.png");
@@ -56,7 +56,7 @@ void LoadingScreen::init(Renderer* t_renderer) {
   loadingprogress->size.set(this->_percent / 100 * 253, 9);
   loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 28);
   t_renderer->core.texture.repository.add(loadingprogressTex)
-      ->addLink(loadingprogress->getId());
+      ->addLink(loadingprogress->id);
 }
 
 void LoadingScreen::setState(LoadingState state) { this->_state = state; }
@@ -85,19 +85,17 @@ void LoadingScreen::render() {
 
 void LoadingScreen::unload() {
   this->t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository
-          .getBySpriteOrMesh(background->getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(background->id)
+          ->id);
+  this->t_renderer->core.texture.repository.free(
+      t_renderer->core.texture.repository.getBySpriteOrMesh(loadingSlot->id)
+          ->id);
   this->t_renderer->core.texture.repository.free(
       t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingSlot->getId())
-          ->getId());
+          .getBySpriteOrMesh(loadingprogress->id)
+          ->id);
   this->t_renderer->core.texture.repository.free(
       t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingprogress->getId())
-          ->getId());
-  this->t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingStateText->getId())
-          ->getId());
+          .getBySpriteOrMesh(loadingStateText->id)
+          ->id);
 }

@@ -19,10 +19,8 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   const float width = 512;
   const float height = 512;
 
-  std::string tyracraftSplash =
-      FileUtils::fromCwd("splash/tyracraft.png");
-  std::string tyraSplash =
-      FileUtils::fromCwd("splash/tyra.png");
+  std::string tyracraftSplash = FileUtils::fromCwd("splash/tyracraft.png");
+  std::string tyraSplash = FileUtils::fromCwd("splash/tyra.png");
 
   tyracraft = new Sprite;
   tyracraft->setMode(Tyra::MODE_STRETCH);
@@ -35,19 +33,17 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   tyra->position.set(0, 0);
 
   t_renderer->core.texture.repository.add(tyracraftSplash)
-      ->addLink(tyracraft->getId());
-  t_renderer->core.texture.repository.add(tyraSplash)->addLink(tyra->getId());
+      ->addLink(tyracraft->id);
+  t_renderer->core.texture.repository.add(tyraSplash)->addLink(tyra->id);
 }
 
 SplashScreen::~SplashScreen() { this->unloadTextures(); }
 
 void SplashScreen::unloadTextures() {
   t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository.getBySpriteOrMesh(tyracraft->getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(tyracraft->id)->id);
   t_renderer->core.texture.repository.free(
-      t_renderer->core.texture.repository.getBySpriteOrMesh(tyra->getId())
-          ->getId());
+      t_renderer->core.texture.repository.getBySpriteOrMesh(tyra->id)->id);
 }
 
 void SplashScreen::render() {

@@ -1,6 +1,6 @@
 # Blender v3.2.0 OBJ File: ''
 # www.blender.org
-mtllib untitled.mtl
+mtllib skybox.mtl
 o Cube.001
 v 1.000000 1.000000 0.000000
 v 0.500000 1.000000 0.500000
