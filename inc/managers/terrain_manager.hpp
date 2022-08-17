@@ -57,6 +57,8 @@ class TerrainManager {
  private:
   Ray ray;
   u8 _shouldUpdateChunck = 0;
+  u8 framesCounter = 0;
+  const u8 UPDATE_TARGET_LIMIT = 3; 
 
   Player* t_player;
   Camera* t_camera;
@@ -105,4 +107,5 @@ class TerrainManager {
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
+  u8 shouldUpdateTargetBlock();
 };

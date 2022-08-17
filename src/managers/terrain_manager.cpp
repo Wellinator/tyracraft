@@ -44,10 +44,13 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                             std::vector<Chunck*> chuncks) {
+  this->framesCounter++;
   this->t_player = t_player;
   this->t_camera = t_camera;
-  this->getTargetBlock(*t_player->getPosition(), t_camera, chuncks);
+  if (this->shouldUpdateTargetBlock())
+    this->getTargetBlock(*t_player->getPosition(), t_camera, chuncks);
   this->handlePadControls(t_pad);
+  if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
 void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
@@ -625,4 +628,8 @@ void TerrainManager::generateWater() {
       }
     }
   }
+}
+
+u8 TerrainManager::shouldUpdateTargetBlock() {
+  return this->framesCounter == this->UPDATE_TARGET_LIMIT;
 }
