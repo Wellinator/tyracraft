@@ -9,11 +9,15 @@
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
+#include "renderer/3d/bbox/bbox.hpp"
+#include <math/m4x4.hpp>
 #include <vector>
 
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
+using Tyra::M4x4;
+using Tyra::BBox;
 
 class ChunckManager {
  public:

@@ -1,5 +1,6 @@
 #include "managers/chunck_manager.hpp"
 
+using Tyra::M4x4;
 using Tyra::Vec4;
 
 ChunckManager::ChunckManager() {}
@@ -21,8 +22,12 @@ void ChunckManager::update(Player* t_player) {
 
 void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                              BlockManager* t_blockManager) {
-  for (u16 i = 0; i < this->chuncks.size(); i++)
+  const auto* frustumPlanes =
+      t_renderer->core.renderer3D.frustumPlanes.getAll();
+  for (u16 i = 0; i < this->chuncks.size(); i++) {
+    // if (chuncks[i]->bbox->isInFrustum(frustumPlanes, chuncks[i]->model))
     chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
+  }
 }
 
 void ChunckManager::generateChunks() {
