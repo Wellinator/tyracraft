@@ -26,6 +26,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
 };
 
 void World::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
+  this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getChuncks());
   this->chunckManager->update(t_player);
@@ -41,7 +42,7 @@ void World::buildInitialPosition() {
   Chunck* initialChunck =
       this->chunckManager->getChunckByPosition(this->worldSpawnArea);
   this->terrainManager->buildChunk(initialChunck);
-  // this->buildChunksNeighbors(initialChunck);
+  this->buildChunksNeighbors(initialChunck);
 };
 
 const std::vector<Block*> World::getLoadedBlocks() {
@@ -61,7 +62,6 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-
   if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
     Chunck* chunckToUpdate =
@@ -69,12 +69,10 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     this->terrainManager->buildChunk(chunckToUpdate);
     this->terrainManager->setChunckToUpdated();
   } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) >
-             DUBLE_BLOCK_SIZE) {
+             CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
     Chunck* currentChunck =
         this->chunckManager->getChunckByPosition(*t_player->getPosition());
-
-    // Set the chunk id for future checks;
     if (t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
       this->terrainManager->buildChunk(currentChunck);
@@ -87,8 +85,13 @@ void World::buildChunksNeighbors(Chunck* t_chunck) {
   Vec4 offset = (*t_chunck->maxCorner + *t_chunck->minCorner) / 2;
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
+    // Prevent to reload the current chunck more than once
+    if (t_chunck->id == chuncks[i]->id) continue;
+
     Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
-    if (offset.distanceTo(tempOffset) <= DRAW_DISTANCE_IN_CHUNKS) {
+    float distanceToCenterChunck =
+        floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
+    if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
       this->terrainManager->buildChunk(chuncks[i]);
     } else if (chuncks[i]->isLoaded) {
       chuncks[i]->clear();

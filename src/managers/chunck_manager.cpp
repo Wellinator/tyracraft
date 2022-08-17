@@ -26,6 +26,7 @@ void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
 }
 
 void ChunckManager::generateChunks() {
+  // TODO: create only the chuncks that'll be rendered
   u16 tempId = 1;
   for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE;
        x += CHUNCK_SIZE) {
@@ -39,14 +40,12 @@ void ChunckManager::generateChunks() {
       tempId++;
     }
   }
-  printf("Total of chuncks -> %i\n", tempId);
 };
 
 Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
     if (position.collidesBox(*chuncks[i]->minCorner * DUBLE_BLOCK_SIZE,
                              *chuncks[i]->maxCorner * DUBLE_BLOCK_SIZE)) {
-      printf("GetChunckByPosition -> %i\n", chuncks[i]->id);
       return chuncks[i];
     }
   return nullptr;

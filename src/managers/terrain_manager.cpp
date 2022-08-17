@@ -251,8 +251,8 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
 void TerrainManager::buildChunk(Chunck* t_chunck) {
   t_chunck->clear();
 
-  for (int z = t_chunck->minCorner->z; z < CHUNCK_SIZE; z++) {
-    for (int x = t_chunck->minCorner->x; x < CHUNCK_SIZE; x++) {
+  for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
+    for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         Vec4* tempBlockOffset = new Vec4(x, y, z);
         Vec4 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
