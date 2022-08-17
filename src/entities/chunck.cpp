@@ -8,6 +8,19 @@ Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
   this->minCorner->set(minCorner);
   this->maxCorner->set(maxCorner);
   this->id = id;
+  this->model.identity();
+  u32 count = 8;
+  // int** p = new int*[N];
+  Vec4** vertices = new Vec4*[count];
+  vertices[0] = new Vec4(minCorner);
+  vertices[1] = new Vec4(maxCorner.x, minCorner.y, minCorner.z);
+  vertices[2] = new Vec4(minCorner.x, maxCorner.y, minCorner.z);
+  vertices[3] = new Vec4(minCorner.x, minCorner.y, maxCorner.z);
+  vertices[4] = new Vec4(maxCorner);
+  vertices[5] = new Vec4(minCorner.x, maxCorner.y, maxCorner.z);
+  vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
+  vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
+  this->bbox = new BBox(*vertices, count);
 };
 
 Chunck::~Chunck() {
@@ -37,7 +50,8 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                       BlockManager* t_blockManager) {
   t_renderer->renderer3D.usePipeline(mcPip);
-  mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(), false);
+  mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
+                false);
   mcPip->render(this->multiTexBlocks, t_blockManager->getBlocksTexture(), true);
 };
 

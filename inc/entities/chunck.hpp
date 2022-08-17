@@ -11,11 +11,15 @@
 #include "managers/block_manager.hpp"
 #include "utils.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
+#include "renderer/3d/bbox/bbox.hpp"
+#include <math/m4x4.hpp>
 
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
+using Tyra::BBox;
+using Tyra::M4x4;
 
 class Chunck {
  public:
@@ -27,6 +31,8 @@ class Chunck {
   std::vector<Block*> blocks;
   Vec4* minCorner = new Vec4();
   Vec4* maxCorner = new Vec4();
+  BBox* bbox;
+  M4x4 model;
 
   void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                 BlockManager* t_blockManager);
