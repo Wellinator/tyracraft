@@ -74,7 +74,7 @@
 #define BLOCK_DAMAGE_70 33
 #define BLOCK_DAMAGE_80 34
 #define BLOCK_DAMAGE_90 35
-#define BLOCK_DAMAGE_110 36
+#define BLOCK_DAMAGE_100 36
 /*---------------------------------------------*/
 
 #define FIRST_PERSON_CAM 1
