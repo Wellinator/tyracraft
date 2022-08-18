@@ -45,7 +45,13 @@ class World {
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
   Vec4* lastPlayerPosition = new Vec4();
+  u8 framesCounter = 0;
+
+  u8 isLoadingData = 0;
+  std::vector<Chunck*> tempChuncksToLoad;
 
   void updateChunkByPlayerPosition(Player* player);
   void buildChunksNeighbors(Chunck* t_chunck);
+  void scheduleChunksNeighbors(Chunck* t_chunck);
+  void loadNextChunk();
 };
