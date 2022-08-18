@@ -32,7 +32,7 @@ void Chunck::update(Player* t_player) {
   if (this->hasChanged) {
     this->filterSingleAndMultiBlocks();
   }
-  this->updateBlocks(*t_player->getPosition());
+  // this->updateBlocks(*t_player->getPosition());
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
