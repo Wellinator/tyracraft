@@ -92,7 +92,7 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
                                            mcPip->getTextureOffset() * 1,
                                            mcPip->getTextureOffset() * 0));
   this->blockItems.push_back(new BlockInfo(OAK_LEAVES_BLOCK, true,
-                                           mcPip->getTextureOffset() * 0,
+                                           mcPip->getTextureOffset() * 3,
                                            mcPip->getTextureOffset() * 10));
 
   // Stripped Woods
