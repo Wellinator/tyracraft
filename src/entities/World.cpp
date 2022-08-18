@@ -92,7 +92,7 @@ void World::buildChunksNeighbors(Chunck* t_chunck) {
     float distanceToCenterChunck =
         floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
-      this->terrainManager->buildChunk(chuncks[i]);
+      if (!chuncks[i]->isLoaded) this->terrainManager->buildChunk(chuncks[i]);
     } else if (chuncks[i]->isLoaded) {
       chuncks[i]->clear();
     }
