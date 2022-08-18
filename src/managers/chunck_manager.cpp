@@ -1,6 +1,8 @@
 #include "managers/chunck_manager.hpp"
+#include "math/plane.hpp"
 
 using Tyra::M4x4;
+using Tyra::Plane;
 using Tyra::Vec4;
 
 ChunckManager::ChunckManager() {}
@@ -22,7 +24,6 @@ void ChunckManager::update(Player* t_player) {
 
 void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                              BlockManager* t_blockManager) {
-        // TODO: Implement chunk culling
   for (u16 i = 0; i < this->chuncks.size(); i++)
     chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
 }
@@ -58,3 +59,14 @@ Chunck* ChunckManager::getChunckById(const u16 id) {
     if (chuncks[i]->id == id) return chuncks[i];
   return nullptr;
 };
+
+u8 ChunckManager::isChunkVisible(Chunck* chunk, Renderer* t_renderer) {
+  const auto* frustumPlanes =
+      t_renderer->core.renderer3D.frustumPlanes.getAll();
+  for (u8 y = 0; y < 8; y++) {
+    auto isIn = frustumPlanes[4].distanceTo(chunk->bbox->vertices[y]) >= 0.0F;
+    // 4th frustum plane is NEAR frustum plane
+    if (isIn) return 1;
+  }
+  return 0;  // is behind
+}

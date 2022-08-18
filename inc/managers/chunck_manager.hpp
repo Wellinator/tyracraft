@@ -13,11 +13,11 @@
 #include <math/m4x4.hpp>
 #include <vector>
 
+using Tyra::BBox;
+using Tyra::M4x4;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
-using Tyra::M4x4;
-using Tyra::BBox;
 
 class ChunckManager {
  public:
@@ -29,6 +29,7 @@ class ChunckManager {
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   void init();
   void update(Player* t_player);
+  u8 isChunkVisible(Chunck* chunk, Renderer* t_renderer);
   void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                 BlockManager* t_blockManager);
 
