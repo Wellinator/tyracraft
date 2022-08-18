@@ -113,6 +113,41 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
   this->blockItems.push_back(new BlockInfo(BIRCH_PLANKS_BLOCK, true,
                                            mcPip->getTextureOffset() * 3,
                                            mcPip->getTextureOffset() * 11));
+
+  // Braking overlay
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_0, true,
+                                           mcPip->getTextureOffset() * 0,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_10, true,
+                                           mcPip->getTextureOffset() * 1,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_20, true,
+                                           mcPip->getTextureOffset() * 2,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_30, true,
+                                           mcPip->getTextureOffset() * 3,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_40, true,
+                                           mcPip->getTextureOffset() * 4,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_50, true,
+                                           mcPip->getTextureOffset() * 5,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_60, true,
+                                           mcPip->getTextureOffset() * 6,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_70, true,
+                                           mcPip->getTextureOffset() * 7,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_80, true,
+                                           mcPip->getTextureOffset() * 8,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_90, true,
+                                           mcPip->getTextureOffset() * 9,
+                                           mcPip->getTextureOffset() * 15));
+  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_100, true,
+                                           mcPip->getTextureOffset() * 10,
+                                           mcPip->getTextureOffset() * 15));
 }
 
 BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
