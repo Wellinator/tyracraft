@@ -42,9 +42,9 @@ void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
 }
 
 void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
-  t_block->color.r = isTarget ? 160 : 128;
-  t_block->color.g = isTarget ? 160 : 128;
-  t_block->color.b = isTarget ? 160 : 128;
+  t_block->color.r = isTarget ? 160 : 116;
+  t_block->color.g = isTarget ? 160 : 116;
+  t_block->color.b = isTarget ? 160 : 116;
 }
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
