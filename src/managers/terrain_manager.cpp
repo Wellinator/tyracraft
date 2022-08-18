@@ -559,25 +559,36 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
 
     if (y >= 0 && type != AIR_BLOCK &&
         (type == GRASS_BLOCK || type == DIRTY_BLOCK)) {
-      for (int j = 0; j <= treeHeight; j++) {
+      for (int j = 0; j <= (treeHeight + 1); j++) {
         u32 treeBlockIndex = this->getIndexByOffset(x, y + j, z);
 
         // Place logs
-        if (this->terrain[treeBlockIndex] == AIR_BLOCK)
+        if (j <= treeHeight && this->terrain[treeBlockIndex] == AIR_BLOCK)
           this->terrain[treeBlockIndex] = OAK_LOG_BLOCK;
 
         // Place leaves
-        if (j >= treeHeight - 2) {
+        if (j >= treeHeight - 3) {
+          Vec4 center = Vec4(x, y + j, z);
+
+          int radianOffset = 0;
+          if (j == (treeHeight - 3) || j == (treeHeight - 2))
+            radianOffset = 3;
+          else if (j == (treeHeight - 1))
+            radianOffset = 2;
+          else if (j == treeHeight)
+            radianOffset = 1;
+
           for (int k = -2; k < 3; k++) {
-            u32 treeLeaveBlockIndex;
+            for (int l = -2; l < 3; l++) {
+              u32 treeLeaveBlockIndex =
+                  this->getIndexByOffset(x + k, y + j, z + l);
+              Vec4 leafPos = Vec4(x + k, y + j, z + l);
 
-            treeLeaveBlockIndex = this->getIndexByOffset(x + k, y + j, z);
-            if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK)
-              this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
-
-            treeLeaveBlockIndex = this->getIndexByOffset(x, y + j, z + k);
-            if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK)
-              this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
+              if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK &&
+                  center.distanceTo(leafPos) <= radianOffset) {
+                this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
+              }
+            }
           }
         }
       }
