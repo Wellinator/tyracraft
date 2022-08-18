@@ -63,6 +63,20 @@
 #define OAK_LEAVES_BLOCK 25
 /*---------------------------------------------*/
 
+// Breaking overlay
+#define BLOCK_DAMAGE_0 26
+#define BLOCK_DAMAGE_10 27
+#define BLOCK_DAMAGE_20 28
+#define BLOCK_DAMAGE_30 29
+#define BLOCK_DAMAGE_40 30
+#define BLOCK_DAMAGE_50 31
+#define BLOCK_DAMAGE_60 32
+#define BLOCK_DAMAGE_70 33
+#define BLOCK_DAMAGE_80 34
+#define BLOCK_DAMAGE_90 35
+#define BLOCK_DAMAGE_110 36
+/*---------------------------------------------*/
+
 #define FIRST_PERSON_CAM 1
 #define THIRD_PERSON_CAM 2
 
