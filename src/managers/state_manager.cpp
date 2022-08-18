@@ -67,7 +67,7 @@ void StateManager::update(const float& deltaTime, Camera* t_camera) {
     // In game updates
     {
       this->controlGameMode(*t_pad);
-      world->update(player, t_camera, t_pad);
+      world->update(player, t_camera, t_pad, deltaTime);
       player->update(deltaTime, *t_pad, *t_camera, world->getLoadedBlocks());
       ui->update();
       t_camera->update(*t_pad, *player->mesh);

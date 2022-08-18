@@ -43,13 +43,14 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 }
 
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
-                            std::vector<Chunck*> chuncks) {
+                            std::vector<Chunck*> chuncks,
+                            const float& deltaTime) {
   this->framesCounter++;
   this->t_player = t_player;
   this->t_camera = t_camera;
   if (this->shouldUpdateTargetBlock())
     this->getTargetBlock(*t_player->getPosition(), t_camera, chuncks);
-  this->handlePadControls(t_pad);
+  this->handlePadControls(t_pad, deltaTime);
   if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
@@ -414,11 +415,14 @@ void TerrainManager::putBlock(u8 blockToPlace) {
   }
 }
 
-void TerrainManager::handlePadControls(Pad* t_pad) {
+void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   PadButtons clickedButton = t_pad->getClicked();
-  if (clickedButton.L2) {
-    this->removeBlock();
+  if (t_pad->getPressed().L2) {
+    this->breakBlock(this->targetBlock, deltaTime);
+  } else {
+    this->isBreakingBlock = 0;
   }
+
   if (clickedButton.R2) {
     ITEM_TYPES activeItemType = this->t_player->getSelectedInventoryItemType();
     if (activeItemType != ITEM_TYPES::empty) {
@@ -426,6 +430,29 @@ void TerrainManager::handlePadControls(Pad* t_pad) {
           this->t_itemRepository->getItemById(activeItemType)->blockId;
       if (blockid != AIR_BLOCK) this->putBlock(blockid);
     }
+  }
+}
+
+void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
+  if (this->isBreakingBlock) {
+    this->breaking_time_pessed += deltaTime;
+    printf("breaking_time_pessed %f\n", breaking_time_pessed);
+
+    if (breaking_time_pessed >= this->t_blockManager->getBlockBreakingTime()) {
+      // Remove block;
+      this->removeBlock();
+
+      // Target block has changed, reseting the pressed time;
+      this->breaking_time_pessed = 0;
+    } else {
+      // Update damage overlay
+      float damage = breaking_time_pessed /
+                     this->t_blockManager->getBlockBreakingTime() * 100;
+      printf("Total damage %f %.\n", damage);
+    }
+  } else {
+    this->breaking_time_pessed = 0;
+    this->isBreakingBlock = 1;
   }
 }
 

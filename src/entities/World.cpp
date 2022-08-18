@@ -25,11 +25,12 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   this->buildInitialPosition();
 };
 
-void World::update(Player* t_player, Camera* t_camera, Pad* t_pad) {
+void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
+                   const float& deltaTime) {
   this->framesCounter++;
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
-                               this->chunckManager->getChuncks());
+                               this->chunckManager->getChuncks(), deltaTime);
   this->chunckManager->update(t_player);
   if (this->framesCounter >= 60) this->framesCounter = 0;
 };

@@ -19,6 +19,7 @@
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "managers/items_repository.hpp"
 #include "debug/debug.hpp"
+#include <chrono>
 
 using Tyra::BBox;
 using Tyra::Engine;
@@ -32,7 +33,8 @@ class TerrainManager {
   ~TerrainManager();
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             MinecraftPipeline* mcPip, BlockManager* blockManager);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad, std::vector<Chunck*> chuncks);
+  void update(Player* t_player, Camera* t_camera, Pad* t_pad,
+              std::vector<Chunck*> chuncks, const float& deltaTime);
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
 
   Block* targetBlock = NULL;
@@ -58,7 +60,7 @@ class TerrainManager {
   Ray ray;
   u8 _shouldUpdateChunck = 0;
   u8 framesCounter = 0;
-  const u8 UPDATE_TARGET_LIMIT = 3; 
+  const u8 UPDATE_TARGET_LIMIT = 3;
 
   Player* t_player;
   Camera* t_camera;
@@ -103,10 +105,15 @@ class TerrainManager {
     return !isBlockHidden(x, y, z);
   };
 
-  void handlePadControls(Pad* t_pad);
+  void handlePadControls(Pad* t_pad, const float& deltaTime);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
   u8 shouldUpdateTargetBlock();
   float getBlockLuminosity(const float& yPosition);
+
+  // Breaking control
+  u8 isBreakingBlock = 0;
+  float breaking_time_pessed = 0.0F;
+  void breakBlock(Block* blockToBreak, const float& deltaTime);
 };

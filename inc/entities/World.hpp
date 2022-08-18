@@ -32,7 +32,8 @@ class World {
   ChunckManager* chunckManager = new ChunckManager();
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad);
+  void update(Player* t_player, Camera* t_camera, Pad* t_pad,
+              const float& deltaTime);
   void render();
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
