@@ -14,7 +14,7 @@
     <img src="https://i.ibb.co/nbDpRhy/Tyra-Craft-Banner.png" alt="Logo" width="100%" height="auto">
   </a>
 
-  <h3 align="center">TyraChaft - alpha version</h3>
+  <h3 align="center">TyraCraft - Alpha Version</h3>
 
   <p align="center">
     Open source game for PlayStation 2™ powered by 
