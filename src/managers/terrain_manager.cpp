@@ -257,25 +257,28 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
   for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
     for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
+        unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+        u8 block_type = this->terrain[blockIndex];
+        if (block_type == AIR_BLOCK) continue;
+
         Vec4* tempBlockOffset = new Vec4(x, y, z);
         Vec4 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        unsigned int blockIndex = this->getIndexByOffset(
-            tempBlockOffset->x, tempBlockOffset->y, tempBlockOffset->z);
-        u8 block_type = this->terrain[blockIndex];
         u8 isHidden = this->isBlockHidden(
             tempBlockOffset->x, tempBlockOffset->y, tempBlockOffset->z);
 
         // Are block's coordinates in world range?
-        if (block_type != AIR_BLOCK && !isHidden &&
+        if (!isHidden &&
             tempBlockOffset->collidesBox(minWorldPos, maxWorldPos)) {
           BlockInfo* blockInfo =
               this->t_blockManager->getBlockTexOffsetByType(block_type);
           if (blockInfo != nullptr) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
-            block->isHidden = isHidden;
-            block->color = Color(116.0F, 116.0F, 116.0F, 128.0F);
+            block->isHidden = false;
+
+            float bright = this->getBlockLuminosity(tempBlockOffset->y);
+            block->color = Color(bright, bright, bright, 128.0F);
 
             block->setPosition(blockPosition);
             block->scale.scale(BLOCK_SIZE);
@@ -643,4 +646,15 @@ void TerrainManager::generateWater() {
 
 u8 TerrainManager::shouldUpdateTargetBlock() {
   return this->framesCounter == this->UPDATE_TARGET_LIMIT;
+}
+
+float TerrainManager::getBlockLuminosity(const float& yPosition) {
+  float luminosity =
+      (yPosition * 110.0F * (1 / (float)OVERWORLD_MAX_HEIGH)) + 100.0F;
+  if (luminosity < 90)
+    return 90.0F;
+  else if (luminosity > 128)
+    return 128.0F;
+  else
+    return luminosity;
 }

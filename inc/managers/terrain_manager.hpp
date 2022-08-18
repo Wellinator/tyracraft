@@ -108,4 +108,5 @@ class TerrainManager {
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
   u8 shouldUpdateTargetBlock();
+  float getBlockLuminosity(const float& yPosition);
 };
