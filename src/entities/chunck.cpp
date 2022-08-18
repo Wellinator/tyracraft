@@ -9,8 +9,8 @@ Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
   this->maxCorner->set(maxCorner);
   this->id = id;
   this->model.identity();
+
   u32 count = 8;
-  // int** p = new int*[N];
   Vec4** vertices = new Vec4*[count];
   vertices[0] = new Vec4(minCorner);
   vertices[1] = new Vec4(maxCorner.x, minCorner.y, minCorner.z);
@@ -59,7 +59,7 @@ void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
  * Calculate the FOG by distance;
  */
 float Chunck::getVisibityByPosition(float d) {
-  return Utils::FOG_EXP_GRAD(d, 0.007F, 3.0F);
+  return Utils::FOG_EXP_GRAD(d, 0.0018F, 3.2F);
 }
 
 void Chunck::clear() {
@@ -86,6 +86,7 @@ void Chunck::addBlock(Block* t_block) {
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
+    // FIXME: refactor fog to use FPU;
     // this->applyFOG(this->blocks[blockIndex], playerPosition);
     this->highLightTargetBlock(this->blocks[blockIndex],
                                this->blocks[blockIndex]->isTarget);
