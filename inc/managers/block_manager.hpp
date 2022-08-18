@@ -37,6 +37,7 @@ class BlockManager {
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
   BlockInfo* getBlockTexOffsetByType(const u8& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
+  float getBlockBreakingTime();
 
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);

@@ -155,3 +155,8 @@ BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
     if (blockItems[i]->blockId == blockType) return blockItems[i];
   return nullptr;
 }
+
+float BlockManager::getBlockBreakingTime(){
+  // TODO: implement https://minecraft.fandom.com/wiki/Breaking
+  return 0.9F;
+}
