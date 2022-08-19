@@ -1,0 +1,8 @@
+############ TyraCfat Roadmap ############
+
+* Features for August Update:
+    -> PLayer Hand;
+    -> Tool (Pickaxe);
+    -> Basic ingame menu for block selection;
+    -> Add "About" in main menu;
+    -> Add "How to play" in main menu;
