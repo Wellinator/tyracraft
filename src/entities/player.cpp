@@ -163,8 +163,6 @@ u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
       continue;
     };
 
-    // Inflate bbox
-    // TODO: implement sliding on colide;
     Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
                            t_blocks[i]->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
