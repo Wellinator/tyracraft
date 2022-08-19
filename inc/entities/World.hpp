@@ -16,11 +16,11 @@
 #include <vector>
 #include "managers/block_manager.hpp"
 
+using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::Pad;
 using Tyra::Renderer;
 using Tyra::Vec4;
-using Tyra::McpipBlock;
 
 class World {
  public:
@@ -50,12 +50,14 @@ class World {
   u8 framesCounter = 0;
 
   u8 isLoadingData = 0;
+  u8 isUnLoadingData = 0;
   std::vector<Chunck*> tempChuncksToLoad;
+  std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
 
   void updateChunkByPlayerPosition(Player* player);
-  void buildChunksNeighbors(Chunck* t_chunck);
-  void scheduleChunksNeighbors(Chunck* t_chunck);
+  void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
   void loadNextChunk();
+  void unloadChunckAsync();
   void renderBlockDamageOverlay();
 };
