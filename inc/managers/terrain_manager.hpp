@@ -38,8 +38,8 @@ class TerrainManager {
   void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
 
   Block* targetBlock = NULL;
-  void getTargetBlock(const Vec4& playerPosition, Camera* t_camera,
-                      std::vector<Chunck*> chuncks);
+  void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
+                         std::vector<Chunck*> chuncks);
   void removeBlock();
   void putBlock(u8 blockType);
 
@@ -53,6 +53,7 @@ class TerrainManager {
 
   inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
   inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };
+  inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
 
   int getNoise(int x, int z);
 
@@ -113,7 +114,7 @@ class TerrainManager {
   float getBlockLuminosity(const float& yPosition);
 
   // Breaking control
-  u8 isBreakingBlock = 0;
+  u8 _isBreakingBlock = 0;
   float breaking_time_pessed = 0.0F;
   void breakBlock(Block* blockToBreak, const float& deltaTime);
 };

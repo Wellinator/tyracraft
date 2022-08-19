@@ -7,11 +7,13 @@
 #include <renderer/core/texture/models/texture.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "contants.hpp"
+#include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 
+using Tyra::McpipBlock;
 using Tyra::Mesh;
+using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Texture;
-using Tyra::MinecraftPipeline;
 
 struct BlockInfo {
   BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
@@ -38,12 +40,15 @@ class BlockManager {
   BlockInfo* getBlockTexOffsetByType(const u8& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
   float getBlockBreakingTime();
+  McpipBlock* getDamageOverlay(const float& damage_percentage);
 
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
+  void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;
   std::vector<BlockInfo*> blockItems;
+  std::vector<McpipBlock*> damage_overlay;
 };

@@ -46,11 +46,13 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                             std::vector<Chunck*> chuncks,
                             const float& deltaTime) {
   this->framesCounter++;
-  this->t_player = t_player;
-  this->t_camera = t_camera;
-  if (this->shouldUpdateTargetBlock())
-    this->getTargetBlock(*t_player->getPosition(), t_camera, chuncks);
-  this->handlePadControls(t_pad, deltaTime);
+  {
+    this->t_player = t_player;
+    this->t_camera = t_camera;
+    if (this->shouldUpdateTargetBlock())
+      this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
+    this->handlePadControls(t_pad, deltaTime);
+  }
   if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
@@ -276,7 +278,6 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
           if (blockInfo != nullptr) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
-            block->isHidden = false;
 
             float bright = this->getBlockLuminosity(tempBlockOffset->y);
             block->color = Color(bright, bright, bright, 128.0F);
@@ -305,9 +306,9 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
   t_chunck->isLoaded = 1;
 }
 
-void TerrainManager::getTargetBlock(const Vec4& playerPosition,
-                                    Camera* t_camera,
-                                    std::vector<Chunck*> chuncks) {
+void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
+                                       Camera* t_camera,
+                                       std::vector<Chunck*> chuncks) {
   u8 hitedABlock = 0;
   float distance = -1.0f;
   float tempTargetDistance = -1.0f;
@@ -419,8 +420,9 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   PadButtons clickedButton = t_pad->getClicked();
   if (t_pad->getPressed().L2) {
     this->breakBlock(this->targetBlock, deltaTime);
-  } else {
-    this->isBreakingBlock = 0;
+  } else if (this->_isBreakingBlock) {
+    this->_isBreakingBlock = 0;
+    if (this->targetBlock) this->targetBlock->damage = 0;
   }
 
   if (clickedButton.R2) {
@@ -434,9 +436,8 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
 }
 
 void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
-  if (this->isBreakingBlock) {
+  if (this->_isBreakingBlock) {
     this->breaking_time_pessed += deltaTime;
-    printf("breaking_time_pessed %f\n", breaking_time_pessed);
 
     if (breaking_time_pessed >= this->t_blockManager->getBlockBreakingTime()) {
       // Remove block;
@@ -446,13 +447,13 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
       this->breaking_time_pessed = 0;
     } else {
       // Update damage overlay
-      float damage = breaking_time_pessed /
-                     this->t_blockManager->getBlockBreakingTime() * 100;
-      printf("Total damage %f %.\n", damage);
+      this->targetBlock->damage = breaking_time_pessed /
+                                  this->t_blockManager->getBlockBreakingTime() *
+                                  100;
     }
   } else {
     this->breaking_time_pessed = 0;
-    this->isBreakingBlock = 1;
+    this->_isBreakingBlock = 1;
   }
 }
 

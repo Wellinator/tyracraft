@@ -20,6 +20,7 @@ using Tyra::MinecraftPipeline;
 using Tyra::Pad;
 using Tyra::Renderer;
 using Tyra::Vec4;
+using Tyra::McpipBlock;
 
 class World {
  public:
@@ -50,9 +51,11 @@ class World {
 
   u8 isLoadingData = 0;
   std::vector<Chunck*> tempChuncksToLoad;
+  std::vector<McpipBlock*> overlayData;
 
   void updateChunkByPlayerPosition(Player* player);
   void buildChunksNeighbors(Chunck* t_chunck);
   void scheduleChunksNeighbors(Chunck* t_chunck);
   void loadNextChunk();
+  void renderBlockDamageOverlay();
 };

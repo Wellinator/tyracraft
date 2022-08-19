@@ -1,8 +1,10 @@
 
 #include "entities/World.hpp"
 #include "renderer/models/color.hpp"
+#include "math/m4x4.hpp"
 
 using Tyra::Color;
+using Tyra::M4x4;
 
 World::World() {}
 
@@ -39,6 +41,7 @@ void World::render() {
   // TODO: Render only chunck in view frustum
   this->chunckManager->renderer(this->t_renderer, &this->mcPip,
                                 this->blockManager);
+  this->renderBlockDamageOverlay();
 };
 
 void World::buildInitialPosition() {
@@ -135,5 +138,38 @@ void World::loadNextChunk() {
   }
   if (!this->isLoadingData) {
     tempChuncksToLoad.clear();
+  }
+}
+
+void World::renderBlockDamageOverlay() {
+  if (this->terrainManager->isBreakingBLock()) {
+    McpipBlock* overlay = this->blockManager->getDamageOverlay(
+        this->terrainManager->targetBlock->damage);
+    if (overlay != nullptr) {
+      if (this->overlayData.size() > 0) {
+        // Clear last overlay;
+        for (u8 i = 0; i < overlayData.size(); i++) {
+          delete overlayData[i]->color;
+          delete overlayData[i]->model;
+        }
+        this->overlayData.clear();
+        this->overlayData.shrink_to_fit();
+      }
+
+      M4x4 scale = M4x4();
+      M4x4 translation = M4x4();
+
+      scale.identity();
+      translation.identity();
+      scale.scale(BLOCK_SIZE + 0.01f);
+      translation.translate(*this->terrainManager->targetBlock->getPosition());
+
+      overlay->model = new M4x4(translation * scale);
+      overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
+
+      this->overlayData.push_back(overlay);
+      this->t_renderer->renderer3D.usePipeline(&this->mcPip);
+      mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
+    }
   }
 }

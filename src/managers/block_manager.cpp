@@ -1,10 +1,13 @@
 #include "managers/block_manager.hpp"
 #include "file/file_utils.hpp"
+#include <math/vec4.hpp>
 
 using Tyra::FileUtils;
+using Tyra::McpipBlock;
 using Tyra::Mesh;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
+using Tyra::Vec4;
 
 BlockManager::BlockManager() {}
 
@@ -20,6 +23,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
   this->t_renderer = t_renderer;
   this->loadBlocksTextures(t_renderer);
   this->registerBlocksTextureCoordinates(mcPip);
+  this->registerDamageOverlayBlocks(mcPip);
 }
 
 void BlockManager::loadBlocksTextures(Renderer* t_renderer) {
@@ -113,41 +117,6 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
   this->blockItems.push_back(new BlockInfo(BIRCH_PLANKS_BLOCK, true,
                                            mcPip->getTextureOffset() * 3,
                                            mcPip->getTextureOffset() * 11));
-
-  // Braking overlay
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_0, true,
-                                           mcPip->getTextureOffset() * 0,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_10, true,
-                                           mcPip->getTextureOffset() * 1,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_20, true,
-                                           mcPip->getTextureOffset() * 2,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_30, true,
-                                           mcPip->getTextureOffset() * 3,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_40, true,
-                                           mcPip->getTextureOffset() * 4,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_50, true,
-                                           mcPip->getTextureOffset() * 5,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_60, true,
-                                           mcPip->getTextureOffset() * 6,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_70, true,
-                                           mcPip->getTextureOffset() * 7,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_80, true,
-                                           mcPip->getTextureOffset() * 8,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_90, true,
-                                           mcPip->getTextureOffset() * 9,
-                                           mcPip->getTextureOffset() * 15));
-  this->blockItems.push_back(new BlockInfo(BLOCK_DAMAGE_100, true,
-                                           mcPip->getTextureOffset() * 10,
-                                           mcPip->getTextureOffset() * 15));
 }
 
 BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
@@ -156,7 +125,25 @@ BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
   return nullptr;
 }
 
-float BlockManager::getBlockBreakingTime(){
+float BlockManager::getBlockBreakingTime() {
   // TODO: implement https://minecraft.fandom.com/wiki/Breaking
   return 0.9F;
+}
+
+void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {
+  float offsetY = mcPip->getTextureOffset() * 15;
+  for (u8 i = 0; i <= 10; i++) {
+    McpipBlock* damageOverlay = new McpipBlock();
+
+    damageOverlay->textureOffset =
+        new Vec4(mcPip->getTextureOffset() * i, offsetY, 0.0F, 1.0F);
+    this->damage_overlay.push_back(damageOverlay);
+  }
+}
+
+McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
+  int normal_damage = floor(damage_percentage / 10);
+  for (u8 i = 0; i < damage_overlay.size(); i++)
+    if (i >= normal_damage) return damage_overlay[i];
+  return nullptr;
 }
