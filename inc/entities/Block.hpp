@@ -23,9 +23,8 @@ class Block {
   u8 isTarget = 0;
   u8 isSolid = 0;
   u8 isEditable = 0;
-  u8 visibility = 255;
-  u8 isHidden = 1;
   u8 isSingleTexture = 1;
+  float damage = 0;
 
   Vec4 minCorner;
   Vec4 maxCorner;
