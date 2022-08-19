@@ -20,7 +20,7 @@ void TyraCraftGame::loop() {
   engine->renderer.beginFrame(CameraInfo3D(&camera.position, &camera.lookPos));
 
   engine->renderer.core.setFrameLimit(false);
-  // printf("FPS: %i \n", engine->info.getFps());
+  printf("FPS: %i \n", engine->info.getFps());
   // printf("Free RAM: %f MB\n", engine->info.getAvailableRAM());
 
   stateManager.update(1 / static_cast<float>(engine->info.getFps()), &camera);
