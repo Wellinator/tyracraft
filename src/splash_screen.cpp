@@ -23,12 +23,12 @@ SplashScreen::SplashScreen(Renderer* t_renderer) {
   std::string tyraSplash = FileUtils::fromCwd("splash/tyra.png");
 
   tyracraft = new Sprite;
-  tyracraft->setMode(Tyra::MODE_STRETCH);
+  tyracraft->mode = Tyra::MODE_STRETCH;
   tyracraft->size.set(width, height);
   tyracraft->position.set(0, 0);
 
   tyra = new Sprite;
-  tyra->setMode(Tyra::MODE_STRETCH);
+  tyra->mode = Tyra::MODE_STRETCH;
   tyra->size.set(width, height);
   tyra->position.set(0, 0);
 

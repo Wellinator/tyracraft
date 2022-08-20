@@ -340,7 +340,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
         // Check if is in frustum
         {
           u8 isInFrustum = chuncks[h]->blocks[i]->bbox->isInFrustum(
-              frustumPlanes, chuncks[h]->blocks[i]->model, 0);
+              frustumPlanes, chuncks[h]->blocks[i]->model);
           if (!isInFrustum) {
             return;
           }

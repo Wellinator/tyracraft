@@ -39,11 +39,11 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
 
   // Load title
   // Title
-  title[0].setMode(Tyra::MODE_STRETCH);
+  title[0].mode = Tyra::MODE_STRETCH;
   title[0].size.set(256, 128);
   title[0].position.set((halfWidth)-256, 64);
 
-  title[1].setMode(Tyra::MODE_STRETCH);
+  title[1].mode = Tyra::MODE_STRETCH;
   title[1].size.set(256, 128);
   title[1].position.set(halfWidth, 64);
 
@@ -55,7 +55,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
       ->addLink(title[1].id);
 
   // Buttons
-  btnCross.setMode(Tyra::MODE_STRETCH);
+  btnCross.mode = Tyra::MODE_STRETCH;
   btnCross.size.set(25, 25);
   btnCross.position.set(40,
                         this->t_renderer->core.getSettings().getHeight() - 52);
@@ -65,13 +65,13 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
       ->addLink(btnCross.id);
 
   // Load slots
-  slot[0].setMode(Tyra::MODE_STRETCH);
+  slot[0].mode = Tyra::MODE_STRETCH;
   slot[0].size.set(SLOT_WIDTH, 25);
   slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 265);
-  slot[1].setMode(Tyra::MODE_STRETCH);
+  slot[1].mode = Tyra::MODE_STRETCH;
   slot[1].size.set(SLOT_WIDTH, 25);
   slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 30);
-  slot[2].setMode(Tyra::MODE_STRETCH);
+  slot[2].mode = Tyra::MODE_STRETCH;
   slot[2].size.set(SLOT_WIDTH, 25);
   slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 60);
 
@@ -86,7 +86,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
       ->addLink(slot[2].id);
 
   // Texts
-  textPlayGame.setMode(Tyra::MODE_STRETCH);
+  textPlayGame.mode = Tyra::MODE_STRETCH;
   textPlayGame.size.set(80, 15);
   textPlayGame.position.set(halfWidth - 40, 265 + 35);
 
@@ -100,7 +100,7 @@ void MainMenu::init(Renderer* t_renderer, Audio* t_audio) {
       .add(FileUtils::fromCwd("assets/menu/play_game.png"))
       ->addLink(textPlayGame.id);
 
-  textSelect.setMode(Tyra::MODE_STRETCH);
+  textSelect.mode = Tyra::MODE_STRETCH;
   textSelect.size.set(64, 16);
   textSelect.position.set(
       30 + 40, this->t_renderer->core.getSettings().getHeight() - 47);
