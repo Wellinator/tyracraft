@@ -255,6 +255,7 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
+  t_chunck->clear();
   for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
     for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
@@ -301,14 +302,13 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
     }
   }
 
-  t_chunck->isLoaded = 1;
+  t_chunck->state = ChunkState::Loaded;
 }
 
 void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
                                        Camera* t_camera,
                                        std::vector<Chunck*> chuncks) {
   u8 hitedABlock = 0;
-  float distance = -1.0f;
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
   Block* tempTargetBlock;
@@ -325,7 +325,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
-    if (!chuncks[h]->isLoaded) continue;
+    if (chuncks[h]->state != ChunkState::Loaded) continue;
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
       float distanceFromCurrentBlockToPlayer =
           playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());

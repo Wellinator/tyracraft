@@ -57,7 +57,7 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->isLoaded) {
+    if (chuncks[i]->state == ChunkState::Loaded) {
       for (u16 j = 0; j < chuncks[i]->blocks.size(); j++)
         this->loadedBlocks.push_back(chuncks[i]->blocks[j]);
     }
@@ -70,8 +70,10 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
 
   if (this->isLoadingData || this->isUnLoadingData) {
-    if (framesCounter % 25 == 0) this->loadNextChunk();
-    if (framesCounter % 40 == 0) this->unloadChunckAsync();
+    if (framesCounter % 40 == 0 && this->tempChuncksToLoad.size() > 0)
+      this->loadNextChunk();
+    if (framesCounter % 25 == 0 && this->tempChuncksToUnLoad.size() > 0)
+      this->unloadChunckAsync();
     return;
   } else if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
@@ -105,13 +107,13 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
       // Add chunck to load async
-      if (!chuncks[i]->isLoaded) {
+      if (chuncks[i]->state == ChunkState::Clean) {
         if (force_loading)
           this->terrainManager->buildChunk(chuncks[i]);
         else
           tempChuncksToLoad.push_back(chuncks[i]);
       }
-    } else if (chuncks[i]->isLoaded) {
+    } else if (chuncks[i]->state == ChunkState::Loaded) {
       // Add chunck to unload async
       tempChuncksToUnLoad.push_back(chuncks[i]);
     }
@@ -124,7 +126,7 @@ void World::loadNextChunk() {
   for (u16 i = 0; i <= tempChuncksToLoad.size(); i++) {
     this->isLoadingData = i < tempChuncksToLoad.size();
     if (isLoadingData) {
-      if (tempChuncksToLoad[i]->isLoaded) continue;
+      if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
       this->terrainManager->buildChunk(tempChuncksToLoad[i]);
     }
     break;
@@ -138,8 +140,8 @@ void World::unloadChunckAsync() {
   for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++) {
     this->isUnLoadingData = i < tempChuncksToUnLoad.size();
     if (isUnLoadingData) {
-      if (!tempChuncksToUnLoad[i]->isLoaded) continue;
-      tempChuncksToUnLoad[i]->clear();
+      if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
+      tempChuncksToUnLoad[i]->clearAsync();
     }
     break;
   }

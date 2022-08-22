@@ -49,6 +49,7 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                       BlockManager* t_blockManager) {
+  if (this->state != ChunkState::Loaded) return;
   t_renderer->renderer3D.usePipeline(mcPip);
   mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
                 false);
@@ -76,7 +77,8 @@ void Chunck::clear() {
 
   this->blocks.clear();
   this->blocks.shrink_to_fit();
-  this->isLoaded = 0;
+
+  this->state = ChunkState::Clean;
 }
 
 void Chunck::addBlock(Block* t_block) {
@@ -111,8 +113,6 @@ void Chunck::filterSingleAndMultiBlocks() {
   }
 
   this->hasChanged = 0;
-  printf("singleTexBlocks: %i\n", singleTexBlocks.size());
-  printf("multiTexBlocks: %i\n", multiTexBlocks.size());
   return;
 }
 
@@ -130,4 +130,91 @@ void Chunck::clearMcpipBlocks() {
   this->singleTexBlocks.shrink_to_fit();
   this->multiTexBlocks.clear();
   this->multiTexBlocks.shrink_to_fit();
+}
+
+void Chunck::clearAsync() {
+  if (this->state == ChunkState::Clean) return;
+  if (this->state != ChunkState::Unloading) {
+    this->unloaderCounter = this->blocks.size() - 1;
+    this->singleTexUnloaderCounter = this->singleTexBlocks.size() - 1;
+    this->multiTexUnloaderCounter = this->multiTexBlocks.size() - 1;
+    this->state = ChunkState::Unloading;
+  }
+
+  if (this->clearMcpipSingleTexBlocksAsync() &&
+      this->clearMcpipMultiTexBlocksAsync() && this->clearBlocksAsync()) {
+    this->state = ChunkState::Clean;
+  }
+}
+
+u8 Chunck::clearMcpipSingleTexBlocksAsync() {
+  if (this->singleTexUnloaderCounter <= 0) return true;
+  u8 unloaded_items = 0;
+  for (int i = singleTexUnloaderCounter; i >= 0; i--) {
+    delete this->singleTexBlocks[i];
+    this->singleTexBlocks[i] = NULL;
+
+    unloaded_items++;
+    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
+      int updatedValue = singleTexUnloaderCounter - CHUNK_BATCH;
+      singleTexUnloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
+      break;
+    }
+  }
+
+  if (this->singleTexUnloaderCounter <= 0) {
+    this->singleTexBlocks.clear();
+    this->singleTexBlocks.shrink_to_fit();
+    return 1;
+  }
+
+  return 0;
+}
+
+u8 Chunck::clearMcpipMultiTexBlocksAsync() {
+  if (this->multiTexUnloaderCounter <= 0) return true;
+  u8 unloaded_items = 0;
+  for (int i = multiTexUnloaderCounter; i >= 0; i--) {
+    delete this->multiTexBlocks[i];
+    this->multiTexBlocks[i] = NULL;
+
+    unloaded_items++;
+    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
+      int updatedValue = multiTexUnloaderCounter - CHUNK_BATCH;
+      multiTexUnloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
+      break;
+    }
+  }
+
+  if (this->multiTexUnloaderCounter <= 0) {
+    this->multiTexBlocks.clear();
+    this->multiTexBlocks.shrink_to_fit();
+    return 1;
+  }
+
+  return 0;
+}
+
+u8 Chunck::clearBlocksAsync() {
+  if (this->unloaderCounter <= 0) return true;
+  u8 unloaded_items = 0;
+  for (int i = unloaderCounter; i >= 0; i--) {
+    delete this->blocks[i];
+    this->blocks[i] = NULL;
+
+    unloaded_items++;
+    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
+      int updatedValue = unloaderCounter - CHUNK_BATCH;
+      unloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
+      break;
+    }
+  }
+
+  if (this->unloaderCounter <= 0) {
+    this->blocks.clear();
+    this->blocks.shrink_to_fit();
+    return 1;
+  }
+
+  return 0;
 }
