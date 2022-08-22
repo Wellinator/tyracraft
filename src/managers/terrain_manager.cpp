@@ -81,7 +81,7 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
     }
   }
 
-  this->generateWater();
+  // this->generateWater();
   this->generateTrees();
 }
 
@@ -255,8 +255,6 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  t_chunck->clear();
-
   for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
     for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
