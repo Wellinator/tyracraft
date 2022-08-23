@@ -59,5 +59,6 @@ class World {
   void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
   void loadNextChunk();
   void unloadChunckAsync();
+  int willChunkBeUnloaded(Chunck* t_chunck);
   void renderBlockDamageOverlay();
 };

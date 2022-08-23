@@ -36,6 +36,9 @@ class Chunck {
   int singleTexloaderCounter = 0;
   int multiTexUnloaderCounter = 0;
   int multiTexloaderCounter = 0;
+
+  Vec4 lastLoadedOffset;
+
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
@@ -49,14 +52,14 @@ class Chunck {
   void update(Player* t_player);
   void clear();
   void clearAsync();
-  void setToChanged();
+  void updateDrawData();
+  void resetLastLoadedOffset();
 
   // Block controllers
   void addBlock(Block* t_block);
 
  private:
   Texture* texture;
-  u8 hasChanged;
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
 

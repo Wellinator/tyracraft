@@ -70,12 +70,13 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
 
   if (this->isLoadingData || this->isUnLoadingData) {
-    if (framesCounter % 40 == 0 && this->tempChuncksToLoad.size() > 0)
+    if (framesCounter == 1 || framesCounter == 30) {
       this->loadNextChunk();
-    if (framesCounter % 25 == 0 && this->tempChuncksToUnLoad.size() > 0)
       this->unloadChunckAsync();
-    return;
-  } else if (this->terrainManager->shouldUpdateChunck()) {
+    }
+  }
+
+  if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
     Chunck* chunckToUpdate =
         this->chunckManager->getChunckByPosition(changedPosition);
@@ -108,10 +109,19 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
       // Add chunck to load async
       if (chuncks[i]->state == ChunkState::Clean) {
-        if (force_loading)
+        if (force_loading) {
           this->terrainManager->buildChunk(chuncks[i]);
-        else
+        } else {
+          // Check if is in the unloading chunk stack and remove it
+          // {
+          //   int willBeUnloadedIndex = this->willChunkBeUnloaded(chuncks[i]);
+          //   if (willBeUnloadedIndex > -1) {
+          //     tempChuncksToUnLoad.erase(tempChuncksToUnLoad.begin() +
+          //                               willBeUnloadedIndex);
+          //   }
+          // }
           tempChuncksToLoad.push_back(chuncks[i]);
+        }
       }
     } else if (chuncks[i]->state == ChunkState::Loaded) {
       // Add chunck to unload async
@@ -181,4 +191,11 @@ void World::renderBlockDamageOverlay() {
       mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
     }
   }
+}
+
+int World::willChunkBeUnloaded(Chunck* t_chunck) {
+  for (size_t i = 0; i < this->tempChuncksToUnLoad.size(); i++) {
+    if (this->tempChuncksToUnLoad[i]->id == t_chunck->id) return i;
+  }
+  return -1;
 }

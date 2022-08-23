@@ -25,7 +25,6 @@ TerrainManager::~TerrainManager() {}
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
                           MinecraftPipeline* mcPip,
                           BlockManager* blockManager) {
-  printf("Iniating Terrain manger\n");
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
   this->t_mcPip = mcPip;
@@ -302,6 +301,76 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
     }
   }
 
+  t_chunck->updateDrawData();
+  t_chunck->state = ChunkState::Loaded;
+}
+
+void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
+  if (t_chunck->state == ChunkState::Loaded) return;
+  if (t_chunck->state != ChunkState::Loading) {
+    t_chunck->clear();
+    t_chunck->resetLastLoadedOffset();
+    t_chunck->state = ChunkState::Loading;
+  }
+
+  u16 loaded_index_counter = 0;
+  for (int z = (int)t_chunck->lastLoadedOffset.z; z < t_chunck->maxCorner->z;
+       z++) {
+    for (int x = (int)t_chunck->lastLoadedOffset.x; x < t_chunck->maxCorner->x;
+         x++) {
+      for (int y = (int)t_chunck->lastLoadedOffset.y;
+           y < OVERWORLD_MAX_DISTANCE; y++) {
+        unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+        u8 block_type = this->terrain[blockIndex];
+        if (block_type == AIR_BLOCK) continue;
+
+        Vec4* tempBlockOffset = new Vec4(x, y, z);
+        Vec4 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+        u8 isHidden = this->isBlockHidden(
+            tempBlockOffset->x, tempBlockOffset->y, tempBlockOffset->z);
+
+        // Are block's coordinates in world range?
+        if (!isHidden &&
+            tempBlockOffset->collidesBox(minWorldPos, maxWorldPos)) {
+          BlockInfo* blockInfo =
+              this->t_blockManager->getBlockTexOffsetByType(block_type);
+          if (blockInfo != nullptr) {
+            Block* block = new Block(blockInfo);
+            block->index = blockIndex;
+
+            float bright = this->getBlockLuminosity(tempBlockOffset->y);
+            block->color = Color(bright, bright, bright, 128.0F);
+
+            block->setPosition(blockPosition);
+            block->scale.scale(BLOCK_SIZE);
+            block->updateModelMatrix();
+
+            // Calc min and max corners
+            {
+              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+            }
+
+            t_chunck->addBlock(block);
+
+            loaded_index_counter++;
+            if (loaded_index_counter >= LOAD_CHUNK_BATCH) {
+              t_chunck->lastLoadedOffset.set(*tempBlockOffset);
+              return;
+            }
+          }
+        }
+
+        delete tempBlockOffset;
+        tempBlockOffset = NULL;
+      }
+    }
+  }
+
+  t_chunck->updateDrawData();
+  t_chunck->resetLastLoadedOffset();
   t_chunck->state = ChunkState::Loaded;
 }
 
@@ -375,7 +444,6 @@ void TerrainManager::removeBlock() {
 }
 
 void TerrainManager::putBlock(u8 blockToPlace) {
-  printf("Put block\n");
   if (this->targetBlock == NULL || this->targetBlock == nullptr) return;
 
   // Prevent to put a block at the player position;

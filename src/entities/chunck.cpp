@@ -21,6 +21,7 @@ Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
   vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
   vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
   this->bbox = new BBox(*vertices, count);
+  this->resetLastLoadedOffset();
 };
 
 Chunck::~Chunck() {
@@ -29,9 +30,6 @@ Chunck::~Chunck() {
 };
 
 void Chunck::update(Player* t_player) {
-  if (this->hasChanged) {
-    this->filterSingleAndMultiBlocks();
-  }
   // this->updateBlocks(*t_player->getPosition());
 }
 
@@ -81,10 +79,7 @@ void Chunck::clear() {
   this->state = ChunkState::Clean;
 }
 
-void Chunck::addBlock(Block* t_block) {
-  this->blocks.push_back(t_block);
-  this->setToChanged();
-}
+void Chunck::addBlock(Block* t_block) { this->blocks.push_back(t_block); }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
@@ -95,7 +90,9 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
   }
 }
 
-void Chunck::setToChanged() { this->hasChanged = 1; }
+void Chunck::updateDrawData() {
+  this->filterSingleAndMultiBlocks();
+}
 
 void Chunck::filterSingleAndMultiBlocks() {
   this->clearMcpipBlocks();
@@ -111,8 +108,6 @@ void Chunck::filterSingleAndMultiBlocks() {
       multiTexBlocks.push_back(tempMcpipBlock);
     }
   }
-
-  this->hasChanged = 0;
   return;
 }
 
@@ -155,8 +150,8 @@ u8 Chunck::clearMcpipSingleTexBlocksAsync() {
     this->singleTexBlocks[i] = NULL;
 
     unloaded_items++;
-    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
-      int updatedValue = singleTexUnloaderCounter - CHUNK_BATCH;
+    if (i == 0 || unloaded_items >= UNLOAD_CHUNK_BATCH) {
+      int updatedValue = singleTexUnloaderCounter - UNLOAD_CHUNK_BATCH;
       singleTexUnloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
       break;
     }
@@ -179,8 +174,8 @@ u8 Chunck::clearMcpipMultiTexBlocksAsync() {
     this->multiTexBlocks[i] = NULL;
 
     unloaded_items++;
-    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
-      int updatedValue = multiTexUnloaderCounter - CHUNK_BATCH;
+    if (i == 0 || unloaded_items >= UNLOAD_CHUNK_BATCH) {
+      int updatedValue = multiTexUnloaderCounter - UNLOAD_CHUNK_BATCH;
       multiTexUnloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
       break;
     }
@@ -203,8 +198,8 @@ u8 Chunck::clearBlocksAsync() {
     this->blocks[i] = NULL;
 
     unloaded_items++;
-    if (i == 0 || unloaded_items >= CHUNK_BATCH) {
-      int updatedValue = unloaderCounter - CHUNK_BATCH;
+    if (i == 0 || unloaded_items >= UNLOAD_CHUNK_BATCH) {
+      int updatedValue = unloaderCounter - UNLOAD_CHUNK_BATCH;
       unloaderCounter = updatedValue <= 0 ? 0 : updatedValue;
       break;
     }
@@ -217,4 +212,8 @@ u8 Chunck::clearBlocksAsync() {
   }
 
   return 0;
+}
+
+void Chunck::resetLastLoadedOffset() {
+  this->lastLoadedOffset.set(Vec4(this->minCorner->x, OVERWORLD_MIN_DISTANCE, this->minCorner->z));
 }
