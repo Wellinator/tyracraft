@@ -118,6 +118,7 @@ void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
       newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
     // Maybe has died, teleport to spaw area
     printf("\nReseting player position to:\n");
+    // FIXME: reset loaded chunks to spawn position;
     this->spawnArea.print();
     this->mesh->getPosition()->set(this->spawnArea);
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
