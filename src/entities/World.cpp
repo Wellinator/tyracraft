@@ -69,30 +69,22 @@ const std::vector<Block*> World::getLoadedBlocks() {
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
 
-  if (this->isLoadingData || this->isUnLoadingData) {
-    if (framesCounter == 1 || framesCounter == 30) {
-      this->loadNextChunk();
-      this->unloadChunckAsync();
-    }
-  }
-
   if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
-    Chunck* chunckToUpdate =
-        this->chunckManager->getChunckByPosition(changedPosition);
+    Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(changedPosition);
     this->terrainManager->buildChunk(chunckToUpdate);
     this->terrainManager->setChunckToUpdated();
-  } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) >
-             CHUNCK_SIZE) {
+  } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
-    Chunck* currentChunck =
-        this->chunckManager->getChunckByPosition(*t_player->getPosition());
+    Chunck* currentChunck = this->chunckManager->getChunckByPosition(*t_player->getPosition());
     if (t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
-      this->terrainManager->buildChunk(currentChunck);
       this->scheduleChunksNeighbors(currentChunck);
     }
   }
+
+  this->loadNextChunk();
+  this->unloadChunckAsync();
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
@@ -100,64 +92,38 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
     // Prevent to reload the current chunck more than once
-    if (t_chunck->id == chuncks[i]->id) continue;
     Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
-
-    float distanceToCenterChunck =
-        floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
+    float distanceToCenterChunck = floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
-      // Add chunck to load async
-      if (chuncks[i]->state == ChunkState::Clean) {
-        if (force_loading) {
-          this->terrainManager->buildChunk(chuncks[i]);
-        } else {
-          // Check if is in the unloading chunk stack and remove it
-          // {
-          //   int willBeUnloadedIndex = this->willChunkBeUnloaded(chuncks[i]);
-          //   if (willBeUnloadedIndex > -1) {
-          //     tempChuncksToUnLoad.erase(tempChuncksToUnLoad.begin() +
-          //                               willBeUnloadedIndex);
-          //   }
-          // }
-          tempChuncksToLoad.push_back(chuncks[i]);
-        }
-      }
-    } else if (chuncks[i]->state == ChunkState::Loaded) {
-      // Add chunck to unload async
-      tempChuncksToUnLoad.push_back(chuncks[i]);
+      if(force_loading){
+        this->terrainManager->buildChunk(chuncks[i]);
+      }else if (chuncks[i]->state != ChunkState::Loaded)
+      // Add chunck to load
+        this->addChunkToLoadAsync(chuncks[i]);
+    } else if (chuncks[i]->state != ChunkState::Clean) {
+      // Add chunck to unload
+      this->addChunkToUnloadAsync(chuncks[i]);
     }
   }
-
-  if (tempChuncksToLoad.size() > 0) this->isLoadingData = 1;
 }
 
 void World::loadNextChunk() {
+  if (tempChuncksToLoad.size() == 0) return;
   for (u16 i = 0; i <= tempChuncksToLoad.size(); i++) {
-    this->isLoadingData = i < tempChuncksToLoad.size();
-    if (isLoadingData) {
-      if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
-      this->terrainManager->buildChunk(tempChuncksToLoad[i]);
-    }
-    break;
+    printf("LOADING CHUNK -> %i\n", tempChuncksToLoad[i]->id);
+    this->terrainManager->buildChunk(tempChuncksToLoad[i]);
   }
-  if (!this->isLoadingData) {
-    tempChuncksToLoad.clear();
-  }
+  tempChuncksToLoad.clear();
 }
 
 void World::unloadChunckAsync() {
+  if (tempChuncksToUnLoad.size() == 0) return;
   for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++) {
-    this->isUnLoadingData = i < tempChuncksToUnLoad.size();
-    if (isUnLoadingData) {
-      if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
-      tempChuncksToUnLoad[i]->clearAsync();
-    }
-    break;
+    printf("UNLOADING CHUNK -> %i\n", tempChuncksToUnLoad[i]->id);
+    tempChuncksToUnLoad[i]->clear();
   }
-  if (!this->isUnLoadingData) {
-    tempChuncksToUnLoad.clear();
-  }
+  tempChuncksToUnLoad.clear();
 }
 
 void World::renderBlockDamageOverlay() {
@@ -193,9 +159,26 @@ void World::renderBlockDamageOverlay() {
   }
 }
 
-int World::willChunkBeUnloaded(Chunck* t_chunck) {
-  for (size_t i = 0; i < this->tempChuncksToUnLoad.size(); i++) {
-    if (this->tempChuncksToUnLoad[i]->id == t_chunck->id) return i;
-  }
-  return -1;
+void World::addChunkToLoadAsync(Chunck* t_chunck) {
+  // Avoid being suplicated;
+  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++)
+    if (tempChuncksToLoad[i]->id == t_chunck->id) return;
+
+  // Avoid unload and load the same chunk at the same time
+  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++)
+    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+
+  tempChuncksToLoad.push_back(t_chunck);
+}
+
+void World::addChunkToUnloadAsync(Chunck* t_chunck) {
+  // Avoid being suplicated;
+  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++)
+    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+
+  // Avoid unload and load the same chunk at the same time
+  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++)
+    if (tempChuncksToLoad[i]->id == t_chunck->id) return;
+
+  tempChuncksToUnLoad.push_back(t_chunck);
 }

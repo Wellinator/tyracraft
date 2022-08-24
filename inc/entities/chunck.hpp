@@ -21,7 +21,7 @@ using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
-enum class ChunkState { Loading, Unloading, Loaded, Clean };
+enum class ChunkState { Loaded, Clean };
 
 class Chunck {
  public:
@@ -36,8 +36,7 @@ class Chunck {
   int singleTexloaderCounter = 0;
   int multiTexUnloaderCounter = 0;
   int multiTexloaderCounter = 0;
-
-  Vec4 lastLoadedOffset;
+  u16 lastLoadedOffset;
 
   ChunkState state = ChunkState::Clean;
 
@@ -51,9 +50,7 @@ class Chunck {
                 BlockManager* t_blockManager);
   void update(Player* t_player);
   void clear();
-  void clearAsync();
   void updateDrawData();
-  void resetLastLoadedOffset();
 
   // Block controllers
   void addBlock(Block* t_block);
@@ -69,7 +66,4 @@ class Chunck {
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
   void clearMcpipBlocks();
-  u8 clearMcpipSingleTexBlocksAsync();
-  u8 clearMcpipMultiTexBlocksAsync();
-  u8 clearBlocksAsync();
 };
