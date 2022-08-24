@@ -71,20 +71,23 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 
   if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
-    Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(changedPosition);
+    Chunck* chunckToUpdate =
+        this->chunckManager->getChunckByPosition(changedPosition);
     this->terrainManager->buildChunk(chunckToUpdate);
     this->terrainManager->setChunckToUpdated();
-  } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
+  } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) >
+             CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
-    Chunck* currentChunck = this->chunckManager->getChunckByPosition(*t_player->getPosition());
+    Chunck* currentChunck =
+        this->chunckManager->getChunckByPosition(*t_player->getPosition());
     if (t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
       this->scheduleChunksNeighbors(currentChunck);
     }
   }
 
-  this->loadNextChunk();
-  this->unloadChunckAsync();
+  this->unloadScheduledChunks();
+  this->loadScheduledChunks();
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
@@ -93,13 +96,14 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   for (u16 i = 0; i < chuncks.size(); i++) {
     // Prevent to reload the current chunck more than once
     Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
-    float distanceToCenterChunck = floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
+    float distanceToCenterChunck =
+        floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
-      if(force_loading){
+      if (force_loading) {
         this->terrainManager->buildChunk(chuncks[i]);
-      }else if (chuncks[i]->state != ChunkState::Loaded)
-      // Add chunck to load
+      } else if (chuncks[i]->state != ChunkState::Loaded)
+        // Add chunck to load
         this->addChunkToLoadAsync(chuncks[i]);
     } else if (chuncks[i]->state != ChunkState::Clean) {
       // Add chunck to unload
@@ -108,19 +112,17 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   }
 }
 
-void World::loadNextChunk() {
+void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() == 0) return;
-  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++) {
-    printf("LOADING CHUNK -> %i\n", tempChuncksToLoad[i]->id);
+  for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
     this->terrainManager->buildChunk(tempChuncksToLoad[i]);
   }
   tempChuncksToLoad.clear();
 }
 
-void World::unloadChunckAsync() {
+void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() == 0) return;
-  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++) {
-    printf("UNLOADING CHUNK -> %i\n", tempChuncksToUnLoad[i]->id);
+  for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
     tempChuncksToUnLoad[i]->clear();
   }
   tempChuncksToUnLoad.clear();
@@ -161,11 +163,11 @@ void World::renderBlockDamageOverlay() {
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
   // Avoid being suplicated;
-  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++)
+  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
   // Avoid unload and load the same chunk at the same time
-  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++)
+  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
     if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
 
   tempChuncksToLoad.push_back(t_chunck);
@@ -173,11 +175,11 @@ void World::addChunkToLoadAsync(Chunck* t_chunck) {
 
 void World::addChunkToUnloadAsync(Chunck* t_chunck) {
   // Avoid being suplicated;
-  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++)
+  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
     if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
 
   // Avoid unload and load the same chunk at the same time
-  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++)
+  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
   tempChuncksToUnLoad.push_back(t_chunck);

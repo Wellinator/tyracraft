@@ -55,8 +55,8 @@ class World {
 
   void updateChunkByPlayerPosition(Player* player);
   void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
-  void loadNextChunk();
-  void unloadChunckAsync();
+  void loadScheduledChunks();
+  void unloadScheduledChunks();
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();
