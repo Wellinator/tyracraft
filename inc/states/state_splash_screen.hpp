@@ -1,13 +1,8 @@
-/*
-# ______       ____   ___
-#   |     \/   ____| |___|
-#   |     |   |   \  |   |
-#-----------------------------------------------------------------------
-# Copyright 2020, tyra - https://github.com/h4570/tyra
-# Licenced under Apache License 2.0
-# Sandro Sobczyński <sandro.sobczynski@gmail.com>
-*/
-
+#pragma once
+#include "file/file_utils.hpp"
+#include <string.h>
+#include "renderer/models/color.hpp"
+#include <debug/debug.hpp>
 #include <renderer/renderer.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/2d/sprite/sprite.hpp>
@@ -19,19 +14,24 @@
 #include <math.h>
 #include <string>
 #include "contants.hpp"
+#include "game_state.hpp"
 
-#pragma once
-
+using Tyra::Color;
+using Tyra::FileUtils;
 using Tyra::Renderer;
+using Tyra::RendererSettings;
 using Tyra::Sprite;
+using Tyra::TextureRepository;
 
-class SplashScreen {
+class StateSplashScreen : public GameState {
  public:
-  SplashScreen(Renderer* renderer);
-  ~SplashScreen();
+  StateSplashScreen(StateManager* t_context);
+  ~StateSplashScreen();
 
-  void render();
   u8 shouldBeDestroyed();
+  void init();
+  void update();
+  void render();
 
  private:
   void unloadTextures();
@@ -40,7 +40,6 @@ class SplashScreen {
   void renderTyraCraftSplash();
   u8 hasFinished();
 
-  Renderer* t_renderer;
   Sprite* tyracraft = new Sprite;
   Sprite* tyra = new Sprite;
   u8 alpha = 1;
