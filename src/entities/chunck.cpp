@@ -29,9 +29,6 @@ Chunck::~Chunck() {
 };
 
 void Chunck::update(Player* t_player) {
-  if (this->hasChanged) {
-    this->filterSingleAndMultiBlocks();
-  }
   // this->updateBlocks(*t_player->getPosition());
 }
 
@@ -49,6 +46,7 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                       BlockManager* t_blockManager) {
+  if (this->state != ChunkState::Loaded) return;
   t_renderer->renderer3D.usePipeline(mcPip);
   mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
                 false);
@@ -76,13 +74,11 @@ void Chunck::clear() {
 
   this->blocks.clear();
   this->blocks.shrink_to_fit();
-  this->isLoaded = 0;
+
+  this->state = ChunkState::Clean;
 }
 
-void Chunck::addBlock(Block* t_block) {
-  this->blocks.push_back(t_block);
-  this->setToChanged();
-}
+void Chunck::addBlock(Block* t_block) { this->blocks.push_back(t_block); }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
@@ -93,7 +89,9 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
   }
 }
 
-void Chunck::setToChanged() { this->hasChanged = 1; }
+void Chunck::updateDrawData() {
+  this->filterSingleAndMultiBlocks();
+}
 
 void Chunck::filterSingleAndMultiBlocks() {
   this->clearMcpipBlocks();
@@ -109,10 +107,6 @@ void Chunck::filterSingleAndMultiBlocks() {
       multiTexBlocks.push_back(tempMcpipBlock);
     }
   }
-
-  this->hasChanged = 0;
-  printf("singleTexBlocks: %i\n", singleTexBlocks.size());
-  printf("multiTexBlocks: %i\n", multiTexBlocks.size());
   return;
 }
 

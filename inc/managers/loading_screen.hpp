@@ -13,7 +13,7 @@ using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Vec4;
 
-enum LoadingState { Loading = 0, Complete = 1 };
+enum class LoadingState { Loading = 0, Complete = 1 };
 
 class LoadingScreen {
  public:

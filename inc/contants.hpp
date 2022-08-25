@@ -13,7 +13,6 @@
 #define OVERWORLD_SIZE ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
-#define DRAW_DISTANCE_IN_CHUNKS 3
 #define CHUNCK_SIZE 16
 #define CHUNCK_HEIGHT OVERWORLD_V_DISTANCE
 #define CHUNCK_LENGTH ((CHUNCK_SIZE * CHUNCK_SIZE) * CHUNCK_HEIGHT)
@@ -21,6 +20,13 @@
 #define BLOCK_SIZE 8.0F
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
+
+// Defines how many chunks will be loaded from player position
+#define DRAW_DISTANCE_IN_CHUNKS 2
+
+// Define how many blocks will be loaded/unloaded from chunk per step in async loading
+#define UNLOAD_CHUNK_BATCH 256
+#define LOAD_CHUNK_BATCH 128
 
 /**
  * Define blocks IDs

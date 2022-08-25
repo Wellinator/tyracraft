@@ -57,7 +57,7 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->isLoaded) {
+    if (chuncks[i]->state == ChunkState::Loaded) {
       for (u16 j = 0; j < chuncks[i]->blocks.size(); j++)
         this->loadedBlocks.push_back(chuncks[i]->blocks[j]);
     }
@@ -69,11 +69,7 @@ const std::vector<Block*> World::getLoadedBlocks() {
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
 
-  if (this->isLoadingData || this->isUnLoadingData) {
-    if (framesCounter % 25 == 0) this->loadNextChunk();
-    if (framesCounter % 40 == 0) this->unloadChunckAsync();
-    return;
-  } else if (this->terrainManager->shouldUpdateChunck()) {
+  if (this->terrainManager->shouldUpdateChunck()) {
     Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
     Chunck* chunckToUpdate =
         this->chunckManager->getChunckByPosition(changedPosition);
@@ -86,10 +82,12 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
         this->chunckManager->getChunckByPosition(*t_player->getPosition());
     if (t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
-      this->terrainManager->buildChunk(currentChunck);
       this->scheduleChunksNeighbors(currentChunck);
     }
   }
+
+  this->unloadScheduledChunks();
+  this->loadScheduledChunks();
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
@@ -97,55 +95,37 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
     // Prevent to reload the current chunck more than once
-    if (t_chunck->id == chuncks[i]->id) continue;
     Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
-
     float distanceToCenterChunck =
         floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
-      // Add chunck to load async
-      if (!chuncks[i]->isLoaded) {
-        if (force_loading)
-          this->terrainManager->buildChunk(chuncks[i]);
-        else
-          tempChuncksToLoad.push_back(chuncks[i]);
-      }
-    } else if (chuncks[i]->isLoaded) {
-      // Add chunck to unload async
-      tempChuncksToUnLoad.push_back(chuncks[i]);
+      if (force_loading) {
+        this->terrainManager->buildChunk(chuncks[i]);
+      } else if (chuncks[i]->state != ChunkState::Loaded)
+        // Add chunck to load
+        this->addChunkToLoadAsync(chuncks[i]);
+    } else if (chuncks[i]->state != ChunkState::Clean) {
+      // Add chunck to unload
+      this->addChunkToUnloadAsync(chuncks[i]);
     }
-  }
-
-  if (tempChuncksToLoad.size() > 0) this->isLoadingData = 1;
-}
-
-void World::loadNextChunk() {
-  for (u16 i = 0; i <= tempChuncksToLoad.size(); i++) {
-    this->isLoadingData = i < tempChuncksToLoad.size();
-    if (isLoadingData) {
-      if (tempChuncksToLoad[i]->isLoaded) continue;
-      this->terrainManager->buildChunk(tempChuncksToLoad[i]);
-    }
-    break;
-  }
-  if (!this->isLoadingData) {
-    tempChuncksToLoad.clear();
   }
 }
 
-void World::unloadChunckAsync() {
-  for (u16 i = 0; i <= tempChuncksToUnLoad.size(); i++) {
-    this->isUnLoadingData = i < tempChuncksToUnLoad.size();
-    if (isUnLoadingData) {
-      if (!tempChuncksToUnLoad[i]->isLoaded) continue;
-      tempChuncksToUnLoad[i]->clear();
-    }
-    break;
+void World::loadScheduledChunks() {
+  if (tempChuncksToLoad.size() == 0) return;
+  for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
+    this->terrainManager->buildChunk(tempChuncksToLoad[i]);
   }
-  if (!this->isUnLoadingData) {
-    tempChuncksToUnLoad.clear();
+  tempChuncksToLoad.clear();
+}
+
+void World::unloadScheduledChunks() {
+  if (tempChuncksToUnLoad.size() == 0) return;
+  for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
+    tempChuncksToUnLoad[i]->clear();
   }
+  tempChuncksToUnLoad.clear();
 }
 
 void World::renderBlockDamageOverlay() {
@@ -179,4 +159,28 @@ void World::renderBlockDamageOverlay() {
       mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
     }
   }
+}
+
+void World::addChunkToLoadAsync(Chunck* t_chunck) {
+  // Avoid being suplicated;
+  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
+    if (tempChuncksToLoad[i]->id == t_chunck->id) return;
+
+  // Avoid unload and load the same chunk at the same time
+  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
+    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+
+  tempChuncksToLoad.push_back(t_chunck);
+}
+
+void World::addChunkToUnloadAsync(Chunck* t_chunck) {
+  // Avoid being suplicated;
+  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
+    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+
+  // Avoid unload and load the same chunk at the same time
+  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
+    if (tempChuncksToLoad[i]->id == t_chunck->id) return;
+
+  tempChuncksToUnLoad.push_back(t_chunck);
 }

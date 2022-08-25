@@ -49,15 +49,15 @@ class World {
   Vec4* lastPlayerPosition = new Vec4();
   u8 framesCounter = 0;
 
-  u8 isLoadingData = 0;
-  u8 isUnLoadingData = 0;
   std::vector<Chunck*> tempChuncksToLoad;
   std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
 
   void updateChunkByPlayerPosition(Player* player);
   void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
-  void loadNextChunk();
-  void unloadChunckAsync();
+  void loadScheduledChunks();
+  void unloadScheduledChunks();
+  void addChunkToLoadAsync(Chunck* t_chunck);
+  void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();
 };

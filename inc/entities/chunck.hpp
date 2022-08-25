@@ -14,12 +14,14 @@
 #include "renderer/3d/bbox/bbox.hpp"
 #include <math/m4x4.hpp>
 
+using Tyra::BBox;
+using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
-using Tyra::BBox;
-using Tyra::M4x4;
+
+enum class ChunkState { Loaded, Clean };
 
 class Chunck {
  public:
@@ -27,7 +29,17 @@ class Chunck {
   ~Chunck();
 
   u16 id = 0;
-  u8 isLoaded = 0;
+
+  int unloaderCounter = 0;
+  int loaderCounter = 0;
+  int singleTexUnloaderCounter = 0;
+  int singleTexloaderCounter = 0;
+  int multiTexUnloaderCounter = 0;
+  int multiTexloaderCounter = 0;
+  u16 lastLoadedOffset;
+
+  ChunkState state = ChunkState::Clean;
+
   std::vector<Block*> blocks;
   Vec4* minCorner = new Vec4();
   Vec4* maxCorner = new Vec4();
@@ -38,14 +50,13 @@ class Chunck {
                 BlockManager* t_blockManager);
   void update(Player* t_player);
   void clear();
-  void setToChanged();
+  void updateDrawData();
 
   // Block controllers
   void addBlock(Block* t_block);
 
  private:
   Texture* texture;
-  u8 hasChanged;
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
 
