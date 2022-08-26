@@ -30,6 +30,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
 void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                    const float& deltaTime) {
   this->framesCounter++;
+  if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getChuncks(), deltaTime);
@@ -68,15 +69,7 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-
-  if (this->terrainManager->shouldUpdateChunck()) {
-    Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
-    Chunck* chunckToUpdate =
-        this->chunckManager->getChunckByPosition(changedPosition);
-    this->terrainManager->buildChunk(chunckToUpdate);
-    this->terrainManager->setChunckToUpdated();
-  } else if (this->lastPlayerPosition->distanceTo(currentPlayerPos) >
-             CHUNCK_SIZE) {
+  if (this->lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
     Chunck* currentChunck =
         this->chunckManager->getChunckByPosition(*t_player->getPosition());
@@ -90,11 +83,19 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   this->loadScheduledChunks();
 }
 
+void World::reloadChangedChunk() {
+  Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
+  Chunck* chunckToUpdate =
+      this->chunckManager->getChunckByPosition(changedPosition);
+  this->terrainManager->buildChunk(chunckToUpdate);
+  this->terrainManager->setChunckToUpdated();
+}
+
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   Vec4 offset = (*t_chunck->maxCorner + *t_chunck->minCorner) / 2;
   auto chuncks = this->chunckManager->getChuncks();
+
   for (u16 i = 0; i < chuncks.size(); i++) {
-    // Prevent to reload the current chunck more than once
     Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
     float distanceToCenterChunck =
         floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
@@ -115,7 +116,9 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() == 0) return;
   for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
+    if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
     this->terrainManager->buildChunk(tempChuncksToLoad[i]);
+    return;
   }
   tempChuncksToLoad.clear();
 }
@@ -123,7 +126,9 @@ void World::loadScheduledChunks() {
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() == 0) return;
   for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
+    if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
     tempChuncksToUnLoad[i]->clear();
+    return;
   }
   tempChuncksToUnLoad.clear();
 }
