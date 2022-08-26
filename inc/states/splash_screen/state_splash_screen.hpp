@@ -1,5 +1,5 @@
 #pragma once
-#include "file/file_utils.hpp"
+#include <file/file_utils.hpp>
 #include <string.h>
 #include "renderer/models/color.hpp"
 #include <debug/debug.hpp>
@@ -14,7 +14,8 @@
 #include <math.h>
 #include <string>
 #include "contants.hpp"
-#include "game_state.hpp"
+#include "states/game_state.hpp"
+#include "states/context.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -25,7 +26,7 @@ using Tyra::TextureRepository;
 
 class StateSplashScreen : public GameState {
  public:
-  StateSplashScreen(StateManager* t_context);
+  StateSplashScreen(Context* context);
   ~StateSplashScreen();
 
   u8 shouldBeDestroyed();

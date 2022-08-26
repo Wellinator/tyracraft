@@ -1,8 +1,8 @@
-#include "states/state_splash_screen.hpp"
+#include "states/splash_screen/state_splash_screen.hpp"
 
-StateSplashScreen::StateSplashScreen(StateManager* t_context) {
-  this->context = t_context;
-  this->init();
+StateSplashScreen::StateSplashScreen(Context* t_context)
+    : GameState(t_context) {
+    this->init();
 };
 
 StateSplashScreen::~StateSplashScreen() { this->unloadTextures(); };
