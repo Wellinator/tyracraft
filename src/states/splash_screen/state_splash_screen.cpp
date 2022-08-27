@@ -1,8 +1,9 @@
 #include "states/splash_screen/state_splash_screen.hpp"
+#include "states/main_menu/state_main_menu.hpp"
 
 StateSplashScreen::StateSplashScreen(Context* t_context)
     : GameState(t_context) {
-    this->init();
+  this->init();
 };
 
 StateSplashScreen::~StateSplashScreen() { this->unloadTextures(); };
@@ -33,7 +34,9 @@ void StateSplashScreen::init() {
   this->context->t_renderer->core.texture.repository.add(tyraSplash)
       ->addLink(tyra->id);
 };
+
 void StateSplashScreen::update() {
+  if (hasFinished()) this->nextState();
   this->alpha = isFading ? alpha - 1 : alpha + 1;
 
   if (alpha == 128) {
@@ -43,6 +46,7 @@ void StateSplashScreen::update() {
     isFading = 0;
   }
 };
+
 void StateSplashScreen::render() {
   if (!hasShowedTyra) {
     renderTyraSplash();
@@ -86,4 +90,6 @@ u8 StateSplashScreen::hasFinished() {
   return hasShowedTyraCraft && hasShowedTyra;
 }
 
-u8 StateSplashScreen::shouldBeDestroyed() { return this->hasFinished(); }
+void StateSplashScreen::nextState() {
+  this->context->setState(new StateMainMenu(this->context));
+}

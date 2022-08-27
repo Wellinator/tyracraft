@@ -29,7 +29,6 @@ class StateSplashScreen : public GameState {
   StateSplashScreen(Context* context);
   ~StateSplashScreen();
 
-  u8 shouldBeDestroyed();
   void init();
   void update();
   void render();
@@ -40,6 +39,7 @@ class StateSplashScreen : public GameState {
   void renderTyraSplash();
   void renderTyraCraftSplash();
   u8 hasFinished();
+  void nextState();
 
   Sprite* tyracraft = new Sprite;
   Sprite* tyra = new Sprite;
