@@ -1,13 +1,3 @@
-/*
-# ______       ____   ___
-#   |     \/   ____| |___|
-#   |     |   |   \  |   |
-#-----------------------------------------------------------------------
-# Copyright 2020, tyra - https://github.com/h4570/tyra
-# Licenced under Apache License 2.0
-# Sandro Sobczyński <sandro.sobczynski@gmail.com>
-*/
-
 #pragma once
 
 #include <debug/debug.hpp>
@@ -28,6 +18,8 @@
 #include "renderer/3d/mesh/static/static_mesh.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
 #include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
+#include "states/game_state.hpp"
+#include "states/context.hpp"
 
 // MENU_OPTIONS
 #define PLAY_GAME 1
@@ -41,13 +33,13 @@ using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 using Tyra::StaticPipeline;
 
-class MainMenu {
+class StateMainMenu : public GameState {
  public:
-  MainMenu();
-  ~MainMenu();
+  StateMainMenu(Context* context);
+  ~StateMainMenu();
 
-  void init(Renderer* t_renderer, Audio* t_audio);
-  void update(Pad& t_pad);
+  void init();
+  void update();
   void render();
   u8 shouldInitGame();
 
@@ -72,4 +64,5 @@ class MainMenu {
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
+  void handleInput();
 };
