@@ -38,7 +38,6 @@ void StateGamePlay::update(const float& deltaTime) {
 }
 
 void StateGamePlay::render() {
-  printf("RENDERING\n");
   this->context->world->render();
   // TODO: Should render only if is third person Cam;
   // this->context->t_renderer.draw(player->mesh);

@@ -151,7 +151,6 @@ void StateLoadingGame::initPlayer() {
 }
 
 void StateLoadingGame::nextState() {
-  printf("MOVING TO GAME PLAY\n");
   this->context->setState(new StateGamePlay(this->context));
 }
 
