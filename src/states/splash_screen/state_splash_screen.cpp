@@ -78,11 +78,11 @@ void StateSplashScreen::setBgColorBlack(Renderer* renderer) {
 void StateSplashScreen::unloadTextures() {
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(tyracraft->id)
+          .getBySpriteId(tyracraft->id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(tyra->id)
+          .getBySpriteId(tyra->id)
           ->id);
 }
 

@@ -173,13 +173,13 @@ Item* ItemRepository::getItemById(ITEM_TYPES& itemId) {
 void ItemRepository::linkTextureByItemType(ITEM_TYPES itemType,
                                            const u32 t_spriteId) {
   this->t_renderer->core.texture.repository
-      .getBySpriteOrMesh(getSpriteByItemType(itemType).id)
+      .getBySpriteId(getSpriteByItemType(itemType).id)
       ->addLink(t_spriteId);
 }
 
 void ItemRepository::removeTextureLinkByBlockType(ITEM_TYPES itemType,
                                                   const u32 t_spriteId) {
-  Texture* tex = this->t_renderer->core.texture.repository.getBySpriteOrMesh(
+  Texture* tex = this->t_renderer->core.texture.repository.getBySpriteId(
       getSpriteByItemType(itemType).id);
   s32 index = tex->getIndexOfLink(t_spriteId);
   if (index != -1) tex->removeLinkByIndex(index);

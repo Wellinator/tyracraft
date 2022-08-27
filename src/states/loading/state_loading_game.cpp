@@ -4,6 +4,7 @@
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
+#include "managers/items_repository.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -66,10 +67,13 @@ void StateLoadingGame::init() {
 
 void StateLoadingGame::update(const float& deltaTime) {
   if (this->hasFinished()) return this->nextState();
+  printf("Update state loading...\n");
   this->loadGame();
+  printf("Updated state loading...\n");
 }
 
 void StateLoadingGame::render() {
+  return;
   this->context->t_renderer->renderer2D.render(background);
   this->context->t_renderer->renderer2D.render(loadingSlot);
   this->context->t_renderer->renderer2D.render(loadingprogress);
@@ -79,24 +83,25 @@ void StateLoadingGame::render() {
 void StateLoadingGame::unload() {
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(background->id)
+          .getBySpriteId(background->id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingSlot->id)
+          .getBySpriteId(loadingSlot->id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingprogress->id)
+          .getBySpriteId(loadingprogress->id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(loadingStateText->id)
+          .getBySpriteId(loadingStateText->id)
           ->id);
 }
 
 void StateLoadingGame::loadGame() {
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
   if (this->shouldCreatedEntities) {
     return this->createEntities();
   } else if (this->shouldInitItemRepository) {
@@ -109,9 +114,11 @@ void StateLoadingGame::loadGame() {
     return this->initPlayer();
   }
   setState(LoadingState::Complete);
+  printf("END\n");
 }
 
 void StateLoadingGame::createEntities() {
+  printf("createEntities\n");
   this->context->world = new World();
   this->context->player =
       new Player(this->context->t_renderer, this->context->t_audio);
@@ -122,12 +129,14 @@ void StateLoadingGame::createEntities() {
 }
 
 void StateLoadingGame::initItemRepository() {
+  printf("initItemRepository\n");
   this->context->itemRepository->init(this->context->t_renderer);
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;
 }
 
 void StateLoadingGame::initUI() {
+  printf("initUI\n");
   this->context->ui->init(this->context->t_renderer,
                           this->context->itemRepository, this->context->player);
   setPercent(50.0F);
@@ -135,6 +144,7 @@ void StateLoadingGame::initUI() {
 }
 
 void StateLoadingGame::initWorld() {
+  printf("initWorld\n");
   this->context->world->init(this->context->t_renderer,
                              this->context->itemRepository);
   setPercent(90.0F);
@@ -142,6 +152,7 @@ void StateLoadingGame::initWorld() {
 }
 
 void StateLoadingGame::initPlayer() {
+  printf("initPlayer\n");
   this->context->player->mesh->getPosition()->set(
       this->context->world->getGlobalSpawnArea());
   this->context->player->spawnArea.set(

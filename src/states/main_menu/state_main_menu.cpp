@@ -164,11 +164,10 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
   objOptions.flipUVs = true;
   objOptions.scale = 250.0F;
 
-  auto* data =
+  auto data =
       loader.load(FileUtils::fromCwd("assets/menu/skybox.obj"), objOptions);
   data->normalsEnabled = false;
-  this->menuSkybox = new StaticMesh(*data);
-  delete data;
+  this->menuSkybox = new StaticMesh(data.get());
 
   renderer->core.texture.repository.addByMesh(
       this->menuSkybox, FileUtils::fromCwd("assets/menu/"), "png");
@@ -178,32 +177,32 @@ void StateMainMenu::unloadTextures() {
   for (u8 i = 0; i < menuSkybox->materials.size(); i++) {
     this->context->t_renderer->core.texture.repository.free(
         this->context->t_renderer->core.texture.repository
-            .getBySpriteOrMesh(menuSkybox->materials[i]->id)
+            .getBySpriteId(menuSkybox->materials[i]->id)
             ->id);
   }
   for (u8 i = 0; i < 2; i++) {
     this->context->t_renderer->core.texture.repository.free(
         this->context->t_renderer->core.texture.repository
-            .getBySpriteOrMesh(title[i].id)
+            .getBySpriteId(title[i].id)
             ->id);
   }
   for (u8 i = 0; i < 3; i++) {
     this->context->t_renderer->core.texture.repository.free(
         this->context->t_renderer->core.texture.repository
-            .getBySpriteOrMesh(slot[i].id)
+            .getBySpriteId(slot[i].id)
             ->id);
   }
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(textPlayGame.id)
+          .getBySpriteId(textPlayGame.id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(textSelect.id)
+          .getBySpriteId(textSelect.id)
           ->id);
   this->context->t_renderer->core.texture.repository.free(
       this->context->t_renderer->core.texture.repository
-          .getBySpriteOrMesh(btnCross.id)
+          .getBySpriteId(btnCross.id)
           ->id);
 }
 

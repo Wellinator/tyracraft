@@ -283,13 +283,12 @@ void Player::loadMesh() {
   options.scale = .35F;
   options.flipUVs = true;
 
-  auto* data =
+  auto data =
       loader.load(FileUtils::fromCwd("meshes/player/warrior.md2"), options);
-  this->mesh = new DynamicMesh(*data);
+  this->mesh = new DynamicMesh(data.get());
   // result->translation.translateZ(-30.0F);
   this->mesh->rotation.rotateX(-1.566F);
   this->mesh->rotation.rotateZ(1.566F);
-  delete data;
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("meshes/player/warrior.png"))
       ->addLink(this->mesh->id);

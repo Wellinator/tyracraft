@@ -23,7 +23,6 @@
 #include <thread>
 #include "entities/World.hpp"
 #include "entities/player.hpp"
-#include "managers/items_repository.hpp"
 #include "ui.hpp"
 
 using Tyra::Color;
