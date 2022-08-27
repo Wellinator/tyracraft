@@ -1,4 +1,5 @@
 #include "states/loading/state_loading_game.hpp"
+#include "states/game_play/state_game_play.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
@@ -63,7 +64,7 @@ void StateLoadingGame::init() {
       ->addLink(loadingprogress->id);
 }
 
-void StateLoadingGame::update() {
+void StateLoadingGame::update(const float& deltaTime) {
   if (this->hasFinished()) return this->nextState();
   this->loadGame();
 }
@@ -97,26 +98,23 @@ void StateLoadingGame::unload() {
 void StateLoadingGame::loadGame() {
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   if (this->shouldCreatedEntities) {
-    this->createEntities();
-    return;
+    return this->createEntities();
   } else if (this->shouldInitItemRepository) {
-    this->initItemRepository();
-    return;
+    return this->initItemRepository();
   } else if (this->shouldInitUI) {
-    this->initUI();
-    return;
+    return this->initUI();
   } else if (this->shouldInitWorld) {
-    this->initWorld();
-    return;
+    return this->initWorld();
   } else if (this->shouldInitPlayer) {
-    this->initPlayer();
-    return;
+    return this->initPlayer();
   }
+  setState(LoadingState::Complete);
 }
 
 void StateLoadingGame::createEntities() {
   this->context->world = new World();
-  this->context->player = new Player(this->context->t_renderer, this->context->t_audio);
+  this->context->player =
+      new Player(this->context->t_renderer, this->context->t_audio);
   this->context->itemRepository = new ItemRepository();
   this->context->ui = new Ui();
   setPercent(25.0F);
@@ -130,28 +128,31 @@ void StateLoadingGame::initItemRepository() {
 }
 
 void StateLoadingGame::initUI() {
-  this->context->ui->init(this->context->t_renderer, this->context->itemRepository, this->context->player);
+  this->context->ui->init(this->context->t_renderer,
+                          this->context->itemRepository, this->context->player);
   setPercent(50.0F);
   this->shouldInitUI = 0;
 }
 
 void StateLoadingGame::initWorld() {
-  this->context->world->init(this->context->t_renderer, this->context->itemRepository);
+  this->context->world->init(this->context->t_renderer,
+                             this->context->itemRepository);
   setPercent(90.0F);
   this->shouldInitWorld = 0;
 }
 
 void StateLoadingGame::initPlayer() {
-  this->context->player->mesh->getPosition()->set(this->context->world->getGlobalSpawnArea());
-  this->context->player->spawnArea.set(this->context->world->getLocalSpawnArea());
+  this->context->player->mesh->getPosition()->set(
+      this->context->world->getGlobalSpawnArea());
+  this->context->player->spawnArea.set(
+      this->context->world->getLocalSpawnArea());
   setPercent(100.0F);
-  setState(LoadingState::Complete);
   this->shouldInitPlayer = 0;
 }
 
 void StateLoadingGame::nextState() {
-  // TODO: move to in game state;
-  // this->context->setState(new StateMainMenu(this->context));
+  printf("MOVING TO GAME PLAY\n");
+  this->context->setState(new StateGamePlay(this->context));
 }
 
 void StateLoadingGame::setState(LoadingState state) { this->_state = state; }

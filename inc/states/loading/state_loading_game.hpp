@@ -21,6 +21,10 @@
 #include "states/game_state.hpp"
 #include "states/context.hpp"
 #include <thread>
+#include "entities/World.hpp"
+#include "entities/player.hpp"
+#include "managers/items_repository.hpp"
+#include "ui.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -36,7 +40,7 @@ class StateLoadingGame : public GameState {
   ~StateLoadingGame();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:
