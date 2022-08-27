@@ -18,13 +18,10 @@ Context::Context(Engine* t_engine, Camera* t_camera) {
   this->t_camera = t_camera;
 }
 
-Context::~Context() {
-  
-  delete this->state;
-}
+Context::~Context() { delete this->state; }
 
 void Context::update(const float& deltaTime) {
-  this->state->update();
+  this->state->update(deltaTime);
   this->state->render();
 
   // // Splash Screen
@@ -86,17 +83,4 @@ void Context::update(const float& deltaTime) {
 void Context::setState(GameState* newState) {
   if (this->state != nullptr) delete this->state;
   this->state = newState;
-}
-
-// TODO : Check the delay to change
-void Context::controlGameMode(Pad& t_pad) {
-  if (t_pad.getPressed().DpadUp && t_pad.getClicked().Cross) {
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(
-            this->lastTimeCrossWasClicked - std::chrono::steady_clock::now())
-            .count() <= 500) {
-      printf("GAME_MODE changed to %d\n", this->gameMode);
-      this->gameMode = this->gameMode == CREATIVE ? SURVIVAL : CREATIVE;
-    }
-    this->lastTimeCrossWasClicked = std::chrono::steady_clock::now();
-  }
 }

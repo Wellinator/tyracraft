@@ -30,7 +30,7 @@ class StateSplashScreen : public GameState {
   ~StateSplashScreen();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

@@ -39,7 +39,7 @@ class StateMainMenu : public GameState {
   ~StateMainMenu();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
   // Rotating skybox

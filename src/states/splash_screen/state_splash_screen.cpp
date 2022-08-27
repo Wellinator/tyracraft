@@ -35,7 +35,7 @@ void StateSplashScreen::init() {
       ->addLink(tyra->id);
 };
 
-void StateSplashScreen::update() {
+void StateSplashScreen::update(const float& deltaTime) {
   if (hasFinished()) this->nextState();
   this->alpha = isFading ? alpha - 1 : alpha + 1;
 

@@ -118,7 +118,7 @@ void StateMainMenu::init() {
   t_audio->song.setVolume(100);
 }
 
-void StateMainMenu::update() {
+void StateMainMenu::update(const float& deltaTime) {
   this->context->t_camera->update(*this->context->t_pad, *this->menuSkybox);
   this->handleInput();
   if (this->shouldInitGame()) return this->loadGame();
