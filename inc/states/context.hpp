@@ -6,7 +6,6 @@
 #include "contants.hpp"
 #include "ui.hpp"
 #include <renderer/3d/mesh/mesh.hpp>
-#include "managers/loading_screen.hpp"
 #include "managers/items_repository.hpp"
 #include <chrono>
 #include <renderer/renderer.hpp>
@@ -46,11 +45,4 @@ class Context {
 
   GameState* state = nullptr;
   GAME_MODE gameMode = SURVIVAL;
-
-  LoadingScreen* loadingScreen;
-  u8 shouldCreatedEntities = 1;
-  u8 shouldInitWorld = 1;
-  u8 shouldInitItemRepository = 1;
-  u8 shouldInitUI = 1;
-  u8 shouldInitPlayer = 1;
 };

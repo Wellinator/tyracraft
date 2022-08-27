@@ -22,8 +22,8 @@
 #include "states/context.hpp"
 
 // MENU_OPTIONS
-#define PLAY_GAME 1
-#define ABOUT 2
+
+enum class MainMenuOptions { None, PlayGame, About };
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -41,15 +41,14 @@ class StateMainMenu : public GameState {
   void init();
   void update();
   void render();
-  u8 shouldInitGame();
 
   // Rotating skybox
   StaticMesh* menuSkybox;
 
  private:
   Audio* t_audio;
-  u8 activeOption = PLAY_GAME;
-  u8 selectedOption = 0;
+  MainMenuOptions activeOption = MainMenuOptions::PlayGame;
+  MainMenuOptions selectedOption = MainMenuOptions::None;
   Renderer* t_renderer;
   Sprite title[2];
   Sprite slot[3];
@@ -62,7 +61,9 @@ class StateMainMenu : public GameState {
   const float SLOT_WIDTH = 160;
 
   u8 hasFinished();
+  u8 shouldInitGame();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void handleInput();
+  void loadGame();
 };

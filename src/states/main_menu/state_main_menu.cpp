@@ -1,4 +1,5 @@
 #include "states/main_menu/state_main_menu.hpp"
+#include "states/loading/state_loading_game.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
@@ -92,7 +93,7 @@ void StateMainMenu::init() {
   textPlayGame.size.set(80, 15);
   textPlayGame.position.set(halfWidth - 40, 265 + 35);
 
-  if (this->activeOption == PLAY_GAME) {
+  if (this->activeOption == MainMenuOptions::PlayGame) {
     textPlayGame.color.r = 255;
     textPlayGame.color.g = 255;
     textPlayGame.color.b = 0;
@@ -120,6 +121,7 @@ void StateMainMenu::init() {
 void StateMainMenu::update() {
   this->context->t_camera->update(*this->context->t_pad, *this->menuSkybox);
   this->handleInput();
+  if (this->shouldInitGame()) return this->loadGame();
 }
 
 void StateMainMenu::render() {
@@ -148,8 +150,6 @@ void StateMainMenu::render() {
   //   // Buttons
   this->context->t_renderer->renderer2D.render(&btnCross);
 }
-
-u8 StateMainMenu::shouldInitGame() { return this->selectedOption == PLAY_GAME; }
 
 void StateMainMenu::loadSkybox(Renderer* renderer) {
   this->skyboxOptions = new StaPipOptions();
@@ -210,4 +210,12 @@ void StateMainMenu::unloadTextures() {
 void StateMainMenu::handleInput() {
   if (this->context->t_pad->getClicked().Cross)
     this->selectedOption = this->activeOption;
+}
+
+u8 StateMainMenu::shouldInitGame() {
+  return this->selectedOption == MainMenuOptions::PlayGame;
+}
+
+void StateMainMenu::loadGame() {
+  this->context->setState(new StateLoadingGame(this->context));
 }

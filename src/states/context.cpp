@@ -88,49 +88,6 @@ void Context::setState(GameState* newState) {
   this->state = newState;
 }
 
-void Context::loadGame() {
-  std::this_thread::sleep_for(std::chrono::milliseconds(150));
-  if (this->shouldCreatedEntities) {
-    printf("Creating entities\n");
-    this->world = new World();
-    this->player = new Player(t_renderer, t_audio);
-    this->itemRepository = new ItemRepository();
-    this->ui = new Ui();
-
-    this->loadingScreen->setPercent(25.0F);
-    this->shouldCreatedEntities = 0;
-    return;
-  } else if (this->shouldInitItemRepository) {
-    printf("Initing item repo\n");
-    this->itemRepository->init(t_renderer);
-    this->loadingScreen->setPercent(35.0F);
-    this->shouldInitItemRepository = 0;
-    return;
-  } else if (this->shouldInitUI) {
-    printf("Initing UI\n");
-    this->ui->init(t_renderer, this->itemRepository, this->player);
-    this->loadingScreen->setPercent(50.0F);
-    this->shouldInitUI = 0;
-    return;
-  } else if (this->shouldInitWorld) {
-    printf("Initing world\n");
-    this->world->init(t_renderer, this->itemRepository);
-    this->loadingScreen->setPercent(90.0F);
-    this->shouldInitWorld = 0;
-    return;
-  } else if (this->shouldInitPlayer) {
-    printf("Initing player\n");
-    this->player->mesh->getPosition()->set(world->getGlobalSpawnArea());
-    this->player->spawnArea.set(world->getLocalSpawnArea());
-    this->loadingScreen->setPercent(100.0F);
-    this->loadingScreen->setState(LoadingState::Complete);
-    this->shouldInitPlayer = 0;
-    return;
-  }
-
-  printf("\nGAME LOADED\n");
-}
-
 // TODO : Check the delay to change
 void Context::controlGameMode(Pad& t_pad) {
   if (t_pad.getPressed().DpadUp && t_pad.getClicked().Cross) {
