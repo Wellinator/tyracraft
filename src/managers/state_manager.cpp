@@ -1,13 +1,12 @@
 #include "managers/state_manager.hpp"
 
-StateManager::StateManager(Engine* t_engine) {
-  this->engine = t_engine;
-  this->context = new Context(this->engine);
-  this->context->state = new StateSplashScreen(context);
+StateManager::StateManager(Engine* t_engine, Camera* t_camera) {
+  this->context = new Context(t_engine, t_camera);
+  this->context->setState(new StateSplashScreen(this->context));
 }
 
-StateManager::~StateManager() {}
+StateManager::~StateManager() { delete this->context; }
 
-void StateManager::update(const float& deltaTime, Camera* t_camera) {
-  this->context->update(deltaTime, t_camera);
+void StateManager::update(const float& deltaTime) {
+  this->context->update(deltaTime);
 }

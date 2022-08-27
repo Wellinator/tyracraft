@@ -9,11 +9,10 @@ using Tyra::Engine;
 
 class StateManager {
  public:
-  StateManager(Engine* t_engine);
+  StateManager(Engine* t_engine, Camera* t_camera);
   ~StateManager();
 
-  void update(const float& deltaTime, Camera* t_camera);
+  void update(const float& deltaTime);
 
   Context* context;
-  Engine* engine;
 };

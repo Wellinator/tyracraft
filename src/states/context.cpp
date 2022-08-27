@@ -11,15 +11,19 @@ using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
 
-Context::Context(Engine* t_engine) {
+Context::Context(Engine* t_engine, Camera* t_camera) {
   this->t_renderer = &t_engine->renderer;
   this->t_audio = &t_engine->audio;
   this->t_pad = &t_engine->pad;
+  this->t_camera = t_camera;
 }
 
-Context::~Context() {}
+Context::~Context() {
+  
+  delete this->state;
+}
 
-void Context::update(const float& deltaTime, Camera* t_camera) {
+void Context::update(const float& deltaTime) {
   this->state->update();
   this->state->render();
 
@@ -77,6 +81,11 @@ void Context::update(const float& deltaTime, Camera* t_camera) {
   //     ui->render();
   //   }
   // }
+}
+
+void Context::setState(GameState* newState) {
+  if (this->state != nullptr) delete this->state;
+  this->state = newState;
 }
 
 void Context::loadGame() {
