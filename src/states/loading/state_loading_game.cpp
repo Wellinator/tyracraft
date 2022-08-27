@@ -150,6 +150,7 @@ void StateLoadingGame::initPlayer() {
 }
 
 void StateLoadingGame::nextState() {
+  // TODO: move to in game state;
   // this->context->setState(new StateMainMenu(this->context));
 }
 
