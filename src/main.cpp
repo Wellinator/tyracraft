@@ -3,8 +3,10 @@
 
 int main() {
   Tyra::EngineOptions options;
-  options.loadUsbDriver = true;
-  options.writeLogsToFile = true;
+  
+  // options.loadUsbDriver = true;
+  // options.writeLogsToFile = true;
+
   Tyra::Engine engine(options);
   TyraCraft::TyraCraftGame game(&engine);
   engine.run(&game);
