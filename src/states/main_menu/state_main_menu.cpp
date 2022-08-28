@@ -112,10 +112,10 @@ void StateMainMenu::init() {
       ->addLink(textSelect.id);
 
   // Load song
-  t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
-  t_audio->song.play();
-  t_audio->song.inLoop = true;
-  t_audio->song.setVolume(100);
+  this->context->t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
+  this->context->t_audio->song.play();
+  this->context->t_audio->song.inLoop = true;
+  this->context->t_audio->song.setVolume(100);
 }
 
 void StateMainMenu::update(const float& deltaTime) {
