@@ -28,7 +28,6 @@ void StateGamePlay::init() {
 }
 
 void StateGamePlay::update(const float& deltaTime) {
-  printf("UPDATING\n");
   this->handleInput();
   this->world->update(this->player, this->context->t_camera,
                       this->context->t_pad, deltaTime);
