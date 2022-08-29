@@ -216,7 +216,7 @@ void StateMainMenu::loadGame() {
 void StateMainMenu::loadMenuSong() {
   // Load song
   this->context->t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
-  this->context->t_audio->song.play();
   this->context->t_audio->song.inLoop = true;
   this->context->t_audio->song.setVolume(95);
+  this->context->t_audio->song.play();
 }
