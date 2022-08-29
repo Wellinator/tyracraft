@@ -66,4 +66,5 @@ class StateMainMenu : public GameState {
   void unloadTextures();
   void handleInput();
   void loadGame();
+  void loadMenuSong();
 };

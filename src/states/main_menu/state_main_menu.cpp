@@ -50,10 +50,10 @@ void StateMainMenu::init() {
   title[1].size.set(256, 128);
   title[1].position.set(halfWidth, 64);
 
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/title_1.png"))
       ->addLink(title[0].id);
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/title_2.png"))
       ->addLink(title[1].id);
 
@@ -63,7 +63,7 @@ void StateMainMenu::init() {
   btnCross.position.set(
       40, this->context->t_renderer->core.getSettings().getHeight() - 52);
 
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
       ->addLink(btnCross.id);
 
@@ -78,13 +78,13 @@ void StateMainMenu::init() {
   slot[2].size.set(SLOT_WIDTH, 25);
   slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 265 + 60);
 
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/slot.png"))
       ->addLink(slot[0].id);
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/hovered_slot.png"))
       ->addLink(slot[1].id);
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/selected_slot.png"))
       ->addLink(slot[2].id);
 
@@ -99,7 +99,7 @@ void StateMainMenu::init() {
     textPlayGame.color.b = 0;
   }
 
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/play_game.png"))
       ->addLink(textPlayGame.id);
 
@@ -107,26 +107,24 @@ void StateMainMenu::init() {
   textSelect.size.set(64, 16);
   textSelect.position.set(
       30 + 40, this->context->t_renderer->core.getSettings().getHeight() - 47);
-  this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/select.png"))
       ->addLink(textSelect.id);
 
-  // Load song
-  this->context->t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
-  this->context->t_audio->song.play();
-  this->context->t_audio->song.inLoop = true;
-  this->context->t_audio->song.setVolume(100);
+  this->loadMenuSong();
 }
 
 void StateMainMenu::update(const float& deltaTime) {
+  Tyra::Threading::switchThread();
   this->context->t_camera->update(*this->context->t_pad, *this->menuSkybox);
   this->handleInput();
+  this->menuSkybox->rotation.rotateY(0.0001F);
+  Tyra::Threading::switchThread();
   if (this->shouldInitGame()) return this->loadGame();
 }
 
 void StateMainMenu::render() {
   // Meshes
-  this->menuSkybox->rotation.rotateY(0.001F);
   this->context->t_renderer->renderer3D.usePipeline(&stapip);
   { stapip.render(this->menuSkybox, skyboxOptions); }
 
@@ -174,33 +172,30 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
 
 void StateMainMenu::unloadTextures() {
   for (u8 i = 0; i < menuSkybox->materials.size(); i++) {
-    this->context->t_renderer->core.texture.repository.free(
-        this->context->t_renderer->core.texture.repository
-            .getBySpriteId(menuSkybox->materials[i]->id)
-            ->id);
+    this->context->t_renderer->getTextureRepository().freeByMesh(menuSkybox);
   }
   for (u8 i = 0; i < 2; i++) {
-    this->context->t_renderer->core.texture.repository.free(
-        this->context->t_renderer->core.texture.repository
+    this->context->t_renderer->getTextureRepository().free(
+        this->context->t_renderer->getTextureRepository()
             .getBySpriteId(title[i].id)
             ->id);
   }
   for (u8 i = 0; i < 3; i++) {
-    this->context->t_renderer->core.texture.repository.free(
-        this->context->t_renderer->core.texture.repository
+    this->context->t_renderer->getTextureRepository().free(
+        this->context->t_renderer->getTextureRepository()
             .getBySpriteId(slot[i].id)
             ->id);
   }
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository().free(
+      this->context->t_renderer->getTextureRepository()
           .getBySpriteId(textPlayGame.id)
           ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository().free(
+      this->context->t_renderer->getTextureRepository()
           .getBySpriteId(textSelect.id)
           ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
+  this->context->t_renderer->getTextureRepository().free(
+      this->context->t_renderer->getTextureRepository()
           .getBySpriteId(btnCross.id)
           ->id);
 }
@@ -216,4 +211,12 @@ u8 StateMainMenu::shouldInitGame() {
 
 void StateMainMenu::loadGame() {
   this->context->setState(new StateLoadingGame(this->context));
+}
+
+void StateMainMenu::loadMenuSong() {
+  // Load song
+  this->context->t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
+  this->context->t_audio->song.play();
+  this->context->t_audio->song.inLoop = true;
+  this->context->t_audio->song.setVolume(95);
 }
