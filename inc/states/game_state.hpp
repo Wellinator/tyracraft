@@ -5,7 +5,7 @@ class Context;
 class GameState {
  public:
   GameState(Context* t_context) { this->context = t_context; };
-  ~GameState(){};
+  virtual ~GameState(){};
   virtual void init() = 0;
   virtual void update(const float& deltaTime) = 0;
   virtual void render() = 0;
