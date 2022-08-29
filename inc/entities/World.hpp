@@ -8,12 +8,12 @@
 #include "chunck.hpp"
 #include "entities/player.hpp"
 #include "entities/Block.hpp"
-#include "managers/terrain_manager.hpp"
 #include "managers/items_repository.hpp"
-#include "managers/chunck_manager.hpp"
 #include "contants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
+#include "managers/chunck_manager.hpp"
+#include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
 
 using Tyra::McpipBlock;
@@ -28,9 +28,9 @@ class World {
   ~World();
 
   Renderer* t_renderer;
-  TerrainManager* terrainManager = new TerrainManager();
-  BlockManager* blockManager = new BlockManager();
-  ChunckManager* chunckManager = new ChunckManager();
+  TerrainManager* terrainManager;
+  BlockManager* blockManager;
+  ChunckManager* chunckManager;
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad,

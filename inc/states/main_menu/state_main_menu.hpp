@@ -1,13 +1,3 @@
-/*
-# ______       ____   ___
-#   |     \/   ____| |___|
-#   |     |   |   \  |   |
-#-----------------------------------------------------------------------
-# Copyright 2020, tyra - https://github.com/h4570/tyra
-# Licenced under Apache License 2.0
-# Sandro Sobczyński <sandro.sobczynski@gmail.com>
-*/
-
 #pragma once
 
 #include <debug/debug.hpp>
@@ -28,10 +18,12 @@
 #include "renderer/3d/mesh/static/static_mesh.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
 #include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
+#include "states/game_state.hpp"
+#include "states/context.hpp"
 
 // MENU_OPTIONS
-#define PLAY_GAME 1
-#define ABOUT 2
+
+enum class MainMenuOptions { None, PlayGame, About };
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -41,23 +33,22 @@ using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 using Tyra::StaticPipeline;
 
-class MainMenu {
+class StateMainMenu : public GameState {
  public:
-  MainMenu();
-  ~MainMenu();
+  StateMainMenu(Context* context);
+  ~StateMainMenu();
 
-  void init(Renderer* t_renderer, Audio* t_audio);
-  void update(Pad& t_pad);
+  void init();
+  void update(const float& deltaTime);
   void render();
-  u8 shouldInitGame();
 
   // Rotating skybox
   StaticMesh* menuSkybox;
 
  private:
   Audio* t_audio;
-  u8 activeOption = PLAY_GAME;
-  u8 selectedOption = 0;
+  MainMenuOptions activeOption = MainMenuOptions::PlayGame;
+  MainMenuOptions selectedOption = MainMenuOptions::None;
   Renderer* t_renderer;
   Sprite title[2];
   Sprite slot[3];
@@ -70,6 +61,10 @@ class MainMenu {
   const float SLOT_WIDTH = 160;
 
   u8 hasFinished();
+  u8 shouldInitGame();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
+  void handleInput();
+  void loadGame();
+  void loadMenuSong();
 };

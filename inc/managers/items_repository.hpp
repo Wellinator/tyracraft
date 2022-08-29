@@ -6,6 +6,7 @@
 #include <renderer/core/texture/models/texture.hpp>
 #include "entities/item.hpp"
 #include "contants.hpp"
+#include "file/file_utils.hpp"
 
 using Tyra::TextureRepository;
 using Tyra::Renderer;

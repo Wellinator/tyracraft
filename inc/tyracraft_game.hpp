@@ -24,7 +24,7 @@ class TyraCraftGame : public Tyra::Game {
 
  private:
   Camera camera;
-  StateManager stateManager;
+  StateManager* stateManager;
   Vec4 cameraPosition, cameraLookAt;
 
   Tyra::Engine* engine;
