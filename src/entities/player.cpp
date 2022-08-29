@@ -1,26 +1,4 @@
-/*
-# ______       ____   ___
-#   |     \/   ____| |___|
-#   |     |   |   \  |   |
-#-----------------------------------------------------------------------
-# Copyright 2020, tyra - https://github.com/h4570/tyra
-# Licenced under Apache License 2.0
-# Sandro Sobczyński <sandro.sobczynski@gmail.com>
-*/
-
 #include "entities/player.hpp"
-#include "utils.hpp"
-#include <debug/debug.hpp>
-#include <math/math.hpp>
-#include "file/file_utils.hpp"
-#include "loaders/3d/md2_loader/md2_loader.hpp"
-#include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
-
-using Tyra::BBox;
-using Tyra::DynamicMesh;
-using Tyra::FileUtils;
-using Tyra::MD2Loader;
-using Tyra::MD2LoaderOptions;
 
 // ----
 // Constructors/Destructors
@@ -287,9 +265,9 @@ void Player::loadMesh() {
       MD2Loader::load(FileUtils::fromCwd("meshes/player/warrior.md2"), options);
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
-  // this->mesh->rotation.rotateX(-1.566F);
-  // this->mesh->rotation.rotateZ(1.566F);
-  // this->t_renderer->getTextureRepository().addByMesh(
-  //     this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+  this->mesh->rotation.rotateX(-1.566F);
+  this->mesh->rotation.rotateZ(1.566F);
+  this->t_renderer->getTextureRepository().addByMesh(
+      this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
   // this->mesh->animation.speed = 0.17F;
 }

@@ -1,15 +1,4 @@
-#include "managers/state_manager.hpp"
-#include "renderer/models/color.hpp"
-#include "file/file_utils.hpp"
-#include <renderer/core/2d/sprite/sprite.hpp>
-#include <thread>
-#include <chrono>
-
-using Tyra::Audio;
-using Tyra::Color;
-using Tyra::FileUtils;
-using Tyra::Renderer;
-using Tyra::Sprite;
+#include "states/context.hpp"
 
 Context::Context(Engine* t_engine, Camera* t_camera) {
   this->t_renderer = &t_engine->renderer;

@@ -1,21 +1,7 @@
 #include "states/loading/state_loading_game.hpp"
-#include "states/game_play/state_game_play.hpp"
-#include "file/file_utils.hpp"
-#include <renderer/renderer_settings.hpp>
-#include <debug/debug.hpp>
-#include "loaders/3d/obj_loader/obj_loader.hpp"
-#include "managers/items_repository.hpp"
-#include "entities/World.hpp"
-#include "entities/player.hpp"
-#include "ui.hpp"
-
-using Tyra::Color;
-using Tyra::FileUtils;
-using Tyra::Renderer;
-using Tyra::RendererSettings;
-using Tyra::Vec4;
 
 StateLoadingGame::StateLoadingGame(Context* t_context) : GameState(t_context) {
+  this->stateGamePlay = new StateGamePlay(this->context);
   this->init();
 }
 
@@ -115,17 +101,16 @@ void StateLoadingGame::unload() {
 }
 
 void StateLoadingGame::createEntities() {
-  this->context->world = new World();
-  this->context->player =
-      new Player(this->context->t_renderer, this->context->t_audio);
-  this->context->itemRepository = new ItemRepository();
-  this->context->ui = new Ui();
+  this->stateGamePlay->world = new World();
+  this->stateGamePlay->player = new Player(this->context->t_renderer, this->context->t_audio);
+  this->stateGamePlay->itemRepository = new ItemRepository();
+  this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
   this->shouldCreatedEntities = 0;
 }
 
 void StateLoadingGame::initItemRepository() {
-  this->context->itemRepository->init(this->context->t_renderer);
+  this->stateGamePlay->itemRepository->init(this->context->t_renderer);
 
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;
@@ -133,26 +118,27 @@ void StateLoadingGame::initItemRepository() {
 }
 
 void StateLoadingGame::initUI() {
-  this->context->ui->init(this->context->t_renderer,
-                          this->context->itemRepository, this->context->player);
+  this->stateGamePlay->ui->init(this->context->t_renderer,
+                                this->stateGamePlay->itemRepository,
+                                this->stateGamePlay->player);
   setPercent(50.0F);
   this->shouldInitUI = 0;
   TYRA_LOG("initUI");
 }
 
 void StateLoadingGame::initWorld() {
-  this->context->world->init(this->context->t_renderer,
-                             this->context->itemRepository);
+  this->stateGamePlay->world->init(this->context->t_renderer,
+                                   this->stateGamePlay->itemRepository);
   setPercent(90.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");
 }
 
 void StateLoadingGame::initPlayer() {
-  this->context->player->mesh->getPosition()->set(
-      this->context->world->getGlobalSpawnArea());
-  this->context->player->spawnArea.set(
-      this->context->world->getLocalSpawnArea());
+  this->stateGamePlay->player->mesh->getPosition()->set(
+      this->stateGamePlay->world->getGlobalSpawnArea());
+  this->stateGamePlay->player->spawnArea.set(
+      this->stateGamePlay->world->getLocalSpawnArea());
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
   TYRA_LOG("initPlayer");
@@ -160,7 +146,7 @@ void StateLoadingGame::initPlayer() {
 
 void StateLoadingGame::nextState() {
   TYRA_LOG("nextState");
-  this->context->setState(new StateGamePlay(this->context));
+  this->context->setState(this->stateGamePlay);
 }
 
 void StateLoadingGame::setPercent(float completed) {

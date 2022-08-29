@@ -9,21 +9,14 @@
 */
 
 #pragma once
-
 #include "camera.hpp"
 #include "contants.hpp"
 #include "entities/Block.hpp"
 #include "entities/item.hpp"
-#include <pad/pad.hpp>
-#include <math/vec4.hpp>
-#include <time/timer.hpp>
-#include <physics/ray.hpp>
 #include <tamtypes.h>
-#include <audio/audio.hpp>
 #include "managers/items_repository.hpp"
-#include <renderer/renderer.hpp>
 #include "managers/collision_manager.hpp"
-#include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
+#include "loaders/3d/md2_loader/md2_loader.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -33,6 +26,9 @@ using Tyra::Renderer;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
+using Tyra::MD2LoaderOptions;
+using Tyra::MD2Loader;
+using Tyra::FileUtils;
 
 /** Player 3D object class  */
 class Player {

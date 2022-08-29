@@ -2,6 +2,7 @@
 #include "entities/World.hpp"
 #include "renderer/models/color.hpp"
 #include "math/m4x4.hpp"
+#include <tyra>
 
 using Tyra::Color;
 using Tyra::M4x4;
@@ -17,7 +18,7 @@ World::~World() {}
 void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   TYRA_ASSERT(t_renderer, "t_renderer not initialized");
   TYRA_ASSERT(itemRepository, "itemRepository not initialized");
-  
+
   // Set color day
   // TODO: refector to day/light cycle;
   t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));

@@ -1,6 +1,7 @@
 #pragma once
 #include "states/context.hpp"
 
+class Context;
 class GameState {
  public:
   GameState(Context* t_context) { this->context = t_context; };

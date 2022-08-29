@@ -159,14 +159,13 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
   this->skyboxOptions->frustumCulling =
       Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
 
-  ObjLoader loader;
-  ObjLoaderOptions objOptions;
-  objOptions.flipUVs = true;
-  objOptions.scale = 250.0F;
+  ObjLoaderOptions options;
+  options.flipUVs = true;
+  options.scale = 250.0F;
 
   auto data =
-      loader.load(FileUtils::fromCwd("assets/menu/skybox.obj"), objOptions);
-  data->normalsEnabled = false;
+      ObjLoader::load(FileUtils::fromCwd("assets/menu/skybox.obj"), options);
+  // data->normalsEnabled = false;
   this->menuSkybox = new StaticMesh(data.get());
 
   renderer->core.texture.repository.addByMesh(

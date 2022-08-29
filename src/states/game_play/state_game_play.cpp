@@ -17,7 +17,10 @@ StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {}
 StateGamePlay::~StateGamePlay() {
   this->context->t_audio->song.stop();
   this->context->t_audio->song.inLoop = false;
-  this->unload();
+  delete this->world;
+  delete this->ui;
+  delete this->player;
+  delete this->itemRepository;
 }
 
 void StateGamePlay::init() {
@@ -27,24 +30,21 @@ void StateGamePlay::init() {
 void StateGamePlay::update(const float& deltaTime) {
   printf("UPDATING\n");
   this->handleInput();
-  this->context->world->update(this->context->player, this->context->t_camera,
-                               this->context->t_pad, deltaTime);
-  this->context->player->update(deltaTime, *this->context->t_pad,
-                                *this->context->t_camera,
-                                this->context->world->getLoadedBlocks());
-  this->context->ui->update();
-  this->context->t_camera->update(*this->context->t_pad,
-                                  *this->context->player->mesh);
+  this->world->update(this->player, this->context->t_camera,
+                      this->context->t_pad, deltaTime);
+  this->player->update(deltaTime, *this->context->t_pad,
+                       *this->context->t_camera,
+                       this->world->getLoadedBlocks());
+  this->ui->update();
+  this->context->t_camera->update(*this->context->t_pad, *this->player->mesh);
 }
 
 void StateGamePlay::render() {
-  this->context->world->render();
+  this->world->render();
   // TODO: Should render only if is third person Cam;
   // this->context->t_renderer.draw(player->mesh);
-  this->context->ui->render();
+  this->ui->render();
 }
-
-void StateGamePlay::unload() {}
 
 void StateGamePlay::handleInput() { this->controlGameMode(); }
 
