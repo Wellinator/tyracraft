@@ -24,6 +24,7 @@
 #include <renderer/renderer.hpp>
 #include "managers/collision_manager.hpp"
 #include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
+#include <tyra>
 
 using Tyra::Audio;
 using Tyra::DynamicMesh;
@@ -36,7 +37,7 @@ using Tyra::Vec4;
 /** Player 3D object class  */
 class Player {
  public:
-  DynamicMesh* mesh;
+  std::unique_ptr<DynamicMesh> mesh;
   Player(Renderer* t_renderer, Audio* t_audio);
   ~Player();
 

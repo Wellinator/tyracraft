@@ -6,14 +6,22 @@
 using Tyra::Color;
 using Tyra::M4x4;
 
-World::World() {}
+World::World() {
+  this->terrainManager = new TerrainManager();
+  this->blockManager = new BlockManager();
+  this->chunckManager = new ChunckManager();
+}
 
 World::~World() {}
 
 void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
+  TYRA_ASSERT(t_renderer, "t_renderer not initialized");
+  TYRA_ASSERT(itemRepository, "itemRepository not initialized");
+  
   // Set color day
   // TODO: refector to day/light cycle;
   t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
+
   this->t_renderer = t_renderer;
   this->mcPip.setRenderer(&t_renderer->core);
   this->blockManager->init(t_renderer, &this->mcPip);

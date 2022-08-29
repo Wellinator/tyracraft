@@ -10,6 +10,10 @@ Ui::~Ui() {}
 
 void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
               Player* t_player) {
+  TYRA_ASSERT(t_renderer, "Param 't_renderer' not initialized");
+  TYRA_ASSERT(itemRepository, "Param 'itemRepository' not initialized");
+  TYRA_ASSERT(t_player, "Param 't_player' not initialized");
+
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
   this->t_player = t_player;

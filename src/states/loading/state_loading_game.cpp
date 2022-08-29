@@ -5,6 +5,9 @@
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
 #include "managers/items_repository.hpp"
+#include "entities/World.hpp"
+#include "entities/player.hpp"
+#include "ui.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -66,14 +69,26 @@ void StateLoadingGame::init() {
 }
 
 void StateLoadingGame::update(const float& deltaTime) {
-  if (this->hasFinished()) return this->nextState();
-  printf("Update state loading...\n");
-  this->loadGame();
-  printf("Updated state loading...\n");
+  if (this->hasFinished()) {
+    this->nextState();
+  }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  if (this->shouldCreatedEntities) {
+    return this->createEntities();
+  } else if (this->shouldInitItemRepository) {
+    return this->initItemRepository();
+  } else if (this->shouldInitUI) {
+    return this->initUI();
+  } else if (this->shouldInitWorld) {
+    return this->initWorld();
+  } else if (this->shouldInitPlayer) {
+    return this->initPlayer();
+  }
+  this->_state = LoadingState::Complete;
 }
 
 void StateLoadingGame::render() {
-  return;
   this->context->t_renderer->renderer2D.render(background);
   this->context->t_renderer->renderer2D.render(loadingSlot);
   this->context->t_renderer->renderer2D.render(loadingprogress);
@@ -99,26 +114,7 @@ void StateLoadingGame::unload() {
           ->id);
 }
 
-void StateLoadingGame::loadGame() {
-  std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
-  if (this->shouldCreatedEntities) {
-    return this->createEntities();
-  } else if (this->shouldInitItemRepository) {
-    return this->initItemRepository();
-  } else if (this->shouldInitUI) {
-    return this->initUI();
-  } else if (this->shouldInitWorld) {
-    return this->initWorld();
-  } else if (this->shouldInitPlayer) {
-    return this->initPlayer();
-  }
-  setState(LoadingState::Complete);
-  printf("END\n");
-}
-
 void StateLoadingGame::createEntities() {
-  printf("createEntities\n");
   this->context->world = new World();
   this->context->player =
       new Player(this->context->t_renderer, this->context->t_audio);
@@ -129,43 +125,43 @@ void StateLoadingGame::createEntities() {
 }
 
 void StateLoadingGame::initItemRepository() {
-  printf("initItemRepository\n");
   this->context->itemRepository->init(this->context->t_renderer);
+
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;
+  TYRA_LOG("initItemRepository");
 }
 
 void StateLoadingGame::initUI() {
-  printf("initUI\n");
   this->context->ui->init(this->context->t_renderer,
                           this->context->itemRepository, this->context->player);
   setPercent(50.0F);
   this->shouldInitUI = 0;
+  TYRA_LOG("initUI");
 }
 
 void StateLoadingGame::initWorld() {
-  printf("initWorld\n");
   this->context->world->init(this->context->t_renderer,
                              this->context->itemRepository);
   setPercent(90.0F);
   this->shouldInitWorld = 0;
+  TYRA_LOG("initWorld");
 }
 
 void StateLoadingGame::initPlayer() {
-  printf("initPlayer\n");
   this->context->player->mesh->getPosition()->set(
       this->context->world->getGlobalSpawnArea());
   this->context->player->spawnArea.set(
       this->context->world->getLocalSpawnArea());
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
+  TYRA_LOG("initPlayer");
 }
 
 void StateLoadingGame::nextState() {
+  TYRA_LOG("nextState");
   this->context->setState(new StateGamePlay(this->context));
 }
-
-void StateLoadingGame::setState(LoadingState state) { this->_state = state; }
 
 void StateLoadingGame::setPercent(float completed) {
   this->_percent = completed;
@@ -176,6 +172,6 @@ void StateLoadingGame::setBgColorBlack() {
   this->context->t_renderer->setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
 }
 
-u8 StateLoadingGame::hasFinished() {
+bool StateLoadingGame::hasFinished() {
   return this->_state == LoadingState::Complete;
 }

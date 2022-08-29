@@ -21,9 +21,6 @@
 #include "states/game_state.hpp"
 #include "states/context.hpp"
 #include <thread>
-#include "entities/World.hpp"
-#include "entities/player.hpp"
-#include "ui.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -31,7 +28,7 @@ using Tyra::Renderer;
 using Tyra::RendererSettings;
 using Tyra::Vec4;
 
-enum class LoadingState { Loading = 0, Complete = 1 };
+enum class LoadingState { Loading, Complete };
 
 class StateLoadingGame : public GameState {
  public:
@@ -57,16 +54,16 @@ class StateLoadingGame : public GameState {
   float _percent = 1.0F;
   float BASE_HEIGHT;
 
-  void setState(LoadingState state);
   void setPercent(float completed);
   void setBgColorBlack();
-  void loadGame();
+
   void createEntities();
   void initItemRepository();
   void initUI();
   void initWorld();
   void initPlayer();
+
   void nextState();
   void unload();
-  u8 hasFinished();
+  bool hasFinished();
 };

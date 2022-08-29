@@ -27,22 +27,16 @@ class Context {
   void update(const float& deltaTime);
   void setState(GameState* newState);
 
-  World* world;
-  Ui* ui;
-  Player* player;
-  ItemRepository* itemRepository;
-  Renderer* t_renderer;
-  Audio* t_audio;
-  Pad* t_pad;
-  Camera* t_camera;
+  World* world = nullptr;
+  Ui* ui = nullptr;
+  Player* player = nullptr;
+  ItemRepository* itemRepository = nullptr;
+
+  Renderer* t_renderer = nullptr;
+  Audio* t_audio = nullptr;
+  Pad* t_pad = nullptr;
+  Camera* t_camera = nullptr;
 
  private:
-  // Control game mode change
-  // Control Cross click debounce for changing game mode
-  std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
-  void controlGameMode(Pad& t_pad);
-  void loadGame();
-
   GameState* state = nullptr;
-  GAME_MODE gameMode = SURVIVAL;
 };

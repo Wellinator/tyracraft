@@ -17,6 +17,7 @@
 #include "renderer/3d/mesh/dynamic/dynamic_mesh.hpp"
 
 using Tyra::BBox;
+using Tyra::DynamicMesh;
 using Tyra::FileUtils;
 using Tyra::MD2Loader;
 using Tyra::MD2LoaderOptions;
@@ -278,20 +279,17 @@ void Player::moveSelectorToTheRight() {
 }
 
 void Player::loadMesh() {
-  MD2Loader loader;
   MD2LoaderOptions options;
   options.scale = .35F;
   options.flipUVs = true;
 
   auto data =
-      loader.load(FileUtils::fromCwd("meshes/player/warrior.md2"), options);
-  this->mesh = new DynamicMesh(data.get());
-  // result->translation.translateZ(-30.0F);
-  this->mesh->rotation.rotateX(-1.566F);
-  this->mesh->rotation.rotateZ(1.566F);
-  this->t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("meshes/player/warrior.png"))
-      ->addLink(this->mesh->id);
-  // this->mesh->animation. playAnimation(0, this->mesh->getFramesCount() - 1);
-  this->mesh->animation.speed = 0.17F;
+      MD2Loader::load(FileUtils::fromCwd("meshes/player/warrior.md2"), options);
+
+  this->mesh = std::make_unique<DynamicMesh>(data.get());
+  // this->mesh->rotation.rotateX(-1.566F);
+  // this->mesh->rotation.rotateZ(1.566F);
+  // this->t_renderer->getTextureRepository().addByMesh(
+  //     this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+  // this->mesh->animation.speed = 0.17F;
 }
