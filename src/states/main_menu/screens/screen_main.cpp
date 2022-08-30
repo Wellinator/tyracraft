@@ -18,9 +18,6 @@ ScreenMain::~ScreenMain() {
 
   this->t_renderer->getTextureRepository().freeBySprite(btnCross);
   this->t_renderer->getTextureRepository().freeBySprite(textSelect);
-
-  //   this->t_renderer->getTextureRepository().freeBySprite(btnTriangle);
-  //   this->t_renderer->getTextureRepository().freeBySprite(textBack);
 }
 
 void ScreenMain::update() {
@@ -41,9 +38,6 @@ void ScreenMain::render() {
 
   this->t_renderer->renderer2D.render(&btnCross);
   this->t_renderer->renderer2D.render(&textSelect);
-
-  //   this->t_renderer->renderer2D.render(&btnTriangle);
-  //   this->t_renderer->renderer2D.render(&textBack);
 }
 
 void ScreenMain::init() {
@@ -121,24 +115,6 @@ void ScreenMain::init() {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/text_select.png"))
       ->addLink(textSelect.id);
-
-  //   btnTriangle.mode = Tyra::MODE_STRETCH;
-  //   btnTriangle.size.set(25, 25);
-  //   btnTriangle.position.set(
-  //       125, this->t_renderer->core.getSettings().getHeight() - 40);
-
-  //   this->t_renderer->getTextureRepository()
-  //       .add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
-  //       ->addLink(btnTriangle.id);
-
-  //   textBack.mode = Tyra::MODE_STRETCH;
-  //   textBack.size.set(64, 15);
-  //   textBack.position.set(30 + 125,
-  //                         this->t_renderer->core.getSettings().getHeight() -
-  //                         36);
-  //   this->t_renderer->getTextureRepository()
-  //       .add(FileUtils::fromCwd("assets/menu/text_back.png"))
-  //       ->addLink(textBack.id);
 }
 
 void ScreenMain::handleInput() {
