@@ -1,5 +1,6 @@
 #pragma once
 #include "states/main_menu/screens/screen_main.hpp"
+#include "states/main_menu/screens/screen_how_to_play.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = t_context->context->t_renderer;
@@ -173,6 +174,8 @@ void ScreenMain::navigate() {
   // TODO: PlayGame wold options;
   if (this->selectedOption == ScreenMainOptions::PlayGame)
     this->context->loadGame();
+  else if (this->selectedOption == ScreenMainOptions::HowToPlay)
+    this->context->setScreen(new ScreenHowToPlay(this->context));
 
-  // TODO: Implement HowToPlay and About screens;
+  // TODO: About screens;
 }
