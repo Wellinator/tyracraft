@@ -68,7 +68,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
   Vec4 normalizedCamera;
   normalizedCamera.set(t_camera.unitCirclePosition);
   normalizedCamera.normalize();
-  normalizedCamera *= (this->speed * deltaTime);
+  normalizedCamera *= (this->speed * std::min(deltaTime, MAX_FRAME_MS));
 
   if (t_pad.getLeftJoyPad().v <= 100) {
     result.x += -normalizedCamera.x;
@@ -91,7 +91,8 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
   this->velocity += GRAVITY;  // Negative gravity to decrease Y axis
-  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * deltaTime);
+  Vec4 newYPosition = *mesh->getPosition() -
+                      (this->velocity * std::min(deltaTime, MAX_FRAME_MS));
 
   if (newYPosition.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
       newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {

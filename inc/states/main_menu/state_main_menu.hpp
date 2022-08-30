@@ -20,10 +20,8 @@
 #include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
 #include "states/game_state.hpp"
 #include "states/context.hpp"
-
-// MENU_OPTIONS
-
-enum class MainMenuOptions { None, PlayGame, About };
+#include "states/main_menu/screens/screen_base.hpp"
+#include "states/main_menu/screens/screen_main.hpp"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -33,6 +31,7 @@ using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 using Tyra::StaticPipeline;
 
+class ScreenBase;
 class StateMainMenu : public GameState {
  public:
   StateMainMenu(Context* context);
@@ -41,22 +40,22 @@ class StateMainMenu : public GameState {
   void init();
   void update(const float& deltaTime);
   void render();
+  void setScreen(ScreenBase* screen);
 
   // Rotating skybox
   StaticMesh* menuSkybox;
 
+  void loadGame();
  private:
   Audio* t_audio;
-  MainMenuOptions activeOption = MainMenuOptions::PlayGame;
-  MainMenuOptions selectedOption = MainMenuOptions::None;
+
   Renderer* t_renderer;
   Sprite title[2];
-  Sprite slot[3];
-  Sprite textPlayGame;
-  Sprite textSelect;
-  Sprite btnCross;
+
   StaPipOptions* skyboxOptions;
   StaticPipeline stapip;
+
+  ScreenBase* screen = nullptr;
 
   const float SLOT_WIDTH = 160;
 
@@ -64,7 +63,8 @@ class StateMainMenu : public GameState {
   u8 shouldInitGame();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
-  void handleInput();
-  void loadGame();
   void loadMenuSong();
+
+  // Scrrens
+  void loadMainScreen();
 };
