@@ -1,5 +1,4 @@
 #pragma once
-#include "states/main_menu/state_main_menu.hpp"
 
 // Its context
 class StateMainMenu;
