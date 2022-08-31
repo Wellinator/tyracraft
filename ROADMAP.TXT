@@ -3,6 +3,8 @@
 * Features for August Update:
     -> PLayer Hand;
     -> Tool (Pickaxe);
-    -> Basic ingame menu for block selection;
-    -> Add "About" in main menu;
-    -> Add "How to play" in main menu;
+    -> In game song;
+    OK -> Basic ingame menu for block selection;
+    OK -> Add "About" in main menu;
+    OK -> Add "How to play" in main menu;
+    OK -> Add "Create World" screen;
