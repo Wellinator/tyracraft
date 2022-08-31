@@ -2,6 +2,7 @@
 #include "states/main_menu/screens/screen_main.hpp"
 #include "states/main_menu/screens/screen_how_to_play.hpp"
 #include "states/main_menu/screens/screen_about.hpp"
+#include "states/main_menu/screens/screen_new_game.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = t_context->context->t_renderer;
@@ -57,6 +58,7 @@ void ScreenMain::init() {
   raw_slot[2].size.set(SLOT_WIDTH, 35);
   raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 80);
 
+  // TODO: Refactor to use the same texture, use texture link
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/slot.png"))
       ->addLink(raw_slot[0].id);
@@ -174,7 +176,7 @@ void ScreenMain::navigate() {
 
   // TODO: PlayGame wold options;
   if (this->selectedOption == ScreenMainOptions::PlayGame)
-    this->context->loadGame();
+    this->context->setScreen(new ScreenNewGame(this->context));
   else if (this->selectedOption == ScreenMainOptions::HowToPlay)
     this->context->setScreen(new ScreenHowToPlay(this->context));
   else if (this->selectedOption == ScreenMainOptions::About)
