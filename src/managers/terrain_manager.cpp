@@ -38,7 +38,6 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
   this->calcRawBlockBBox(mcPip);
   this->initNoise();
-  this->generateNewTerrain(terrainType, false, true);
 }
 
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
@@ -55,8 +54,7 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
   if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
-void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
-                                        bool makeCaves) {
+void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
   int index = 0;
   int noise = 0;
   float density;
@@ -65,7 +63,7 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
     for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
       noise = getNoise(x, z);
       for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
-        if (makeFlat) {
+        if (options.makeFlat) {
           this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
         } else {
           density = getDensity(x, y, z);
@@ -80,8 +78,8 @@ void TerrainManager::generateNewTerrain(int terrainType, bool makeFlat,
     }
   }
 
-  // this->generateWater();
-  this->generateTrees();
+  if (options.enableWater) this->generateWater();
+  if (options.enableTrees) this->generateTrees();
 }
 
 void TerrainManager::initNoise() {

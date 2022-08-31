@@ -131,9 +131,9 @@ u8 StateMainMenu::shouldInitGame() {
   return false;  // this->selectedOption == MainMenuOptions::PlayGame;
 }
 
-void StateMainMenu::loadGame() {
+void StateMainMenu::loadGame(const NewGameOptions& options) {
   delete this->screen;
-  this->context->setState(new StateLoadingGame(this->context));
+  this->context->setState(new StateLoadingGame(this->context, options));
 }
 
 void StateMainMenu::loadMenuSong() {

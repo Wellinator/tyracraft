@@ -7,7 +7,8 @@
 using Tyra::Color;
 using Tyra::M4x4;
 
-World::World() {
+World::World(const NewGameOptions& options) {
+  this->worldOptions = options;
   this->terrainManager = new TerrainManager();
   this->blockManager = new BlockManager();
   this->chunckManager = new ChunckManager();
@@ -29,7 +30,8 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   this->chunckManager->init();
   this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
                              this->blockManager);
-
+                             
+  this->terrainManager->generateNewTerrain(this->worldOptions);
   // Define global and local spawn area
   this->worldSpawnArea.set(this->terrainManager->defineSpawnArea());
   this->spawnArea.set(this->worldSpawnArea);

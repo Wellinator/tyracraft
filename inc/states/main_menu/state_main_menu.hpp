@@ -22,6 +22,7 @@
 #include "states/context.hpp"
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "models/new_game_model.hpp"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -45,7 +46,8 @@ class StateMainMenu : public GameState {
   // Rotating skybox
   StaticMesh* menuSkybox;
 
-  void loadGame();
+  void loadGame(const NewGameOptions& options);
+
  private:
   Audio* t_audio;
 

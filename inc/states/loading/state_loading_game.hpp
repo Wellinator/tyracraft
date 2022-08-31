@@ -19,6 +19,7 @@
 #include "managers/items_repository.hpp"
 #include "ui.hpp"
 #include "thread"
+#include "models/new_game_model.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -31,7 +32,7 @@ enum class LoadingState { Loading, Complete };
 
 class StateLoadingGame : public GameState {
  public:
-  StateLoadingGame(Context* context);
+  StateLoadingGame(Context* context, const NewGameOptions& options);
   ~StateLoadingGame();
 
   void init();
@@ -54,6 +55,7 @@ class StateLoadingGame : public GameState {
   float BASE_HEIGHT;
 
   StateGamePlay* stateGamePlay = nullptr;
+  NewGameOptions worldOptions;
 
   void setPercent(float completed);
   void setBgColorBlack();

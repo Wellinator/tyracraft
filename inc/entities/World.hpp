@@ -15,6 +15,7 @@
 #include "managers/chunck_manager.hpp"
 #include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
+#include "models/new_game_model.hpp"
 
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
@@ -24,7 +25,7 @@ using Tyra::Vec4;
 
 class World {
  public:
-  World();
+  World(const NewGameOptions& options);
   ~World();
 
   Renderer* t_renderer;
@@ -48,6 +49,7 @@ class World {
   Vec4 spawnArea;
   Vec4* lastPlayerPosition = new Vec4();
   u8 framesCounter = 0;
+  NewGameOptions worldOptions = NewGameOptions();
 
   std::vector<Chunck*> tempChuncksToLoad;
   std::vector<Chunck*> tempChuncksToUnLoad;

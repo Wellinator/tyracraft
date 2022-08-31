@@ -20,6 +20,7 @@
 #include "managers/items_repository.hpp"
 #include "debug/debug.hpp"
 #include <chrono>
+#include "models/new_game_model.hpp"
 
 using Tyra::BBox;
 using Tyra::Engine;
@@ -35,7 +36,7 @@ class TerrainManager {
             MinecraftPipeline* mcPip, BlockManager* blockManager);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad,
               std::vector<Chunck*> chuncks, const float& deltaTime);
-  void generateNewTerrain(int terrainType, bool makeFlat, bool makeCaves);
+  void generateNewTerrain(const NewGameOptions& options);
 
   Block* targetBlock = NULL;
   void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
