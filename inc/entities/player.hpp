@@ -26,8 +26,8 @@ using Tyra::Renderer;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
-using Tyra::MD2LoaderOptions;
-using Tyra::MD2Loader;
+using Tyra::ObjLoaderOptions;
+using Tyra::ObjLoader;
 using Tyra::FileUtils;
 
 /** Player 3D object class  */
