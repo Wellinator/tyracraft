@@ -120,7 +120,7 @@ void ScreenNewGame::init() {
         ->addLink(textEnableTrees.id);
 
     textEnableWater.mode = Tyra::MODE_STRETCH;
-    textEnableWater.size.set(128, 16);
+    textEnableWater.size.set(256, 32);
     textEnableWater.position.set(132 + 20, 214 + 60);
 
     this->t_renderer->getTextureRepository()
