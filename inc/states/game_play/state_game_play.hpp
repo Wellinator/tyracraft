@@ -18,12 +18,12 @@
 #include <chrono>
 
 using Tyra::Audio;
+using Tyra::DynamicPipeline;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
-using Tyra::StaPipOptions;
+using Tyra::DynPipOptions;
 using Tyra::StaticMesh;
-using Tyra::StaticPipeline;
 
 enum class GameMode { Survival, Creative };
 
@@ -49,6 +49,9 @@ class StateGamePlay : public GameState {
   // Control Cross click debounce for changing game mode
   std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
   GameMode gameMode = GameMode::Survival;
+  
+  DynPipOptions dynpipOptions;
+  DynamicPipeline dynpip;
 
   void handleInput();
   void controlGameMode();

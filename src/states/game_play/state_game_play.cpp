@@ -6,10 +6,12 @@
 #include "loaders/3d/obj_loader/obj_loader.hpp"
 
 using Tyra::Audio;
+using Tyra::DynamicPipeline;
 using Tyra::FileUtils;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
+using Tyra::Renderer3D;
 using Tyra::RendererSettings;
 
 StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {}
@@ -25,6 +27,7 @@ StateGamePlay::~StateGamePlay() {
 
 void StateGamePlay::init() {
   // TODO: add in game skybox;
+  this->dynpip.setRenderer(&this->context->t_renderer->core);
 }
 
 void StateGamePlay::update(const float& deltaTime) {
@@ -40,8 +43,13 @@ void StateGamePlay::update(const float& deltaTime) {
 
 void StateGamePlay::render() {
   this->world->render();
-  // TODO: Should render only if is third person Cam;
-  // this->context->t_renderer.draw(player->mesh);
+
+  {
+    // TODO: Should render only if is third person Cam;
+    this->context->t_renderer->renderer3D.usePipeline(&dynpip);
+    { dynpip.render(this->player->mesh.get()); }
+  }
+
   this->ui->render();
 }
 
