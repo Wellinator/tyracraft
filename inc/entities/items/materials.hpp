@@ -1,2 +1,2 @@
 #pragma once
-enum class ItemsMaterials { Wooden, Iron, Gold, Diamond };
+enum class ItemsMaterials { Wood, Stone, Iron, Gold, Diamond };
