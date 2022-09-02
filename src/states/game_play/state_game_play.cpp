@@ -40,9 +40,10 @@ void StateGamePlay::update(const float& deltaTime) {
 
 void StateGamePlay::render() {
   this->world->render();
+  this->player->render();
   // TODO: Should render only if is third person Cam;
   // this->context->t_renderer.draw(player->mesh);
-  this->ui->render();
+  // this->ui->render();
 }
 
 void StateGamePlay::handleInput() { this->controlGameMode(); }

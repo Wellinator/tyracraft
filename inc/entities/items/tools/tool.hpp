@@ -2,8 +2,9 @@
 #include <tamtypes.h>
 
 class Tool {
-  Tool();
-  virtual ~Tool();
+ public:
+  Tool(){};
+  virtual ~Tool(){};
 
  protected:
   u8 isEnchanted = 0;

@@ -8,19 +8,18 @@ using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 
 class Axe : public Tool {
+ public:
   Axe(ItemsMaterials material);
   ~Axe();
 
- public:
-  StaticMesh* mesh;
+  std::unique_ptr<StaticMesh> mesh;
+  StaPipOptions* options;
 
+  void init(Renderer* t_renderer);
   void update();
 
  private:
   Renderer* t_renderer;
-  StaPipOptions* options;
 
-  void init(Renderer* t_renderer);
-  void playBreakSound();
   void allocateOptions();
 };

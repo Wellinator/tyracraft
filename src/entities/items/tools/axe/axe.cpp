@@ -1,5 +1,7 @@
 #pragma once
 #include "entities/items/tools/axe/axe.hpp"
+#include "entities/items/tools/tool.hpp"
+#include "entities/items/materials.hpp"
 #include <tyra>
 
 using Tyra::FileUtils;
@@ -9,30 +11,38 @@ using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 
 Axe::Axe(ItemsMaterials material) {}
-Axe::~Axe() {}
+
+Axe::~Axe() {
+  this->t_renderer->getTextureRepository().freeByMesh(this->mesh.get());
+}
 
 void Axe::update() {}
 void Axe::init(Renderer* t_renderer) {
   this->t_renderer = t_renderer;
-  ObjLoader loader;
+  this->allocateOptions();
 
   ObjLoaderOptions objOptions;
   objOptions.flipUVs = true;
-  objOptions.scale = .5F;
+  objOptions.scale = 10.0F;
 
-  auto data =
-      loader.load(FileUtils::fromCwd("meshes/tools/axe/axe.obj"), objOptions);
+  auto data = ObjLoader::load(FileUtils::fromCwd("meshes/tools/axe/axe.obj"),
+                              objOptions);
 
-  data->loadNormals = false;
-  this->mesh = new StaticMesh(data.get());
+  // data.get()->loadNormals = false;
+  this->mesh = std::make_unique<StaticMesh>(data.get());
 
-  mesh->rotation.rotateY(1.60F);
-  mesh->rotation.rotateZ(-6.30F);
-  mesh->scale.scale(0.5F);
+  mesh.get()->translation.translateX(2.85F);
+  mesh.get()->translation.translateY(-3.40F);
+  mesh.get()->translation.translateZ(-10.50F);
 
-  t_renderer->core.texture.repository->addByMesh(
-      // TODO: load texture by material
-      mesh, FileUtils::fromCwd("meshes/tools/axe/wooden/"), "png");
+  mesh.get()->rotation.rotateY(1.60F);
+  mesh.get()->rotation.rotateZ(-6.30F);
+
+  mesh.get()->scale.scale(100.0F);
+
+  // TODO: load texture by material
+  t_renderer->getTextureRepository().addByMesh(
+      mesh.get(), FileUtils::fromCwd("meshes/tools/axe/wooden/"), "png");
 }
 
 void Axe::allocateOptions() {
