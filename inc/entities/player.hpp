@@ -17,18 +17,21 @@
 #include "managers/items_repository.hpp"
 #include "managers/collision_manager.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
+#include "entities/items/materials.hpp"
+#include "entities/items/tools/axe/axe.hpp"
 #include <tyra>
 
 using Tyra::Audio;
 using Tyra::DynamicMesh;
+using Tyra::FileUtils;
+using Tyra::MD2Loader;
+using Tyra::MD2LoaderOptions;
 using Tyra::Ray;
 using Tyra::Renderer;
+using Tyra::StaticPipeline;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
-using Tyra::MD2LoaderOptions;
-using Tyra::MD2Loader;
-using Tyra::FileUtils;
 
 /** Player 3D object class  */
 class Player {
@@ -39,6 +42,8 @@ class Player {
 
   void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
               std::vector<Block*> loadedBlocks);
+  void render();
+
   inline Vec4* getPosition() { return mesh->getPosition(); };
   u8 isFighting, isWalking, isOnGround;
   Vec4 spawnArea;
@@ -51,12 +56,13 @@ class Player {
   // Inventory
   u8 inventoryHasChanged = 1;
   u8 selectedSlotHasChanged = 0;
-  ITEM_TYPES getSelectedInventoryItemType();
+  ItemId getSelectedInventoryItemType();
   u8 getSelectedInventorySlot();
-  inline ITEM_TYPES* getInventoryData() { return inventory; };
+  inline ItemId* getInventoryData() { return inventory; };
 
  private:
   Renderer* t_renderer;
+  StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
   u8 isWalkingAnimationSet, isJumpingAnimationSet, isFightingAnimationSet;
@@ -83,17 +89,16 @@ class Player {
 
   // Inventory
 
-  ITEM_TYPES inventory[INVENTORY_SIZE] = {
-      ITEM_TYPES::dirt,
-      ITEM_TYPES::stone,
-      ITEM_TYPES::sand,
-      ITEM_TYPES::bricks,
-      ITEM_TYPES::glass,
-      ITEM_TYPES::oak_planks,
-      ITEM_TYPES::spruce_planks,
-      ITEM_TYPES::stone_brick,
-      ITEM_TYPES::chiseled_stone_bricks};  // Starts from 0
+  ItemId inventory[INVENTORY_SIZE] = {
+      ItemId::wooden_axe, ItemId::dirt,
+      ItemId::stone,      ItemId::sand,
+      ItemId::bricks,     ItemId::glass,
+      ItemId::oak_planks, ItemId::spruce_planks,
+      ItemId::stone_brick};  // Starts from 0
+
   short int selectedInventoryIndex = 0;
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
+
+  Axe* handledItem = new Axe(ItemsMaterials::Wood);
 };

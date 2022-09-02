@@ -19,11 +19,11 @@ public:
     ItemRepository();
     ~ItemRepository();
     void init(Renderer* t_renderer);
-    Item *getItemById(ITEM_TYPES &itemId);
+    Item *getItemById(ItemId &itemId);
 
-    void linkTextureByItemType(ITEM_TYPES itemType, const u32 t_spriteId);
-    void removeTextureLinkByBlockType(ITEM_TYPES itemType, const u32 t_spriteId);
-    Sprite &getSpriteByItemType(ITEM_TYPES itemType);
+    void linkTextureByItemType(ItemId itemType, const u32 t_spriteId);
+    void removeTextureLinkByBlockType(ItemId itemType, const u32 t_spriteId);
+    Sprite &getSpriteByItemType(ItemId itemType);
 
 private:
     std::vector<Item *> items;
@@ -59,4 +59,7 @@ private:
 
     // Stripped woods
     Item stripped_oak_wood;
+
+    // Toolds
+    Item wooden_axe;
 };
