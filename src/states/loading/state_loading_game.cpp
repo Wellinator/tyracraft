@@ -155,7 +155,7 @@ void StateLoadingGame::nextState() {
 
 void StateLoadingGame::setPercent(float completed) {
   this->_percent = completed;
-  this->loadingprogress->size.set(this->_percent / 100 * 253, 9);
+  this->loadingprogress->size.set(this->_percent / 100 * 250, 9);
 }
 
 void StateLoadingGame::setBgColorBlack() {
