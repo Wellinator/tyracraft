@@ -6,7 +6,6 @@
 #include "loaders/3d/obj_loader/obj_loader.hpp"
 
 using Tyra::Audio;
-using Tyra::DynamicPipeline;
 using Tyra::FileUtils;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
@@ -29,7 +28,6 @@ StateGamePlay::~StateGamePlay() {
 
 void StateGamePlay::init() {
   // TODO: add in game skybox;
-  this->dynpip.setRenderer(&this->context->t_renderer->core);
 }
 
 void StateGamePlay::update(const float& deltaTime) {

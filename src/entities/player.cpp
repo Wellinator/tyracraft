@@ -23,6 +23,14 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
   this->t_audio->adpcm.setVolume(70, 0);
 
+  dynpip.setRenderer(&this->t_renderer->core);
+  dynpipOptions.antiAliasingEnabled = false;
+  dynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+  dynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
+
   // TODO: refactor to handled item, temp stuff...
   {
     this->handledItem->init(t_renderer);
@@ -61,6 +69,9 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 }
 
 void Player::render() {
+  this->t_renderer->renderer3D.usePipeline(&dynpip);
+  dynpip.render(mesh.get(), &dynpipOptions);
+
   if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
     auto& utilityTools = this->t_renderer->renderer3D.utility;
     // TODO: refactor to handledItem structure
@@ -83,10 +94,22 @@ void Player::handleInputCommands(Pad& t_pad) {
     // this->t_audio->playADPCM(jumpAdpcm);
   }
 
-  if (t_pad.getRightJoyPad().h >= 200)
-    this->mesh->rotation.rotateZ(-0.08F);
-  else if (t_pad.getRightJoyPad().h <= 100)
-    this->mesh->rotation.rotateZ(0.08F);
+  if (t_pad.getRightJoyPad().h >= 200) {
+    this->mesh->rotation.rotateY(-0.08F);
+  } else if (t_pad.getRightJoyPad().h <= 100) {
+    this->mesh->rotation.rotateY(0.08F);
+  }
+
+  if (t_pad.getLeftJoyPad().isMoved) {
+    if (!isWalkingAnimationSet) {
+      this->mesh->animation.setSequence(walkSequence);
+      isWalkingAnimationSet = true;
+    }
+    this->mesh->update();
+  } else {
+    this->mesh->animation.setSequence(standStillSequence);
+    isWalkingAnimationSet = false;
+  }
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
@@ -148,7 +171,7 @@ u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB = (BBox)this->mesh->getCurrentBoundingBox();
+  BBox playerBB = *this->mesh->frames[0]->bbox;//(BBox)this->mesh->getCurrentBoundingBox();
   playerBB.getMinMax(&playerMin, &playerMax);
   playerMin += currentPlayerPos;
   playerMax += currentPlayerPos;
@@ -291,20 +314,22 @@ void Player::loadMesh() {
   options.animation.count = 3;
   options.animation.startingIndex = 1;
 
-  auto data = ObjLoader::load(FileUtils::fromCwd("meshes/player/player.obj"), options);
+  auto data =
+      ObjLoader::load(FileUtils::fromCwd("meshes/player/player.obj"), options);
   data.get()->loadNormals = false;
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
 
   this->mesh->rotation.identity();
-  // this->mesh->rotation.rotateX(-1.566F);
-  // this->mesh->rotation.rotateZ(1.566F);
-  
+  this->mesh->rotation.rotateY(-3.14F);
+
+  this->mesh->scale.identity();
+  this->mesh->scale.scaleY(1.22F);
+
   this->t_renderer->getTextureRepository().addByMesh(
       this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
 
   this->mesh->animation.loop = true;
-  this->mesh->animation.setSequence({0, 1, 2});  // walk animation
-
-  // this->mesh->animation.speed = 0.17F;
+  this->mesh->animation.setSequence(standStillSequence);
+  this->mesh->animation.speed = 0.08F;
 }

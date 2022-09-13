@@ -23,18 +23,19 @@
 
 using Tyra::Audio;
 using Tyra::DynamicMesh;
+using Tyra::DynamicPipeline;
+using Tyra::DynPipOptions;
 using Tyra::FileUtils;
 using Tyra::MD2Loader;
 using Tyra::MD2LoaderOptions;
+using Tyra::ObjLoader;
+using Tyra::ObjLoaderOptions;
 using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
-using Tyra::ObjLoaderOptions;
-using Tyra::ObjLoader;
-using Tyra::FileUtils;
 
 /** Player 3D object class  */
 class Player {
@@ -92,16 +93,22 @@ class Player {
 
   // Inventory
 
-  ItemId inventory[INVENTORY_SIZE] = {
-      ItemId::wooden_axe, ItemId::dirt,
-      ItemId::stone,      ItemId::sand,
-      ItemId::bricks,     ItemId::glass,
-      ItemId::oak_planks, ItemId::spruce_planks,
-      ItemId::stone_brick};  // Starts from 0
+  ItemId inventory[INVENTORY_SIZE] = {ItemId::wooden_axe, ItemId::dirt,
+                                      ItemId::stone,      ItemId::sand,
+                                      ItemId::bricks,     ItemId::glass,
+                                      ItemId::oak_planks, ItemId::spruce_planks,
+                                      ItemId::stone_brick};  // Starts from 0
 
   short int selectedInventoryIndex = 0;
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
+
+  DynPipOptions dynpipOptions;
+  DynamicPipeline dynpip;
+
+  // Animations
+  std::vector<u32> walkSequence = {0, 1, 0, 2};
+  std::vector<u32> standStillSequence = {1};
 };
