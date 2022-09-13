@@ -421,8 +421,8 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   }
 
   if (clickedButton.R2) {
-    ITEM_TYPES activeItemType = this->t_player->getSelectedInventoryItemType();
-    if (activeItemType != ITEM_TYPES::empty) {
+    ItemId activeItemType = this->t_player->getSelectedInventoryItemType();
+    if (activeItemType != ItemId::empty) {
       int blockid =
           this->t_itemRepository->getItemById(activeItemType)->blockId;
       if (blockid != AIR_BLOCK) this->putBlock(blockid);

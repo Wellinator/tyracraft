@@ -139,9 +139,9 @@ void Ui::updatePlayerInventory() {
   const float BASE_X = BASE_X_POS + 2;
   const float BASE_Y = BASE_Y_POS + 29 + 2;
 
-  ITEM_TYPES* inventoryData = this->t_player->getInventoryData();
+  ItemId* inventoryData = this->t_player->getInventoryData();
   for (u8 i = 0; i < INVENTORY_SIZE; i++) {
-    if (inventoryData[i] != ITEM_TYPES::empty) {
+    if (inventoryData[i] != ItemId::empty) {
       if (this->playerInventory[i] != NULL) {
         printf("Item on inv at %i, clearing...\n", i);
         this->t_itemRepository->removeTextureLinkByBlockType(

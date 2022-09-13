@@ -5,18 +5,20 @@
 
 using Tyra::Sprite;
 
-class Item
-{
-public:
-    Item();
-    ~Item();
+class Item {
+ public:
+  Item();
+  ~Item();
 
-    /** Block id to render mesh of sprite. */
-    ITEM_TYPES id;
+  /** Item id */
+  ItemType itemType = ItemType::McPipBlock;
 
-    /** Block id to render mesh of sprite. */
-    int blockId;
+  /** Item id */
+  ItemId id;
 
-    /** Sprite to be renderer. */
-    Sprite sprite;
+  /** Block id to render mesh of sprite. */
+  int blockId;
+
+  /** Sprite to be renderer. */
+  Sprite sprite;
 };

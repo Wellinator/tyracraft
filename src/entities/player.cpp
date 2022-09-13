@@ -1,5 +1,7 @@
 #include "entities/player.hpp"
 
+using Tyra::Renderer3D;
+
 // ----
 // Constructors/Destructors
 // ----
@@ -20,6 +22,12 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
   boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
   this->t_audio->adpcm.setVolume(70, 0);
+
+  // TODO: refactor to handled item, temp stuff...
+  {
+    this->handledItem->init(t_renderer);
+    stpip.setRenderer(&t_renderer->core);
+  }
 }
 
 Player::~Player() {}
@@ -45,6 +53,25 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   float terrainHeight = this->getTerrainHeightOnPlayerPosition(
       &loadedBlocks[0], loadedBlocks.size());
   this->updateGravity(deltaTime, terrainHeight);
+
+  this->handledItem->mesh->translation.identity();
+  // this->handledItem->mesh->translation.translate(
+  //     Vec4(this->mesh->getPosition()->x, this->mesh->getPosition()->y - 16,
+  //          this->mesh->getPosition()->z));
+}
+
+void Player::render() {
+  if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
+    auto& utilityTools = this->t_renderer->renderer3D.utility;
+    // TODO: refactor to handledItem structure
+    this->t_renderer->renderer3D.usePipeline(stpip);
+    this->stpip.render(this->handledItem->mesh.get(),
+                       this->handledItem->options);
+
+    utilityTools.drawBBox(
+        this->handledItem->mesh.get()->frame->bbox->getTransformed(
+            this->handledItem->mesh.get()->getModelMatrix()));
+  }
 }
 
 void Player::handleInputCommands(Pad& t_pad) {
@@ -233,7 +260,7 @@ float Player::getTerrainHeightOnPlayerPosition(Block* t_blocks[],
  *
  */
 
-ITEM_TYPES Player::getSelectedInventoryItemType() {
+ItemId Player::getSelectedInventoryItemType() {
   return this->inventory[this->selectedInventoryIndex];
 }
 

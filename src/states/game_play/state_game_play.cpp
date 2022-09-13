@@ -45,14 +45,7 @@ void StateGamePlay::update(const float& deltaTime) {
 
 void StateGamePlay::render() {
   this->world->render();
-
-  {
-    // TODO: Should render only if is third person Cam;
-    TYRA_LOG("Rendering Player");
-    this->context->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(this->player->mesh.get());
-  }
-
+  this->player->render();
   this->ui->render();
 }
 

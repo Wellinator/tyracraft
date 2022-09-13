@@ -2,15 +2,22 @@
 
 #include <math/vec4.hpp>
 
-#define OVERWORLD_H_DISTANCE 256                             // Total horizontal overworld distance;
-#define OVERWORLD_V_DISTANCE 128                             // Total vertical overworld distance;
-#define HALF_OVERWORLD_H_DISTANCE (OVERWORLD_H_DISTANCE / 2) // Half horizontal overworld distance;
-#define HALF_OVERWORLD_V_DISTANCE (OVERWORLD_V_DISTANCE / 2) // Half vertical overworld distance;
-#define OVERWORLD_MIN_DISTANCE -HALF_OVERWORLD_H_DISTANCE    // Min overworld width;
-#define OVERWORLD_MAX_DISTANCE HALF_OVERWORLD_H_DISTANCE     // Max overworld width;
-#define OVERWORLD_MIN_HEIGH -HALF_OVERWORLD_V_DISTANCE       // Min overworld layer for badblock;
-#define OVERWORLD_MAX_HEIGH HALF_OVERWORLD_V_DISTANCE        // Max overworld heigh layer;
-#define OVERWORLD_SIZE ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
+#define OVERWORLD_H_DISTANCE 256  // Total horizontal overworld distance;
+#define OVERWORLD_V_DISTANCE 128  // Total vertical overworld distance;
+#define HALF_OVERWORLD_H_DISTANCE \
+  (OVERWORLD_H_DISTANCE / 2)  // Half horizontal overworld distance;
+#define HALF_OVERWORLD_V_DISTANCE \
+  (OVERWORLD_V_DISTANCE / 2)  // Half vertical overworld distance;
+#define OVERWORLD_MIN_DISTANCE \
+  -HALF_OVERWORLD_H_DISTANCE  // Min overworld width;
+#define OVERWORLD_MAX_DISTANCE \
+  HALF_OVERWORLD_H_DISTANCE  // Max overworld width;
+#define OVERWORLD_MIN_HEIGH \
+  -HALF_OVERWORLD_V_DISTANCE  // Min overworld layer for badblock;
+#define OVERWORLD_MAX_HEIGH \
+  HALF_OVERWORLD_V_DISTANCE  // Max overworld heigh layer;
+#define OVERWORLD_SIZE \
+  ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
 #define CHUNCK_SIZE 16
@@ -24,7 +31,8 @@
 // Defines how many chunks will be loaded from player position
 #define DRAW_DISTANCE_IN_CHUNKS 2
 
-// Define how many blocks will be loaded/unloaded from chunk per step in async loading
+// Define how many blocks will be loaded/unloaded from chunk per step in async
+// loading
 #define UNLOAD_CHUNK_BATCH 256
 #define LOAD_CHUNK_BATCH 128
 
@@ -72,7 +80,8 @@
 #define FIRST_PERSON_CAM 1
 #define THIRD_PERSON_CAM 2
 
-#define MAX_RANGE_PICKER (DUBLE_BLOCK_SIZE * 8.0F) // How far the player can pick a block
+#define MAX_RANGE_PICKER \
+  (DUBLE_BLOCK_SIZE * 8.0F)  // How far the player can pick a block
 
 // Game states
 #define MAIN_MENU 0
@@ -84,51 +93,61 @@
 // World constants
 #define GRAVITY Vec4(0.0f, 20.5f, 0.0f)
 
-enum GAME_MODE
-{
-    SURVIVAL,
-    CREATIVE
+enum class GAME_MODE { SURVIVAL, CREATIVE };
+
+enum class ItemId {
+  // None
+  empty,
+
+  // Blocks
+  dirt,
+  sand,
+  stone,
+  bricks,
+  glass,
+
+  // Ores and Minerals
+  coal_ore_block,
+  diamond_ore_block,
+  iron_ore_block,
+  gold_ore_block,
+  redstone_ore_block,
+  emerald_ore_block,
+
+  // Wood Planks
+  oak_planks,
+  spruce_planks,
+  birch_planks,
+  acacia_planks,
+
+  // Stripped woods
+  stripped_oak_wood,
+
+  // Stone Bricks
+  stone_brick,
+  cracked_stone_bricks,
+  mossy_stone_bricks,
+  chiseled_stone_bricks,
+
+  // Tools
+  wooden_axe,
+  stone_axe,
+  iron_axe,
+  golden_axe,
+  diamond_axe
 };
 
-enum ITEM_TYPES
-{
-    // None
-    empty,
-
-    // Blocks
-    dirt,
-    sand,
-    stone,
-    bricks,
-    glass,
-
-    // Ores and Minerals
-    coal_ore_block,
-    diamond_ore_block,
-    iron_ore_block,
-    gold_ore_block,
-    redstone_ore_block,
-    emerald_ore_block,
-
-    // Wood Planks
-    oak_planks,
-    spruce_planks,
-    birch_planks,
-    acacia_planks,
-
-    // Stripped woods
-    stripped_oak_wood,
-
-    // Stone Bricks
-    stone_brick,
-    cracked_stone_bricks,
-    mossy_stone_bricks,
-    chiseled_stone_bricks
-};
+enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
 #define INVENTORY_SIZE 9
 
-#define MIN_WORLD_POS Vec4(OVERWORLD_MIN_DISTANCE *DUBLE_BLOCK_SIZE, OVERWORLD_MIN_HEIGH *DUBLE_BLOCK_SIZE, OVERWORLD_MIN_DISTANCE *DUBLE_BLOCK_SIZE)
-#define MAX_WORLD_POS Vec4(OVERWORLD_MAX_DISTANCE *DUBLE_BLOCK_SIZE, OVERWORLD_MAX_HEIGH *DUBLE_BLOCK_SIZE, OVERWORLD_MAX_DISTANCE *DUBLE_BLOCK_SIZE)
+#define MIN_WORLD_POS                            \
+  Vec4(OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE, \
+       OVERWORLD_MIN_HEIGH* DUBLE_BLOCK_SIZE,    \
+       OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE)
+#define MAX_WORLD_POS                            \
+  Vec4(OVERWORLD_MAX_DISTANCE* DUBLE_BLOCK_SIZE, \
+       OVERWORLD_MAX_HEIGH* DUBLE_BLOCK_SIZE,    \
+       OVERWORLD_MAX_DISTANCE* DUBLE_BLOCK_SIZE)
 
-#define MAX_FRAME_MS 0.016667F// Comes from 1 / 60;
+#define MAX_FRAME_MS 0.016667F  // Comes from 1 / 60;
