@@ -259,20 +259,25 @@ void Player::moveSelectorToTheRight() {
 
 void Player::loadMesh() {
   ObjLoaderOptions options;
-  options.scale = 20.0F;
+  options.scale = 10.0F;
   options.flipUVs = true;
   options.animation.count = 3;
   options.animation.startingIndex = 1;
 
   auto data = ObjLoader::load(FileUtils::fromCwd("meshes/player/player.obj"), options);
+  data.get()->loadNormals = false;
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
-  this->mesh->rotation.rotateX(-1.566F);
-  this->mesh->rotation.rotateZ(1.566F);
+
+  this->mesh->rotation.identity();
+  // this->mesh->rotation.rotateX(-1.566F);
+  // this->mesh->rotation.rotateZ(1.566F);
+  
   this->t_renderer->getTextureRepository().addByMesh(
       this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
-  
-  this->mesh->animation.setSequence({1, 2, 1});  // walk animation
+
+  this->mesh->animation.loop = true;
+  this->mesh->animation.setSequence({0, 1, 2});  // walk animation
 
   // this->mesh->animation.speed = 0.17F;
 }

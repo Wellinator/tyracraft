@@ -14,7 +14,9 @@ using Tyra::Renderer;
 using Tyra::Renderer3D;
 using Tyra::RendererSettings;
 
-StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {}
+StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {
+  this->init();
+}
 
 StateGamePlay::~StateGamePlay() {
   this->context->t_audio->song.stop();
@@ -46,8 +48,9 @@ void StateGamePlay::render() {
 
   {
     // TODO: Should render only if is third person Cam;
+    TYRA_LOG("Rendering Player");
     this->context->t_renderer->renderer3D.usePipeline(&dynpip);
-    { dynpip.render(this->player->mesh.get()); }
+    dynpip.render(this->player->mesh.get());
   }
 
   this->ui->render();
