@@ -1,5 +1,7 @@
 #include "entities/player.hpp"
 
+using Tyra::Renderer3D;
+
 // ----
 // Constructors/Destructors
 // ----
@@ -52,18 +54,23 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
       &loadedBlocks[0], loadedBlocks.size());
   this->updateGravity(deltaTime, terrainHeight);
 
-  this->handledItem->mesh->setPosition(Vec4(this->mesh->getPosition()->x,
-                                            this->mesh->getPosition()->y - 10,
-                                            this->mesh->getPosition()->z));
+  this->handledItem->mesh->translation.identity();
+  // this->handledItem->mesh->translation.translate(
+  //     Vec4(this->mesh->getPosition()->x, this->mesh->getPosition()->y - 16,
+  //          this->mesh->getPosition()->z));
 }
 
 void Player::render() {
-  // TODO: refactor to handledItem structure
-  this->t_renderer->renderer3D.usePipeline(stpip);
   if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
-    this->stpip.render(this->handledItem->mesh.get());
-    // this->stpip.render(this->handledItem->mesh.get(),
-    //                    this->handledItem->options);
+    auto& utilityTools = this->t_renderer->renderer3D.utility;
+    // TODO: refactor to handledItem structure
+    this->t_renderer->renderer3D.usePipeline(stpip);
+    this->stpip.render(this->handledItem->mesh.get(),
+                       this->handledItem->options);
+
+    utilityTools.drawBBox(
+        this->handledItem->mesh.get()->frame->bbox->getTransformed(
+            this->handledItem->mesh.get()->getModelMatrix()));
   }
 }
 
