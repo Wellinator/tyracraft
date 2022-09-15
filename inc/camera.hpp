@@ -23,10 +23,13 @@
 #include <debug/debug.hpp>
 #include <fastmath.h>
 #include "renderer/renderer_settings.hpp"
+#include <tyra>
 
 using Tyra::CameraInfo3D;
 using Tyra::Pad;
 using Tyra::RendererSettings;
+
+enum class CamType { FirstPerson, ThirdPerson };
 
 /** 3D camera which follow by 3D object. Can be rotated via pad */
 class Camera : public CameraInfo3D {
@@ -34,7 +37,6 @@ class Camera : public CameraInfo3D {
   Vec4 up, position, unitCirclePosition, lookPos;
   float horizontalLevel, verticalLevel, pitch, yaw;
   float const _sensitivity = 4.58425F;
-  u8 camera_type = FIRST_PERSON_CAM;
 
   Camera(const RendererSettings& t_screen);
   ~Camera();
@@ -46,6 +48,7 @@ class Camera : public CameraInfo3D {
   void pointCamera(Pad& t_pad, Mesh& t_mesh);
 
  protected:
+  CamType camera_type = CamType::FirstPerson;
   Vec4* getPosition() { return &position; };
 };
 

@@ -22,8 +22,9 @@ const float CAMERA_Y = 25.0F;
 // Constructors/Destructors
 // ----
 
-Camera::Camera(const RendererSettings& t_screen) : Tyra::CameraInfo3D(&position, &lookPos) {
-  verticalLevel = DUBLE_BLOCK_SIZE * 2;
+Camera::Camera(const RendererSettings& t_screen)
+    : Tyra::CameraInfo3D(&position, &lookPos) {
+  verticalLevel = DUBLE_BLOCK_SIZE * 2.2F;
   pitch = 0.0F;
   yaw = 270.0F;
 }
@@ -61,9 +62,10 @@ void Camera::updateUnitCirclePosition() {
 /** Rotate camera around 3D object */
 void Camera::followBy(Mesh& t_mesh) {
   position.y = unitCirclePosition.y + t_mesh.getPosition()->y;
-  if (camera_type == FIRST_PERSON_CAM) {
-    position.x = t_mesh.getPosition()->x;
-    position.z = t_mesh.getPosition()->z;
+  if (camera_type == CamType::FirstPerson) {
+    const Vec4 direction = (unitCirclePosition.getNormalized() * 3.5F);
+    position.x = t_mesh.getPosition()->x - direction.x;
+    position.z = t_mesh.getPosition()->z - direction.z;
   } else {
     position.x = t_mesh.getPosition()->x + unitCirclePosition.x;
     position.z = t_mesh.getPosition()->z + unitCirclePosition.z;
