@@ -30,7 +30,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   this->chunckManager->init();
   this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
                              this->blockManager);
-                             
+
   this->terrainManager->generateNewTerrain(this->worldOptions);
   // Define global and local spawn area
   this->worldSpawnArea.set(this->terrainManager->defineSpawnArea());
@@ -90,8 +90,10 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     }
   }
 
-  this->unloadScheduledChunks();
-  this->loadScheduledChunks();
+  if (this->framesCounter % 30 == 0) {
+    this->unloadScheduledChunks();
+    this->loadScheduledChunks();
+  }
 }
 
 void World::reloadChangedChunk() {
