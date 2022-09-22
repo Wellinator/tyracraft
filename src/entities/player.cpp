@@ -114,28 +114,18 @@ void Player::handleInputCommands(Pad& t_pad) {
 
 Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
                              const Camera& t_camera) {
-  Vec4 result = *mesh->getPosition();
-  Vec4 normalizedCamera;
-  normalizedCamera.set(t_camera.unitCirclePosition);
-  normalizedCamera.normalize();
-  normalizedCamera *= (this->speed * std::min(deltaTime, MAX_FRAME_MS));
+  if (t_pad.getLeftJoyPad().isCentered) return (*mesh->getPosition());
 
-  if (t_pad.getLeftJoyPad().v <= 100) {
-    result.x += -normalizedCamera.x;
-    result.z += -normalizedCamera.z;
-  } else if (t_pad.getLeftJoyPad().v >= 200) {
-    result.x += normalizedCamera.x;
-    result.z += normalizedCamera.z;
-  }
-  if (t_pad.getLeftJoyPad().h <= 100) {
-    result.x += -normalizedCamera.z;
-    result.z += normalizedCamera.x;
-  } else if (t_pad.getLeftJoyPad().h >= 200) {
-    result.x += normalizedCamera.z;
-    result.z += -normalizedCamera.x;
-  }
-
-  return result;
+  Vec4 camDir = t_camera.unitCirclePosition.getNormalized();
+  Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
+                          (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
+  Vec4 result =
+      Vec4((camDir.x * sensibility.z) + (camDir.z * sensibility.x), 0.0F,
+           (camDir.z * sensibility.z) + (camDir.x * -sensibility.x));
+  result.normalize();
+  result *=
+      (this->speed * sensibility.length() * std::min(deltaTime, MAX_FRAME_MS));
+  return result + *mesh->getPosition();
 }
 
 /** Update player position by gravity and update index of current block */
@@ -171,7 +161,8 @@ u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB = *this->mesh->frames[0]->bbox;//(BBox)this->mesh->getCurrentBoundingBox();
+  BBox playerBB = *this->mesh->frames[0]
+                       ->bbox;  //(BBox)this->mesh->getCurrentBoundingBox();
   playerBB.getMinMax(&playerMin, &playerMax);
   playerMin += currentPlayerPos;
   playerMax += currentPlayerPos;
