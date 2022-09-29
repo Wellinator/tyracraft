@@ -11,12 +11,11 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   this->t_audio = t_audio;
 
   this->loadMesh();
+  this->calcStaticBBox();
 
   isWalking = false;
-  isFighting = false;
   isWalkingAnimationSet = false;
-  isJumpingAnimationSet = false;
-  isFightingAnimationSet = false;
+  isBreakingAnimationSet = false;
 
   walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
   jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
@@ -69,11 +68,23 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 }
 
 void Player::render() {
+  auto& utilityTools = this->t_renderer->renderer3D.utility;
+
   this->t_renderer->renderer3D.usePipeline(&dynpip);
   dynpip.render(mesh.get(), &dynpipOptions);
 
+  // Draw Player bbox
+  {
+    BBox playerBB = *this->staticBBox;
+    utilityTools.drawBBox(
+        playerBB.getTransformed(mesh.get()->getModelMatrix()));
+    utilityTools.drawBBox(playerBB.getTransformed(mesh->getModelMatrix()));
+  }
+
+  // Draw current block bbox
+  { utilityTools.drawBBox(*currentBlock->bbox); }
+
   if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
-    auto& utilityTools = this->t_renderer->renderer3D.utility;
     // TODO: refactor to handledItem structure
     this->t_renderer->renderer3D.usePipeline(stpip);
     this->stpip.render(this->handledItem->mesh.get(),
@@ -88,6 +99,17 @@ void Player::render() {
 void Player::handleInputCommands(Pad& t_pad) {
   if (t_pad.getClicked().L1) this->moveSelectorToTheLeft();
   if (t_pad.getClicked().R1) this->moveSelectorToTheRight();
+
+  if (t_pad.getPressed().L2) {
+    if (!isBreakingAnimationSet) {
+      TYRA_LOG("setSequence(breakBlockSequence)");
+      this->mesh->animation.setSequence(breakBlockSequence);
+      isBreakingAnimationSet = true;
+    }
+  } else {
+    isBreakingAnimationSet = false;
+  }
+
   if (t_pad.getClicked().Cross && this->isOnGround) {
     this->velocity += this->lift * this->speed;
     this->isOnGround = 0;
@@ -102,14 +124,26 @@ void Player::handleInputCommands(Pad& t_pad) {
 
   if (t_pad.getLeftJoyPad().isMoved) {
     if (!isWalkingAnimationSet) {
+      TYRA_LOG("setSequence(walkSequence)");
       this->mesh->animation.setSequence(walkSequence);
       isWalkingAnimationSet = true;
     }
-    this->mesh->update();
   } else {
-    this->mesh->animation.setSequence(standStillSequence);
     isWalkingAnimationSet = false;
   }
+
+  u8 isAnimating = (isBreakingAnimationSet || isWalkingAnimationSet);
+  if (!isAnimating) {
+    if (!isStandStillAnimationSet) {
+      TYRA_LOG("setSequence(standStillSequence)");
+      this->mesh->animation.setSequence(standStillSequence);
+      isStandStillAnimationSet = true;
+    }
+  } else {
+    isStandStillAnimationSet = false;
+  }
+
+  this->mesh->update();
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
@@ -155,7 +189,7 @@ void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
+u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
@@ -233,22 +267,23 @@ u8 Player::updatePosition(Block* t_blocks[], int blocks_ammount,
   return 1;
 }
 
-float Player::getTerrainHeightOnPlayerPosition(Block* t_blocks[],
+float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
                                                int blocks_ammount) {
-  this->currentBlock = NULL;
-  Vec4 playerPos = *this->mesh->getPosition();
-  BBox playerBB = (BBox)this->mesh->getCurrentBoundingBox();
+  float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
+  BBox playerBB =
+      (BBox)this->staticBBox->getTransformed(mesh.get()->getModelMatrix());
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
-  minPlayer += playerPos;
-  maxPlayer += playerPos;
-  float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
-  u8 onBlocksCounter = 0;
+
+  this->currentBlock = NULL;
 
   for (int i = 0; i < blocks_ammount; i++) {
-    if (playerPos.y < t_blocks[i]->maxCorner.y) continue;
+    const float blockHeight = t_blocks[i]->maxCorner.y;
 
-    float distanceToBlock = playerPos.distanceTo(*t_blocks[i]->getPosition());
+    if (playerBB.getBottomFace().axisPosition < blockHeight) continue;
+
+    float distanceToBlock =
+        mesh.get()->getPosition()->distanceTo(*t_blocks[i]->getPosition());
 
     if (distanceToBlock <= MAX_RANGE_PICKER) {
       u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
@@ -257,9 +292,8 @@ float Player::getTerrainHeightOnPlayerPosition(Block* t_blocks[],
                      maxPlayer.z > t_blocks[i]->minCorner.z;
 
       if (isOnBlock) {
-        onBlocksCounter++;
-        if (t_blocks[i]->maxCorner.y > higherY) {
-          higherY = t_blocks[i]->maxCorner.y;
+        if (blockHeight > higherY) {
+          higherY = (blockHeight - BLOCK_SIZE);
           this->currentBlock = t_blocks[i];
         }
       }
@@ -302,8 +336,7 @@ void Player::loadMesh() {
   ObjLoaderOptions options;
   options.scale = 10.0F;
   options.flipUVs = true;
-  options.animation.count = 3;
-  options.animation.startingIndex = 1;
+  options.animation.count = 10;
 
   auto data =
       ObjLoader::load(FileUtils::fromCwd("meshes/player/player.obj"), options);
@@ -323,4 +356,25 @@ void Player::loadMesh() {
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
   this->mesh->animation.speed = 0.08F;
+}
+
+void Player::calcStaticBBox() {
+  const float width = DUBLE_BLOCK_SIZE * 0.6F;
+  const float depth = DUBLE_BLOCK_SIZE * 0.6F;
+  const float height = DUBLE_BLOCK_SIZE * 1.8F;
+  Vec4 minCorner = Vec4();
+  Vec4 maxCorner = Vec4(width, height, depth);
+  u32 count = 8;
+  Vec4** vertices = new Vec4*[count];
+
+  vertices[0] = new Vec4(minCorner);
+  vertices[1] = new Vec4(maxCorner.x, minCorner.y, minCorner.z);
+  vertices[2] = new Vec4(minCorner.x, maxCorner.y, minCorner.z);
+  vertices[3] = new Vec4(minCorner.x, minCorner.y, maxCorner.z);
+  vertices[4] = new Vec4(maxCorner);
+  vertices[5] = new Vec4(minCorner.x, maxCorner.y, maxCorner.z);
+  vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
+  vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
+
+  this->staticBBox = new BBox(*vertices, count);
 }

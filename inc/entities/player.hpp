@@ -49,7 +49,7 @@ class Player {
   void render();
 
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  u8 isFighting, isWalking, isOnGround;
+  u8 isWalking, isOnGround, isBreaking;
   Vec4 spawnArea;
   u16 currentChunckId = 0;
 
@@ -69,7 +69,7 @@ class Player {
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
-  u8 isWalkingAnimationSet, isJumpingAnimationSet, isFightingAnimationSet;
+  u8 isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   u8 isOnBlock, isUnderBlock;
   Audio* t_audio;
   Timer walkTimer, fightTimer;
@@ -81,14 +81,16 @@ class Player {
   // Phisycs values
   Vec4 lift = Vec4(0.0f, -5.0F, 0.0f);
   Vec4 velocity = Vec4(0.0f, 0.0f, 0.0f);
+  BBox* staticBBox;
 
   void loadMesh();
+  void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updateGravity(const float& deltaTime, const float terrainHeight);
-  u8 updatePosition(Block* t_blocks[], int blocks_ammount,
+  u8 updatePosition(Block** t_blocks, int blocks_ammount,
                     const float& deltaTime, const Vec4& nextPlayerPos,
                     u8 isColliding = 0);
-  float getTerrainHeightOnPlayerPosition(Block* t_blocks[], int blocks_ammount);
+  float getTerrainHeightOnPlayerPosition(Block** t_blocks, int blocks_ammount);
   void handleInputCommands(Pad& t_pad);
 
   // Inventory
@@ -109,6 +111,7 @@ class Player {
   DynamicPipeline dynpip;
 
   // Animations
-  std::vector<u32> walkSequence = {0, 1, 0, 2};
+  std::vector<u32> walkSequence = {0, 1, 0, 2, 0};
+  std::vector<u32> breakBlockSequence = {3, 4, 5, 6, 7, 8, 9, 3};
   std::vector<u32> standStillSequence = {1};
 };
