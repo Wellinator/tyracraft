@@ -111,7 +111,7 @@ class Player {
   DynamicPipeline dynpip;
 
   // Animations
-  std::vector<u32> walkSequence = {0, 1, 0, 2, 0};
-  std::vector<u32> breakBlockSequence = {3, 4, 5, 6, 7, 8, 9, 3};
+  std::vector<u32> walkSequence = {2, 1, 0, 1};
+  std::vector<u32> breakBlockSequence = {3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
 };
