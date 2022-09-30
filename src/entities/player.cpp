@@ -193,10 +193,9 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB = *this->hitBox;
+  BBox playerBB =
+      (BBox)this->hitBox->getTransformed(mesh.get()->getModelMatrix());
   playerBB.getMinMax(&playerMin, &playerMax);
-  playerMin += currentPlayerPos;
-  playerMax += currentPlayerPos;
   Vec4 rayOrigin = currentPlayerPos;
   Vec4 rayDir = nextPlayerPos - currentPlayerPos;
   rayDir.normalize();
