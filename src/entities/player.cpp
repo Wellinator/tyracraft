@@ -75,10 +75,11 @@ void Player::render() {
 
   // Draw Player bbox
   {
-    BBox playerBB = *this->staticBBox;
-    utilityTools.drawBBox(
-        playerBB.getTransformed(mesh.get()->getModelMatrix()));
+    BBox playerBB = this->mesh->getCurrentBoundingBox();
     utilityTools.drawBBox(playerBB.getTransformed(mesh->getModelMatrix()));
+
+    utilityTools.drawBBox(
+        (*this->staticBBox).getTransformed(mesh.get()->getModelMatrix()));
   }
 
   // Draw current block bbox
@@ -195,8 +196,7 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB = *this->mesh->frames[0]
-                       ->bbox;  //(BBox)this->mesh->getCurrentBoundingBox();
+  BBox playerBB = *this->staticBBox;
   playerBB.getMinMax(&playerMin, &playerMax);
   playerMin += currentPlayerPos;
   playerMax += currentPlayerPos;
@@ -215,7 +215,7 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
 
     // Check if player would collide (Broad phase);
     // TODO: filter the block that are beyond the max distance of frame;
-    if (playerMin.y >= t_blocks[i]->getPosition()->y) {
+    if (playerMin.y > t_blocks[i]->getPosition()->y) {
       continue;
     };
 
@@ -293,7 +293,7 @@ float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
 
       if (isOnBlock) {
         if (blockHeight > higherY) {
-          higherY = (blockHeight - BLOCK_SIZE);
+          higherY = blockHeight;
           this->currentBlock = t_blocks[i];
         }
       }
@@ -359,11 +359,13 @@ void Player::loadMesh() {
 }
 
 void Player::calcStaticBBox() {
-  const float width = DUBLE_BLOCK_SIZE * 0.6F;
-  const float depth = DUBLE_BLOCK_SIZE * 0.6F;
-  const float height = DUBLE_BLOCK_SIZE * 1.8F;
-  Vec4 minCorner = Vec4();
+  const float width = (DUBLE_BLOCK_SIZE * 0.6F) / 2;
+  const float depth = (DUBLE_BLOCK_SIZE * 0.6F) / 2;
+  const float height = DUBLE_BLOCK_SIZE * 1.6F;
+
+  Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);
+
   u32 count = 8;
   Vec4** vertices = new Vec4*[count];
 
