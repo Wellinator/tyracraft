@@ -63,6 +63,9 @@ class Player {
   ItemId getSelectedInventoryItemType();
   u8 getSelectedInventorySlot();
   inline ItemId* getInventoryData() { return inventory; };
+  inline BBox getHitBox() const {
+    return hitBox->getTransformed(mesh->getModelMatrix());
+  };
 
  private:
   Renderer* t_renderer;

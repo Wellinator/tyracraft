@@ -376,9 +376,20 @@ void TerrainManager::putBlock(u8 blockToPlace) {
   if (this->targetBlock == NULL || this->targetBlock == nullptr) return;
 
   // Prevent to put a block at the player position;
-  if (this->t_player->getPosition()->collidesBox(this->targetBlock->minCorner,
-                                                 this->targetBlock->maxCorner))
-    return;
+  {
+    Vec4 minCorner = Vec4();
+    Vec4 maxCorner = Vec4();
+    this->t_player->getHitBox().getMinMax(&minCorner, &maxCorner);
+
+    u8 willCollideWithPlayer = minCorner.x <= targetBlock->maxCorner.x &&
+                               maxCorner.x >= targetBlock->minCorner.x &&
+                               minCorner.z <= targetBlock->maxCorner.z &&
+                               maxCorner.z >= targetBlock->minCorner.z &&
+                               minCorner.y <= targetBlock->maxCorner.y &&
+                               maxCorner.y >= targetBlock->minCorner.y;
+
+    if (willCollideWithPlayer) return;
+  }
 
   // Detect face
   Vec4 targetPos = ray.at(this->targetBlock->distance);
