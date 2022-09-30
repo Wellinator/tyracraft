@@ -203,18 +203,15 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 inflatedMax = Vec4();
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
-  float maxDistanceOfFrame = this->speed * deltaTime;
 
   for (int i = 0; i < blocks_ammount; i++) {
-    Vec4 tempInflatedMin = Vec4();
-    Vec4 tempInflatedMax = Vec4();
-
-    // Check if player would collide (Broad phase);
-    // TODO: filter the block that are beyond the max distance of frame;
+    // Broad phase
     if (playerMin.y > t_blocks[i]->getPosition()->y) {
       continue;
     };
 
+    Vec4 tempInflatedMin = Vec4();
+    Vec4 tempInflatedMax = Vec4();
     Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
                            t_blocks[i]->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
