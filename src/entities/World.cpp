@@ -54,6 +54,7 @@ void World::render() {
   this->chunckManager->renderer(this->t_renderer, &this->mcPip,
                                 this->blockManager);
   this->renderBlockDamageOverlay();
+  this->renderTargetBlockHitbox(this->terrainManager->targetBlock);
 };
 
 void World::buildInitialPosition() {
@@ -176,6 +177,13 @@ void World::renderBlockDamageOverlay() {
       this->t_renderer->renderer3D.usePipeline(&this->mcPip);
       mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
     }
+  }
+}
+
+void World::renderTargetBlockHitbox(Block* targetBlock) {
+  if (targetBlock) {
+    this->t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox,
+                                                  Color(0, 0, 0));
   }
 }
 
