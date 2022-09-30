@@ -75,11 +75,8 @@ void Player::render() {
 
   // Draw Player bbox
   {
-    BBox playerBB = this->mesh->getCurrentBoundingBox();
-    utilityTools.drawBBox(playerBB.getTransformed(mesh->getModelMatrix()));
-
     utilityTools.drawBBox(
-        (*this->staticBBox).getTransformed(mesh.get()->getModelMatrix()));
+        (*this->hitBox).getTransformed(mesh.get()->getModelMatrix()));
   }
 
   // Draw current block bbox
@@ -196,7 +193,7 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB = *this->staticBBox;
+  BBox playerBB = *this->hitBox;
   playerBB.getMinMax(&playerMin, &playerMax);
   playerMin += currentPlayerPos;
   playerMax += currentPlayerPos;
@@ -271,7 +268,7 @@ float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
                                                int blocks_ammount) {
   float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
   BBox playerBB =
-      (BBox)this->staticBBox->getTransformed(mesh.get()->getModelMatrix());
+      (BBox)this->hitBox->getTransformed(mesh.get()->getModelMatrix());
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
 
@@ -378,5 +375,5 @@ void Player::calcStaticBBox() {
   vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
   vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
 
-  this->staticBBox = new BBox(*vertices, count);
+  this->hitBox = new BBox(*vertices, count);
 }
