@@ -70,7 +70,7 @@ void Player::render() {
   dynpip.render(mesh.get(), &dynpipOptions);
 
   // Draw Player bbox
-  { utilityTools.drawBBox(getHitBox()); }
+  // { utilityTools.drawBBox(getHitBox()); }
 
   if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
     // TODO: refactor to handledItem structure
