@@ -73,6 +73,7 @@ class Player {
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
+  u8 shouldRenderPlayerModel = 0;
   u8 isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   u8 isOnBlock, isUnderBlock;
   Audio* t_audio;

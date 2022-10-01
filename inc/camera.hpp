@@ -47,6 +47,8 @@ class Camera : public CameraInfo3D {
   void followBy(Mesh& t_mesh);
   void pointCamera(Pad& t_pad, Mesh& t_mesh);
 
+  inline const CamType getCamType() const { return camera_type; }
+
  protected:
   CamType camera_type = CamType::FirstPerson;
   Vec4* getPosition() { return &position; };

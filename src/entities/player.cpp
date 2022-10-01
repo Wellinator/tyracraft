@@ -45,10 +45,11 @@ Player::~Player() {}
 
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     std::vector<Block*> loadedBlocks) {
+  this->shouldRenderPlayerModel = t_camera.getCamType() == CamType::ThirdPerson;
+
   this->handleInputCommands(t_pad);
 
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-
   if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
     this->updatePosition(&loadedBlocks[0], loadedBlocks.size(), deltaTime,
                          nextPlayerPos);
@@ -66,8 +67,10 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 void Player::render() {
   auto& utilityTools = this->t_renderer->renderer3D.utility;
 
-  this->t_renderer->renderer3D.usePipeline(&dynpip);
-  dynpip.render(mesh.get(), &dynpipOptions);
+  if (shouldRenderPlayerModel) {
+    this->t_renderer->renderer3D.usePipeline(&dynpip);
+    dynpip.render(mesh.get(), &dynpipOptions);
+  }
 
   // Draw Player bbox
   // { utilityTools.drawBBox(getHitBox()); }
