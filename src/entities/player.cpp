@@ -49,13 +49,9 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
 
-  if (nextPlayerPos.x != this->mesh->getPosition()->x ||
-      nextPlayerPos.y != this->mesh->getPosition()->y ||
-      nextPlayerPos.z != this->mesh->getPosition()->z) {
-    if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
-      this->updatePosition(&loadedBlocks[0], loadedBlocks.size(), deltaTime,
-                           nextPlayerPos);
-  }
+  if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
+    this->updatePosition(&loadedBlocks[0], loadedBlocks.size(), deltaTime,
+                         nextPlayerPos);
 
   float terrainHeight = this->getTerrainHeightOnPlayerPosition(
       &loadedBlocks[0], loadedBlocks.size());
@@ -74,13 +70,7 @@ void Player::render() {
   dynpip.render(mesh.get(), &dynpipOptions);
 
   // Draw Player bbox
-  {
-    utilityTools.drawBBox(
-        (*this->hitBox).getTransformed(mesh.get()->getModelMatrix()));
-  }
-
-  // Draw current block bbox
-  { utilityTools.drawBBox(*currentBlock->bbox); }
+  { utilityTools.drawBBox(getHitBox()); }
 
   if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
     // TODO: refactor to handledItem structure
@@ -100,7 +90,7 @@ void Player::handleInputCommands(Pad& t_pad) {
 
   if (t_pad.getPressed().L2) {
     if (!isBreakingAnimationSet) {
-      TYRA_LOG("setSequence(breakBlockSequence)");
+      this->mesh->animation.speed = baseAnimationSpeed * 3;
       this->mesh->animation.setSequence(breakBlockSequence);
       isBreakingAnimationSet = true;
     }
@@ -122,7 +112,7 @@ void Player::handleInputCommands(Pad& t_pad) {
 
   if (t_pad.getLeftJoyPad().isMoved) {
     if (!isWalkingAnimationSet) {
-      TYRA_LOG("setSequence(walkSequence)");
+      this->mesh->animation.speed = baseAnimationSpeed;
       this->mesh->animation.setSequence(walkSequence);
       isWalkingAnimationSet = true;
     }
@@ -133,7 +123,6 @@ void Player::handleInputCommands(Pad& t_pad) {
   u8 isAnimating = (isBreakingAnimationSet || isWalkingAnimationSet);
   if (!isAnimating) {
     if (!isStandStillAnimationSet) {
-      TYRA_LOG("setSequence(standStillSequence)");
       this->mesh->animation.setSequence(standStillSequence);
       isStandStillAnimationSet = true;
     }
@@ -193,8 +182,7 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin = Vec4();
   Vec4 playerMax = Vec4();
-  BBox playerBB =
-      (BBox)this->hitBox->getTransformed(mesh.get()->getModelMatrix());
+  BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
   Vec4 rayOrigin = currentPlayerPos;
   Vec4 rayDir = nextPlayerPos - currentPlayerPos;
@@ -327,7 +315,7 @@ void Player::moveSelectorToTheRight() {
 
 void Player::loadMesh() {
   ObjLoaderOptions options;
-  options.scale = 10.0F;
+  options.scale = 15.0F;
   options.flipUVs = true;
   options.animation.count = 10;
 
@@ -341,7 +329,6 @@ void Player::loadMesh() {
   this->mesh->rotation.rotateY(-3.14F);
 
   this->mesh->scale.identity();
-  this->mesh->scale.scaleY(1.22F);
 
   this->t_renderer->getTextureRepository().addByMesh(
       this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
@@ -352,9 +339,9 @@ void Player::loadMesh() {
 }
 
 void Player::calcStaticBBox() {
-  const float width = (DUBLE_BLOCK_SIZE * 0.6F) / 2;
-  const float depth = (DUBLE_BLOCK_SIZE * 0.6F) / 2;
-  const float height = DUBLE_BLOCK_SIZE * 1.6F;
+  const float width = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
+  const float depth = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
+  const float height = DUBLE_BLOCK_SIZE * 1.8F;
 
   Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);

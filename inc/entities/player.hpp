@@ -26,6 +26,7 @@ using Tyra::DynamicMesh;
 using Tyra::DynamicPipeline;
 using Tyra::DynPipOptions;
 using Tyra::FileUtils;
+using Tyra::M4x4;
 using Tyra::MD2Loader;
 using Tyra::MD2LoaderOptions;
 using Tyra::ObjLoader;
@@ -64,7 +65,7 @@ class Player {
   u8 getSelectedInventorySlot();
   inline ItemId* getInventoryData() { return inventory; };
   inline BBox getHitBox() const {
-    return hitBox->getTransformed(mesh->getModelMatrix());
+    return hitBox->getTransformed(mesh->translation);
   };
 
  private:
@@ -114,7 +115,8 @@ class Player {
   DynamicPipeline dynpip;
 
   // Animations
+  float baseAnimationSpeed = 0.08F;
   std::vector<u32> walkSequence = {2, 1, 0, 1};
-  std::vector<u32> breakBlockSequence = {3, 4, 5, 6, 7, 8, 9};
+  std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
 };
