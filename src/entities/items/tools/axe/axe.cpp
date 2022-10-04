@@ -32,9 +32,9 @@ void Axe::init(Renderer* t_renderer) {
   this->mesh = std::make_unique<StaticMesh>(data.get());
 
   mesh.get()->translation.identity();
-  mesh.get()->translation.translateX(2.85F);
-  mesh.get()->translation.translateY(-3.40F);
-  mesh.get()->translation.translateZ(-10.50F);
+  // mesh.get()->translation.translateX(2.85F);
+  // mesh.get()->translation.translateY(-3.40F);
+  // mesh.get()->translation.translateZ(-10.50F);
 
   // mesh.get()->rotation.identity();
   mesh.get()->rotation.rotateY(1.60F);

@@ -58,33 +58,31 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
       &loadedBlocks[0], loadedBlocks.size());
   this->updateGravity(deltaTime, terrainHeight);
 
-  this->handledItem->mesh->translation.identity();
-  // this->handledItem->mesh->translation.translate(
-  //     Vec4(this->mesh->getPosition()->x, this->mesh->getPosition()->y - 16,
-  //          this->mesh->getPosition()->z));
+  // this->handledItem->mesh->translation.identity();
+  // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
 void Player::render() {
-  auto& utilityTools = this->t_renderer->renderer3D.utility;
-
   if (shouldRenderPlayerModel) {
     this->t_renderer->renderer3D.usePipeline(&dynpip);
     dynpip.render(mesh.get(), &dynpipOptions);
   }
 
+  // auto& utilityTools = this->t_renderer->renderer3D.utility;
+
   // Draw Player bbox
   // { utilityTools.drawBBox(getHitBox()); }
 
-  if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
-    // TODO: refactor to handledItem structure
-    this->t_renderer->renderer3D.usePipeline(stpip);
-    this->stpip.render(this->handledItem->mesh.get(),
-                       this->handledItem->options);
+  // if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
+  //   // TODO: refactor to handledItem structure
+  //   this->t_renderer->renderer3D.usePipeline(stpip);
+  //   this->stpip.render(this->handledItem->mesh.get(),
+  //                      this->handledItem->options);
 
-    utilityTools.drawBBox(
-        this->handledItem->mesh.get()->frame->bbox->getTransformed(
-            this->handledItem->mesh.get()->getModelMatrix()));
-  }
+  //   utilityTools.drawBBox(
+  //       this->handledItem->mesh.get()->frame->bbox->getTransformed(
+  //           this->handledItem->mesh.get()->getModelMatrix()));
+  // }
 }
 
 void Player::handleInputCommands(Pad& t_pad) {
