@@ -84,7 +84,7 @@ class Player {
   float speed = 100;
 
   // Phisycs values
-  Vec4 lift = Vec4(0.0f, -5.0F, 0.0f);
+  Vec4 lift = Vec4(0.0f, -2.8F, 0.0f);
   Vec4 velocity = Vec4(0.0f, 0.0f, 0.0f);
   BBox* hitBox;
 
