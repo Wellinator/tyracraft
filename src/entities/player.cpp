@@ -320,8 +320,8 @@ void Player::loadMesh() {
   options.flipUVs = true;
   options.animation.count = 10;
 
-  auto data =
-      ObjLoader::load(FileUtils::fromCwd("meshes/player/player.obj"), options);
+  auto data = ObjLoader::load(
+      FileUtils::fromCwd("meshes/player/model/player.obj"), options);
   data.get()->loadNormals = false;
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
