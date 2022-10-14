@@ -42,6 +42,7 @@ using Tyra::Vec4;
 class Player {
  public:
   std::unique_ptr<DynamicMesh> mesh;
+  std::unique_ptr<DynamicMesh> armMesh;
   Player(Renderer* t_renderer, Audio* t_audio);
   ~Player();
 
@@ -89,6 +90,7 @@ class Player {
   BBox* hitBox;
 
   void loadMesh();
+  void loadArmMesh();
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updateGravity(const float& deltaTime, const float terrainHeight);
@@ -100,7 +102,7 @@ class Player {
 
   // Inventory
 
-  ItemId inventory[INVENTORY_SIZE] = {ItemId::wooden_axe, ItemId::dirt,
+  ItemId inventory[INVENTORY_SIZE] = {ItemId::empty,      ItemId::dirt,
                                       ItemId::stone,      ItemId::sand,
                                       ItemId::bricks,     ItemId::glass,
                                       ItemId::oak_planks, ItemId::spruce_planks,
@@ -112,12 +114,20 @@ class Player {
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
-  DynPipOptions dynpipOptions;
+  DynPipOptions modelDynpipOptions;
+  DynPipOptions armDynpipOptions;
   DynamicPipeline dynpip;
 
   // Animations
+  // Player body
   float baseAnimationSpeed = 0.08F;
   std::vector<u32> walkSequence = {2, 1, 0, 1};
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
+
+  // Player arm
+  std::vector<u32> armStandStillSequence = {6};
+  std::vector<u32> armWalkingSequence = {0, 1, 2, 3,  4,  5, 6,
+                                         7, 8, 9, 10, 11, 12};
+  std::vector<u32> armHitingSequence = {13, 14, 15, 16, 17, 18, 19, 20};
 };

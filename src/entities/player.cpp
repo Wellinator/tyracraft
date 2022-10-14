@@ -11,6 +11,7 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   this->t_audio = t_audio;
 
   this->loadMesh();
+  this->loadArmMesh();
   this->calcStaticBBox();
 
   isWalking = false;
@@ -23,11 +24,11 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   this->t_audio->adpcm.setVolume(70, 0);
 
   dynpip.setRenderer(&this->t_renderer->core);
-  dynpipOptions.antiAliasingEnabled = false;
-  dynpipOptions.frustumCulling =
+  modelDynpipOptions.antiAliasingEnabled = false;
+  modelDynpipOptions.frustumCulling =
       Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  dynpipOptions.textureMappingType =
+  modelDynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+  modelDynpipOptions.textureMappingType =
       Tyra::PipelineTextureMappingType::TyraNearest;
 
   // TODO: refactor to handled item, temp stuff...
@@ -65,7 +66,12 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 void Player::render() {
   if (shouldRenderPlayerModel) {
     this->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(mesh.get(), &dynpipOptions);
+    dynpip.render(mesh.get(), &modelDynpipOptions);
+  }
+
+  if (this->getSelectedInventoryItemType() == ItemId::empty) {
+    this->t_renderer->renderer3D.usePipeline(&dynpip);
+    dynpip.render(armMesh.get(), &armDynpipOptions);
   }
 
   // auto& utilityTools = this->t_renderer->renderer3D.utility;
@@ -93,6 +99,10 @@ void Player::handleInputCommands(Pad& t_pad) {
     if (!isBreakingAnimationSet) {
       this->mesh->animation.speed = baseAnimationSpeed * 3;
       this->mesh->animation.setSequence(breakBlockSequence);
+
+      this->armMesh->animation.speed = baseAnimationSpeed * 6;
+      this->armMesh->animation.setSequence(armHitingSequence);
+
       isBreakingAnimationSet = true;
     }
   } else {
@@ -115,6 +125,10 @@ void Player::handleInputCommands(Pad& t_pad) {
     if (!isWalkingAnimationSet) {
       this->mesh->animation.speed = baseAnimationSpeed;
       this->mesh->animation.setSequence(walkSequence);
+
+      this->armMesh->animation.speed = baseAnimationSpeed * 3;
+      this->armMesh->animation.setSequence(armWalkingSequence);
+
       isWalkingAnimationSet = true;
     }
   } else {
@@ -125,6 +139,7 @@ void Player::handleInputCommands(Pad& t_pad) {
   if (!isAnimating) {
     if (!isStandStillAnimationSet) {
       this->mesh->animation.setSequence(standStillSequence);
+      this->armMesh->animation.setSequence(armStandStillSequence);
       isStandStillAnimationSet = true;
     }
   } else {
@@ -132,6 +147,7 @@ void Player::handleInputCommands(Pad& t_pad) {
   }
 
   this->mesh->update();
+  this->armMesh->update();
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
@@ -316,7 +332,7 @@ void Player::moveSelectorToTheRight() {
 
 void Player::loadMesh() {
   ObjLoaderOptions options;
-  options.scale = 15.0F;
+  options.scale = 5.0F;
   options.flipUVs = true;
   options.animation.count = 10;
 
@@ -337,6 +353,47 @@ void Player::loadMesh() {
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
   this->mesh->animation.speed = 0.08F;
+}
+
+void Player::loadArmMesh() {
+  ObjLoaderOptions options;
+  options.scale = 15.0F;
+  options.flipUVs = true;
+  options.animation.count = 21;
+
+  auto data =
+      ObjLoader::load(FileUtils::fromCwd("meshes/player/arm/arm.obj"), options);
+  data.get()->loadNormals = false;
+
+  this->armMesh = std::make_unique<DynamicMesh>(data.get());
+
+  this->armMesh->scale.identity();
+  this->armMesh->scale.scaleX(0.7F);
+  this->armMesh->scale.scaleZ(1.1F);
+
+  this->armMesh->translation.identity();
+  this->armMesh->translation.translateZ(-15.0F);
+  this->armMesh->translation.translateY(-8.0F);
+  this->armMesh->translation.translateX(5.0F);
+
+  this->armMesh->rotation.identity();
+  this->armMesh->rotation.rotateY(-3.14F);
+
+  this->t_renderer->getTextureRepository().addByMesh(
+      this->armMesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+
+  this->armMesh->animation.loop = true;
+  this->armMesh->animation.setSequence(armStandStillSequence);
+  this->armMesh->animation.speed = 0.08F;
+
+  armDynpipOptions.antiAliasingEnabled = false;
+  armDynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  armDynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+  armDynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
+  armDynpipOptions.transformationType =
+      Tyra::PipelineTransformationType::TyraMP;
 }
 
 void Player::calcStaticBBox() {
