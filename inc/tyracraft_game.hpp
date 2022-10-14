@@ -28,6 +28,7 @@ class TyraCraftGame : public Tyra::Game {
   Vec4 cameraPosition, cameraLookAt;
 
   Tyra::Engine* engine;
+  int FPSCounter;
 };
 
 }  // namespace TyraCraft
