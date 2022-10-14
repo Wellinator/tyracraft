@@ -65,13 +65,9 @@ float Chunck::getVisibityByPosition(float d) {
 void Chunck::clear() {
   this->clearMcpipBlocks();
 
-  // Delete pointers
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    if (this->blocks[blockIndex] != NULL &&
-        this->blocks[blockIndex] != nullptr) {
-      delete this->blocks[blockIndex];
-      this->blocks[blockIndex] = NULL;
-    }
+    delete this->blocks[blockIndex];
+    this->blocks[blockIndex] = NULL;
   }
 
   this->blocks.clear();
@@ -94,8 +90,6 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
 void Chunck::updateDrawData() { this->filterSingleAndMultiBlocks(); }
 
 void Chunck::filterSingleAndMultiBlocks() {
-  this->clearMcpipBlocks();
-
   for (u16 i = 0; i < this->blocks.size(); i++) {
     McpipBlock* tempMcpipBlock = new McpipBlock();
     tempMcpipBlock->model = &this->blocks[i]->model;
