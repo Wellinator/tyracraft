@@ -30,14 +30,6 @@ class Chunck {
 
   u16 id = 0;
 
-  int unloaderCounter = 0;
-  int loaderCounter = 0;
-  int singleTexUnloaderCounter = 0;
-  int singleTexloaderCounter = 0;
-  int multiTexUnloaderCounter = 0;
-  int multiTexloaderCounter = 0;
-  u16 lastLoadedOffset;
-
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
@@ -56,7 +48,6 @@ class Chunck {
   void addBlock(Block* t_block);
 
  private:
-  Texture* texture;
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
 
