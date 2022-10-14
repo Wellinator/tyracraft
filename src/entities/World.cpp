@@ -60,6 +60,7 @@ void World::render() {
 void World::buildInitialPosition() {
   Chunck* initialChunck =
       this->chunckManager->getChunckByPosition(this->worldSpawnArea);
+  initialChunck->clear();
   this->terrainManager->buildChunk(initialChunck);
   this->scheduleChunksNeighbors(initialChunck, true);
 };
@@ -101,6 +102,7 @@ void World::reloadChangedChunk() {
   Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
   Chunck* chunckToUpdate =
       this->chunckManager->getChunckByPosition(changedPosition);
+  chunckToUpdate->clear();
   this->terrainManager->buildChunk(chunckToUpdate);
   this->terrainManager->setChunckToUpdated();
 }
@@ -116,6 +118,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
       if (force_loading) {
+        chuncks[i]->clear();
         this->terrainManager->buildChunk(chuncks[i]);
       } else if (chuncks[i]->state != ChunkState::Loaded)
         // Add chunck to load
@@ -129,21 +132,34 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
 
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() == 0) return;
+  int loadPerCall = 0;
+
   for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
     if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
     this->terrainManager->buildChunk(tempChuncksToLoad[i]);
-    return;
+
+    if (loadPerCall >= this->maxLoadPerCall)
+      return;
+    else
+      loadPerCall++;
   }
+
   tempChuncksToLoad.clear();
 }
 
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() == 0) return;
+  int unloadPerCall = 0;
   for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
     if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
     tempChuncksToUnLoad[i]->clear();
-    return;
+
+    if (unloadPerCall >= this->maxUnloadPerCall)
+      return;
+    else
+      unloadPerCall++;
   }
+
   tempChuncksToUnLoad.clear();
 }
 

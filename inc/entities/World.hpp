@@ -51,6 +51,9 @@ class World {
   u8 framesCounter = 0;
   NewGameOptions worldOptions = NewGameOptions();
 
+  int maxLoadPerCall = 1;
+  int maxUnloadPerCall = 2;
+
   std::vector<Chunck*> tempChuncksToLoad;
   std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
