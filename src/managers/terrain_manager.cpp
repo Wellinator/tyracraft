@@ -252,7 +252,6 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  t_chunck->clear();
   for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
     for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
@@ -260,22 +259,22 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
         u8 block_type = this->terrain[blockIndex];
         if (block_type == AIR_BLOCK) continue;
 
-        Vec4* tempBlockOffset = new Vec4(x, y, z);
-        Vec4 blockPosition = (*tempBlockOffset * DUBLE_BLOCK_SIZE);
+        Vec4 tempBlockOffset = Vec4(x, y, z);
+        Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        u8 isHidden = this->isBlockHidden(
-            tempBlockOffset->x, tempBlockOffset->y, tempBlockOffset->z);
+        u8 isHidden = this->isBlockHidden(tempBlockOffset.x, tempBlockOffset.y,
+                                          tempBlockOffset.z);
 
         // Are block's coordinates in world range?
         if (!isHidden &&
-            tempBlockOffset->collidesBox(minWorldPos, maxWorldPos)) {
+            tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
           BlockInfo* blockInfo =
               this->t_blockManager->getBlockTexOffsetByType(block_type);
           if (blockInfo != nullptr) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
 
-            float bright = this->getBlockLuminosity(tempBlockOffset->y);
+            float bright = this->getBlockLuminosity(tempBlockOffset.y);
             block->color = Color(bright, bright, bright, 128.0F);
 
             block->setPosition(blockPosition);
@@ -292,9 +291,6 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
             t_chunck->addBlock(block);
           }
         }
-
-        delete tempBlockOffset;
-        tempBlockOffset = NULL;
       }
     }
   }
@@ -337,9 +333,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
         {
           u8 isInFrustum = chuncks[h]->blocks[i]->bbox->isInFrustum(
               frustumPlanes, chuncks[h]->blocks[i]->model);
-          if (!isInFrustum) {
-            return;
-          }
+          if (!isInFrustum) continue;
         }
 
         float intersectionPoint = Utils::Raycast(
