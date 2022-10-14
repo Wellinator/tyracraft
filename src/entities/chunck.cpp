@@ -11,21 +11,23 @@ Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
   this->model.identity();
 
   u32 count = 8;
-  Vec4** vertices = new Vec4*[count];
-  vertices[0] = new Vec4(minCorner);
-  vertices[1] = new Vec4(maxCorner.x, minCorner.y, minCorner.z);
-  vertices[2] = new Vec4(minCorner.x, maxCorner.y, minCorner.z);
-  vertices[3] = new Vec4(minCorner.x, minCorner.y, maxCorner.z);
-  vertices[4] = new Vec4(maxCorner);
-  vertices[5] = new Vec4(minCorner.x, maxCorner.y, maxCorner.z);
-  vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
-  vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
-  this->bbox = new BBox(*vertices, count);
+  Vec4 vertices[count] = {
+      Vec4(minCorner),
+      Vec4(maxCorner.x, minCorner.y, minCorner.z),
+      Vec4(minCorner.x, maxCorner.y, minCorner.z),
+      Vec4(minCorner.x, minCorner.y, maxCorner.z),
+      Vec4(maxCorner),
+      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
+      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
+      Vec4(maxCorner.x, maxCorner.y, minCorner.z),
+  };
+  this->bbox = new BBox(vertices, count);
 };
 
 Chunck::~Chunck() {
   delete this->minCorner;
   delete this->maxCorner;
+  delete this->bbox;
 };
 
 void Chunck::update(Player* t_player) {
@@ -89,9 +91,7 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
   }
 }
 
-void Chunck::updateDrawData() {
-  this->filterSingleAndMultiBlocks();
-}
+void Chunck::updateDrawData() { this->filterSingleAndMultiBlocks(); }
 
 void Chunck::filterSingleAndMultiBlocks() {
   this->clearMcpipBlocks();
