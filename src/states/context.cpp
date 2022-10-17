@@ -5,6 +5,7 @@ Context::Context(Engine* t_engine, Camera* t_camera) {
   this->t_audio = &t_engine->audio;
   this->t_pad = &t_engine->pad;
   this->t_camera = t_camera;
+  this->t_soundManager = new SoundManager(t_engine);
 }
 
 Context::~Context() { delete this->state; }

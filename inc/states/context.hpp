@@ -1,5 +1,6 @@
 #pragma once
 #include "states/game_state.hpp"
+#include "managers/sound_manager.hpp"
 #include "camera.hpp"
 #include <tyra>
 
@@ -23,6 +24,7 @@ class Context {
   Audio* t_audio;
   Pad* t_pad;
   Camera* t_camera;
+  SoundManager* t_soundManager;
 
  private:
   GameState* state;
