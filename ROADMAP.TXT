@@ -1,10 +1,13 @@
 ############ TyraCfat Roadmap ############
 
-* Features for August Update:
-    -> PLayer Hand;
-    -> Tool (Pickaxe);
-    -> In game song;
-    OK -> Basic ingame menu for block selection;
-    OK -> Add "About" in main menu;
-    OK -> Add "How to play" in main menu;
-    OK -> Add "Create World" screen;
+* Features for pre-alpha release (v0.1):
+    ✅ -> PLayer Hand;
+        ✅ -> Walking and Hiting Animation;
+    🔲 -> Tool (Pickaxe) (WIP);
+    🔲 -> In game song manger;
+        🔲 -> Sound FX and background music;
+    ✅ -> Basic ingame menu for block selection;
+    ✅ -> Add "About" in main menu;
+    ✅ -> Add "How to play" in main menu;
+    ✅ -> Add "Create World" screen;
+    🔲 -> In game MENU;
