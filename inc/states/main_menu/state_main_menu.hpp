@@ -23,6 +23,7 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "models/new_game_model.hpp"
+#include "tyra"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -66,6 +67,7 @@ class StateMainMenu : public GameState {
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
+  const std::string getRandonMenuSongName();
 
   // Scrrens
   void loadMainScreen();

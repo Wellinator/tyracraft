@@ -7,6 +7,7 @@
 
 using Tyra::Audio;
 using Tyra::FileUtils;
+using Tyra::Math;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
@@ -24,11 +25,7 @@ StateMainMenu::~StateMainMenu() {
 
 void StateMainMenu::init() {
   /**
-   * TODO: ->
-   * - Load menu option
-   *      - Play Game (DONE!)
-   *      - How to play
-   *      - About
+   * TODO: Add menu actions sfx;
    * */
 
   this->stapip.setRenderer(&this->context->t_renderer->core);
@@ -138,10 +135,21 @@ void StateMainMenu::loadGame(const NewGameOptions& options) {
 
 void StateMainMenu::loadMenuSong() {
   // Load song
-  this->context->t_audio->song.load(FileUtils::fromCwd("sounds/menu.wav"));
+  this->context->t_audio->song.load(
+      FileUtils::fromCwd(this->getRandonMenuSongName()));
   this->context->t_audio->song.inLoop = true;
-  this->context->t_audio->song.setVolume(95);
+  this->context->t_audio->song.setVolume(80);
   this->context->t_audio->song.play();
+}
+
+const std::string StateMainMenu::getRandonMenuSongName() {
+  std::string result = "sounds/menu/menu";
+  std::string songExtension = ".wav";
+
+  int randSongId = Math::randomi(1, 4);
+  result.append(std::to_string(randSongId));
+  result.append(songExtension);
+  return result;
 }
 
 void StateMainMenu::setScreen(ScreenBase* screen) {
