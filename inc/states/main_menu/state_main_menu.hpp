@@ -63,12 +63,8 @@ class StateMainMenu : public GameState {
   const float SLOT_WIDTH = 160;
 
   u8 hasFinished();
-  u8 shouldInitGame();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
   const std::string getRandonMenuSongName();
-
-  // Scrrens
-  void loadMainScreen();
 };

@@ -124,10 +124,6 @@ void StateMainMenu::unloadTextures() {
   }
 }
 
-u8 StateMainMenu::shouldInitGame() {
-  return false;  // this->selectedOption == MainMenuOptions::PlayGame;
-}
-
 void StateMainMenu::loadGame(const NewGameOptions& options) {
   delete this->screen;
   this->context->setState(new StateLoadingGame(this->context, options));
