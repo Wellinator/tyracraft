@@ -89,7 +89,6 @@ void ScreenAbout::init() {
 
 void ScreenAbout::handleInput() {
   if (this->canReturnToMainMenu()) return this->navigate();
-  // if (this->context->context->t_pad->getClicked().Triangle)
 }
 void ScreenAbout::navigate() {
   this->context->setScreen(new ScreenMain(this->context));
