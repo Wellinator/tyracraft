@@ -197,12 +197,14 @@ void ScreenNewGame::handleInput() {
   // Change active option
   {
     if (this->context->context->t_pad->getClicked().DpadDown) {
+      this->playClickSound();
       int nextOption = (int)this->activeOption + 1;
       if (nextOption > 3)
         this->activeOption = ScreenNewGameOptions::FlatWorld;
       else
         this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
     } else if (this->context->context->t_pad->getClicked().DpadUp) {
+      this->playClickSound();
       int nextOption = (int)this->activeOption - 1;
       if (nextOption < 0)
         this->activeOption = ScreenNewGameOptions::CreateNewWorld;
@@ -211,9 +213,11 @@ void ScreenNewGame::handleInput() {
     }
   }
 
-  if (this->context->context->t_pad->getClicked().Triangle)
+  if (this->context->context->t_pad->getClicked().Triangle) {
+    this->playClickSound();
     this->backToMainMenu();
-  else if (this->context->context->t_pad->getClicked().Cross) {
+  } else if (this->context->context->t_pad->getClicked().Cross) {
+    this->playClickSound();
     this->selectedOption = this->activeOption;
     this->updateModel();
     if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld)

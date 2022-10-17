@@ -125,24 +125,25 @@ void ScreenMain::handleInput() {
   // Change active option
   {
     if (this->context->context->t_pad->getClicked().DpadDown) {
+      this->playClickSound();
       int nextOption = (int)this->activeOption + 1;
       if (nextOption > 2)
         this->activeOption = ScreenMainOptions::PlayGame;
       else
         this->activeOption = static_cast<ScreenMainOptions>(nextOption);
-      TYRA_LOG("New option -> ", (int)this->activeOption);
     } else if (this->context->context->t_pad->getClicked().DpadUp) {
       int nextOption = (int)this->activeOption - 1;
       if (nextOption < 0)
         this->activeOption = ScreenMainOptions::About;
       else
         this->activeOption = static_cast<ScreenMainOptions>(nextOption);
-      TYRA_LOG("New option -> ", (int)this->activeOption);
     }
   }
 
-  if (this->context->context->t_pad->getClicked().Cross)
+  if (this->context->context->t_pad->getClicked().Cross) {
+    this->playClickSound();
     this->selectedOption = this->activeOption;
+  }
 }
 
 void ScreenMain::hightLightActiveOption() {

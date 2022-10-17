@@ -50,8 +50,12 @@ void ScreenHowToPlay::init() {
 }
 
 void ScreenHowToPlay::handleInput() {
-  if (this->context->context->t_pad->getClicked().Triangle) this->navigate();
+  if (this->context->context->t_pad->getClicked().Triangle) {
+    this->playClickSound();
+    this->navigate()
+  };
 }
+
 void ScreenHowToPlay::navigate() {
   this->context->setScreen(new ScreenMain(this->context));
 }
