@@ -21,3 +21,11 @@ SfxLibraryCategory* SfxLibrary::getCategory(SoundFxCategory idCategory) {
 
   return nullptr;
 }
+
+SfxLibrarySound* SfxLibrary::getSound(SoundFxCategory idCategory,
+                                      SoundFX idSound) {
+  SfxLibraryCategory* t_category = this->getCategory(idCategory);
+  if (t_category != nullptr) return t_category->getSound(idSound);
+
+  return nullptr;
+}
