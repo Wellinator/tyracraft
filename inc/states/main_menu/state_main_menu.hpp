@@ -53,8 +53,6 @@ class StateMainMenu : public GameState {
   void playClickSound();
 
  private:
-  Audio* t_audio;
-
   Renderer* t_renderer;
   Sprite title[2];
 
