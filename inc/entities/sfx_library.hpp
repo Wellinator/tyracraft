@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entities/sfx_library_category.hpp"
+#include "entities/sfx_library_sound.hpp"
 #include "entities/sfx_categories/sfx_category_random.hpp"
 #include <vector>
 #include "tyra"
@@ -21,6 +22,5 @@ class SfxLibrary {
 
   /** Item id */
   std::vector<SfxLibraryCategory*> categories;
-
   void buildSoundFXLibraries(Audio* t_audio);
 };

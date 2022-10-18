@@ -1,8 +1,9 @@
-#pragma once
-
 #include "entities/sfx_library.hpp"
 
-SfxLibrary::SfxLibrary(Audio* t_audio) { this->t_audio = t_audio; }
+SfxLibrary::SfxLibrary(Audio* t_audio) {
+  this->t_audio = t_audio;
+  this->buildSoundFXLibraries(t_audio);
+}
 
 SfxLibrary::~SfxLibrary() {
   for (size_t i = 0; i < categories.size(); i++) {
@@ -19,6 +20,7 @@ SfxLibraryCategory* SfxLibrary::getCategory(SoundFxCategory idCategory) {
   for (size_t i = 0; i < categories.size(); i++)
     if (categories[i]->id == idCategory) return categories[i];
 
+  TYRA_ASSERT(false, "Category not found in sound fx library");
   return nullptr;
 }
 
