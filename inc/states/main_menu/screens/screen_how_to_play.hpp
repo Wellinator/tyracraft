@@ -25,4 +25,5 @@ class ScreenHowToPlay : public ScreenBase {
 
   void handleInput();
   void navigate();
+  void playClickSound();
 };

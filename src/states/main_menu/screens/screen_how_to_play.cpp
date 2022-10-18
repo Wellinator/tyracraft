@@ -52,10 +52,15 @@ void ScreenHowToPlay::init() {
 void ScreenHowToPlay::handleInput() {
   if (this->context->context->t_pad->getClicked().Triangle) {
     this->playClickSound();
-    this->navigate()
+    this->navigate();
   };
 }
 
 void ScreenHowToPlay::navigate() {
   this->context->setScreen(new ScreenMain(this->context));
+}
+
+void ScreenHowToPlay::playClickSound() {
+  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                                  SoundFX::Click);
 }

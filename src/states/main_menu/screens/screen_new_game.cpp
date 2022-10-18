@@ -275,3 +275,8 @@ void ScreenNewGame::hightLightActiveOption() {
 
   t_selectedOptionSprite->color = Tyra::Color(230, 230, 0);
 }
+
+void ScreenNewGame::playClickSound() {
+  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                                  SoundFX::Click);
+}

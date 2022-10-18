@@ -132,6 +132,7 @@ void ScreenMain::handleInput() {
       else
         this->activeOption = static_cast<ScreenMainOptions>(nextOption);
     } else if (this->context->context->t_pad->getClicked().DpadUp) {
+      this->playClickSound();
       int nextOption = (int)this->activeOption - 1;
       if (nextOption < 0)
         this->activeOption = ScreenMainOptions::About;
@@ -182,4 +183,9 @@ void ScreenMain::navigate() {
     this->context->setScreen(new ScreenHowToPlay(this->context));
   else if (this->selectedOption == ScreenMainOptions::About)
     this->context->setScreen(new ScreenAbout(this->context));
+}
+
+void ScreenMain::playClickSound() {
+  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                                  SoundFX::Click);
 }
