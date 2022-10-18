@@ -12,6 +12,7 @@ using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
 using Tyra::Renderer3D;
 using Tyra::RendererSettings;
+using Tyra::Threading;
 
 StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {
   this->init();
@@ -28,16 +29,24 @@ StateGamePlay::~StateGamePlay() {
 
 void StateGamePlay::init() {
   // TODO: add in game skybox;
+
+  this->t_creativeAudioListener = new CreativeAudioListener(this->context);
+  this->t_creativeAudioListener->playRandomCreativeSound();
+  this->context->t_audio->song.addListener(this->t_creativeAudioListener);
 }
 
 void StateGamePlay::update(const float& deltaTime) {
   this->handleInput();
+  Threading::switchThread();
   this->world->update(this->player, this->context->t_camera,
                       this->context->t_pad, deltaTime);
+  Threading::switchThread();
   this->player->update(deltaTime, *this->context->t_pad,
                        *this->context->t_camera,
                        this->world->getLoadedBlocks());
+  Threading::switchThread();
   this->ui->update();
+  Threading::switchThread();
   this->context->t_camera->update(*this->context->t_pad, *this->player->mesh);
 }
 
