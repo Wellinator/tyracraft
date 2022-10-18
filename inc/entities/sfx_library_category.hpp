@@ -1,5 +1,4 @@
 #pragma once
-
 #include "entities/sfx_library_sound.hpp"
 #include "contants.hpp"
 #include <vector>
@@ -20,6 +19,7 @@ class SfxLibraryCategory {
     for (size_t i = 0; i < sounds.size(); i++)
       if (sounds[i]->id == idSound) return sounds[i];
 
+    TYRA_ASSERT(false, "Sound not found in sound fx library");
     return nullptr;
   }
 
