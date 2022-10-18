@@ -121,8 +121,3 @@ void ScreenAbout::renderAboutText3() {
 u8 ScreenAbout::canReturnToMainMenu() {
   return this->hasShowedText1 && this->hasShowedText2 && this->hasShowedText3;
 }
-
-void ScreenAbout::playClickSound() {
-  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                  SoundFX::Click);
-}

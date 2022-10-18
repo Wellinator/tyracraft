@@ -70,5 +70,4 @@ class ScreenNewGame : public ScreenBase {
   void hightLightActiveOption();
   void updateModel();
   void renderSelectedOptions();
-  void playClickSound();
 };

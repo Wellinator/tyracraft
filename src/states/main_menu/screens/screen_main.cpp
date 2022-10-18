@@ -140,7 +140,7 @@ void ScreenMain::handleInput() {
   }
 
   if (this->context->context->t_pad->getClicked().Cross) {
-    this->playClickSound();
+    this->context->playClickSound();
     this->selectedOption = this->activeOption;
   }
 }
@@ -181,9 +181,4 @@ void ScreenMain::navigate() {
     this->context->setScreen(new ScreenHowToPlay(this->context));
   else if (this->selectedOption == ScreenMainOptions::About)
     this->context->setScreen(new ScreenAbout(this->context));
-}
-
-void ScreenMain::playClickSound() {
-  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                  SoundFX::Click);
 }

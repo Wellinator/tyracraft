@@ -48,5 +48,4 @@ class ScreenMain : public ScreenBase {
   void hightLightActiveOption();
   void handleInput();
   void navigate();
-  void playClickSound();
 };

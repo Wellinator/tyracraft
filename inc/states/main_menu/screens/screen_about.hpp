@@ -37,6 +37,5 @@ class ScreenAbout : public ScreenBase {
   void renderAboutText1();
   void renderAboutText2();
   void renderAboutText3();
-  void playClickSound();
   u8 canReturnToMainMenu();
 };

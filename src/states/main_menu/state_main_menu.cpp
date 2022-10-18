@@ -129,6 +129,11 @@ void StateMainMenu::loadGame(const NewGameOptions& options) {
   this->context->setState(new StateLoadingGame(this->context, options));
 }
 
+void StateMainMenu::playClickSound() {
+  this->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                         SoundFX::Click);
+}
+
 void StateMainMenu::loadMenuSong() {
   // Load song
   this->context->t_audio->song.load(

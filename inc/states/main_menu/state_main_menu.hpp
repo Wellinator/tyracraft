@@ -23,6 +23,8 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "models/new_game_model.hpp"
+#include "entities/sfx_library_category.hpp"
+#include "entities/sfx_library_sound.hpp"
 #include "tyra"
 
 using Tyra::Audio;
@@ -48,6 +50,7 @@ class StateMainMenu : public GameState {
   StaticMesh* menuSkybox;
 
   void loadGame(const NewGameOptions& options);
+  void playClickSound();
 
  private:
   Audio* t_audio;

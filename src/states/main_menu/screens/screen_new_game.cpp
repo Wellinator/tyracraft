@@ -212,10 +212,10 @@ void ScreenNewGame::handleInput() {
   }
 
   if (this->context->context->t_pad->getClicked().Triangle) {
-    this->playClickSound();
+    this->context->playClickSound();
     this->backToMainMenu();
   } else if (this->context->context->t_pad->getClicked().Cross) {
-    this->playClickSound();
+    this->context->playClickSound();
     this->selectedOption = this->activeOption;
     this->updateModel();
     if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld)
@@ -272,9 +272,4 @@ void ScreenNewGame::hightLightActiveOption() {
     t_selectedOptionSprite = &this->textCreateNewWorld;
 
   t_selectedOptionSprite->color = Tyra::Color(230, 230, 0);
-}
-
-void ScreenNewGame::playClickSound() {
-  this->context->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                  SoundFX::Click);
 }
