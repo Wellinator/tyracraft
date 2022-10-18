@@ -18,8 +18,6 @@ StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
 }
 
 StateMainMenu::~StateMainMenu() {
-  this->context->t_audio->song.stop();
-  this->context->t_audio->song.inLoop = false;
   this->unloadTextures();
 }
 
