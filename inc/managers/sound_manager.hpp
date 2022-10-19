@@ -3,6 +3,8 @@
 #include "tyra"
 #include "entities/sfx_library.hpp"
 
+using Tyra::Audio;
+using Tyra::AdpcmResult;
 using Tyra::Engine;
 
 class SoundManager {
@@ -18,7 +20,9 @@ class SoundManager {
     return this->soundLibrary->getSound(idCategory, idSound);
   }
 
-  void playSfx(SoundFxCategory idCategory, SoundFX idSound);
+  AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound);
+  AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound,
+                      const s8& t_ch);
 
  private:
   SfxLibrary* soundLibrary;

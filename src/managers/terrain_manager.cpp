@@ -157,6 +157,8 @@ float TerrainManager::getHeightScale(int x, int z) {
   if (noise > 0.0f && noise <= 0.8f) return 20.0f;
   if (noise > 0.8f && noise <= 0.9f) return 25.0f;
   if (noise <= 1.0f) return 30.0f;
+
+  return 0.0F;
 }
 
 bool TerrainManager::isBlockHidden(int x, int y, int z) {
@@ -695,23 +697,25 @@ float TerrainManager::getBlockLuminosity(const float& yPosition) {
 void TerrainManager::playPutBlockSound(const u8& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
-
-  this->t_soundManager->playSfx(blockSfxModel->category,
-                                blockSfxModel->onPlacement);
+  if (blockSfxModel)
+    this->t_soundManager->playSfx(blockSfxModel->category,
+                                  blockSfxModel->onPlacement, BLOCK_SFX_CH);
 }
 
 void TerrainManager::playDestroyBlockSound(const u8& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
 
-  this->t_soundManager->playSfx(blockSfxModel->category,
-                                blockSfxModel->onDestroy);
+  if (blockSfxModel)
+    this->t_soundManager->playSfx(blockSfxModel->category,
+                                  blockSfxModel->onDestroy, BLOCK_SFX_CH);
 }
 
 void TerrainManager::playBreakingBlockSound(const u8& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
 
-  this->t_soundManager->playSfx(blockSfxModel->category,
-                                blockSfxModel->onBreaking);
+  if (blockSfxModel)
+    this->t_soundManager->playSfx(blockSfxModel->category,
+                                  blockSfxModel->onBreaking, BLOCK_SFX_CH);
 }

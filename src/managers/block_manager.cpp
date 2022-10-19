@@ -1,6 +1,7 @@
 #include "managers/block_manager.hpp"
 #include "file/file_utils.hpp"
 #include <math/vec4.hpp>
+#include "contants.hpp"
 
 using Tyra::FileUtils;
 using Tyra::McpipBlock;
@@ -237,9 +238,11 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
 }
 
 SfxBlockModel* BlockManager::getBlockSoundsByType(const u8& blockType) {
-  for (size_t i = 0; i < blockSfx.size(); i++)
-    if (blockSfx[i]->getType() == blockType) return blockSfx[i];
+  if (blockType > 0) {
+    for (size_t i = 0; i < blockSfx.size(); i++)
+      if (blockSfx[i]->getType() == blockType) return blockSfx[i];
 
-  TYRA_ASSERT(false, "Block sound not found!");
+    TYRA_ASSERT(false, "Block sound not found. Was it registered?");
+  }
   return nullptr;
 }

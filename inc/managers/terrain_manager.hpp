@@ -122,6 +122,8 @@ class TerrainManager {
   u8 _isBreakingBlock = 0;
   float breaking_time_pessed = 0.0F;
   void breakBlock(Block* blockToBreak, const float& deltaTime);
+
+  const s8 BLOCK_SFX_CH = 1;
   void playPutBlockSound(const u8& blockType);
   void playDestroyBlockSound(const u8& blockType);
   void playBreakingBlockSound(const u8& blockType);
