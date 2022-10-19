@@ -693,7 +693,6 @@ float TerrainManager::getBlockLuminosity(const float& yPosition) {
 }
 
 void TerrainManager::playPutBlockSound(const u8& blockType) {
-  printf("playPutBlockSound -> %i", blockType);
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
 
@@ -702,7 +701,6 @@ void TerrainManager::playPutBlockSound(const u8& blockType) {
 }
 
 void TerrainManager::playDestroyBlockSound(const u8& blockType) {
-  printf("playDestroyBlockSound -> %i", blockType);
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
 
@@ -711,7 +709,6 @@ void TerrainManager::playDestroyBlockSound(const u8& blockType) {
 }
 
 void TerrainManager::playBreakingBlockSound(const u8& blockType) {
-  printf("playBreakingBlockSound -> %i", blockType);
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getBlockSoundsByType(blockType);
 
