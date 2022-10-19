@@ -1,4 +1,3 @@
-#pragma once
 #include "entities/items/tools/axe/axe.hpp"
 #include "entities/items/tools/tool.hpp"
 #include "entities/items/materials.hpp"

@@ -17,9 +17,7 @@ StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
   this->init();
 }
 
-StateMainMenu::~StateMainMenu() {
-  this->unloadTextures();
-}
+StateMainMenu::~StateMainMenu() { this->unloadTextures(); }
 
 void StateMainMenu::init() {
   /**
@@ -30,8 +28,6 @@ void StateMainMenu::init() {
 
   const float halfWidth =
       this->context->t_renderer->core.getSettings().getWidth() / 2;
-  const float halfHeight =
-      this->context->t_renderer->core.getSettings().getHeight() / 2;
 
   this->loadSkybox(this->context->t_renderer);
 
