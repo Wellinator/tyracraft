@@ -127,11 +127,11 @@ void BlockManager::registerBlockSoundsEffects() {
                                              SoundFX::Grass1, SoundFX::Grass1,
                                              SoundFX::Grass1, SoundFX::Grass1));
   this->blockSfx.push_back(
-      new SfxBlockModel(BEDROCK_BLOCK, SoundFxCategory::Dig, SoundFX::Grass1,
-                        SoundFX::Grass1, SoundFX::Grass1, SoundFX::Grass1));
-  this->blockSfx.push_back(new SfxBlockModel(DIRTY_BLOCK, SoundFxCategory::Dig,
-                                             SoundFX::Grass1, SoundFX::Grass1,
-                                             SoundFX::Grass1, SoundFX::Grass1));
+      new SfxBlockModel(BEDROCK_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1,
+                        SoundFX::Stone1, SoundFX::Stone1, SoundFX::Stone1));
+  this->blockSfx.push_back(
+      new SfxBlockModel(DIRTY_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1,
+                        SoundFX::Gravel1, SoundFX::Gravel1, SoundFX::Gravel1));
   this->blockSfx.push_back(new SfxBlockModel(SAND_BLOCK, SoundFxCategory::Dig,
                                              SoundFX::Sand1, SoundFX::Sand1,
                                              SoundFX::Sand1, SoundFX::Sand1));
@@ -238,11 +238,9 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
 }
 
 SfxBlockModel* BlockManager::getBlockSoundsByType(const u8& blockType) {
-  if (blockType > 0) {
-    for (size_t i = 0; i < blockSfx.size(); i++)
-      if (blockSfx[i]->getType() == blockType) return blockSfx[i];
+  for (size_t i = 0; i < blockSfx.size(); i++)
+    if (blockSfx[i]->getType() == blockType) return blockSfx[i];
 
-    TYRA_ASSERT(false, "Block sound not found. Was it registered?");
-  }
+  TYRA_ASSERT(false, "Block sound not found!");
   return nullptr;
 }

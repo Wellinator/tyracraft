@@ -689,27 +689,36 @@ float TerrainManager::getBlockLuminosity(const float& yPosition) {
 }
 
 void TerrainManager::playPutBlockSound(const u8& blockType) {
-  SfxBlockModel* blockSfxModel =
-      this->t_blockManager->getBlockSoundsByType(blockType);
-  if (blockSfxModel)
-    this->t_soundManager->playSfx(blockSfxModel->category,
-                                  blockSfxModel->onPlacement, BLOCK_SFX_CH);
+  if (blockType != AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->t_blockManager->getBlockSoundsByType(blockType);
+    if (blockSfxModel != nullptr)
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->onPlacement,
+                                    BLOCK_PLACEMENT_SFX_CH);
+  }
 }
 
 void TerrainManager::playDestroyBlockSound(const u8& blockType) {
-  SfxBlockModel* blockSfxModel =
-      this->t_blockManager->getBlockSoundsByType(blockType);
+  if (blockType != AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->t_blockManager->getBlockSoundsByType(blockType);
 
-  if (blockSfxModel)
-    this->t_soundManager->playSfx(blockSfxModel->category,
-                                  blockSfxModel->onDestroy, BLOCK_SFX_CH);
+    if (blockSfxModel != nullptr)
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->onDestroy,
+                                    BLOCK_PLACEMENT_SFX_CH);
+  }
 }
 
 void TerrainManager::playBreakingBlockSound(const u8& blockType) {
-  SfxBlockModel* blockSfxModel =
-      this->t_blockManager->getBlockSoundsByType(blockType);
+  if (blockType != AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->t_blockManager->getBlockSoundsByType(blockType);
 
-  if (blockSfxModel)
-    this->t_soundManager->playSfx(blockSfxModel->category,
-                                  blockSfxModel->onBreaking, BLOCK_SFX_CH);
+    if (blockSfxModel != nullptr)
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->onBreaking,
+                                    BLOCK_PLACEMENT_SFX_CH);
+  }
 }
