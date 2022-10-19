@@ -3,6 +3,7 @@
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "entities/sfx_categories/sfx_category_random.hpp"
+#include "entities/sfx_categories/sfx_category_dig.hpp"
 #include <vector>
 #include "tyra"
 

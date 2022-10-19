@@ -14,6 +14,7 @@ SfxLibrary::~SfxLibrary() {
 
 void SfxLibrary::buildSoundFXLibraries(Audio* t_audio) {
   categories.push_back(new SfxRandomCategory(t_audio));
+  categories.push_back(new SfxDigCategory(t_audio));
 }
 
 SfxLibraryCategory* SfxLibrary::getCategory(SoundFxCategory idCategory) {
