@@ -5,15 +5,27 @@
 
 struct SfxBlockModel {
  public:
-  SfxBlockModel(SoundFxCategory category) { this->_category = category; };
+  SfxBlockModel(u8 blockType) { this->_blockType = blockType; };
+  SfxBlockModel(u8 blockType, SoundFxCategory category, SoundFX onPlacement,
+                SoundFX onBreaking, SoundFX onDestroy, SoundFX onStep) {
+    this->_blockType = blockType;
+    this->category = category;
+    this->onPlacement = onPlacement;
+    this->onBreaking = onBreaking;
+    this->onDestroy = onDestroy;
+    this->onStep = onStep;
+  };
+
   ~SfxBlockModel(){};
 
-  const SoundFxCategory getCategory() { return this->_category; };
+  const u8 getType() { return this->_blockType; };
 
+  SoundFxCategory category;
   SoundFX onPlacement = SoundFX::None;
   SoundFX onBreaking = SoundFX::None;
   SoundFX onDestroy = SoundFX::None;
+  SoundFX onStep = SoundFX::None;
 
  private:
-  SoundFxCategory _category;
+  u8 _blockType;
 };
