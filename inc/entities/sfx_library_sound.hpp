@@ -8,7 +8,16 @@ enum class SoundFX {
   None,
 
   // Random
-  Click
+  Click,
+
+  // Dig
+  Grass1,
+  Gravel1,
+  Sand1,
+  Snow1,
+  Stone1,
+  WetGrass1,
+  Wood1
 };
 
 class SfxLibrarySound {
