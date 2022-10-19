@@ -18,9 +18,10 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
 
-  walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
-  jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
-  boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
+  // walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
+  // jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
+  // boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
+  
   this->t_audio->adpcm.setVolume(70, 0);
 
   dynpip.setRenderer(&this->t_renderer->core);
