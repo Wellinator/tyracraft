@@ -31,12 +31,6 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->t_blockManager = blockManager;
   this->t_soundManager = t_soundManager;
 
-  int terrainType = 0;
-  int testterrain = rand() % 10;
-  if (testterrain < 4) terrainType = 0;
-  if (testterrain >= 4 && testterrain < 7) terrainType = 1;
-  if (testterrain >= 7) terrainType = 2;
-
   this->calcRawBlockBBox(mcPip);
   this->initNoise();
 }
