@@ -1,10 +1,10 @@
 #pragma once
 
-struct NewGameOptions {
+class NewGameOptions {
+ public:
   NewGameOptions(){};
   ~NewGameOptions(){};
 
- public:
   bool makeFlat = false;
   bool enableWater = false;
   bool enableTrees = true;
