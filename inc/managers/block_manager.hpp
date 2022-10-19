@@ -9,6 +9,9 @@
 #include "contants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/sfx_block_model.hpp"
+#include "entities/sfx_library_category.hpp"
+#include "entities/sfx_library_sound.hpp"
+#include <tyra>
 
 using Tyra::Audio;
 using Tyra::McpipBlock;
@@ -40,6 +43,7 @@ class BlockManager {
   ~BlockManager();
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
   BlockInfo* getBlockTexOffsetByType(const u8& blockType);
+  SfxBlockModel* getBlockSoundsByType(const u8& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
   float getBlockBreakingTime();
   McpipBlock* getDamageOverlay(const float& damage_percentage);

@@ -132,7 +132,8 @@ void StateLoadingGame::initUI() {
 
 void StateLoadingGame::initWorld() {
   this->stateGamePlay->world->init(this->context->t_renderer,
-                                   this->stateGamePlay->itemRepository);
+                                   this->stateGamePlay->itemRepository,
+                                   this->context->t_soundManager);
   setPercent(90.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");

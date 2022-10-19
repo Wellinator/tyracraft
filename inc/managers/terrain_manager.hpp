@@ -15,9 +15,11 @@
 #include "entities/player.hpp"
 #include "entities/item.hpp"
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
-#include "managers/block_manager.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
+#include "managers/block_manager.hpp"
 #include "managers/items_repository.hpp"
+#include "managers/sound_manager.hpp"
+#include "models/sfx_block_model.hpp"
 #include "debug/debug.hpp"
 #include <chrono>
 #include "models/new_game_model.hpp"
@@ -33,7 +35,8 @@ class TerrainManager {
   TerrainManager();
   ~TerrainManager();
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
-            MinecraftPipeline* mcPip, BlockManager* blockManager);
+            MinecraftPipeline* mcPip, BlockManager* blockManager,
+            SoundManager* t_soundManager);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad,
               std::vector<Chunck*> chuncks, const float& deltaTime);
   void generateNewTerrain(const NewGameOptions& options);
@@ -47,6 +50,7 @@ class TerrainManager {
   Renderer* t_renderer;
   Engine* engine;
   BlockManager* t_blockManager;
+  SoundManager* t_soundManager;
 
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
@@ -118,4 +122,7 @@ class TerrainManager {
   u8 _isBreakingBlock = 0;
   float breaking_time_pessed = 0.0F;
   void breakBlock(Block* blockToBreak, const float& deltaTime);
+  void playPutBlockSound(const u8& blockType);
+  void playDestroyBlockSound(const u8& blockType);
+  void playBreakingBlockSound(const u8& blockType);
 };

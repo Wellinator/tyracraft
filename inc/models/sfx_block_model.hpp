@@ -3,9 +3,10 @@
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 
-struct SfxBlockModel {
+using Tyra::Audio;
+
+class SfxBlockModel {
  public:
-  SfxBlockModel(u8 blockType) { this->_blockType = blockType; };
   SfxBlockModel(u8 blockType, SoundFxCategory category, SoundFX onPlacement,
                 SoundFX onBreaking, SoundFX onDestroy, SoundFX onStep) {
     this->_blockType = blockType;

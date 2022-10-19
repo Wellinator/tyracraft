@@ -23,6 +23,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
   this->t_renderer = t_renderer;
   this->loadBlocksTextures(t_renderer);
   this->registerBlocksTextureCoordinates(mcPip);
+  this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
 }
 
@@ -208,6 +209,7 @@ void BlockManager::registerBlockSoundsEffects() {
 BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
   for (u8 i = 0; i < blockItems.size(); i++)
     if (blockItems[i]->blockId == blockType) return blockItems[i];
+  TYRA_ASSERT(false, "Block not found. Was it registered?");
   return nullptr;
 }
 
@@ -231,5 +233,13 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
   int normal_damage = floor(damage_percentage / 10);
   for (u8 i = 0; i < damage_overlay.size(); i++)
     if (i >= normal_damage) return damage_overlay[i];
+  return nullptr;
+}
+
+SfxBlockModel* BlockManager::getBlockSoundsByType(const u8& blockType) {
+  for (size_t i = 0; i < blockSfx.size(); i++)
+    if (blockSfx[i]->getType() == blockType) return blockSfx[i];
+
+  TYRA_ASSERT(false, "Block sound not found!");
   return nullptr;
 }

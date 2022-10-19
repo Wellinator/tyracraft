@@ -15,6 +15,7 @@
 #include "managers/chunck_manager.hpp"
 #include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
+#include "managers/sound_manager.hpp"
 #include "models/new_game_model.hpp"
 
 using Tyra::McpipBlock;
@@ -33,7 +34,8 @@ class World {
   BlockManager* blockManager;
   ChunckManager* chunckManager;
 
-  void init(Renderer* t_renderer, ItemRepository* itemRepository);
+  void init(Renderer* t_renderer, ItemRepository* itemRepository,
+            SoundManager* t_soundManager);
   void update(Player* t_player, Camera* t_camera, Pad* t_pad,
               const float& deltaTime);
   void render();

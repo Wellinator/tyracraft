@@ -23,12 +23,13 @@ TerrainManager::TerrainManager() {
 TerrainManager::~TerrainManager() {}
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
-                          MinecraftPipeline* mcPip,
-                          BlockManager* blockManager) {
+                          MinecraftPipeline* mcPip, BlockManager* blockManager,
+                          SoundManager* t_soundManager) {
   this->t_renderer = t_renderer;
   this->t_itemRepository = itemRepository;
   this->t_mcPip = mcPip;
   this->t_blockManager = blockManager;
+  this->t_soundManager = t_soundManager;
 
   int terrainType = 0;
   int testterrain = rand() % 10;
@@ -364,6 +365,7 @@ void TerrainManager::removeBlock() {
 
   terrain[this->targetBlock->index] = AIR_BLOCK;
   this->_shouldUpdateChunck = 1;
+  this->playDestroyBlockSound(this->targetBlock->type);
 }
 
 void TerrainManager::putBlock(u8 blockToPlace) {
@@ -414,6 +416,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
       terrainIndex != this->targetBlock->index) {
     this->terrain[terrainIndex] = blockToPlace;
     this->_shouldUpdateChunck = 1;
+    this->playPutBlockSound(blockToPlace);
   }
 }
 
@@ -451,6 +454,7 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
       this->targetBlock->damage = breaking_time_pessed /
                                   this->t_blockManager->getBlockBreakingTime() *
                                   100;
+      this->playBreakingBlockSound(blockToBreak->type);
     }
   } else {
     this->breaking_time_pessed = 0;
@@ -686,4 +690,31 @@ float TerrainManager::getBlockLuminosity(const float& yPosition) {
     return 128.0F;
   else
     return luminosity;
+}
+
+void TerrainManager::playPutBlockSound(const u8& blockType) {
+  printf("playPutBlockSound -> %i", blockType);
+  SfxBlockModel* blockSfxModel =
+      this->t_blockManager->getBlockSoundsByType(blockType);
+
+  this->t_soundManager->playSfx(blockSfxModel->category,
+                                blockSfxModel->onPlacement);
+}
+
+void TerrainManager::playDestroyBlockSound(const u8& blockType) {
+  printf("playDestroyBlockSound -> %i", blockType);
+  SfxBlockModel* blockSfxModel =
+      this->t_blockManager->getBlockSoundsByType(blockType);
+
+  this->t_soundManager->playSfx(blockSfxModel->category,
+                                blockSfxModel->onDestroy);
+}
+
+void TerrainManager::playBreakingBlockSound(const u8& blockType) {
+  printf("playBreakingBlockSound -> %i", blockType);
+  SfxBlockModel* blockSfxModel =
+      this->t_blockManager->getBlockSoundsByType(blockType);
+
+  this->t_soundManager->playSfx(blockSfxModel->category,
+                                blockSfxModel->onBreaking);
 }

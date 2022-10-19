@@ -16,7 +16,8 @@ World::World(const NewGameOptions& options) {
 
 World::~World() {}
 
-void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
+void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
+                 SoundManager* t_soundManager) {
   TYRA_ASSERT(t_renderer, "t_renderer not initialized");
   TYRA_ASSERT(itemRepository, "itemRepository not initialized");
 
@@ -29,7 +30,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository) {
   this->blockManager->init(t_renderer, &this->mcPip);
   this->chunckManager->init();
   this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
-                             this->blockManager);
+                             this->blockManager, t_soundManager);
 
   this->terrainManager->generateNewTerrain(this->worldOptions);
   // Define global and local spawn area
