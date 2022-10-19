@@ -8,7 +8,9 @@
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "contants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
+#include "models/sfx_block_model.hpp"
 
+using Tyra::Audio;
 using Tyra::McpipBlock;
 using Tyra::Mesh;
 using Tyra::MinecraftPipeline;
@@ -44,6 +46,7 @@ class BlockManager {
 
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
+  void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 
@@ -51,4 +54,5 @@ class BlockManager {
   Renderer* t_renderer;
   std::vector<BlockInfo*> blockItems;
   std::vector<McpipBlock*> damage_overlay;
+  std::vector<SfxBlockModel*> blockSfx;
 };
