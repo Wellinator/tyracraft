@@ -5,6 +5,8 @@
 #include <tyra>
 
 enum class SoundFX {
+  None,
+
   // Random
   Click
 };
