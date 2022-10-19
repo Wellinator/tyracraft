@@ -375,6 +375,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
     Vec4 maxCorner = Vec4();
     this->t_player->getHitBox().getMinMax(&minCorner, &maxCorner);
 
+    // TODO: fix collision with new block position instead targetBlock
     u8 willCollideWithPlayer = minCorner.x <= targetBlock->maxCorner.x &&
                                maxCorner.x >= targetBlock->minCorner.x &&
                                minCorner.z <= targetBlock->maxCorner.z &&
