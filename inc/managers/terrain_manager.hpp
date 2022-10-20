@@ -23,9 +23,11 @@
 #include "debug/debug.hpp"
 #include <chrono>
 #include "models/new_game_model.hpp"
+#include <stdint.h>
 
 using Tyra::BBox;
 using Tyra::Engine;
+using Tyra::Math;
 using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
@@ -85,9 +87,9 @@ class TerrainManager {
   const float amplitude = 0.65f;
   const float lacunarity = 2.4f;
   const float persistance = .45f;
-  const unsigned int seed = rand() % 100000;  // 56476;  // 52485;  //
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
-
+  const int seed = Math::randomi(-100000, 100000);
+  
   FastNoiseLite* noise;
   void initNoise();
   void generateTrees();
