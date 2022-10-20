@@ -241,6 +241,7 @@ SfxBlockModel* BlockManager::getBlockSoundsByType(const u8& blockType) {
   for (size_t i = 0; i < blockSfx.size(); i++)
     if (blockSfx[i]->getType() == blockType) return blockSfx[i];
 
-  TYRA_ASSERT(false, "Block sound not found!");
+  TYRA_WARN("Block sound not found for type: ",
+            std::to_string(blockType).c_str());
   return nullptr;
 }
