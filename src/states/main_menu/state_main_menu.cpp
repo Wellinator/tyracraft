@@ -124,8 +124,9 @@ void StateMainMenu::loadGame(const NewGameOptions& options) {
 }
 
 void StateMainMenu::playClickSound() {
+  this->context->t_audio->adpcm.setVolume(50, MENU_SFX_CH);
   this->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                         SoundFX::Click);
+                                         SoundFX::Click, MENU_SFX_CH);
 }
 
 void StateMainMenu::loadMenuSong() {
