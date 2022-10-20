@@ -184,8 +184,8 @@ void BlockManager::registerBlockSoundsEffects() {
       new SfxBlockModel(OAK_LOG_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1,
                         SoundFX::Wood1, SoundFX::Wood1, SoundFX::Wood1));
   this->blockSfx.push_back(
-      new SfxBlockModel(OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1,
-                        SoundFX::Wood1, SoundFX::Wood1, SoundFX::Wood1));
+      new SfxBlockModel(OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1,
+                        SoundFX::Gravel1, SoundFX::Gravel1, SoundFX::Gravel1));
 
   // Stripped Woods
   this->blockSfx.push_back(new SfxBlockModel(
