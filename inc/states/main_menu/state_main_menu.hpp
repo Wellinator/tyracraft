@@ -65,7 +65,7 @@ class StateMainMenu : public GameState {
 
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
-  void unloadTextures();
+  void unloadTextures();  
   void loadMenuSong();
   const std::string getRandonMenuSongName();
 };

@@ -138,10 +138,11 @@ void StateMainMenu::loadMenuSong() {
 }
 
 const std::string StateMainMenu::getRandonMenuSongName() {
+  const u8 MAX_MENU_SONGS = 5;
   std::string result = "sounds/menu/menu";
   std::string songExtension = ".wav";
 
-  int randSongId = Math::randomi(1, 4);
+  int randSongId = Math::randomi(1, MAX_MENU_SONGS);
   result.append(std::to_string(randSongId));
   result.append(songExtension);
   return result;
