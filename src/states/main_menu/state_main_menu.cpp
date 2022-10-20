@@ -119,9 +119,8 @@ void StateMainMenu::unloadTextures() {
 }
 
 void StateMainMenu::loadGame(const NewGameOptions& options) {
-  NewGameOptions model = options;
+  this->context->setState(new StateLoadingGame(this->context, options));
   delete this->screen;
-  this->context->setState(new StateLoadingGame(this->context, model));
 }
 
 void StateMainMenu::playClickSound() {
