@@ -405,17 +405,28 @@ void Player::calcStaticBBox() {
   Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);
 
-  u32 count = 8;
-  Vec4** vertices = new Vec4*[count];
+  const u32 count = 8;
+  Vec4 vertices[count] = {Vec4(minCorner),
+                          Vec4(maxCorner.x, minCorner.y, minCorner.z),
+                          Vec4(minCorner.x, maxCorner.y, minCorner.z),
+                          Vec4(minCorner.x, minCorner.y, maxCorner.z),
+                          Vec4(maxCorner),
+                          Vec4(minCorner.x, maxCorner.y, maxCorner.z),
+                          Vec4(maxCorner.x, minCorner.y, maxCorner.z),
+                          Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
 
-  vertices[0] = new Vec4(minCorner);
-  vertices[1] = new Vec4(maxCorner.x, minCorner.y, minCorner.z);
-  vertices[2] = new Vec4(minCorner.x, maxCorner.y, minCorner.z);
-  vertices[3] = new Vec4(minCorner.x, minCorner.y, maxCorner.z);
-  vertices[4] = new Vec4(maxCorner);
-  vertices[5] = new Vec4(minCorner.x, maxCorner.y, maxCorner.z);
-  vertices[6] = new Vec4(maxCorner.x, minCorner.y, maxCorner.z);
-  vertices[7] = new Vec4(maxCorner.x, maxCorner.y, minCorner.z);
+  this->hitBox = new BBox(vertices, count);
 
-  this->hitBox = new BBox(*vertices, count);
+  // Hitbox Debug stuff
+  // {
+  //   TYRA_LOG("==================");
+  //   TYRA_LOG("DUBLE_BLOCK_SIZE -> ",
+  //   std::to_string(DUBLE_BLOCK_SIZE).c_str()); TYRA_LOG("minCorner");
+  //   minCorner.print();
+  //   TYRA_LOG("maxCorner");
+  //   maxCorner.print();
+  //   TYRA_LOG("Player->StaticBBox");
+  //   this->hitBox->print();
+  //   TYRA_LOG("==================");
+  // }
 }
