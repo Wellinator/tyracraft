@@ -41,7 +41,7 @@ class TerrainManager {
               std::vector<Chunck*> chuncks, const float& deltaTime);
   void generateNewTerrain(const NewGameOptions& options);
 
-  Block* targetBlock = NULL;
+  Block* targetBlock = nullptr;
   void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
                          std::vector<Chunck*> chuncks);
   void removeBlock();
@@ -85,7 +85,7 @@ class TerrainManager {
   const float amplitude = 0.65f;
   const float lacunarity = 2.4f;
   const float persistance = .45f;
-  const unsigned int seed = 56476;  // rand() % 100000;  // 52485;  //
+  const unsigned int seed = rand() % 100000;  // 56476;  // 52485;  //
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
 
   FastNoiseLite* noise;

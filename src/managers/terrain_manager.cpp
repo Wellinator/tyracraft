@@ -307,7 +307,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
       this->t_renderer->core.renderer3D.frustumPlanes.getAll();
 
   // Reset the current target block;
-  this->targetBlock = NULL;
+  this->targetBlock = nullptr;
 
   // Prepate the raycast
   Vec4 rayDir = t_camera->lookPos - t_camera->position;
@@ -418,7 +418,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
 
 void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   PadButtons clickedButton = t_pad->getClicked();
-  if (t_pad->getPressed().L2) {
+  if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
     this->_isBreakingBlock = 0;
