@@ -183,9 +183,9 @@ void BlockManager::registerBlockSoundsEffects() {
   this->blockSfx.push_back(
       new SfxBlockModel(OAK_LOG_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1,
                         SoundFX::Wood1, SoundFX::Wood1, SoundFX::Wood1));
-  this->blockSfx.push_back(
-      new SfxBlockModel(OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1,
-                        SoundFX::Gravel1, SoundFX::Gravel1, SoundFX::Gravel1));
+  this->blockSfx.push_back(new SfxBlockModel(
+      OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1,
+      SoundFX::Gravel1, SoundFX::Gravel1, SoundFX::Gravel1));
 
   // Stripped Woods
   this->blockSfx.push_back(new SfxBlockModel(
@@ -210,7 +210,8 @@ void BlockManager::registerBlockSoundsEffects() {
 BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
   for (u8 i = 0; i < blockItems.size(); i++)
     if (blockItems[i]->blockId == blockType) return blockItems[i];
-  TYRA_ASSERT(false, "Block not found. Was it registered?");
+  TYRA_WARN("Block not found. ID -> ", std::to_string(blockType).c_str(),
+            " Was it registered?");
   return nullptr;
 }
 
