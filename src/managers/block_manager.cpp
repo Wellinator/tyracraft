@@ -122,132 +122,8 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
 }
 
 void BlockManager::registerBlockSoundsEffects() {
-  this->registerDigSfx();
-  this->registerStepSfx();
-}
-
-void BlockManager::registerDigSfx() {
-  // Base Blocks
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(GRASS_BLOCK, SoundFxCategory::Dig, SoundFX::Grass1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(BEDROCK_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(DIRTY_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(SAND_BLOCK, SoundFxCategory::Dig, SoundFX::Sand1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(STONE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(GLASS_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-
-  // Ores and Minerals
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(GOLD_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      REDSTONE_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(IRON_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      EMERALD_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      DIAMOND_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(COAL_ORE_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-
-  // Stone bricks
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      STONE_BRICK_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      CRACKED_STONE_BRICKS_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      MOSSY_STONE_BRICKS_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      CHISELED_STONE_BRICKS_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(BRICKS_BLOCK, SoundFxCategory::Dig, SoundFX::Stone1));
-
-  // Woods
-  this->digBlockSfx.push_back(
-      new SfxBlockModel(OAK_LOG_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1));
-
-  // Stripped Woods
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      STRIPPED_OAK_WOOD_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-
-  // Wood Planks
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      OAK_PLANKS_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      SPRUCE_PLANKS_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      ACACIA_PLANKS_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-  this->digBlockSfx.push_back(new SfxBlockModel(
-      BIRCH_PLANKS_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
-}
-
-void BlockManager::registerStepSfx() {
-  // Base Blocks
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(GRASS_BLOCK, SoundFxCategory::Step, SoundFX::Grass1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(BEDROCK_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(DIRTY_BLOCK, SoundFxCategory::Step, SoundFX::Gravel1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(SAND_BLOCK, SoundFxCategory::Step, SoundFX::Sand1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(STONE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(GLASS_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-
-  // Ores and Minerals
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      GOLD_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      REDSTONE_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      IRON_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      EMERALD_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      DIAMOND_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      COAL_ORE_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-
-  // Stone bricks
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      STONE_BRICK_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      CRACKED_STONE_BRICKS_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      MOSSY_STONE_BRICKS_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      CHISELED_STONE_BRICKS_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(BRICKS_BLOCK, SoundFxCategory::Step, SoundFX::Stone1));
-
-  // Woods
-  this->stepBlockSfx.push_back(
-      new SfxBlockModel(OAK_LOG_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      OAK_LEAVES_BLOCK, SoundFxCategory::Step, SoundFX::Gravel1));
-
-  // Stripped Woods
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      STRIPPED_OAK_WOOD_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-
-  // Wood Planks
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      OAK_PLANKS_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      SPRUCE_PLANKS_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      ACACIA_PLANKS_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-  this->stepBlockSfx.push_back(new SfxBlockModel(
-      BIRCH_PLANKS_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
+  this->blockSfxRepositories.push_back(new BlockDigSfxRepository());
+  this->blockSfxRepositories.push_back(new BlockStepSfxRepository());
 }
 
 BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
@@ -282,8 +158,9 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
 }
 
 SfxBlockModel* BlockManager::getDigSoundByBlockType(const u8& blockType) {
-  for (size_t i = 0; i < this->digBlockSfx.size(); i++)
-    if (digBlockSfx[i]->getType() == blockType) return digBlockSfx[i];
+  for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)
+    if (blockSfxRepositories[i]->id == SoundFxCategory::Dig)
+      return blockSfxRepositories[i]->getModel(blockType);
 
   TYRA_WARN("Block sound not found for type: ",
             std::to_string(blockType).c_str());
@@ -291,9 +168,9 @@ SfxBlockModel* BlockManager::getDigSoundByBlockType(const u8& blockType) {
 }
 
 SfxBlockModel* BlockManager::getStepSoundByBlockType(const u8& blockType) {
-  for (size_t i = 0; i < this->stepBlockSfx.size(); i++)
-    if (this->stepBlockSfx[i]->getType() == blockType)
-      return this->stepBlockSfx[i];
+  for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)
+    if (this->blockSfxRepositories[i]->id == SoundFxCategory::Step)
+      return this->blockSfxRepositories[i]->getModel(blockType);
 
   TYRA_WARN("Block sound not found for type: ",
             std::to_string(blockType).c_str());

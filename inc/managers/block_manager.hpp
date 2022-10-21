@@ -11,6 +11,9 @@
 #include "models/sfx_block_model.hpp"
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
+#include "managers/block/sound/block_sfx_base_repository.hpp"
+#include "managers/block/sound/block_dig_sfx_repository.hpp"
+#include "managers/block/sound/block_step_sfx_repository.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -52,8 +55,6 @@ class BlockManager {
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
   void registerBlockSoundsEffects();
-  void registerDigSfx();
-  void registerStepSfx();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 
@@ -62,6 +63,5 @@ class BlockManager {
   std::vector<BlockInfo*> blockItems;
   std::vector<McpipBlock*> damage_overlay;
 
-  std::vector<SfxBlockModel*> digBlockSfx;
-  std::vector<SfxBlockModel*> stepBlockSfx;
+  std::vector<BlockSfxBaseRepository*> blockSfxRepositories;
 };
