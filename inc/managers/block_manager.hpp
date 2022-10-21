@@ -52,6 +52,7 @@ class BlockManager {
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
   void registerBlockSoundsEffects();
   void registerDigSfx();
+  void registerStepSfx();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 
@@ -59,5 +60,7 @@ class BlockManager {
   Renderer* t_renderer;
   std::vector<BlockInfo*> blockItems;
   std::vector<McpipBlock*> damage_overlay;
-  std::vector<SfxBlockModel*> blockSfx;
+
+  std::vector<SfxBlockModel*> digBlockSfx;
+  std::vector<SfxBlockModel*> stepBlockSfx;
 };
