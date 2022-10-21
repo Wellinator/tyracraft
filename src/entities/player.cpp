@@ -21,7 +21,7 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   // walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
   // jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
   // boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
-  
+
   this->t_audio->adpcm.setVolume(70, 0);
 
   dynpip.setRenderer(&this->t_renderer->core);
@@ -212,7 +212,8 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
 
   for (int i = 0; i < blocks_ammount; i++) {
     // Broad phase
-    if (playerMin.y > t_blocks[i]->getPosition()->y) {
+    if (playerBB.getBottomFace().axisPosition >= t_blocks[i]->maxCorner.y ||
+        playerBB.getTopFace().axisPosition < t_blocks[i]->minCorner.y) {
       continue;
     };
 
@@ -269,12 +270,11 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
 float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
                                                int blocks_ammount) {
   float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
-  BBox playerBB =
-      (BBox)this->hitBox->getTransformed(mesh.get()->getModelMatrix());
+  BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
 
-  this->currentBlock = NULL;
+  this->currentBlock = nullptr;
 
   for (int i = 0; i < blocks_ammount; i++) {
     const float blockHeight = t_blocks[i]->maxCorner.y;
