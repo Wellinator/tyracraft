@@ -16,6 +16,8 @@
 #include <tamtypes.h>
 #include "managers/items_repository.hpp"
 #include "managers/collision_manager.hpp"
+#include "managers/block_manager.hpp"
+#include "managers/sound_manager.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
@@ -43,7 +45,8 @@ class Player {
  public:
   std::unique_ptr<DynamicMesh> mesh;
   std::unique_ptr<DynamicMesh> armMesh;
-  Player(Renderer* t_renderer, Audio* t_audio);
+  Player(Renderer* t_renderer, SoundManager* t_soundManager,
+         BlockManager* t_blockManager);
   ~Player();
 
   void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
@@ -71,6 +74,8 @@ class Player {
 
  private:
   Renderer* t_renderer;
+  BlockManager* t_blockManager;
+  SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
@@ -78,8 +83,7 @@ class Player {
   u8 isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   u8 isOnBlock, isUnderBlock;
   Audio* t_audio;
-  Timer walkTimer, fightTimer;
-  audsrv_adpcm_t *walkAdpcm, *jumpAdpcm, *boomAdpcm;
+  const u8 WALK_SFX_CH = 3;
 
   // Forces values
   float speed = 100;
@@ -111,6 +115,7 @@ class Player {
   short int selectedInventoryIndex = 0;
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
+  void playWalkSfx(u8 blockType);
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 

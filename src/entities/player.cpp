@@ -6,9 +6,11 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Player::Player(Renderer* t_renderer, Audio* t_audio) {
+Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
+               BlockManager* t_blockManager) {
   this->t_renderer = t_renderer;
-  this->t_audio = t_audio;
+  this->t_blockManager = t_blockManager;
+  this->t_soundManager = t_soundManager;
 
   this->loadMesh();
   this->loadArmMesh();
@@ -17,12 +19,6 @@ Player::Player(Renderer* t_renderer, Audio* t_audio) {
   isWalking = false;
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
-
-  // walkAdpcm = this->t_audio->adpcm.load("sounds/walk.adpcm");
-  // jumpAdpcm = this->t_audio->adpcm.load("sounds/jump.adpcm");
-  // boomAdpcm = this->t_audio->adpcm.load("sounds/boom.adpcm");
-
-  this->t_audio->adpcm.setVolume(70, 0);
 
   dynpip.setRenderer(&this->t_renderer->core);
   modelDynpipOptions.antiAliasingEnabled = false;
@@ -52,9 +48,15 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   this->handleInputCommands(t_pad);
 
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-  if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS))
-    this->updatePosition(&loadedBlocks[0], loadedBlocks.size(), deltaTime,
-                         nextPlayerPos);
+
+  if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
+    const u8 hasMoved = this->updatePosition(
+        &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
+
+    const u8 canPlayWalkSound =
+        !t_pad.getLeftJoyPad().isCentered && hasMoved && this->isOnGround;
+    if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
+  }
 
   float terrainHeight = this->getTerrainHeightOnPlayerPosition(
       &loadedBlocks[0], loadedBlocks.size());
@@ -113,7 +115,6 @@ void Player::handleInputCommands(Pad& t_pad) {
   if (t_pad.getClicked().Cross && this->isOnGround) {
     this->velocity += this->lift * this->speed;
     this->isOnGround = 0;
-    // this->t_audio->playADPCM(jumpAdpcm);
   }
 
   if (t_pad.getRightJoyPad().h >= 200) {
@@ -429,4 +430,15 @@ void Player::calcStaticBBox() {
   //   this->hitBox->print();
   //   TYRA_LOG("==================");
   // }
+}
+
+void Player::playWalkSfx(u8 blockType) {
+  if (blockType != AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->t_blockManager->getStepSoundByBlockType(blockType);
+
+    if (blockSfxModel != nullptr)
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->sound, WALK_SFX_CH);
+  }
 }

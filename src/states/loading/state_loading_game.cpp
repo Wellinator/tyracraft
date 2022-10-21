@@ -106,7 +106,8 @@ void StateLoadingGame::unload() {
 void StateLoadingGame::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
   this->stateGamePlay->player =
-      new Player(this->context->t_renderer, this->context->t_audio);
+      new Player(this->context->t_renderer, this->context->t_soundManager,
+                 this->stateGamePlay->world->blockManager);
   this->stateGamePlay->itemRepository = new ItemRepository();
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);

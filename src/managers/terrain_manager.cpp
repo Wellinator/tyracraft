@@ -691,10 +691,10 @@ float TerrainManager::getBlockLuminosity(const float& yPosition) {
 void TerrainManager::playPutBlockSound(const u8& blockType) {
   if (blockType != AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        this->t_blockManager->getBlockSoundsByType(blockType);
+        this->t_blockManager->getDigSoundByBlockType(blockType);
     if (blockSfxModel != nullptr)
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->onPlacement,
+                                    blockSfxModel->sound,
                                     BLOCK_PLACEMENT_SFX_CH);
   }
 }
@@ -702,11 +702,11 @@ void TerrainManager::playPutBlockSound(const u8& blockType) {
 void TerrainManager::playDestroyBlockSound(const u8& blockType) {
   if (blockType != AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        this->t_blockManager->getBlockSoundsByType(blockType);
+        this->t_blockManager->getDigSoundByBlockType(blockType);
 
     if (blockSfxModel != nullptr)
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->onDestroy,
+                                    blockSfxModel->sound,
                                     BLOCK_PLACEMENT_SFX_CH);
   }
 }
@@ -714,11 +714,11 @@ void TerrainManager::playDestroyBlockSound(const u8& blockType) {
 void TerrainManager::playBreakingBlockSound(const u8& blockType) {
   if (blockType != AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        this->t_blockManager->getBlockSoundsByType(blockType);
+        this->t_blockManager->getDigSoundByBlockType(blockType);
 
     if (blockSfxModel != nullptr)
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->onBreaking,
+                                    blockSfxModel->sound,
                                     BLOCK_PLACEMENT_SFX_CH);
   }
 }
