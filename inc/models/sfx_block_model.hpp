@@ -7,10 +7,10 @@ using Tyra::Audio;
 
 class SfxBlockModel {
  public:
-  SfxBlockModel(u8 blockType, SoundFxCategory category, SoundFX sfx) {
+  SfxBlockModel(u8 blockType, SoundFxCategory category, SoundFX sound) {
     this->_blockType = blockType;
     this->category = category;
-    this->sfx = sfx;
+    this->sound = sound;
   };
 
   ~SfxBlockModel(){};
@@ -18,7 +18,7 @@ class SfxBlockModel {
   const u8 getType() { return this->_blockType; };
 
   SoundFxCategory category;
-  SoundFX sfx = SoundFX::None;
+  SoundFX sound = SoundFX::None;
 
  private:
   u8 _blockType;

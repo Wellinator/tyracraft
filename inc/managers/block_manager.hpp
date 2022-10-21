@@ -43,7 +43,8 @@ class BlockManager {
   ~BlockManager();
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
   BlockInfo* getBlockTexOffsetByType(const u8& blockType);
-  SfxBlockModel* getBlockSoundsByType(const u8& blockType);
+  SfxBlockModel* getDigSoundByBlockType(const u8& blockType);
+  SfxBlockModel* getStepSoundByBlockType(const u8& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
   float getBlockBreakingTime();
   McpipBlock* getDamageOverlay(const float& damage_percentage);
