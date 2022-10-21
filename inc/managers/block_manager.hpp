@@ -14,6 +14,8 @@
 #include "managers/block/sound/block_sfx_base_repository.hpp"
 #include "managers/block/sound/block_dig_sfx_repository.hpp"
 #include "managers/block/sound/block_step_sfx_repository.hpp"
+#include "managers/block/texture/block_texture_info_repository.hpp"
+#include "models/block_info_model.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -23,28 +25,12 @@ using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Texture;
 
-struct BlockInfo {
-  BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
-            const float& texOffssetY) {
-    _texOffssetX = texOffssetX;
-    _texOffssetY = texOffssetY;
-    blockId = type;
-    _isSingle = isSingle;
-  };
-
-  ~BlockInfo(){};
-
-  float _texOffssetX;
-  float _texOffssetY;
-  u8 _isSingle;
-  u8 blockId;
-};
-
 class BlockManager {
  public:
   BlockManager();
   ~BlockManager();
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
+
   BlockInfo* getBlockTexOffsetByType(const u8& blockType);
   SfxBlockModel* getDigSoundByBlockType(const u8& blockType);
   SfxBlockModel* getStepSoundByBlockType(const u8& blockType);
@@ -53,15 +39,14 @@ class BlockManager {
   McpipBlock* getDamageOverlay(const float& damage_percentage);
 
  private:
-  void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
   void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;
-  std::vector<BlockInfo*> blockItems;
-  std::vector<McpipBlock*> damage_overlay;
+  BlockTextureRepository* t_blockTextureRepository;
 
+  std::vector<McpipBlock*> damage_overlay;
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;
 };
