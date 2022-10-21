@@ -51,6 +51,7 @@ class BlockManager {
  private:
   void registerBlocksTextureCoordinates(MinecraftPipeline* mcPip);
   void registerBlockSoundsEffects();
+  void registerDigSfx();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(Renderer* t_renderer);
 

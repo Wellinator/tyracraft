@@ -121,7 +121,11 @@ void BlockManager::registerBlocksTextureCoordinates(MinecraftPipeline* mcPip) {
                                            mcPip->getTextureOffset() * 11));
 }
 
-void BlockManager::registerBlockSoundsEffects() {
+void BlockManager::registerBlockSoundsEffects() { 
+  this->registerDigSfx(); 
+}
+
+void BlockManager::registerDigSfx() {
   // Base Blocks
   this->blockSfx.push_back(new SfxBlockModel(GRASS_BLOCK, SoundFxCategory::Dig,
                                              SoundFX::Grass1, SoundFX::Grass1,
