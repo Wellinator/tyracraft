@@ -88,7 +88,7 @@ class TerrainManager {
   const float lacunarity = 2.4f;
   const float persistance = .45f;
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
-  const int seed = rand() % INT_FAST16_MAX;
+  const int seed = rand() % 1337;
 
   FastNoiseLite* noise;
   void initNoise();
