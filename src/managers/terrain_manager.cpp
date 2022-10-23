@@ -50,8 +50,8 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
-  int index = 0;
-  int noise = 0;
+  u32 index = 0;
+  u32 noise = 0;
   float density;
 
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
@@ -61,12 +61,13 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
         if (options.makeFlat) {
           this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
         } else {
-          density = getDensity(x, y, z);
-          if (density <= 0) {
-            this->terrain[index] = AIR_BLOCK;
-          } else {
-            this->terrain[index] = this->getBlock(noise, y);
-          }
+          this->terrain[index] = this->getBlock(noise, y);
+          // density = getDensity(x, y, z);
+          // if (density <= 0) {
+          //   this->terrain[index] = AIR_BLOCK;
+          // } else {
+          //   this->terrain[index] = this->getBlock(noise, y);
+          // }
         }
         index++;
       }
@@ -79,7 +80,8 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
 
 void TerrainManager::initNoise() {
   // Fast Noise Lite
-  this->noise = new FastNoiseLite(seed);
+  this->noise = new FastNoiseLite();
+  this->noise->SetSeed(this->seed);
   this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
   this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
   this->noise->SetFractalOctaves(this->octaves);
