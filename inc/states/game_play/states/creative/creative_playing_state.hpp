@@ -22,4 +22,5 @@ class CreativePlayingState : public PlayingStateBase {
   void renderCreativeUi();
 
   CreativeAudioListener* t_creativeAudioListener;
+  u32 audioListenerId;
 };

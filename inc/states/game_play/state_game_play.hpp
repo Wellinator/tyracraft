@@ -11,6 +11,7 @@
 #include "states/game_state.hpp"
 #include "states/context.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
+#include "states/main_menu/state_main_menu.hpp"
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "states/game_play/states/survival/survival_playing_state.hpp"
 #include <tyra>
@@ -38,6 +39,9 @@ class StateGamePlay : public GameState {
   void init();
   void update(const float& deltaTime);
   void render();
+
+  void inline backToGame() { this->unpauseGame(); };
+  void quitToTitle();
 
   void setPlayingState(PlayingStateBase* t_playingState);
   PlayingStateBase* getPreviousState();

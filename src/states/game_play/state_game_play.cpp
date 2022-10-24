@@ -23,11 +23,12 @@ StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
 StateGamePlay::~StateGamePlay() {
   this->context->t_audio->song.stop();
   this->context->t_audio->song.inLoop = false;
+  delete this->state;
+  delete this->previousState;
   delete this->world;
   delete this->ui;
   delete this->player;
   delete this->itemRepository;
-  delete this->state;
 }
 
 void StateGamePlay::handleGameMode(const GameMode& gameMode) {
@@ -81,4 +82,8 @@ void StateGamePlay::unpauseGame() {
   this->previousState = nullptr;
   this->paused = false;
   TYRA_LOG("UNPAUSED");
+}
+
+void StateGamePlay::quitToTitle() {
+  this->context->setState(new StateMainMenu(this->context));
 }

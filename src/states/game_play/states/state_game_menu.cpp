@@ -7,16 +7,210 @@ StateGameMenu::StateGameMenu(StateGamePlay* t_context)
 
 StateGameMenu::~StateGameMenu() {}
 
-void StateGameMenu::init() {}
+void StateGameMenu::init() {
+  const float halfWidth =
+      this->stateGamePlay->context->t_renderer->core.getSettings().getWidth() /
+      2;
+  const float halfHeight =
+      this->stateGamePlay->context->t_renderer->core.getSettings().getHeight() /
+      2;
 
-void StateGameMenu::update(const float& deltaTime) {}
+  // Overlay
+  overlay.mode = Tyra::MODE_STRETCH;
+  overlay.size.set(halfWidth * 2, halfHeight * 2);
+  overlay.position.set(0, 0);
 
-void StateGameMenu::render() {
-  this->stateGamePlay->getPreviousState()->render();
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/overlay.png"))
+      ->addLink(overlay.id);
+
+  // Load slots
+  raw_slot[0].mode = Tyra::MODE_STRETCH;
+  raw_slot[0].size.set(SLOT_WIDTH, 35);
+  raw_slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 240);
+  raw_slot[1].mode = Tyra::MODE_STRETCH;
+  raw_slot[1].size.set(SLOT_WIDTH, 35);
+  raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 40);
+
+  this->textureRawSlot =
+      this->stateGamePlay->context->t_renderer->getTextureRepository().add(
+          FileUtils::fromCwd("assets/game_menu/slot.png"));
+
+  this->textureRawSlot->addLink(raw_slot[0].id);
+  this->textureRawSlot->addLink(raw_slot[1].id);
+
+  active_slot.mode = Tyra::MODE_STRETCH;
+  active_slot.size.set(SLOT_WIDTH, 35);
+  active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/slot_active.png"))
+      ->addLink(active_slot.id);
+
+  // Texts
+  textGameMenu.mode = Tyra::MODE_STRETCH;
+  textGameMenu.size.set(128, 16);
+  textGameMenu.position.set(halfWidth - 64, halfHeight - 100);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/text_game_menu.png"))
+      ->addLink(textGameMenu.id);
+
+  textBackToGame.mode = Tyra::MODE_STRETCH;
+  textBackToGame.size.set(128, 16);
+  textBackToGame.position.set(halfWidth - 64, 240 + 9);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/text_back_to_game.png"))
+      ->addLink(textBackToGame.id);
+
+  textQuitToTitle.mode = Tyra::MODE_STRETCH;
+  textQuitToTitle.size.set(128, 16);
+  textQuitToTitle.position.set(halfWidth - 64, 240 + 49);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/text_quit_to_title.png"))
+      ->addLink(textQuitToTitle.id);
+
+  // Buttons
+  btnCross.mode = Tyra::MODE_STRETCH;
+  btnCross.size.set(25, 25);
+  btnCross.position.set(
+      15,
+      this->stateGamePlay->context->t_renderer->core.getSettings().getHeight() -
+          40);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+      ->addLink(btnCross.id);
+
+  textSelect.mode = Tyra::MODE_STRETCH;
+  textSelect.size.set(64, 15);
+  textSelect.position.set(
+      15 + 30,
+      this->stateGamePlay->context->t_renderer->core.getSettings().getHeight() -
+          36);
+  this->stateGamePlay->context->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("assets/game_menu/text_select.png"))
+      ->addLink(textSelect.id);
 }
 
-void StateGameMenu::handleInput() {}
+void StateGameMenu::update(const float& deltaTime) {
+  this->handleInput();
+  Threading::switchThread();
+  this->hightLightActiveOption();
+  Threading::switchThread();
+  this->navigate();
+}
 
-void StateGameMenu::navigate() {}
+void StateGameMenu::render() {
+  // Render the game under menu
+  this->stateGamePlay->getPreviousState()->render();
 
-void StateGameMenu::unloadTextures() {}
+  Threading::switchThread();
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&overlay);
+
+  Threading::switchThread();
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&raw_slot[0]);
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&raw_slot[1]);
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&active_slot);
+
+  Threading::switchThread();
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&textGameMenu);
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&textBackToGame);
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&textQuitToTitle);
+
+  Threading::switchThread();
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&btnCross);
+  this->stateGamePlay->context->t_renderer->renderer2D.render(&textSelect);
+}
+
+void StateGameMenu::handleInput() {
+  // Change active option
+  {
+    if (this->stateGamePlay->context->t_pad->getClicked().DpadDown) {
+      int nextOption = (int)this->activeOption + 1;
+      if (nextOption > 1)
+        this->activeOption = GameMenuOptions::BackToGame;
+      else
+        this->activeOption = static_cast<GameMenuOptions>(nextOption);
+    } else if (this->stateGamePlay->context->t_pad->getClicked().DpadUp) {
+      int nextOption = (int)this->activeOption - 1;
+      if (nextOption < 0)
+        this->activeOption = GameMenuOptions::QuitToTitle;
+      else
+        this->activeOption = static_cast<GameMenuOptions>(nextOption);
+    }
+  }
+
+  if (this->stateGamePlay->context->t_pad->getClicked().Cross) {
+    this->playClickSound();
+    this->selectedOption = this->activeOption;
+  }
+}
+
+void StateGameMenu::navigate() {
+  if (this->selectedOption == GameMenuOptions::None) return;
+
+  // TODO: PlayGame wold options;
+  if (this->selectedOption == GameMenuOptions::BackToGame)
+    this->stateGamePlay->backToGame();
+  else if (this->selectedOption == GameMenuOptions::QuitToTitle)
+    this->stateGamePlay->quitToTitle();
+}
+
+void StateGameMenu::unloadTextures() {
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      overlay);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      raw_slot[0]);
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      raw_slot[1]);
+  this->stateGamePlay->context->t_renderer->getTextureRepository().free(
+      this->textureRawSlot);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      active_slot);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      btnCross);
+
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      textBackToGame);
+  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
+      textQuitToTitle);
+
+  delete textureRawSlot;
+}
+
+void StateGameMenu::playClickSound() {
+  this->stateGamePlay->context->t_audio->adpcm.setVolume(50, MENU_SFX_CH);
+  this->stateGamePlay->context->t_soundManager->playSfx(
+      SoundFxCategory::Random, SoundFX::Click, MENU_SFX_CH);
+}
+
+void StateGameMenu::hightLightActiveOption() {
+  // Reset sprite colors
+  {
+    this->textBackToGame.color = Tyra::Color(128, 128, 128);
+    this->textQuitToTitle.color = Tyra::Color(128, 128, 128);
+  }
+
+  Sprite* t_selectedOptionSprite = nullptr;
+  if (this->activeOption == GameMenuOptions::BackToGame)
+    t_selectedOptionSprite = &this->textBackToGame;
+  else if (this->activeOption == GameMenuOptions::QuitToTitle)
+    t_selectedOptionSprite = &this->textQuitToTitle;
+
+  if (t_selectedOptionSprite != nullptr) {
+    t_selectedOptionSprite->color = Tyra::Color(255, 255, 0);
+  }
+
+  // Hightlight active slot
+  {
+    u8 option = (int)this->activeOption;
+    this->active_slot.position.y =
+        (option * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
+  }
+}
