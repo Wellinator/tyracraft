@@ -38,7 +38,9 @@ class StateGamePlay : public GameState {
   void init();
   void update(const float& deltaTime);
   void render();
+
   void setPlayingState(PlayingStateBase* t_playingState);
+  PlayingStateBase* getPreviousState();
 
   // Rotating skybox
   StaticMesh* menuSkybox;
@@ -50,6 +52,11 @@ class StateGamePlay : public GameState {
 
  private:
   PlayingStateBase* state = nullptr;
+  PlayingStateBase* previousState = nullptr;
+  u8 paused = false;
 
   void handleGameMode(const GameMode& gameMode);
+  void handleInput();
+  void pauseGame();
+  void unpauseGame();
 };
