@@ -30,7 +30,11 @@ void CreativePlayingState::update(const float& deltaTime) {
       *this->stateGamePlay->context->t_pad, *this->stateGamePlay->player->mesh);
 }
 
-void CreativePlayingState::render() {}
+void CreativePlayingState::render() {
+  this->stateGamePlay->world->render();
+  this->stateGamePlay->player->render();
+  this->stateGamePlay->ui->render();
+}
 
 void CreativePlayingState::handleInput() {}
 

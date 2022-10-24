@@ -49,9 +49,6 @@ void StateGamePlay::update(const float& deltaTime) {
 
 void StateGamePlay::render() {
   this->state->render();
-  this->world->render();
-  this->player->render();
-  this->ui->render();
 }
 
 void StateGamePlay::setPlayingState(PlayingStateBase* t_playingState) {
