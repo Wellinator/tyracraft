@@ -33,10 +33,14 @@ void CreativePlayingState::update(const float& deltaTime) {
 void CreativePlayingState::render() {
   this->stateGamePlay->world->render();
   this->stateGamePlay->player->render();
-  this->stateGamePlay->ui->renderCrosshair();
-  this->stateGamePlay->ui->renderInventory();
+  this->renderCreativeUi();
 }
 
 void CreativePlayingState::handleInput() {}
 
 void CreativePlayingState::navigate() {}
+
+void CreativePlayingState::renderCreativeUi() {
+  this->stateGamePlay->ui->renderCrosshair();
+  this->stateGamePlay->ui->renderInventory();
+}

@@ -19,6 +19,7 @@ class CreativePlayingState : public PlayingStateBase {
  private:
   void handleInput();
   void navigate();
+  void renderCreativeUi();
 
   CreativeAudioListener* t_creativeAudioListener;
 };
