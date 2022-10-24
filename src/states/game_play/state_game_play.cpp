@@ -44,9 +44,8 @@ void StateGamePlay::init() {
 }
 
 void StateGamePlay::update(const float& deltaTime) {
-  this->state->update();
+  this->state->update(deltaTime);
 
-  this->handleInput();
   Threading::switchThread();
   this->world->update(this->player, this->context->t_camera,
                       this->context->t_pad, deltaTime);
@@ -65,24 +64,6 @@ void StateGamePlay::render() {
   this->world->render();
   this->player->render();
   this->ui->render();
-}
-
-void StateGamePlay::handleInput() { this->controlGameMode(); }
-
-// TODO : Check the delay to change
-void StateGamePlay::controlGameMode() {
-  if (this->context->t_pad->getPressed().DpadUp &&
-      this->context->t_pad->getClicked().Cross) {
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(
-            this->lastTimeCrossWasClicked - std::chrono::steady_clock::now())
-            .count() <= 500) {
-      printf("GAME_MODE changed to %d\n", (u8)this->gameMode);
-      this->gameMode = this->gameMode == GameMode::Creative
-                           ? GameMode::Survival
-                           : GameMode::Creative;
-    }
-    this->lastTimeCrossWasClicked = std::chrono::steady_clock::now();
-  }
 }
 
 void StateGamePlay::setPlayingState(PlayingStateBase* t_playingState) {

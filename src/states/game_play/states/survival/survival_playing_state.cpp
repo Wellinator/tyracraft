@@ -7,7 +7,7 @@ SurvivalPlayingState::~SurvivalPlayingState() {}
 
 void SurvivalPlayingState::init() {}
 
-void SurvivalPlayingState::update() {}
+void SurvivalPlayingState::update(const float& deltaTime) {}
 
 void SurvivalPlayingState::render() {}
 

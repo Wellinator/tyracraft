@@ -49,14 +49,8 @@ class StateGamePlay : public GameState {
   ItemRepository* itemRepository;
 
  private:
-  // Control game mode change
-  // Control Cross click debounce for changing game mode
-  std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
-  GameMode gameMode = GameMode::Survival;
-
   PlayingStateBase* state = nullptr;
 
-  void handleInput();
   void controlGameMode();
   void handleGameMode(const GameMode& gameMode);
 };

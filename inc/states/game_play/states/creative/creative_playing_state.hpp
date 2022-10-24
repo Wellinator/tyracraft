@@ -11,7 +11,7 @@ class CreativePlayingState : public PlayingStateBase {
   ~CreativePlayingState();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

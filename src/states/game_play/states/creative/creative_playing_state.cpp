@@ -13,7 +13,7 @@ void CreativePlayingState::init() {
       this->t_creativeAudioListener);
 }
 
-void CreativePlayingState::update() {}
+void CreativePlayingState::update(const float& deltaTime) {}
 
 void CreativePlayingState::render() {}
 

@@ -10,7 +10,7 @@ class SurvivalPlayingState : public PlayingStateBase {
   ~SurvivalPlayingState();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:
