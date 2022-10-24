@@ -5,7 +5,13 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 
 CreativePlayingState::~CreativePlayingState() {}
 
-void CreativePlayingState::init() {}
+void CreativePlayingState::init() {
+  this->t_creativeAudioListener =
+      new CreativeAudioListener(this->context->context);
+  this->t_creativeAudioListener->playRandomCreativeSound();
+  this->context->context->t_audio->song.addListener(
+      this->t_creativeAudioListener);
+}
 
 void CreativePlayingState::update() {}
 

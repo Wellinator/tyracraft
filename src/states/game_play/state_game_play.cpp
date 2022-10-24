@@ -40,10 +40,7 @@ void StateGamePlay::handleGameMode(const GameMode& gameMode) {
 
 void StateGamePlay::init() {
   // TODO: add in game skybox;
-
-  this->t_creativeAudioListener = new CreativeAudioListener(this->context);
-  this->t_creativeAudioListener->playRandomCreativeSound();
-  this->context->t_audio->song.addListener(this->t_creativeAudioListener);
+  this->state->init();
 }
 
 void StateGamePlay::update(const float& deltaTime) {

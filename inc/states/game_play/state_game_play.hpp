@@ -17,7 +17,6 @@
 #include "entities/World.hpp"
 #include "entities/player.hpp"
 #include "managers/items_repository.hpp"
-#include "states/game_play/creative_audio_listener.hpp"
 #include "ui.hpp"
 #include <chrono>
 
@@ -54,7 +53,6 @@ class StateGamePlay : public GameState {
   // Control Cross click debounce for changing game mode
   std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
   GameMode gameMode = GameMode::Survival;
-  CreativeAudioListener* t_creativeAudioListener;
 
   PlayingStateBase* state = nullptr;
 
