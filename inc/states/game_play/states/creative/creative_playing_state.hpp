@@ -5,6 +5,8 @@
 #include <tamtypes.h>
 #include <tyra>
 
+using Tyra::Threading;
+
 class CreativePlayingState : public PlayingStateBase {
  public:
   CreativePlayingState(StateGamePlay* t_context);
