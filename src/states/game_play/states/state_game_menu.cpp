@@ -5,7 +5,7 @@ StateGameMenu::StateGameMenu(StateGamePlay* t_context)
   this->init();
 }
 
-StateGameMenu::~StateGameMenu() {}
+StateGameMenu::~StateGameMenu() { this->unloadTextures(); }
 
 void StateGameMenu::init() {
   const float halfWidth =
@@ -160,28 +160,17 @@ void StateGameMenu::navigate() {
 }
 
 void StateGameMenu::unloadTextures() {
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      overlay);
+  TextureRepository* textureRepository =
+      &this->stateGamePlay->context->t_renderer->getTextureRepository();
 
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      raw_slot[0]);
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      raw_slot[1]);
-  this->stateGamePlay->context->t_renderer->getTextureRepository().free(
-      this->textureRawSlot);
-
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      active_slot);
-
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      btnCross);
-
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      textBackToGame);
-  this->stateGamePlay->context->t_renderer->getTextureRepository().freeBySprite(
-      textQuitToTitle);
-
-  delete textureRawSlot;
+  textureRepository->free(this->textureRawSlot->id);
+  textureRepository->freeBySprite(overlay);
+  textureRepository->freeBySprite(active_slot);
+  textureRepository->freeBySprite(btnCross);
+  textureRepository->freeBySprite(textSelect);
+  textureRepository->freeBySprite(textGameMenu);
+  textureRepository->freeBySprite(textBackToGame);
+  textureRepository->freeBySprite(textQuitToTitle);
 }
 
 void StateGameMenu::playClickSound() {
