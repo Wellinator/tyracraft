@@ -16,15 +16,7 @@ using Tyra::Threading;
 
 StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
     : GameState(context) {
-  // Define GAME_MODE
-  // TODO: refactor to a function
-  {
-    if (gameMode == GameMode::Creative) {
-      this->setPlayingState(new CreativePlayingState(this));
-    } else if (gameMode == GameMode::Survival) {
-      this->setPlayingState(new SurvivalPlayingState(this));
-    }
-  }
+  this->handleGameMode(gameMode);
   this->init();
 }
 
@@ -36,6 +28,14 @@ StateGamePlay::~StateGamePlay() {
   delete this->player;
   delete this->itemRepository;
   delete this->state;
+}
+
+void StateGamePlay::handleGameMode(const GameMode& gameMode) {
+  if (gameMode == GameMode::Creative) {
+    this->setPlayingState(new CreativePlayingState(this));
+  } else if (gameMode == GameMode::Survival) {
+    this->setPlayingState(new SurvivalPlayingState(this));
+  }
 }
 
 void StateGamePlay::init() {

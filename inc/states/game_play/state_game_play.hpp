@@ -60,4 +60,5 @@ class StateGamePlay : public GameState {
 
   void handleInput();
   void controlGameMode();
+  void handleGameMode(const GameMode& gameMode);
 };
