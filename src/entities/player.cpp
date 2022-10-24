@@ -41,6 +41,9 @@ Player::~Player() {
   delete hitBox;
   delete handledItem;
 
+  this->t_renderer->getTextureRepository().freeByMesh(mesh.get());
+  this->t_renderer->getTextureRepository().freeByMesh(armMesh.get());
+
   walkSequence.clear();
   breakBlockSequence.clear();
   standStillSequence.clear();

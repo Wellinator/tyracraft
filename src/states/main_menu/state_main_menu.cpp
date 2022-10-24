@@ -107,15 +107,17 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
 }
 
 void StateMainMenu::unloadTextures() {
-  for (u8 i = 0; i < menuSkybox->materials.size(); i++) {
-    this->context->t_renderer->getTextureRepository().freeByMesh(menuSkybox);
-  }
+  this->context->t_renderer->getTextureRepository().freeByMesh(menuSkybox);
+
   for (u8 i = 0; i < 2; i++) {
     this->context->t_renderer->getTextureRepository().free(
         this->context->t_renderer->getTextureRepository()
             .getBySpriteId(title[i].id)
             ->id);
   }
+
+  delete this->menuSkybox;
+  delete this->skyboxOptions;
 }
 
 void StateMainMenu::loadGame(const NewGameOptions& options) {

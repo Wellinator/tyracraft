@@ -76,14 +76,11 @@ void StateSplashScreen::setBgColorBlack(Renderer* renderer) {
 }
 
 void StateSplashScreen::unloadTextures() {
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(tyracraft->id)
-          ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(tyra->id)
-          ->id);
+  this->context->t_renderer->getTextureRepository().freeBySprite(*tyracraft);
+  this->context->t_renderer->getTextureRepository().freeBySprite(*tyra);
+
+  delete this->tyracraft;
+  delete this->tyra;
 }
 
 u8 StateSplashScreen::hasFinished() {

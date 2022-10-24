@@ -85,22 +85,17 @@ void StateLoadingGame::render() {
 }
 
 void StateLoadingGame::unload() {
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(background->id)
-          ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(loadingSlot->id)
-          ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(loadingprogress->id)
-          ->id);
-  this->context->t_renderer->core.texture.repository.free(
-      this->context->t_renderer->core.texture.repository
-          .getBySpriteId(loadingStateText->id)
-          ->id);
+  this->context->t_renderer->getTextureRepository().freeBySprite(*background);
+  this->context->t_renderer->getTextureRepository().freeBySprite(*loadingSlot);
+  this->context->t_renderer->getTextureRepository().freeBySprite(
+      *loadingprogress);
+  this->context->t_renderer->getTextureRepository().freeBySprite(
+      *loadingStateText);
+
+  delete background;
+  delete loadingSlot;
+  delete loadingprogress;
+  delete loadingStateText;
 }
 
 void StateLoadingGame::createEntities() {
