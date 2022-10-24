@@ -51,6 +51,5 @@ class StateGamePlay : public GameState {
  private:
   PlayingStateBase* state = nullptr;
 
-  void controlGameMode();
   void handleGameMode(const GameMode& gameMode);
 };
