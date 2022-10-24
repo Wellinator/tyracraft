@@ -18,7 +18,14 @@ class Ui {
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             Player* t_player);
   void update();
-  void render();
+
+  void renderCrosshair();
+  void renderInventory();
+  void renderExperienceBar();
+  void renderArmorBar();
+  void renderHealthBar();
+  void renderHungerBar();
+  void renderBreathBar();
 
   void loadlHud();
 

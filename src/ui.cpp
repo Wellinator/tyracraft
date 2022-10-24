@@ -26,16 +26,8 @@ void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
 void Ui::update() { this->updateHud(); }
 
-void Ui::render() {
+void Ui::renderInventory() {
   this->t_renderer->renderer2D.render(&empty_slots);
-  this->t_renderer->renderer2D.render(&xp_bar_full);
-  for (u8 i = 0; i < 10; i++) {
-    // TODO: Daw only when wearing an armor
-    this->t_renderer->renderer2D.render(&armor[i]);
-    this->t_renderer->renderer2D.render(&health[i]);
-    this->t_renderer->renderer2D.render(&hungry[i]);
-    this->t_renderer->renderer2D.render(&breath[i]);
-  }
 
   // Draw itens from player inventory
   for (u8 i = 0; i < INVENTORY_SIZE; i++)
@@ -43,7 +35,28 @@ void Ui::render() {
       this->t_renderer->renderer2D.render(playerInventory[i]);
 
   this->t_renderer->renderer2D.render(&selected_slot);
-  this->t_renderer->renderer2D.render(&crosshair);
+}
+
+void Ui::renderCrosshair() { this->t_renderer->renderer2D.render(&crosshair); }
+
+void Ui::renderExperienceBar() {
+  this->t_renderer->renderer2D.render(&xp_bar_full);
+}
+
+void Ui::renderArmorBar() {
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&armor[i]);
+}
+
+void Ui::renderHealthBar() {
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&health[i]);
+}
+
+void Ui::renderHungerBar() {
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&hungry[i]);
+}
+
+void Ui::renderBreathBar() {
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&breath[i]);
 }
 
 void Ui::loadlHud() {
