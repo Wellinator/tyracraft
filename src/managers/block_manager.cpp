@@ -13,13 +13,20 @@ BlockManager::BlockManager() {}
 
 BlockManager::~BlockManager() {
   delete this->t_blockTextureRepository;
-  delete this->blocksTexAtlas;
+
+  this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
 
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
     this->blockSfxRepositories[i] = NULL;
   }
   this->blockSfxRepositories.clear();
+
+  for (u8 i = 0; i < this->damage_overlay.size(); i++) {
+    delete this->damage_overlay[i];
+    this->damage_overlay[i] = NULL;
+  }
+  this->damage_overlay.clear();
 }
 
 void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {

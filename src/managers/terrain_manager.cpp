@@ -20,7 +20,9 @@ TerrainManager::TerrainManager() {
                         OVERWORLD_MAX_DISTANCE);
 }
 
-TerrainManager::~TerrainManager() {}
+TerrainManager::~TerrainManager() {
+  delete this->noise;
+}
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
                           MinecraftPipeline* mcPip, BlockManager* blockManager,

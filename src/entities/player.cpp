@@ -35,7 +35,19 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   }
 }
 
-Player::~Player() {}
+Player::~Player() {
+  currentBlock = nullptr;
+  willCollideBlock = nullptr;
+  delete hitBox;
+  delete handledItem;
+
+  walkSequence.clear();
+  breakBlockSequence.clear();
+  standStillSequence.clear();
+  armStandStillSequence.clear();
+  armWalkingSequence.clear();
+  armHitingSequence.clear();
+}
 
 // ----
 // Methods

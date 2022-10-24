@@ -6,7 +6,24 @@ using Tyra::FileUtils;
 
 Ui::Ui() {}
 
-Ui::~Ui() {}
+Ui::~Ui() {
+  TextureRepository* textureRepository =
+      &this->t_renderer->getTextureRepository();
+
+  textureRepository->freeBySprite(crosshair);
+  textureRepository->freeBySprite(empty_slots);
+  textureRepository->freeBySprite(selected_slot);
+  textureRepository->freeBySprite(xp_bar_full);
+
+  for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(health[i]);
+  for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(hungry[i]);
+  for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(armor[i]);
+  for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(breath[i]);
+
+  for (u8 i = 0; i < INVENTORY_SIZE; i++)
+    if (playerInventory[i] != NULL)
+      textureRepository->freeBySprite(*playerInventory[i]);
+}
 
 void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
               Player* t_player) {

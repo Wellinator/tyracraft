@@ -14,7 +14,11 @@ World::World(const NewGameOptions& options) {
   this->chunckManager = new ChunckManager();
 }
 
-World::~World() {}
+World::~World() {
+  delete this->terrainManager;
+  delete this->blockManager;
+  delete this->chunckManager;
+}
 
 void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
                  SoundManager* t_soundManager) {

@@ -9,7 +9,30 @@ using Tyra::Texture;
 using Tyra::Vec4;
 
 ItemRepository::ItemRepository() {}
-ItemRepository::~ItemRepository() {}
+
+ItemRepository::~ItemRepository() {
+  this->t_renderer->getTextureRepository().freeBySprite(dirt.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(sand.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(stone.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(glass.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(coal_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(diamond_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(iron_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(gold_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(redstone_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(emerald_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(oak_planks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(spruce_planks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(birch_planks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(acacia_planks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(stone_brick.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(cracked_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(mossy_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(chiseled_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(stripped_oak_wood.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
+}
 
 void ItemRepository::init(Renderer* t_renderer) {
   TYRA_ASSERT(t_renderer, "Param 't_renderer' not initialized!");

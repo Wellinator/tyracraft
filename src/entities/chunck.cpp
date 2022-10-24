@@ -25,6 +25,7 @@ Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
 };
 
 Chunck::~Chunck() {
+  this->clear();
   delete this->minCorner;
   delete this->maxCorner;
   delete this->bbox;

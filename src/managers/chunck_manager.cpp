@@ -9,11 +9,10 @@ ChunckManager::ChunckManager() {}
 
 ChunckManager::~ChunckManager() {
   for (u16 i = 0; i < this->chuncks.size(); i++) {
-    chuncks[i]->clear();
     delete chuncks[i];
     chuncks[i] = NULL;
-    this->chuncks.clear();
   }
+  this->chuncks.clear();
 }
 
 void ChunckManager::init() { this->generateChunks(); }
