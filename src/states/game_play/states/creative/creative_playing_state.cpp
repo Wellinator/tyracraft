@@ -7,26 +7,27 @@ CreativePlayingState::~CreativePlayingState() {}
 
 void CreativePlayingState::init() {
   this->t_creativeAudioListener =
-      new CreativeAudioListener(this->context->context);
+      new CreativeAudioListener(this->stateGamePlay->context);
   this->t_creativeAudioListener->playRandomCreativeSound();
-  this->context->context->t_audio->song.addListener(
+  this->stateGamePlay->context->t_audio->song.addListener(
       this->t_creativeAudioListener);
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
   Threading::switchThread();
-  this->context->world->update(this->context->player,
-                               this->context->context->t_camera,
-                               this->context->context->t_pad, deltaTime);
+  this->stateGamePlay->world->update(
+      this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
+      this->stateGamePlay->context->t_pad, deltaTime);
   Threading::switchThread();
-  this->context->player->update(deltaTime, *this->context->context->t_pad,
-                                *this->context->context->t_camera,
-                                this->context->world->getLoadedBlocks());
+  this->stateGamePlay->player->update(
+      deltaTime, *this->stateGamePlay->context->t_pad,
+      *this->stateGamePlay->context->t_camera,
+      this->stateGamePlay->world->getLoadedBlocks());
   Threading::switchThread();
-  this->context->ui->update();
+  this->stateGamePlay->ui->update();
   Threading::switchThread();
-  this->context->context->t_camera->update(*this->context->context->t_pad,
-                                           *this->context->player->mesh);
+  this->stateGamePlay->context->t_camera->update(
+      *this->stateGamePlay->context->t_pad, *this->stateGamePlay->player->mesh);
 }
 
 void CreativePlayingState::render() {}
