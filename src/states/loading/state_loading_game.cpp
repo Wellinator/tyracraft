@@ -4,7 +4,7 @@ StateLoadingGame::StateLoadingGame(Context* t_context,
                                    const NewGameOptions& options)
     : GameState(t_context) {
   this->worldOptions = options;
-  this->stateGamePlay = new StateGamePlay(this->context);
+  this->stateGamePlay = new StateGamePlay(this->context, GameMode::Creative);
   this->init();
 }
 

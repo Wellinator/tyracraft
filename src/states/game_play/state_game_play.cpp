@@ -14,7 +14,17 @@ using Tyra::Renderer3D;
 using Tyra::RendererSettings;
 using Tyra::Threading;
 
-StateGamePlay::StateGamePlay(Context* t_context) : GameState(t_context) {
+StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
+    : GameState(context) {
+  // Define GAME_MODE
+  // TODO: refactor to a function
+  {
+    if (gameMode == GameMode::Creative) {
+      this->setPlayingState(new CreativePlayingState(this));
+    } else if (gameMode == GameMode::Survival) {
+      this->setPlayingState(new SurvivalPlayingState(this));
+    }
+  }
   this->init();
 }
 
@@ -25,6 +35,7 @@ StateGamePlay::~StateGamePlay() {
   delete this->ui;
   delete this->player;
   delete this->itemRepository;
+  delete this->state;
 }
 
 void StateGamePlay::init() {
@@ -36,6 +47,8 @@ void StateGamePlay::init() {
 }
 
 void StateGamePlay::update(const float& deltaTime) {
+  this->state->update();
+
   this->handleInput();
   Threading::switchThread();
   this->world->update(this->player, this->context->t_camera,
@@ -51,6 +64,7 @@ void StateGamePlay::update(const float& deltaTime) {
 }
 
 void StateGamePlay::render() {
+  this->state->render();
   this->world->render();
   this->player->render();
   this->ui->render();
@@ -72,4 +86,9 @@ void StateGamePlay::controlGameMode() {
     }
     this->lastTimeCrossWasClicked = std::chrono::steady_clock::now();
   }
+}
+
+void StateGamePlay::setPlayingState(PlayingStateBase* t_playingState) {
+  delete this->state;
+  this->state = t_playingState;
 }

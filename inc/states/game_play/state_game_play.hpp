@@ -10,6 +10,9 @@
 #include "camera.hpp"
 #include "states/game_state.hpp"
 #include "states/context.hpp"
+#include "states/game_play/states/playing_state_base.hpp"
+#include "states/game_play/states/creative/creative_playing_state.hpp"
+#include "states/game_play/states/survival/survival_playing_state.hpp"
 #include <tyra>
 #include "entities/World.hpp"
 #include "entities/player.hpp"
@@ -26,14 +29,17 @@ using Tyra::StaticMesh;
 
 enum class GameMode { Survival, Creative };
 
+class PlayingStateBase;
+
 class StateGamePlay : public GameState {
  public:
-  StateGamePlay(Context* context);
+  StateGamePlay(Context* context, const GameMode& gameMode);
   ~StateGamePlay();
 
   void init();
   void update(const float& deltaTime);
   void render();
+  void setPlayingState(PlayingStateBase* t_playingState);
 
   // Rotating skybox
   StaticMesh* menuSkybox;
@@ -49,6 +55,8 @@ class StateGamePlay : public GameState {
   std::chrono::steady_clock::time_point lastTimeCrossWasClicked;
   GameMode gameMode = GameMode::Survival;
   CreativeAudioListener* t_creativeAudioListener;
+
+  PlayingStateBase* state = nullptr;
 
   void handleInput();
   void controlGameMode();
