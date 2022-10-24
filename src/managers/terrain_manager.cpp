@@ -22,6 +22,7 @@ TerrainManager::TerrainManager() {
 
 TerrainManager::~TerrainManager() {
   delete this->noise;
+  delete this->terrain;
 }
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,

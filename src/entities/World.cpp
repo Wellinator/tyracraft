@@ -15,6 +15,7 @@ World::World(const NewGameOptions& options) {
 }
 
 World::~World() {
+  delete lastPlayerPosition;
   delete this->terrainManager;
   delete this->blockManager;
   delete this->chunckManager;
