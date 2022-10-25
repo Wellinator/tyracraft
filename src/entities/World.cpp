@@ -105,6 +105,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 }
 
 void World::reloadChangedChunk() {
+  if (this->terrainManager->targetBlock == nullptr) return;
   Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
   Chunck* chunckToUpdate =
       this->chunckManager->getChunckByPosition(changedPosition);
@@ -170,6 +171,7 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
+  if(this->terrainManager->targetBlock == nullptr) return;
   if (this->terrainManager->isBreakingBLock()) {
     McpipBlock* overlay = this->blockManager->getDamageOverlay(
         this->terrainManager->targetBlock->damage);
@@ -203,10 +205,9 @@ void World::renderBlockDamageOverlay() {
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {
-  if (targetBlock) {
-    this->t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox,
-                                                  Color(0, 0, 0));
-  }
+  if (targetBlock == nullptr) return;
+  this->t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox,
+                                                Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {

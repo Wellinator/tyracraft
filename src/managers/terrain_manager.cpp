@@ -307,7 +307,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   u8 hitedABlock = 0;
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
-  Block* tempTargetBlock;
+  Block* tempTargetBlock = nullptr;
   const auto* frustumPlanes =
       this->t_renderer->core.renderer3D.frustumPlanes.getAll();
 
@@ -362,7 +362,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
 }
 
 void TerrainManager::removeBlock() {
-  if (this->targetBlock == NULL) return;
+  if (this->targetBlock == nullptr) return;
 
   terrain[this->targetBlock->index] = AIR_BLOCK;
   this->_shouldUpdateChunck = 1;
@@ -370,7 +370,7 @@ void TerrainManager::removeBlock() {
 }
 
 void TerrainManager::putBlock(u8 blockToPlace) {
-  if (this->targetBlock == NULL || this->targetBlock == nullptr) return;
+  if (this->targetBlock == nullptr) return;
 
   // Prevent to put a block at the player position;
   {
@@ -441,6 +441,8 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
 }
 
 void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
+  if (this->targetBlock == nullptr) return;
+
   if (this->_isBreakingBlock) {
     this->breaking_time_pessed += deltaTime;
 
