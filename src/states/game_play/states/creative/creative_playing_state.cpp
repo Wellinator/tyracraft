@@ -37,7 +37,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 
 void CreativePlayingState::render() {
   this->stateGamePlay->world->render();
+  Threading::switchThread();
   this->stateGamePlay->player->render();
+  Threading::switchThread();
   this->renderCreativeUi();
 }
 
