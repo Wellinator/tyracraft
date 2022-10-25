@@ -225,9 +225,11 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 inflatedMax = Vec4();
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
+  const float maxCollidableDistance = currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (int i = 0; i < blocks_ammount; i++) {
+  for (u16 i = 0; i < blocks_ammount; i++) {
     // Broad phase
+    // is vertically out of range?
     if (playerBB.getBottomFace().axisPosition >= t_blocks[i]->maxCorner.y ||
         playerBB.getTopFace().axisPosition < t_blocks[i]->minCorner.y) {
       continue;
@@ -241,6 +243,9 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
 
     tempHitDistance =
         Utils::Raycast(&rayOrigin, &rayDir, &tempInflatedMin, &tempInflatedMax);
+
+    // Is horizontally collidable?
+    if (tempHitDistance > maxCollidableDistance) continue;
 
     if (tempHitDistance > -1.0f &&
         (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance)) {
