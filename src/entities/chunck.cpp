@@ -31,9 +31,7 @@ Chunck::~Chunck() {
   delete this->bbox;
 };
 
-void Chunck::update(Player* t_player) {
-  // this->updateBlocks(*t_player->getPosition());
-}
+void Chunck::update(Player* t_player) {}
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
   t_block->color.a =
