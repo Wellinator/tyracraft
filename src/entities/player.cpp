@@ -218,16 +218,18 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   Vec4 playerMax = Vec4();
   BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
-  Vec4 rayOrigin = currentPlayerPos;
+
+  // Set ray props
+  Vec4 rayOrigin = ((playerMax - playerMin) / 2) + playerMin;
   Vec4 rayDir = nextPlayerPos - currentPlayerPos;
   rayDir.normalize();
-  Vec4 inflatedMin = Vec4();
-  Vec4 inflatedMax = Vec4();
+  const Ray ray = Ray(rayOrigin, rayDir);
+
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
   const float maxCollidableDistance = currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (u16 i = 0; i < blocks_ammount; i++) {
+  for (int i = 0; i < blocks_ammount; i++) {
     // Broad phase
     // is vertically out of range?
     if (playerBB.getBottomFace().axisPosition >= t_blocks[i]->maxCorner.y ||
@@ -241,17 +243,13 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
                            t_blocks[i]->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
 
-    tempHitDistance =
-        Utils::Raycast(&rayOrigin, &rayDir, &tempInflatedMin, &tempInflatedMax);
+    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
+      // Is horizontally collidable?
+      if (tempHitDistance > maxCollidableDistance) continue;
 
-    // Is horizontally collidable?
-    if (tempHitDistance > maxCollidableDistance) continue;
-
-    if (tempHitDistance > -1.0f &&
-        (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance)) {
-      finalHitDistance = tempHitDistance;
-      inflatedMin.set(tempInflatedMin);
-      inflatedMax.set(tempInflatedMax);
+      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
+        finalHitDistance = tempHitDistance;
+      }
     }
   }
 
@@ -354,7 +352,7 @@ void Player::moveSelectorToTheRight() {
 
 void Player::loadMesh() {
   ObjLoaderOptions options;
-  options.scale = 5.0F;
+  options.scale = 15.0F;
   options.flipUVs = true;
   options.animation.count = 10;
 
