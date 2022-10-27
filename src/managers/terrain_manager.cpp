@@ -183,8 +183,8 @@ bool TerrainManager::isBlockHidden(int x, int y, int z) {
       // Left block
       leftBlock == AIR_BLOCK || leftBlock == GLASS_BLOCK) {
     return false;
-  }
-  return true;
+  } else
+    return true;
 }
 
 u8 TerrainManager::getBlockTypeByOffset(const int& x, const int& y,
@@ -254,8 +254,8 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minCorner->z; z < t_chunck->maxCorner->z; z++) {
-    for (int x = t_chunck->minCorner->x; x < t_chunck->maxCorner->x; x++) {
+  for (int z = t_chunck->minCorner->z; z <= t_chunck->maxCorner->z; z++) {
+    for (int x = t_chunck->minCorner->x; x <= t_chunck->maxCorner->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
@@ -321,7 +321,11 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
-    if (chuncks[h]->state != ChunkState::Loaded) continue;
+    // Isn't loaded or is out of frustum
+    if (chuncks[h]->state != ChunkState::Loaded ||
+        !chuncks[h]->isChunkVisible(frustumPlanes))
+      continue;
+
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
       float distanceFromCurrentBlockToPlayer =
           playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
@@ -331,17 +335,10 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
         chuncks[h]->blocks[i]->isTarget = 0;
         chuncks[h]->blocks[i]->distance = -1.0f;
 
-        // Check if is in frustum
-        {
-          u8 isInFrustum = chuncks[h]->blocks[i]->bbox->isInFrustum(
-              frustumPlanes, chuncks[h]->blocks[i]->model);
-          if (!isInFrustum) continue;
-        }
-
-        float intersectionPoint = Utils::Raycast(
-            &t_camera->position, &rayDir, &chuncks[h]->blocks[i]->minCorner,
-            &chuncks[h]->blocks[i]->maxCorner);
-        if (intersectionPoint > -1) {
+        float intersectionPoint;
+        if (ray.intersectBox(chuncks[h]->blocks[i]->minCorner,
+                             chuncks[h]->blocks[i]->maxCorner,
+                             &intersectionPoint)) {
           hitedABlock = 1;
           if (tempTargetDistance == -1.0f ||
               (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
@@ -422,7 +419,6 @@ void TerrainManager::putBlock(u8 blockToPlace) {
 }
 
 void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
-  PadButtons clickedButton = t_pad->getClicked();
   if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
@@ -430,7 +426,7 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
     if (this->targetBlock) this->targetBlock->damage = 0;
   }
 
-  if (clickedButton.R2) {
+  if (t_pad->getClicked().R2) {
     ItemId activeItemType = this->t_player->getSelectedInventoryItemType();
     if (activeItemType != ItemId::empty) {
       int blockid =
