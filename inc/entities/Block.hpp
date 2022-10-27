@@ -21,8 +21,8 @@ class Block {
 
   // Block state
   u8 isTarget = 0;
-  u8 isSolid = 0;
-  u8 isEditable = 0;
+  // u8 isSolid = 0;
+  // u8 isEditable = 0;
   u8 isSingleTexture = 1;
   float damage = 0;
 
@@ -55,12 +55,12 @@ class Block {
   // Block props
 
   // Terrain generation params
-  float continentalness = 0.0;
-  float erosion = 0.0;
-  float peaks_and_valleys = 0.0;
-  float density = 0.0;
+  // float continentalness = 0.0;
+  // float erosion = 0.0;
+  // float peaks_and_valleys = 0.0;
+  // float density = 0.0;
 
   // Biom's params
-  float temperature = 0.0;
-  float humidity = 0.0;
+  // float temperature = 0.0;
+  // float humidity = 0.0;
 };
