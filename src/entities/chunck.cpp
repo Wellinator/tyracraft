@@ -5,21 +5,21 @@
 #include <algorithm>
 
 Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
+  this->id = id;
   this->minCorner->set(minCorner);
   this->maxCorner->set(maxCorner);
-  this->id = id;
-  this->model.identity();
+  this->center->set(((maxCorner - minCorner) / 2 + minCorner));
 
   u32 count = 8;
   Vec4 vertices[count] = {
-      Vec4(minCorner),
-      Vec4(maxCorner.x, minCorner.y, minCorner.z),
-      Vec4(minCorner.x, maxCorner.y, minCorner.z),
-      Vec4(minCorner.x, minCorner.y, maxCorner.z),
-      Vec4(maxCorner),
-      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
-      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
-      Vec4(maxCorner.x, maxCorner.y, minCorner.z),
+      Vec4(minCorner) * DUBLE_BLOCK_SIZE,
+      Vec4(maxCorner.x, minCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(minCorner.x, maxCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(minCorner.x, minCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(maxCorner) * DUBLE_BLOCK_SIZE,
+      Vec4(minCorner.x, maxCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(maxCorner.x, minCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(maxCorner.x, maxCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
   };
   this->bbox = new BBox(vertices, count);
 };
@@ -28,6 +28,7 @@ Chunck::~Chunck() {
   this->clear();
   delete this->minCorner;
   delete this->maxCorner;
+  delete this->center;
   delete this->bbox;
 };
 
@@ -47,11 +48,15 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                       BlockManager* t_blockManager) {
-  if (this->state != ChunkState::Loaded) return;
-  t_renderer->renderer3D.usePipeline(mcPip);
-  mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
-                false);
-  mcPip->render(this->multiTexBlocks, t_blockManager->getBlocksTexture(), true);
+  if (this->state == ChunkState::Loaded &&
+      this->isChunkVisible(
+          t_renderer->core.renderer3D.frustumPlanes.getAll())) {
+    t_renderer->renderer3D.usePipeline(mcPip);
+    mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
+                  false);
+    mcPip->render(this->multiTexBlocks, t_blockManager->getBlocksTexture(),
+                  true);
+  }
 };
 
 /**
@@ -117,4 +122,12 @@ void Chunck::clearMcpipBlocks() {
   this->singleTexBlocks.shrink_to_fit();
   this->multiTexBlocks.clear();
   this->multiTexBlocks.shrink_to_fit();
+}
+
+u8 Chunck::isChunkVisible(const Plane* frustumPlanes) {
+  for (u8 y = 0; y < 8; y++) {
+    // 4th frustum plane is NEAR frustum plane
+    if (frustumPlanes[4].distanceTo(this->bbox->vertices[y]) >= 0.0F) return 1;
+  }
+  return 0;  // is behind
 }

@@ -58,12 +58,6 @@ Chunck* ChunckManager::getChunckById(const u16 id) {
 };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk, Renderer* t_renderer) {
-  const auto* frustumPlanes =
-      t_renderer->core.renderer3D.frustumPlanes.getAll();
-  for (u8 y = 0; y < 8; y++) {
-    auto isIn = frustumPlanes[4].distanceTo(chunk->bbox->vertices[y]) >= 0.0F;
-    // 4th frustum plane is NEAR frustum plane
-    if (isIn) return 1;
-  }
-  return 0;  // is behind
+  return chunk->isChunkVisible(
+      t_renderer->core.renderer3D.frustumPlanes.getAll());
 }

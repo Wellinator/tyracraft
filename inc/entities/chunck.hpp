@@ -18,6 +18,7 @@ using Tyra::BBox;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
+using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
@@ -35,14 +36,15 @@ class Chunck {
   std::vector<Block*> blocks;
   Vec4* minCorner = new Vec4();
   Vec4* maxCorner = new Vec4();
+  Vec4* center = new Vec4();
   BBox* bbox;
-  M4x4 model;
 
   void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                 BlockManager* t_blockManager);
   void update(Player* t_player);
   void clear();
   void updateDrawData();
+  u8 isChunkVisible(const Plane* frustumPlanes);
 
   // Block controllers
   void addBlock(Block* t_block);
