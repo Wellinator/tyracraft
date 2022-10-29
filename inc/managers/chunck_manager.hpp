@@ -16,6 +16,7 @@
 using Tyra::BBox;
 using Tyra::M4x4;
 using Tyra::MinecraftPipeline;
+using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
@@ -28,7 +29,7 @@ class ChunckManager {
   Chunck* getChunckById(const u16 id);
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   void init();
-  void update(Player* t_player);
+  void update(const Plane* frustumPlanes);
   u8 isChunkVisible(Chunck* chunk, Renderer* t_renderer);
   void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                 BlockManager* t_blockManager);

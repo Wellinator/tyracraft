@@ -37,7 +37,6 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
 
 Player::~Player() {
   currentBlock = nullptr;
-  willCollideBlock = nullptr;
   delete hitBox;
   delete handledItem;
 
@@ -68,8 +67,9 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     const u8 hasMoved = this->updatePosition(
         &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
 
-    const u8 canPlayWalkSound =
-        !t_pad.getLeftJoyPad().isCentered && hasMoved && this->isOnGround;
+    const u8 canPlayWalkSound = !t_pad.getLeftJoyPad().isCentered && hasMoved &&
+                                this->isOnGround &&
+                                this->currentBlock != nullptr;
     if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
   }
 
@@ -227,7 +227,8 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
 
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
-  const float maxCollidableDistance = currentPlayerPos.distanceTo(nextPlayerPos);
+  const float maxCollidableDistance =
+      currentPlayerPos.distanceTo(nextPlayerPos);
 
   for (int i = 0; i < blocks_ammount; i++) {
     // Broad phase

@@ -48,6 +48,8 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                    const float& deltaTime) {
   this->framesCounter++;
   if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
+  this->chunckManager->update(
+      this->t_renderer->core.renderer3D.frustumPlanes.getAll());
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getChuncks(), deltaTime);
@@ -58,16 +60,21 @@ void World::render() {
   // TODO: Render only chunck in view frustum
   this->chunckManager->renderer(this->t_renderer, &this->mcPip,
                                 this->blockManager);
-  this->renderBlockDamageOverlay();
-  this->renderTargetBlockHitbox(this->terrainManager->targetBlock);
+
+  if (this->terrainManager->targetBlock != nullptr) {
+    this->renderBlockDamageOverlay();
+    this->renderTargetBlockHitbox(this->terrainManager->targetBlock);
+  }
 };
 
 void World::buildInitialPosition() {
   Chunck* initialChunck =
       this->chunckManager->getChunckByPosition(this->worldSpawnArea);
-  initialChunck->clear();
-  this->terrainManager->buildChunk(initialChunck);
-  this->scheduleChunksNeighbors(initialChunck, true);
+  if (initialChunck != nullptr) {
+    initialChunck->clear();
+    this->terrainManager->buildChunk(initialChunck);
+    this->scheduleChunksNeighbors(initialChunck, true);
+  }
 };
 
 const std::vector<Block*> World::getLoadedBlocks() {
@@ -76,7 +83,7 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
   auto chuncks = this->chunckManager->getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->state == ChunkState::Loaded) {
+    if (chuncks[i]->state == ChunkState::Loaded && chuncks[i]->isVisible()) {
       for (u16 j = 0; j < chuncks[i]->blocks.size(); j++)
         this->loadedBlocks.push_back(chuncks[i]->blocks[j]);
     }
@@ -91,7 +98,9 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     this->lastPlayerPosition->set(currentPlayerPos);
     Chunck* currentChunck =
         this->chunckManager->getChunckByPosition(*t_player->getPosition());
-    if (t_player->currentChunckId != currentChunck->id) {
+
+    if (currentChunck != nullptr &&
+        t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
       this->scheduleChunksNeighbors(currentChunck);
     }
@@ -108,9 +117,12 @@ void World::reloadChangedChunk() {
   Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
   Chunck* chunckToUpdate =
       this->chunckManager->getChunckByPosition(changedPosition);
-  chunckToUpdate->clear();
-  this->terrainManager->buildChunk(chunckToUpdate);
-  this->terrainManager->setChunckToUpdated();
+
+  if (chunckToUpdate != nullptr) {
+    chunckToUpdate->clear();
+    this->terrainManager->buildChunk(chunckToUpdate);
+    this->terrainManager->setChunckToUpdated();
+  }
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
@@ -170,7 +182,6 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
-  if(this->terrainManager->targetBlock == nullptr) return;
   if (this->terrainManager->isBreakingBLock()) {
     McpipBlock* overlay = this->blockManager->getDamageOverlay(
         this->terrainManager->targetBlock->damage);

@@ -17,7 +17,9 @@ ChunckManager::~ChunckManager() {
 
 void ChunckManager::init() { this->generateChunks(); }
 
-void ChunckManager::update(Player* t_player) {}
+void ChunckManager::update(const Plane* frustumPlanes) {
+  for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->update(frustumPlanes);
+}
 
 void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                              BlockManager* t_blockManager) {

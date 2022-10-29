@@ -32,7 +32,9 @@ Chunck::~Chunck() {
   delete this->bbox;
 };
 
-void Chunck::update(Player* t_player) {}
+void Chunck::update(const Plane* frustumPlanes) {
+  this->_isVisible = this->isChunkVisible(frustumPlanes);
+}
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
   t_block->color.a =
@@ -48,9 +50,7 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                       BlockManager* t_blockManager) {
-  if (this->state == ChunkState::Loaded &&
-      this->isChunkVisible(
-          t_renderer->core.renderer3D.frustumPlanes.getAll())) {
+  if (this->state == ChunkState::Loaded && this->isVisible()) {
     t_renderer->renderer3D.usePipeline(mcPip);
     mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
                   false);
@@ -131,3 +131,5 @@ u8 Chunck::isChunkVisible(const Plane* frustumPlanes) {
   }
   return 0;  // is behind
 }
+
+u8 Chunck::isVisible() { return this->_isVisible; }

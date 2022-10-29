@@ -41,10 +41,11 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                 BlockManager* t_blockManager);
-  void update(Player* t_player);
+  void update(const Plane* frustumPlanes);
   void clear();
   void updateDrawData();
   u8 isChunkVisible(const Plane* frustumPlanes);
+  u8 isVisible();
 
   // Block controllers
   void addBlock(Block* t_block);
@@ -52,6 +53,7 @@ class Chunck {
  private:
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
+  u8 _isVisible = 0;
 
   float getVisibityByPosition(float d);
   void applyFOG(Block* t_block, const Vec4& originPosition);

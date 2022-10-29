@@ -71,6 +71,8 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
   int normal_damage = floor(damage_percentage / 10);
   for (u8 i = 0; i < damage_overlay.size(); i++)
     if (i >= normal_damage) return damage_overlay[i];
+
+  TYRA_WARN("Block damage overlay not loaded");
   return nullptr;
 }
 

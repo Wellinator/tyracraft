@@ -308,8 +308,6 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
   Block* tempTargetBlock = nullptr;
-  const auto* frustumPlanes =
-      this->t_renderer->core.renderer3D.frustumPlanes.getAll();
 
   // Reset the current target block;
   this->targetBlock = nullptr;
@@ -322,8 +320,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     // Isn't loaded or is out of frustum
-    if (chuncks[h]->state != ChunkState::Loaded ||
-        !chuncks[h]->isChunkVisible(frustumPlanes))
+    if (chuncks[h]->state != ChunkState::Loaded || !chuncks[h]->isVisible())
       continue;
 
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
@@ -419,6 +416,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
 }
 
 void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
+  
   if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
