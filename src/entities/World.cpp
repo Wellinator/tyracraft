@@ -61,9 +61,10 @@ void World::render() {
   this->chunckManager->renderer(this->t_renderer, &this->mcPip,
                                 this->blockManager);
 
-  if (this->terrainManager->targetBlock != nullptr) {
-    this->renderBlockDamageOverlay();
+  if (this->terrainManager->targetBlock) {
     this->renderTargetBlockHitbox(this->terrainManager->targetBlock);
+    if (this->terrainManager->isBreakingBLock())
+      this->renderBlockDamageOverlay();
   }
 };
 
@@ -182,42 +183,39 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
-  if (this->terrainManager->isBreakingBLock()) {
-    McpipBlock* overlay = this->blockManager->getDamageOverlay(
-        this->terrainManager->targetBlock->damage);
-    if (overlay != nullptr) {
-      if (this->overlayData.size() > 0) {
-        // Clear last overlay;
-        for (u8 i = 0; i < overlayData.size(); i++) {
-          delete overlayData[i]->color;
-          delete overlayData[i]->model;
-        }
-        this->overlayData.clear();
-        this->overlayData.shrink_to_fit();
+  McpipBlock* overlay = this->blockManager->getDamageOverlay(
+      this->terrainManager->targetBlock->damage);
+  if (overlay != nullptr) {
+    if (this->overlayData.size() > 0) {
+      // Clear last overlay;
+      for (u8 i = 0; i < overlayData.size(); i++) {
+        delete overlayData[i]->color;
+        delete overlayData[i]->model;
       }
-
-      M4x4 scale = M4x4();
-      M4x4 translation = M4x4();
-
-      scale.identity();
-      translation.identity();
-      scale.scale(BLOCK_SIZE + 0.01f);
-      translation.translate(*this->terrainManager->targetBlock->getPosition());
-
-      overlay->model = new M4x4(translation * scale);
-      overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
-
-      this->overlayData.push_back(overlay);
-      this->t_renderer->renderer3D.usePipeline(&this->mcPip);
-      mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
+      this->overlayData.clear();
+      this->overlayData.shrink_to_fit();
     }
+
+    M4x4 scale = M4x4();
+    M4x4 translation = M4x4();
+
+    scale.identity();
+    translation.identity();
+    scale.scale(BLOCK_SIZE + 0.01f);
+    translation.translate(*this->terrainManager->targetBlock->getPosition());
+
+    overlay->model = new M4x4(translation * scale);
+    overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
+
+    this->overlayData.push_back(overlay);
+    this->t_renderer->renderer3D.usePipeline(&this->mcPip);
+    mcPip.render(overlayData, this->blockManager->getBlocksTexture(), false);
   }
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {
-  if (targetBlock == nullptr) return;
-  this->t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox,
-                                                Color(0, 0, 0));
+  this->t_renderer->renderer3D.utility.drawBox(*targetBlock->getPosition(),
+                                               BLOCK_SIZE, Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {

@@ -41,15 +41,15 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                             std::vector<Chunck*> chuncks,
                             const float& deltaTime) {
-  this->framesCounter++;
-  {
+  // this->framesCounter++;
+  // {
     this->t_player = t_player;
     this->t_camera = t_camera;
-    if (this->shouldUpdateTargetBlock())
-      this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
+    // if (this->shouldUpdateTargetBlock())
+    this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
     this->handlePadControls(t_pad, deltaTime);
-  }
-  if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
+  // }
+  // if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
@@ -416,7 +416,6 @@ void TerrainManager::putBlock(u8 blockToPlace) {
 }
 
 void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
-  
   if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
