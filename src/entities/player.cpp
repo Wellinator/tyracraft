@@ -175,8 +175,8 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
   Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
                           (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
   Vec4 result =
-      Vec4((camDir.x * sensibility.z) + (camDir.z * sensibility.x), 0.0F,
-           (camDir.z * sensibility.z) + (camDir.x * -sensibility.x));
+      Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
+           (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
   result *=
       (this->speed * sensibility.length() * std::min(deltaTime, MAX_FRAME_MS));

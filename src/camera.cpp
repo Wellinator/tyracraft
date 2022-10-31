@@ -16,18 +16,11 @@ using Tyra::Mesh;
 using Tyra::Pad;
 using Tyra::Vec4;
 
-const float CAMERA_Y = 25.0F;
-
 // ----
 // Constructors/Destructors
 // ----
 
-Camera::Camera(const RendererSettings& t_screen)
-    : Tyra::CameraInfo3D(&position, &lookPos) {
-  verticalLevel = DUBLE_BLOCK_SIZE * 2.2F;
-  pitch = 0.0F;
-  yaw = 270.0F;
-}
+Camera::Camera(const RendererSettings& t_screen) {}
 
 Camera::~Camera() {}
 
@@ -35,63 +28,42 @@ Camera::~Camera() {}
 // Methods
 // ----
 
-void Camera::update(Pad& t_pad, Mesh& t_mesh) {
-  rotate(t_pad);
-  updateUnitCirclePosition();
-  followBy(t_mesh);
-  pointCamera(t_pad, t_mesh);
-}
+void Camera::update(Pad& pad, Mesh& t_mesh) {
+  const auto& rightJoy = pad.getRightJoyPad();
+  position.set(*t_mesh.getPosition());
+  position.y += CAMERA_Y;
 
-/** Set camera rotation by pad right joy and update unit circle
- * https://en.wikipedia.org/wiki/Unit_circle
- * https://www.desmos.com/calculator/3e7iypw4ow
- */
-void Camera::rotate(Pad& t_pad) {
-  if (t_pad.getRightJoyPad().h <= 100)
-    horizontalLevel += 0.08F;
-  else if (t_pad.getRightJoyPad().h >= 200)
-    horizontalLevel -= 0.08F;
-}
+  Vec4 sensibility = Vec4((rightJoy.h - 128.0F) / 128.0F, 0.0F,
+                          (rightJoy.v - 128.0F) / 128.0F);
 
-void Camera::updateUnitCirclePosition() {
-  unitCirclePosition.x = (Math::sin(horizontalLevel) * verticalLevel);
-  unitCirclePosition.y = CAMERA_Y;
-  unitCirclePosition.z = (Math::cos(horizontalLevel) * verticalLevel);
-}
+  if (rightJoy.isMoved) {
+    yaw += camSpeed * sensibility.x;
+    pitch += camSpeed * (-sensibility.z);
 
-/** Rotate camera around 3D object */
-void Camera::followBy(Mesh& t_mesh) {
-  position.y = unitCirclePosition.y + t_mesh.getPosition()->y;
-  if (camera_type == CamType::FirstPerson) {
-    const Vec4 direction = (unitCirclePosition.getNormalized() * 3.5F);
-    position.x = t_mesh.getPosition()->x - direction.x;
-    position.z = t_mesh.getPosition()->z - direction.z;
-  } else {
-    position.x = t_mesh.getPosition()->x + unitCirclePosition.x;
-    position.z = t_mesh.getPosition()->z + unitCirclePosition.z;
+    // if (rightJoy.h <= 100)
+    //   yaw -= camSpeed * sensibility.x;
+    // else if (rightJoy.h >= 200)
+    //   yaw += camSpeed * sensibility.x;
+    // else if (rightJoy.v <= 100)
+    //   pitch += camSpeed * sensibility.z;
+    // else if (rightJoy.v >= 200)
+    //   pitch -= camSpeed * sensibility.z;
+
+    if (pitch > 89.0F) pitch = 89.0F;
+    if (pitch < -89.0F) pitch = -89.0F;
   }
-}
 
-/** Point the camera to a specific position */
-void Camera::pointCamera(Pad& t_pad, Mesh& t_mesh) {
-  if (t_pad.getRightJoyPad().h <= 100)
-    yaw -= _sensitivity;
-  else if (t_pad.getRightJoyPad().h >= 200)
-    yaw += _sensitivity;
-  else if (t_pad.getRightJoyPad().v <= 100)
-    pitch += _sensitivity / 3;
-  else if (t_pad.getRightJoyPad().v >= 200)
-    pitch -= _sensitivity / 3;
+  unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
+  unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
+  unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
 
-  if (pitch > 89.0F) pitch = 89.0F;
-  if (pitch < -89.0F) pitch = -89.0F;
+  lookPos.set(unitCirclePosition + position);
 
-  lookPos.x = Math::cos(Utils::degreesToRadian(yaw)) *
-              Math::cos(Utils::degreesToRadian(pitch));
-  lookPos.y = Math::sin(Utils::degreesToRadian(pitch));
-  lookPos.z = Math::sin(Utils::degreesToRadian(yaw)) *
-              Math::cos(Utils::degreesToRadian(pitch));
-
-  lookPos += position;
-  //   lookAt(lookPos);
+  if (camera_type == CamType::ThirdPerson) {
+    const Vec4 direction = (lookPos.getNormalized() * 10.0F);
+    position.x -= direction.x;
+    position.z -= direction.z;
+  }
 }

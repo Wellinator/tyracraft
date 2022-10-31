@@ -8,8 +8,7 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#ifndef _CAMERA_
-#define _CAMERA_
+#pragma once
 
 #include <pad/pad.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
@@ -32,26 +31,24 @@ using Tyra::RendererSettings;
 enum class CamType { FirstPerson, ThirdPerson };
 
 /** 3D camera which follow by 3D object. Can be rotated via pad */
-class Camera : public CameraInfo3D {
+class Camera {
  public:
-  Vec4 up, position, unitCirclePosition, lookPos;
-  float horizontalLevel, verticalLevel, pitch, yaw;
-  float const _sensitivity = 4.58425F;
+  Vec4 position, lookPos, unitCirclePosition;
+  float pitch, yaw;
 
   Camera(const RendererSettings& t_screen);
   ~Camera();
 
   void update(Pad& t_pad, Mesh& t_mesh);
-  void rotate(Pad& t_pad);
-  void updateUnitCirclePosition();
-  void followBy(Mesh& t_mesh);
-  void pointCamera(Pad& t_pad, Mesh& t_mesh);
+
+  CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &lookPos); }
 
   inline const CamType getCamType() const { return camera_type; }
 
- protected:
+ private:
   CamType camera_type = CamType::FirstPerson;
-  Vec4* getPosition() { return &position; };
+  const float CAMERA_Y = 25.0F;
+  
+  // TODO: add cam spped to menu options
+  const float camSpeed = 4.0F;
 };
-
-#endif
