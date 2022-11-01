@@ -4,7 +4,7 @@
     ✅ -> PLayer Hand;
         ✅ -> Walking and Hiting Animation;
     🔲 -> Tool (Pickaxe) (WIP);
-    🔲 -> Implement cam sensitivity;
+    ✅ -> Implement cam sensitivity;
     ✅ -> In game song manger;
         ✅ -> Sound FX and background music;
     ✅ -> Basic ingame menu for block selection;
