@@ -17,6 +17,6 @@
     ✅ -> Player collision detection on two blocks height (Fixed wrong Ray origin calculation);
     🔲 -> Fix chunk reloading when modifying world;
     ✅ -> Prevent camera to get into objects when it's in first person view;
-    🔲 -> Prevent place block at player position;
+    ✅ -> Prevent place block at player position;
     🔲 -> Vertical collision when the player is jumping;
 
