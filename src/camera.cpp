@@ -60,10 +60,4 @@ void Camera::update(Pad& pad, Mesh& t_mesh) {
                          Math::cos(Utils::degreesToRadian(pitch));
 
   lookPos.set(unitCirclePosition + position);
-
-  if (camera_type == CamType::ThirdPerson) {
-    const Vec4 direction = (lookPos.getNormalized() * 10.0F);
-    position.x -= direction.x;
-    position.z -= direction.z;
-  }
 }

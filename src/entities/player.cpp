@@ -132,11 +132,12 @@ void Player::handleInputCommands(Pad& t_pad) {
     this->isOnGround = 0;
   }
 
-  if (t_pad.getRightJoyPad().h >= 200) {
-    this->mesh->rotation.rotateY(-0.08F);
-  } else if (t_pad.getRightJoyPad().h <= 100) {
-    this->mesh->rotation.rotateY(0.08F);
-  }
+  // FIXME: Player mesh rotation based on camera direction 
+  // if (t_pad.getRightJoyPad().h >= 200) {
+  //   this->mesh->rotation.rotateY(-0.08F);
+  // } else if (t_pad.getRightJoyPad().h <= 100) {
+  //   this->mesh->rotation.rotateY(0.08F);
+  // }
 
   if (t_pad.getLeftJoyPad().isMoved) {
     if (!isWalkingAnimationSet) {

@@ -33,11 +33,14 @@ enum class CamType { FirstPerson, ThirdPerson };
 /** 3D camera which follow by 3D object. Can be rotated via pad */
 class Camera {
  public:
-  Vec4 position, lookPos, unitCirclePosition;
-  float pitch, yaw;
-
   Camera(const RendererSettings& t_screen);
   ~Camera();
+
+  Vec4 position, lookPos, unitCirclePosition;
+
+  // TODO: add cam spped to menu options
+  float camSpeed = 4.0F;
+  float pitch, yaw;
 
   void update(Pad& t_pad, Mesh& t_mesh);
 
@@ -46,9 +49,7 @@ class Camera {
   inline const CamType getCamType() const { return camera_type; }
 
  private:
+ // TODO: Implements third person cam
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
-  
-  // TODO: add cam spped to menu options
-  const float camSpeed = 4.0F;
 };
