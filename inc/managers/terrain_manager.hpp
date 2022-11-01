@@ -107,7 +107,7 @@ class TerrainManager {
   u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
-  Vec4* getPositionByIndex(unsigned int index);
+  const Vec4 getPositionByIndex(const u16& index);
   bool isBlockHidden(int x, int y, int z);
   inline bool isBlockVisible(int x, int y, int z) {
     return !isBlockHidden(x, y, z);

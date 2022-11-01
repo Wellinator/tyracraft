@@ -43,11 +43,11 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                             const float& deltaTime) {
   // this->framesCounter++;
   // {
-    this->t_player = t_player;
-    this->t_camera = t_camera;
-    // if (this->shouldUpdateTargetBlock())
-    this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
-    this->handlePadControls(t_pad, deltaTime);
+  this->t_player = t_player;
+  this->t_camera = t_camera;
+  // if (this->shouldUpdateTargetBlock())
+  this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
+  this->handlePadControls(t_pad, deltaTime);
   // }
   // if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
@@ -227,8 +227,7 @@ unsigned int TerrainManager::getIndexByOffset(int x, int y, int z) {
   return _z + _x + _y;
 }
 
-Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
-  Vec4* pos = new Vec4();
+const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
   int mod = index;
   int z = OVERWORLD_MIN_DISTANCE;
   int x = OVERWORLD_MIN_DISTANCE;
@@ -249,8 +248,7 @@ Vec4* TerrainManager::getPositionByIndex(unsigned int index) {
     y = mod - HALF_OVERWORLD_V_DISTANCE;
   }
 
-  pos->set(x, y, z);
-  return pos;
+  return Vec4(x, y, z) * DUBLE_BLOCK_SIZE;
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
@@ -366,49 +364,70 @@ void TerrainManager::removeBlock() {
 void TerrainManager::putBlock(u8 blockToPlace) {
   if (this->targetBlock == nullptr) return;
 
-  // Prevent to put a block at the player position;
-  {
-    Vec4 minCorner = Vec4();
-    Vec4 maxCorner = Vec4();
-    this->t_player->getHitBox().getMinMax(&minCorner, &maxCorner);
-
-    // TODO: fix collision with new block position instead targetBlock
-    u8 willCollideWithPlayer = minCorner.x <= targetBlock->maxCorner.x &&
-                               maxCorner.x >= targetBlock->minCorner.x &&
-                               minCorner.z <= targetBlock->maxCorner.z &&
-                               maxCorner.z >= targetBlock->minCorner.z &&
-                               minCorner.y <= targetBlock->maxCorner.y &&
-                               maxCorner.y >= targetBlock->minCorner.y;
-
-    if (willCollideWithPlayer) return;
-  }
-
-  // Detect face
-  Vec4 targetPos = ray.at(this->targetBlock->distance);
   int terrainIndex = this->targetBlock->index;
+  Vec4 targetPos = ray.at(this->targetBlock->distance);
+  Vec4 newBlockPos = *this->targetBlock->getPosition();
 
+  // Front
   if (std::round(targetPos.z) ==
       this->targetBlock->bbox->getFrontFace().axisPosition) {
     terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    newBlockPos.z += DUBLE_BLOCK_SIZE;
+    // Back
   } else if (std::round(targetPos.z) ==
              this->targetBlock->bbox->getBackFace().axisPosition) {
     terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    newBlockPos.z -= DUBLE_BLOCK_SIZE;
+    // Right
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getRightFace().axisPosition) {
     terrainIndex += OVERWORLD_V_DISTANCE;
+    newBlockPos.x += DUBLE_BLOCK_SIZE;
+    // Left
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getLeftFace().axisPosition) {
     terrainIndex -= OVERWORLD_V_DISTANCE;
+    newBlockPos.x -= DUBLE_BLOCK_SIZE;
+    // Up
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getTopFace().axisPosition) {
-    terrainIndex += 1;
+    terrainIndex++;
+    newBlockPos.y += DUBLE_BLOCK_SIZE;
+    // Down
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getBottomFace().axisPosition) {
-    terrainIndex -= 1;
+    terrainIndex--;
+    newBlockPos.y -= DUBLE_BLOCK_SIZE;
   }
 
   if (terrainIndex <= OVERWORLD_SIZE &&
       terrainIndex != this->targetBlock->index) {
+    // Prevent to put a block at the player position;
+    {
+      M4x4 tempModel = M4x4();
+      tempModel.identity();
+      tempModel.scale(BLOCK_SIZE);
+      tempModel.translate(newBlockPos);
+
+      BBox tempBBox = this->rawBlockBbox->getTransformed(tempModel);
+      Vec4 newBlockPosMin;
+      Vec4 newBlockPosMax;
+      tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+
+      Vec4 minPlayerCorner;
+      Vec4 maxPlayerCorner;
+      this->t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+      // Will Collide to player?
+      if (newBlockPosMax.x > minPlayerCorner.x &&
+          newBlockPosMin.x < maxPlayerCorner.x &&
+          newBlockPosMax.z > minPlayerCorner.z &&
+          newBlockPosMin.z < maxPlayerCorner.z &&
+          newBlockPosMax.y > minPlayerCorner.y &&
+          newBlockPosMin.y < maxPlayerCorner.y)
+        return;  // Return on collision
+    }
+
     this->terrain[terrainIndex] = blockToPlace;
     this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);
