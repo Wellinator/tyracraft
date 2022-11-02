@@ -3,7 +3,7 @@
 * Features for pre-alpha release (v0.1):
     ✅ -> PLayer Hand;
         ✅ -> Walking and Hiting Animation;
-    🔲 -> Tool (Pickaxe) (WIP);
+    ❌ -> Tool (Pickaxe) (WIP);
     ✅ -> Implement cam sensitivity;
     ✅ -> In game song manger;
         ✅ -> Sound FX and background music;
@@ -19,4 +19,4 @@
     ✅ -> Prevent camera to get into objects when it's in first person view;
     ✅ -> Prevent place block at player position;
     🔲 -> Vertical collision when the player is jumping;
-    🔲 -> Fix ammount of chunks to load;
+    ✅ -> Fix ammount of chunks to load;
