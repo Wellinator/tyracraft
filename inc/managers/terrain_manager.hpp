@@ -91,7 +91,7 @@ class TerrainManager {
   BBox* rawBlockBbox;
 
   // Params for noise generation;
-  const float frequency = 0.01;
+  const float frequency = 0.01f;
   const float amplitude = 0.65f;
   const float lacunarity = 2.4f;
   const float persistance = .45f;

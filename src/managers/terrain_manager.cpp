@@ -144,18 +144,28 @@ float TerrainManager::getHeightScale(int x, int z) {
 
   float noise = continentalnes + pv - erosion;
   // Clamp between -1 and 1
-  if (noise < -1.0f) noise = -1.0;
-  if (noise > 1.0f) noise = 1.0;
+  if (noise < -2.0f) noise = -1.0;
+  if (noise > 2.0f) noise = 1.0;
 
   // Scale based on noise;
   if (noise <= -0.9f) return 30.0f;
-  if (noise > -0.9f && noise <= -0.7f) return 2.0f;
-  if (noise > -0.7f && noise <= -0.6f) return 9.0f;
-  if (noise > -0.6f && noise <= -0.2f) return 11.0f;
-  if (noise > -0.2f && noise <= -0.0f) return 12.0f;
-  if (noise > 0.0f && noise <= 0.8f) return 20.0f;
-  if (noise > 0.8f && noise <= 0.9f) return 25.0f;
-  if (noise <= 1.0f) return 30.0f;
+  if (noise > -0.9f && noise <= -0.8f) return 27.0f;
+  if (noise > -0.8f && noise <= -0.7f) return 23.0f;
+  if (noise > -0.7f && noise <= -0.5f) return 19.0f;
+  if (noise > -0.5f && noise <= -0.4f) return 15.0f;
+  if (noise > -0.4f && noise <= -0.3f) return 5.0f;
+  if (noise > -0.3f && noise <= -0.2f) return 2.0f;
+  if (noise > -0.2f && noise <= 0.2f) return 1.0f;
+  if (noise > 0.2f && noise <= 0.3f) return 2.0f;
+  if (noise > 0.4f && noise <= 0.5f) return 5.0f;
+  if (noise > 0.6f && noise <= 0.7f) return 7.0f;
+  if (noise > 0.8f && noise <= 0.9f) return 10.0f;
+  if (noise > 1.0f && noise <= 1.3f) return 15.0f;
+  if (noise > 1.3f && noise <= 1.4f) return 17.0f;
+  if (noise > 1.4f && noise <= 1.5f) return 18.0f;
+  if (noise > 1.5f && noise <= 1.6f) return 25.0f;
+  if (noise > 1.6f && noise <= 1.9f) return 30.0f;
+  if (noise > 1.9f) return 30.0f;
 
   return 0.0F;
 }
