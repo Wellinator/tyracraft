@@ -26,7 +26,7 @@ enum class ChunkState { Loaded, Clean };
 
 class Chunck {
  public:
-  Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id);
+  Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id);
   ~Chunck();
 
   u16 id = 0;
@@ -34,8 +34,8 @@ class Chunck {
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
-  Vec4* minCorner = new Vec4();
-  Vec4* maxCorner = new Vec4();
+  Vec4* minOffset = new Vec4();
+  Vec4* maxOffset = new Vec4();
   Vec4* center = new Vec4();
   BBox* bbox;
 

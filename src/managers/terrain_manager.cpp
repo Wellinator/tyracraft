@@ -252,8 +252,8 @@ const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minCorner->z; z <= t_chunck->maxCorner->z; z++) {
-    for (int x = t_chunck->minCorner->x; x <= t_chunck->maxCorner->x; x++) {
+  for (int z = t_chunck->minOffset->z; z <= t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x <= t_chunck->maxOffset->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
@@ -356,6 +356,7 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
 void TerrainManager::removeBlock() {
   if (this->targetBlock == nullptr) return;
 
+  this->_modifiedPosition.set(*this->targetBlock->getPosition());
   terrain[this->targetBlock->index] = AIR_BLOCK;
   this->_shouldUpdateChunck = 1;
   this->playDestroyBlockSound(this->targetBlock->type);
@@ -428,6 +429,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
         return;  // Return on collision
     }
 
+    this->_modifiedPosition.set(newBlockPos);
     this->terrain[terrainIndex] = blockToPlace;
     this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);

@@ -62,12 +62,20 @@ class TerrainManager {
   inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
 
+  /**
+   * @brief Returns the modified position on putting or removing a block when
+   * shouldUpdateChunck() is true. It is useful to get the exact chunk by
+   * position.
+   */
+  inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
+
   int getNoise(int x, int z);
 
  private:
   Ray ray;
   u8 _shouldUpdateChunck = 0;
   u8 framesCounter = 0;
+  Vec4 _modifiedPosition;
   const u8 UPDATE_TARGET_LIMIT = 3;
 
   Player* t_player;

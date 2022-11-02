@@ -114,10 +114,8 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 }
 
 void World::reloadChangedChunk() {
-  if (this->terrainManager->targetBlock == nullptr) return;
-  Vec4 changedPosition = *this->terrainManager->targetBlock->getPosition();
-  Chunck* chunckToUpdate =
-      this->chunckManager->getChunckByPosition(changedPosition);
+  Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(
+      this->terrainManager->getModifiedPosition());
 
   if (chunckToUpdate != nullptr) {
     chunckToUpdate->clear();
@@ -127,11 +125,11 @@ void World::reloadChangedChunk() {
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
-  Vec4 offset = (*t_chunck->maxCorner + *t_chunck->minCorner) / 2;
+  Vec4 offset = (*t_chunck->maxOffset + *t_chunck->minOffset) / 2;
   auto chuncks = this->chunckManager->getChuncks();
 
   for (u16 i = 0; i < chuncks.size(); i++) {
-    Vec4 tempOffset = (*chuncks[i]->maxCorner + *chuncks[i]->minCorner) / 2;
+    Vec4 tempOffset = (*chuncks[i]->maxOffset + *chuncks[i]->minOffset) / 2;
     float distanceToCenterChunck =
         floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
 

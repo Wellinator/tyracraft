@@ -4,30 +4,35 @@
 #include <iterator>
 #include <algorithm>
 
-Chunck::Chunck(const Vec4& minCorner, const Vec4& maxCorner, u16 id) {
+Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
   this->id = id;
-  this->minCorner->set(minCorner);
-  this->maxCorner->set(maxCorner);
-  this->center->set(((maxCorner - minCorner) / 2 + minCorner));
+  this->minOffset->set(minOffset);
+  this->maxOffset->set(maxOffset);
+  this->center->set(((maxOffset - minOffset) / 2 + minOffset));
+
+  // Used to fix the edge of the chunk. It must contain all blocks;
+  const Vec4 offsetFix = Vec4(0.5F);
+  const Vec4 min = minOffset - offsetFix;
+  const Vec4 max = maxOffset + offsetFix;
 
   u32 count = 8;
   Vec4 vertices[count] = {
-      Vec4(minCorner) * DUBLE_BLOCK_SIZE,
-      Vec4(maxCorner.x, minCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
-      Vec4(minCorner.x, maxCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
-      Vec4(minCorner.x, minCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
-      Vec4(maxCorner) * DUBLE_BLOCK_SIZE,
-      Vec4(minCorner.x, maxCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
-      Vec4(maxCorner.x, minCorner.y, maxCorner.z) * DUBLE_BLOCK_SIZE,
-      Vec4(maxCorner.x, maxCorner.y, minCorner.z) * DUBLE_BLOCK_SIZE,
+      Vec4(min) * DUBLE_BLOCK_SIZE,
+      Vec4(max.x, min.y, min.z) * DUBLE_BLOCK_SIZE,
+      Vec4(min.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
+      Vec4(min.x, min.y, max.z) * DUBLE_BLOCK_SIZE,
+      Vec4(max) * DUBLE_BLOCK_SIZE,
+      Vec4(min.x, max.y, max.z) * DUBLE_BLOCK_SIZE,
+      Vec4(max.x, min.y, max.z) * DUBLE_BLOCK_SIZE,
+      Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
   };
   this->bbox = new BBox(vertices, count);
 };
 
 Chunck::~Chunck() {
   this->clear();
-  delete this->minCorner;
-  delete this->maxCorner;
+  delete this->minOffset;
+  delete this->maxOffset;
   delete this->center;
   delete this->bbox;
 };
