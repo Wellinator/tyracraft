@@ -131,7 +131,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
   for (u16 i = 0; i < chuncks.size(); i++) {
     Vec4 tempOffset = (*chuncks[i]->maxOffset + *chuncks[i]->minOffset) / 2;
     float distanceToCenterChunck =
-        floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE);
+        floor(offset.distanceTo(tempOffset) / CHUNCK_SIZE) + 1;
 
     if (distanceToCenterChunck <= DRAW_DISTANCE_IN_CHUNKS) {
       if (force_loading) {
