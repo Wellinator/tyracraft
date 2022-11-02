@@ -20,3 +20,7 @@
     ✅ -> Prevent place block at player position;
     🔲 -> Vertical collision when the player is jumping;
     ✅ -> Fix ammount of chunks to load;
+    🔲 -> Real PS2:
+        🔲 -> Fix walking state;
+        🔲 -> Fix amimations state;
+        🔲 -> Blocks textures ID;
