@@ -53,14 +53,16 @@ class Player {
               std::vector<Block*> loadedBlocks);
   void render();
 
+  void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
   u8 isWalking, isOnGround, isBreaking;
+  u8 isFlying = false;
   Vec4 spawnArea;
   u16 currentChunckId = 0;
 
   // Phisycs variables
   Ray ray;
-  Block *currentBlock = nullptr;
+  Block* currentBlock = nullptr;
 
   // Inventory
   u8 inventoryHasChanged = 1;
@@ -98,6 +100,10 @@ class Player {
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updateGravity(const float& deltaTime, const float terrainHeight);
+  void flyUp(const float& deltaTime, const float terrainHeight);
+  void flyDown(const float& deltaTime, const float terrainHeight);
+  void fly(const float& deltaTime, const float terrainHeight,
+           const Vec4& direction);
   u8 updatePosition(Block** t_blocks, int blocks_ammount,
                     const float& deltaTime, const Vec4& nextPlayerPos,
                     u8 isColliding = 0);

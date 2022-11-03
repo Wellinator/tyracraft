@@ -68,14 +68,23 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
         &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
 
     const u8 canPlayWalkSound = !t_pad.getLeftJoyPad().isCentered && hasMoved &&
-                                this->isOnGround &&
+                                !this->isFlying && this->isOnGround &&
                                 this->currentBlock != nullptr;
     if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
   }
 
   float terrainHeight = this->getTerrainHeightOnPlayerPosition(
       &loadedBlocks[0], loadedBlocks.size());
-  this->updateGravity(deltaTime, terrainHeight);
+
+  if (this->isFlying) {
+    if (t_pad.getPressed().DpadUp) {
+      this->flyUp(deltaTime, terrainHeight);
+    } else if (t_pad.getPressed().DpadDown) {
+      this->flyDown(deltaTime, terrainHeight);
+    }
+  } else {
+    this->updateGravity(deltaTime, terrainHeight);
+  }
 
   // this->handledItem->mesh->translation.identity();
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
@@ -127,12 +136,12 @@ void Player::handleInputCommands(Pad& t_pad) {
     isBreakingAnimationSet = false;
   }
 
-  if (t_pad.getClicked().Cross && this->isOnGround) {
+  if (t_pad.getClicked().Cross && this->isOnGround && !this->isFlying) {
     this->velocity += this->lift * this->speed;
     this->isOnGround = 0;
   }
 
-  // FIXME: Player mesh rotation based on camera direction 
+  // FIXME: Player mesh rotation based on camera direction
   // if (t_pad.getRightJoyPad().h >= 200) {
   //   this->mesh->rotation.rotateY(-0.08F);
   // } else if (t_pad.getRightJoyPad().h <= 100) {
@@ -141,11 +150,14 @@ void Player::handleInputCommands(Pad& t_pad) {
 
   if (t_pad.getLeftJoyPad().isMoved) {
     if (!isWalkingAnimationSet) {
-      this->mesh->animation.speed = baseAnimationSpeed;
-      this->mesh->animation.setSequence(walkSequence);
+      // TODO: enable on third person only
+      // this->mesh->animation.speed = baseAnimationSpeed;
+      // this->mesh->animation.setSequence(walkSequence);
 
-      this->armMesh->animation.speed = baseAnimationSpeed * 3;
-      this->armMesh->animation.setSequence(armWalkingSequence);
+      if (!this->isFlying) {
+        this->armMesh->animation.speed = baseAnimationSpeed * 3;
+        this->armMesh->animation.setSequence(armWalkingSequence);
+      }
 
       isWalkingAnimationSet = true;
     }
@@ -208,6 +220,38 @@ void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
   }
 
   // Finally updates gravity after checks
+  mesh->getPosition()->set(newYPosition);
+}
+
+/** Fly in up direction */
+void Player::flyUp(const float& deltaTime, const float terrainHeight) {
+  const Vec4 upDir = GRAVITY * -5.0F;
+  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, upDir);
+}
+
+/** Fly in down direction */
+void Player::flyDown(const float& deltaTime, const float terrainHeight) {
+  const Vec4 downDir = GRAVITY * 5.0F;
+  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, downDir);
+}
+
+/** Fly in given direction */
+void Player::fly(const float& deltaTime, const float terrainHeight,
+                 const Vec4& direction) {
+  Vec4 newYPosition = *mesh->getPosition() - (direction * deltaTime);
+
+  // Is player inside world bbox?
+  if (newYPosition.y + hitBox->getHeight() >=
+          OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
+      newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
+    return;
+  }
+
+  if (newYPosition.y < terrainHeight) {
+    newYPosition.y = terrainHeight;
+    this->isOnGround = 1;
+  }
+
   mesh->getPosition()->set(newYPosition);
 }
 
@@ -461,4 +505,9 @@ void Player::playWalkSfx(u8 blockType) {
       this->t_soundManager->playSfx(blockSfxModel->category,
                                     blockSfxModel->sound, WALK_SFX_CH);
   }
+}
+
+void Player::toggleFlying() {
+  this->isFlying = !this->isFlying;
+  this->t_renderer->core.renderer3D.setFov(isFlying ? 70.0F : 60.0F);
 }

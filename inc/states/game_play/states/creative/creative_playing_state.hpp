@@ -5,6 +5,8 @@
 #include <tamtypes.h>
 #include <tyra>
 
+using Tyra::Pad;
+using Tyra::PadButtons;
 using Tyra::Threading;
 
 class CreativePlayingState : public PlayingStateBase {
@@ -23,4 +25,5 @@ class CreativePlayingState : public PlayingStateBase {
 
   CreativeAudioListener* t_creativeAudioListener;
   u32 audioListenerId;
+  float elapsedTimeInSec;
 };
