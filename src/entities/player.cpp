@@ -438,12 +438,12 @@ void Player::loadArmMesh() {
   this->armMesh->scale.scaleZ(1.1F);
 
   this->armMesh->translation.identity();
-  this->armMesh->translation.translateZ(-15.0F);
+  this->armMesh->translation.translateZ(-13.5F);
   this->armMesh->translation.translateY(-8.0F);
   this->armMesh->translation.translateX(5.0F);
 
   this->armMesh->rotation.identity();
-  this->armMesh->rotation.rotateY(-3.14F);
+  this->armMesh->rotation.rotateY(-3.24);
 
   this->t_renderer->getTextureRepository().addByMesh(
       this->armMesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
