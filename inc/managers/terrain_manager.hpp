@@ -129,7 +129,7 @@ class TerrainManager {
   float getBlockLuminosity(const float& yPosition);
 
   // Breaking control
-  u8 _isBreakingBlock = 0;
+  u8 _isBreakingBlock = false;
   float breaking_time_pessed = 0.0F;
   void breakBlock(Block* blockToBreak, const float& deltaTime);
 

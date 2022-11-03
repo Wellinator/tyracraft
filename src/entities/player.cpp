@@ -138,7 +138,7 @@ void Player::handleInputCommands(Pad& t_pad) {
 
   if (t_pad.getClicked().Cross && this->isOnGround && !this->isFlying) {
     this->velocity += this->lift * this->speed;
-    this->isOnGround = 0;
+    this->isOnGround = false;
   }
 
   // FIXME: Player mesh rotation based on camera direction
@@ -216,7 +216,7 @@ void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
   if (newYPosition.y < terrainHeight) {
     newYPosition.y = terrainHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
-    this->isOnGround = 1;
+    this->isOnGround = true;
   }
 
   // Finally updates gravity after checks
@@ -249,7 +249,7 @@ void Player::fly(const float& deltaTime, const float terrainHeight,
 
   if (newYPosition.y < terrainHeight) {
     newYPosition.y = terrainHeight;
-    this->isOnGround = 1;
+    this->isOnGround = true;
   }
 
   mesh->getPosition()->set(newYPosition);

@@ -450,7 +450,7 @@ void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
-    this->_isBreakingBlock = 0;
+    this->_isBreakingBlock = false;
     if (this->targetBlock) this->targetBlock->damage = 0;
   }
 
@@ -485,7 +485,7 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
     }
   } else {
     this->breaking_time_pessed = 0;
-    this->_isBreakingBlock = 1;
+    this->_isBreakingBlock = true;
   }
 }
 
