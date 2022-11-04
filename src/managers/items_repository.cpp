@@ -17,20 +17,27 @@ ItemRepository::~ItemRepository() {
   this->t_renderer->getTextureRepository().freeBySprite(bricks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(glass.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(coal_ore_block.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(diamond_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      diamond_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(iron_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(gold_ore_block.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(redstone_ore_block.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(emerald_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      redstone_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      emerald_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(oak_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(spruce_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(birch_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(acacia_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(stone_brick.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(cracked_stone_bricks.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(mossy_stone_bricks.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(chiseled_stone_bricks.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(stripped_oak_wood.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      cracked_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      mossy_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      chiseled_stone_bricks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      stripped_oak_wood.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
@@ -197,7 +204,7 @@ void ItemRepository::loadItems() {
 }
 
 Item* ItemRepository::getItemById(ItemId& itemId) {
-  for (int i = 0; i < items.size(); i++)
+  for (size_t i = 0; i < items.size(); i++)
     if (items[i]->id == itemId) return items[i];
   return NULL;
 }
@@ -205,19 +212,20 @@ Item* ItemRepository::getItemById(ItemId& itemId) {
 void ItemRepository::linkTextureByItemType(ItemId itemType,
                                            const u32 t_spriteId) {
   this->t_renderer->getTextureRepository()
-      .getBySpriteId(getSpriteByItemType(itemType).id)
+      .getBySpriteId(getSpriteByItemType(itemType)->id)
       ->addLink(t_spriteId);
 }
 
 void ItemRepository::removeTextureLinkByBlockType(ItemId itemType,
                                                   const u32 t_spriteId) {
   Texture* tex = this->t_renderer->getTextureRepository().getBySpriteId(
-      getSpriteByItemType(itemType).id);
+      getSpriteByItemType(itemType)->id);
   s32 index = tex->getIndexOfLink(t_spriteId);
   if (index != -1) tex->removeLinkByIndex(index);
 }
 
-Sprite& ItemRepository::getSpriteByItemType(ItemId itemType) {
-  for (int i = 0; i < items.size(); i++)
-    if (items[i]->id == itemType) return items[i]->sprite;
+Sprite* ItemRepository::getSpriteByItemType(ItemId itemType) {
+  for (size_t i = 0; i < items.size(); i++)
+    if (items[i]->id == itemType) return &items[i]->sprite;
+  return nullptr;
 }

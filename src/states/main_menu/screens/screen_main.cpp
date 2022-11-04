@@ -1,4 +1,3 @@
-#pragma once
 #include "states/main_menu/screens/screen_main.hpp"
 #include "states/main_menu/screens/screen_how_to_play.hpp"
 #include "states/main_menu/screens/screen_about.hpp"
@@ -45,7 +44,6 @@ void ScreenMain::render() {
 
 void ScreenMain::init() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
-  const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
 
   // Load slots
   raw_slot[0].mode = Tyra::MODE_STRETCH;

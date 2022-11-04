@@ -1,4 +1,3 @@
-#pragma once
 #include "states/main_menu/screens/screen_new_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 

@@ -11,8 +11,6 @@ StateSplashScreen::~StateSplashScreen() { this->unloadTextures(); };
 void StateSplashScreen::init() {
   this->setBgColorBlack(this->context->t_renderer);
 
-  const RendererSettings& rendererSettings =
-      this->context->t_renderer->core.getSettings();
   const float width = 512;
   const float height = 512;
 
