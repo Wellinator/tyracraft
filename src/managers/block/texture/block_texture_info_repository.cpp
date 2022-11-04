@@ -26,9 +26,10 @@ void BlockTextureRepository::loadTextures() {
   this->models.push_back(new BlockInfo(GRASS_BLOCK, false,
                                        this->t_mcPip->getTextureOffset() * 0,
                                        this->t_mcPip->getTextureOffset() * 0));
-  this->models.push_back(new BlockInfo(BEDROCK_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 7));
+  this->models.push_back(
+      new BlockInfo(BEDROCK_BLOCK, true, this->t_mcPip->getTextureOffset() * 0,
+                    this->t_mcPip->getTextureOffset() * 7, false));
+                    
   this->models.push_back(new BlockInfo(DIRTY_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 1,
                                        this->t_mcPip->getTextureOffset() * 7));

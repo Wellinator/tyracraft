@@ -21,8 +21,8 @@ class Block {
 
   // Block state
   u8 isTarget = 0;
-  // u8 isSolid = 0;
-  // u8 isEditable = 0;
+  u8 isSolid = 0;
+  u8 isBreakable = 0;
   u8 isSingleTexture = 1;
   float damage = 0;
 

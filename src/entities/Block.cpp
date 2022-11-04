@@ -11,6 +11,8 @@ Block::Block(BlockInfo* blockInfo) {
   this->isSingleTexture = blockInfo->_isSingle;
   this->textureOffset =
       Vec4(blockInfo->_texOffssetX, blockInfo->_texOffssetY, 0.0F, 1.0F);
+  this->isBreakable = blockInfo->_isBreakable;
+  this->isSolid = blockInfo->_isSolid;
   this->scale.identity();
   this->translation.identity();
   this->rotation.identity();
