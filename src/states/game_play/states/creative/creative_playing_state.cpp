@@ -20,18 +20,22 @@ void CreativePlayingState::init() {
 
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
+  this->handleInput();
 
   Threading::switchThread();
   this->stateGamePlay->world->update(
       this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
       this->stateGamePlay->context->t_pad, deltaTime);
+
   Threading::switchThread();
   this->stateGamePlay->player->update(
       deltaTime, *this->stateGamePlay->context->t_pad,
       *this->stateGamePlay->context->t_camera,
       this->stateGamePlay->world->getLoadedBlocks());
+
   Threading::switchThread();
   this->stateGamePlay->ui->update();
+
   Threading::switchThread();
   this->stateGamePlay->context->t_camera->update(
       *this->stateGamePlay->context->t_pad, *this->stateGamePlay->player->mesh);
@@ -48,7 +52,7 @@ void CreativePlayingState::render() {
 void CreativePlayingState::handleInput() {
   const auto& clicked = this->stateGamePlay->context->t_pad->getClicked();
   if (clicked.Cross) {
-    if(elapsedTimeInSec < 0.5F){
+    if (elapsedTimeInSec < 0.5F) {
       this->stateGamePlay->player->toggleFlying();
     }
     elapsedTimeInSec = 0.0F;

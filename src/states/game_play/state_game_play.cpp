@@ -67,7 +67,6 @@ void StateGamePlay::handleInput() {
     else
       this->pauseGame();
   }
-  this->state->handleInput();
 }
 
 void StateGamePlay::pauseGame() {

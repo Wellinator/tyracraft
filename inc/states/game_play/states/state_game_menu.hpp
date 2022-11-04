@@ -20,6 +20,7 @@ class StateGameMenu : public PlayingStateBase {
   void init();
   void update(const float& deltaTime);
   void render();
+  void handleInput();
 
   void playClickSound();
 
@@ -50,7 +51,6 @@ class StateGameMenu : public PlayingStateBase {
   const u8 MENU_SFX_CH = 1;
 
   void hightLightActiveOption();
-  void handleInput();
   void navigate();
   void unloadTextures();
 };

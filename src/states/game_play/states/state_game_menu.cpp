@@ -126,24 +126,24 @@ void StateGameMenu::render() {
 }
 
 void StateGameMenu::handleInput() {
-  // Change active option
-  {
-    if (this->stateGamePlay->context->t_pad->getClicked().DpadDown) {
-      int nextOption = (int)this->activeOption + 1;
-      if (nextOption > 1)
-        this->activeOption = GameMenuOptions::BackToGame;
-      else
-        this->activeOption = static_cast<GameMenuOptions>(nextOption);
-    } else if (this->stateGamePlay->context->t_pad->getClicked().DpadUp) {
-      int nextOption = (int)this->activeOption - 1;
-      if (nextOption < 0)
-        this->activeOption = GameMenuOptions::QuitToTitle;
-      else
-        this->activeOption = static_cast<GameMenuOptions>(nextOption);
-    }
+  const PadButtons& clicked = this->stateGamePlay->context->t_pad->getClicked();
+
+  if (clicked.DpadDown) {
+    int nextOption = (int)this->activeOption + 1;
+    if (nextOption > 1)
+      this->activeOption = GameMenuOptions::BackToGame;
+    else
+      this->activeOption = static_cast<GameMenuOptions>(nextOption);
+
+  } else if (clicked.DpadUp) {
+    int nextOption = (int)this->activeOption - 1;
+    if (nextOption < 0)
+      this->activeOption = GameMenuOptions::QuitToTitle;
+    else
+      this->activeOption = static_cast<GameMenuOptions>(nextOption);
   }
 
-  if (this->stateGamePlay->context->t_pad->getClicked().Cross) {
+  if (clicked.Cross) {
     this->playClickSound();
     this->selectedOption = this->activeOption;
   }
