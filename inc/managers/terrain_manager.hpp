@@ -100,6 +100,8 @@ class TerrainManager {
 
   FastNoiseLite* noise;
   void initNoise();
+  void generateTerrainBase(const bool& makeFlat);
+  void generateCaves();
   void generateTrees();
   void generateWater();
   void placeTreeAt(int x, int z, u8 treeHeight);

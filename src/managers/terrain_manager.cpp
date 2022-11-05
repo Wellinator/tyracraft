@@ -53,32 +53,61 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
+  // TODO: refactor to terrain generation pipeline by terrain type
+  this->generateTerrainBase(options.makeFlat);
+  if (true) this->generateCaves();
+  if (options.enableWater) this->generateWater();
+  if (options.enableTrees) this->generateTrees();
+}
+
+void TerrainManager::generateTerrainBase(const bool& makeFlat) {
+  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+
   u32 index = 0;
   u32 noise = 0;
-  float density;
 
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
     for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
       noise = getNoise(x, z);
       for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
-        if (options.makeFlat) {
+        if (y == OVERWORLD_MIN_HEIGH)
+          this->terrain[index] = BEDROCK_BLOCK;
+        else if (makeFlat) {
           this->terrain[index] = y <= 0 ? GRASS_BLOCK : AIR_BLOCK;
         } else {
           this->terrain[index] = this->getBlock(noise, y);
-          // density = getDensity(x, y, z);
-          // if (density <= 0) {
-          //   this->terrain[index] = AIR_BLOCK;
-          // } else {
-          //   this->terrain[index] = this->getBlock(noise, y);
-          // }
         }
         index++;
       }
     }
   }
+}
 
-  if (options.enableWater) this->generateWater();
-  if (options.enableTrees) this->generateTrees();
+void TerrainManager::generateCaves() {
+  // TODO: refactor to terrain generation pipeline by terrain type
+  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+  this->noise->SetFractalType(FastNoiseLite::FractalType_None);
+  this->noise->SetFrequency(0.04F);
+  this->noise->SetFractalLacunarity(1.0F);
+  this->noise->SetFractalOctaves(24);
+
+  u32 index = 0;
+  for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
+    for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
+      for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
+        if (y == OVERWORLD_MIN_HEIGH) {
+          index++;
+          continue;
+        }
+
+        const float density = getDensity(x, y, z);
+        if (density <= -0.2F) this->terrain[index] = AIR_BLOCK;
+
+        index++;
+      }
+    }
+  }
 }
 
 void TerrainManager::initNoise() {
@@ -262,8 +291,8 @@ const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minOffset->z; z <= t_chunck->maxOffset->z; z++) {
-    for (int x = t_chunck->minOffset->x; x <= t_chunck->maxOffset->x; x++) {
+  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
@@ -565,10 +594,6 @@ float TerrainManager::getPeaksAndValleys(int x, int z) {
 }
 
 float TerrainManager::getDensity(int x, int y, int z) {
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
-  this->noise->SetFrequency(0.0001);
-  this->noise->SetFractalLacunarity(1.5);
-  this->noise->SetFractalOctaves(8);
   return this->noise->GetNoise((float)(x + seed), (float)(y + seed),
                                (float)(z + seed));
 }
