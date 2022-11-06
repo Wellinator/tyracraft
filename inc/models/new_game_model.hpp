@@ -7,5 +7,6 @@ class NewGameOptions {
 
   bool makeFlat = false;
   bool enableWater = false;
+  bool enableCaves = false;
   bool enableTrees = true;
 };

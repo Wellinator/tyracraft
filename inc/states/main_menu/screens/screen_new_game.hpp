@@ -14,6 +14,7 @@ enum class ScreenNewGameOptions {
   FlatWorld,
   EnableTrees,
   EnableWater,
+  EnableCaves,
   CreateNewWorld,
   None
 };
@@ -35,13 +36,16 @@ class ScreenNewGame : public ScreenBase {
   Sprite checkboxUnfilledFlatWorld;
   Sprite checkboxUnfilledEnableTrees;
   Sprite checkboxUnfilledEnableWater;
+  Sprite checkboxUnfilledEnableCaves;
   Sprite checkboxFilledFlatWorld;
   Sprite checkboxFilledEnableTrees;
   Sprite checkboxFilledEnableWater;
+  Sprite checkboxFilledEnableCaves;
 
   Sprite textFlatWorld;
   Sprite textEnableTrees;
   Sprite textEnableWater;
+  Sprite textEnableCaves;
   Sprite textCreateNewWorld;
 
   Sprite slotCreateNewWorld;

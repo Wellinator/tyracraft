@@ -55,7 +55,7 @@ void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
   // TODO: refactor to terrain generation pipeline by terrain type
   this->generateTerrainBase(options.makeFlat);
-  if (true) this->generateCaves();
+  if (options.enableCaves) this->generateCaves();
   if (options.enableWater) this->generateWater();
   if (options.enableTrees) this->generateTrees();
 }

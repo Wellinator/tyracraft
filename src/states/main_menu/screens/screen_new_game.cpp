@@ -15,6 +15,7 @@ ScreenNewGame::~ScreenNewGame() {
   this->t_renderer->getTextureRepository().freeBySprite(textFlatWorld);
   this->t_renderer->getTextureRepository().freeBySprite(textEnableTrees);
   this->t_renderer->getTextureRepository().freeBySprite(textEnableWater);
+  this->t_renderer->getTextureRepository().freeBySprite(textEnableCaves);
   this->t_renderer->getTextureRepository().freeBySprite(textCreateNewWorld);
   this->t_renderer->getTextureRepository().freeBySprite(slotCreateNewWorld);
   this->t_renderer->getTextureRepository().freeBySprite(textBack);
@@ -35,11 +36,13 @@ void ScreenNewGame::render() {
   this->t_renderer->renderer2D.render(&checkboxUnfilledFlatWorld);
   this->t_renderer->renderer2D.render(&checkboxUnfilledEnableTrees);
   this->t_renderer->renderer2D.render(&checkboxUnfilledEnableWater);
+  this->t_renderer->renderer2D.render(&checkboxUnfilledEnableCaves);
   this->renderSelectedOptions();
 
   this->t_renderer->renderer2D.render(&textFlatWorld);
   this->t_renderer->renderer2D.render(&textEnableTrees);
   this->t_renderer->renderer2D.render(&textEnableWater);
+  this->t_renderer->renderer2D.render(&textEnableCaves);
   this->t_renderer->renderer2D.render(&textCreateNewWorld);
 
   this->t_renderer->renderer2D.render(&textBack);
@@ -61,15 +64,19 @@ void ScreenNewGame::init() {
   {
     checkboxUnfilledFlatWorld.mode = Tyra::MODE_STRETCH;
     checkboxUnfilledFlatWorld.size.set(16, 16);
-    checkboxUnfilledFlatWorld.position.set(132, 214);
+    checkboxUnfilledFlatWorld.position.set(132, 205);
 
     checkboxUnfilledEnableTrees.mode = Tyra::MODE_STRETCH;
     checkboxUnfilledEnableTrees.size.set(16, 16);
-    checkboxUnfilledEnableTrees.position.set(132, 214 + 30);
+    checkboxUnfilledEnableTrees.position.set(132, 205 + 30);
 
     checkboxUnfilledEnableWater.mode = Tyra::MODE_STRETCH;
     checkboxUnfilledEnableWater.size.set(16, 16);
-    checkboxUnfilledEnableWater.position.set(132, 214 + 60);
+    checkboxUnfilledEnableWater.position.set(132, 205 + 60);
+
+    checkboxUnfilledEnableCaves.mode = Tyra::MODE_STRETCH;
+    checkboxUnfilledEnableCaves.size.set(16, 16);
+    checkboxUnfilledEnableCaves.position.set(132, 205 + 90);
 
     checkboxUnfilledWhiteBorderTexture =
         this->t_renderer->getTextureRepository().add(FileUtils::fromCwd(
@@ -78,18 +85,23 @@ void ScreenNewGame::init() {
     checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledFlatWorld.id);
     checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableTrees.id);
     checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableWater.id);
+    checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableCaves.id);
 
     checkboxFilledFlatWorld.mode = Tyra::MODE_STRETCH;
     checkboxFilledFlatWorld.size.set(16, 16);
-    checkboxFilledFlatWorld.position.set(132, 214);
+    checkboxFilledFlatWorld.position.set(132, 205);
 
     checkboxFilledEnableTrees.mode = Tyra::MODE_STRETCH;
     checkboxFilledEnableTrees.size.set(16, 16);
-    checkboxFilledEnableTrees.position.set(132, 214 + 30);
+    checkboxFilledEnableTrees.position.set(132, 205 + 30);
 
     checkboxFilledEnableWater.mode = Tyra::MODE_STRETCH;
     checkboxFilledEnableWater.size.set(16, 16);
-    checkboxFilledEnableWater.position.set(132, 214 + 60);
+    checkboxFilledEnableWater.position.set(132, 205 + 60);
+
+    checkboxFilledEnableCaves.mode = Tyra::MODE_STRETCH;
+    checkboxFilledEnableCaves.size.set(16, 16);
+    checkboxFilledEnableCaves.position.set(132, 205 + 90);
 
     checkboxFilledWhiteBorderTexture =
         this->t_renderer->getTextureRepository().add(FileUtils::fromCwd(
@@ -98,13 +110,14 @@ void ScreenNewGame::init() {
     checkboxFilledWhiteBorderTexture->addLink(checkboxFilledFlatWorld.id);
     checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableTrees.id);
     checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableWater.id);
+    checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableCaves.id);
   }
 
   // Checkbox text options
   {
     textFlatWorld.mode = Tyra::MODE_STRETCH;
     textFlatWorld.size.set(128, 16);
-    textFlatWorld.position.set(132 + 20, 214);
+    textFlatWorld.position.set(132 + 20, 205);
 
     this->t_renderer->getTextureRepository()
         .add(FileUtils::fromCwd("assets/menu/text_flat_world.png"))
@@ -112,7 +125,7 @@ void ScreenNewGame::init() {
 
     textEnableTrees.mode = Tyra::MODE_STRETCH;
     textEnableTrees.size.set(128, 16);
-    textEnableTrees.position.set(132 + 20, 214 + 30);
+    textEnableTrees.position.set(132 + 20, 205 + 30);
 
     this->t_renderer->getTextureRepository()
         .add(FileUtils::fromCwd("assets/menu/text_enable_trees.png"))
@@ -120,11 +133,19 @@ void ScreenNewGame::init() {
 
     textEnableWater.mode = Tyra::MODE_STRETCH;
     textEnableWater.size.set(256, 32);
-    textEnableWater.position.set(132 + 20, 214 + 60);
+    textEnableWater.position.set(132 + 20, 205 + 60);
 
     this->t_renderer->getTextureRepository()
         .add(FileUtils::fromCwd("assets/menu/text_enable_water.png"))
         ->addLink(textEnableWater.id);
+
+    textEnableCaves.mode = Tyra::MODE_STRETCH;
+    textEnableCaves.size.set(256, 32);
+    textEnableCaves.position.set(132 + 20, 205 + 90);
+
+    this->t_renderer->getTextureRepository()
+        .add(FileUtils::fromCwd("assets/menu/text_enable_caves.png"))
+        ->addLink(textEnableCaves.id);
   }
 
   textCreateNewWorld.mode = Tyra::MODE_STRETCH;
@@ -197,7 +218,7 @@ void ScreenNewGame::handleInput() {
   {
     if (this->context->context->t_pad->getClicked().DpadDown) {
       int nextOption = (int)this->activeOption + 1;
-      if (nextOption > 3)
+      if (nextOption > 4)
         this->activeOption = ScreenNewGameOptions::FlatWorld;
       else
         this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
@@ -229,6 +250,8 @@ void ScreenNewGame::updateModel() {
     this->model.enableTrees = !this->model.enableTrees;
   else if (this->selectedOption == ScreenNewGameOptions::EnableWater)
     this->model.enableWater = !this->model.enableWater;
+  else if (this->selectedOption == ScreenNewGameOptions::EnableCaves)
+    this->model.enableCaves = !this->model.enableCaves;
 }
 
 void ScreenNewGame::backToMainMenu() {
@@ -244,6 +267,8 @@ void ScreenNewGame::renderSelectedOptions() {
     this->t_renderer->renderer2D.render(&checkboxFilledEnableTrees);
   if (this->model.enableWater)
     this->t_renderer->renderer2D.render(&checkboxFilledEnableWater);
+  if (this->model.enableCaves)
+    this->t_renderer->renderer2D.render(&checkboxFilledEnableCaves);
 
   if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
     this->t_renderer->renderer2D.render(&slotCreateNewWorldActive);
@@ -257,6 +282,7 @@ void ScreenNewGame::hightLightActiveOption() {
     this->textFlatWorld.color = Tyra::Color(128, 128, 128);
     this->textEnableTrees.color = Tyra::Color(128, 128, 128);
     this->textEnableWater.color = Tyra::Color(128, 128, 128);
+    this->textEnableCaves.color = Tyra::Color(128, 128, 128);
     this->textCreateNewWorld.color = Tyra::Color(128, 128, 128);
   }
 
@@ -267,6 +293,8 @@ void ScreenNewGame::hightLightActiveOption() {
     t_selectedOptionSprite = &this->textEnableTrees;
   else if (this->activeOption == ScreenNewGameOptions::EnableWater)
     t_selectedOptionSprite = &this->textEnableWater;
+  else if (this->activeOption == ScreenNewGameOptions::EnableCaves)
+    t_selectedOptionSprite = &this->textEnableCaves;
   else if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
     t_selectedOptionSprite = &this->textCreateNewWorld;
 
