@@ -31,7 +31,6 @@ class FontManager {
 
  private:
   Renderer* t_renderer;
-  const float BASE_CHAT_WIDTH = 14.0F;
   std::vector<FontChar*> printable_ascii_chars_sprites;
   u8 char_widths[256] = {
       8,  6,  9,  6,  6,  6,  6,  6,  6,  96, 0,  6,  14, 0,  6,  6,  6,  6,
