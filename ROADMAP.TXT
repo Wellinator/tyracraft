@@ -13,6 +13,7 @@
     ✅ -> Add "Create World" screen;
     ✅ -> In game MENU;
     ✅ -> Flying in creative mode;
+    ✅ -> Added basic font support;
 
 * Bug fixes for pre-alpha release (v0.1):
     ✅ -> Player collision detection on two blocks height (Fixed wrong Ray origin calculation);
