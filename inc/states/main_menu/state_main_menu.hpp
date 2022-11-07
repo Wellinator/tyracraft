@@ -26,6 +26,7 @@
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "tyra"
+#include "managers/font/font_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -46,11 +47,11 @@ class StateMainMenu : public GameState {
   void render();
   void setScreen(ScreenBase* screen);
 
-  // Rotating skybox
-  StaticMesh* menuSkybox;
-
   void loadGame(const NewGameOptions& options);
   void playClickSound();
+
+  StaticMesh* menuSkybox;
+  FontManager* t_fontManager;
 
  private:
   Renderer* t_renderer;

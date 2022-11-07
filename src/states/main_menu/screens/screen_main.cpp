@@ -14,12 +14,7 @@ ScreenMain::~ScreenMain() {
   this->t_renderer->getTextureRepository().freeBySprite(raw_slot[2]);
   this->t_renderer->getTextureRepository().freeBySprite(active_slot);
 
-  this->t_renderer->getTextureRepository().freeBySprite(textPlayGame);
-  this->t_renderer->getTextureRepository().freeBySprite(textHowToPlay);
-  this->t_renderer->getTextureRepository().freeBySprite(textAbout);
-
   this->t_renderer->getTextureRepository().freeBySprite(btnCross);
-  this->t_renderer->getTextureRepository().freeBySprite(textSelect);
 }
 
 void ScreenMain::update() {
@@ -34,12 +29,26 @@ void ScreenMain::render() {
   this->t_renderer->renderer2D.render(&raw_slot[2]);
   this->t_renderer->renderer2D.render(&active_slot);
 
-  this->t_renderer->renderer2D.render(&textPlayGame);
-  this->t_renderer->renderer2D.render(&textHowToPlay);
-  this->t_renderer->renderer2D.render(&textAbout);
+  this->context->t_fontManager->printText(
+      "Play Game", 256 - 64, 240 + 6,
+      this->activeOption == ScreenMainOptions::PlayGame
+          ? Tyra::Color(255, 255, 0)
+          : Tyra::Color(255, 255, 255));
+
+  this->context->t_fontManager->printText(
+      "How to Play", 256 - 72, 240 + 46,
+      this->activeOption == ScreenMainOptions::HowToPlay
+          ? Tyra::Color(255, 255, 0)
+          : Tyra::Color(255, 255, 255));
+
+  this->context->t_fontManager->printText(
+      "About", 256 - 42, 240 + 86,
+      this->activeOption == ScreenMainOptions::About
+          ? Tyra::Color(255, 255, 0)
+          : Tyra::Color(255, 255, 255));
 
   this->t_renderer->renderer2D.render(&btnCross);
-  this->t_renderer->renderer2D.render(&textSelect);
+  this->context->t_fontManager->printText("Select", 35, 407);
 }
 
 void ScreenMain::init() {
@@ -75,31 +84,6 @@ void ScreenMain::init() {
       .add(FileUtils::fromCwd("assets/menu/slot_active.png"))
       ->addLink(active_slot.id);
 
-  // Texts
-  textPlayGame.mode = Tyra::MODE_STRETCH;
-  textPlayGame.size.set(128, 16);
-  textPlayGame.position.set(halfWidth - 64, 240 + 9);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_play_game.png"))
-      ->addLink(textPlayGame.id);
-
-  textHowToPlay.mode = Tyra::MODE_STRETCH;
-  textHowToPlay.size.set(128, 16);
-  textHowToPlay.position.set(halfWidth - 64, 240 + 49);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_how_to_play.png"))
-      ->addLink(textHowToPlay.id);
-
-  textAbout.mode = Tyra::MODE_STRETCH;
-  textAbout.size.set(64, 16);
-  textAbout.position.set(halfWidth - 32, 240 + 89);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_about.png"))
-      ->addLink(textAbout.id);
-
   // Buttons
   btnCross.mode = Tyra::MODE_STRETCH;
   btnCross.size.set(25, 25);
@@ -109,14 +93,6 @@ void ScreenMain::init() {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
       ->addLink(btnCross.id);
-
-  textSelect.mode = Tyra::MODE_STRETCH;
-  textSelect.size.set(64, 15);
-  textSelect.position.set(
-      15 + 30, this->t_renderer->core.getSettings().getHeight() - 36);
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_select.png"))
-      ->addLink(textSelect.id);
 }
 
 void ScreenMain::handleInput() {
@@ -144,29 +120,9 @@ void ScreenMain::handleInput() {
 }
 
 void ScreenMain::hightLightActiveOption() {
-  // Reset sprite colors
-  {
-    this->textPlayGame.color = Tyra::Color(128, 128, 128);
-    this->textHowToPlay.color = Tyra::Color(128, 128, 128);
-    this->textAbout.color = Tyra::Color(128, 128, 128);
-  }
-
-  Sprite* t_selectedOptionSprite = NULL;
-  if (this->activeOption == ScreenMainOptions::PlayGame)
-    t_selectedOptionSprite = &this->textPlayGame;
-  else if (this->activeOption == ScreenMainOptions::HowToPlay)
-    t_selectedOptionSprite = &this->textHowToPlay;
-  else
-    t_selectedOptionSprite = &this->textAbout;
-
-  t_selectedOptionSprite->color = Tyra::Color(255, 255, 0);
-
-  // Hightlight active slot
-  {
-    u8 option = (int)this->activeOption;
-    this->active_slot.position.y =
-        (option * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  }
+  u8 option = (int)this->activeOption;
+  this->active_slot.position.y =
+      (option * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
 }
 
 void ScreenMain::navigate() {

@@ -26,13 +26,6 @@ class ScreenMain : public ScreenBase {
   // Slots
   Sprite raw_slot[3];
   Sprite active_slot;
-
-  // Text slot option
-  Sprite textPlayGame;
-  Sprite textHowToPlay;
-  Sprite textAbout;
-
-  Sprite textSelect;
   Sprite textBack;
 
   Sprite btnCross;
