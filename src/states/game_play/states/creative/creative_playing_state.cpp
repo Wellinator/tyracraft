@@ -83,13 +83,13 @@ void CreativePlayingState::drawDegubInfo() {
   Info* info = &this->stateGamePlay->context->t_engine->info;
 
   // Draw seed
-  std::string seed = std::to_string(this->stateGamePlay->world->getSeed());
-  this->t_fontManager->printText((std::string("Seed: ").append(seed)).c_str(),
-                                 5.0f, 5.0f);
+  std::string seed = std::string("Seed: ").append(
+      std::to_string(this->stateGamePlay->world->getSeed()));
+  this->t_fontManager->printText(seed, FontOptions(Vec2(5.0f, 5.0f)));
 
   // Draw FPS:
   std::string fps = std::string("FPS: ").append(std::to_string(info->getFps()));
-  this->t_fontManager->printText(fps.c_str(), 5.0f, 23.0f);
+  this->t_fontManager->printText(fps, FontOptions(Vec2(5.0f, 25.0f)));
 
   // Draw Free RAM:
   // std::string freeRam = std::string("Free RAM: ")

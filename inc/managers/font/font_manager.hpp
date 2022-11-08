@@ -3,7 +3,8 @@
 #include <vector>
 #include <string>
 #include "tyra"
-#include "font_char.hpp"
+#include "managers/font/font_char.hpp"
+#include "managers/font/font_options.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -16,17 +17,14 @@ class FontManager {
   FontManager(Renderer* renderer);
   ~FontManager();
 
-  void printText(const std::string& text, const Vec2& position,
-                 const Color& color = Color(255), const float& scale = 1.0F);
+  void printText(const std::string& text, const FontOptions& options);
 
-  void printText(const char* text, const Vec2& position,
-                 const Color& color = Color(255), const float& scale = 1.0F) {
-    printText(std::string(text), position, color, scale);
+  void printText(const char* text, const FontOptions& options) {
+    printText(std::string(text), options);
   }
 
-  void printText(const char* text, const float& posX, const float& posY,
-                 const Color& color = Color(255), const float& scale = 1.0F) {
-    printText(std::string(text), Vec2(posX, posY), color, scale);
+  void printText(const char* text, const float& x, const float& y) {
+    printText(std::string(text), FontOptions(Vec2(x, y)));
   }
 
  private:

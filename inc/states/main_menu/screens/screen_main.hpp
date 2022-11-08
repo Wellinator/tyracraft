@@ -4,6 +4,7 @@
 #include <tyra>
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/state_main_menu.hpp"
+#include "managers/font/font_options.hpp"
 
 using Tyra::FileUtils;
 using Tyra::Renderer;

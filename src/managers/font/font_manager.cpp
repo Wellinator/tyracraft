@@ -7,26 +7,30 @@ FontManager::FontManager(Renderer* renderer) {
 
 FontManager::~FontManager() { this->unloadFontChars(); };
 
-void FontManager::printText(const std::string& text, const Vec2& position,
-                            const Color& color, const float& scale) {
+void FontManager::printText(const std::string& text,
+                            const FontOptions& options) {
   // TODO: implement line break
   float cursor = 0.0F;
   for (size_t i = 0; i < text.size(); i++) {
     const u8 charCode = getCodeFromChar(text.at(i));
     const FontChar* fontCharAt = getFontChatByCode(charCode);
 
-    if (fontCharAt) {
+    if (fontCharAt != nullptr) {
       Sprite spriteToPrint = *fontCharAt->t_sprite;
-      spriteToPrint.position.set(position.x + cursor, position.y);
-      spriteToPrint.color.set(color);
-      spriteToPrint.scale = scale;
+      spriteToPrint.position.set(options.position.x + cursor,
+                                 options.position.y);
+      spriteToPrint.color.set(options.color);
+      spriteToPrint.scale = options.scale;
 
       t_renderer->renderer2D.render(spriteToPrint);
       cursor += (char_widths[charCode] + 2);
     } else {
-      TYRA_WARN("Char at ", i, "(", charCode,
-                ")"
-                " is not a valid ASCII code!");
+      TYRA_TRAP(std::string("Char at ")
+                    .append(std::to_string(i))
+                    .append(std::string("("))
+                    .append(std::to_string(charCode))
+                    .append(std::string(") is not a valid ASCII code!"))
+                    .c_str());
     }
   }
 }

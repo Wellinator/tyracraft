@@ -29,23 +29,36 @@ void ScreenMain::render() {
   this->t_renderer->renderer2D.render(&raw_slot[2]);
   this->t_renderer->renderer2D.render(&active_slot);
 
-  this->context->t_fontManager->printText(
-      "Play Game", 256 - 64, 240 + 6,
-      this->activeOption == ScreenMainOptions::PlayGame
-          ? Tyra::Color(255, 255, 0)
-          : Tyra::Color(255, 255, 255));
+  // Play Game
+  {
+    FontOptions fontOptions;
+    fontOptions.position.set(Vec2(256 - 64, 240 + 6));
+    fontOptions.color.set(this->activeOption == ScreenMainOptions::PlayGame
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
 
-  this->context->t_fontManager->printText(
-      "How to Play", 256 - 72, 240 + 46,
-      this->activeOption == ScreenMainOptions::HowToPlay
-          ? Tyra::Color(255, 255, 0)
-          : Tyra::Color(255, 255, 255));
+    this->context->t_fontManager->printText("Play Game", fontOptions);
+  }
 
-  this->context->t_fontManager->printText(
-      "About", 256 - 42, 240 + 86,
-      this->activeOption == ScreenMainOptions::About
-          ? Tyra::Color(255, 255, 0)
-          : Tyra::Color(255, 255, 255));
+  // How To Play
+  {
+    FontOptions fontOptions;
+    fontOptions.position.set(Vec2(256 - 72, 240 + 46));
+    fontOptions.color.set(this->activeOption == ScreenMainOptions::HowToPlay
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+    this->context->t_fontManager->printText("How to Play", fontOptions);
+  }
+
+  // About
+  {
+    FontOptions fontOptions;
+    fontOptions.position.set(Vec2(256 - 42, 240 + 86));
+    fontOptions.color.set(this->activeOption == ScreenMainOptions::About
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+    this->context->t_fontManager->printText("About", fontOptions);
+  }
 
   this->t_renderer->renderer2D.render(&btnCross);
   this->context->t_fontManager->printText("Select", 35, 407);
