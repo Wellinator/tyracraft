@@ -199,9 +199,14 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
                            const TerrainHeightModel& terrainHeight) {
-  this->velocity += GRAVITY;  // Negative gravity to decrease Y axis
-  Vec4 newYPosition = *mesh->getPosition() -
-                      (this->velocity * std::min(deltaTime, MAX_FRAME_MS));
+  const float dTime = std::min(deltaTime, MAX_FRAME_MS);
+
+  // Accelerate the velocity: velocity += gravConst * deltaTime
+  Vec4 acceleration = GRAVITY * dTime;
+  this->velocity += acceleration;
+
+  // Increase the position by velocity
+  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * dTime);
 
   if (newYPosition.y + hitBox->getHeight() >=
           OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||

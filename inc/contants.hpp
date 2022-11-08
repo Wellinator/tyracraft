@@ -91,7 +91,7 @@
 #define LOADING_SCREEN 4
 
 // World constants
-#define GRAVITY Vec4(0.0f, 20.5f, 0.0f)
+#define GRAVITY Vec4(0.0f, 850.0f, 0.0f)
 
 enum class GAME_MODE { SURVIVAL, CREATIVE };
 
