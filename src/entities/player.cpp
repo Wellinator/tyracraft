@@ -73,8 +73,8 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
   }
 
-  float terrainHeight = this->getTerrainHeightOnPlayerPosition(
-      &loadedBlocks[0], loadedBlocks.size());
+  TerrainHeightModel terrainHeight =
+      this->getTerrainHeightAtPosition(&loadedBlocks[0], loadedBlocks.size());
 
   if (this->isFlying) {
     if (t_pad.getPressed().DpadUp) {
@@ -136,7 +136,7 @@ void Player::handleInputCommands(Pad& t_pad) {
     isBreakingAnimationSet = false;
   }
 
-  if (t_pad.getClicked().Cross && this->isOnGround && !this->isFlying) {
+  if (t_pad.getPressed().Cross && this->isOnGround && !this->isFlying) {
     this->velocity += this->lift * this->speed;
     this->isOnGround = false;
   }
@@ -197,26 +197,31 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
 }
 
 /** Update player position by gravity and update index of current block */
-void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
+void Player::updateGravity(const float& deltaTime,
+                           const TerrainHeightModel& terrainHeight) {
   this->velocity += GRAVITY;  // Negative gravity to decrease Y axis
   Vec4 newYPosition = *mesh->getPosition() -
                       (this->velocity * std::min(deltaTime, MAX_FRAME_MS));
 
-  if (newYPosition.y >= OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
+  if (newYPosition.y + hitBox->getHeight() >=
+          OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
       newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
     // Maybe has died, teleport to spaw area
-    printf("\nReseting player position to:\n");
-    // FIXME: reset loaded chunks to spawn position;
-    this->spawnArea.print();
+    TYRA_LOG("\nReseting player position to:\n");
     this->mesh->getPosition()->set(this->spawnArea);
+
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     return;
   }
 
-  if (newYPosition.y < terrainHeight) {
-    newYPosition.y = terrainHeight;
+  if (newYPosition.y < terrainHeight.minHeight) {
+    newYPosition.y = terrainHeight.minHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = true;
+  } else if (newYPosition.y >
+             terrainHeight.maxHeight + this->hitBox->getHeight()) {
+    newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
+    this->velocity = -this->velocity;
   }
 
   // Finally updates gravity after checks
@@ -224,19 +229,22 @@ void Player::updateGravity(const float& deltaTime, const float terrainHeight) {
 }
 
 /** Fly in up direction */
-void Player::flyUp(const float& deltaTime, const float terrainHeight) {
+void Player::flyUp(const float& deltaTime,
+                   const TerrainHeightModel& terrainHeight) {
   const Vec4 upDir = GRAVITY * -5.0F;
   this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, upDir);
 }
 
 /** Fly in down direction */
-void Player::flyDown(const float& deltaTime, const float terrainHeight) {
+void Player::flyDown(const float& deltaTime,
+                     const TerrainHeightModel& terrainHeight) {
   const Vec4 downDir = GRAVITY * 5.0F;
   this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, downDir);
 }
 
 /** Fly in given direction */
-void Player::fly(const float& deltaTime, const float terrainHeight,
+void Player::fly(const float& deltaTime,
+                 const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
   Vec4 newYPosition = *mesh->getPosition() - (direction * deltaTime);
 
@@ -247,9 +255,12 @@ void Player::fly(const float& deltaTime, const float terrainHeight,
     return;
   }
 
-  if (newYPosition.y < terrainHeight) {
-    newYPosition.y = terrainHeight;
+  if (newYPosition.y < terrainHeight.minHeight) {
+    newYPosition.y = terrainHeight.minHeight;
     this->isOnGround = true;
+  } else if (newYPosition.y >
+             terrainHeight.maxHeight + this->hitBox->getHeight()) {
+    newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
   }
 
   mesh->getPosition()->set(newYPosition);
@@ -332,9 +343,9 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   return 1;
 }
 
-float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
-                                               int blocks_ammount) {
-  float higherY = (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE);
+TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
+                                                      int blocks_ammount) {
+  TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
@@ -342,29 +353,26 @@ float Player::getTerrainHeightOnPlayerPosition(Block** t_blocks,
   this->currentBlock = nullptr;
 
   for (int i = 0; i < blocks_ammount; i++) {
-    const float blockHeight = t_blocks[i]->maxCorner.y;
+    u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
+                   maxPlayer.x > t_blocks[i]->minCorner.x &&
+                   minPlayer.z < t_blocks[i]->maxCorner.z &&
+                   maxPlayer.z > t_blocks[i]->minCorner.z;
 
-    if (playerBB.getBottomFace().axisPosition < blockHeight) continue;
+    if (!isOnBlock) continue;
 
-    float distanceToBlock =
-        mesh.get()->getPosition()->distanceTo(*t_blocks[i]->getPosition());
+    const float underBlockHeight = t_blocks[i]->maxCorner.y;
+    if (minPlayer.y >= underBlockHeight && underBlockHeight > model.minHeight) {
+      model.minHeight = underBlockHeight;
+      this->currentBlock = t_blocks[i];
+    }
 
-    if (distanceToBlock <= MAX_RANGE_PICKER) {
-      u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
-                     maxPlayer.x > t_blocks[i]->minCorner.x &&
-                     minPlayer.z < t_blocks[i]->maxCorner.z &&
-                     maxPlayer.z > t_blocks[i]->minCorner.z;
-
-      if (isOnBlock) {
-        if (blockHeight > higherY) {
-          higherY = blockHeight;
-          this->currentBlock = t_blocks[i];
-        }
-      }
+    const float overBlockHeight = t_blocks[i]->minCorner.y;
+    if (maxPlayer.y <= overBlockHeight && overBlockHeight < model.maxHeight) {
+      model.maxHeight = overBlockHeight;
     }
   }
 
-  return higherY;
+  return model;
 }
 
 /**

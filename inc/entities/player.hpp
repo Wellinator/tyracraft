@@ -21,6 +21,7 @@
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
+#include "models/terrain_height_model.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -99,15 +100,17 @@ class Player {
   void loadArmMesh();
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  void updateGravity(const float& deltaTime, const float terrainHeight);
-  void flyUp(const float& deltaTime, const float terrainHeight);
-  void flyDown(const float& deltaTime, const float terrainHeight);
-  void fly(const float& deltaTime, const float terrainHeight,
+  void updateGravity(const float& deltaTime,
+                     const TerrainHeightModel& terrainHeight);
+  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
   u8 updatePosition(Block** t_blocks, int blocks_ammount,
                     const float& deltaTime, const Vec4& nextPlayerPos,
                     u8 isColliding = 0);
-  float getTerrainHeightOnPlayerPosition(Block** t_blocks, int blocks_ammount);
+  TerrainHeightModel getTerrainHeightAtPosition(Block** t_blocks,
+                                                int blocks_ammount);
   void handleInputCommands(Pad& t_pad);
 
   // Inventory
