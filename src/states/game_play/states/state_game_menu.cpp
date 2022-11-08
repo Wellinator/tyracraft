@@ -2,8 +2,8 @@
 
 StateGameMenu::StateGameMenu(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {
-  this->init();
   this->t_renderer = &t_context->context->t_engine->renderer;
+  this->init();
 }
 
 StateGameMenu::~StateGameMenu() { this->unloadTextures(); }
