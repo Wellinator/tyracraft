@@ -3,7 +3,7 @@
 
 ScreenHowToPlay::ScreenHowToPlay(StateMainMenu* t_context)
     : ScreenBase(t_context) {
-  this->t_renderer = t_context->context->t_renderer;
+  this->t_renderer = &t_context->context->t_engine->renderer;
   this->init();
 }
 
@@ -49,7 +49,7 @@ void ScreenHowToPlay::init() {
 }
 
 void ScreenHowToPlay::handleInput() {
-  if (this->context->context->t_pad->getClicked().Triangle) {
+  if (this->context->context->t_engine->pad.getClicked().Triangle) {
     this->context->playClickSound();
     this->navigate();
   };

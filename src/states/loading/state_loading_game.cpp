@@ -14,7 +14,7 @@ void StateLoadingGame::init() {
   this->setBgColorBlack();
 
   const RendererSettings& rendererSettings =
-      this->context->t_renderer->core.getSettings();
+      this->context->t_engine->renderer.core.getSettings();
   const float width = rendererSettings.getWidth();
   const float height = rendererSettings.getHeight();
   this->BASE_HEIGHT = height - 120;
@@ -25,7 +25,7 @@ void StateLoadingGame::init() {
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
   background->position.set(0, 0);
-  this->context->t_renderer->core.texture.repository.add(backgroundTex)
+  this->context->t_engine->renderer.core.texture.repository.add(backgroundTex)
       ->addLink(background->id);
 
   // State desc
@@ -34,7 +34,8 @@ void StateLoadingGame::init() {
   loadingStateText->mode = Tyra::MODE_STRETCH;
   loadingStateText->size.set(256, 16);
   loadingStateText->position.set(width / 2 - 128, BASE_HEIGHT);
-  this->context->t_renderer->core.texture.repository.add(stateLoadingText)
+  this->context->t_engine->renderer.core.texture.repository
+      .add(stateLoadingText)
       ->addLink(loadingStateText->id);
 
   // Loading slot
@@ -44,7 +45,7 @@ void StateLoadingGame::init() {
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
   loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 25);
-  this->context->t_renderer->core.texture.repository.add(loadingSlotTex)
+  this->context->t_engine->renderer.core.texture.repository.add(loadingSlotTex)
       ->addLink(loadingSlot->id);
 
   // Loading bar
@@ -53,7 +54,8 @@ void StateLoadingGame::init() {
   loadingprogress->mode = Tyra::MODE_STRETCH;
   loadingprogress->size.set(this->_percent / 100 * 253, 9);
   loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 28);
-  this->context->t_renderer->core.texture.repository.add(loadingprogressTex)
+  this->context->t_engine->renderer.core.texture.repository
+      .add(loadingprogressTex)
       ->addLink(loadingprogress->id);
 }
 
@@ -78,18 +80,20 @@ void StateLoadingGame::update(const float& deltaTime) {
 }
 
 void StateLoadingGame::render() {
-  this->context->t_renderer->renderer2D.render(background);
-  this->context->t_renderer->renderer2D.render(loadingSlot);
-  this->context->t_renderer->renderer2D.render(loadingprogress);
-  this->context->t_renderer->renderer2D.render(loadingStateText);
+  this->context->t_engine->renderer.renderer2D.render(background);
+  this->context->t_engine->renderer.renderer2D.render(loadingSlot);
+  this->context->t_engine->renderer.renderer2D.render(loadingprogress);
+  this->context->t_engine->renderer.renderer2D.render(loadingStateText);
 }
 
 void StateLoadingGame::unload() {
-  this->context->t_renderer->getTextureRepository().freeBySprite(*background);
-  this->context->t_renderer->getTextureRepository().freeBySprite(*loadingSlot);
-  this->context->t_renderer->getTextureRepository().freeBySprite(
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+      *background);
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+      *loadingSlot);
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingprogress);
-  this->context->t_renderer->getTextureRepository().freeBySprite(
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingStateText);
 
   delete background;
@@ -100,9 +104,9 @@ void StateLoadingGame::unload() {
 
 void StateLoadingGame::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
-  this->stateGamePlay->player =
-      new Player(this->context->t_renderer, this->context->t_soundManager,
-                 this->stateGamePlay->world->blockManager);
+  this->stateGamePlay->player = new Player(
+      &this->context->t_engine->renderer, this->context->t_soundManager,
+      this->stateGamePlay->world->blockManager);
   this->stateGamePlay->itemRepository = new ItemRepository();
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
@@ -110,7 +114,7 @@ void StateLoadingGame::createEntities() {
 }
 
 void StateLoadingGame::initItemRepository() {
-  this->stateGamePlay->itemRepository->init(this->context->t_renderer);
+  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer);
 
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;
@@ -118,7 +122,7 @@ void StateLoadingGame::initItemRepository() {
 }
 
 void StateLoadingGame::initUI() {
-  this->stateGamePlay->ui->init(this->context->t_renderer,
+  this->stateGamePlay->ui->init(&this->context->t_engine->renderer,
                                 this->stateGamePlay->itemRepository,
                                 this->stateGamePlay->player);
   setPercent(50.0F);
@@ -127,7 +131,7 @@ void StateLoadingGame::initUI() {
 }
 
 void StateLoadingGame::initWorld() {
-  this->stateGamePlay->world->init(this->context->t_renderer,
+  this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository,
                                    this->context->t_soundManager);
   setPercent(90.0F);
@@ -156,7 +160,8 @@ void StateLoadingGame::setPercent(float completed) {
 }
 
 void StateLoadingGame::setBgColorBlack() {
-  this->context->t_renderer->setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
+  this->context->t_engine->renderer.setClearScreenColor(
+      Color(0.0F, 0.0F, 0.0F));
 }
 
 bool StateLoadingGame::hasFinished() {

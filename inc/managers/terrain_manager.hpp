@@ -42,6 +42,7 @@ class TerrainManager {
   void update(Player* t_player, Camera* t_camera, Pad* t_pad,
               std::vector<Chunck*> chuncks, const float& deltaTime);
   void generateNewTerrain(const NewGameOptions& options);
+  inline const int getSeed() { return seed; };
 
   Block* targetBlock = nullptr;
   void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,

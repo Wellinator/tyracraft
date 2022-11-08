@@ -2,7 +2,7 @@
 #include "states/main_menu/screens/screen_main.hpp"
 
 ScreenAbout::ScreenAbout(StateMainMenu* t_context) : ScreenBase(t_context) {
-  this->t_renderer = t_context->context->t_renderer;
+  this->t_renderer = &t_context->context->t_engine->renderer;
   this->init();
 }
 

@@ -4,7 +4,7 @@
 #include "states/main_menu/screens/screen_new_game.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
-  this->t_renderer = t_context->context->t_renderer;
+  this->t_renderer = &t_context->context->t_engine->renderer;
   this->init();
 }
 
@@ -98,13 +98,13 @@ void ScreenMain::init() {
 void ScreenMain::handleInput() {
   // Change active option
   {
-    if (this->context->context->t_pad->getClicked().DpadDown) {
+    if (this->context->context->t_engine->pad.getClicked().DpadDown) {
       int nextOption = (int)this->activeOption + 1;
       if (nextOption > 2)
         this->activeOption = ScreenMainOptions::PlayGame;
       else
         this->activeOption = static_cast<ScreenMainOptions>(nextOption);
-    } else if (this->context->context->t_pad->getClicked().DpadUp) {
+    } else if (this->context->context->t_engine->pad.getClicked().DpadUp) {
       int nextOption = (int)this->activeOption - 1;
       if (nextOption < 0)
         this->activeOption = ScreenMainOptions::About;
@@ -113,7 +113,7 @@ void ScreenMain::handleInput() {
     }
   }
 
-  if (this->context->context->t_pad->getClicked().Cross) {
+  if (this->context->context->t_engine->pad.getClicked().Cross) {
     this->context->playClickSound();
     this->selectedOption = this->activeOption;
   }

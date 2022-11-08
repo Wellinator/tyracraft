@@ -9,7 +9,7 @@ StateSplashScreen::StateSplashScreen(Context* t_context)
 StateSplashScreen::~StateSplashScreen() { this->unloadTextures(); };
 
 void StateSplashScreen::init() {
-  this->setBgColorBlack(this->context->t_renderer);
+  this->setBgColorBlack(&this->context->t_engine->renderer);
 
   const float width = 512;
   const float height = 512;
@@ -27,9 +27,10 @@ void StateSplashScreen::init() {
   tyra->size.set(width, height);
   tyra->position.set(0, 0);
 
-  this->context->t_renderer->core.texture.repository.add(tyracraftSplash)
+  this->context->t_engine->renderer.core.texture.repository
+      .add(tyracraftSplash)
       ->addLink(tyracraft->id);
-  this->context->t_renderer->core.texture.repository.add(tyraSplash)
+  this->context->t_engine->renderer.core.texture.repository.add(tyraSplash)
       ->addLink(tyra->id);
 };
 
@@ -59,23 +60,25 @@ void StateSplashScreen::render() {
 
 void StateSplashScreen::renderTyraSplash() {
   this->tyra->color.a = alpha;
-  this->context->t_renderer->renderer2D.render(tyra);
+  this->context->t_engine->renderer.renderer2D.render(tyra);
   if (alpha == 0) hasShowedTyra = 1;
 }
 
 void StateSplashScreen::renderTyraCraftSplash() {
   this->tyracraft->color.a = alpha;
-  this->context->t_renderer->renderer2D.render(tyracraft);
+  this->context->t_engine->renderer.renderer2D.render(tyracraft);
   if (alpha == 0) hasShowedTyraCraft = 1;
 }
 
 void StateSplashScreen::setBgColorBlack(Renderer* renderer) {
-  this->context->t_renderer->setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
+  this->context->t_engine->renderer.setClearScreenColor(
+      Color(0.0F, 0.0F, 0.0F));
 }
 
 void StateSplashScreen::unloadTextures() {
-  this->context->t_renderer->getTextureRepository().freeBySprite(*tyracraft);
-  this->context->t_renderer->getTextureRepository().freeBySprite(*tyra);
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+      *tyracraft);
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(*tyra);
 
   delete this->tyracraft;
   delete this->tyra;

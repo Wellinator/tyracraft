@@ -25,6 +25,8 @@ class StateGameMenu : public PlayingStateBase {
   void playClickSound();
 
  private:
+  Renderer* t_renderer;
+
   // Overlay
   Sprite overlay;
 

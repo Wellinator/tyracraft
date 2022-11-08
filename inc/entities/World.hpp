@@ -43,6 +43,7 @@ class World {
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
   const std::vector<Block*> getLoadedBlocks();
   void buildInitialPosition();
+  inline const int getSeed() { return this->terrainManager->getSeed(); };
 
  private:
   MinecraftPipeline mcPip;

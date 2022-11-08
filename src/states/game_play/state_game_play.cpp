@@ -21,8 +21,8 @@ StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
 }
 
 StateGamePlay::~StateGamePlay() {
-  this->context->t_audio->song.stop();
-  this->context->t_audio->song.inLoop = false;
+  this->context->t_engine->audio.song.stop();
+  this->context->t_engine->audio.song.inLoop = false;
   delete this->state;
   delete this->previousState;
   delete this->world;
@@ -61,7 +61,7 @@ PlayingStateBase* StateGamePlay::getPreviousState() {
 }
 
 void StateGamePlay::handleInput() {
-  if (this->context->t_pad->getClicked().Start) {
+  if (this->context->t_engine->pad.getClicked().Start) {
     if (this->paused)
       this->unpauseGame();
     else

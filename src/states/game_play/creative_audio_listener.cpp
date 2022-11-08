@@ -1,24 +1,24 @@
 
 #include "states/game_play/creative_audio_listener.hpp"
 
-CreativeAudioListener::CreativeAudioListener(Context* context) {
-  this->t_context = context;
+CreativeAudioListener::CreativeAudioListener(AudioSong* t_song) {
+  this->t_song = t_song;
 }
 
 CreativeAudioListener::~CreativeAudioListener() {}
 
-void CreativeAudioListener::onAudioTick() { }
+void CreativeAudioListener::onAudioTick() {}
 
 void CreativeAudioListener::onAudioFinish() { this->playRandomCreativeSound(); }
 
 void CreativeAudioListener::playRandomCreativeSound() {
-  this->t_context->t_audio->song.stop();
+  this->t_song->stop();
   const std::string songName = this->getRandonMenuSongName();
   TYRA_LOG("Playing song -> ", songName.c_str());
-  this->t_context->t_audio->song.load(FileUtils::fromCwd(songName));
-  this->t_context->t_audio->song.inLoop = true;
-  this->t_context->t_audio->song.setVolume(100);
-  this->t_context->t_audio->song.play();
+  this->t_song->load(FileUtils::fromCwd(songName));
+  this->t_song->inLoop = true;
+  this->t_song->setVolume(100);
+  this->t_song->play();
 }
 
 const std::string CreativeAudioListener::getRandonMenuSongName() {

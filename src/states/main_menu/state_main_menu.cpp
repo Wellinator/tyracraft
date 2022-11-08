@@ -15,7 +15,7 @@ using Tyra::RendererSettings;
 
 StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
   this->init();
-  this->t_fontManager = new FontManager(t_context->t_renderer);
+  this->t_fontManager = new FontManager(&t_context->t_engine->renderer);
 }
 
 StateMainMenu::~StateMainMenu() {
@@ -28,12 +28,12 @@ void StateMainMenu::init() {
    * TODO: Add menu actions sfx;
    * */
 
-  this->stapip.setRenderer(&this->context->t_renderer->core);
+  this->stapip.setRenderer(&this->context->t_engine->renderer.core);
 
   const float halfWidth =
-      this->context->t_renderer->core.getSettings().getWidth() / 2;
+      this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
 
-  this->loadSkybox(this->context->t_renderer);
+  this->loadSkybox(&this->context->t_engine->renderer);
 
   // Load title
   // Title
@@ -45,10 +45,10 @@ void StateMainMenu::init() {
   title[1].size.set(256, 128);
   title[1].position.set(halfWidth, 64);
 
-  this->context->t_renderer->getTextureRepository()
+  this->context->t_engine->renderer.getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/title_1.png"))
       ->addLink(title[0].id);
-  this->context->t_renderer->getTextureRepository()
+  this->context->t_engine->renderer.getTextureRepository()
       .add(FileUtils::fromCwd("assets/menu/title_2.png"))
       ->addLink(title[1].id);
 
@@ -62,7 +62,8 @@ void StateMainMenu::update(const float& deltaTime) {
 
   // Update skybox and camera;
   {
-    this->context->t_camera->update(*this->context->t_pad, *this->menuSkybox);
+    this->context->t_camera->update(this->context->t_engine->pad,
+                                    *this->menuSkybox);
     this->menuSkybox->rotation.rotateY(0.0001F);
   }
 
@@ -75,7 +76,7 @@ void StateMainMenu::update(const float& deltaTime) {
 
 void StateMainMenu::render() {
   // Meshes
-  this->context->t_renderer->renderer3D.usePipeline(&stapip);
+  this->context->t_engine->renderer.renderer3D.usePipeline(&stapip);
   { stapip.render(this->menuSkybox, skyboxOptions); }
 
   /**
@@ -83,8 +84,8 @@ void StateMainMenu::render() {
    * */
 
   // Title & Subtitle
-  this->context->t_renderer->renderer2D.render(&title[0]);
-  this->context->t_renderer->renderer2D.render(&title[1]);
+  this->context->t_engine->renderer.renderer2D.render(&title[0]);
+  this->context->t_engine->renderer.renderer2D.render(&title[1]);
 
   this->screen->render();
 }
@@ -111,11 +112,12 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
 }
 
 void StateMainMenu::unloadTextures() {
-  this->context->t_renderer->getTextureRepository().freeByMesh(menuSkybox);
+  this->context->t_engine->renderer.getTextureRepository().freeByMesh(
+      menuSkybox);
 
   for (u8 i = 0; i < 2; i++) {
-    this->context->t_renderer->getTextureRepository().free(
-        this->context->t_renderer->getTextureRepository()
+    this->context->t_engine->renderer.getTextureRepository().free(
+        this->context->t_engine->renderer.getTextureRepository()
             .getBySpriteId(title[i].id)
             ->id);
   }
@@ -130,18 +132,18 @@ void StateMainMenu::loadGame(const NewGameOptions& options) {
 }
 
 void StateMainMenu::playClickSound() {
-  this->context->t_audio->adpcm.setVolume(50, MENU_SFX_CH);
+  this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
   this->context->t_soundManager->playSfx(SoundFxCategory::Random,
                                          SoundFX::Click, MENU_SFX_CH);
 }
 
 void StateMainMenu::loadMenuSong() {
   // Load song
-  this->context->t_audio->song.load(
+  this->context->t_engine->audio.song.load(
       FileUtils::fromCwd(this->getRandonMenuSongName()));
-  this->context->t_audio->song.inLoop = true;
-  this->context->t_audio->song.setVolume(80);
-  this->context->t_audio->song.play();
+  this->context->t_engine->audio.song.inLoop = true;
+  this->context->t_engine->audio.song.setVolume(80);
+  this->context->t_engine->audio.song.play();
 }
 
 const std::string StateMainMenu::getRandonMenuSongName() {

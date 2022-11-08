@@ -2,7 +2,7 @@
 #include "states/main_menu/screens/screen_main.hpp"
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
-  this->t_renderer = t_context->context->t_renderer;
+  this->t_renderer = &t_context->context->t_engine->renderer;
   this->init();
 }
 
@@ -216,13 +216,13 @@ void ScreenNewGame::init() {
 void ScreenNewGame::handleInput() {
   // Change active option
   {
-    if (this->context->context->t_pad->getClicked().DpadDown) {
+    if (this->context->context->t_engine->pad.getClicked().DpadDown) {
       int nextOption = (int)this->activeOption + 1;
       if (nextOption > 4)
         this->activeOption = ScreenNewGameOptions::FlatWorld;
       else
         this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
-    } else if (this->context->context->t_pad->getClicked().DpadUp) {
+    } else if (this->context->context->t_engine->pad.getClicked().DpadUp) {
       int nextOption = (int)this->activeOption - 1;
       if (nextOption < 0)
         this->activeOption = ScreenNewGameOptions::CreateNewWorld;
@@ -231,10 +231,10 @@ void ScreenNewGame::handleInput() {
     }
   }
 
-  if (this->context->context->t_pad->getClicked().Triangle) {
+  if (this->context->context->t_engine->pad.getClicked().Triangle) {
     this->context->playClickSound();
     this->backToMainMenu();
-  } else if (this->context->context->t_pad->getClicked().Cross) {
+  } else if (this->context->context->t_engine->pad.getClicked().Cross) {
     this->context->playClickSound();
     this->selectedOption = this->activeOption;
     this->updateModel();

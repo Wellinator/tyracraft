@@ -4,11 +4,7 @@
 #include "camera.hpp"
 #include <tyra>
 
-using Tyra::Audio;
-using Tyra::Color;
 using Tyra::Engine;
-using Tyra::Renderer;
-using Tyra::Sprite;
 
 class GameState;
 
@@ -20,12 +16,10 @@ class Context {
   void update(const float& deltaTime);
   void setState(GameState* newState);
 
-  Renderer* t_renderer;
-  Audio* t_audio;
-  Pad* t_pad;
-  Camera* t_camera;
-  SoundManager* t_soundManager;
+  Camera* t_camera = nullptr;
+  SoundManager* t_soundManager = nullptr;
+  Engine* t_engine = nullptr;
 
  private:
-  GameState* state;
+  GameState* state = nullptr;
 };

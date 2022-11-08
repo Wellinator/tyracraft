@@ -4,16 +4,15 @@
 #include <tyra>
 #include <audio/audio_listener.hpp>
 #include "contants.hpp"
-#include "states/context.hpp"
 
-using Tyra::Audio;
 using Tyra::AudioListener;
+using Tyra::AudioSong;
 using Tyra::FileUtils;
 using Tyra::Math;
 
 class CreativeAudioListener : public AudioListener {
  public:
-  CreativeAudioListener(Context* t_context);
+  CreativeAudioListener(AudioSong* t_song);
   ~CreativeAudioListener();
 
   void onAudioTick();
@@ -21,5 +20,5 @@ class CreativeAudioListener : public AudioListener {
   void playRandomCreativeSound();
   const std::string getRandonMenuSongName();
 
-  Context* t_context;
+  AudioSong* t_song = nullptr;
 };

@@ -25,6 +25,7 @@ using Tyra::Audio;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::Info;
 using Tyra::StaticMesh;
 
 enum class GameMode { Survival, Creative };
