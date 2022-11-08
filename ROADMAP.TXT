@@ -20,7 +20,8 @@
     ✅ -> Fix chunk reloading when modifying world;
     ✅ -> Prevent camera to get into objects when it's in first person view;
     ✅ -> Prevent place block at player position;
-    🔲 -> Vertical collision when the player is jumping;
+    ✅ -> Vertical collision when the player is jumping;
+    ✅ -> Jump height on low FPS;
     ✅ -> Fix ammount of chunks to load;
     🔲 -> Real PS2:
         🔲 -> Fix walking state;
