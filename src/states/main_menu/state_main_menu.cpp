@@ -18,7 +18,10 @@ StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
   this->t_fontManager = new FontManager(t_context->t_renderer);
 }
 
-StateMainMenu::~StateMainMenu() { this->unloadTextures(); }
+StateMainMenu::~StateMainMenu() {
+  delete t_fontManager;
+  this->unloadTextures();
+}
 
 void StateMainMenu::init() {
   /**
