@@ -14,6 +14,7 @@
     ✅ -> In game MENU;
     ✅ -> Flying in creative mode;
     ✅ -> Added basic font support;
+    ✅ -> Added birch tree;
 
 * Bug fixes for pre-alpha release (v0.1):
     ✅ -> Player collision detection on two blocks height (Fixed wrong Ray origin calculation);
@@ -23,6 +24,8 @@
     ✅ -> Vertical collision when the player is jumping;
     ✅ -> Jump height on low FPS;
     ✅ -> Fix ammount of chunks to load;
+    🔲 -> Ajust breaking block time by game mode;
+    🔲 -> Ajust flying speed;
     🔲 -> Real PS2:
         🔲 -> Fix walking state;
         🔲 -> Fix amimations state;
