@@ -24,8 +24,8 @@
     ✅ -> Vertical collision when the player is jumping;
     ✅ -> Jump height on low FPS;
     ✅ -> Fix ammount of chunks to load;
-    🔲 -> Ajust breaking block time by game mode;
-    🔲 -> Ajust flying speed;
+    ✅ -> Ajust breaking block time by game mode;
+    ✅ -> Ajust flying speed;
     🔲 -> Real PS2:
         🔲 -> Fix walking state;
         🔲 -> Fix amimations state;
