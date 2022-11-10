@@ -52,8 +52,9 @@ BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
 }
 
 float BlockManager::getBlockBreakingTime() {
-  // TODO: implement https://minecraft.fandom.com/wiki/Breaking
-  return 0.9F;
+  // TODO: refactor -> receive block info and tool to calc breaking time;
+  // ref: https://minecraft.fandom.com/wiki/Breaking
+  return 0.5F;
 }
 
 void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {
