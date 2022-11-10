@@ -108,14 +108,6 @@ enum class ItemId {
   bricks,
   glass,
 
-  // Ores and Minerals
-  coal_ore_block,
-  diamond_ore_block,
-  iron_ore_block,
-  gold_ore_block,
-  redstone_ore_block,
-  emerald_ore_block,
-
   // Wood Planks
   oak_planks,
   spruce_planks,
@@ -130,6 +122,14 @@ enum class ItemId {
   cracked_stone_bricks,
   mossy_stone_bricks,
   chiseled_stone_bricks,
+
+  // Ores and Minerals
+  coal_ore_block,
+  diamond_ore_block,
+  iron_ore_block,
+  gold_ore_block,
+  redstone_ore_block,
+  emerald_ore_block,
 
   // Tools
   wooden_axe,

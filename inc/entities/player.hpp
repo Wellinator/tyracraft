@@ -34,6 +34,7 @@ using Tyra::MD2Loader;
 using Tyra::MD2LoaderOptions;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
+using Tyra::PadButtons;
 using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::StaticPipeline;
@@ -111,7 +112,7 @@ class Player {
                     u8 isColliding = 0);
   TerrainHeightModel getTerrainHeightAtPosition(Block** t_blocks,
                                                 int blocks_ammount);
-  void handleInputCommands(Pad& t_pad);
+  void handleInputCommands(const Pad& t_pad);
 
   // Inventory
 
@@ -125,6 +126,9 @@ class Player {
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
   void playWalkSfx(u8 blockType);
+
+  void selectNextItem();
+  void selectPreviousItem();
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 

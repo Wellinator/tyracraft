@@ -118,11 +118,14 @@ void Player::render() {
   // }
 }
 
-void Player::handleInputCommands(Pad& t_pad) {
-  if (t_pad.getClicked().L1) this->moveSelectorToTheLeft();
-  if (t_pad.getClicked().R1) this->moveSelectorToTheRight();
+void Player::handleInputCommands(const Pad& t_pad) {
+  const PadButtons& clicked = t_pad.getClicked();
+  const PadButtons& pressed = t_pad.getPressed();
 
-  if (t_pad.getPressed().L2) {
+  if (clicked.L1) this->moveSelectorToTheLeft();
+  if (clicked.R1) this->moveSelectorToTheRight();
+
+  if (pressed.L2) {
     if (!isBreakingAnimationSet) {
       this->mesh->animation.speed = baseAnimationSpeed * 3;
       this->mesh->animation.setSequence(breakBlockSequence);
@@ -136,9 +139,15 @@ void Player::handleInputCommands(Pad& t_pad) {
     isBreakingAnimationSet = false;
   }
 
-  if (t_pad.getPressed().Cross && this->isOnGround && !this->isFlying) {
+  if (pressed.Cross && this->isOnGround && !this->isFlying) {
     this->velocity += this->lift * this->speed;
     this->isOnGround = false;
+  }
+
+  // TODO: refactore to ingame invetory menu
+  if (!this->isFlying) {
+    if (clicked.DpadUp) this->selectNextItem();
+    if (clicked.DpadDown) this->selectPreviousItem();
   }
 
   // FIXME: Player mesh rotation based on camera direction
@@ -523,4 +532,32 @@ void Player::playWalkSfx(u8 blockType) {
 void Player::toggleFlying() {
   this->isFlying = !this->isFlying;
   this->t_renderer->core.renderer3D.setFov(isFlying ? 70.0F : 60.0F);
+}
+
+void Player::selectNextItem() {
+  int currentItemId = (int)inventory[selectedInventoryIndex];
+  ItemId nextItem;
+
+  if ((currentItemId + 1) >= (int)ItemId::wooden_axe) {
+    nextItem = ItemId::empty;
+  } else {
+    nextItem = static_cast<ItemId>(currentItemId + 1);
+  }
+
+  inventory[selectedInventoryIndex] = nextItem;
+  this->inventoryHasChanged = true;
+}
+
+void Player::selectPreviousItem() {
+  int currentItemId = (int)inventory[selectedInventoryIndex];
+  ItemId previousItem;
+
+  if ((currentItemId - 1) < 0) {
+    previousItem = ItemId::chiseled_stone_bricks;
+  } else {
+    previousItem = static_cast<ItemId>(currentItemId - 1);
+  }
+
+  inventory[selectedInventoryIndex] = previousItem;
+  this->inventoryHasChanged = true;
 }

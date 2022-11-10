@@ -173,7 +173,6 @@ void Ui::updatePlayerInventory() {
   for (u8 i = 0; i < INVENTORY_SIZE; i++) {
     if (inventoryData[i] != ItemId::empty) {
       if (this->playerInventory[i] != NULL) {
-        printf("Item on inv at %i, clearing...\n", i);
         this->t_itemRepository->removeTextureLinkByBlockType(
             inventoryData[i], this->playerInventory[i]->id);
         delete this->playerInventory[i];
@@ -188,6 +187,9 @@ void Ui::updatePlayerInventory() {
                                                     tempItemSprite->id);
 
       this->playerInventory[i] = tempItemSprite;
+    } else {
+      delete this->playerInventory[i];
+      this->playerInventory[i] = NULL;
     }
   }
 
