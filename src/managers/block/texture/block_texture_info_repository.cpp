@@ -89,6 +89,12 @@ void BlockTextureRepository::loadTextures() {
   this->models.push_back(new BlockInfo(OAK_LEAVES_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 3,
                                        this->t_mcPip->getTextureOffset() * 10));
+  this->models.push_back(new BlockInfo(BIRCH_LOG_BLOCK, false,
+                                       this->t_mcPip->getTextureOffset() * 6,
+                                       this->t_mcPip->getTextureOffset() * 0));
+  this->models.push_back(new BlockInfo(BIRCH_LEAVES_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 2,
+                                       this->t_mcPip->getTextureOffset() * 10));
 
   // Stripped Woods
   this->models.push_back(new BlockInfo(STRIPPED_OAK_WOOD_BLOCK, true,

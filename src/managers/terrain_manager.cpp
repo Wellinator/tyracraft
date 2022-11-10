@@ -628,19 +628,42 @@ void TerrainManager::generateTrees() {
       u8 treeHeight;
       u8 shouldPutATree = noise > 5 && (modX == 1 || modZ == 7) ? 1 : 0;
 
-      if (noise < 10 && noise > 5)
+      if (noise < 10 && noise >= 4)
         treeHeight = noise;
-      else if (noise < 6)
-        treeHeight = 6;
+      else if (noise < 3)
+        treeHeight = 4;
       else if (noise > 9)
         treeHeight = 9;
 
-      if (shouldPutATree) this->placeTreeAt(x, z, treeHeight);
+      if (shouldPutATree) {
+        // TODO: Refactor: Sould generate tree based on biome type
+        TreeType treeType = this->getTreeType(x, z);
+
+        if (treeType == TreeType::Oak)
+          this->placeOakTreeAt(x, z, treeHeight);
+        else if (treeType == TreeType::Birch)
+          this->placeBirchTreeAt(x, z, treeHeight);
+      }
     }
   }
 }
 
-void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
+TreeType TerrainManager::getTreeType(const int& x, const int& z) {
+  FastNoiseLite fnl = FastNoiseLite(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFrequency(0.005f);
+
+  const float noise = fnl.GetNoise((float)(x), (float)(z));
+
+  if (noise > 0.5f) return TreeType::Birch;
+
+  return TreeType::Oak;
+}
+
+void TerrainManager::placeTreeAt(const int& x, const int& z,
+                                 const u8& treeHeight, const u8& logType,
+                                 const u8& leaveType) {
   for (int y = OVERWORLD_MAX_HEIGH - 1; y >= OVERWORLD_MIN_HEIGH; y--) {
     int index = this->getIndexByOffset(x, y, z);
     u8 type = this->terrain[index];
@@ -652,7 +675,7 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
 
         // Place logs
         if (j <= treeHeight && this->terrain[treeBlockIndex] == AIR_BLOCK)
-          this->terrain[treeBlockIndex] = OAK_LOG_BLOCK;
+          this->terrain[treeBlockIndex] = logType;
 
         // Place leaves
         if (j >= treeHeight - 3) {
@@ -674,7 +697,7 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
 
               if (this->terrain[treeLeaveBlockIndex] == AIR_BLOCK &&
                   center.distanceTo(leafPos) <= radianOffset) {
-                this->terrain[treeLeaveBlockIndex] = OAK_LEAVES_BLOCK;
+                this->terrain[treeLeaveBlockIndex] = leaveType;
               }
             }
           }
@@ -683,6 +706,16 @@ void TerrainManager::placeTreeAt(int x, int z, u8 treeHeight) {
       break;
     }
   }
+}
+
+void TerrainManager::placeOakTreeAt(const int& x, const int& z,
+                                    const u8& treeHeight) {
+  this->placeTreeAt(x, z, treeHeight, OAK_LOG_BLOCK, OAK_LEAVES_BLOCK);
+}
+
+void TerrainManager::placeBirchTreeAt(const int& x, const int& z,
+                                      const u8& treeHeight) {
+  this->placeTreeAt(x, z, treeHeight, BIRCH_LOG_BLOCK, BIRCH_LEAVES_BLOCK);
 }
 
 void TerrainManager::calcRawBlockBBox(MinecraftPipeline* mcPip) {

@@ -58,6 +58,10 @@ void BlockDigSfxRepository::loadModels() {
       new SfxBlockModel(OAK_LOG_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
   this->models.push_back(new SfxBlockModel(
       OAK_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1));
+  this->models.push_back(
+      new SfxBlockModel(BIRCH_LOG_BLOCK, SoundFxCategory::Dig, SoundFX::Wood1));
+  this->models.push_back(new SfxBlockModel(
+      BIRCH_LEAVES_BLOCK, SoundFxCategory::Dig, SoundFX::Gravel1));
 
   // Stripped Woods
   this->models.push_back(new SfxBlockModel(

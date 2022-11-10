@@ -32,6 +32,8 @@ using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
+enum class TreeType { Oak, Birch };
+
 class TerrainManager {
  public:
   TerrainManager();
@@ -105,7 +107,13 @@ class TerrainManager {
   void generateCaves();
   void generateTrees();
   void generateWater();
-  void placeTreeAt(int x, int z, u8 treeHeight);
+
+  void placeTreeAt(const int& x, const int& z, const u8& treeHeight,
+                   const u8& logType, const u8& leaveType);
+  void placeOakTreeAt(const int& x, const int& z, const u8& treeHeight);
+  void placeBirchTreeAt(const int& x, const int& z, const u8& treeHeight);
+  TreeType getTreeType(const int& x, const int& z);
+
   u8 getBlock(int noise, int y);
   float getContinentalness(int x, int z);
   float getErosion(int x, int z);
