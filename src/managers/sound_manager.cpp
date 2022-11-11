@@ -1,5 +1,4 @@
 #include "managers/sound_manager.hpp"
-#include <tyra>
 
 SoundManager::SoundManager(Engine* t_engine) {
   this->t_engine = t_engine;
@@ -20,4 +19,8 @@ AdpcmResult SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound,
   TYRA_ASSERT(t_sound->isLoaded, "Sound FX not loaded");
 
   return this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
+};
+
+void SoundManager::setSfxVolume(const s8& t_vol, const s8& t_ch) {
+  return this->t_engine->audio.adpcm.setVolume(t_vol, t_ch);
 };

@@ -16,9 +16,13 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   this->loadArmMesh();
   this->calcStaticBBox();
 
-  isWalking = false;
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
+  isStandStillAnimationSet = false;
+
+  isOnGround = true;
+  isFlying = false;
+  isBreaking = false;
 
   dynpip.setRenderer(&this->t_renderer->core);
   modelDynpipOptions.antiAliasingEnabled = false;
@@ -67,8 +71,8 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     const u8 hasMoved = this->updatePosition(
         &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
 
-    const u8 canPlayWalkSound = !t_pad.getLeftJoyPad().isCentered && hasMoved &&
-                                !this->isFlying && this->isOnGround &&
+    const u8 canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
+                                this->isOnGround &&
                                 this->currentBlock != nullptr;
     if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
   }
@@ -127,25 +131,24 @@ void Player::handleInputCommands(const Pad& t_pad) {
 
   if (pressed.L2) {
     if (!isBreakingAnimationSet) {
-      this->mesh->animation.speed = baseAnimationSpeed * 3;
-      this->mesh->animation.setSequence(breakBlockSequence);
+      // FIXME: enable on thrid person only
+      // this->mesh->animation.speed = baseAnimationSpeed * 3;
+      // this->mesh->animation.setSequence(breakBlockSequence);
 
       this->armMesh->animation.speed = baseAnimationSpeed * 6;
       this->armMesh->animation.setSequence(armHitingSequence);
-
       isBreakingAnimationSet = true;
     }
   } else {
     isBreakingAnimationSet = false;
   }
 
-  if (pressed.Cross && this->isOnGround && !this->isFlying) {
-    this->velocity += this->lift * this->speed;
-    this->isOnGround = false;
+  if (pressed.Cross && this->isOnGround) {
+    this->jump();
   }
 
   // TODO: refactore to ingame invetory menu
-  if (!this->isFlying) {
+  if (isOnGround) {
     if (clicked.DpadUp) this->selectNextItem();
     if (clicked.DpadDown) this->selectPreviousItem();
   }
@@ -157,32 +160,31 @@ void Player::handleInputCommands(const Pad& t_pad) {
   //   this->mesh->rotation.rotateY(0.08F);
   // }
 
-  if (t_pad.getLeftJoyPad().isMoved) {
+  if (t_pad.getLeftJoyPad().isMoved && isOnGround) {
     if (!isWalkingAnimationSet) {
       // TODO: enable on third person only
       // this->mesh->animation.speed = baseAnimationSpeed;
       // this->mesh->animation.setSequence(walkSequence);
 
-      if (!this->isFlying) {
-        this->armMesh->animation.speed = baseAnimationSpeed * 3;
-        this->armMesh->animation.setSequence(armWalkingSequence);
-      }
-
+      this->armMesh->animation.speed = baseAnimationSpeed * 3;
+      this->armMesh->animation.setSequence(armWalkingSequence);
       isWalkingAnimationSet = true;
     }
   } else {
     isWalkingAnimationSet = false;
   }
 
-  u8 isAnimating = (isBreakingAnimationSet || isWalkingAnimationSet);
-  if (!isAnimating) {
+  // If is not animating walking or breaking, set default (standstill);
+  const bool isNotAnimating =
+      (!isBreakingAnimationSet && !isWalkingAnimationSet);
+  if (isNotAnimating) {
     if (!isStandStillAnimationSet) {
       this->mesh->animation.setSequence(standStillSequence);
       this->armMesh->animation.setSequence(armStandStillSequence);
-      isStandStillAnimationSet = true;
+      this->isStandStillAnimationSet = true;
     }
   } else {
-    isStandStillAnimationSet = false;
+    this->isStandStillAnimationSet = false;
   }
 
   this->mesh->update();
@@ -523,15 +525,22 @@ void Player::playWalkSfx(u8 blockType) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getStepSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      this->t_soundManager->setSfxVolume(WALK_SFX_VOL, WALK_SFX_CH);
       this->t_soundManager->playSfx(blockSfxModel->category,
                                     blockSfxModel->sound, WALK_SFX_CH);
+    }
   }
 }
 
 void Player::toggleFlying() {
   this->isFlying = !this->isFlying;
-  this->t_renderer->core.renderer3D.setFov(isFlying ? 70.0F : 60.0F);
+  if (this->isFlying) {
+    this->t_renderer->core.renderer3D.setFov(70.0F);
+    this->isOnGround = false;
+  } else {
+    this->t_renderer->core.renderer3D.setFov(60.0F);
+  }
 }
 
 void Player::selectNextItem() {
@@ -560,4 +569,9 @@ void Player::selectPreviousItem() {
 
   inventory[selectedInventoryIndex] = previousItem;
   this->inventoryHasChanged = true;
+}
+
+void Player::jump() {
+  this->velocity += this->lift * this->speed;
+  this->isOnGround = false;
 }

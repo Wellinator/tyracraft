@@ -1,10 +1,11 @@
 #pragma once
 #include <tamtypes.h>
+#include <audsrv.h>
 #include "tyra"
 #include "entities/sfx_library.hpp"
 
-using Tyra::Audio;
 using Tyra::AdpcmResult;
+using Tyra::Audio;
 using Tyra::Engine;
 
 class SoundManager {
@@ -23,6 +24,8 @@ class SoundManager {
   AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound);
   AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound,
                       const s8& t_ch);
+
+  void setSfxVolume(const s8& t_vol, const s8& t_ch);
 
  private:
   SfxLibrary* soundLibrary;

@@ -57,8 +57,8 @@ class Player {
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  u8 isWalking, isOnGround, isBreaking;
-  u8 isFlying = false;
+  bool isOnGround , isFlying ,isBreaking;
+
   Vec4 spawnArea;
   u16 currentChunckId = 0;
 
@@ -84,10 +84,10 @@ class Player {
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
   u8 shouldRenderPlayerModel = 0;
-  u8 isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
-  u8 isOnBlock, isUnderBlock;
+  bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
   const u8 WALK_SFX_CH = 3;
+  const u8 WALK_SFX_VOL = 50;
 
   // Forces values
   float speed = 100;
@@ -103,6 +103,7 @@ class Player {
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updateGravity(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight);
+  void jump();
   void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
