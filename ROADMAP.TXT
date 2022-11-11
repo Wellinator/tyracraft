@@ -7,7 +7,7 @@
     ✅ -> Implement cam sensitivity;
     ✅ -> In game song manger;
         ✅ -> Sound FX and background music;
-    ✅ -> Basic ingame menu for block selection;
+    ❌ -> Basic ingame menu for block selection;
     ✅ -> Add "About" in main menu;
     ✅ -> Add "How to play" in main menu;
     ✅ -> Add "Create World" screen;
