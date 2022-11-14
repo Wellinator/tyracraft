@@ -1,5 +1,5 @@
 #include "states/game_play/state_game_play.hpp"
-#include "states/game_play/states/state_game_menu.hpp"
+#include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 #include "states/loading/state_loading_game.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
@@ -73,7 +73,6 @@ void StateGamePlay::pauseGame() {
   this->previousState = this->state;
   this->state = new StateGameMenu(this);
   this->paused = true;
-  TYRA_LOG("PAUSED");
 }
 
 void StateGamePlay::unpauseGame() {
@@ -81,7 +80,6 @@ void StateGamePlay::unpauseGame() {
   this->state = this->previousState;
   this->previousState = nullptr;
   this->paused = false;
-  TYRA_LOG("UNPAUSED");
 }
 
 void StateGamePlay::quitToTitle() {

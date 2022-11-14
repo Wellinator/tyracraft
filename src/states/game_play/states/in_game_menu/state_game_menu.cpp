@@ -1,4 +1,4 @@
-#include "states/game_play/states/state_game_menu.hpp"
+#include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 
 StateGameMenu::StateGameMenu(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {
