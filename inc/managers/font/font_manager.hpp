@@ -46,6 +46,10 @@ class FontManager {
       12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 20, 12, 12, 12,
       12, 12, 4,  6,  6,  6,  12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
       12, 12, 12, 12};
+  const u8 LINE_FEED = 10;
+  const u8 NULL_CHAR = 0;
+  const u8 BACK_SPACE = 8;
+  const u8 BASE_LINE_HEIGHT = 20;
 
   void loadFontChars();
   void unloadFontChars();

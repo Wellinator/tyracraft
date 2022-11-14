@@ -10,20 +10,29 @@ FontManager::~FontManager() { this->unloadFontChars(); };
 void FontManager::printText(const std::string& text,
                             const FontOptions& options) {
   // TODO: implement line break
-  float cursor = 0.0F;
+  float cursorX = 0.0F;
+  float cursorY = 0.0F;
+
   for (size_t i = 0; i < text.size(); i++) {
     const u8 charCode = getCodeFromChar(text.at(i));
     const FontChar* fontCharAt = getFontChatByCode(charCode);
 
     if (fontCharAt != nullptr) {
+      // Break line
+      if (fontCharAt->_charCode == LINE_FEED) {
+        cursorY += BASE_LINE_HEIGHT * options.scale;
+        cursorX = 0;
+        continue;
+      }
+
       Sprite spriteToPrint = *fontCharAt->t_sprite;
-      spriteToPrint.position.set(options.position.x + cursor,
-                                 options.position.y);
+      spriteToPrint.position.set(options.position.x + cursorX,
+                                 options.position.y + cursorY);
       spriteToPrint.color.set(options.color);
       spriteToPrint.scale = options.scale;
 
       t_renderer->renderer2D.render(spriteToPrint);
-      cursor += (char_widths[charCode] + 2);
+      cursorX += (char_widths[charCode] + 2);
     } else {
       TYRA_TRAP(std::string("Char at ")
                     .append(std::to_string(i))
