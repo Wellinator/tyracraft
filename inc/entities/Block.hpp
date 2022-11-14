@@ -20,10 +20,10 @@ class Block {
   // Vec4 position;        // Index at terrain;
 
   // Block state
-  u8 isTarget = 0;
-  u8 isSolid = 0;
-  u8 isBreakable = 0;
-  u8 isSingleTexture = 1;
+  u8 isTarget = false;
+  u8 isSolid = false;
+  u8 isBreakable = false;
+  u8 isSingleTexture = true;
   float damage = 0;
 
   Vec4 minCorner;

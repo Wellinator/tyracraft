@@ -9,10 +9,10 @@ using Tyra::McpipBlock;
 Block::Block(BlockInfo* blockInfo) {
   this->type = blockInfo->blockId;
   this->isSingleTexture = blockInfo->_isSingle;
-  this->textureOffset =
-      Vec4(blockInfo->_texOffssetX, blockInfo->_texOffssetY, 0.0F, 1.0F);
+  this->textureOffset.set(blockInfo->_texOffssetX, blockInfo->_texOffssetY);
   this->isBreakable = blockInfo->_isBreakable;
   this->isSolid = blockInfo->_isSolid;
+  this->model.identity();
   this->scale.identity();
   this->translation.identity();
   this->rotation.identity();

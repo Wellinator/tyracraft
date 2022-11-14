@@ -5,9 +5,8 @@ class BlockInfo {
  public:
   BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
             const float& texOffssetY, const bool& isBreakable = true,
-            const bool& isSolid = false) {
-    _texOffssetX = texOffssetX;
-    _texOffssetY = texOffssetY;
+            const bool& isSolid = false)
+      : _texOffssetX(texOffssetX), _texOffssetY(texOffssetY) {
     blockId = type;
     _isSingle = isSingle;
     _isBreakable = isBreakable;
@@ -16,8 +15,8 @@ class BlockInfo {
 
   ~BlockInfo(){};
 
-  float _texOffssetX;
-  float _texOffssetY;
+  const float _texOffssetX;
+  const float _texOffssetY;
   u8 _isSingle;
   u8 blockId;
   bool _isBreakable;
