@@ -41,15 +41,10 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                             std::vector<Chunck*> chuncks,
                             const float& deltaTime) {
-  // this->framesCounter++;
-  // {
   this->t_player = t_player;
   this->t_camera = t_camera;
-  // if (this->shouldUpdateTargetBlock())
   this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
   this->handlePadControls(t_pad, deltaTime);
-  // }
-  // if (framesCounter >= this->UPDATE_TARGET_LIMIT) this->framesCounter = 0;
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
@@ -58,6 +53,9 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
   if (options.enableCaves) this->generateCaves();
   if (options.enableWater) this->generateWater();
   if (options.enableTrees) this->generateTrees();
+
+  // TODO: refactor -> use local noise variable in each function;
+  delete this->noise;
 }
 
 void TerrainManager::generateTerrainBase(const bool& makeFlat) {
