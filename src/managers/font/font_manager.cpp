@@ -36,8 +36,8 @@ void FontManager::printText(const std::string& text,
 }
 
 void FontManager::loadFontChars() {
-  const u8 INITIAL_CHAR_CODE = 32;
-  const u8 FINAL_CHAR_CODE = 126;
+  const u8 INITIAL_CHAR_CODE = 0;
+  const u8 FINAL_CHAR_CODE = 255;
 
   for (size_t code = INITIAL_CHAR_CODE; code <= FINAL_CHAR_CODE; code++) {
     Sprite* charSprite = new Sprite();
