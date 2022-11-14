@@ -55,7 +55,6 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
   if (options.enableTrees) this->generateTrees();
 
   // TODO: refactor -> use local noise variable in each function;
-  delete this->noise;
 }
 
 void TerrainManager::generateTerrainBase(const bool& makeFlat) {
@@ -475,6 +474,7 @@ void TerrainManager::putBlock(u8 blockToPlace) {
 
 void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
   if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
+    if (!this->targetBlock->isBreakable) return;
     this->breakBlock(this->targetBlock, deltaTime);
   } else if (this->_isBreakingBlock) {
     this->_isBreakingBlock = false;
