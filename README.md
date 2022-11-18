@@ -7,6 +7,8 @@
 [![GitHub watchers](https://badgen.net/github/watchers/Wellinator/tyracraft/)](https://GitHub.com/Wellinator/tyracraft/watchers/)
 [![Discord](https://img.shields.io/badge/discord-Tyra-brightgreen?logo=discord)](https://discord.gg/NhhTmg3Gm5)
 [![Discord](https://img.shields.io/badge/discord-PS2--Scene-brightgreen?logo=discord)](https://discord.gg/7dCr6ThSN5)
+[![Discord](https://img.shields.io/badge/discord-TyraCraft-Official-Server-brightgreen?logo=discord)](https://discord.gg/MD6GCJ6K)
+
 
 <br />
 <p align="center">
