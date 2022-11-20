@@ -3,11 +3,11 @@
 
 class BlockInfo {
  public:
-  BlockInfo(u8 type, u8 isSingle, const float& texOffssetX,
+  BlockInfo(const Blocks& type, const u8 isSingle, const float& texOffssetX,
             const float& texOffssetY, const bool& isBreakable = true,
             const bool& isSolid = false)
       : _texOffssetX(texOffssetX), _texOffssetY(texOffssetY) {
-    blockId = type;
+    blockId = (u8)type;
     _isSingle = isSingle;
     _isBreakable = isBreakable;
     _isSolid = isSolid;

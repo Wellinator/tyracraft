@@ -57,7 +57,7 @@ class Player {
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround , isFlying ,isBreaking;
+  bool isOnGround, isFlying, isBreaking;
 
   Vec4 spawnArea;
   u16 currentChunckId = 0;
@@ -126,7 +126,7 @@ class Player {
   short int selectedInventoryIndex = 0;
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
-  void playWalkSfx(u8 blockType);
+  void playWalkSfx(const Blocks& blockType);
 
   void selectNextItem();
   void selectPreviousItem();

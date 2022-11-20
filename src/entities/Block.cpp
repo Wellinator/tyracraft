@@ -7,7 +7,7 @@ using Tyra::M4x4;
 using Tyra::McpipBlock;
 
 Block::Block(BlockInfo* blockInfo) {
-  this->type = blockInfo->blockId;
+  this->type = static_cast<Blocks>(blockInfo->blockId);
   this->isSingleTexture = blockInfo->_isSingle;
   this->textureOffset.set(blockInfo->_texOffssetX, blockInfo->_texOffssetY);
   this->isBreakable = blockInfo->_isBreakable;

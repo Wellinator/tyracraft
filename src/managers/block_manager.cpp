@@ -47,7 +47,7 @@ void BlockManager::registerBlockSoundsEffects() {
   this->blockSfxRepositories.push_back(new BlockStepSfxRepository());
 }
 
-BlockInfo* BlockManager::getBlockTexOffsetByType(const u8& blockType) {
+BlockInfo* BlockManager::getBlockTexOffsetByType(const Blocks& blockType) {
   return this->t_blockTextureRepository->getTextureInfo(blockType);
 }
 
@@ -77,22 +77,22 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
   return nullptr;
 }
 
-SfxBlockModel* BlockManager::getDigSoundByBlockType(const u8& blockType) {
+SfxBlockModel* BlockManager::getDigSoundByBlockType(const Blocks& blockType) {
   for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)
     if (blockSfxRepositories[i]->id == SoundFxCategory::Dig)
-      return blockSfxRepositories[i]->getModel(blockType);
+      return blockSfxRepositories[i]->getModel((u8)blockType);
 
   TYRA_WARN("Block sound not found for type: ",
-            std::to_string(blockType).c_str());
+            std::to_string((u8)blockType).c_str());
   return nullptr;
 }
 
-SfxBlockModel* BlockManager::getStepSoundByBlockType(const u8& blockType) {
+SfxBlockModel* BlockManager::getStepSoundByBlockType(const Blocks& blockType) {
   for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)
     if (this->blockSfxRepositories[i]->id == SoundFxCategory::Step)
-      return this->blockSfxRepositories[i]->getModel(blockType);
+      return this->blockSfxRepositories[i]->getModel((u8)blockType);
 
   TYRA_WARN("Block sound not found for type: ",
-            std::to_string(blockType).c_str());
+            std::to_string((u8)blockType).c_str());
   return nullptr;
 }

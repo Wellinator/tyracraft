@@ -50,7 +50,7 @@ class TerrainManager {
   void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
                          std::vector<Chunck*> chuncks);
   void removeBlock();
-  void putBlock(u8 blockType);
+  void putBlock(const Blocks& blockType);
 
   Renderer* t_renderer;
   Engine* engine;
@@ -109,7 +109,7 @@ class TerrainManager {
   void generateWater();
 
   void placeTreeAt(const int& x, const int& z, const u8& treeHeight,
-                   const u8& logType, const u8& leaveType);
+                   const Blocks& logType, const Blocks& leaveType);
   void placeOakTreeAt(const int& x, const int& z, const u8& treeHeight);
   void placeBirchTreeAt(const int& x, const int& z, const u8& treeHeight);
   TreeType getTreeType(const int& x, const int& z);
@@ -146,7 +146,7 @@ class TerrainManager {
 
   const s8 BLOCK_PLACEMENT_SFX_CH = 1;
   const s8 BLOCK_FOOTSTEP_SFX_CH = 2;
-  void playPutBlockSound(const u8& blockType);
-  void playDestroyBlockSound(const u8& blockType);
-  void playBreakingBlockSound(const u8& blockType);
+  void playPutBlockSound(const Blocks& blockType);
+  void playDestroyBlockSound(const Blocks& blockType);
+  void playBreakingBlockSound(const Blocks& blockType);
 };

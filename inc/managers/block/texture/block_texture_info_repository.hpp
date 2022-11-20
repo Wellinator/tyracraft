@@ -12,7 +12,7 @@ class BlockTextureRepository {
   BlockTextureRepository(MinecraftPipeline* t_mcPip);
   ~BlockTextureRepository();
 
-  BlockInfo* getTextureInfo(const u8& blockType);
+  BlockInfo* getTextureInfo(const Blocks& blockType);
 
  private:
   void loadTextures();

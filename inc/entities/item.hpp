@@ -17,7 +17,7 @@ class Item {
   ItemId id;
 
   /** Block id to render mesh of sprite. */
-  int blockId;
+  Blocks blockId;
 
   /** Sprite to be renderer. */
   Sprite sprite;

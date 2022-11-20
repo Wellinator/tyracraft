@@ -520,8 +520,8 @@ void Player::calcStaticBBox() {
   // }
 }
 
-void Player::playWalkSfx(u8 blockType) {
-  if (blockType != AIR_BLOCK) {
+void Player::playWalkSfx(const Blocks& blockType) {
+  if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getStepSoundByBlockType(blockType);
 

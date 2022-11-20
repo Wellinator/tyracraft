@@ -15,8 +15,8 @@ using Tyra::Vec4;
 /** Block 3D object class  */
 class Block {
  public:
-  u8 type = AIR_BLOCK;  // Init as air
-  int index;            // Index at terrain;
+  Blocks type = Blocks::AIR_BLOCK;  // Init as air
+  int index;                        // Index at terrain;
   // Vec4 position;        // Index at terrain;
 
   // Block state
