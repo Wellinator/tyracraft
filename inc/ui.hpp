@@ -5,7 +5,7 @@
 #include <tamtypes.h>
 #include "entities/player.hpp"
 #include "managers/items_repository.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 
 using Tyra::Renderer;
 using Tyra::Sprite;

@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <string>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "camera.hpp"
 #include "states/game_state.hpp"
 #include "states/context.hpp"

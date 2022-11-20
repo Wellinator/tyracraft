@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <string>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "camera.hpp"
 #include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
 #include "states/game_state.hpp"

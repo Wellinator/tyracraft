@@ -1,7 +1,7 @@
 #pragma once
 
 #include <renderer/core/2d/sprite/sprite.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 
 using Tyra::Sprite;
 

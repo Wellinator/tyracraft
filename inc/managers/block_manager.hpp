@@ -6,7 +6,7 @@
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/texture/models/texture.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/sfx_block_model.hpp"
 #include "entities/sfx_library_category.hpp"

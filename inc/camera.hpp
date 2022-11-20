@@ -18,7 +18,7 @@
 #include <tamtypes.h>
 #include <utils.hpp>
 #include <math/math.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 #include <debug/debug.hpp>
 #include <fastmath.h>
 #include "renderer/renderer_settings.hpp"

@@ -3,7 +3,7 @@
 #include <tamtypes.h>
 #include <tyra>
 #include <audio/audio_listener.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 
 using Tyra::AudioListener;
 using Tyra::AudioSong;

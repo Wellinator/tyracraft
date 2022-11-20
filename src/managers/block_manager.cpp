@@ -1,7 +1,7 @@
 #include "managers/block_manager.hpp"
 #include "file/file_utils.hpp"
 #include <math/vec4.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 
 using Tyra::FileUtils;
 using Tyra::McpipBlock;

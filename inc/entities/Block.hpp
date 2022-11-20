@@ -2,7 +2,7 @@
 
 #include <tamtypes.h>
 #include <math/vec4.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "managers/block_manager.hpp"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "contants.hpp"
+#include "constants.hpp"
 
 class TerrainHeightModel {
  public:

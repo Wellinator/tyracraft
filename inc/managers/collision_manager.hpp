@@ -8,7 +8,7 @@
 #include <renderer/3d/bbox/bbox.hpp>
 #include <math/vec4.hpp>
 #include <math.h>
-#include "contants.hpp"
+#include "constants.hpp"
 
 using Tyra::Mesh;
 using Tyra::Vec4;

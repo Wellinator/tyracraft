@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "entities/Block.hpp"
 #include "entities/player.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include "managers/block_manager.hpp"
 #include "utils.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"

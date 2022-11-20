@@ -3,7 +3,7 @@
 #pragma once
 
 #include <debug/debug.hpp>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player.hpp"
 #include "managers/block_manager.hpp"

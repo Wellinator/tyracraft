@@ -2,7 +2,7 @@
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "models/sfx_block_model.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include <tyra>
 
 using Tyra::Audio;

@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <string>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "camera.hpp"
 #include "renderer/3d/mesh/static/static_mesh.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"

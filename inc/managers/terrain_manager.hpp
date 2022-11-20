@@ -9,7 +9,7 @@
 #include <physics/ray.hpp>
 #include <fastmath.h>
 #include <draw_sampling.h>
-#include "contants.hpp"
+#include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player.hpp"

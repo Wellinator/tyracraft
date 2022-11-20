@@ -9,7 +9,7 @@
 #include "entities/player.hpp"
 #include "entities/Block.hpp"
 #include "managers/items_repository.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
 #include "managers/chunck_manager.hpp"

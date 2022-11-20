@@ -10,7 +10,7 @@
 
 #pragma once
 #include "camera.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/item.hpp"
 #include <tamtypes.h>

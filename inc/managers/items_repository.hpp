@@ -5,7 +5,7 @@
 #include <renderer/core/2d/sprite/sprite.hpp>
 #include <renderer/core/texture/models/texture.hpp>
 #include "entities/item.hpp"
-#include "contants.hpp"
+#include "constants.hpp"
 #include "file/file_utils.hpp"
 
 using Tyra::Renderer;
