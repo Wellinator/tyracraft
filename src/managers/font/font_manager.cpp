@@ -62,20 +62,16 @@ void FontManager::loadFontChars() {
         ->addLink(charSprite->id);
 
     FontChar* fontChar = new FontChar(code, charSprite);
-    printable_ascii_chars_sprites.push_back(fontChar);
+    printable_ascii_chars_sprites[code] = fontChar;
   }
 };
 
 void FontManager::unloadFontChars() {
-  for (size_t i = 0; i < printable_ascii_chars_sprites.size(); i++) {
+  for (size_t i = 0; i < 256; i++) {
     delete printable_ascii_chars_sprites[i];
   }
 }
 
 const FontChar* FontManager::getFontChatByCode(const u8& code) {
-  for (size_t i = 0; i < printable_ascii_chars_sprites.size(); i++) {
-    if (printable_ascii_chars_sprites[i]->_charCode == code)
-      return printable_ascii_chars_sprites[i];
-  }
-  return nullptr;
+  return printable_ascii_chars_sprites[code];
 }
