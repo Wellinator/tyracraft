@@ -127,9 +127,9 @@ class TerrainManager {
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
   const Vec4 getPositionByIndex(const u16& index);
-  bool isBlockHidden(int x, int y, int z);
-  inline bool isBlockVisible(int x, int y, int z) {
-    return !isBlockHidden(x, y, z);
+  bool isBlockHidden(const Vec4& blockOffset);
+  inline bool isBlockVisible(const Vec4& blockOffset) {
+    return !isBlockHidden(blockOffset);
   };
 
   void handlePadControls(Pad* t_pad, const float& deltaTime);

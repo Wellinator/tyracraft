@@ -197,13 +197,19 @@ float TerrainManager::getHeightScale(int x, int z) {
   return 0.0F;
 }
 
-bool TerrainManager::isBlockHidden(int x, int y, int z) {
-  u8 upBlock = this->getBlockTypeByOffset(x, y - 1, z);
-  u8 downBlock = this->getBlockTypeByOffset(x, y + 1, z);
-  u8 frontBlock = this->getBlockTypeByOffset(x, y, z + 1);
-  u8 backBlock = this->getBlockTypeByOffset(x, y, z - 1);
-  u8 rightBlock = this->getBlockTypeByOffset(x + 1, y, z);
-  u8 leftBlock = this->getBlockTypeByOffset(x - 1, y, z);
+bool TerrainManager::isBlockHidden(const Vec4& blockOffset) {
+  u8 upBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y - 1,
+                                          blockOffset.z);
+  u8 downBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y + 1,
+                                            blockOffset.z);
+  u8 frontBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
+                                             blockOffset.z + 1);
+  u8 backBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
+                                            blockOffset.z - 1);
+  u8 rightBlock = this->getBlockTypeByOffset(blockOffset.x + 1, blockOffset.y,
+                                             blockOffset.z);
+  u8 leftBlock = this->getBlockTypeByOffset(blockOffset.x - 1, blockOffset.y,
+                                            blockOffset.z);
 
   // If some nighbor block is transparent set block to visible
   if (
@@ -299,13 +305,12 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
-        if (block_type == (u8)Blocks::AIR_BLOCK) continue;
+        if (block_type <= (u8)Blocks::AIR_BLOCK) continue;
 
         Vec4 tempBlockOffset = Vec4(x, y, z);
         Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        u8 isHidden = this->isBlockHidden(tempBlockOffset.x, tempBlockOffset.y,
-                                          tempBlockOffset.z);
+        u8 isHidden = this->isBlockHidden(tempBlockOffset);
 
         // Are block's coordinates in world range?
         if (!isHidden &&
