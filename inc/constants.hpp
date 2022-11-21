@@ -78,7 +78,10 @@ enum class Blocks {
   OAK_LOG_BLOCK,
   OAK_LEAVES_BLOCK,
   BIRCH_LOG_BLOCK,
-  BIRCH_LEAVES_BLOCK
+  BIRCH_LEAVES_BLOCK,
+
+  //Helper index
+  TOTAL_OF_BLOCKS
 };
 /*---------------------------------------------*/
 

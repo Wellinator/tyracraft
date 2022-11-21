@@ -96,4 +96,24 @@ void CreativePlayingState::drawDegubInfo() {
   //                           .append(std::to_string(info->getAvailableRAM()))
   //                           .append(" MB");
   // this->t_fontManager->printText(freeRam.c_str(), 5.0f, 32.0f);
+
+  // Draw blocks info:
+  float offsetY = 45.0f;
+  for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
+       i++) {
+    BlockInfo info =
+        *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
+            static_cast<Blocks>(i));
+
+    std::string blocksInfo = std::string("\nID: ")
+                                 .append(std::to_string(i))
+                                 .append(std::string(" | X: "))
+                                 .append(std::to_string(info._texOffssetX))
+                                 .append(std::string(" | Y: "))
+                                 .append(std::to_string(info._texOffssetX));
+
+    this->t_fontManager->printText(
+        blocksInfo, FontOptions(Vec2(5.0f, offsetY), Color(255), 0.45F));
+    offsetY += 10.0F;
+  }
 }
