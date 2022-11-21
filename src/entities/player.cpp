@@ -130,6 +130,7 @@ void Player::handleInputCommands(const Pad& t_pad) {
   if (clicked.R1) this->moveSelectorToTheRight();
 
   if (pressed.L2) {
+    this->isBreaking = true;
     if (!isBreakingAnimationSet) {
       // FIXME: enable on thrid person only
       // this->mesh->animation.speed = baseAnimationSpeed * 3;
@@ -140,6 +141,7 @@ void Player::handleInputCommands(const Pad& t_pad) {
       isBreakingAnimationSet = true;
     }
   } else {
+    this->isBreaking = false;
     isBreakingAnimationSet = false;
   }
 
@@ -238,6 +240,7 @@ void Player::updateGravity(const float& deltaTime,
              terrainHeight.maxHeight + this->hitBox->getHeight()) {
     newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
     this->velocity = -this->velocity;
+    this->isOnGround = false;
   }
 
   // Finally updates gravity after checks
