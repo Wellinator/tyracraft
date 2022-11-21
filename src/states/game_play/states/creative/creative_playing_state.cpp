@@ -85,11 +85,13 @@ void CreativePlayingState::drawDegubInfo() {
   // Draw seed
   std::string seed = std::string("Seed: ").append(
       std::to_string(this->stateGamePlay->world->getSeed()));
-  this->t_fontManager->printText(seed, FontOptions(Vec2(5.0f, 5.0f)));
+  this->t_fontManager->printText(
+      seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
   std::string fps = std::string("FPS: ").append(std::to_string(info->getFps()));
-  this->t_fontManager->printText(fps, FontOptions(Vec2(5.0f, 25.0f)));
+  this->t_fontManager->printText(
+      fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw Free RAM:
   // std::string freeRam = std::string("Free RAM: ")
@@ -98,22 +100,38 @@ void CreativePlayingState::drawDegubInfo() {
   // this->t_fontManager->printText(freeRam.c_str(), 5.0f, 32.0f);
 
   // Draw blocks info:
-  float offsetY = 45.0f;
-  for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
-       i++) {
-    BlockInfo info =
-        *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
-            static_cast<Blocks>(i));
+  // float offsetY = 30.0f;
+  // for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
+  //      i++) {
+  //   BlockInfo info =
+  //       *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
+  //           static_cast<Blocks>(i));
 
-    std::string blocksInfo = std::string("\nID: ")
-                                 .append(std::to_string(i))
-                                 .append(std::string(" | X: "))
-                                 .append(std::to_string(info._texOffssetX))
-                                 .append(std::string(" | Y: "))
-                                 .append(std::to_string(info._texOffssetX));
+  //   std::string blocksInfo = std::string("\nID: ")
+  //                                .append(std::to_string(i))
+  //                                .append(std::string(" | X: "))
+  //                                .append(std::to_string(info._texOffssetX))
+  //                                .append(std::string(" | Y: "))
+  //                                .append(std::to_string(info._texOffssetX));
 
-    this->t_fontManager->printText(
-        blocksInfo, FontOptions(Vec2(5.0f, offsetY), Color(255), 0.45F));
-    offsetY += 10.0F;
-  }
+  //   this->t_fontManager->printText(
+  //       blocksInfo, FontOptions(Vec2(5.0f, offsetY), Color(255), 0.8F));
+  //   offsetY += 15.0F;
+  // }
+
+  // Draw Player state:
+  std::string playerStateInfo =
+      std::string("Player state\n")
+          .append(std::string("Is On ground: ") +
+                  std::to_string(this->stateGamePlay->player->isOnGround) +
+                  std::string("\n"))
+          .append(std::string("Is Flaying: ") +
+                  std::to_string(this->stateGamePlay->player->isFlying) +
+                  std::string("\n"))
+          .append(std::string("Is Breaking: ") +
+                  std::to_string(this->stateGamePlay->player->isBreaking) +
+                  std::string("\n"));
+
+  this->t_fontManager->printText(
+      playerStateInfo, FontOptions(Vec2(310.0f, 5.0f), Color(255), 0.8F));
 }
