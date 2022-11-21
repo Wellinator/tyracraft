@@ -38,7 +38,8 @@ Chunck::~Chunck() {
 };
 
 void Chunck::update(const Plane* frustumPlanes) {
-  this->_isVisible = this->isChunkVisible(frustumPlanes);
+  this->updateFrustumCheck(frustumPlanes);
+  this->_isVisible = this->isVisible();
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
@@ -129,12 +130,10 @@ void Chunck::clearMcpipBlocks() {
   this->multiTexBlocks.shrink_to_fit();
 }
 
-u8 Chunck::isChunkVisible(const Plane* frustumPlanes) {
-  for (u8 y = 0; y < 8; y++) {
-    // 4th frustum plane is NEAR frustum plane
-    if (frustumPlanes[4].distanceTo(this->bbox->vertices[y]) >= 0.0F) return 1;
-  }
-  return 0;  // is behind
+void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
+  this->frustumCheck = this->bbox->frustumCheck(frustumPlanes);
 }
 
-u8 Chunck::isVisible() { return this->_isVisible; }
+u8 Chunck::isVisible() {
+  return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+}

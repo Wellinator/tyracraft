@@ -60,7 +60,4 @@ Chunck* ChunckManager::getChunckById(const u16 id) {
   return nullptr;
 };
 
-u8 ChunckManager::isChunkVisible(Chunck* chunk, Renderer* t_renderer) {
-  return chunk->isChunkVisible(
-      t_renderer->core.renderer3D.frustumPlanes.getAll());
-}
+u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }

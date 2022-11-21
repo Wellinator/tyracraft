@@ -30,7 +30,7 @@ class ChunckManager {
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   void init();
   void update(const Plane* frustumPlanes);
-  u8 isChunkVisible(Chunck* chunk, Renderer* t_renderer);
+  u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
                 BlockManager* t_blockManager);
 

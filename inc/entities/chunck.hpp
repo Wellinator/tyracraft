@@ -15,6 +15,7 @@
 #include <math/m4x4.hpp>
 
 using Tyra::BBox;
+using Tyra::CoreBBoxFrustum;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
@@ -38,13 +39,14 @@ class Chunck {
   Vec4* maxOffset = new Vec4();
   Vec4* center = new Vec4();
   BBox* bbox;
+  CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
   void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
                 BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
   void clear();
   void updateDrawData();
-  u8 isChunkVisible(const Plane* frustumPlanes);
+  void updateFrustumCheck(const Plane* frustumPlanes);
   u8 isVisible();
 
   // Block controllers
@@ -53,7 +55,7 @@ class Chunck {
  private:
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
-  u8 _isVisible = 0;
+  u8 _isVisible = false;
 
   float getVisibityByPosition(float d);
   void applyFOG(Block* t_block, const Vec4& originPosition);
