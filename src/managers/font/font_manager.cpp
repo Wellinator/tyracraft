@@ -32,7 +32,7 @@ void FontManager::printText(const std::string& text,
       spriteToPrint.scale = options.scale;
 
       t_renderer->renderer2D.render(spriteToPrint);
-      cursorX += (char_widths[charCode] + 2);
+      cursorX += (char_widths[charCode] + 2) * options.scale;
     } else {
       TYRA_TRAP(std::string("Char at ")
                     .append(std::to_string(i))
