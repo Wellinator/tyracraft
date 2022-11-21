@@ -14,56 +14,79 @@ BlockTextureRepository::~BlockTextureRepository() {
 }
 
 BlockInfo* BlockTextureRepository::getTextureInfo(const Blocks& blockType) {
-  for (u8 i = 0; i < this->models.size(); i++)
-    if (this->models[i]->blockId == (u8)blockType) return this->models[i];
+  if ((u8)blockType > (u8)Blocks::AIR_BLOCK &&
+      (u8)blockType < (u8)Blocks::TOTAL_OF_BLOCKS) {
+    return this->models[(u8)blockType];
+  }
   TYRA_WARN("Block texture info not found. BLockType -> ",
             std::to_string((u8)blockType).c_str(), " Was it registered?");
   return nullptr;
 }
 
 void BlockTextureRepository::loadTextures() {
+  // Non usable indexes
+  // Blocks::VOID, Blocks::AIR_BLOCK;
+  this->models.push_back(nullptr);
+  this->models.push_back(nullptr);
+
   // Base Blocks
+  this->models.push_back(new BlockInfo(Blocks::STONE_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 3,
+                                       this->t_mcPip->getTextureOffset() * 7));
   this->models.push_back(new BlockInfo(Blocks::GRASS_BLOCK, false,
                                        this->t_mcPip->getTextureOffset() * 0,
                                        this->t_mcPip->getTextureOffset() * 0));
-  this->models.push_back(new BlockInfo(
-      Blocks::BEDROCK_BLOCK, true, this->t_mcPip->getTextureOffset() * 0,
-      this->t_mcPip->getTextureOffset() * 7, false));
-
   this->models.push_back(new BlockInfo(Blocks::DIRTY_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 7));
-  this->models.push_back(new BlockInfo(Blocks::SAND_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 7));
-  this->models.push_back(new BlockInfo(Blocks::STONE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
                                        this->t_mcPip->getTextureOffset() * 7));
   this->models.push_back(new BlockInfo(Blocks::WATER_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 4,
                                        this->t_mcPip->getTextureOffset() * 7));
+  this->models.push_back(new BlockInfo(
+      Blocks::BEDROCK_BLOCK, true, this->t_mcPip->getTextureOffset() * 0,
+      this->t_mcPip->getTextureOffset() * 7, false));
+  this->models.push_back(new BlockInfo(Blocks::SAND_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 2,
+                                       this->t_mcPip->getTextureOffset() * 7));
   this->models.push_back(new BlockInfo(Blocks::GLASS_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 0,
                                        this->t_mcPip->getTextureOffset() * 9));
+  this->models.push_back(new BlockInfo(Blocks::BRICKS_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 4,
+                                       this->t_mcPip->getTextureOffset() * 6));
 
   // Ores and Minerals
   this->models.push_back(new BlockInfo(Blocks::GOLD_ORE_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 0,
                                        this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 8));
   this->models.push_back(new BlockInfo(Blocks::IRON_ORE_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 2,
                                        this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::EMERALD_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
+  this->models.push_back(new BlockInfo(Blocks::COAL_ORE_BLOCK, true, 80.0F,
                                        this->t_mcPip->getTextureOffset() * 8));
   this->models.push_back(new BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 4,
                                        this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::COAL_ORE_BLOCK, true, 80.0F,
+  this->models.push_back(new BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 1,
                                        this->t_mcPip->getTextureOffset() * 8));
+  this->models.push_back(new BlockInfo(Blocks::EMERALD_ORE_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 3,
+                                       this->t_mcPip->getTextureOffset() * 8));
+
+  // Wood Planks
+  this->models.push_back(new BlockInfo(Blocks::OAK_PLANKS_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 0,
+                                       this->t_mcPip->getTextureOffset() * 11));
+  this->models.push_back(new BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 1,
+                                       this->t_mcPip->getTextureOffset() * 11));
+  this->models.push_back(new BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 3,
+                                       this->t_mcPip->getTextureOffset() * 11));
+  this->models.push_back(new BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 2,
+                                       this->t_mcPip->getTextureOffset() * 11));
 
   // Stone bricks
   this->models.push_back(new BlockInfo(Blocks::STONE_BRICK_BLOCK, true,
@@ -79,9 +102,10 @@ void BlockTextureRepository::loadTextures() {
                                        true,
                                        this->t_mcPip->getTextureOffset() * 3,
                                        this->t_mcPip->getTextureOffset() * 6));
-  this->models.push_back(new BlockInfo(Blocks::BRICKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 4,
-                                       this->t_mcPip->getTextureOffset() * 6));
+  // Stripped Woods
+  this->models.push_back(new BlockInfo(Blocks::STRIPPED_OAK_WOOD_BLOCK, true,
+                                       this->t_mcPip->getTextureOffset() * 0,
+                                       this->t_mcPip->getTextureOffset() * 12));
 
   // Woods
   this->models.push_back(new BlockInfo(Blocks::OAK_LOG_BLOCK, false,
@@ -96,23 +120,4 @@ void BlockTextureRepository::loadTextures() {
   this->models.push_back(new BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true,
                                        this->t_mcPip->getTextureOffset() * 2,
                                        this->t_mcPip->getTextureOffset() * 10));
-
-  // Stripped Woods
-  this->models.push_back(new BlockInfo(Blocks::STRIPPED_OAK_WOOD_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 12));
-
-  // Wood Planks
-  this->models.push_back(new BlockInfo(Blocks::OAK_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 11));
 }

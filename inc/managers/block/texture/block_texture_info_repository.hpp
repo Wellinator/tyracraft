@@ -15,6 +15,12 @@ class BlockTextureRepository {
   BlockInfo* getTextureInfo(const Blocks& blockType);
 
  private:
+  /**
+   * @brief Load blocks textures
+   * @warning Should load textures in @enum Blocks order to load info faster
+   * (haky)
+   *
+   */
   void loadTextures();
 
   MinecraftPipeline* t_mcPip;
