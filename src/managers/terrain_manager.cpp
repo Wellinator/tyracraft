@@ -20,10 +20,7 @@ TerrainManager::TerrainManager() {
                         OVERWORLD_MAX_DISTANCE);
 }
 
-TerrainManager::~TerrainManager() {
-  delete this->noise;
-  delete this->terrain;
-}
+TerrainManager::~TerrainManager() { delete this->terrain; }
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
                           MinecraftPipeline* mcPip, BlockManager* blockManager,
@@ -35,7 +32,6 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->t_soundManager = t_soundManager;
 
   this->calcRawBlockBBox(mcPip);
-  this->initNoise();
 }
 
 void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
@@ -58,9 +54,6 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
 }
 
 void TerrainManager::generateTerrainBase(const bool& makeFlat) {
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
-
   u32 index = 0;
   u32 noise = 0;
 
@@ -84,11 +77,14 @@ void TerrainManager::generateTerrainBase(const bool& makeFlat) {
 
 void TerrainManager::generateCaves() {
   // TODO: refactor to terrain generation pipeline by terrain type
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_None);
-  this->noise->SetFrequency(0.04F);
-  this->noise->SetFractalLacunarity(1.0F);
-  this->noise->SetFractalOctaves(24);
+
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+  fnl.SetFractalType(FastNoiseLite::FractalType_None);
+  fnl.SetFrequency(0.04F);
+  fnl.SetFractalLacunarity(1.0F);
+  fnl.SetFractalOctaves(24);
 
   u32 index = 0;
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
@@ -108,35 +104,26 @@ void TerrainManager::generateCaves() {
   }
 }
 
-void TerrainManager::initNoise() {
-  // Fast Noise Lite
-  this->noise = new FastNoiseLite();
-  this->noise->SetSeed(this->seed);
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
-  this->noise->SetFractalOctaves(this->octaves);
-  this->noise->SetFractalLacunarity(this->lacunarity);
-  this->noise->SetFrequency(this->frequency);
-}
+int TerrainManager::getNoise(const int& x, const int& z) {
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-int TerrainManager::getNoise(int x, int z) {
   float xNoiseOffset = (float)((x + seed));
   float zNoiseOffset = (float)((z + seed));
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(this->octaves);
-  float y1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  float y1 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
-  // xNoiseOffset += 1;
-  // zNoiseOffset += 1;
-  this->noise->SetFrequency(this->frequency + 0.01f);
-  this->noise->SetFractalOctaves(this->octaves / 4);
-  float y2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  fnl.SetFrequency(this->frequency + 0.01f);
+  fnl.SetFractalOctaves(this->octaves / 4);
+  float y2 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
-  // xNoiseOffset += 2;
-  // zNoiseOffset += 2;
-  this->noise->SetFrequency(this->frequency + 0.02f);
-  this->noise->SetFractalOctaves(this->octaves / 16);
-  float y3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  fnl.SetFrequency(this->frequency + 0.02f);
+  fnl.SetFractalOctaves(this->octaves / 16);
+  float y3 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
   float scale = getHeightScale(x, z);
 
@@ -582,56 +569,88 @@ const Vec4 TerrainManager::calcSpawOffset(int bias) {
 }
 
 float TerrainManager::getContinentalness(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getErosion(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(2);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(2);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getPeaksAndValleys(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getDensity(int x, int y, int z) {
-  return this->noise->GetNoise((float)(x + seed), (float)(y + seed),
-                               (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+
+  return fnl.GetNoise((float)(x + seed), (float)(y + seed), (float)(z + seed));
 }
 
 float TerrainManager::getTemperature(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
-
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getHumidity(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
-
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 void TerrainManager::generateTrees() {
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpIndependent);
-  this->noise->SetFractalOctaves(this->octaves);
-  this->noise->SetFractalLacunarity(10.0f);
-  this->noise->SetFrequency(1.0f);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpIndependent);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(10.0f);
+  fnl.SetFrequency(1.0f);
 
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
     for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
-      int noise = floor(
-          this->noise->GetNoise((float)(x + seed), (float)(z + seed)) * 7.6);
+      int noise =
+          floor(fnl.GetNoise((float)(x + seed), (float)(z + seed)) * 7.6);
       int modX = noise % 3;
       int modZ = noise % 9;
       u8 treeHeight;

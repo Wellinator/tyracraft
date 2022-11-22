@@ -72,8 +72,6 @@ class TerrainManager {
    */
   inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
 
-  int getNoise(int x, int z);
-
  private:
   Ray ray;
   u8 _shouldUpdateChunck = 0;
@@ -101,8 +99,7 @@ class TerrainManager {
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
   const int seed = rand() % 1337;
 
-  FastNoiseLite* noise;
-  void initNoise();
+  int getNoise(const int& x, const int& z);
   void generateTerrainBase(const bool& makeFlat);
   void generateCaves();
   void generateTrees();
