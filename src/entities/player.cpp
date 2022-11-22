@@ -372,6 +372,11 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
   this->currentBlock = nullptr;
 
   for (int i = 0; i < blocks_ammount; i++) {
+    // Broad phase
+    if (t_blocks[i]->getPosition()->distanceTo(*this->getPosition()) >
+        DUBLE_BLOCK_SIZE)
+      continue;
+
     u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
                    maxPlayer.x > t_blocks[i]->minCorner.x &&
                    minPlayer.z < t_blocks[i]->maxCorner.z &&
