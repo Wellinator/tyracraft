@@ -27,6 +27,18 @@ class CreativePlayingState : public PlayingStateBase {
   void renderCreativeUi();
   void drawDegubInfo();
 
+  /**
+   * @brief Print blocks info to log
+   *
+   */
+  void printBlockInfoToLog();
+
+  /**
+   * @brief Print RAM memory info to log
+   *
+   */
+  void printMemoryInfoToLog();
+
   CreativeAudioListener* t_creativeAudioListener = nullptr;
   FontManager* t_fontManager = nullptr;
   u32 audioListenerId;
