@@ -18,7 +18,12 @@ ChunckManager::~ChunckManager() {
 void ChunckManager::init() { this->generateChunks(); }
 
 void ChunckManager::update(const Plane* frustumPlanes) {
-  for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->update(frustumPlanes);
+  this->visibleChunks.clear();
+  for (u16 i = 0; i < chuncks.size(); i++) {
+    chuncks[i]->update(frustumPlanes);
+    if (chuncks[i]->isVisible() && chuncks[i]->state == ChunkState::Loaded)
+      this->visibleChunks.push_back(chuncks[i]);
+  }
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
@@ -61,3 +66,7 @@ Chunck* ChunckManager::getChunckById(const u16 id) {
 };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
+
+std::vector<Chunck*> ChunckManager::getVisibleChunks() {
+  return this->visibleChunks;
+}

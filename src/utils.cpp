@@ -117,3 +117,64 @@ Vec4 Utils::GetNormalFromHitPosition(const Vec4& intersection,
   }
   return normal;
 }
+
+/**
+ * @brief Test BBox againt Frustum Planes
+ * @details https://gist.github.com/Kinwailo/d9a07f98d8511206182e50acda4fbc9b
+ *
+ */
+CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
+                                            const BBox& AABB) {
+  Vec4 mins, maxs;
+  AABB.getMinMax(&mins, &maxs);
+  return Utils::FrustumAABBIntersect(frustumPlanes, mins, maxs);
+}
+
+CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
+                                            const Vec4& mins,
+                                            const Vec4& maxs) {
+  CoreBBoxFrustum result = CoreBBoxFrustum::IN_FRUSTUM;
+  Vec4 vmin, vmax;
+
+  for (u8 i = 0; i < 6; ++i) {
+    // X axis
+    if (frustumPlanes[i].normal.x < 0) {
+      vmin.x = mins.x;
+      vmax.x = maxs.x;
+    } else {
+      vmin.x = maxs.x;
+      vmax.x = mins.x;
+    }
+    // Y axis
+    if (frustumPlanes[i].normal.y < 0) {
+      vmin.y = mins.y;
+      vmax.y = maxs.y;
+    } else {
+      vmin.y = maxs.y;
+      vmax.y = mins.y;
+    }
+    // Z axis
+    if (frustumPlanes[i].normal.z < 0) {
+      vmin.z = mins.z;
+      vmax.z = maxs.z;
+    } else {
+      vmin.z = maxs.z;
+      vmax.z = mins.z;
+    }
+
+    // float A = frustumPlanes[i].normal.x * vmin.x +
+    //           frustumPlanes[i].normal.y * vmin.y +
+    //           frustumPlanes[i].normal.z * vmin.z + frustumPlanes[i].distance;
+    float A = frustumPlanes[i].normal.dot3(vmin) + frustumPlanes[i].distance;
+
+    // float B = frustumPlanes[i].normal.x * vmax.x +
+    //           frustumPlanes[i].normal.y * vmax.y +
+    //           frustumPlanes[i].normal.z * vmax.z + frustumPlanes[i].distance;
+    float B = frustumPlanes[i].normal.dot3(vmax) + frustumPlanes[i].distance;
+
+    if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+    if (B <= 0) result = CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
+  }
+
+  return result;
+}

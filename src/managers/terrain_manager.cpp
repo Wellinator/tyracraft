@@ -351,10 +351,6 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
-    // Isn't loaded or is out of frustum
-    if (chuncks[h]->state != ChunkState::Loaded || !chuncks[h]->isVisible())
-      continue;
-
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
       float distanceFromCurrentBlockToPlayer =
           playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());

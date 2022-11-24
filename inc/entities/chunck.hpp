@@ -55,7 +55,6 @@ class Chunck {
  private:
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
-  u8 _isVisible = false;
 
   float getVisibityByPosition(float d);
   void applyFOG(Block* t_block, const Vec4& originPosition);

@@ -39,7 +39,6 @@ Chunck::~Chunck() {
 
 void Chunck::update(const Plane* frustumPlanes) {
   this->updateFrustumCheck(frustumPlanes);
-  this->_isVisible = this->isVisible();
 }
 
 void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
@@ -131,7 +130,9 @@ void Chunck::clearMcpipBlocks() {
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
-  this->frustumCheck = this->bbox->frustumCheck(frustumPlanes);
+  this->frustumCheck = Utils::FrustumAABBIntersect(
+      frustumPlanes, *this->minOffset * DUBLE_BLOCK_SIZE,
+      *this->maxOffset * DUBLE_BLOCK_SIZE);
 }
 
 u8 Chunck::isVisible() {

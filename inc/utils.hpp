@@ -19,7 +19,9 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using Tyra::BBox;
+using Tyra::CoreBBoxFrustum;
 using Tyra::Mesh;
+using Tyra::Plane;
 using Tyra::Vec4;
 
 // enum eDirection { RIGHT, LEFT, UP, DOWN, FRONT, BACK };
@@ -58,4 +60,10 @@ class Utils {
   static void GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
                               const Vec4& BMin, const Vec4& BMax,
                               Vec4* resultMin, Vec4* resultMax);
+
+  static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
+                                              const BBox& AABB);
+  static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
+                                              const Vec4& mins,
+                                              const Vec4& maxs);
 };

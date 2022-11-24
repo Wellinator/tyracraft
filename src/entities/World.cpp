@@ -52,12 +52,12 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
       this->t_renderer->core.renderer3D.frustumPlanes.getAll());
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
-                               this->chunckManager->getChuncks(), deltaTime);
+                               this->chunckManager->getVisibleChunks(),
+                               deltaTime);
   if (this->framesCounter >= 60) this->framesCounter = 0;
 };
 
 void World::render() {
-  // TODO: Render only chunck in view frustum
   this->chunckManager->renderer(this->t_renderer, &this->mcPip,
                                 this->blockManager);
 
@@ -82,12 +82,10 @@ const std::vector<Block*> World::getLoadedBlocks() {
   this->loadedBlocks.clear();
   this->loadedBlocks.shrink_to_fit();
 
-  auto chuncks = this->chunckManager->getChuncks();
-  for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->state == ChunkState::Loaded && chuncks[i]->isVisible()) {
-      for (u16 j = 0; j < chuncks[i]->blocks.size(); j++)
-        this->loadedBlocks.push_back(chuncks[i]->blocks[j]);
-    }
+  auto visibleChuncks = this->chunckManager->getVisibleChunks();
+  for (u16 i = 0; i < visibleChuncks.size(); i++) {
+    for (u16 j = 0; j < visibleChuncks[i]->blocks.size(); j++)
+      this->loadedBlocks.push_back(visibleChuncks[i]->blocks[j]);
   }
 
   return this->loadedBlocks;
@@ -137,11 +135,11 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
       if (force_loading) {
         chuncks[i]->clear();
         this->terrainManager->buildChunk(chuncks[i]);
-      } else if (chuncks[i]->state != ChunkState::Loaded)
-        // Add chunck to load
+      } else if (chuncks[i]->state != ChunkState::Loaded &&
+                 chuncks[i]->isVisible())
         this->addChunkToLoadAsync(chuncks[i]);
-    } else if (chuncks[i]->state != ChunkState::Clean) {
-      // Add chunck to unload
+    } else if (!chuncks[i]->isVisible() ||
+               chuncks[i]->state != ChunkState::Clean) {
       this->addChunkToUnloadAsync(chuncks[i]);
     }
   }

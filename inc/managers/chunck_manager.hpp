@@ -28,6 +28,7 @@ class ChunckManager {
   Chunck* getChunckByPosition(const Vec4& position);
   Chunck* getChunckById(const u16 id);
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
+  std::vector<Chunck*> getVisibleChunks();
   void init();
   void update(const Plane* frustumPlanes);
   u8 isChunkVisible(Chunck* chunk);
@@ -36,6 +37,7 @@ class ChunckManager {
 
  private:
   std::vector<Chunck*> chuncks;
+  std::vector<Chunck*> visibleChunks;
 
   void generateChunks();
 };
