@@ -22,6 +22,7 @@
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
 #include "models/terrain_height_model.hpp"
+#include "entities/chunck.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -52,7 +53,7 @@ class Player {
   ~Player();
 
   void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-              std::vector<Block*> loadedBlocks);
+              std::vector<Chunck*> loadedChunks);
   void render();
 
   void toggleFlying();
@@ -108,11 +109,10 @@ class Player {
   void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(Block** t_blocks, int blocks_ammount,
-                    const float& deltaTime, const Vec4& nextPlayerPos,
-                    u8 isColliding = 0);
-  TerrainHeightModel getTerrainHeightAtPosition(Block** t_blocks,
-                                                int blocks_ammount);
+  u8 updatePosition(std::vector<Chunck*> loadedChunks, const float& deltaTime,
+                    const Vec4& nextPlayerPos, u8 isColliding = 0);
+  TerrainHeightModel getTerrainHeightAtPosition(
+      std::vector<Chunck*> loadedChunks);
   void handleInputCommands(const Pad& t_pad);
 
   // Inventory

@@ -60,7 +60,7 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-                    std::vector<Block*> loadedBlocks) {
+                    std::vector<Chunck*> loadedChunks) {
   this->shouldRenderPlayerModel = t_camera.getCamType() == CamType::ThirdPerson;
 
   this->handleInputCommands(t_pad);
@@ -68,8 +68,8 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
 
   if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-    const u8 hasMoved = this->updatePosition(
-        &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
+    const u8 hasMoved =
+        this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
     const u8 canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
                                 this->isOnGround &&
@@ -78,7 +78,7 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   }
 
   TerrainHeightModel terrainHeight =
-      this->getTerrainHeightAtPosition(&loadedBlocks[0], loadedBlocks.size());
+      this->getTerrainHeightAtPosition(loadedChunks);
 
   if (this->isFlying) {
     if (t_pad.getPressed().DpadUp) {
@@ -285,7 +285,7 @@ void Player::fly(const float& deltaTime,
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
+u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
@@ -305,26 +305,32 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   const float maxCollidableDistance =
       currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (int i = 0; i < blocks_ammount; i++) {
-    // Broad phase
-    // is vertically out of range?
-    if (playerBB.getBottomFace().axisPosition >= t_blocks[i]->maxCorner.y ||
-        playerBB.getTopFace().axisPosition < t_blocks[i]->minCorner.y) {
-      continue;
-    };
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
+    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+      // Broad phase
+      // is vertically out of range?
+      if (playerBB.getBottomFace().axisPosition >=
+              loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
+          playerBB.getTopFace().axisPosition <
+              loadedChunks[chunkIndex]->blocks[i]->minCorner.y) {
+        continue;
+      };
 
-    Vec4 tempInflatedMin = Vec4();
-    Vec4 tempInflatedMax = Vec4();
-    Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
-                           t_blocks[i]->maxCorner, &tempInflatedMin,
-                           &tempInflatedMax);
+      Vec4 tempInflatedMin = Vec4();
+      Vec4 tempInflatedMax = Vec4();
+      Utils::GetMinkowskiSum(playerMin, playerMax,
+                             loadedChunks[chunkIndex]->blocks[i]->minCorner,
+                             loadedChunks[chunkIndex]->blocks[i]->maxCorner,
+                             &tempInflatedMin, &tempInflatedMax);
 
-    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
-      // Is horizontally collidable?
-      if (tempHitDistance > maxCollidableDistance) continue;
+      if (ray.intersectBox(tempInflatedMin, tempInflatedMax,
+                           &tempHitDistance)) {
+        // Is horizontally collidable?
+        if (tempHitDistance > maxCollidableDistance) continue;
 
-      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
-        finalHitDistance = tempHitDistance;
+        if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
+          finalHitDistance = tempHitDistance;
+        }
       }
     }
   }
@@ -342,14 +348,14 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnX = this->updatePosition(t_blocks, blocks_ammount,
-                                             deltaTime, moveOnXOnly, 1);
+      u8 couldMoveOnX =
+          this->updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1);
       if (couldMoveOnX) return 1;
 
       Vec4 moveOnZOnly =
           Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnZ = this->updatePosition(t_blocks, blocks_ammount,
-                                             deltaTime, moveOnZOnly, 1);
+      u8 couldMoveOnZ =
+          this->updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1);
       if (couldMoveOnZ) return 1;
 
       return 0;
@@ -362,8 +368,8 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   return 1;
 }
 
-TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
-                                                      int blocks_ammount) {
+TerrainHeightModel Player::getTerrainHeightAtPosition(
+    std::vector<Chunck*> loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
@@ -371,28 +377,33 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
 
   this->currentBlock = nullptr;
 
-  for (int i = 0; i < blocks_ammount; i++) {
-    // Broad phase
-    if (t_blocks[i]->getPosition()->distanceTo(*this->getPosition()) >
-        DUBLE_BLOCK_SIZE)
-      continue;
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
+    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+      // Broad phase
+      if (loadedChunks[chunkIndex]->blocks[i]->getPosition()->distanceTo(
+              *this->getPosition()) > DUBLE_BLOCK_SIZE)
+        continue;
 
-    u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
-                   maxPlayer.x > t_blocks[i]->minCorner.x &&
-                   minPlayer.z < t_blocks[i]->maxCorner.z &&
-                   maxPlayer.z > t_blocks[i]->minCorner.z;
+      // Is on block?
+      if (!(minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
+            maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
+            minPlayer.z < loadedChunks[chunkIndex]->blocks[i]->maxCorner.z &&
+            maxPlayer.z > loadedChunks[chunkIndex]->blocks[i]->minCorner.z))
+        continue;
 
-    if (!isOnBlock) continue;
+      const float underBlockHeight =
+          loadedChunks[chunkIndex]->blocks[i]->maxCorner.y;
+      if (minPlayer.y >= underBlockHeight &&
+          underBlockHeight > model.minHeight) {
+        model.minHeight = underBlockHeight;
+        this->currentBlock = loadedChunks[chunkIndex]->blocks[i];
+      }
 
-    const float underBlockHeight = t_blocks[i]->maxCorner.y;
-    if (minPlayer.y >= underBlockHeight && underBlockHeight > model.minHeight) {
-      model.minHeight = underBlockHeight;
-      this->currentBlock = t_blocks[i];
-    }
-
-    const float overBlockHeight = t_blocks[i]->minCorner.y;
-    if (maxPlayer.y <= overBlockHeight && overBlockHeight < model.maxHeight) {
-      model.maxHeight = overBlockHeight;
+      const float overBlockHeight =
+          loadedChunks[chunkIndex]->blocks[i]->minCorner.y;
+      if (maxPlayer.y <= overBlockHeight && overBlockHeight < model.maxHeight) {
+        model.maxHeight = overBlockHeight;
+      }
     }
   }
 

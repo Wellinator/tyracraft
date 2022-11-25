@@ -35,7 +35,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   this->stateGamePlay->player->update(
       deltaTime, this->stateGamePlay->context->t_engine->pad,
       *this->stateGamePlay->context->t_camera,
-      this->stateGamePlay->world->getLoadedBlocks());
+      this->stateGamePlay->world->chunckManager->getVisibleChunks());
 
   Threading::switchThread();
   this->stateGamePlay->ui->update();

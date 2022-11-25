@@ -6,7 +6,6 @@
 #include <fastmath.h>
 #include <algorithm>
 #include "entities/Block.hpp"
-#include "entities/player.hpp"
 #include "constants.hpp"
 #include "managers/block_manager.hpp"
 #include "utils.hpp"
