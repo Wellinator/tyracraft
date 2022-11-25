@@ -15,7 +15,7 @@
 #include "states/context.hpp"
 #include "states/game_play/state_game_play.hpp"
 #include "entities/World.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
 #include "ui.hpp"
 #include "thread"

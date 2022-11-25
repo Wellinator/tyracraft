@@ -3,7 +3,7 @@
 #include <renderer/renderer.hpp>
 #include <renderer/renderer.hpp>
 #include <tamtypes.h>
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
 #include "constants.hpp"
 

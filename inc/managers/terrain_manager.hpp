@@ -12,7 +12,7 @@
 #include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/chunck.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "entities/item.hpp"
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -29,6 +29,7 @@ using Tyra::BBox;
 using Tyra::Engine;
 using Tyra::Math;
 using Tyra::MinecraftPipeline;
+using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::Vec4;
 

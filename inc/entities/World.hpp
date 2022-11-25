@@ -6,7 +6,7 @@
 #include <pad/pad.hpp>
 #include <renderer/renderer.hpp>
 #include "chunck.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "entities/Block.hpp"
 #include "managers/items_repository.hpp"
 #include "constants.hpp"

@@ -5,7 +5,7 @@
 #include <debug/debug.hpp>
 #include "constants.hpp"
 #include "entities/chunck.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"

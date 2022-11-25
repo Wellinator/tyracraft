@@ -23,6 +23,9 @@
 #include "entities/items/tools/axe/axe.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/chunck.hpp"
+#include "entities/player/player_render_pip.hpp"
+#include "entities/player/player_first_person_render_pip.hpp"
+#include "entities/player/player_third_person_render_pip.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -56,6 +59,8 @@ class Player {
               std::vector<Chunck*> loadedChunks);
   void render();
 
+  void setRenderPip(PlayerRenderPip* pipToSet);
+
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isFlying, isBreaking;
@@ -77,14 +82,19 @@ class Player {
     return hitBox->getTransformed(mesh->translation);
   };
 
- private:
+  DynPipOptions modelDynpipOptions;
+  DynPipOptions armDynpipOptions;
+  DynamicPipeline dynpip;
+
   Renderer* t_renderer;
+  PlayerRenderPip* renderPip = nullptr;
+
+ private:
   BlockManager* t_blockManager;
   SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
                        const Camera& t_camera);
-  u8 shouldRenderPlayerModel = 0;
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
   const u8 WALK_SFX_CH = 3;
@@ -132,10 +142,6 @@ class Player {
   void selectPreviousItem();
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
-
-  DynPipOptions modelDynpipOptions;
-  DynPipOptions armDynpipOptions;
-  DynamicPipeline dynpip;
 
   // Animations
   // Player body

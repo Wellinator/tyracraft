@@ -1,4 +1,4 @@
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 
 using Tyra::Renderer3D;
 
@@ -37,6 +37,9 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
     this->handledItem->init(t_renderer);
     stpip.setRenderer(&t_renderer->core);
   }
+
+  // Set render pip
+  this->setRenderPip(new PlayerFirstPersonRenderPip(this));
 }
 
 Player::~Player() {
@@ -61,8 +64,6 @@ Player::~Player() {
 
 void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     std::vector<Chunck*> loadedChunks) {
-  this->shouldRenderPlayerModel = t_camera.getCamType() == CamType::ThirdPerson;
-
   this->handleInputCommands(t_pad);
 
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
@@ -95,15 +96,7 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 }
 
 void Player::render() {
-  if (shouldRenderPlayerModel) {
-    this->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(mesh.get(), &modelDynpipOptions);
-  }
-
-  if (this->getSelectedInventoryItemType() == ItemId::empty) {
-    this->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(armMesh.get(), &armDynpipOptions);
-  }
+  this->renderPip->render(this->t_renderer);
 
   // auto& utilityTools = this->t_renderer->renderer3D.utility;
 
@@ -593,4 +586,9 @@ void Player::selectPreviousItem() {
 void Player::jump() {
   this->velocity += this->lift * this->speed;
   this->isOnGround = false;
+}
+
+void Player::setRenderPip(PlayerRenderPip* pipToSet) {
+  delete this->renderPip;
+  this->renderPip = pipToSet;
 }
