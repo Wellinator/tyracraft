@@ -27,6 +27,8 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
       Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
   };
   this->bbox = new BBox(vertices, count);
+
+  loadBags();
 };
 
 Chunck::~Chunck() {
@@ -53,14 +55,11 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
   t_block->color.b = isTarget ? 160 : 116;
 }
 
-void Chunck::renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
+void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
   if (this->state == ChunkState::Loaded && this->isVisible()) {
-    t_renderer->renderer3D.usePipeline(mcPip);
-    mcPip->render(this->singleTexBlocks, t_blockManager->getBlocksTexture(),
-                  false);
-    mcPip->render(this->multiTexBlocks, t_blockManager->getBlocksTexture(),
-                  true);
+    t_renderer->renderer3D.usePipeline(stapip);
+    stapip->core.render(getDrawData());
   }
 };
 
@@ -72,7 +71,7 @@ float Chunck::getVisibityByPosition(float d) {
 }
 
 void Chunck::clear() {
-  this->clearMcpipBlocks();
+  clearDrawData();
 
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
     delete this->blocks[blockIndex];
@@ -96,37 +95,41 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
   }
 }
 
-void Chunck::updateDrawData() { this->filterSingleAndMultiBlocks(); }
-
-void Chunck::filterSingleAndMultiBlocks() {
-  for (u16 i = 0; i < this->blocks.size(); i++) {
-    McpipBlock* tempMcpipBlock = new McpipBlock();
-    tempMcpipBlock->model = &this->blocks[i]->model;
-    tempMcpipBlock->color = &this->blocks[i]->color;
-    tempMcpipBlock->textureOffset = &this->blocks[i]->textureOffset;
-    if (this->blocks[i]->isSingleTexture) {
-      singleTexBlocks.push_back(tempMcpipBlock);
-    } else {
-      multiTexBlocks.push_back(tempMcpipBlock);
-    }
-  }
-  return;
+void Chunck::clearDrawData() {
+  delete bag->vertices;
+  bag->count = 0;
 }
 
-void Chunck::clearMcpipBlocks() {
-  for (u16 i = 0; i < this->singleTexBlocks.size(); i++) {
-    delete this->singleTexBlocks[i];
-    this->singleTexBlocks[i] = NULL;
-  }
-  for (u16 i = 0; i < this->multiTexBlocks.size(); i++) {
-    delete this->multiTexBlocks[i];
-    this->multiTexBlocks[i] = NULL;
+void Chunck::updateDrawData() {
+  clearDrawData();
+
+  for (u16 i = 0; i < blocks.size(); i++) {
+    // const auto& frontFace = blocks[i]->bbox->getFrontFace();
+    // const auto& backFace = blocks[i]->bbox->getBackFace();
+    // const auto& leftFace = blocks[i]->bbox->getLeftFace();
+    // const auto& rightFace = blocks[i]->bbox->getRightFace();
+    const auto& topFace = blocks[i]->bbox->getTopFace();
+
+    // const auto& bottomFace = blocks[i]->bbox->getBottomFace();
+
+    // TODO: Count the visible faces
+
+    vertices.push_back(
+        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.minCorner.z));
+    vertices.push_back(
+        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.maxCorner.z));
+    vertices.push_back(
+        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.maxCorner.z));
+    vertices.push_back(
+        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.minCorner.z));
+    vertices.push_back(
+        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.minCorner.z));
+    vertices.push_back(
+        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.maxCorner.z));
   }
 
-  this->singleTexBlocks.clear();
-  this->singleTexBlocks.shrink_to_fit();
-  this->multiTexBlocks.clear();
-  this->multiTexBlocks.shrink_to_fit();
+  bag->vertices = &vertices.data()[0];
+  bag->count = vertices.size();
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
@@ -138,3 +141,26 @@ void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
 u8 Chunck::isVisible() {
   return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 }
+
+void Chunck::loadBags() {
+  // Load info bag
+  infoBag = std::make_unique<StaPipInfoBag>();
+
+  infoBag->model = new M4x4();
+  infoBag->model->identity();
+
+  infoBag->shadingType = Tyra::TyraShadingGouraud;
+  infoBag->textureMappingType = Tyra::TyraNearest;
+
+  // Load color bag
+  colorBag = std::make_unique<StaPipColorBag>();
+  colorBag->single = new Color(100, 100, 100);
+
+  bag = std::make_unique<StaPipBag>();
+  bag->color = colorBag.get();
+  bag->info = infoBag.get();
+  bag->vertices = &vertices.data()[0];
+  bag->count = vertices.size();
+}
+
+StaPipBag* Chunck::getDrawData() { return bag.get(); }

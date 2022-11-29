@@ -15,7 +15,7 @@
 
 using Tyra::BBox;
 using Tyra::M4x4;
-using Tyra::MinecraftPipeline;
+using Tyra::StaticPipeline;
 using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::Vec4;
@@ -32,7 +32,7 @@ class ChunckManager {
   void init();
   void update(const Plane* frustumPlanes);
   u8 isChunkVisible(Chunck* chunk);
-  void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+  void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
 
  private:

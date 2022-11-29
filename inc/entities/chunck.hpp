@@ -14,13 +14,19 @@
 #include <math/m4x4.hpp>
 
 using Tyra::BBox;
+using Tyra::Color;
 using Tyra::CoreBBoxFrustum;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::Plane;
 using Tyra::Renderer;
+using Tyra::StaPipBag;
+using Tyra::StaPipColorBag;
+using Tyra::StaPipInfoBag;
+using Tyra::StaticPipeline;
 using Tyra::Vec4;
+using Tyra::BBoxFace;
 
 enum class ChunkState { Loaded, Clean };
 
@@ -40,7 +46,7 @@ class Chunck {
   BBox* bbox;
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
-  void renderer(Renderer* t_renderer, MinecraftPipeline* mcPip,
+  void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
   void clear();
@@ -52,6 +58,15 @@ class Chunck {
   void addBlock(Block* t_block);
 
  private:
+  std::unique_ptr<StaPipBag> bag;
+  std::unique_ptr<StaPipInfoBag> infoBag;
+  std::unique_ptr<StaPipColorBag> colorBag;
+
+  std::vector<Vec4> vertices;
+  std::vector<Vec4> uvMap;
+  std::vector<Vec4> normals;
+  // std::vector<Color> colors;
+
   std::vector<McpipBlock*> singleTexBlocks;
   std::vector<McpipBlock*> multiTexBlocks;
 
@@ -60,5 +75,8 @@ class Chunck {
   void highLightTargetBlock(Block* t_block, u8& isTarget);
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
-  void clearMcpipBlocks();
+
+  void loadBags();
+  void clearDrawData();
+  StaPipBag* getDrawData();
 };

@@ -20,6 +20,7 @@
 
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
+using Tyra::StaticPipeline;
 using Tyra::Pad;
 using Tyra::Renderer;
 using Tyra::Vec4;
@@ -47,6 +48,7 @@ class World {
 
  private:
   MinecraftPipeline mcPip;
+  StaticPipeline stapip;
   std::vector<Block*> loadedBlocks;
   Vec4 worldSpawnArea;
   Vec4 spawnArea;

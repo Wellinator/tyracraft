@@ -31,7 +31,10 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
 
   this->t_renderer = t_renderer;
+
   this->mcPip.setRenderer(&t_renderer->core);
+  this->stapip.setRenderer(&t_renderer->core);
+
   this->blockManager->init(t_renderer, &this->mcPip);
   this->chunckManager->init();
   this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
@@ -58,7 +61,7 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
 };
 
 void World::render() {
-  this->chunckManager->renderer(this->t_renderer, &this->mcPip,
+  this->chunckManager->renderer(this->t_renderer, &this->stapip,
                                 this->blockManager);
 
   if (this->terrainManager->targetBlock) {

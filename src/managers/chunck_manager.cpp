@@ -26,10 +26,10 @@ void ChunckManager::update(const Plane* frustumPlanes) {
   }
 }
 
-void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                              BlockManager* t_blockManager) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
-    chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
+    chuncks[i]->renderer(t_renderer, stapip, t_blockManager);
 }
 
 void ChunckManager::generateChunks() {
