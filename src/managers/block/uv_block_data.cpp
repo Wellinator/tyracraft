@@ -4,4 +4,4 @@ UVBlockData::UVBlockData() {}
 
 UVBlockData::~UVBlockData() {}
 
-const Vec4* UVBlockData::getUVMap() {}
+const Vec4* UVBlockData::getUVMap() { return nullptr; }

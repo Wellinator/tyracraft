@@ -11,9 +11,11 @@
 #include "utils.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "renderer/3d/bbox/bbox.hpp"
+#include "managers/block/vertex_block_data.hpp"
 #include <math/m4x4.hpp>
 
 using Tyra::BBox;
+using Tyra::BBoxFace;
 using Tyra::Color;
 using Tyra::CoreBBoxFrustum;
 using Tyra::M4x4;
@@ -26,7 +28,6 @@ using Tyra::StaPipColorBag;
 using Tyra::StaPipInfoBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
-using Tyra::BBoxFace;
 
 enum class ChunkState { Loaded, Clean };
 
@@ -63,12 +64,7 @@ class Chunck {
   std::unique_ptr<StaPipColorBag> colorBag;
 
   std::vector<Vec4> vertices;
-  std::vector<Vec4> uvMap;
-  std::vector<Vec4> normals;
-  // std::vector<Color> colors;
-
-  std::vector<McpipBlock*> singleTexBlocks;
-  std::vector<McpipBlock*> multiTexBlocks;
+  std::vector<Color> verticesColors;
 
   float getVisibityByPosition(float d);
   void applyFOG(Block* t_block, const Vec4& originPosition);
@@ -79,4 +75,6 @@ class Chunck {
   void loadBags();
   void clearDrawData();
   StaPipBag* getDrawData();
+
+  VertexBlockData vertexBlockData;
 };

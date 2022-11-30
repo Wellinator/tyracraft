@@ -222,6 +222,77 @@ bool TerrainManager::isBlockHidden(const Vec4& blockOffset) {
     return true;
 }
 
+bool TerrainManager::isFaceVisible(const unsigned int& terrainIndex) {
+  // if (terrainIndex <= OVERWORLD_SIZE) {
+  //   u8 blockType = terrain[terrainIndex];
+
+  //   if (blockType > 1) {
+  //     const BlockInfo info = t_blockManager->getBlockTexOffsetByType(
+  //         static_cast<Blocks>(terrain[terrainIndex]));
+  //     if (!info._isSolid) return true;
+  //   } else if (blockType == 1) {
+  //     return true;
+  //   }
+  // }
+  if (terrainIndex >= 0 && terrainIndex <= OVERWORLD_SIZE) {
+    return (terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK ||
+            terrain[terrainIndex] == (u8)Blocks::GLASS_BLOCK);
+  }
+
+  return false;
+}
+
+bool TerrainManager::isTopFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex + 1);
+}
+
+bool TerrainManager::isBottomFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex - 1);
+}
+
+bool TerrainManager::isLeftFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex -
+                       OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+}
+
+bool TerrainManager::isRightFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex +
+                       OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+}
+
+bool TerrainManager::isFrontFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex - OVERWORLD_V_DISTANCE);
+}
+
+bool TerrainManager::isBackFaceVisible(const unsigned int& blockIndex) {
+  return isFaceVisible(blockIndex + OVERWORLD_V_DISTANCE);
+}
+
+int TerrainManager::getBlockVisibleFaces(const unsigned int& blockIndex) {
+  int result = 0x000000;
+
+  // Front
+  if (isFrontFaceVisible(blockIndex)) result = result | FRONT_VISIBLE;
+
+  // Back
+  if (isBackFaceVisible(blockIndex)) result = result | BACK_VISIBLE;
+
+  // Right
+  if (isRightFaceVisible(blockIndex)) result = result | RIGHT_VISIBLE;
+
+  // Left
+  if (isLeftFaceVisible(blockIndex)) result = result | LEFT_VISIBLE;
+
+  // Top
+  if (isTopFaceVisible(blockIndex)) result = result | TOP_VISIBLE;
+
+  // Bottom
+  if (isBottomFaceVisible(blockIndex)) result = result | BOTTOM_VISIBLE;
+
+  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
+  return result;
+}
+
 u8 TerrainManager::getBlockTypeByOffset(const int& x, const int& y,
                                         const int& z) {
   return terrain[this->getIndexByOffset(x, y, z)];
@@ -292,38 +363,42 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
       for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
-        if (block_type <= (u8)Blocks::AIR_BLOCK) continue;
+
+        if (blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
+            block_type <= (u8)Blocks::AIR_BLOCK)
+          continue;
 
         Vec4 tempBlockOffset = Vec4(x, y, z);
         Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        u8 isHidden = this->isBlockHidden(tempBlockOffset);
+        const int visibleFaces = this->getBlockVisibleFaces(blockIndex);
+        const bool isVisible = visibleFaces > 0;
 
         // Are block's coordinates in world range?
-        if (!isHidden &&
+        if (isVisible &&
             tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
           BlockInfo* blockInfo = this->t_blockManager->getBlockTexOffsetByType(
               static_cast<Blocks>(block_type));
-          if (blockInfo != nullptr) {
-            Block* block = new Block(blockInfo);
-            block->index = blockIndex;
 
-            float bright = this->getBlockLuminosity(tempBlockOffset.y);
-            block->color = Color(bright, bright, bright, 128.0F);
+          Block* block = new Block(blockInfo);
+          block->index = blockIndex;
+          block->visibleFaces = visibleFaces;
 
-            block->setPosition(blockPosition);
-            block->scale.scale(BLOCK_SIZE);
-            block->updateModelMatrix();
+          float bright = this->getBlockLuminosity(tempBlockOffset.y);
+          block->color = Color(bright, bright, bright, 128.0F);
 
-            // Calc min and max corners
-            {
-              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
-              block->bbox = new BBox(tempBBox);
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-            }
+          block->setPosition(blockPosition);
+          block->scale.scale(BLOCK_SIZE);
+          block->updateModelMatrix();
 
-            t_chunck->addBlock(block);
+          // Calc min and max corners
+          {
+            BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+            block->bbox = new BBox(tempBBox);
+            block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
           }
+
+          t_chunck->addBlock(block);
         }
       }
     }

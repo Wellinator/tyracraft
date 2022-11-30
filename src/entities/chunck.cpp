@@ -16,7 +16,7 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
   const Vec4 max = maxOffset + offsetFix;
 
   u32 count = 8;
-  Vec4 vertices[count] = {
+  Vec4 _vertices[count] = {
       Vec4(min) * DUBLE_BLOCK_SIZE,
       Vec4(max.x, min.y, min.z) * DUBLE_BLOCK_SIZE,
       Vec4(min.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
@@ -26,7 +26,7 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
       Vec4(max.x, min.y, max.z) * DUBLE_BLOCK_SIZE,
       Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
   };
-  this->bbox = new BBox(vertices, count);
+  this->bbox = new BBox(_vertices, count);
 
   loadBags();
 };
@@ -57,9 +57,10 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
-  if (this->state == ChunkState::Loaded && this->isVisible()) {
+  if (this->state == ChunkState::Loaded && this->isVisible() &&
+      bag.get()->vertices) {
     t_renderer->renderer3D.usePipeline(stapip);
-    stapip->core.render(getDrawData());
+    stapip->core.render(bag.get());
   }
 };
 
@@ -96,40 +97,131 @@ void Chunck::updateBlocks(const Vec4& playerPosition) {
 }
 
 void Chunck::clearDrawData() {
-  delete bag->vertices;
-  bag->count = 0;
+  // bag->count = 0;
+  // delete bag->vertices;
+  // delete bag->color->many;
+
+  vertices.clear();
+  verticesColors.clear();
 }
 
 void Chunck::updateDrawData() {
-  clearDrawData();
+  const Vec4* rawData = vertexBlockData.getVertexData();
+  for (size_t i = 0; i < blocks.size(); i++) {
+    int vert = 0;
 
-  for (u16 i = 0; i < blocks.size(); i++) {
-    // const auto& frontFace = blocks[i]->bbox->getFrontFace();
-    // const auto& backFace = blocks[i]->bbox->getBackFace();
-    // const auto& leftFace = blocks[i]->bbox->getLeftFace();
-    // const auto& rightFace = blocks[i]->bbox->getRightFace();
-    const auto& topFace = blocks[i]->bbox->getTopFace();
+    if (blocks[i]->isTopFaceVisible()) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-    // const auto& bottomFace = blocks[i]->bbox->getBottomFace();
+      verticesColors.push_back(Color(128, 0, 0));
+      verticesColors.push_back(Color(128, 0, 0));
+      verticesColors.push_back(Color(128, 0, 0));
+      verticesColors.push_back(Color(128, 0, 0));
+      verticesColors.push_back(Color(128, 0, 0));
+      verticesColors.push_back(Color(128, 0, 0));
+    }
+    vert = 6;
 
-    // TODO: Count the visible faces
+    if (blocks[i]->isBottomFaceVisible()) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-    vertices.push_back(
-        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.minCorner.z));
-    vertices.push_back(
-        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.maxCorner.z));
-    vertices.push_back(
-        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.maxCorner.z));
-    vertices.push_back(
-        Vec4(topFace.minCorner.x, topFace.axisPosition, topFace.minCorner.z));
-    vertices.push_back(
-        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.minCorner.z));
-    vertices.push_back(
-        Vec4(topFace.maxCorner.x, topFace.axisPosition, topFace.maxCorner.z));
+      verticesColors.push_back(Color(0, 128, 0));
+      verticesColors.push_back(Color(0, 128, 0));
+      verticesColors.push_back(Color(0, 128, 0));
+      verticesColors.push_back(Color(0, 128, 0));
+      verticesColors.push_back(Color(0, 128, 0));
+      verticesColors.push_back(Color(0, 128, 0));
+    }
+    vert = 12;
+
+    if (blocks[i]->isLeftFaceVisible()) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Color(0, 0, 128));
+      verticesColors.push_back(Color(0, 0, 128));
+      verticesColors.push_back(Color(0, 0, 128));
+      verticesColors.push_back(Color(0, 0, 128));
+      verticesColors.push_back(Color(0, 0, 128));
+      verticesColors.push_back(Color(0, 0, 128));
+    }
+    vert = 18;
+
+    if (blocks[i]->isRightFaceVisible()) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Color(128, 128, 0));
+      verticesColors.push_back(Color(128, 128, 0));
+      verticesColors.push_back(Color(128, 128, 0));
+      verticesColors.push_back(Color(128, 128, 0));
+      verticesColors.push_back(Color(128, 128, 0));
+      verticesColors.push_back(Color(128, 128, 0));
+    }
+    vert = 24;
+
+    if (blocks[i]->isBackFaceVisible()) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Color(0, 128, 128));
+      verticesColors.push_back(Color(0, 128, 128));
+      verticesColors.push_back(Color(0, 128, 128));
+      verticesColors.push_back(Color(0, 128, 128));
+      verticesColors.push_back(Color(0, 128, 128));
+      verticesColors.push_back(Color(0, 128, 128));
+    }
+    vert = 30;
+
+    if (true) {
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Color(128, 0, 128));
+      verticesColors.push_back(Color(128, 0, 128));
+      verticesColors.push_back(Color(128, 0, 128));
+      verticesColors.push_back(Color(128, 0, 128));
+      verticesColors.push_back(Color(128, 0, 128));
+      verticesColors.push_back(Color(128, 0, 128));
+    }
   }
 
-  bag->vertices = &vertices.data()[0];
   bag->count = vertices.size();
+  bag->vertices = &vertices.data()[0];
+  bag->color->many = &verticesColors.data()[0];
+
+  // for (size_t v = 0; v < vertices.size(); v++) {
+  //   bag->vertices[v] = vertices[v];
+  // }
+
+  TYRA_LOG("Loaded ", vertices.size(), " in the chunk ", id);
+  delete rawData;
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
@@ -145,22 +237,17 @@ u8 Chunck::isVisible() {
 void Chunck::loadBags() {
   // Load info bag
   infoBag = std::make_unique<StaPipInfoBag>();
-
   infoBag->model = new M4x4();
   infoBag->model->identity();
-
   infoBag->shadingType = Tyra::TyraShadingGouraud;
   infoBag->textureMappingType = Tyra::TyraNearest;
 
   // Load color bag
   colorBag = std::make_unique<StaPipColorBag>();
-  colorBag->single = new Color(100, 100, 100);
 
   bag = std::make_unique<StaPipBag>();
   bag->color = colorBag.get();
   bag->info = infoBag.get();
-  bag->vertices = &vertices.data()[0];
-  bag->count = vertices.size();
 }
 
 StaPipBag* Chunck::getDrawData() { return bag.get(); }

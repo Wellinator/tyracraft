@@ -5,30 +5,48 @@ VertexBlockData::VertexBlockData() {}
 VertexBlockData::~VertexBlockData() {}
 
 const Vec4* VertexBlockData::getVertexData() {
-  std::array<Vec4, 24> tempVertices = {
-      Vec4(-1.0F, -1.0F, -1.0F), Vec4(1.0F, -1.0F, -1.0F),
-      Vec4(1.0F, -1.0F, 1.0F),   Vec4(-1.0F, -1.0F, 1.0F),
-      Vec4(1.0F, -1.0F, 1.0F),   Vec4(1.0F, 1.0F, 1.0F),
-      Vec4(-1.0F, 1.0F, 1.0F),   Vec4(-1.0F, -1.0F, 1.0F),
-      Vec4(-1.0F, -1.0F, 1.0F),  Vec4(-1.0F, 1.0F, 1.0F),
-      Vec4(-1.0F, 1.0F, -1.0F),  Vec4(-1.0F, -1.0F, -1.0F),
-      Vec4(1.0F, -1.0F, -1.0F),  Vec4(1.0F, 1.0F, -1.0F),
-      Vec4(1.0F, 1.0F, 1.0F),    Vec4(1.0F, -1.0F, 1.0F),
-      Vec4(-1.0F, -1.0F, -1.0F), Vec4(-1.0F, 1.0F, -1.0F),
-      Vec4(1.0F, 1.0F, -1.0F),   Vec4(1.0F, -1.0F, -1.0F),
-      Vec4(1.0F, 1.0F, -1.0F),   Vec4(-1.0F, 1.0F, -1.0F),
-      Vec4(-1.0F, 1.0F, 1.0F),   Vec4(1.0F, 1.0F, 1.0F),
+  std::array<Vec4, 8> cornerVetices = {
+      Vec4(1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, 1.0),
+      Vec4(-1.0F, -1.0F, 1.0), Vec4(-1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),  Vec4(1.0F, 1.0F, 1.0),
+      Vec4(-1.0F, 1.0F, 1.0),  Vec4(-1.0F, 1.0F, -1.0),
   };
 
-  u32 vertexFacesIndex[VETEX_COUNT] = {
-      1,  2,  3,  1,  3,  4,  5,  6,  7,  5,  7,  8,  9,  10, 11, 9,  11, 12,
-      13, 14, 15, 13, 15, 16, 17, 18, 19, 17, 19, 20, 21, 22, 23, 21, 23, 24};
+  u32 vertexFacesIndex[VETEX_COUNT] = {// Top
+                                       8, 6, 5, 8, 7, 6,
 
-  Vec4* tempVertFaces = new Vec4[VETEX_COUNT];
+                                       // Bottom
+                                       1, 3, 4, 1, 2, 3,
+
+                                       // Left
+                                       1, 8, 5, 1, 4, 8,
+
+                                       // Right
+                                       6, 3, 2, 6, 7, 3,
+
+                                       // Back
+                                       5, 2, 1, 5, 6, 2,
+
+                                       // Front
+                                       3, 8, 4, 3, 7, 8,
+                                      };
+
+  Vec4* result = new Vec4[VETEX_COUNT];
 
   for (size_t i = 0; i < VETEX_COUNT; i++) {
-    tempVertFaces[i] = tempVertices[vertexFacesIndex[i] - 1];
+    result[i] = cornerVetices[vertexFacesIndex[i] - 1];
   }
 
-  return tempVertFaces;
+  return result;
+}
+
+const Vec4* VertexBlockData::getVertexNormalData() {
+  Vec4* normals = new Vec4[FACES_COUNT];
+  normals[0] = Vec4(0, -1, 0);
+  normals[1] = Vec4(0, 1, 0);
+  normals[2] = Vec4(-1, 0, 0);
+  normals[3] = Vec4(1, 0, 0);
+  normals[4] = Vec4(0, 0, -1);
+  normals[5] = Vec4(0, 0, 1);
+  return normals;
 }

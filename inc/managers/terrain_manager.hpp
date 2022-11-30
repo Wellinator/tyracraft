@@ -126,6 +126,21 @@ class TerrainManager {
   unsigned int getIndexByPosition(Vec4* pos);
   const Vec4 getPositionByIndex(const u16& index);
   bool isBlockHidden(const Vec4& blockOffset);
+
+  /**
+   * @brief Update the visible block faces
+   * @return false if the block is completely hidden
+   *
+   */
+  int getBlockVisibleFaces(const unsigned int& blockIndex);
+  inline bool isFaceVisible(const unsigned int& terrainIndex);
+  inline bool isTopFaceVisible(const unsigned int& blockIndex);
+  inline bool isBottomFaceVisible(const unsigned int& blockIndex);
+  inline bool isLeftFaceVisible(const unsigned int& blockIndex);
+  inline bool isRightFaceVisible(const unsigned int& blockIndex);
+  inline bool isFrontFaceVisible(const unsigned int& blockIndex);
+  inline bool isBackFaceVisible(const unsigned int& blockIndex);
+
   inline bool isBlockVisible(const Vec4& blockOffset) {
     return !isBlockHidden(blockOffset);
   };

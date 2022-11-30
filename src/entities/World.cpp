@@ -138,11 +138,9 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
       if (force_loading) {
         chuncks[i]->clear();
         this->terrainManager->buildChunk(chuncks[i]);
-      } else if (chuncks[i]->state != ChunkState::Loaded &&
-                 chuncks[i]->isVisible())
+      } else if (chuncks[i]->state != ChunkState::Loaded)
         this->addChunkToLoadAsync(chuncks[i]);
-    } else if (!chuncks[i]->isVisible() ||
-               chuncks[i]->state != ChunkState::Clean) {
+    } else if (chuncks[i]->state != ChunkState::Clean) {
       this->addChunkToUnloadAsync(chuncks[i]);
     }
   }

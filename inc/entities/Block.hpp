@@ -6,6 +6,14 @@
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "managers/block_manager.hpp"
 
+#define FRONT_VISIBLE 0x100000
+#define BACK_VISIBLE 0x010000
+#define LEFT_VISIBLE 0x001000
+#define RIGHT_VISIBLE 0x000100
+#define TOP_VISIBLE 0x000010
+#define BOTTOM_VISIBLE 0x000001
+#define HIDDEN_BLOCK 0x000000
+
 using Tyra::BBox;
 using Tyra::Color;
 using Tyra::M4x4;
@@ -36,6 +44,8 @@ class Block {
   Vec4 textureOffset;
   BBox* bbox = nullptr;
 
+  u32 visibleFaces = 0x000000;
+
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;
 
@@ -45,6 +55,30 @@ class Block {
   void updateModelMatrix();
 
   void setPosition(const Vec4& v);
+
+  inline const bool isFrontFaceVisible() {
+    return (visibleFaces & FRONT_VISIBLE) == FRONT_VISIBLE;
+  };
+
+  inline const bool isBackFaceVisible() {
+    return (visibleFaces & BACK_VISIBLE) == BACK_VISIBLE;
+  };
+
+  inline const bool isLeftFaceVisible() {
+    return (visibleFaces & LEFT_VISIBLE) == LEFT_VISIBLE;
+  };
+
+  inline const bool isRightFaceVisible() {
+    return (visibleFaces & RIGHT_VISIBLE) == RIGHT_VISIBLE;
+  };
+
+  inline const bool isTopFaceVisible() {
+    return (visibleFaces & TOP_VISIBLE) == TOP_VISIBLE;
+  };
+
+  inline const bool isBottomFaceVisible() {
+    return (visibleFaces & BOTTOM_VISIBLE) == BOTTOM_VISIBLE;
+  };
 
   /** Get position from translation matrix */
   inline Vec4* getPosition() {
