@@ -208,7 +208,7 @@ bool TerrainManager::isTopFaceVisible(const Vec4* t_blockOffset) {
 }
 
 bool TerrainManager::isBottomFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->y - 1 < OVERWORLD_MAX_HEIGH) return false;
+  if (t_blockOffset->y - 1 < OVERWORLD_MIN_HEIGH) return false;
 
   unsigned int blockIndex = getIndexByOffset(
       t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z);
@@ -246,8 +246,8 @@ bool TerrainManager::isLeftFaceVisible(const Vec4* t_blockOffset) {
 bool TerrainManager::isRightFaceVisible(const Vec4* t_blockOffset) {
   if (t_blockOffset->z + 1 >= OVERWORLD_MAX_DISTANCE) return false;
 
-  unsigned int blockIndex = getIndexByOffset(
-      t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1);
+  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
+                                             t_blockOffset->z + 1);
 
   return isBlockVisibleAtIndex(blockIndex);
 }
