@@ -134,7 +134,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isTopFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(128, 0, 0));
+        verticesColors.push_back(Color(150, 150, 150));
       }
     }
     vert = 6;
@@ -142,7 +142,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isBottomFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(0, 128, 0));
+        verticesColors.push_back(Color(90, 90, 90));
       }
     }
     vert = 12;
@@ -150,7 +150,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isLeftFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(0, 0, 128));
+        verticesColors.push_back(Color(100, 100, 100));
       }
     }
     vert = 18;
@@ -158,7 +158,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isRightFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(128, 128, 0));
+        verticesColors.push_back(Color(130, 130, 130));
       }
     }
     vert = 24;
@@ -166,7 +166,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isBackFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(0, 128, 128));
+        verticesColors.push_back(Color(110, 110, 110));
       }
     }
     vert = 30;
@@ -174,7 +174,7 @@ void Chunck::updateDrawData() {
     if (blocks[i]->isFrontFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(128, 0, 128));
+        verticesColors.push_back(Color(140, 140, 140));
       }
     }
   }
