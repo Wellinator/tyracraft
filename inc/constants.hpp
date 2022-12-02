@@ -29,7 +29,7 @@
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
 // Defines how many chunks will be loaded from player position
-#define DRAW_DISTANCE_IN_CHUNKS 2
+#define DRAW_DISTANCE_IN_CHUNKS 3
 
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
