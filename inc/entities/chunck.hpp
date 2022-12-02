@@ -53,16 +53,15 @@ class Chunck {
   void clear();
   void updateDrawData();
   void updateFrustumCheck(const Plane* frustumPlanes);
-  u8 isVisible();
+
+  inline const u8 isVisible() {
+    return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+  }
 
   // Block controllers
   void addBlock(Block* t_block);
 
  private:
-  std::unique_ptr<StaPipBag> bag;
-  std::unique_ptr<StaPipInfoBag> infoBag;
-  std::unique_ptr<StaPipColorBag> colorBag;
-
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
 
@@ -72,9 +71,11 @@ class Chunck {
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
 
-  void loadBags();
   void clearDrawData();
+  void deallocDrawBags(StaPipBag* bag);
   StaPipBag* getDrawData();
+
+  inline const bool hasDataToDraw() { return vertices.size() > 0; };
 
   VertexBlockData vertexBlockData;
 };

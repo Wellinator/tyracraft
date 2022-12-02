@@ -184,56 +184,13 @@ float TerrainManager::getHeightScale(int x, int z) {
   return 0.0F;
 }
 
-bool TerrainManager::isBlockHidden(const Vec4& blockOffset) {
-  u8 upBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y - 1,
-                                          blockOffset.z);
-  u8 downBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y + 1,
-                                            blockOffset.z);
-  u8 frontBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
-                                             blockOffset.z + 1);
-  u8 backBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
-                                            blockOffset.z - 1);
-  u8 rightBlock = this->getBlockTypeByOffset(blockOffset.x + 1, blockOffset.y,
-                                             blockOffset.z);
-  u8 leftBlock = this->getBlockTypeByOffset(blockOffset.x - 1, blockOffset.y,
-                                            blockOffset.z);
-
-  // If some nighbor block is transparent set block to visible
-  if (
-      // Up block
-      upBlock == (u8)Blocks::AIR_BLOCK || upBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Down block
-      downBlock == (u8)Blocks::AIR_BLOCK ||
-      downBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Front block
-      frontBlock == (u8)Blocks::AIR_BLOCK ||
-      frontBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Back block
-      backBlock == (u8)Blocks::AIR_BLOCK ||
-      backBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Right block
-      rightBlock == (u8)Blocks::AIR_BLOCK ||
-      rightBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Left block
-      leftBlock == (u8)Blocks::AIR_BLOCK ||
-      leftBlock == (u8)Blocks::GLASS_BLOCK) {
-    return false;
-  } else
-    return true;
+bool TerrainManager::isBlockHidden(const Vec4* blockOffset) {
+  return isFrontFaceVisible(blockOffset) && isBackFaceVisible(blockOffset) &&
+         isRightFaceVisible(blockOffset) && isLeftFaceVisible(blockOffset) &&
+         isTopFaceVisible(blockOffset) && isBottomFaceVisible(blockOffset);
 }
 
-bool TerrainManager::isFaceVisible(const unsigned int& terrainIndex) {
-  // if (terrainIndex <= OVERWORLD_SIZE) {
-  //   u8 blockType = terrain[terrainIndex];
-
-  //   if (blockType > 1) {
-  //     const BlockInfo info = t_blockManager->getBlockTexOffsetByType(
-  //         static_cast<Blocks>(terrain[terrainIndex]));
-  //     if (!info._isSolid) return true;
-  //   } else if (blockType == 1) {
-  //     return true;
-  //   }
-  // }
+bool TerrainManager::isBlockVisibleAtIndex(const unsigned int& terrainIndex) {
   if (terrainIndex >= 0 && terrainIndex <= OVERWORLD_SIZE) {
     return (terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK ||
             terrain[terrainIndex] == (u8)Blocks::GLASS_BLOCK);
@@ -242,52 +199,79 @@ bool TerrainManager::isFaceVisible(const unsigned int& terrainIndex) {
   return false;
 }
 
-bool TerrainManager::isTopFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex + 1);
+bool TerrainManager::isTopFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->y + 1 >= OVERWORLD_MAX_HEIGH) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x, t_blockOffset->y + 1, t_blockOffset->z);
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-bool TerrainManager::isBottomFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex - 1);
+bool TerrainManager::isBottomFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->y - 1 < OVERWORLD_MAX_HEIGH) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z);
+
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-bool TerrainManager::isLeftFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex -
-                       OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+bool TerrainManager::isFrontFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->x - 1 < OVERWORLD_MIN_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z);
+
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-bool TerrainManager::isRightFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex +
-                       OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
+bool TerrainManager::isBackFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->x + 1 >= OVERWORLD_MAX_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z);
+
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-bool TerrainManager::isFrontFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex - OVERWORLD_V_DISTANCE);
+bool TerrainManager::isLeftFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->z - 1 < OVERWORLD_MIN_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
+                                             t_blockOffset->z - 1);
+
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-bool TerrainManager::isBackFaceVisible(const unsigned int& blockIndex) {
-  return isFaceVisible(blockIndex + OVERWORLD_V_DISTANCE);
+bool TerrainManager::isRightFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->z + 1 >= OVERWORLD_MAX_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1);
+
+  return isBlockVisibleAtIndex(blockIndex);
 }
 
-int TerrainManager::getBlockVisibleFaces(const unsigned int& blockIndex) {
+int TerrainManager::getBlockVisibleFaces(const Vec4* t_blockOffset) {
   int result = 0x000000;
 
   // Front
-  if (isFrontFaceVisible(blockIndex)) result = result | FRONT_VISIBLE;
+  if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
 
   // Back
-  if (isBackFaceVisible(blockIndex)) result = result | BACK_VISIBLE;
+  if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
 
   // Right
-  if (isRightFaceVisible(blockIndex)) result = result | RIGHT_VISIBLE;
+  if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
 
   // Left
-  if (isLeftFaceVisible(blockIndex)) result = result | LEFT_VISIBLE;
+  if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
 
   // Top
-  if (isTopFaceVisible(blockIndex)) result = result | TOP_VISIBLE;
+  if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
 
   // Bottom
-  if (isBottomFaceVisible(blockIndex)) result = result | BOTTOM_VISIBLE;
+  if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
 
   // printf("Result for index %i -> 0x%X\n", blockIndex, result);
   return result;
@@ -371,7 +355,7 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
         Vec4 tempBlockOffset = Vec4(x, y, z);
         Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        const int visibleFaces = this->getBlockVisibleFaces(blockIndex);
+        const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
         const bool isVisible = visibleFaces > 0;
 
         // Are block's coordinates in world range?

@@ -125,23 +125,25 @@ class TerrainManager {
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
   const Vec4 getPositionByIndex(const u16& index);
-  bool isBlockHidden(const Vec4& blockOffset);
+  bool isBlockHidden(const Vec4* blockOffset);
 
   /**
    * @brief Update the visible block faces
    * @return false if the block is completely hidden
    *
    */
-  int getBlockVisibleFaces(const unsigned int& blockIndex);
-  inline bool isFaceVisible(const unsigned int& terrainIndex);
-  inline bool isTopFaceVisible(const unsigned int& blockIndex);
-  inline bool isBottomFaceVisible(const unsigned int& blockIndex);
-  inline bool isLeftFaceVisible(const unsigned int& blockIndex);
-  inline bool isRightFaceVisible(const unsigned int& blockIndex);
-  inline bool isFrontFaceVisible(const unsigned int& blockIndex);
-  inline bool isBackFaceVisible(const unsigned int& blockIndex);
+  int getBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline bool isBlockVisible(const Vec4& blockOffset) {
+  inline bool isBlockVisibleAtIndex(const unsigned int& terrainIndex);
+
+  inline bool isTopFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBottomFaceVisible(const Vec4* t_blockOffset);
+  inline bool isLeftFaceVisible(const Vec4* t_blockOffset);
+  inline bool isRightFaceVisible(const Vec4* t_blockOffset);
+  inline bool isFrontFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBackFaceVisible(const Vec4* t_blockOffset);
+
+  inline bool isBlockVisible(const Vec4* blockOffset) {
     return !isBlockHidden(blockOffset);
   };
 

@@ -27,8 +27,6 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
       Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
   };
   this->bbox = new BBox(_vertices, count);
-
-  loadBags();
 };
 
 Chunck::~Chunck() {
@@ -57,10 +55,32 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
-  if (this->state == ChunkState::Loaded && this->isVisible() &&
-      bag.get()->vertices) {
+  if (hasDataToDraw() && this->state == ChunkState::Loaded && isVisible()) {
     t_renderer->renderer3D.usePipeline(stapip);
-    stapip->core.render(bag.get());
+
+    // Prepare bag
+
+    // Load info bag
+    StaPipInfoBag infoBag;
+    infoBag.model = new M4x4();
+    infoBag.model->identity();
+    infoBag.shadingType = Tyra::TyraShadingGouraud;
+    infoBag.textureMappingType = Tyra::TyraNearest;
+
+    // Load color bag
+    StaPipColorBag colorBag;
+    colorBag.many = verticesColors.data();
+
+    StaPipBag bag;
+    bag.color = &colorBag;
+    bag.info = &infoBag;
+    bag.count = vertices.size();
+    bag.vertices = vertices.data();
+
+    stapip->core.render(&bag);
+
+    deallocDrawBags(&bag);
+    if (infoBag.model) delete infoBag.model;
   }
 };
 
@@ -89,20 +109,17 @@ void Chunck::addBlock(Block* t_block) { this->blocks.push_back(t_block); }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    // FIXME: refactor fog to use FPU;
-    // this->applyFOG(this->blocks[blockIndex], playerPosition);
+    this->applyFOG(this->blocks[blockIndex], playerPosition);
     this->highLightTargetBlock(this->blocks[blockIndex],
                                this->blocks[blockIndex]->isTarget);
   }
 }
 
 void Chunck::clearDrawData() {
-  // bag->count = 0;
-  // delete bag->vertices;
-  // delete bag->color->many;
-
   vertices.clear();
+  vertices.shrink_to_fit();
   verticesColors.clear();
+  verticesColors.shrink_to_fit();
 }
 
 void Chunck::updateDrawData() {
@@ -195,7 +212,7 @@ void Chunck::updateDrawData() {
     }
     vert = 30;
 
-    if (true) {
+    if (blocks[i]->isFrontFaceVisible()) {
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -212,14 +229,6 @@ void Chunck::updateDrawData() {
     }
   }
 
-  bag->count = vertices.size();
-  bag->vertices = &vertices.data()[0];
-  bag->color->many = &verticesColors.data()[0];
-
-  // for (size_t v = 0; v < vertices.size(); v++) {
-  //   bag->vertices[v] = vertices[v];
-  // }
-
   TYRA_LOG("Loaded ", vertices.size(), " in the chunk ", id);
   delete rawData;
 }
@@ -230,24 +239,12 @@ void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
       *this->maxOffset * DUBLE_BLOCK_SIZE);
 }
 
-u8 Chunck::isVisible() {
-  return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+void Chunck::deallocDrawBags(StaPipBag* bag) {
+  if (bag->texture) {
+    delete bag->texture;
+  }
+
+  if (bag->lighting) {
+    delete bag->lighting;
+  }
 }
-
-void Chunck::loadBags() {
-  // Load info bag
-  infoBag = std::make_unique<StaPipInfoBag>();
-  infoBag->model = new M4x4();
-  infoBag->model->identity();
-  infoBag->shadingType = Tyra::TyraShadingGouraud;
-  infoBag->textureMappingType = Tyra::TyraNearest;
-
-  // Load color bag
-  colorBag = std::make_unique<StaPipColorBag>();
-
-  bag = std::make_unique<StaPipBag>();
-  bag->color = colorBag.get();
-  bag->info = infoBag.get();
-}
-
-StaPipBag* Chunck::getDrawData() { return bag.get(); }
