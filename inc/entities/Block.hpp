@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tamtypes.h>
+#include <array>
 #include <math/vec4.hpp>
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
@@ -41,10 +42,24 @@ class Block {
 
   M4x4 model;
   Color color;
-  Vec4 textureOffset;
   BBox* bbox = nullptr;
 
   u32 visibleFaces = 0x000000;
+
+  std::array<u8, 12> facesMap = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+  inline const u8& topMapX() { return facesMap[0]; };
+  inline const u8& topMapY() { return facesMap[1]; };
+  inline const u8& bottomMapX() { return facesMap[2]; };
+  inline const u8& bottomMapY() { return facesMap[3]; };
+  inline const u8& leftMapX() { return facesMap[4]; };
+  inline const u8& leftMapY() { return facesMap[5]; };
+  inline const u8& rightMapX() { return facesMap[6]; };
+  inline const u8& rightMapY() { return facesMap[7]; };
+  inline const u8& frontMapX() { return facesMap[8]; };
+  inline const u8& frontMapY() { return facesMap[9]; };
+  inline const u8& backMapX() { return facesMap[10]; };
+  inline const u8& backMapY() { return facesMap[11]; };
 
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;
@@ -97,4 +112,7 @@ class Block {
   // Biom's params
   // float temperature = 0.0;
   // float humidity = 0.0;
+
+  inline void setSingleFaces(const u8& col, const u8& row);
+  inline void setMultipleFaces(const u8* uv);
 };

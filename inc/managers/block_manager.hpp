@@ -31,7 +31,7 @@ class BlockManager {
   ~BlockManager();
   void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
 
-  BlockInfo* getBlockTexOffsetByType(const Blocks& blockType);
+  BlockInfo* getBlockInfoByType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };

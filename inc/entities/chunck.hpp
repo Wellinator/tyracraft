@@ -26,6 +26,7 @@ using Tyra::Renderer;
 using Tyra::StaPipBag;
 using Tyra::StaPipColorBag;
 using Tyra::StaPipInfoBag;
+using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
@@ -61,9 +62,14 @@ class Chunck {
   // Block controllers
   void addBlock(Block* t_block);
 
+  inline std::vector<Vec4> getVertexData() { return vertices; }
+
+  inline std::vector<Color> getVertexColorData() { return verticesColors; }
+
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
+  std::vector<Vec4> uvMap;
 
   float getVisibityByPosition(float d);
   void applyFOG(Block* t_block, const Vec4& originPosition);
@@ -71,6 +77,7 @@ class Chunck {
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
 
+  void loadBags();
   void clearDrawData();
   void deallocDrawBags(StaPipBag* bag);
   StaPipBag* getDrawData();

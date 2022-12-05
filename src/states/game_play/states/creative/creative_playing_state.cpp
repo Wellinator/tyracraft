@@ -121,21 +121,22 @@ void CreativePlayingState::drawDegubInfo() {
 }
 
 void CreativePlayingState::printBlockInfoToLog() {
-  std::string blocksInfo = std::string("");
-  for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
-       i++) {
-    BlockInfo info =
-        *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
-            static_cast<Blocks>(i));
+  return;
+  // std::string blocksInfo = std::string("");
+  // for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
+  //      i++) {
+  //   BlockInfo info =
+  //       *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
+  //           static_cast<Blocks>(i));
 
-    blocksInfo.append(std::string("\nID: "))
-        .append(std::to_string(i))
-        .append(std::string(" | X: "))
-        .append(std::to_string(info._texOffssetX))
-        .append(std::string(" | Y: "))
-        .append(std::to_string(info._texOffssetX));
-  }
-  TYRA_LOG(blocksInfo.c_str());
+  //   blocksInfo.append(std::string("\nID: "))
+  //       .append(std::to_string(i))
+  //       .append(std::string(" | X: "))
+  //       .append(std::to_string(info._texOffssetX))
+  //       .append(std::string(" | Y: "))
+  //       .append(std::to_string(info._texOffssetX));
+  // }
+  // TYRA_LOG(blocksInfo.c_str());
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {

@@ -30,94 +30,58 @@ void BlockTextureRepository::loadTextures() {
   this->models.push_back(nullptr);
 
   // Base Blocks
-  this->models.push_back(new BlockInfo(Blocks::STONE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 7));
+  this->models.push_back(new BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}));
   this->models.push_back(new BlockInfo(Blocks::GRASS_BLOCK, false,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 0));
-  this->models.push_back(new BlockInfo(Blocks::DIRTY_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 7));
-  this->models.push_back(new BlockInfo(Blocks::WATER_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 4,
-                                       this->t_mcPip->getTextureOffset() * 7));
-  this->models.push_back(new BlockInfo(
-      Blocks::BEDROCK_BLOCK, true, this->t_mcPip->getTextureOffset() * 0,
-      this->t_mcPip->getTextureOffset() * 7, false));
-  this->models.push_back(new BlockInfo(Blocks::SAND_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 7));
-  this->models.push_back(new BlockInfo(Blocks::GLASS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 9));
-  this->models.push_back(new BlockInfo(Blocks::BRICKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 4,
-                                       this->t_mcPip->getTextureOffset() * 6));
+                                       {0, 0, 0, 5, 0, 1, 0, 1, 0, 1, 0, 1}));
+  this->models.push_back(new BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}));
+  this->models.push_back(new BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}));
+  this->models.push_back(
+      new BlockInfo(Blocks::BEDROCK_BLOCK, true, {0, 7}, false));
+  this->models.push_back(new BlockInfo(Blocks::SAND_BLOCK, true, {2, 7}));
+  this->models.push_back(new BlockInfo(Blocks::GLASS_BLOCK, true, {0, 9}));
+  this->models.push_back(new BlockInfo(Blocks::BRICKS_BLOCK, true, {4, 6}));
 
   // Ores and Minerals
-  this->models.push_back(new BlockInfo(Blocks::GOLD_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::IRON_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::COAL_ORE_BLOCK, true, 80.0F,
-                                       this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 4,
-                                       this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 8));
-  this->models.push_back(new BlockInfo(Blocks::EMERALD_ORE_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 8));
+  this->models.push_back(new BlockInfo(Blocks::GOLD_ORE_BLOCK, true, {0, 8}));
+  this->models.push_back(new BlockInfo(Blocks::IRON_ORE_BLOCK, true, {2, 8}));
+  this->models.push_back(new BlockInfo(Blocks::COAL_ORE_BLOCK, true, {1, 8}));
+  this->models.push_back(
+      new BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {4, 8}));
+  this->models.push_back(
+      new BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true, {1, 8}));
+  this->models.push_back(
+      new BlockInfo(Blocks::EMERALD_ORE_BLOCK, true, {3, 8}));
 
   // Wood Planks
-  this->models.push_back(new BlockInfo(Blocks::OAK_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 11));
-  this->models.push_back(new BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 11));
+  this->models.push_back(
+      new BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}));
+  this->models.push_back(
+      new BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true, {1, 11}));
+  this->models.push_back(
+      new BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true, {3, 11}));
+  this->models.push_back(
+      new BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true, {2, 11}));
 
   // Stone bricks
-  this->models.push_back(new BlockInfo(Blocks::STONE_BRICK_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 6));
-  this->models.push_back(new BlockInfo(Blocks::CRACKED_STONE_BRICKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 6));
-  this->models.push_back(new BlockInfo(Blocks::MOSSY_STONE_BRICKS_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 6));
-  this->models.push_back(new BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK,
-                                       true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 6));
+  this->models.push_back(
+      new BlockInfo(Blocks::STONE_BRICK_BLOCK, true, {1, 6}));
+  this->models.push_back(
+      new BlockInfo(Blocks::CRACKED_STONE_BRICKS_BLOCK, true, {0, 6}));
+  this->models.push_back(
+      new BlockInfo(Blocks::MOSSY_STONE_BRICKS_BLOCK, true, {2, 6}));
+  this->models.push_back(
+      new BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {3, 6}));
   // Stripped Woods
-  this->models.push_back(new BlockInfo(Blocks::STRIPPED_OAK_WOOD_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 0,
-                                       this->t_mcPip->getTextureOffset() * 12));
+  this->models.push_back(
+      new BlockInfo(Blocks::STRIPPED_OAK_WOOD_BLOCK, true, {0, 12}));
 
   // Woods
   this->models.push_back(new BlockInfo(Blocks::OAK_LOG_BLOCK, false,
-                                       this->t_mcPip->getTextureOffset() * 1,
-                                       this->t_mcPip->getTextureOffset() * 0));
-  this->models.push_back(new BlockInfo(Blocks::OAK_LEAVES_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 3,
-                                       this->t_mcPip->getTextureOffset() * 10));
+                                       {1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}));
+  this->models.push_back(
+      new BlockInfo(Blocks::OAK_LEAVES_BLOCK, true, {3, 10}));
   this->models.push_back(new BlockInfo(Blocks::BIRCH_LOG_BLOCK, false,
-                                       this->t_mcPip->getTextureOffset() * 6,
-                                       this->t_mcPip->getTextureOffset() * 0));
-  this->models.push_back(new BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true,
-                                       this->t_mcPip->getTextureOffset() * 2,
-                                       this->t_mcPip->getTextureOffset() * 10));
+                                       {6, 0, 6, 0, 6, 1, 6, 1, 6, 1, 6, 1}));
+  this->models.push_back(
+      new BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true, {2, 10}));
 }

@@ -361,15 +361,15 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
         // Are block's coordinates in world range?
         if (isVisible &&
             tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
-          BlockInfo* blockInfo = this->t_blockManager->getBlockTexOffsetByType(
+          BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
               static_cast<Blocks>(block_type));
 
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
           block->visibleFaces = visibleFaces;
 
-          float bright = this->getBlockLuminosity(tempBlockOffset.y);
-          block->color = Color(bright, bright, bright, 128.0F);
+          // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+          // block->color = Color(bright, bright, bright, 128.0F);
 
           block->setPosition(blockPosition);
           block->scale.scale(BLOCK_SIZE);

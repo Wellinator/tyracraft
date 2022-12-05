@@ -27,6 +27,8 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
       Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
   };
   this->bbox = new BBox(_vertices, count);
+
+  loadBags();
 };
 
 Chunck::~Chunck() {
@@ -60,30 +62,34 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (hasDataToDraw() && this->state == ChunkState::Loaded && isVisible()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
-    // Prepare bag
+    StaPipTextureBag textureBag;
+    textureBag.texture = t_blockManager->getBlocksTexture();
+    textureBag.coordinates = uvMap.data();
 
-    // Load info bag
     StaPipInfoBag infoBag;
     infoBag.model = new M4x4();
     infoBag.model->identity();
     infoBag.shadingType = Tyra::TyraShadingGouraud;
     infoBag.textureMappingType = Tyra::TyraNearest;
+    infoBag.fullClipChecks = false;
+    infoBag.antiAliasingEnabled = false;
+    infoBag.frustumCulling =
+        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
-    // Load color bag
+    // Apply multiple colors
     StaPipColorBag colorBag;
-    // Color baseColor = Color(128, 128, 128);
-    // colorBag.single = &baseColor;
     colorBag.many = verticesColors.data();
 
     StaPipBag bag;
-    bag.color = &colorBag;
-    bag.info = &infoBag;
     bag.count = vertices.size();
     bag.vertices = vertices.data();
+    bag.color = &colorBag;
+    bag.info = &infoBag;
+    bag.texture = &textureBag;
 
     stapip->core.render(&bag);
 
-    deallocDrawBags(&bag);
+    // deallocDrawBags(&bag);
     if (infoBag.model) delete infoBag.model;
   }
 };
@@ -124,62 +130,129 @@ void Chunck::clearDrawData() {
   vertices.shrink_to_fit();
   verticesColors.clear();
   verticesColors.shrink_to_fit();
+  uvMap.clear();
+  uvMap.shrink_to_fit();
 }
 
 void Chunck::updateDrawData() {
+  const float scale = 1.0F / 16.0F;
+  const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
   const Vec4* rawData = vertexBlockData.getVertexData();
+
   for (size_t i = 0; i < blocks.size(); i++) {
     int vert = 0;
 
     if (blocks[i]->isTopFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(150, 150, 150));
+        verticesColors.push_back(Color(120, 120, 120));
       }
+
+      const u8 X = blocks[i]->topMapX();
+      const u8 Y = blocks[i]->topMapY();
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 6;
 
-    if (blocks[i]->isBottomFaceVisible()) {
+    if (blocks[i]->isRightFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(90, 90, 90));
+        verticesColors.push_back(Color(60, 60, 60));
       }
+      const u8 X = blocks[i]->bottomMapX();
+      const u8 Y = blocks[i]->bottomMapY();
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 12;
 
     if (blocks[i]->isLeftFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(100, 100, 100));
+        verticesColors.push_back(Color(70, 70, 70));
       }
+      const u8 X = blocks[i]->leftMapX();
+      const u8 Y = blocks[i]->leftMapY();
+
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 18;
 
     if (blocks[i]->isRightFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(130, 130, 130));
+        verticesColors.push_back(Color(100, 100, 100));
       }
+      const u8 X = blocks[i]->rightMapX();
+      const u8 Y = blocks[i]->rightMapY();
+
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
     }
     vert = 24;
 
     if (blocks[i]->isBackFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(110, 110, 110));
+        verticesColors.push_back(Color(80, 80, 80));
       }
+
+      const u8 X = blocks[i]->backMapX();
+      const u8 Y = blocks[i]->backMapY();
+
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
     }
     vert = 30;
 
     if (blocks[i]->isFrontFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(140, 140, 140));
+        verticesColors.push_back(Color(110, 110, 110));
       }
+      const u8 X = blocks[i]->frontMapX();
+      const u8 Y = blocks[i]->frontMapY();
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
   }
 
-  TYRA_LOG("Loaded ", vertices.size(), " in the chunk ", id);
+  // TYRA_LOG("Loaded ", vertices.size(), " in the chunk ", id);
   delete rawData;
 }
 
@@ -198,3 +271,5 @@ void Chunck::deallocDrawBags(StaPipBag* bag) {
     delete bag->lighting;
   }
 }
+
+void Chunck::loadBags() { return; }
