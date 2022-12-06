@@ -159,7 +159,7 @@ void Chunck::updateDrawData() {
     }
     vert = 6;
 
-    if (blocks[i]->isRightFaceVisible()) {
+    if (blocks[i]->isBottomFaceVisible()) {
       for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         verticesColors.push_back(Color(60, 60, 60));
