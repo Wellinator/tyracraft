@@ -48,19 +48,39 @@ float Utils::clamp(const float value, float min, float max) {
   return ((value < min) * (min - value)) + ((value > max) * (max - value));
 }
 
-float Utils::FOG_LINEAR(float d, float start, float end, float offset = 0.0F) {
-  if (d <= offset) return end - start;
-  return end - d / end - start;
+float Utils::FOG_LINEAR(const float& d, const float& start, const float& end,
+                        const float& offset) {
+  if (d <= offset) return (end - start) * 1 / end;
+  return (end - d / end - start) * 1 / end;
 }
 
-float Utils::FOG_EXP(float d, float density) { return exp(-(d * density)); }
+float Utils::FOG_EXP(float d, float density) { return expf_fast(-(d * density)); }
 
 float Utils::FOG_EXP2(float d, float density) {
   return exp(-pow((d * density), 2));
 }
 
 float Utils::FOG_EXP_GRAD(float d, float density, float gradient) {
-  return exp(-pow((d * density), gradient));
+  return expf_fast(-fastPow((d * density), gradient));
+}
+
+float Utils::fastPow(float a, float b) {
+  union {
+    float d;
+    int x[2];
+  } u = {a};
+  u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+  u.x[0] = 0;
+  return u.d;
+}
+
+float Utils::expf_fast(float a) {
+  union {
+    float f;
+    int x;
+  } u;
+  u.x = (int)(12102203 * a + 1064866805);
+  return u.f;
 }
 
 float Utils::Raycast(Vec4* origin, Vec4* dir, Vec4* min, Vec4* max) {
