@@ -39,14 +39,17 @@ Chunck::~Chunck() {
   delete this->bbox;
 };
 
-void Chunck::update(const Plane* frustumPlanes) {
+void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
   this->updateFrustumCheck(frustumPlanes);
+  // if (isVisible()) applyFOG(currentPlayerPos);
 }
 
-void Chunck::applyFOG(Block* t_block, const Vec4& originPosition) {
-  t_block->color.a =
-      255 * this->getVisibityByPosition(
-                originPosition.distanceTo(*t_block->getPosition()));
+void Chunck::applyFOG(const Vec4& originPosition) {
+  // for (size_t i = 0; i < vertices.size(); i++) {
+  //   const float interp =
+  //       this->getVisibityByPosition(originPosition.distanceTo(vertices[i]));
+  // verticesColorsWithFog[i].a = interp * 128;
+  // }
 }
 
 void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
@@ -69,12 +72,8 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     StaPipInfoBag infoBag;
     infoBag.model = new M4x4();
     infoBag.model->identity();
-    infoBag.shadingType = Tyra::TyraShadingGouraud;
+    infoBag.shadingType = Tyra::TyraShadingFlat;
     infoBag.textureMappingType = Tyra::TyraNearest;
-    infoBag.fullClipChecks = false;
-    infoBag.antiAliasingEnabled = false;
-    infoBag.frustumCulling =
-        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
     // Apply multiple colors
     StaPipColorBag colorBag;
@@ -119,7 +118,6 @@ void Chunck::addBlock(Block* t_block) { this->blocks.push_back(t_block); }
 
 void Chunck::updateBlocks(const Vec4& playerPosition) {
   for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    this->applyFOG(this->blocks[blockIndex], playerPosition);
     this->highLightTargetBlock(this->blocks[blockIndex],
                                this->blocks[blockIndex]->isTarget);
   }

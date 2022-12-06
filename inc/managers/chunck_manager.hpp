@@ -15,9 +15,9 @@
 
 using Tyra::BBox;
 using Tyra::M4x4;
-using Tyra::StaticPipeline;
 using Tyra::Plane;
 using Tyra::Renderer;
+using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
 class ChunckManager {
@@ -30,7 +30,7 @@ class ChunckManager {
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   std::vector<Chunck*> getVisibleChunks();
   void init();
-  void update(const Plane* frustumPlanes);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
   u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);

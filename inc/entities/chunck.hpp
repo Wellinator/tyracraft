@@ -50,7 +50,7 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
-  void update(const Plane* frustumPlanes);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
   void clear();
   void updateDrawData();
   void updateFrustumCheck(const Plane* frustumPlanes);
@@ -72,7 +72,7 @@ class Chunck {
   std::vector<Vec4> uvMap;
 
   float getVisibityByPosition(float d);
-  void applyFOG(Block* t_block, const Vec4& originPosition);
+  void applyFOG(const Vec4& originPosition);
   void highLightTargetBlock(Block* t_block, u8& isTarget);
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();

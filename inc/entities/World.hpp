@@ -20,9 +20,9 @@
 
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
-using Tyra::StaticPipeline;
 using Tyra::Pad;
 using Tyra::Renderer;
+using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
 class World {
@@ -55,6 +55,8 @@ class World {
   Vec4* lastPlayerPosition = new Vec4();
   u8 framesCounter = 0;
   NewGameOptions worldOptions = NewGameOptions();
+
+  Color dayColor = Color(192.0F, 216.0F, 255.0F);
 
   int maxLoadPerCall = 1;
   int maxUnloadPerCall = 2;

@@ -28,7 +28,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
   // Set color day
   // TODO: refector to day/light cycle;
-  t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
+  t_renderer->core.setClearScreenColor(dayColor);
 
   this->t_renderer = t_renderer;
 
@@ -52,7 +52,8 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
   this->framesCounter++;
   if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
   this->chunckManager->update(
-      this->t_renderer->core.renderer3D.frustumPlanes.getAll());
+      this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
+      *t_player->getPosition());
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getVisibleChunks(),
@@ -99,7 +100,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   if (this->lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
     Chunck* currentChunck =
-        this->chunckManager->getChunckByPosition(*t_player->getPosition());
+        this->chunckManager->getChunckByPosition(currentPlayerPos);
 
     if (currentChunck != nullptr &&
         t_player->currentChunckId != currentChunck->id) {
