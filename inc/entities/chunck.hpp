@@ -21,11 +21,13 @@ using Tyra::CoreBBoxFrustum;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
+using Tyra::PipelineDirLightsBag;
 using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::StaPipBag;
 using Tyra::StaPipColorBag;
 using Tyra::StaPipInfoBag;
+using Tyra::StaPipLightingBag;
 using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
@@ -50,7 +52,7 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos, Vec4* lightsPositions);
   void clear();
   void updateDrawData();
   void updateFrustumCheck(const Plane* frustumPlanes);
@@ -69,6 +71,7 @@ class Chunck {
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
+  std::vector<Vec4> verticesNormals;
   std::vector<Vec4> uvMap;
 
   float getVisibityByPosition(float d);
@@ -85,4 +88,6 @@ class Chunck {
   inline const bool hasDataToDraw() { return vertices.size() > 0; };
 
   VertexBlockData vertexBlockData;
+
+  Vec4 sunPosition;
 };

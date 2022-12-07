@@ -51,9 +51,12 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                    const float& deltaTime) {
   this->framesCounter++;
   if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
+
+  lightsPositions[0].set(getNewSunPosition());
+
   this->chunckManager->update(
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
-      *t_player->getPosition());
+      *t_player->getPosition(), lightsPositions.data());
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getVisibleChunks(),
@@ -238,4 +241,13 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
   tempChuncksToUnLoad.push_back(t_chunck);
+}
+
+Vec4 World::getNewSunPosition() {
+  currentAngle += angularSpeed;
+  Vec4 result = Vec4(Math::sin(Math::ANG2RAD * currentAngle) * circleRad,
+                     Math::cos(Math::ANG2RAD * currentAngle) * circleRad, 0.0F);
+
+  result += fixedPoint;
+  return result;
 }

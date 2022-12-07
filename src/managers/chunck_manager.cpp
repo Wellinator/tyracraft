@@ -18,10 +18,11 @@ ChunckManager::~ChunckManager() {
 void ChunckManager::init() { this->generateChunks(); }
 
 void ChunckManager::update(const Plane* frustumPlanes,
-                           const Vec4& currentPlayerPos) {
+                           const Vec4& currentPlayerPos,
+                           Vec4* lightsPositions) {
   this->visibleChunks.clear();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->update(frustumPlanes, currentPlayerPos);
+    chuncks[i]->update(frustumPlanes, currentPlayerPos, lightsPositions);
     if (chuncks[i]->isVisible() && chuncks[i]->state == ChunkState::Loaded)
       this->visibleChunks.push_back(chuncks[i]);
   }

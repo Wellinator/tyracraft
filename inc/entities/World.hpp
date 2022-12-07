@@ -65,6 +65,16 @@ class World {
   std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
 
+  // TODO: move to day/night cycle manager
+  Vec4 fixedPoint = CENTER_WORLD_POS;
+  float currentAngle = 0.0F;
+  float angularSpeed = 0.1F;
+  float circleRad = HALF_OVERWORLD_H_DISTANCE * DUBLE_BLOCK_SIZE;
+  std::vector<Vec4> lightsPositions = {
+      Vec4(0.0F, 0.0F, 0.0F)  // Sun positions
+  };
+  Vec4 getNewSunPosition();
+
   void updateChunkByPlayerPosition(Player* player);
   void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
   void loadScheduledChunks();
