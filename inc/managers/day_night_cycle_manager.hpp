@@ -4,6 +4,7 @@
 #include "tyra"
 #include <cmath>
 #include "constants.hpp"
+#include "managers/tick_manager.hpp"
 
 using Tyra::Color;
 using Tyra::Math;
@@ -13,7 +14,7 @@ class DayNightCycleManager {
  public:
   DayNightCycleManager();
   ~DayNightCycleManager();
-  void update(const float& deltaTime);
+  void update();
 
   float currentAngleInDegrees = 0.0F;
   float angularSpeed = 5.0F;
@@ -30,24 +31,6 @@ class DayNightCycleManager {
 
   const float getLightIntensity();
   const float getAmbientLightIntesity();
-
-  // TODO: move to ticksManager
-  double elapsedRealTime = 0.0F;
-  const float tick = 1.0F / 20.0F;
-  const float DAY_DURATION_IN_TICKS = 24000.0F;
-
-  // Values in ticks
-  const int DAY_INIT = 0;
-  const int DAY_MID = 6000;
-  const int DAY_SUNSET = 12000;
-  const int NIGHT_INIT = 13000;
-  const int NIGHT_MID = 18000;
-  const int DAY_SUNRISE = 23000;
-  const int DAY_END = 240000;
-
-  float ticksCounter = DAY_MID;
-  u16 ticksDayCounter = 0;
-  void updateTicks(const float& deltaTime);
 
  private:
   void updateEntitiesPosition();

@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include "states/splash_screen/state_splash_screen.hpp"
 #include "states/context.hpp"
+#include "managers/tick_manager.hpp"
 #include "camera.hpp"
 #include "tyra"
 
@@ -15,4 +16,5 @@ class StateManager {
   void update(const float& deltaTime);
 
   Context* context;
+  TickManager tickManager;
 };

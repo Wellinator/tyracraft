@@ -47,7 +47,7 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                    const float& deltaTime) {
   this->framesCounter++;
 
-  dayNightCycleManager.update(deltaTime);
+  dayNightCycleManager.update();
   updateLightModel();
 
   if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();

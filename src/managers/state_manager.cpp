@@ -8,5 +8,6 @@ StateManager::StateManager(Engine* t_engine, Camera* t_camera) {
 StateManager::~StateManager() { delete this->context; }
 
 void StateManager::update(const float& deltaTime) {
+  tickManager.update(std::min(deltaTime, MAX_FRAME_MS));
   this->context->update(deltaTime);
 }

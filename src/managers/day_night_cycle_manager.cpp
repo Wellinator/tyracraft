@@ -4,8 +4,7 @@ DayNightCycleManager::DayNightCycleManager() {}
 
 DayNightCycleManager::~DayNightCycleManager() {}
 
-void DayNightCycleManager::update(const float& deltaTime) {
-  updateTicks(std::min(deltaTime, MAX_FRAME_MS));
+void DayNightCycleManager::update() {
   updateCurrentAngle();
   updateEntitiesPosition();
 }
@@ -36,16 +35,6 @@ void DayNightCycleManager::updateEntitiesPosition() {
 
   sunPosition.set(offset);
   moonPosition.set(-sunPosition);
-}
-
-void DayNightCycleManager::updateTicks(const float& deltaTime) {
-  elapsedRealTime += deltaTime;
-  ticksCounter += deltaTime / tick;
-
-  if (ticksCounter >= DAY_DURATION_IN_TICKS) {
-    ticksDayCounter++;
-    ticksCounter -= DAY_DURATION_IN_TICKS;
-  }
 }
 
 const Color DayNightCycleManager::getSkyColor() {
