@@ -70,6 +70,11 @@ class Utils {
 
   static float fastPow(float a, float b);
 
+  static float reRangeScale(float new_min, float new_max, float old_min,
+                            float old_max, float v) {
+    return (new_max - new_min) / (old_max - old_min) * (v - old_min) + new_min;
+  };
+
   /* Schraudolph's published algorithm with John's constants */
   /* 1065353216 - 486411 = 1064866805 */
   static float expf_fast(float a);

@@ -26,10 +26,6 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   TYRA_ASSERT(t_renderer, "t_renderer not initialized");
   TYRA_ASSERT(itemRepository, "itemRepository not initialized");
 
-  // Set color day
-  // TODO: refector to day/light cycle;
-  t_renderer->core.setClearScreenColor(dayColor);
-
   this->t_renderer = t_renderer;
 
   this->mcPip.setRenderer(&t_renderer->core);
@@ -50,13 +46,15 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
 void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
                    const float& deltaTime) {
   this->framesCounter++;
-  if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
 
-  lightsPositions[0].set(getNewSunPosition());
+  dayNightCycleManager.update(deltaTime);
+  updateLightModel();
+
+  if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
 
   this->chunckManager->update(
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
-      *t_player->getPosition(), lightsPositions.data());
+      *t_player->getPosition(), &worldLightModel);
   this->updateChunkByPlayerPosition(t_player);
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getVisibleChunks(),
@@ -65,6 +63,9 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
 };
 
 void World::render() {
+  this->t_renderer->core.setClearScreenColor(
+      dayNightCycleManager.getSkyColor());
+
   this->chunckManager->renderer(this->t_renderer, &this->stapip,
                                 this->blockManager);
 
@@ -243,11 +244,11 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
   tempChuncksToUnLoad.push_back(t_chunck);
 }
 
-Vec4 World::getNewSunPosition() {
-  currentAngle += angularSpeed;
-  Vec4 result = Vec4(Math::sin(Math::ANG2RAD * currentAngle) * circleRad,
-                     Math::cos(Math::ANG2RAD * currentAngle) * circleRad, 0.0F);
-
-  result += fixedPoint;
-  return result;
+void World::updateLightModel() {
+  worldLightModel.lightsPositions = lightsPositions.data();
+  worldLightModel.lightIntensity = dayNightCycleManager.getLightIntensity();
+  worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
+  worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
+  worldLightModel.ambientLightIntensity =
+      dayNightCycleManager.getAmbientLightIntesity();
 }

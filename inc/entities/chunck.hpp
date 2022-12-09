@@ -13,6 +13,7 @@
 #include "renderer/3d/bbox/bbox.hpp"
 #include "managers/block/vertex_block_data.hpp"
 #include <math/m4x4.hpp>
+#include "models/world_light_model.hpp"
 
 using Tyra::BBox;
 using Tyra::BBoxFace;
@@ -52,7 +53,8 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos, Vec4* lightsPositions);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
+              WorldLightModel* worldLightModel);
   void clear();
   void updateDrawData();
   void updateFrustumCheck(const Plane* frustumPlanes);
@@ -90,4 +92,6 @@ class Chunck {
   VertexBlockData vertexBlockData;
 
   Vec4 sunPosition;
+  float sunLightIntensity;
+  float ambientLightIntesity;
 };

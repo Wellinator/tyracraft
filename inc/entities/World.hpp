@@ -16,6 +16,8 @@
 #include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
+#include "managers/day_night_cycle_manager.hpp"
+#include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
 
 using Tyra::McpipBlock;
@@ -34,6 +36,7 @@ class World {
   TerrainManager* terrainManager;
   BlockManager* blockManager;
   ChunckManager* chunckManager;
+  DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
@@ -56,24 +59,15 @@ class World {
   u8 framesCounter = 0;
   NewGameOptions worldOptions = NewGameOptions();
 
-  Color dayColor = Color(192.0F, 216.0F, 255.0F);
-
   int maxLoadPerCall = 1;
   int maxUnloadPerCall = 2;
 
   std::vector<Chunck*> tempChuncksToLoad;
   std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
+  std::vector<Vec4> lightsPositions = {Vec4(0, 0, 0)};
 
-  // TODO: move to day/night cycle manager
-  Vec4 fixedPoint = CENTER_WORLD_POS;
-  float currentAngle = 0.0F;
-  float angularSpeed = 0.1F;
-  float circleRad = HALF_OVERWORLD_H_DISTANCE * DUBLE_BLOCK_SIZE;
-  std::vector<Vec4> lightsPositions = {
-      Vec4(0.0F, 0.0F, 0.0F)  // Sun positions
-  };
-  Vec4 getNewSunPosition();
+  WorldLightModel worldLightModel;
 
   void updateChunkByPlayerPosition(Player* player);
   void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
@@ -84,4 +78,5 @@ class World {
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();
   void renderTargetBlockHitbox(Block* targetBlock);
+  void updateLightModel();
 };

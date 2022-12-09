@@ -40,8 +40,10 @@ Chunck::~Chunck() {
 };
 
 void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
-                    Vec4* lightsPositions) {
-  sunPosition.set(lightsPositions[0]);
+                    WorldLightModel* worldLightModel) {
+  sunPosition.set(worldLightModel->sunPosition);
+  sunLightIntensity = worldLightModel->lightIntensity;
+  ambientLightIntesity = worldLightModel->ambientLightIntensity;
   this->updateFrustumCheck(frustumPlanes);
   // if (isVisible()) applyFOG(currentPlayerPos);
 }
@@ -76,8 +78,10 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     rawMatrix->identity();
 
     PipelineDirLightsBag dirLightsBag;
-    dirLightsBag.setAmbientColor(Color(75.0F, 75.0F, 75.0F));
-    dirLightsBag.setDirectionalLightColor(Color(105.0F, 105.0F, 105.0F), 0);
+    dirLightsBag.setAmbientColor(Color(
+        ambientLightIntesity, ambientLightIntesity, ambientLightIntesity));
+    dirLightsBag.setDirectionalLightColor(
+        Color(sunLightIntensity, sunLightIntensity, sunLightIntensity), 0);
     dirLightsBag.setDirectionalLightDirection(
         (sunPosition - CENTER_WORLD_POS).getNormalized(), 0);
 
@@ -98,7 +102,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     // Apply multiple colors
     StaPipColorBag colorBag;
     // colorBag.many = verticesColors.data();
-    Color* baseColor = new Color(128.0F, 128.0F, 128.0F);
+    Color* baseColor = new Color(110.0F, 110.0F, 110.0F);
     colorBag.single = baseColor;
 
     StaPipBag bag;
