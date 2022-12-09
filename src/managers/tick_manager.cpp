@@ -18,7 +18,7 @@ void TickManager::update(const float& deltaTime) {
 
 void TickManager::updateTicks(const float& deltaTime) {
   elapsedRealTime += deltaTime;
-  ticksCounter += deltaTime / TICK;
+  ticksCounter += deltaTime * REAL_TIME_TO_TICK;
 
   if (ticksCounter >= DAY_DURATION_IN_TICKS) {
     ticksDayCounter++;
