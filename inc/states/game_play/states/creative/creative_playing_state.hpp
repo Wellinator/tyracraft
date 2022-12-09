@@ -4,6 +4,7 @@
 #include "states/game_play/creative_audio_listener.hpp"
 #include "managers/font/font_manager.hpp"
 #include "managers/font/font_options.hpp"
+#include "managers/tick_manager.hpp"
 #include <tamtypes.h>
 #include <string>
 #include <tyra>

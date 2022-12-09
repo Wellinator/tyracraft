@@ -100,8 +100,14 @@ void CreativePlayingState::drawDegubInfo() {
 
   // Draw print log tip message:
   this->t_fontManager->printText(
-      "Press circle to print debug info to log",
+      "Press circle to log debug info",
       FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.8F));
+
+  // Draw ticks
+  std::string ticks = std::string("Ticks: ").append(
+      std::to_string(ticksCounter));
+  this->t_fontManager->printText(
+      ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
 
   // Draw Player state:
   std::string playerStateInfo =
