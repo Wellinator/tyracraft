@@ -39,10 +39,13 @@ void DayNightCycleManager::updateEntitiesPosition() {
 
 const Color DayNightCycleManager::getSkyColor() {
   Color result;
-  Color colorA = Color(120, 169, 255);
-  Color colorB = Color(0, 0, 0);
-  float interpolation = getLightScaleFromAngle();
 
-  result.lerp(colorA, colorB, interpolation);
+  float interpolation =
+      std::abs(((fmodf(currentAngleInDegrees, 90.0F)) - 90.0F) / 90.0F);
+
+  currentAngleInDegrees > 180.0F
+      ? result.lerp(AFTERNOON_MORNING_COLOR, NIGHT_MID_COLOR, interpolation)
+      : result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation);
+
   return result;
 }

@@ -6,6 +6,10 @@
 #include "constants.hpp"
 #include "managers/tick_manager.hpp"
 
+#define DAY_MID_COLOR Color(120, 169, 255)
+#define AFTERNOON_MORNING_COLOR Color(60, 85, 128)
+#define NIGHT_MID_COLOR Color(20, 20, 50)
+
 using Tyra::Color;
 using Tyra::Math;
 using Tyra::Vec4;
