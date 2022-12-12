@@ -134,7 +134,7 @@ class TerrainManager {
    */
   int getBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline bool isBlockVisibleAtIndex(const unsigned int& terrainIndex);
+  inline bool isBlockTransparentAtIndex(const unsigned int& terrainIndex);
 
   inline bool isTopFaceVisible(const Vec4* t_blockOffset);
   inline bool isBottomFaceVisible(const Vec4* t_blockOffset);

@@ -51,6 +51,10 @@ BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
   return this->t_blockTextureRepository->getTextureInfo(blockType);
 }
 
+const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
+    return this->t_blockTextureRepository->isBlockTransparent(blockType);
+}
+
 float BlockManager::getBlockBreakingTime() {
   // TODO: refactor -> receive block info and tool to calc breaking time;
   // ref: https://minecraft.fandom.com/wiki/Breaking
