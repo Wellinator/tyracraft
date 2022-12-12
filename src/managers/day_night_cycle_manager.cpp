@@ -6,21 +6,21 @@ DayNightCycleManager::~DayNightCycleManager() {}
 
 void DayNightCycleManager::update() {
   updateCurrentAngle();
+  updateIntensityByAngle();
   updateEntitiesPosition();
 }
 
 const float DayNightCycleManager::getLightIntensity() {
   float intensity = getLightScaleFromAngle();
-  intensity *= (ticksCounter < DAY_SUNSET || ticksCounter > DAY_SUNRISE)
-                   ? dayLightIntensity
-                   : nightLightIntensity;
+
+  intensity *= isDay() ? dayLightIntensity : nightLightIntensity;
   return baseLightIntensity + intensity;
 }
 
 const float DayNightCycleManager::getAmbientLightIntesity() {
   float intensity = getLightScaleFromAngle();
-  intensity *= ambientLightIntesity;
-  return baseLightIntensity + intensity;
+  intensity *= isDay() ? dayAmbientLightIntesity : nightAmbientLightIntesity;
+  return baseAmbientLightIntensity + intensity;
 }
 
 void DayNightCycleManager::updateCurrentAngle() {
@@ -39,13 +39,15 @@ void DayNightCycleManager::updateEntitiesPosition() {
 
 const Color DayNightCycleManager::getSkyColor() {
   Color result;
+  float interpolation = getLightScaleFromAngle();
 
-  float interpolation =
-      std::abs(((fmodf(currentAngleInDegrees, 90.0F)) - 90.0F) / 90.0F);
-
-  currentAngleInDegrees > 180.0F
-      ? result.lerp(AFTERNOON_MORNING_COLOR, NIGHT_MID_COLOR, interpolation)
-      : result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation);
+  isDay()
+      ? result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation)
+      : result.lerp(AFTERNOON_MORNING_COLOR, NIGHT_MID_COLOR, interpolation);
 
   return result;
+}
+
+void DayNightCycleManager::updateIntensityByAngle() {
+  _intensity = std::abs(Math::sin(currentAngleInDegrees * Math::ANG2RAD));
 }
