@@ -17,6 +17,7 @@
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
+#include "managers/tick_manager.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
 
@@ -79,4 +80,5 @@ class World {
   void renderBlockDamageOverlay();
   void renderTargetBlockHitbox(Block* targetBlock);
   void updateLightModel();
+  inline void setIntialTime() { g_ticksCounter = worldOptions.initialTime; };
 };

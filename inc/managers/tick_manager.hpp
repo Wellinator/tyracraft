@@ -20,7 +20,7 @@
  *
  */
 extern double elapsedRealTime;
-extern float ticksCounter;
+extern float g_ticksCounter;
 extern u16 ticksDayCounter;
 
 class TickManager {

@@ -24,6 +24,7 @@ void CreativePlayingState::init() {
 
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
+  tickManager.update(std::min(deltaTime, MAX_FRAME_MS));
   this->handleInput();
 
   this->stateGamePlay->world->update(
@@ -105,7 +106,7 @@ void CreativePlayingState::drawDegubInfo() {
 
   // Draw ticks
   std::string ticks =
-      std::string("Ticks: ").append(std::to_string(ticksCounter));
+      std::string("Ticks: ").append(std::to_string(g_ticksCounter));
   this->t_fontManager->printText(
       ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
 

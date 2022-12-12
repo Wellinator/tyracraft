@@ -41,6 +41,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->worldSpawnArea.set(this->terrainManager->defineSpawnArea());
   this->spawnArea.set(this->worldSpawnArea);
   this->buildInitialPosition();
+  this->setIntialTime();
 };
 
 void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,

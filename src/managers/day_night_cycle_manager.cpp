@@ -24,7 +24,7 @@ const float DayNightCycleManager::getAmbientLightIntesity() {
 }
 
 void DayNightCycleManager::updateCurrentAngle() {
-  currentAngleInDegrees = (ticksCounter / DAY_DURATION_IN_TICKS) * 360;
+  currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360;
 }
 
 void DayNightCycleManager::updateEntitiesPosition() {

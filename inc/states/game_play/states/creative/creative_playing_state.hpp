@@ -50,4 +50,5 @@ class CreativePlayingState : public PlayingStateBase {
   u32 audioListenerId;
   float elapsedTimeInSec;
   u8 debugMode = false;
+  TickManager tickManager;
 };
