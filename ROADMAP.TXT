@@ -43,7 +43,7 @@
     ✅ -> Basic Day/Night cycle;
 
 * Bug fixes for pre-alpha release (v0.2):
-    🔲 -> Chash on creative sound ends;
+    ✅ -> Game chashes when creative sound finish;
     🔲 -> Leaves neghboors blocks visibility;
     🔲 -> Refactor block visibility/transparency/solid check system;
     🔲 -> Real PS2:
