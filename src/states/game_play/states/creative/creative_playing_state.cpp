@@ -16,10 +16,10 @@ CreativePlayingState::~CreativePlayingState() {
 void CreativePlayingState::init() {
   this->t_creativeAudioListener = new CreativeAudioListener(
       &this->stateGamePlay->context->t_engine->audio.song);
-  this->t_creativeAudioListener->playRandomCreativeSound();
   this->audioListenerId =
       this->stateGamePlay->context->t_engine->audio.song.addListener(
           this->t_creativeAudioListener);
+  this->t_creativeAudioListener->playRandomCreativeSound();
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
@@ -104,8 +104,8 @@ void CreativePlayingState::drawDegubInfo() {
       FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.8F));
 
   // Draw ticks
-  std::string ticks = std::string("Ticks: ").append(
-      std::to_string(ticksCounter));
+  std::string ticks =
+      std::string("Ticks: ").append(std::to_string(ticksCounter));
   this->t_fontManager->printText(
       ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
 
