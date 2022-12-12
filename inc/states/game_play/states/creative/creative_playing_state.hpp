@@ -27,6 +27,11 @@ class CreativePlayingState : public PlayingStateBase {
   void navigate();
   void renderCreativeUi();
   void drawDegubInfo();
+  void playNewRandomSong();
+
+  inline const u8 isSongPlaying() {
+    return t_creativeAudioListener->t_song->isPlaying();
+  };
 
   /**
    * @brief Print blocks info to log

@@ -26,36 +26,36 @@ void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
   this->handleInput();
 
-  Threading::switchThread();
   this->stateGamePlay->world->update(
       this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
       &this->stateGamePlay->context->t_engine->pad, deltaTime);
 
-  Threading::switchThread();
   this->stateGamePlay->player->update(
       deltaTime, this->stateGamePlay->context->t_engine->pad,
       *this->stateGamePlay->context->t_camera,
       this->stateGamePlay->world->chunckManager->getVisibleChunks());
 
-  Threading::switchThread();
   this->stateGamePlay->ui->update();
 
-  Threading::switchThread();
   this->stateGamePlay->context->t_camera->update(
       this->stateGamePlay->context->t_engine->pad,
       *this->stateGamePlay->player->mesh);
+
+  if (!isSongPlaying()) playNewRandomSong();
+
+  Threading::switchThread();
 }
 
 void CreativePlayingState::render() {
   this->stateGamePlay->world->render();
 
-  Threading::switchThread();
   this->stateGamePlay->player->render();
 
-  Threading::switchThread();
   this->renderCreativeUi();
 
   if (debugMode) drawDegubInfo();
+
+  Threading::switchThread();
 }
 
 void CreativePlayingState::handleInput() {
@@ -151,4 +151,9 @@ void CreativePlayingState::printMemoryInfoToLog() {
                             .append(std::to_string(info.getAvailableRAM()))
                             .append(" MB");
   TYRA_LOG(freeRam.c_str());
+}
+
+void CreativePlayingState::playNewRandomSong() {
+  TYRA_LOG("Song finished, playing a new random song.");
+  this->t_creativeAudioListener->playRandomCreativeSound();
 }
