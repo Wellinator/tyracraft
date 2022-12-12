@@ -30,3 +30,22 @@
         🔲 -> Fix walking state;
         🔲 -> Fix amimations state;
         🔲 -> Blocks textures ID;
+
+
+############ TyraCfat Roadmap ############
+
+* Features for pre-alpha release (v0.2):
+    ❌ -> Tool (Pickaxe) (WIP);
+    ❌ -> Basic ingame menu for block selection;
+    ✅ -> Implemented tyra manual render mode;
+    ✅ -> BLocks hidden faces culling;
+    ✅ -> Basic ambient and directional lighting effets;
+    ✅ -> Basic Day/Night cycle;
+
+* Bug fixes for pre-alpha release (v0.2):
+    🔲 -> Chash on creative sound ends;
+    🔲 -> Leaves neghboors blocks visibility;
+    🔲 -> Real PS2:
+        🔲 -> Fix walking state;
+        🔲 -> Fix amimations state;
+        ✅ -> Blocks textures ID (Kinda cache at rendering multiple blocks);
