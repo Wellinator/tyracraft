@@ -41,9 +41,11 @@
     ✅ -> BLocks hidden faces culling;
     ✅ -> Basic ambient and directional lighting effets;
     ✅ -> Basic Day/Night cycle;
+    ✅ -> Adde tick manager (visible in debug info);
 
 * Bug fixes for pre-alpha release (v0.2):
     ✅ -> Game chashes when creative sound finish;
+    ✅ -> Fixed time scale conversion;
     🔲 -> Leaves neghboors blocks visibility;
     🔲 -> Refactor block visibility/transparency/solid check system;
     🔲 -> Real PS2:
