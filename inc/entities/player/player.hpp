@@ -65,6 +65,11 @@ class Player {
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isFlying, isBreaking;
 
+  inline const u8 isHandFree() { return !isHoldingAnItem(); };
+  inline const u8 isHoldingAnItem() {
+    return getSelectedInventoryItemType() != ItemId::empty;
+  };
+
   Vec4 spawnArea;
   u16 currentChunckId = 0;
 
@@ -141,6 +146,12 @@ class Player {
   void selectNextItem();
   void selectPreviousItem();
 
+  void animate();
+  void setArmBreakingAnimation();
+  void unsetArmBreakingAnimation();
+  void setWalkingAnimation();
+  void unsetWalkingAnimation();
+
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
   // Animations
@@ -148,10 +159,10 @@ class Player {
   float baseAnimationSpeed = 0.08F;
   std::vector<u32> walkSequence = {2, 1, 0, 1};
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
-  std::vector<u32> standStillSequence = {1};
+  std::vector<u32> standStillSequence = {1, 1};
 
   // Player arm
-  std::vector<u32> armStandStillSequence = {6};
+  std::vector<u32> armStandStillSequence = {6, 6};
   std::vector<u32> armWalkingSequence = {0, 1, 2, 3,  4,  5, 6,
                                          7, 8, 9, 10, 11, 12};
   std::vector<u32> armHitingSequence = {13, 14, 15, 16, 17, 18, 19, 20};

@@ -69,12 +69,11 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
   const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
 
   if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-    const u8 hasMoved =
+    const bool hasMoved =
         this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
-
-    const u8 canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
-                                this->isOnGround &&
-                                this->currentBlock != nullptr;
+    const bool canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
+                                  this->isOnGround &&
+                                  this->currentBlock != nullptr;
     if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
   }
 
@@ -91,29 +90,13 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     this->updateGravity(deltaTime, terrainHeight);
   }
 
+  animate();
+
   // this->handledItem->mesh->translation.identity();
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
-void Player::render() {
-  this->renderPip->render(this->t_renderer);
-
-  // auto& utilityTools = this->t_renderer->renderer3D.utility;
-
-  // Draw Player bbox
-  // { utilityTools.drawBBox(getHitBox()); }
-
-  // if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
-  //   // TODO: refactor to handledItem structure
-  //   this->t_renderer->renderer3D.usePipeline(stpip);
-  //   this->stpip.render(this->handledItem->mesh.get(),
-  //                      this->handledItem->options);
-
-  //   utilityTools.drawBBox(
-  //       this->handledItem->mesh.get()->frame->bbox->getTransformed(
-  //           this->handledItem->mesh.get()->getModelMatrix()));
-  // }
-}
+void Player::render() { this->renderPip->render(this->t_renderer); }
 
 void Player::handleInputCommands(const Pad& t_pad) {
   const PadButtons& clicked = t_pad.getClicked();
@@ -122,30 +105,24 @@ void Player::handleInputCommands(const Pad& t_pad) {
   if (clicked.L1) this->moveSelectorToTheLeft();
   if (clicked.R1) this->moveSelectorToTheRight();
 
-  if (pressed.L2) {
-    this->isBreaking = true;
-    if (!isBreakingAnimationSet) {
-      // FIXME: enable on thrid person only
-      // this->mesh->animation.speed = baseAnimationSpeed * 3;
-      // this->mesh->animation.setSequence(breakBlockSequence);
-
-      this->armMesh->animation.speed = baseAnimationSpeed * 6;
-      this->armMesh->animation.setSequence(armHitingSequence);
-      isBreakingAnimationSet = true;
-    }
-  } else {
-    this->isBreaking = false;
-    isBreakingAnimationSet = false;
-  }
-
-  if (pressed.Cross && this->isOnGround) {
-    this->jump();
-  }
+  if (pressed.L2)
+    setArmBreakingAnimation();
+  else
+    unsetArmBreakingAnimation();
 
   // TODO: refactore to ingame invetory menu
+
   if (isOnGround) {
+    if (pressed.Cross) this->jump();
+
     if (clicked.DpadUp) this->selectNextItem();
+
     if (clicked.DpadDown) this->selectPreviousItem();
+
+    if (t_pad.getLeftJoyPad().isMoved) {
+      setWalkingAnimation();
+    } else
+      unsetWalkingAnimation();
   }
 
   // FIXME: Player mesh rotation based on camera direction
@@ -154,36 +131,6 @@ void Player::handleInputCommands(const Pad& t_pad) {
   // } else if (t_pad.getRightJoyPad().h <= 100) {
   //   this->mesh->rotation.rotateY(0.08F);
   // }
-
-  if (t_pad.getLeftJoyPad().isMoved && isOnGround) {
-    if (!isWalkingAnimationSet) {
-      // TODO: enable on third person only
-      // this->mesh->animation.speed = baseAnimationSpeed;
-      // this->mesh->animation.setSequence(walkSequence);
-
-      this->armMesh->animation.speed = baseAnimationSpeed * 3;
-      this->armMesh->animation.setSequence(armWalkingSequence);
-      isWalkingAnimationSet = true;
-    }
-  } else {
-    isWalkingAnimationSet = false;
-  }
-
-  // If is not animating walking or breaking, set default (standstill);
-  const bool isNotAnimating =
-      (!isBreakingAnimationSet && !isWalkingAnimationSet);
-  if (isNotAnimating) {
-    if (!isStandStillAnimationSet) {
-      this->mesh->animation.setSequence(standStillSequence);
-      this->armMesh->animation.setSequence(armStandStillSequence);
-      this->isStandStillAnimationSet = true;
-    }
-  } else {
-    this->isStandStillAnimationSet = false;
-  }
-
-  this->mesh->update();
-  this->armMesh->update();
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
@@ -533,15 +480,12 @@ void Player::calcStaticBBox() {
 }
 
 void Player::playWalkSfx(const Blocks& blockType) {
-  if (blockType != Blocks::AIR_BLOCK) {
-    SfxBlockModel* blockSfxModel =
-        this->t_blockManager->getStepSoundByBlockType(blockType);
-
-    if (blockSfxModel != nullptr) {
-      this->t_soundManager->setSfxVolume(WALK_SFX_VOL, WALK_SFX_CH);
-      this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound, WALK_SFX_CH);
-    }
+  SfxBlockModel* blockSfxModel =
+      this->t_blockManager->getStepSoundByBlockType(blockType);
+  if (blockSfxModel) {
+    this->t_soundManager->setSfxVolume(WALK_SFX_VOL, WALK_SFX_CH);
+    this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
+                                  WALK_SFX_CH);
   }
 }
 
@@ -591,4 +535,58 @@ void Player::jump() {
 void Player::setRenderPip(PlayerRenderPip* pipToSet) {
   delete this->renderPip;
   this->renderPip = pipToSet;
+}
+
+void Player::setArmBreakingAnimation() {
+  if (isBreakingAnimationSet) return;
+
+  mesh->animation.speed = baseAnimationSpeed * 3;
+  mesh->animation.setSequence(breakBlockSequence);
+
+  if (isHandFree()) {
+    armMesh->animation.speed = baseAnimationSpeed * 6;
+    armMesh->animation.setSequence(armHitingSequence);
+  }
+
+  isBreakingAnimationSet = true;
+  isBreaking = true;
+}
+
+void Player::unsetArmBreakingAnimation() {
+  if (!isBreakingAnimationSet) return;
+
+  isBreaking = false;
+  isBreakingAnimationSet = false;
+  armMesh->animation.setSequence(armStandStillSequence);
+  mesh->animation.setSequence(standStillSequence);
+}
+
+void Player::setWalkingAnimation() {
+  if (isWalkingAnimationSet) return;
+
+  this->mesh->animation.speed = baseAnimationSpeed;
+  this->mesh->animation.setSequence(walkSequence);
+
+  if (isHandFree()) {
+    this->armMesh->animation.speed = baseAnimationSpeed * 3;
+    this->armMesh->animation.setSequence(armWalkingSequence);
+  }
+
+  isWalkingAnimationSet = true;
+}
+
+void Player::unsetWalkingAnimation() {
+  if (!isWalkingAnimationSet) return;
+
+  isWalkingAnimationSet = false;
+  armMesh->animation.setSequence(armStandStillSequence);
+  mesh->animation.setSequence(standStillSequence);
+}
+
+void Player::animate() {
+  // TODO: check cam type before animate
+  if (isBreakingAnimationSet || isWalkingAnimationSet) {
+    this->mesh->update();
+    if (isHandFree()) this->armMesh->update();
+  }
 }
