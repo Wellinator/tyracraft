@@ -77,10 +77,14 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
           this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
-      const bool canPlayWalkSound =
-          hasChangedPosition && this->isOnGround && this->currentBlock;
-      if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
+
+      if (hasChangedPosition && this->isOnGround && this->currentBlock) {
+        this->playWalkSfx(this->currentBlock->type);
+        setWalkingAnimation();
+      }
     }
+  } else {
+    unsetWalkingAnimation();
   }
 
   TerrainHeightModel terrainHeight =
@@ -124,11 +128,6 @@ void Player::handleInputCommands(const Pad& t_pad) {
     if (clicked.DpadUp) this->selectNextItem();
 
     if (clicked.DpadDown) this->selectPreviousItem();
-
-    if (t_pad.getLeftJoyPad().isMoved) {
-      setWalkingAnimation();
-    } else
-      unsetWalkingAnimation();
   }
 
   // FIXME: Player mesh rotation based on camera direction
