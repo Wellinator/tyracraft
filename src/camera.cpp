@@ -30,13 +30,14 @@ Camera::~Camera() {}
 
 void Camera::update(Pad& pad, Mesh& t_mesh) {
   const auto& rightJoy = pad.getRightJoyPad();
-  position.set(*t_mesh.getPosition() - (unitCirclePosition.getNormalized() * BLOCK_SIZE));
+  position.set(*t_mesh.getPosition() -
+               (unitCirclePosition.getNormalized() * BLOCK_SIZE));
   position.y += CAMERA_Y;
 
   Vec4 sensibility = Vec4((rightJoy.h - 128.0F) / 128.0F, 0.0F,
                           (rightJoy.v - 128.0F) / 128.0F);
 
-  if (rightJoy.isMoved) {
+  if (rightJoy.isMoved && sensibility.length() >= R_JOYPAD_DEAD_ZONE) {
     yaw += camSpeed * sensibility.x;
     pitch += camSpeed * (-sensibility.z);
 

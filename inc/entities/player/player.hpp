@@ -63,7 +63,7 @@ class Player {
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isFlying, isBreaking;
+  bool isOnGround, isFlying, isBreaking, isMoving;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
@@ -98,12 +98,13 @@ class Player {
   BlockManager* t_blockManager;
   SoundManager* t_soundManager;
   StaticPipeline stpip;
-  Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
+  Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,
                        const Camera& t_camera);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
   const u8 WALK_SFX_CH = 3;
   const u8 WALK_SFX_VOL = 50;
+  const float L_JOYPAD_DEAD_ZONE = 0.15F;
 
   // Forces values
   float speed = 100;

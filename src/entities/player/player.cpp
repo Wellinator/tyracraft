@@ -66,15 +66,21 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
                     std::vector<Chunck*> loadedChunks) {
   this->handleInputCommands(t_pad);
 
-  const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
+  Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
+                          (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
 
-  if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-    const bool hasMoved =
-        this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
-    const bool canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
-                                  this->isOnGround &&
-                                  this->currentBlock != nullptr;
-    if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
+  this->isMoving = t_pad.getLeftJoyPad().isMoved &&
+                   sensibility.length() >= L_JOYPAD_DEAD_ZONE;
+  if (isMoving) {
+    const Vec4 nextPlayerPos =
+        getNextPosition(deltaTime, sensibility, t_camera);
+    if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
+      const bool hasChangedPosition =
+          this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
+      const bool canPlayWalkSound =
+          hasChangedPosition && this->isOnGround && this->currentBlock;
+      if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
+    }
   }
 
   TerrainHeightModel terrainHeight =
@@ -133,13 +139,9 @@ void Player::handleInputCommands(const Pad& t_pad) {
   // }
 }
 
-Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
+Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Camera& t_camera) {
-  if (t_pad.getLeftJoyPad().isCentered) return (*mesh->getPosition());
-
   Vec4 camDir = t_camera.unitCirclePosition.getNormalized();
-  Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
-                          (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
   Vec4 result =
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
