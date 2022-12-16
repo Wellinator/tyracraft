@@ -116,6 +116,9 @@ void CreativePlayingState::drawDegubInfo() {
           .append(std::string("Is On ground: ") +
                   std::to_string(this->stateGamePlay->player->isOnGround) +
                   std::string("\n"))
+          .append(std::string("Is moving: ") +
+                  std::to_string(this->stateGamePlay->player->isMoving) +
+                  std::string("\n"))
           .append(std::string("Is Flaying: ") +
                   std::to_string(this->stateGamePlay->player->isFlying) +
                   std::string("\n"))
