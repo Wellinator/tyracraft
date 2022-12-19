@@ -92,15 +92,15 @@ void StateMainMenu::render() {
 
 void StateMainMenu::loadSkybox(Renderer* renderer) {
   this->skyboxOptions = new StaPipOptions();
-  this->skyboxOptions->fullClipChecks = false;
+  this->skyboxOptions->fullClipChecks = true;
   this->skyboxOptions->textureMappingType =
       Tyra::PipelineTextureMappingType::TyraNearest;
   this->skyboxOptions->frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
 
   ObjLoaderOptions options;
   options.flipUVs = true;
-  options.scale = 250.0F;
+  options.scale = 300.0F;
 
   auto data =
       ObjLoader::load(FileUtils::fromCwd("assets/menu/skybox.obj"), options);
