@@ -558,8 +558,8 @@ void Player::unsetArmBreakingAnimation() {
 
   isBreaking = false;
   isBreakingAnimationSet = false;
-  armMesh->animation.setSequence(armStandStillSequence);
   mesh->animation.setSequence(standStillSequence);
+  armMesh->animation.setSequence(armStandStillSequence);
 }
 
 void Player::setWalkingAnimation() {
@@ -586,8 +586,6 @@ void Player::unsetWalkingAnimation() {
 
 void Player::animate() {
   // TODO: check cam type before animate
-  if (isBreakingAnimationSet || isWalkingAnimationSet) {
-    this->mesh->update();
-    if (isHandFree()) this->armMesh->update();
-  }
+  this->mesh->update();
+  if (isHandFree()) this->armMesh->update();
 }
