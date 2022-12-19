@@ -61,6 +61,7 @@ class TerrainManager {
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
+  void buildChunkAsync(Chunck* t_chunck);
 
   inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
   inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };

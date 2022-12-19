@@ -34,7 +34,7 @@
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
 #define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 128
+#define LOAD_CHUNK_BATCH 64
 
 /**
  * Define blocks IDs

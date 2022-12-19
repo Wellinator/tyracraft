@@ -114,10 +114,8 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     }
   }
 
-  if (this->framesCounter % 30 == 0) {
-    this->unloadScheduledChunks();
-    this->loadScheduledChunks();
-  }
+  this->unloadScheduledChunks();
+  this->loadScheduledChunks();
 }
 
 void World::reloadChangedChunk() {
@@ -154,16 +152,10 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
 
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() == 0) return;
-  int loadPerCall = 0;
 
   for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
     if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
-    this->terrainManager->buildChunk(tempChuncksToLoad[i]);
-
-    if (loadPerCall >= this->maxLoadPerCall)
-      return;
-    else
-      loadPerCall++;
+    return this->terrainManager->buildChunkAsync(tempChuncksToLoad[i]);
   }
 
   tempChuncksToLoad.clear();
@@ -171,15 +163,10 @@ void World::loadScheduledChunks() {
 
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() == 0) return;
-  int unloadPerCall = 0;
+
   for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
     if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
-    tempChuncksToUnLoad[i]->clear();
-
-    if (unloadPerCall >= this->maxUnloadPerCall)
-      return;
-    else
-      unloadPerCall++;
+    return tempChuncksToUnLoad[i]->clear();
   }
 
   tempChuncksToUnLoad.clear();

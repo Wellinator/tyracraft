@@ -45,6 +45,7 @@ class Chunck {
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
+  Vec4* tempLoadingOffset = new Vec4();
   Vec4* minOffset = new Vec4();
   Vec4* maxOffset = new Vec4();
   Vec4* center = new Vec4();
@@ -81,6 +82,10 @@ class Chunck {
   void highLightTargetBlock(Block* t_block, u8& isTarget);
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
+
+  inline void resetLoadingOffset() {
+    this->tempLoadingOffset->set(*minOffset);
+  };
 
   void loadBags();
   void clearDrawData();

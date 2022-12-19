@@ -190,7 +190,8 @@ bool TerrainManager::isBlockHidden(const Vec4* blockOffset) {
          isTopFaceVisible(blockOffset) && isBottomFaceVisible(blockOffset);
 }
 
-bool TerrainManager::isBlockTransparentAtIndex(const unsigned int& terrainIndex) {
+bool TerrainManager::isBlockTransparentAtIndex(
+    const unsigned int& terrainIndex) {
   if (terrainIndex >= 0 && terrainIndex <= OVERWORLD_SIZE) {
     return (terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK ||
             this->t_blockManager->isBlockTransparent(
@@ -343,9 +344,9 @@ const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
-    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
-      for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
+  for (int z = t_chunck->minOffset->z; z <= t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x <= t_chunck->maxOffset->x; x++) {
+      for (int y = t_chunck->minOffset->y; y <= t_chunck->maxOffset->y; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
 
@@ -387,6 +388,74 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
         }
       }
     }
+  }
+
+  t_chunck->state = ChunkState::Loaded;
+  t_chunck->updateDrawData();
+}
+
+void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
+  int batchCounter = 0;
+  int z = t_chunck->tempLoadingOffset->z;
+  int x = t_chunck->tempLoadingOffset->x;
+  int y = t_chunck->tempLoadingOffset->y;
+
+  while (batchCounter < LOAD_CHUNK_BATCH) {
+    if (z > t_chunck->maxOffset->z) break;
+
+    unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+    u8 block_type = this->terrain[blockIndex];
+
+    if (!(blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
+          block_type <= (u8)Blocks::AIR_BLOCK)) {
+      Vec4 tempBlockOffset = Vec4(x, y, z);
+      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+      const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+      const bool isVisible = visibleFaces > 0;
+
+      // Are block's coordinates in world range?
+      if (isVisible && tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
+        BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
+            static_cast<Blocks>(block_type));
+
+        Block* block = new Block(blockInfo);
+        block->index = blockIndex;
+        block->visibleFaces = visibleFaces;
+
+        // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+        // block->color = Color(bright, bright, bright, 128.0F);
+
+        block->setPosition(blockPosition);
+        block->scale.scale(BLOCK_SIZE);
+        block->updateModelMatrix();
+
+        // Calc min and max corners
+        {
+          BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+          block->bbox = new BBox(tempBBox);
+          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+        }
+
+        t_chunck->addBlock(block);
+        batchCounter++;
+      }
+    }
+
+    y++;
+    if (y > t_chunck->maxOffset->y) {
+      y = t_chunck->minOffset->y;
+      x++;
+    }
+    if (x > t_chunck->maxOffset->x) {
+      x = t_chunck->minOffset->x;
+      z++;
+    }
+  }
+
+  if (batchCounter >= LOAD_CHUNK_BATCH) {
+    t_chunck->tempLoadingOffset->set(x, y, z);
+    return;
   }
 
   t_chunck->state = ChunkState::Loaded;

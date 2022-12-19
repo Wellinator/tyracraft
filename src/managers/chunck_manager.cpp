@@ -38,9 +38,9 @@ void ChunckManager::generateChunks() {
   // TODO: create only the chuncks that'll be rendered
   u16 tempId = 1;
 
-  for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE;
+  for (int x = OVERWORLD_MIN_DISTANCE; x <= OVERWORLD_MAX_DISTANCE;
        x += CHUNCK_SIZE) {
-    for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE;
+    for (int z = OVERWORLD_MIN_DISTANCE; z <= OVERWORLD_MAX_DISTANCE;
          z += CHUNCK_SIZE) {
       Vec4 tempMin = Vec4(x, OVERWORLD_MIN_HEIGH, z);
       Vec4 tempMax =

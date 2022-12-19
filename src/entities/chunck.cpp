@@ -6,6 +6,7 @@
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
   this->id = id;
+  this->tempLoadingOffset->set(minOffset);
   this->minOffset->set(minOffset);
   this->maxOffset->set(maxOffset);
   this->center->set(((maxOffset - minOffset) / 2 + minOffset));
@@ -139,6 +140,8 @@ void Chunck::clear() {
 
   this->blocks.clear();
   this->blocks.shrink_to_fit();
+
+  resetLoadingOffset();
 
   this->state = ChunkState::Clean;
 }
