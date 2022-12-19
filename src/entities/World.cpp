@@ -60,7 +60,8 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
   this->terrainManager->update(t_player, t_camera, t_pad,
                                this->chunckManager->getVisibleChunks(),
                                deltaTime);
-  if (this->framesCounter >= 60) this->framesCounter = 0;
+
+  this->framesCounter = this->framesCounter % 60;
 };
 
 void World::render() {
@@ -107,8 +108,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     Chunck* currentChunck =
         this->chunckManager->getChunckByPosition(currentPlayerPos);
 
-    if (currentChunck != nullptr &&
-        t_player->currentChunckId != currentChunck->id) {
+    if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
       this->scheduleChunksNeighbors(currentChunck);
     }
