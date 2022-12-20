@@ -27,6 +27,7 @@ class ChunckManager {
   ~ChunckManager();
 
   Chunck* getChunckByPosition(const Vec4& position);
+  Chunck* getChunckByOffset(const Vec4& offset);
   Chunck* getChunckById(const u16 id);
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   std::vector<Chunck*> getVisibleChunks();

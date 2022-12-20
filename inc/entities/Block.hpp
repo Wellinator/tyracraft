@@ -26,13 +26,14 @@ class Block {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
   int index;                        // Index at terrain;
-  // Vec4 position;        // Index at terrain;
+  Vec4 offset;                      // Terrain offset;
+  u32 chunkId = 0;;
 
   // Block state
   u8 isTarget = false;
   u8 isSolid = false;
   u8 isBreakable = false;
-  u8 isSingleTexture = true;
+  u8 isAtChunkBorder = false;
   float damage = 0;
 
   Vec4 minCorner;

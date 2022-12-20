@@ -61,6 +61,17 @@ Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
   return nullptr;
 };
 
+Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
+  for (u16 i = 0; i < this->chuncks.size(); i++)
+    if (offset.x >= chuncks[i]->minOffset->x &&
+        offset.x <= chuncks[i]->maxOffset->x &&
+        offset.z >= chuncks[i]->minOffset->z &&
+        offset.z <= chuncks[i]->maxOffset->z) {
+      return chuncks[i];
+    }
+  return nullptr;
+};
+
 Chunck* ChunckManager::getChunckById(const u16 id) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
     if (chuncks[i]->id == id) return chuncks[i];

@@ -368,7 +368,11 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
 
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
+          block->offset.set(tempBlockOffset);
+          block->chunkId = t_chunck->id;
           block->visibleFaces = visibleFaces;
+          block->isAtChunkBorder = isBlockAtChunkBorder(
+              &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
           // float bright = this->getBlockLuminosity(tempBlockOffset.y);
           // block->color = Color(bright, bright, bright, 128.0F);
@@ -421,7 +425,11 @@ void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
 
         Block* block = new Block(blockInfo);
         block->index = blockIndex;
+        block->offset.set(tempBlockOffset);
+        block->chunkId = t_chunck->id;
         block->visibleFaces = visibleFaces;
+        block->isAtChunkBorder = isBlockAtChunkBorder(
+            &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
         // float bright = this->getBlockLuminosity(tempBlockOffset.y);
         // block->color = Color(bright, bright, bright, 128.0F);
@@ -512,13 +520,12 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   }
 }
 
-void TerrainManager::removeBlock() {
-  if (this->targetBlock == nullptr) return;
-
-  this->_modifiedPosition.set(*this->targetBlock->getPosition());
-  terrain[this->targetBlock->index] = (u8)Blocks::AIR_BLOCK;
-  this->_shouldUpdateChunck = 1;
-  this->playDestroyBlockSound(this->targetBlock->type);
+void TerrainManager::removeBlock(Block* blockToRemove) {
+  terrain[blockToRemove->index] = (u8)Blocks::AIR_BLOCK;
+  this->_modifiedPosition.set(*blockToRemove->getPosition());
+  this->removedBlock = blockToRemove;
+  this->_shouldUpdateChunck = true;
+  this->playDestroyBlockSound(blockToRemove->type);
 }
 
 void TerrainManager::putBlock(const Blocks& blockToPlace) {
@@ -560,10 +567,11 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
     newBlockPos.y -= DUBLE_BLOCK_SIZE;
   }
 
+  // Is a valid index?
   if (terrainIndex <= OVERWORLD_SIZE &&
       terrainIndex != this->targetBlock->index) {
-    // Prevent to put a block at the player position;
     {
+      // Prevent to put a block at the player position;
       M4x4 tempModel = M4x4();
       tempModel.identity();
       tempModel.scale(BLOCK_SIZE);
@@ -589,7 +597,8 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
     }
 
     this->_modifiedPosition.set(newBlockPos);
-    this->terrain[terrainIndex] = (u8)blockToPlace;
+    if (this->terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK)
+      this->terrain[terrainIndex] = (u8)blockToPlace;
     this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);
   }
@@ -622,7 +631,7 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
 
     if (breaking_time_pessed >= this->t_blockManager->getBlockBreakingTime()) {
       // Remove block;
-      this->removeBlock();
+      this->removeBlock(this->targetBlock);
 
       // Target block has changed, reseting the pressed time;
       this->breaking_time_pessed = 0;
@@ -966,4 +975,13 @@ void TerrainManager::playBreakingBlockSound(const Blocks& blockType) {
                                     blockSfxModel->sound,
                                     BLOCK_PLACEMENT_SFX_CH);
   }
+}
+
+u8 TerrainManager::isBlockAtChunkBorder(const Vec4* blockOffset,
+                                        const Vec4* chunkMinOffset,
+                                        const Vec4* chunkMaxOffset) {
+  return blockOffset->x == chunkMinOffset->x ||
+         blockOffset->x == chunkMaxOffset->x ||
+         blockOffset->z == chunkMinOffset->z ||
+         blockOffset->z == chunkMaxOffset->z;
 }

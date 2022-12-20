@@ -8,7 +8,6 @@ using Tyra::McpipBlock;
 
 Block::Block(BlockInfo* blockInfo) {
   this->type = static_cast<Blocks>(blockInfo->blockId);
-  this->isSingleTexture = blockInfo->_isSingle;
   this->isBreakable = blockInfo->_isBreakable;
   this->isSolid = blockInfo->_isSolid;
   this->model.identity();
@@ -16,7 +15,7 @@ Block::Block(BlockInfo* blockInfo) {
   this->translation.identity();
   this->rotation.identity();
 
-  isSingleTexture
+  blockInfo->_isSingle
       ? setSingleFaces(blockInfo->_facesMap[0], blockInfo->_facesMap[1])
       : setMultipleFaces(blockInfo->_facesMap.data());
 }

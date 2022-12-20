@@ -76,7 +76,9 @@ class World {
                                u8 force_loading = 0);
   void loadScheduledChunks();
   void unloadScheduledChunks();
-  void reloadChangedChunk();
+  void updateNeighBorsChunksByModdedBlock(Block* changedBlock);
+  void reloadChangedChunkByRemovedBlock();
+  void reloadChangedChunkByPutedBlock();
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();

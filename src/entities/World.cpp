@@ -51,7 +51,12 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
   dayNightCycleManager.update();
   updateLightModel();
 
-  if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
+  if (this->terrainManager->shouldUpdateChunck()) {
+    if (this->terrainManager->hasRemovedABlock())
+      reloadChangedChunkByRemovedBlock();
+    else
+      reloadChangedChunkByPutedBlock();
+  }
 
   this->chunckManager->update(
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
@@ -120,14 +125,69 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   }
 }
 
-void World::reloadChangedChunk() {
+void World::reloadChangedChunkByPutedBlock() {
   Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(
       this->terrainManager->getModifiedPosition());
+
+  if (this->terrainManager->targetBlock &&
+      this->terrainManager->targetBlock->isAtChunkBorder) {
+    updateNeighBorsChunksByModdedBlock(this->terrainManager->targetBlock);
+  }
 
   if (chunckToUpdate != nullptr) {
     chunckToUpdate->clear();
     this->terrainManager->buildChunk(chunckToUpdate);
     this->terrainManager->setChunckToUpdated();
+  }
+}
+
+void World::reloadChangedChunkByRemovedBlock() {
+  Block* removedBlock = this->terrainManager->removedBlock;
+  if (removedBlock->isAtChunkBorder)
+    updateNeighBorsChunksByModdedBlock(removedBlock);
+
+  Chunck* chunckToUpdate =
+      this->chunckManager->getChunckById(removedBlock->chunkId);
+  chunckToUpdate->clear();
+  this->terrainManager->buildChunk(chunckToUpdate);
+  this->terrainManager->removedBlock = nullptr;
+  this->terrainManager->setChunckToUpdated();
+}
+
+void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
+  // Front
+  Chunck* frontChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x, changedBlock->offset.y,
+           changedBlock->offset.z + 1));
+
+  // Back
+  Chunck* backChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x, changedBlock->offset.y,
+           changedBlock->offset.z - 1));
+
+  // Right
+  Chunck* rightChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x + 1, changedBlock->offset.y,
+           changedBlock->offset.z));
+  // Left
+  Chunck* leftChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x - 1, changedBlock->offset.y,
+           changedBlock->offset.z));
+
+  if (frontChunk && frontChunk->id != changedBlock->chunkId) {
+    frontChunk->clear();
+    this->terrainManager->buildChunk(frontChunk);
+  } else if (backChunk && backChunk->id != changedBlock->chunkId) {
+    backChunk->clear();
+    this->terrainManager->buildChunk(backChunk);
+  }
+
+  if (rightChunk && rightChunk->id != changedBlock->chunkId) {
+    rightChunk->clear();
+    this->terrainManager->buildChunk(rightChunk);
+  } else if (leftChunk && leftChunk->id != changedBlock->chunkId) {
+    leftChunk->clear();
+    this->terrainManager->buildChunk(leftChunk);
   }
 }
 

@@ -50,7 +50,7 @@ class TerrainManager {
   Block* targetBlock = nullptr;
   void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
                          std::vector<Chunck*> chuncks);
-  void removeBlock();
+  void removeBlock(Block* blockToRemove);
   void putBlock(const Blocks& blockType);
 
   Renderer* t_renderer;
@@ -64,7 +64,7 @@ class TerrainManager {
   void buildChunkAsync(Chunck* t_chunck);
 
   inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
-  inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };
+  inline void setChunckToUpdated() { this->_shouldUpdateChunck = false; };
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
 
   /**
@@ -74,11 +74,15 @@ class TerrainManager {
    */
   inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
 
+  inline u8 hasRemovedABlock() { return this->removedBlock != nullptr; };
+  Block* removedBlock = nullptr;
+
  private:
   Ray ray;
-  u8 _shouldUpdateChunck = 0;
-  u8 framesCounter = 0;
+  u8 _shouldUpdateChunck = false;
+  u8 framesCounter = false;
   Vec4 _modifiedPosition;
+
   const u8 UPDATE_TARGET_LIMIT = 3;
 
   Player* t_player;
@@ -122,6 +126,8 @@ class TerrainManager {
   float getHumidity(int x, int z);
   float getHeightScale(int x, int z);
 
+  u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
+                          const Vec4* chunkMaxOffset);
   u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
