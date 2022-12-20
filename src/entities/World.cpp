@@ -110,7 +110,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
-      this->scheduleChunksNeighbors(currentChunck);
+      this->scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
   }
 
@@ -131,7 +131,9 @@ void World::reloadChangedChunk() {
   }
 }
 
-void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
+void World::scheduleChunksNeighbors(Chunck* t_chunck,
+                                    const Vec4 currentPlayerPos,
+                                    u8 force_loading) {
   Vec4 offset = (*t_chunck->maxOffset + *t_chunck->minOffset) / 2;
   auto chuncks = this->chunckManager->getChuncks();
 
@@ -150,6 +152,19 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
       this->addChunkToUnloadAsync(chuncks[i]);
     }
   }
+
+  if (tempChuncksToLoad.size()) sortChunksToLoad(currentPlayerPos);
+}
+
+void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
+  std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
+            [currentPlayerPos](const Chunck* a, const Chunck* b) {
+              const float distanceA =
+                  (*a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              const float distanceB =
+                  (*b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              return distanceA < distanceB;
+            });
 }
 
 void World::loadScheduledChunks() {
@@ -193,7 +208,7 @@ void World::renderBlockDamageOverlay() {
 
     scale.identity();
     translation.identity();
-    scale.scale(BLOCK_SIZE + 0.01f);
+    scale.scale(BLOCK_SIZE + 0.015f);
     translation.translate(*this->terrainManager->targetBlock->getPosition());
 
     overlay->model = new M4x4(translation * scale);

@@ -12,6 +12,7 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
+#include <algorithm>
 #include "managers/chunck_manager.hpp"
 #include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
@@ -71,7 +72,8 @@ class World {
   WorldLightModel worldLightModel;
 
   void updateChunkByPlayerPosition(Player* player);
-  void scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading = 0);
+  void scheduleChunksNeighbors(Chunck* t_chunck, const Vec4 currentPlayerPos,
+                               u8 force_loading = 0);
   void loadScheduledChunks();
   void unloadScheduledChunks();
   void reloadChangedChunk();
@@ -80,5 +82,6 @@ class World {
   void renderBlockDamageOverlay();
   void renderTargetBlockHitbox(Block* targetBlock);
   void updateLightModel();
+  void sortChunksToLoad(const Vec4& currentPlayerPos);
   inline void setIntialTime() { g_ticksCounter = worldOptions.initialTime; };
 };
