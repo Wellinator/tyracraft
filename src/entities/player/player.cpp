@@ -320,30 +320,30 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(
 
   for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
     for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
-      // Broad phase
-      if (loadedChunks[chunkIndex]->blocks[i]->getPosition()->distanceTo(
-              *this->getPosition()) > DUBLE_BLOCK_SIZE)
-        continue;
+      // // Broad phase
+      // if (loadedChunks[chunkIndex]->blocks[i]->getPosition()->distanceTo(
+      //         *this->getPosition()) > DUBLE_BLOCK_SIZE)
+      //   continue;
 
       // Is on block?
-      if (!(minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
-            maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
-            minPlayer.z < loadedChunks[chunkIndex]->blocks[i]->maxCorner.z &&
-            maxPlayer.z > loadedChunks[chunkIndex]->blocks[i]->minCorner.z))
-        continue;
+      if (minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
+          maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
+          minPlayer.z < loadedChunks[chunkIndex]->blocks[i]->maxCorner.z &&
+          maxPlayer.z > loadedChunks[chunkIndex]->blocks[i]->minCorner.z) {
+        const float underBlockHeight =
+            loadedChunks[chunkIndex]->blocks[i]->maxCorner.y;
+        if (minPlayer.y >= underBlockHeight &&
+            underBlockHeight > model.minHeight) {
+          model.minHeight = underBlockHeight;
+          this->currentBlock = loadedChunks[chunkIndex]->blocks[i];
+        }
 
-      const float underBlockHeight =
-          loadedChunks[chunkIndex]->blocks[i]->maxCorner.y;
-      if (minPlayer.y >= underBlockHeight &&
-          underBlockHeight > model.minHeight) {
-        model.minHeight = underBlockHeight;
-        this->currentBlock = loadedChunks[chunkIndex]->blocks[i];
-      }
-
-      const float overBlockHeight =
-          loadedChunks[chunkIndex]->blocks[i]->minCorner.y;
-      if (maxPlayer.y <= overBlockHeight && overBlockHeight < model.maxHeight) {
-        model.maxHeight = overBlockHeight;
+        const float overBlockHeight =
+            loadedChunks[chunkIndex]->blocks[i]->minCorner.y;
+        if (maxPlayer.y <= overBlockHeight &&
+            overBlockHeight < model.maxHeight) {
+          model.maxHeight = overBlockHeight;
+        }
       }
     }
   }
