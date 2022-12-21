@@ -640,7 +640,12 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
       this->targetBlock->damage = breaking_time_pessed /
                                   this->t_blockManager->getBlockBreakingTime() *
                                   100;
-      this->playBreakingBlockSound(blockToBreak->type);
+      if (lastTimePlayedBreakingSfx > 0.3F) {
+        this->playBreakingBlockSound(blockToBreak->type);
+        lastTimePlayedBreakingSfx = 0;
+      } else {
+        lastTimePlayedBreakingSfx += deltaTime;
+      }
     }
   } else {
     this->breaking_time_pessed = 0;
@@ -946,10 +951,12 @@ void TerrainManager::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const s8 ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
 }
 
@@ -958,10 +965,12 @@ void TerrainManager::playDestroyBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const s8 ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
 }
 
@@ -970,10 +979,12 @@ void TerrainManager::playBreakingBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const s8 ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
 }
 

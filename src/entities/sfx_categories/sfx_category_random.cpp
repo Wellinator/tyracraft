@@ -17,6 +17,5 @@ void SfxRandomCategory::loadSounds() {
   SfxLibrarySound* clickSfx = new SfxLibrarySound(SoundFX::Click);
   clickSfx->_sound = this->t_audio->adpcm.load(
       FileUtils::fromCwd("sounds/random/click.adpcm"));
-  clickSfx->isLoaded = true;
   sounds.push_back(clickSfx);
 }

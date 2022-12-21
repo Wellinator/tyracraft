@@ -79,8 +79,13 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
           this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
       if (hasChangedPosition && this->isOnGround && this->currentBlock) {
-        this->playWalkSfx(this->currentBlock->type);
-        setWalkingAnimation();
+        if (lastTimePlayedWalkSfx > 0.3F) {
+          this->playWalkSfx(this->currentBlock->type);
+          setWalkingAnimation();
+          lastTimePlayedWalkSfx = 0;
+        } else {
+          lastTimePlayedWalkSfx += deltaTime;
+        }
       }
     }
   } else {
@@ -484,9 +489,11 @@ void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
-    this->t_soundManager->setSfxVolume(WALK_SFX_VOL, WALK_SFX_CH);
+    const s8 ch = this->t_soundManager->getAvailableChannel();
+    this->t_soundManager->setSfxVolume(75, ch);
     this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                                  WALK_SFX_CH);
+                                  ch);
+    Tyra::Threading::switchThread();
   }
 }
 

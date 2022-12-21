@@ -167,10 +167,11 @@ void StateGameMenu::unloadTextures() {
 }
 
 void StateGameMenu::playClickSound() {
-  this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(50,
-                                                                MENU_SFX_CH);
-  this->stateGamePlay->context->t_soundManager->playSfx(
-      SoundFxCategory::Random, SoundFX::Click, MENU_SFX_CH);
+  const s8 ch =
+      this->stateGamePlay->context->t_soundManager->getAvailableChannel();
+  this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
+  this->stateGamePlay->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                                        SoundFX::Click, ch);
 }
 
 void StateGameMenu::hightLightActiveOption() {

@@ -102,8 +102,6 @@ class Player {
                        const Camera& t_camera);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
-  const u8 WALK_SFX_CH = 3;
-  const u8 WALK_SFX_VOL = 50;
   const float L_JOYPAD_DEAD_ZONE = 0.15F;
 
   // Forces values
@@ -142,6 +140,8 @@ class Player {
   short int selectedInventoryIndex = 0;
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
+
+  float lastTimePlayedWalkSfx = 0.0F;
   void playWalkSfx(const Blocks& blockType);
 
   void selectNextItem();

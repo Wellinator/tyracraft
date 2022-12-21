@@ -162,3 +162,5 @@ enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 #define CENTER_WORLD_POS (MAX_WORLD_POS + MIN_WORLD_POS) / 2
 
 #define MAX_FRAME_MS 0.016667F  // Comes from 1 / 60;
+
+#define MAX_ADPCM_CH 23

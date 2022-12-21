@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include <audsrv.h>
 #include "tyra"
+#include "constants.hpp"
 #include "entities/sfx_library.hpp"
 
 using Tyra::AdpcmResult;
@@ -27,7 +28,15 @@ class SoundManager {
 
   void setSfxVolume(const s8& t_vol, const s8& t_ch);
 
+  const s8 getAvailableChannel();
+
  private:
+  /**
+   * @brief Declaration of global current adpcm channel
+   *
+   */
+  s8 currentAdpcmChannel = 0;
+
   SfxLibrary* soundLibrary;
   Engine* t_engine;
 };

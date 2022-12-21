@@ -17,42 +17,35 @@ void SfxStepCategory::loadSounds() {
   SfxLibrarySound* grass1 = new SfxLibrarySound(SoundFX::Grass1);
   grass1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/step/grass1.adpcm"));
-  grass1->isLoaded = true;
   sounds.push_back(grass1);
 
   SfxLibrarySound* gravel1 = new SfxLibrarySound(SoundFX::Gravel1);
   gravel1->_sound = this->t_audio->adpcm.load(
       FileUtils::fromCwd("sounds/step/gravel1.adpcm"));
-  gravel1->isLoaded = true;
   sounds.push_back(gravel1);
 
   SfxLibrarySound* sand1 = new SfxLibrarySound(SoundFX::Sand1);
   sand1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/step/sand1.adpcm"));
-  sand1->isLoaded = true;
   sounds.push_back(sand1);
 
   SfxLibrarySound* snow1 = new SfxLibrarySound(SoundFX::Snow1);
   snow1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/step/snow1.adpcm"));
-  snow1->isLoaded = true;
   sounds.push_back(snow1);
 
   SfxLibrarySound* stone1 = new SfxLibrarySound(SoundFX::Stone1);
   stone1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/step/stone1.adpcm"));
-  stone1->isLoaded = true;
   sounds.push_back(stone1);
 
   SfxLibrarySound* wetGrass1 = new SfxLibrarySound(SoundFX::WetGrass1);
   wetGrass1->_sound = this->t_audio->adpcm.load(
       FileUtils::fromCwd("sounds/step/wet_grass1.adpcm"));
-  wetGrass1->isLoaded = true;
   sounds.push_back(wetGrass1);
 
   SfxLibrarySound* wood1 = new SfxLibrarySound(SoundFX::Wood1);
   wood1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/step/wood1.adpcm"));
-  wood1->isLoaded = true;
   sounds.push_back(wood1);
 }
