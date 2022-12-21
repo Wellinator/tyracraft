@@ -34,12 +34,6 @@ class CreativePlayingState : public PlayingStateBase {
   };
 
   /**
-   * @brief Print blocks info to log
-   *
-   */
-  void printBlockInfoToLog();
-
-  /**
    * @brief Print RAM memory info to log
    *
    */

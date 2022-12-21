@@ -74,7 +74,6 @@ void CreativePlayingState::handleInput() {
 
   if (debugMode && clicked.Circle) {
     printMemoryInfoToLog();
-    printBlockInfoToLog();
   }
 }
 
@@ -99,11 +98,6 @@ void CreativePlayingState::drawDegubInfo() {
   this->t_fontManager->printText(
       fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
-  // Draw print log tip message:
-  this->t_fontManager->printText(
-      "Press circle to log debug info",
-      FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.8F));
-
   // Draw ticks
   std::string ticks =
       std::string("Ticks: ").append(std::to_string(g_ticksCounter));
@@ -111,42 +105,23 @@ void CreativePlayingState::drawDegubInfo() {
       ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
 
   // Draw Player state:
-  std::string playerStateInfo =
-      std::string("Player state\n")
-          .append(std::string("Is On ground: ") +
-                  std::to_string(this->stateGamePlay->player->isOnGround) +
-                  std::string("\n"))
-          .append(std::string("Is moving: ") +
-                  std::to_string(this->stateGamePlay->player->isMoving) +
-                  std::string("\n"))
-          .append(std::string("Is Flaying: ") +
-                  std::to_string(this->stateGamePlay->player->isFlying) +
-                  std::string("\n"))
-          .append(std::string("Is Breaking: ") +
-                  std::to_string(this->stateGamePlay->player->isBreaking) +
-                  std::string("\n"));
+  // std::string playerStateInfo =
+  //     std::string("Player state\n")
+  //         .append(std::string("Is On ground: ") +
+  //                 std::to_string(this->stateGamePlay->player->isOnGround) +
+  //                 std::string("\n"))
+  //         .append(std::string("Is moving: ") +
+  //                 std::to_string(this->stateGamePlay->player->isMoving) +
+  //                 std::string("\n"))
+  //         .append(std::string("Is Flaying: ") +
+  //                 std::to_string(this->stateGamePlay->player->isFlying) +
+  //                 std::string("\n"))
+  //         .append(std::string("Is Breaking: ") +
+  //                 std::to_string(this->stateGamePlay->player->isBreaking) +
+  //                 std::string("\n"));
 
-  this->t_fontManager->printText(
-      playerStateInfo, FontOptions(Vec2(350.0f, 5.0f), Color(255), 0.8F));
-}
-
-void CreativePlayingState::printBlockInfoToLog() {
-  return;
-  // std::string blocksInfo = std::string("");
-  // for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
-  //      i++) {
-  //   BlockInfo info =
-  //       *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
-  //           static_cast<Blocks>(i));
-
-  //   blocksInfo.append(std::string("\nID: "))
-  //       .append(std::to_string(i))
-  //       .append(std::string(" | X: "))
-  //       .append(std::to_string(info._texOffssetX))
-  //       .append(std::string(" | Y: "))
-  //       .append(std::to_string(info._texOffssetX));
-  // }
-  // TYRA_LOG(blocksInfo.c_str());
+  // this->t_fontManager->printText(
+  //     playerStateInfo, FontOptions(Vec2(350.0f, 5.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
