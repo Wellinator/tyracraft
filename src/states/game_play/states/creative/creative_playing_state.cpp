@@ -7,17 +7,17 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 }
 
 CreativePlayingState::~CreativePlayingState() {
-  this->stateGamePlay->context->t_engine->audio.song.removeListener(
+  stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
   delete this->t_creativeAudioListener;
   delete this->t_fontManager;
 }
 
 void CreativePlayingState::init() {
-  this->t_creativeAudioListener = new CreativeAudioListener(
-      &this->stateGamePlay->context->t_engine->audio.song);
+  this->t_creativeAudioListener =
+      new CreativeAudioListener(&stateGamePlay->context->t_engine->audio.song);
   this->audioListenerId =
-      this->stateGamePlay->context->t_engine->audio.song.addListener(
+      stateGamePlay->context->t_engine->audio.song.addListener(
           this->t_creativeAudioListener);
   this->t_creativeAudioListener->playRandomCreativeSound();
 }
@@ -28,20 +28,19 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   this->handleInput(deltaTime);
 
-  this->stateGamePlay->world->update(
-      this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
-      &this->stateGamePlay->context->t_engine->pad, deltaTime);
+  stateGamePlay->world->update(
+      stateGamePlay->player, stateGamePlay->context->t_camera,
+      &stateGamePlay->context->t_engine->pad, deltaTime);
 
-  this->stateGamePlay->player->update(
+  stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
       stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
       stateGamePlay->world->chunckManager->getVisibleChunks(), &terrainHeight);
 
-  this->stateGamePlay->ui->update();
+  stateGamePlay->ui->update();
 
-  this->stateGamePlay->context->t_camera->update(
-      this->stateGamePlay->context->t_engine->pad,
-      *this->stateGamePlay->player->mesh);
+  stateGamePlay->context->t_camera->update(
+      stateGamePlay->context->t_engine->pad, *stateGamePlay->player->mesh);
 
   if (!isSongPlaying()) playNewRandomSong();
 
@@ -49,13 +48,13 @@ void CreativePlayingState::update(const float& deltaTime) {
 }
 
 void CreativePlayingState::render() {
-  this->stateGamePlay->world->render();
+  stateGamePlay->world->render();
 
-  this->stateGamePlay->player->render();
+  stateGamePlay->player->render();
 
   this->renderCreativeUi();
 
-  if (isInventoryOpened()) this->stateGamePlay->ui->renderInventoryMenu();
+  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
 
   if (debugMode) drawDegubInfo();
 
@@ -63,19 +62,16 @@ void CreativePlayingState::render() {
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
-  const auto& clicked =
-      this->stateGamePlay->context->t_engine->pad.getClicked();
-  const auto& pressed =
-      this->stateGamePlay->context->t_engine->pad.getPressed();
-  const auto& lJoyPad =
-      this->stateGamePlay->context->t_engine->pad.getLeftJoyPad();
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+  const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
+  const auto& lJoyPad = stateGamePlay->context->t_engine->pad.getLeftJoyPad();
 
   // Player commands
   {
     playerMovementDirection = Vec4((lJoyPad.h - 128.0F) / 128.0F, 0.0F,
                                    (lJoyPad.v - 128.0F) / 128.0F);
     terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
-        this->stateGamePlay->world->chunckManager->getVisibleChunks());
+        stateGamePlay->world->chunckManager->getVisibleChunks());
 
     if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
@@ -106,7 +102,7 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 
   if (clicked.Cross) {
     if (elapsedTimeInSec < 0.5F) {
-      this->stateGamePlay->player->toggleFlying();
+      stateGamePlay->player->toggleFlying();
     }
     elapsedTimeInSec = 0.0F;
   }
@@ -121,16 +117,16 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 void CreativePlayingState::navigate() {}
 
 void CreativePlayingState::renderCreativeUi() {
-  this->stateGamePlay->ui->renderCrosshair();
-  this->stateGamePlay->ui->renderInventory();
+  stateGamePlay->ui->renderCrosshair();
+  stateGamePlay->ui->renderInventory();
 }
 
 void CreativePlayingState::drawDegubInfo() {
-  Info* info = &this->stateGamePlay->context->t_engine->info;
+  Info* info = &stateGamePlay->context->t_engine->info;
 
   // Draw seed
   std::string seed = std::string("Seed: ").append(
-      std::to_string(this->stateGamePlay->world->getSeed()));
+      std::to_string(stateGamePlay->world->getSeed()));
   this->t_fontManager->printText(
       seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
@@ -144,29 +140,10 @@ void CreativePlayingState::drawDegubInfo() {
       std::string("Ticks: ").append(std::to_string(g_ticksCounter));
   this->t_fontManager->printText(
       ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
-
-  // Draw Player state:
-  // std::string playerStateInfo =
-  //     std::string("Player state\n")
-  //         .append(std::string("Is On ground: ") +
-  //                 std::to_string(this->stateGamePlay->player->isOnGround) +
-  //                 std::string("\n"))
-  //         .append(std::string("Is moving: ") +
-  //                 std::to_string(this->stateGamePlay->player->isMoving) +
-  //                 std::string("\n"))
-  //         .append(std::string("Is Flaying: ") +
-  //                 std::to_string(this->stateGamePlay->player->isFlying) +
-  //                 std::string("\n"))
-  //         .append(std::string("Is Breaking: ") +
-  //                 std::to_string(this->stateGamePlay->player->isBreaking) +
-  //                 std::string("\n"));
-
-  // this->t_fontManager->printText(
-  //     playerStateInfo, FontOptions(Vec2(350.0f, 5.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
-  Info info = this->stateGamePlay->context->t_engine->info;
+  Info info = stateGamePlay->context->t_engine->info;
   std::string freeRam = std::string("Free RAM: ")
                             .append(std::to_string(info.getAvailableRAM()))
                             .append(" MB");
@@ -179,13 +156,13 @@ void CreativePlayingState::playNewRandomSong() {
 }
 
 void CreativePlayingState::closeInventory() {
-  this->stateGamePlay->ui->unloadInventory();
+  stateGamePlay->ui->unloadInventory();
 }
 
 void CreativePlayingState::openInventory() {
-  this->stateGamePlay->ui->loadInventory();
+  stateGamePlay->ui->loadInventory();
 }
 
 const u8 CreativePlayingState::isInventoryOpened() {
-  return this->stateGamePlay->ui->isInventoryOpened();
+  return stateGamePlay->ui->isInventoryOpened();
 }
