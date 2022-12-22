@@ -25,16 +25,17 @@ void CreativePlayingState::init() {
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
   tickManager.update(std::min(deltaTime, MAX_FRAME_MS));
-  this->handleInput();
+
+  this->handleInput(deltaTime);
 
   this->stateGamePlay->world->update(
       this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
       &this->stateGamePlay->context->t_engine->pad, deltaTime);
 
   this->stateGamePlay->player->update(
-      deltaTime, this->stateGamePlay->context->t_engine->pad,
-      *this->stateGamePlay->context->t_camera,
-      this->stateGamePlay->world->chunckManager->getVisibleChunks());
+      deltaTime, playerMovementDirection,
+      stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
+      stateGamePlay->world->chunckManager->getVisibleChunks(), &terrainHeight);
 
   this->stateGamePlay->ui->update();
 
@@ -61,9 +62,42 @@ void CreativePlayingState::render() {
   Threading::switchThread();
 }
 
-void CreativePlayingState::handleInput() {
+void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked =
       this->stateGamePlay->context->t_engine->pad.getClicked();
+  const auto& pressed =
+      this->stateGamePlay->context->t_engine->pad.getPressed();
+  const auto& lJoyPad =
+      this->stateGamePlay->context->t_engine->pad.getLeftJoyPad();
+
+  // Player commands
+  {
+    playerMovementDirection = Vec4((lJoyPad.h - 128.0F) / 128.0F, 0.0F,
+                                   (lJoyPad.v - 128.0F) / 128.0F);
+    terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
+        this->stateGamePlay->world->chunckManager->getVisibleChunks());
+
+    if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
+    if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
+    if (pressed.L2)
+      stateGamePlay->player->setArmBreakingAnimation();
+    else
+      stateGamePlay->player->unsetArmBreakingAnimation();
+
+    if (stateGamePlay->player->isOnGround) {
+      if (pressed.Cross) stateGamePlay->player->jump();
+      if (clicked.DpadUp)
+        stateGamePlay->player->selectNextItem();
+      else if (clicked.DpadDown)
+        stateGamePlay->player->selectPreviousItem();
+    } else if (stateGamePlay->player->isFlying) {
+      if (pressed.DpadUp) {
+        stateGamePlay->player->flyUp(deltaTime, terrainHeight);
+      } else if (pressed.DpadDown) {
+        stateGamePlay->player->flyDown(deltaTime, terrainHeight);
+      }
+    }
+  }
 
   if (clicked.Triangle) {
     isInventoryOpened() ? closeInventory() : openInventory();

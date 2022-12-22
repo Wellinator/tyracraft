@@ -5,6 +5,7 @@
 #include "managers/font/font_manager.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/tick_manager.hpp"
+#include "models/terrain_height_model.hpp"
 #include <tamtypes.h>
 #include <string>
 #include <tyra>
@@ -23,7 +24,7 @@ class CreativePlayingState : public PlayingStateBase {
   void render();
 
  private:
-  void handleInput();
+  void handleInput(const float& deltaTime);
   void navigate();
   void renderCreativeUi();
   void drawDegubInfo();
@@ -47,6 +48,9 @@ class CreativePlayingState : public PlayingStateBase {
   float elapsedTimeInSec;
   u8 debugMode = false;
   TickManager tickManager;
+
+  TerrainHeightModel terrainHeight;
+  Vec4 playerMovementDirection;
 
   inline const u8 isInventoryOpened();
 };

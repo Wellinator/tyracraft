@@ -14,6 +14,6 @@ class SurvivalPlayingState : public PlayingStateBase {
   void render();
 
  private:
-  void handleInput();
+  void handleInput(const float& deltaTime);
   void navigate();
 };

@@ -55,8 +55,9 @@ class Player {
          BlockManager* t_blockManager);
   ~Player();
 
-  void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-              std::vector<Chunck*> loadedChunks);
+  void update(const float& deltaTime, const Vec4& movementDir,
+              const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+              TerrainHeightModel* terrainHeight);
   void render();
 
   void setRenderPip(PlayerRenderPip* pipToSet);
@@ -94,12 +95,27 @@ class Player {
   Renderer* t_renderer;
   PlayerRenderPip* renderPip = nullptr;
 
+  void moveSelectorToTheLeft();
+  void moveSelectorToTheRight();
+  void setArmBreakingAnimation();
+  void unsetArmBreakingAnimation();
+  void setWalkingAnimation();
+  void unsetWalkingAnimation();
+  void selectNextItem();
+  void selectPreviousItem();
+  void jump();
+  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+
+  TerrainHeightModel getTerrainHeightAtPosition(
+      std::vector<Chunck*> loadedChunks);
+
  private:
   BlockManager* t_blockManager;
   SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,
-                       const Camera& t_camera);
+                       const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
   const float L_JOYPAD_DEAD_ZONE = 0.15F;
@@ -117,17 +133,11 @@ class Player {
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   void updateGravity(const float& deltaTime,
-                     const TerrainHeightModel& terrainHeight);
-  void jump();
-  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
-  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+                     TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
   u8 updatePosition(std::vector<Chunck*> loadedChunks, const float& deltaTime,
                     const Vec4& nextPlayerPos, u8 isColliding = 0);
-  TerrainHeightModel getTerrainHeightAtPosition(
-      std::vector<Chunck*> loadedChunks);
-  void handleInputCommands(const Pad& t_pad);
 
   // Inventory
 
@@ -138,20 +148,11 @@ class Player {
                                       ItemId::stone_brick};  // Starts from 0
 
   short int selectedInventoryIndex = 0;
-  void moveSelectorToTheLeft();
-  void moveSelectorToTheRight();
 
   float lastTimePlayedWalkSfx = 0.0F;
   void playWalkSfx(const Blocks& blockType);
 
-  void selectNextItem();
-  void selectPreviousItem();
-
   void animate();
-  void setArmBreakingAnimation();
-  void unsetArmBreakingAnimation();
-  void setWalkingAnimation();
-  void unsetWalkingAnimation();
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 

@@ -11,6 +11,6 @@ void SurvivalPlayingState::update(const float& deltaTime) {}
 
 void SurvivalPlayingState::render() {}
 
-void SurvivalPlayingState::handleInput() {}
+void SurvivalPlayingState::handleInput(const float& deltaTime) {}
 
 void SurvivalPlayingState::navigate() {}

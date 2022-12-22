@@ -88,7 +88,7 @@ void StateGameMenu::init() {
 }
 
 void StateGameMenu::update(const float& deltaTime) {
-  this->handleInput();
+  this->handleInput(deltaTime);
   Threading::switchThread();
   this->hightLightActiveOption();
   Threading::switchThread();
@@ -117,7 +117,7 @@ void StateGameMenu::render() {
   this->t_renderer->renderer2D.render(&textSelect);
 }
 
-void StateGameMenu::handleInput() {
+void StateGameMenu::handleInput(const float& deltaTime) {
   const PadButtons& clicked =
       this->stateGamePlay->context->t_engine->pad.getClicked();
 

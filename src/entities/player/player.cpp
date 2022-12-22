@@ -62,18 +62,12 @@ Player::~Player() {
 // Methods
 // ----
 
-void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-                    std::vector<Chunck*> loadedChunks) {
-  this->handleInputCommands(t_pad);
-
-  Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
-                          (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
-
-  this->isMoving = t_pad.getLeftJoyPad().isMoved &&
-                   sensibility.length() >= L_JOYPAD_DEAD_ZONE;
+void Player::update(const float& deltaTime, const Vec4& movementDir,
+                    const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+                    TerrainHeightModel* terrainHeight) {
+  isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
-    const Vec4 nextPlayerPos =
-        getNextPosition(deltaTime, sensibility, t_camera);
+    const Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
           this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
@@ -92,18 +86,7 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
     unsetWalkingAnimation();
   }
 
-  TerrainHeightModel terrainHeight =
-      this->getTerrainHeightAtPosition(loadedChunks);
-
-  if (this->isFlying) {
-    if (t_pad.getPressed().DpadUp) {
-      this->flyUp(deltaTime, terrainHeight);
-    } else if (t_pad.getPressed().DpadDown) {
-      this->flyDown(deltaTime, terrainHeight);
-    }
-  } else {
-    this->updateGravity(deltaTime, terrainHeight);
-  }
+  if (!isFlying) updateGravity(deltaTime, terrainHeight);
 
   animate();
 
@@ -113,39 +96,8 @@ void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
 
 void Player::render() { this->renderPip->render(this->t_renderer); }
 
-void Player::handleInputCommands(const Pad& t_pad) {
-  const PadButtons& clicked = t_pad.getClicked();
-  const PadButtons& pressed = t_pad.getPressed();
-
-  if (clicked.L1) this->moveSelectorToTheLeft();
-  if (clicked.R1) this->moveSelectorToTheRight();
-
-  if (pressed.L2)
-    setArmBreakingAnimation();
-  else
-    unsetArmBreakingAnimation();
-
-  // TODO: refactore to ingame invetory menu
-
-  if (isOnGround) {
-    if (pressed.Cross) this->jump();
-
-    if (clicked.DpadUp) this->selectNextItem();
-
-    if (clicked.DpadDown) this->selectPreviousItem();
-  }
-
-  // FIXME: Player mesh rotation based on camera direction
-  // if (t_pad.getRightJoyPad().h >= 200) {
-  //   this->mesh->rotation.rotateY(-0.08F);
-  // } else if (t_pad.getRightJoyPad().h <= 100) {
-  //   this->mesh->rotation.rotateY(0.08F);
-  // }
-}
-
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
-                             const Camera& t_camera) {
-  Vec4 camDir = t_camera.unitCirclePosition.getNormalized();
+                             const Vec4& camDir) {
   Vec4 result =
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
@@ -157,7 +109,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
-                           const TerrainHeightModel& terrainHeight) {
+                           TerrainHeightModel* terrainHeight) {
   const float dTime = std::min(deltaTime, MAX_FRAME_MS);
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
@@ -178,13 +130,13 @@ void Player::updateGravity(const float& deltaTime,
     return;
   }
 
-  if (newYPosition.y < terrainHeight.minHeight) {
-    newYPosition.y = terrainHeight.minHeight;
+  if (newYPosition.y < terrainHeight->minHeight) {
+    newYPosition.y = terrainHeight->minHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = true;
   } else if (newYPosition.y >
-             terrainHeight.maxHeight + this->hitBox->getHeight()) {
-    newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
+             terrainHeight->maxHeight + this->hitBox->getHeight()) {
+    newYPosition.y = terrainHeight->maxHeight + this->hitBox->getHeight();
     this->velocity = -this->velocity;
     this->isOnGround = false;
   }
@@ -325,11 +277,6 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(
 
   for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
     for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
-      // // Broad phase
-      // if (loadedChunks[chunkIndex]->blocks[i]->getPosition()->distanceTo(
-      //         *this->getPosition()) > DUBLE_BLOCK_SIZE)
-      //   continue;
-
       // Is on block?
       if (minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
           maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
