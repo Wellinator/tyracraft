@@ -23,6 +23,8 @@ Ui::~Ui() {
   for (u8 i = 0; i < INVENTORY_SIZE; i++)
     if (playerInventory[i] != NULL)
       textureRepository->freeBySprite(*playerInventory[i]);
+
+  delete creativeInventory;
 }
 
 void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
@@ -150,9 +152,12 @@ void Ui::loadlHud() {
 }
 
 void Ui::updateHud() {
-  if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
-
-  if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
+  if (isInventoryOpened()) {
+    creativeInventory->update();
+  } else {
+    if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
+    if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
+  }
 }
 
 void Ui::updateSelectedSlot() {
@@ -195,3 +200,15 @@ void Ui::updatePlayerInventory() {
 
   t_player->inventoryHasChanged = 0;
 }
+
+void Ui::loadInventory() {
+  creativeInventory = new Inventory(t_renderer, t_itemRepository);
+  _isInventoryOpened = true;
+}
+
+void Ui::unloadInventory() {
+  delete creativeInventory;
+  _isInventoryOpened = false;
+}
+
+void Ui::renderInventoryMenu() { creativeInventory->render(); }

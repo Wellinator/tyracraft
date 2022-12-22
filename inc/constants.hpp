@@ -142,7 +142,10 @@ enum class ItemId {
   stone_axe,
   iron_axe,
   golden_axe,
-  diamond_axe
+  diamond_axe,
+
+  //Helper
+  total_of_items
 };
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };

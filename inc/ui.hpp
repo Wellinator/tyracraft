@@ -3,6 +3,7 @@
 #include <renderer/renderer.hpp>
 #include <renderer/renderer.hpp>
 #include <tamtypes.h>
+#include "entities/inventory.hpp"
 #include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
 #include "constants.hpp"
@@ -26,6 +27,11 @@ class Ui {
   void renderHealthBar();
   void renderHungerBar();
   void renderBreathBar();
+  void renderInventoryMenu();
+
+  void loadInventory();
+  void unloadInventory();
+  inline const u8 isInventoryOpened() { return _isInventoryOpened; };
 
   void loadlHud();
 
@@ -51,6 +57,8 @@ class Ui {
   float BASE_Y_POS;
   const float HUD_WIDTH = 192.0F;
 
+  u8 _isInventoryOpened = false;
+  Inventory* creativeInventory = nullptr;
 
   void updateHud();
   void updatePlayerInventory();

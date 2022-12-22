@@ -54,6 +54,8 @@ void CreativePlayingState::render() {
 
   this->renderCreativeUi();
 
+  if (isInventoryOpened()) this->stateGamePlay->ui->renderInventoryMenu();
+
   if (debugMode) drawDegubInfo();
 
   Threading::switchThread();
@@ -62,6 +64,11 @@ void CreativePlayingState::render() {
 void CreativePlayingState::handleInput() {
   const auto& clicked =
       this->stateGamePlay->context->t_engine->pad.getClicked();
+
+  if (clicked.Triangle) {
+    isInventoryOpened() ? closeInventory() : openInventory();
+  }
+  if (isInventoryOpened()) return;
 
   if (clicked.Cross) {
     if (elapsedTimeInSec < 0.5F) {
@@ -135,4 +142,16 @@ void CreativePlayingState::printMemoryInfoToLog() {
 void CreativePlayingState::playNewRandomSong() {
   TYRA_LOG("Song finished, playing a new random song.");
   this->t_creativeAudioListener->playRandomCreativeSound();
+}
+
+void CreativePlayingState::closeInventory() {
+  this->stateGamePlay->ui->unloadInventory();
+}
+
+void CreativePlayingState::openInventory() {
+  this->stateGamePlay->ui->loadInventory();
+}
+
+const u8 CreativePlayingState::isInventoryOpened() {
+  return this->stateGamePlay->ui->isInventoryOpened();
 }

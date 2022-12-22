@@ -28,6 +28,8 @@ class CreativePlayingState : public PlayingStateBase {
   void renderCreativeUi();
   void drawDegubInfo();
   void playNewRandomSong();
+  void openInventory();
+  void closeInventory();
 
   inline const u8 isSongPlaying() {
     return t_creativeAudioListener->t_song->isPlaying();
@@ -45,4 +47,6 @@ class CreativePlayingState : public PlayingStateBase {
   float elapsedTimeInSec;
   u8 debugMode = false;
   TickManager tickManager;
+
+  inline const u8 isInventoryOpened();
 };
