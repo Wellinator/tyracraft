@@ -489,7 +489,7 @@ void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
-    const s8 ch = this->t_soundManager->getAvailableChannel();
+    const int ch = this->t_soundManager->getAvailableChannel();
     this->t_soundManager->setSfxVolume(75, ch);
     this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
                                   ch);

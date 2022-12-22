@@ -21,11 +21,11 @@ AdpcmResult SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound,
   return result;
 };
 
-void SoundManager::setSfxVolume(const s8& t_vol, const s8& t_ch) {
+void SoundManager::setSfxVolume(const u8& t_vol, const s8& t_ch) {
   return this->t_engine->audio.adpcm.setVolume(t_vol, t_ch);
 };
 
-const s8 SoundManager::getAvailableChannel() {
-  currentAdpcmChannel = currentAdpcmChannel % MAX_ADPCM_CH;
+const int SoundManager::getAvailableChannel() {
+  currentAdpcmChannel %= MAX_ADPCM_CH;
   return currentAdpcmChannel++;
 };
