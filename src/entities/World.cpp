@@ -44,8 +44,8 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->setIntialTime();
 };
 
-void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
-                   const float& deltaTime) {
+void World::update(Player* t_player, const Vec4& camLookPos,
+                   const Vec4& camPosition) {
   this->framesCounter++;
 
   dayNightCycleManager.update();
@@ -62,9 +62,8 @@ void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
       *t_player->getPosition(), &worldLightModel);
   this->updateChunkByPlayerPosition(t_player);
-  this->terrainManager->update(t_player, t_camera, t_pad,
-                               this->chunckManager->getVisibleChunks(),
-                               deltaTime);
+  this->terrainManager->update(camLookPos, camPosition,
+                               this->chunckManager->getVisibleChunks());
 
   this->framesCounter = this->framesCounter % 60;
 };

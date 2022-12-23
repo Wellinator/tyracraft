@@ -34,13 +34,9 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->calcRawBlockBBox(mcPip);
 }
 
-void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
-                            std::vector<Chunck*> chuncks,
-                            const float& deltaTime) {
-  this->t_player = t_player;
-  this->t_camera = t_camera;
-  this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
-  this->handlePadControls(t_pad, deltaTime);
+void TerrainManager::update(const Vec4& camLookPos, const Vec4& camPosition,
+                            std::vector<Chunck*> chuncks) {
+  this->updateTargetBlock(camLookPos, camPosition, chuncks);
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
@@ -470,8 +466,8 @@ void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
   t_chunck->updateDrawData();
 }
 
-void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
-                                       Camera* t_camera,
+void TerrainManager::updateTargetBlock(const Vec4& camLookPos,
+                                       const Vec4& camPosition,
                                        std::vector<Chunck*> chuncks) {
   u8 hitedABlock = 0;
   float tempTargetDistance = -1.0f;
@@ -482,15 +478,15 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   this->targetBlock = nullptr;
 
   // Prepate the raycast
-  Vec4 rayDir = t_camera->lookPos - t_camera->position;
+  Vec4 rayDir = camLookPos - camPosition;
   rayDir.normalize();
-  ray.origin.set(t_camera->position);
+  ray.origin.set(camPosition);
   ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
       float distanceFromCurrentBlockToPlayer =
-          playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
+          camPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
 
       if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
         // Reset block state
@@ -528,7 +524,7 @@ void TerrainManager::removeBlock(Block* blockToRemove) {
   this->playDestroyBlockSound(blockToRemove->type);
 }
 
-void TerrainManager::putBlock(const Blocks& blockToPlace) {
+void TerrainManager::putBlock(const Blocks& blockToPlace, Player* t_player) {
   if (this->targetBlock == nullptr) return;
 
   int terrainIndex = this->targetBlock->index;
@@ -584,7 +580,7 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
 
       Vec4 minPlayerCorner;
       Vec4 maxPlayerCorner;
-      this->t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+      t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
 
       // Will Collide to player?
       if (newBlockPosMax.x > minPlayerCorner.x &&
@@ -604,26 +600,12 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
   }
 }
 
-void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
-  if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
-    if (!this->targetBlock->isBreakable) return;
-    this->breakBlock(this->targetBlock, deltaTime);
-  } else if (this->_isBreakingBlock) {
-    this->_isBreakingBlock = false;
-    if (this->targetBlock) this->targetBlock->damage = 0;
-  }
-
-  if (t_pad->getClicked().R2) {
-    ItemId activeItemType = this->t_player->getSelectedInventoryItemType();
-    if (activeItemType != ItemId::empty) {
-      const Blocks blockid =
-          this->t_itemRepository->getItemById(activeItemType)->blockId;
-      if (blockid != Blocks::AIR_BLOCK) this->putBlock(blockid);
-    }
-  }
+void TerrainManager::stopBreakTargetBlock() {
+  this->_isBreakingBlock = false;
+  if (this->targetBlock) this->targetBlock->damage = 0;
 }
 
-void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
+void TerrainManager::breakTargetBlock(const float& deltaTime) {
   if (this->targetBlock == nullptr) return;
 
   if (this->_isBreakingBlock) {
@@ -641,7 +623,7 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
                                   this->t_blockManager->getBlockBreakingTime() *
                                   100;
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        this->playBreakingBlockSound(blockToBreak->type);
+        this->playBreakingBlockSound(this->targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;

@@ -42,16 +42,19 @@ class TerrainManager {
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             MinecraftPipeline* mcPip, BlockManager* blockManager,
             SoundManager* t_soundManager);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad,
-              std::vector<Chunck*> chuncks, const float& deltaTime);
+  void update(const Vec4& camLookPos, const Vec4& camPosition,
+              std::vector<Chunck*> chuncks);
   void generateNewTerrain(const NewGameOptions& options);
   inline const int getSeed() { return seed; };
 
   Block* targetBlock = nullptr;
-  void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
+  void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
                          std::vector<Chunck*> chuncks);
   void removeBlock(Block* blockToRemove);
-  void putBlock(const Blocks& blockType);
+  void putBlock(const Blocks& blockType, Player* t_player);
+  inline const u8 validTargetBlock() {
+    return this->targetBlock != nullptr && this->targetBlock->isBreakable;
+  };
 
   Renderer* t_renderer;
   Engine* engine;
@@ -66,6 +69,8 @@ class TerrainManager {
   inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
   inline void setChunckToUpdated() { this->_shouldUpdateChunck = false; };
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
+  void breakTargetBlock(const float& deltaTime);
+  void stopBreakTargetBlock();
 
   /**
    * @brief Returns the modified position on putting or removing a block when
@@ -85,8 +90,6 @@ class TerrainManager {
 
   const u8 UPDATE_TARGET_LIMIT = 3;
 
-  Player* t_player;
-  Camera* t_camera;
   ItemRepository* t_itemRepository;
   MinecraftPipeline* t_mcPip;
 
@@ -154,7 +157,6 @@ class TerrainManager {
     return !isBlockHidden(blockOffset);
   };
 
-  void handlePadControls(Pad* t_pad, const float& deltaTime);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
@@ -165,7 +167,6 @@ class TerrainManager {
   u8 _isBreakingBlock = false;
   float breaking_time_pessed = 0.0F;
   float lastTimePlayedBreakingSfx = 0.0F;
-  void breakBlock(Block* blockToBreak, const float& deltaTime);
 
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);

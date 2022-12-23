@@ -28,9 +28,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   this->handleInput(deltaTime);
 
-  stateGamePlay->world->update(
-      stateGamePlay->player, stateGamePlay->context->t_camera,
-      &stateGamePlay->context->t_engine->pad, deltaTime);
+  stateGamePlay->world->update(stateGamePlay->player,
+                               stateGamePlay->context->t_camera->lookPos,
+                               stateGamePlay->context->t_camera->position);
 
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
@@ -75,10 +75,29 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 
     if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
-    if (pressed.L2)
-      stateGamePlay->player->setArmBreakingAnimation();
-    else
-      stateGamePlay->player->unsetArmBreakingAnimation();
+
+    if (pressed.L2) {
+      if (stateGamePlay->world->terrainManager->validTargetBlock()) {
+        stateGamePlay->world->terrainManager->breakTargetBlock(deltaTime);
+        stateGamePlay->player->setArmBreakingAnimation();
+      }
+    } else if (stateGamePlay->world->terrainManager->isBreakingBLock()) {
+      stateGamePlay->world->terrainManager->stopBreakTargetBlock();
+    }
+
+    if (clicked.R2) {
+      ItemId activeItemType =
+          stateGamePlay->player->getSelectedInventoryItemType();
+      if (activeItemType != ItemId::empty) {
+        const Blocks blockid =
+            stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
+        if (blockid != Blocks::AIR_BLOCK)
+          stateGamePlay->world->terrainManager->putBlock(blockid,
+                                                         stateGamePlay->player);
+      }
+    }
+
+    stateGamePlay->player->unsetArmBreakingAnimation();
 
     if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();

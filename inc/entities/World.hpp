@@ -42,8 +42,8 @@ class World {
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad,
-              const float& deltaTime);
+  void update(Player* t_player, const Vec4& camLookPos,
+              const Vec4& camPosition);
   void render();
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
