@@ -6,6 +6,7 @@
 #include "managers/font/font_options.hpp"
 #include "managers/tick_manager.hpp"
 #include "models/terrain_height_model.hpp"
+#include "entities/inventory.hpp"
 #include <tamtypes.h>
 #include <string>
 #include <tyra>
@@ -31,6 +32,8 @@ class CreativePlayingState : public PlayingStateBase {
   void playNewRandomSong();
   void openInventory();
   void closeInventory();
+  void gamePlayInputHandler(const float& deltaTime);
+  void inventoryInputHandler(const float& deltaTime);
 
   inline const u8 isSongPlaying() {
     return t_creativeAudioListener->t_song->isPlaying();

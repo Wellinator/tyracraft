@@ -38,7 +38,7 @@ ItemRepository::~ItemRepository() {
       chiseled_stone_bricks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       stripped_oak_wood.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
+//   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
 void ItemRepository::init(Renderer* t_renderer) {
@@ -195,12 +195,12 @@ void ItemRepository::loadItems() {
       ->addLink(stripped_oak_wood.sprite.id);
 
   // -------------------- Tools ----------------
-  wooden_axe.id = ItemId::wooden_axe;
-  wooden_axe.blockId = Blocks::VOID;
-  this->items.push_back(&wooden_axe);
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/wooden_axe.png"))
-      ->addLink(wooden_axe.sprite.id);
+//   wooden_axe.id = ItemId::wooden_axe;
+//   wooden_axe.blockId = Blocks::VOID;
+//   this->items.push_back(&wooden_axe);
+//   this->t_renderer->getTextureRepository()
+//       .add(FileUtils::fromCwd("assets/textures/items/wooden_axe.png"))
+//       ->addLink(wooden_axe.sprite.id);
 }
 
 Item* ItemRepository::getItemById(ItemId& itemId) {
@@ -209,11 +209,16 @@ Item* ItemRepository::getItemById(ItemId& itemId) {
   return NULL;
 }
 
-void ItemRepository::linkTextureByItemType(ItemId itemType,
-                                           const u32 t_spriteId) {
-  this->t_renderer->getTextureRepository()
-      .getBySpriteId(getSpriteByItemType(itemType)->id)
-      ->addLink(t_spriteId);
+u8 ItemRepository::linkTextureByItemType(ItemId itemType,
+                                         const u32 t_spriteId) {
+  Sprite* baseSprite = getSpriteByItemType(itemType);
+  if (baseSprite) {
+    this->t_renderer->getTextureRepository()
+        .getBySpriteId(baseSprite->id)
+        ->addLink(t_spriteId);
+    return true;
+  }
+  return false;
 }
 
 void ItemRepository::removeTextureLinkByBlockType(ItemId itemType,

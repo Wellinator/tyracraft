@@ -54,7 +54,7 @@ void CreativePlayingState::render() {
 
   this->renderCreativeUi();
 
-  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
+  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu(t_fontManager);
 
   if (debugMode) drawDegubInfo();
 
@@ -63,8 +63,23 @@ void CreativePlayingState::render() {
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+
+  if (clicked.Select) debugMode = !debugMode;
+  if (debugMode && clicked.Circle) printMemoryInfoToLog();
+
+  if (isInventoryOpened()) {
+    inventoryInputHandler(deltaTime);
+  } else {
+    gamePlayInputHandler(deltaTime);
+  }
+}
+
+void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
   const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
   const auto& lJoyPad = stateGamePlay->context->t_engine->pad.getLeftJoyPad();
+
+  if (clicked.Triangle && !isInventoryOpened()) openInventory();
 
   // Player commands
   {
@@ -112,25 +127,32 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
         stateGamePlay->player->flyDown(deltaTime, terrainHeight);
       }
     }
-  }
 
-  if (clicked.Triangle) {
-    isInventoryOpened() ? closeInventory() : openInventory();
-  }
-  if (isInventoryOpened()) return;
-
-  if (clicked.Cross) {
-    if (elapsedTimeInSec < 0.5F) {
-      stateGamePlay->player->toggleFlying();
+    if (clicked.Cross) {
+      if (elapsedTimeInSec < 0.5F) {
+        stateGamePlay->player->toggleFlying();
+      }
+      elapsedTimeInSec = 0.0F;
     }
-    elapsedTimeInSec = 0.0F;
+  }
+}
+
+void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+
+  Inventory* creativeInvetory = stateGamePlay->ui->getInvetory();
+  if (creativeInvetory) {
+    if (clicked.DpadUp)
+      creativeInvetory->moveSelectorUp();
+    else if (clicked.DpadDown)
+      creativeInvetory->moveSelectorDown();
+    else if (clicked.DpadLeft)
+      creativeInvetory->moveSelectorLeft();
+    else if (clicked.DpadRight)
+      creativeInvetory->moveSelectorRight();
   }
 
-  if (clicked.Select) debugMode = !debugMode;
-
-  if (debugMode && clicked.Circle) {
-    printMemoryInfoToLog();
-  }
+  if (clicked.Triangle) closeInventory();
 }
 
 void CreativePlayingState::navigate() {}
