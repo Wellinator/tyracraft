@@ -54,7 +54,8 @@ void CreativePlayingState::render() {
 
   this->renderCreativeUi();
 
-  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu(t_fontManager);
+  if (isInventoryOpened())
+    stateGamePlay->ui->renderInventoryMenu(t_fontManager);
 
   if (debugMode) drawDegubInfo();
 
@@ -62,6 +63,7 @@ void CreativePlayingState::render() {
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
+  // FIX: camera moving while in inventory
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
   if (clicked.Select) debugMode = !debugMode;

@@ -21,8 +21,10 @@ Ui::~Ui() {
   for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(breath[i]);
 
   for (u8 i = 0; i < INVENTORY_SIZE; i++)
-    if (playerInventory[i] != NULL)
+    if (playerInventory[i]) {
       textureRepository->freeBySprite(*playerInventory[i]);
+      delete playerInventory[i];
+    }
 
   delete creativeInventory;
 }
@@ -209,8 +211,11 @@ void Ui::loadInventory() {
 void Ui::unloadInventory() {
   delete creativeInventory;
   _isInventoryOpened = false;
+  creativeInventory = nullptr;
 }
 
 void Ui::renderInventoryMenu(FontManager* t_fontManager) {
-  if (isInventoryOpened()) creativeInventory->render(t_fontManager);
+  if (isInventoryOpened() && creativeInventory) {
+    creativeInventory->render(t_fontManager);
+  }
 }

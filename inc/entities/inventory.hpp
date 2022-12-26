@@ -52,7 +52,15 @@ class Inventory {
   Sprite selector_overlay;
   Sprite itemframe;
   Sprite scroller;
-  Sprite* slots_prites[SIZE];
+
+  // It gets some error if don't get initialized
+  std::array<Sprite*, SIZE> slots_prites = {
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  };
 
   Renderer* t_renderer;
   ItemRepository* t_itemRepository;

@@ -18,8 +18,9 @@ Inventory::~Inventory() {
   textureRepository->freeBySprite(btnCross);
   textureRepository->freeBySprite(btnCircle);
 
-  for (size_t i = 0; i < SIZE; i++)
-    if (slots_prites[i]) textureRepository->freeBySprite(*slots_prites[i]);
+  for (size_t i = 0; i < SIZE; i++) {
+    if (slots_prites[i]) delete slots_prites[i];
+  }
 }
 
 void Inventory::init() {
@@ -65,7 +66,7 @@ void Inventory::load_slots_sprites() {
           this->t_itemRepository->removeTextureLinkByBlockType(
               active_slots_data[index], slots_prites[index]->id);
           delete slots_prites[index];
-          slots_prites[index] = NULL;
+          slots_prites[index] = nullptr;
         }
 
         Sprite* tempItemSprite = new Sprite();
@@ -75,8 +76,6 @@ void Inventory::load_slots_sprites() {
                                      BASE_Y - i + (ROW_HEIGHT * i));
         const u8 linkStatus = this->t_itemRepository->linkTextureByItemType(
             active_slots_data[index], tempItemSprite->id);
-        // TYRA_ASSERT(linkStatus, "ERROR at repository sprite texture
-        // linking");
 
         if (linkStatus) {
           slots_prites[index] = tempItemSprite;
@@ -88,9 +87,6 @@ void Inventory::load_slots_sprites() {
         delete slots_prites[index];
         slots_prites[index] = NULL;
       }
-
-      const auto& item = std::to_string((u8)active_slots_data[index]);
-      TYRA_LOG("Added sprite: ", item.c_str(), " to ", i, " x ", j);
 
       index++;
     }
@@ -129,7 +125,7 @@ void Inventory::load_sprites() {
 
   btnCircle.mode = Tyra::MODE_STRETCH;
   btnCircle.size.set(25, 25);
-  btnCircle.position.set(180, t_renderer->core.getSettings().getHeight() - 40);
+  btnCircle.position.set(190, t_renderer->core.getSettings().getHeight() - 40);
   t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("assets/textures/ui/btn_circle.png"))
       ->addLink(btnCircle.id);
@@ -156,7 +152,7 @@ void Inventory::render(FontManager* t_fontManager) {
   t_renderer->renderer2D.render(btnCross);
   t_fontManager->printText("Select Item", 35, 407);
   t_renderer->renderer2D.render(btnCircle);
-  t_fontManager->printText("Exit", 200, 407);
+  t_fontManager->printText("Exit", 210, 407);
 }
 
 void Inventory::moveSelectorUp() {
