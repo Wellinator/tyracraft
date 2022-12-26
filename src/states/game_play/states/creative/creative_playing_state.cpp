@@ -152,7 +152,7 @@ void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
       creativeInvetory->moveSelectorRight();
   }
 
-  if (clicked.Triangle) closeInventory();
+  if (clicked.Circle) closeInventory();
 }
 
 void CreativePlayingState::navigate() {}
