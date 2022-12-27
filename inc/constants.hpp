@@ -137,15 +137,16 @@ enum class ItemId {
   redstone_ore_block,
   emerald_ore_block,
 
+  // TODO: move total_of_items to the end of enum this is temp!
+  // Helper
+  total_of_items,
+
   // Tools
   wooden_axe,
   stone_axe,
   iron_axe,
   golden_axe,
   diamond_axe,
-
-  //Helper
-  total_of_items
 };
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
