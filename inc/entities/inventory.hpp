@@ -29,6 +29,7 @@ class Inventory {
   void moveSelectorDown();
   void moveSelectorLeft();
   void moveSelectorRight();
+  const ItemId getSelectedItem();
 
  private:
   float BASE_X_POS;

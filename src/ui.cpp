@@ -158,10 +158,10 @@ void Ui::loadlHud() {
 void Ui::updateHud() {
   if (isInventoryOpened()) {
     creativeInventory->update();
-  } else {
-    if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
-    if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
   }
+
+  if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
+  if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
 }
 
 void Ui::updateSelectedSlot() {

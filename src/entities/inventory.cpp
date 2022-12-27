@@ -192,3 +192,9 @@ void Inventory::updateSelectorSpritePosition() {
       BASE_X - selector_col + (COL_WIDTH * selector_col),
       BASE_Y - selector_row + (ROW_HEIGHT * selector_row));
 }
+
+const ItemId Inventory::getSelectedItem() {
+  const u8 index = (selector_row * COLS) + selector_col;
+  const ItemId result = active_slots_data[index];
+  return result;
+}

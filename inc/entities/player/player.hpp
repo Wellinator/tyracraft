@@ -106,6 +106,8 @@ class Player {
   void jump();
   void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void shiftItemToInventory(const ItemId& itemToShift);
+  void setItemToInventory(const ItemId& itemToShift);
 
   TerrainHeightModel getTerrainHeightAtPosition(
       std::vector<Chunck*> loadedChunks);

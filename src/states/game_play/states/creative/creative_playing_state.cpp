@@ -154,6 +154,14 @@ void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
       creativeInvetory->moveSelectorRight();
   }
 
+  if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
+  if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
+
+  if (clicked.Cross) {
+    stateGamePlay->player->setItemToInventory(
+        creativeInvetory->getSelectedItem());
+  }
+
   if (clicked.Circle) closeInventory();
 }
 

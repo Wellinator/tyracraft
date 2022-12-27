@@ -543,3 +543,17 @@ void Player::animate() {
   this->mesh->update();
   if (isHandFree()) this->armMesh->update();
 }
+
+void Player::shiftItemToInventory(const ItemId& itemToShift) {
+  for (size_t i = INVENTORY_SIZE - 1; i > 0; i--) {
+    inventory[i] = inventory[i - 1];
+  }
+
+  inventory[0] = itemToShift;
+  inventoryHasChanged = true;
+}
+
+void Player::setItemToInventory(const ItemId& itemToShift) {
+  inventory[selectedInventoryIndex] = itemToShift;
+  inventoryHasChanged = true;
+}
