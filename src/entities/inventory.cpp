@@ -25,7 +25,7 @@ Inventory::~Inventory() {
 
 void Inventory::init() {
   BASE_X_POS = (t_renderer->core.getSettings().getWidth() / 2) - 196;
-  BASE_Y_POS = (t_renderer->core.getSettings().getHeight() / 2) - 170;
+  BASE_Y_POS = (t_renderer->core.getSettings().getHeight() / 2) - 196;
 
   load_sprites();
   load_slots_data();

@@ -57,7 +57,9 @@ class Ui {
 
   float BASE_X_POS;
   float BASE_Y_POS;
-  const float HUD_WIDTH = 192.0F;
+  const float HUD_HEIGHT = 67.0F;
+  const float HUD_WIDTH = 496.0F;
+  const float COL_WIDTH = HUD_WIDTH / 12.4F;
 
   u8 _isInventoryOpened = false;
   Inventory* creativeInventory = nullptr;
