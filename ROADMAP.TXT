@@ -49,6 +49,8 @@
     ✅ -> Leaves neghboors blocks visibility;
     ✅ -> Refactor block visibility/transparency/solid check system;
     🔲 -> Fix block faces transparency (Render transaparent block after solid ones);
+    ✅ -> Duplicated inventory item;
+    ✅ -> Invalid reference to inventory index;
     ✅ -> Fix player keeps walking when the inventory is opened;
     🔲 -> Real PS2:
         ✅ -> Fix walking state;
