@@ -66,10 +66,6 @@ void BlockStepSfxRepository::loadModels() {
   this->models.push_back(new SfxBlockModel(
       Blocks::BIRCH_LEAVES_BLOCK, SoundFxCategory::Step, SoundFX::Gravel1));
 
-  // Stripped Woods
-  this->models.push_back(new SfxBlockModel(
-      Blocks::STRIPPED_OAK_WOOD_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));
-
   // Wood Planks
   this->models.push_back(new SfxBlockModel(
       Blocks::OAK_PLANKS_BLOCK, SoundFxCategory::Step, SoundFX::Wood1));

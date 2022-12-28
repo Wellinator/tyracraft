@@ -74,7 +74,6 @@ enum class Blocks {
   CHISELED_STONE_BRICKS_BLOCK,
 
   // Woods
-  STRIPPED_OAK_WOOD_BLOCK,
   OAK_LOG_BLOCK,
   OAK_LEAVES_BLOCK,
   BIRCH_LOG_BLOCK,
@@ -119,9 +118,6 @@ enum class ItemId {
   spruce_planks,
   birch_planks,
   acacia_planks,
-
-  // Stripped woods
-  stripped_oak_wood,
 
   // Stone Bricks
   stone_brick,

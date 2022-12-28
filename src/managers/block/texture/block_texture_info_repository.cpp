@@ -90,9 +90,6 @@ void BlockTextureRepository::loadTextures() {
       new BlockInfo(Blocks::MOSSY_STONE_BRICKS_BLOCK, true, {2, 6}, false));
   this->models.push_back(
       new BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {3, 6}, false));
-  // Stripped Woods
-  this->models.push_back(
-      new BlockInfo(Blocks::STRIPPED_OAK_WOOD_BLOCK, true, {0, 12}, false));
 
   // Woods
   this->models.push_back(new BlockInfo(Blocks::OAK_LOG_BLOCK, false,

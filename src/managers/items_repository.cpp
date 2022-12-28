@@ -36,8 +36,6 @@ ItemRepository::~ItemRepository() {
       mossy_stone_bricks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       chiseled_stone_bricks.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(
-      stripped_oak_wood.sprite);
   //   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
@@ -185,14 +183,6 @@ void ItemRepository::loadItems() {
       .add(
           FileUtils::fromCwd("assets/textures/items/chiseled_stone_bricks.png"))
       ->addLink(chiseled_stone_bricks.sprite.id);
-
-  // --------------------Stripped Oak Wood----------------
-  stripped_oak_wood.id = ItemId::stripped_oak_wood;
-  stripped_oak_wood.blockId = Blocks::STRIPPED_OAK_WOOD_BLOCK;
-  this->items.push_back(&stripped_oak_wood);
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/stripped_oak_wood.png"))
-      ->addLink(stripped_oak_wood.sprite.id);
 
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;

@@ -56,9 +56,6 @@ class ItemRepository {
   Item mossy_stone_bricks;
   Item chiseled_stone_bricks;
 
-  // Stripped woods
-  Item stripped_oak_wood;
-
   // Toolds
   // Item wooden_axe;
 };
