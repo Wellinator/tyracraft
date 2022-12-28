@@ -5,7 +5,7 @@
 
 // Values in ticks
 #define TICK 1.0F / 20.0F
-#define REAL_TIME_TO_TICK 3.6F
+#define REAL_TIME_TO_TICK 36.0F
 #define DAY_INIT 0
 #define DAY_MID 6000
 #define DAY_SUNSET 12000
