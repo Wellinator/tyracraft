@@ -134,8 +134,7 @@ class Player {
   void loadArmMesh();
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  void updateGravity(const float& deltaTime,
-                     TerrainHeightModel* terrainHeight);
+  void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
   u8 updatePosition(std::vector<Chunck*> loadedChunks, const float& deltaTime,
@@ -143,11 +142,10 @@ class Player {
 
   // Inventory
 
-  ItemId inventory[INVENTORY_SIZE] = {ItemId::empty,      ItemId::dirt,
-                                      ItemId::stone,      ItemId::sand,
-                                      ItemId::bricks,     ItemId::glass,
-                                      ItemId::oak_planks, ItemId::spruce_planks,
-                                      ItemId::stone_brick};  // Starts from 0
+  ItemId inventory[HOT_INVENTORY_SIZE] = {
+      ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
+      ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
+  };
 
   short int selectedInventoryIndex = 0;
 

@@ -52,7 +52,7 @@ class Ui {
   Sprite breath[10];
 
   // Player inventory ui
-  Sprite* playerInventory[INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
+  Sprite* playerInventory[HOT_INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
                                              NULL, NULL, NULL, NULL};
 
   float BASE_X_POS;

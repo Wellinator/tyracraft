@@ -322,13 +322,13 @@ u8 Player::getSelectedInventorySlot() {
 
 void Player::moveSelectorToTheLeft() {
   selectedInventoryIndex--;
-  if (selectedInventoryIndex < 0) selectedInventoryIndex = INVENTORY_SIZE - 1;
+  if (selectedInventoryIndex < 0) selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
   selectedSlotHasChanged = 1;
 }
 
 void Player::moveSelectorToTheRight() {
   selectedInventoryIndex++;
-  if (selectedInventoryIndex > INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
+  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
 }
 
@@ -545,7 +545,7 @@ void Player::animate() {
 }
 
 void Player::shiftItemToInventory(const ItemId& itemToShift) {
-  for (size_t i = INVENTORY_SIZE - 1; i > 0; i--) {
+  for (size_t i = HOT_INVENTORY_SIZE - 1; i > 0; i--) {
     inventory[i] = inventory[i - 1];
   }
 

@@ -14,7 +14,7 @@ void TyraCraftGame::init() { stateManager = new StateManager(engine, &camera); }
 
 void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
-  engine->renderer.core.setFrameLimit(false);
+  engine->renderer.core.setFrameLimit(true);
   stateManager->update(1 / static_cast<float>(engine->info.getFps()));
   engine->renderer.endFrame();
 }

@@ -20,7 +20,7 @@ Ui::~Ui() {
   for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(armor[i]);
   for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(breath[i]);
 
-  for (u8 i = 0; i < INVENTORY_SIZE; i++)
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++)
     if (playerInventory[i]) {
       textureRepository->freeBySprite(*playerInventory[i]);
       delete playerInventory[i];
@@ -51,7 +51,7 @@ void Ui::renderInventory() {
   this->t_renderer->renderer2D.render(&empty_slots);
 
   // Draw itens from player inventory
-  for (u8 i = 0; i < INVENTORY_SIZE; i++)
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++)
     if (playerInventory[i])
       this->t_renderer->renderer2D.render(playerInventory[i]);
 
@@ -176,7 +176,7 @@ void Ui::updatePlayerInventory() {
   const float BASE_Y = BASE_Y_POS + 43;
 
   ItemId* inventoryData = this->t_player->getInventoryData();
-  for (u8 i = 0; i < INVENTORY_SIZE; i++) {
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++) {
     if (inventoryData[i] != ItemId::empty) {
       if (this->playerInventory[i]) {
         this->t_itemRepository->removeTextureLinkByBlockType(

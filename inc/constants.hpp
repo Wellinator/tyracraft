@@ -147,7 +147,7 @@ enum class ItemId {
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
-#define INVENTORY_SIZE 9
+#define HOT_INVENTORY_SIZE 9
 
 #define MIN_WORLD_POS                            \
   Vec4(OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE, \
