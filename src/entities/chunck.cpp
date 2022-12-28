@@ -316,6 +316,6 @@ void Chunck::loadBags() { return; }
 
 void Chunck::sortBlockByTransparency() {
   std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {
-    return (u8)a->hasTransparency > (u8)b->hasTransparency;
+    return (u8)a->hasTransparency < (u8)b->hasTransparency;
   });
 }
