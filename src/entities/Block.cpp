@@ -10,6 +10,7 @@ Block::Block(BlockInfo* blockInfo) {
   this->type = static_cast<Blocks>(blockInfo->blockId);
   this->isBreakable = blockInfo->_isBreakable;
   this->isSolid = blockInfo->_isSolid;
+  this->hasTransparency = blockInfo->_isTransparent;
   this->model.identity();
   this->scale.identity();
   this->translation.identity();

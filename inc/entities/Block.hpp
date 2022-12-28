@@ -32,6 +32,7 @@ class Block {
   // Block state
   u8 isTarget = false;
   u8 isSolid = false;
+  u8 hasTransparency = false;
   u8 isBreakable = false;
   u8 isAtChunkBorder = false;
   float damage = 0;

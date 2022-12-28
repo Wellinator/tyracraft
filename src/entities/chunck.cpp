@@ -167,6 +167,8 @@ void Chunck::clearDrawData() {
 }
 
 void Chunck::updateDrawData() {
+  sortBlockByTransparency();
+
   const float scale = 1.0F / 16.0F;
   const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
   const Vec4* rawData = vertexBlockData.getVertexData();
@@ -311,3 +313,9 @@ void Chunck::deallocDrawBags(StaPipBag* bag) {
 }
 
 void Chunck::loadBags() { return; }
+
+void Chunck::sortBlockByTransparency() {
+  std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {
+    return (u8)a->hasTransparency > (u8)b->hasTransparency;
+  });
+}

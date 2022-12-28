@@ -82,6 +82,7 @@ class Chunck {
   void highLightTargetBlock(Block* t_block, u8& isTarget);
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
+  void sortBlockByTransparency();
 
   inline void resetLoadingOffset() {
     this->tempLoadingOffset->set(*minOffset);
