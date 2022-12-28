@@ -44,7 +44,7 @@ class Inventory {
   s8 selector_row = 0;
 
   u8 indexOffset = 0;
-  std::array<ItemId, (u8)ItemId::total_of_items> slots_data;
+  std::array<ItemId, ((u8)ItemId::total_of_items - 1)> slots_data;
   std::array<ItemId, SIZE> active_slots_data;
 
   Sprite btnCross;

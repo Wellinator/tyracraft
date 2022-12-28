@@ -34,8 +34,10 @@ void Inventory::init() {
 }
 
 void Inventory::load_slots_data() {
-  for (size_t i = 0; i < (u8)ItemId::total_of_items - 1; i++) {
-    slots_data[i] = static_cast<ItemId>(i + 1);
+  u8 index = 0;
+  for (size_t i = (u8)ItemId::dirt; i < (u8)ItemId::total_of_items; i++) {
+    slots_data[index] = static_cast<ItemId>(i);
+    index++;
   }
 }
 
@@ -43,7 +45,7 @@ void Inventory::load_active_slots_data() {
   u8 index = 0;
   for (int i = 0; i < ROWS; i++) {
     for (int j = 0; j < COLS; j++) {
-      active_slots_data[index] = index < (u8)ItemId::total_of_items
+      active_slots_data[index] = index < (u8)ItemId::total_of_items - 1
                                      ? slots_data[index]
                                      : ItemId::empty;
       index++;
@@ -85,7 +87,7 @@ void Inventory::load_slots_sprites() {
         }
       } else {
         delete slots_prites[index];
-        slots_prites[index] = NULL;
+        slots_prites[index] = nullptr;
       }
 
       index++;
