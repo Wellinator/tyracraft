@@ -34,7 +34,7 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   playerMovementDirection =
       isInventoryOpened() ? Vec4(0.0F) : playerMovementDirection;
-      
+
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
       stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
@@ -103,6 +103,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
       }
     } else if (stateGamePlay->world->terrainManager->isBreakingBLock()) {
       stateGamePlay->world->terrainManager->stopBreakTargetBlock();
+      stateGamePlay->player->unsetArmBreakingAnimation();
     }
 
     if (clicked.R2) {
@@ -116,8 +117,6 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
                                                          stateGamePlay->player);
       }
     }
-
-    stateGamePlay->player->unsetArmBreakingAnimation();
 
     if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
@@ -190,10 +189,10 @@ void CreativePlayingState::drawDegubInfo() {
       fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
-  std::string ticks =
-      std::string("Ticks: ").append(std::to_string(g_ticksCounter));
+  std::string ticks = std::string("Ticks: ").append(
+      std::to_string(static_cast<int>(g_ticksCounter)));
   this->t_fontManager->printText(
-      ticks, FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.8F));
+      ticks, FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
