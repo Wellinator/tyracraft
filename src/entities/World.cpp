@@ -118,7 +118,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     }
   }
 
-  if (this->framesCounter % 5 == 0) {
+  if (this->framesCounter % 3 == 0) {
     this->unloadScheduledChunks();
     this->loadScheduledChunks();
   }

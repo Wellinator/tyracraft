@@ -57,8 +57,11 @@ class Chunck {
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
               WorldLightModel* worldLightModel);
   void clear();
-  void updateDrawData();
   void updateFrustumCheck(const Plane* frustumPlanes);
+
+  void loadDrawData();
+  void clearDrawData();
+  inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
   inline const u8 isVisible() {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
@@ -89,7 +92,6 @@ class Chunck {
   };
 
   void loadBags();
-  void clearDrawData();
   void deallocDrawBags(StaPipBag* bag);
   StaPipBag* getDrawData();
 
@@ -100,4 +102,6 @@ class Chunck {
   Vec4 sunPosition;
   float sunLightIntensity;
   float ambientLightIntesity;
+
+  u8 _isDrawDataLoaded = false;
 };

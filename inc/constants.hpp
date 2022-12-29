@@ -20,7 +20,7 @@
   ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
-#define CHUNCK_SIZE 16
+#define CHUNCK_SIZE 8
 #define CHUNCK_HEIGHT OVERWORLD_V_DISTANCE
 #define CHUNCK_LENGTH ((CHUNCK_SIZE * CHUNCK_SIZE) * CHUNCK_HEIGHT)
 #define HALF_CHUNCK_SIZE (CHUNCK_SIZE / 2)
@@ -34,7 +34,7 @@
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
 #define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 64
+#define LOAD_CHUNK_BATCH 32
 
 /**
  * Define blocks IDs

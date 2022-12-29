@@ -67,7 +67,7 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
 // TODO: calc light info once per chunk loading
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
-  if (hasDataToDraw() && this->state == ChunkState::Loaded && isVisible()) {
+  if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
     M4x4* lightMatrix = new M4x4();
@@ -164,9 +164,11 @@ void Chunck::clearDrawData() {
   uvMap.shrink_to_fit();
   verticesNormals.clear();
   verticesNormals.shrink_to_fit();
+
+  _isDrawDataLoaded = false;
 }
 
-void Chunck::updateDrawData() {
+void Chunck::loadDrawData() {
   sortBlockByTransparency();
 
   const float scale = 1.0F / 16.0F;
@@ -292,7 +294,7 @@ void Chunck::updateDrawData() {
     }
   }
 
-  // TYRA_LOG("Loaded ", vertices.size(), " in the chunk ", id);
+  _isDrawDataLoaded = true;
   delete rawData;
 }
 

@@ -391,7 +391,7 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->updateDrawData();
+  t_chunck->loadDrawData();
 }
 
 void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
@@ -463,7 +463,7 @@ void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->updateDrawData();
+  t_chunck->loadDrawData();
 }
 
 void TerrainManager::updateTargetBlock(const Vec4& camLookPos,
