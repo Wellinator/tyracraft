@@ -103,14 +103,14 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
   result *=
-      (this->speed * sensibility.length() * std::min(deltaTime, MAX_FRAME_MS));
+      (this->speed * sensibility.length() * FIXED_FRAME_MS);
   return result + *mesh->getPosition();
 }
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
-  const float dTime = std::min(deltaTime, MAX_FRAME_MS);
+  const float dTime = FIXED_FRAME_MS;
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
   Vec4 acceleration = GRAVITY * dTime;
@@ -149,14 +149,14 @@ void Player::updateGravity(const float& deltaTime,
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
   const Vec4 upDir = GRAVITY * -10.0F * deltaTime;
-  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, upDir);
+  this->fly(FIXED_FRAME_MS, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
   const Vec4 downDir = GRAVITY * 10.0F * deltaTime;
-  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, downDir);
+  this->fly(FIXED_FRAME_MS, terrainHeight, downDir);
 }
 
 /** Fly in given direction */
@@ -322,13 +322,15 @@ u8 Player::getSelectedInventorySlot() {
 
 void Player::moveSelectorToTheLeft() {
   selectedInventoryIndex--;
-  if (selectedInventoryIndex < 0) selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
+  if (selectedInventoryIndex < 0)
+    selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
   selectedSlotHasChanged = 1;
 }
 
 void Player::moveSelectorToTheRight() {
   selectedInventoryIndex++;
-  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
+  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1)
+    selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
 }
 
