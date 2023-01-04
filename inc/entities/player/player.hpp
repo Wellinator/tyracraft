@@ -22,6 +22,10 @@
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
 #include "models/terrain_height_model.hpp"
+#include "entities/chunck.hpp"
+#include "entities/player/player_render_pip.hpp"
+#include "entities/player/player_first_person_render_pip.hpp"
+#include "entities/player/player_third_person_render_pip.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -51,13 +55,21 @@ class Player {
          BlockManager* t_blockManager);
   ~Player();
 
-  void update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-              std::vector<Block*> loadedBlocks);
+  void update(const float& deltaTime, const Vec4& movementDir,
+              const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+              TerrainHeightModel* terrainHeight);
   void render();
+
+  void setRenderPip(PlayerRenderPip* pipToSet);
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isFlying, isBreaking;
+  bool isOnGround, isFlying, isBreaking, isMoving;
+
+  inline const u8 isHandFree() { return !isHoldingAnItem(); };
+  inline const u8 isHoldingAnItem() {
+    return getSelectedInventoryItemType() != ItemId::empty;
+  };
 
   Vec4 spawnArea;
   u16 currentChunckId = 0;
@@ -76,18 +88,39 @@ class Player {
     return hitBox->getTransformed(mesh->translation);
   };
 
- private:
+  DynPipOptions modelDynpipOptions;
+  DynPipOptions armDynpipOptions;
+  DynamicPipeline dynpip;
+
   Renderer* t_renderer;
+  PlayerRenderPip* renderPip = nullptr;
+
+  void moveSelectorToTheLeft();
+  void moveSelectorToTheRight();
+  void setArmBreakingAnimation();
+  void unsetArmBreakingAnimation();
+  void setWalkingAnimation();
+  void unsetWalkingAnimation();
+  void selectNextItem();
+  void selectPreviousItem();
+  void jump();
+  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void shiftItemToInventory(const ItemId& itemToShift);
+  void setItemToInventory(const ItemId& itemToShift);
+
+  TerrainHeightModel getTerrainHeightAtPosition(
+      std::vector<Chunck*> loadedChunks);
+
+ private:
   BlockManager* t_blockManager;
   SoundManager* t_soundManager;
   StaticPipeline stpip;
-  Vec4 getNextPosition(const float& deltaTime, Pad& t_pad,
-                       const Camera& t_camera);
-  u8 shouldRenderPlayerModel = 0;
+  Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,
+                       const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
-  const u8 WALK_SFX_CH = 3;
-  const u8 WALK_SFX_VOL = 50;
+  const float L_JOYPAD_DEAD_ZONE = 0.15F;
 
   // Forces values
   float speed = 100;
@@ -101,41 +134,27 @@ class Player {
   void loadArmMesh();
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  void updateGravity(const float& deltaTime,
-                     const TerrainHeightModel& terrainHeight);
-  void jump();
-  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
-  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(Block** t_blocks, int blocks_ammount,
-                    const float& deltaTime, const Vec4& nextPlayerPos,
-                    u8 isColliding = 0);
-  TerrainHeightModel getTerrainHeightAtPosition(Block** t_blocks,
-                                                int blocks_ammount);
-  void handleInputCommands(const Pad& t_pad);
+  u8 updatePosition(std::vector<Chunck*> loadedChunks, const float& deltaTime,
+                    const Vec4& nextPlayerPos, u8 isColliding = 0);
 
   // Inventory
 
-  ItemId inventory[INVENTORY_SIZE] = {ItemId::empty,      ItemId::dirt,
-                                      ItemId::stone,      ItemId::sand,
-                                      ItemId::bricks,     ItemId::glass,
-                                      ItemId::oak_planks, ItemId::spruce_planks,
-                                      ItemId::stone_brick};  // Starts from 0
+  ItemId inventory[HOT_INVENTORY_SIZE] = {
+      ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
+      ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
+  };
 
   short int selectedInventoryIndex = 0;
-  void moveSelectorToTheLeft();
-  void moveSelectorToTheRight();
+
+  float lastTimePlayedWalkSfx = 0.0F;
   void playWalkSfx(const Blocks& blockType);
 
-  void selectNextItem();
-  void selectPreviousItem();
+  void animate();
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
-
-  DynPipOptions modelDynpipOptions;
-  DynPipOptions armDynpipOptions;
-  DynamicPipeline dynpip;
 
   // Animations
   // Player body

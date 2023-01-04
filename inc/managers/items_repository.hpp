@@ -20,7 +20,7 @@ class ItemRepository {
   void init(Renderer* t_renderer);
   Item* getItemById(ItemId& itemId);
 
-  void linkTextureByItemType(ItemId itemType, const u32 t_spriteId);
+  u8 linkTextureByItemType(ItemId itemType, const u32 t_spriteId);
   void removeTextureLinkByBlockType(ItemId itemType, const u32 t_spriteId);
   Sprite* getSpriteByItemType(ItemId itemType);
 
@@ -56,9 +56,6 @@ class ItemRepository {
   Item mossy_stone_bricks;
   Item chiseled_stone_bricks;
 
-  // Stripped woods
-  Item stripped_oak_wood;
-
   // Toolds
-  Item wooden_axe;
+  // Item wooden_axe;
 };

@@ -20,7 +20,7 @@
   ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
-#define CHUNCK_SIZE 16
+#define CHUNCK_SIZE 8
 #define CHUNCK_HEIGHT OVERWORLD_V_DISTANCE
 #define CHUNCK_LENGTH ((CHUNCK_SIZE * CHUNCK_SIZE) * CHUNCK_HEIGHT)
 #define HALF_CHUNCK_SIZE (CHUNCK_SIZE / 2)
@@ -34,7 +34,7 @@
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
 #define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 128
+#define LOAD_CHUNK_BATCH 32
 
 /**
  * Define blocks IDs
@@ -74,13 +74,12 @@ enum class Blocks {
   CHISELED_STONE_BRICKS_BLOCK,
 
   // Woods
-  STRIPPED_OAK_WOOD_BLOCK,
   OAK_LOG_BLOCK,
   OAK_LEAVES_BLOCK,
   BIRCH_LOG_BLOCK,
   BIRCH_LEAVES_BLOCK,
 
-  //Helper index
+  // Helper index
   TOTAL_OF_BLOCKS
 };
 /*---------------------------------------------*/
@@ -120,9 +119,6 @@ enum class ItemId {
   birch_planks,
   acacia_planks,
 
-  // Stripped woods
-  stripped_oak_wood,
-
   // Stone Bricks
   stone_brick,
   cracked_stone_bricks,
@@ -137,25 +133,34 @@ enum class ItemId {
   redstone_ore_block,
   emerald_ore_block,
 
+  // TODO: move total_of_items to the end of enum this is temp!
+  // Helper
+  total_of_items,
+
   // Tools
   wooden_axe,
   stone_axe,
   iron_axe,
   golden_axe,
-  diamond_axe
+  diamond_axe,
 };
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
-#define INVENTORY_SIZE 9
+#define HOT_INVENTORY_SIZE 9
 
 #define MIN_WORLD_POS                            \
   Vec4(OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE, \
        OVERWORLD_MIN_HEIGH* DUBLE_BLOCK_SIZE,    \
        OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE)
+
 #define MAX_WORLD_POS                            \
   Vec4(OVERWORLD_MAX_DISTANCE* DUBLE_BLOCK_SIZE, \
        OVERWORLD_MAX_HEIGH* DUBLE_BLOCK_SIZE,    \
        OVERWORLD_MAX_DISTANCE* DUBLE_BLOCK_SIZE)
 
+#define CENTER_WORLD_POS (MAX_WORLD_POS + MIN_WORLD_POS) / 2
+
 #define MAX_FRAME_MS 0.016667F  // Comes from 1 / 60;
+
+#define MAX_ADPCM_CH 23

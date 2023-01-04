@@ -47,8 +47,12 @@ void BlockManager::registerBlockSoundsEffects() {
   this->blockSfxRepositories.push_back(new BlockStepSfxRepository());
 }
 
-BlockInfo* BlockManager::getBlockTexOffsetByType(const Blocks& blockType) {
+BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
   return this->t_blockTextureRepository->getTextureInfo(blockType);
+}
+
+const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
+    return this->t_blockTextureRepository->isBlockTransparent(blockType);
 }
 
 float BlockManager::getBlockBreakingTime() {

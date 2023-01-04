@@ -26,12 +26,11 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   TYRA_ASSERT(t_renderer, "t_renderer not initialized");
   TYRA_ASSERT(itemRepository, "itemRepository not initialized");
 
-  // Set color day
-  // TODO: refector to day/light cycle;
-  t_renderer->core.setClearScreenColor(Color(192.0F, 216.0F, 255.0F));
-
   this->t_renderer = t_renderer;
+
   this->mcPip.setRenderer(&t_renderer->core);
+  this->stapip.setRenderer(&t_renderer->core);
+
   this->blockManager->init(t_renderer, &this->mcPip);
   this->chunckManager->init();
   this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
@@ -42,23 +41,38 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->worldSpawnArea.set(this->terrainManager->defineSpawnArea());
   this->spawnArea.set(this->worldSpawnArea);
   this->buildInitialPosition();
+  this->setIntialTime();
 };
 
-void World::update(Player* t_player, Camera* t_camera, Pad* t_pad,
-                   const float& deltaTime) {
+void World::update(Player* t_player, const Vec4& camLookPos,
+                   const Vec4& camPosition) {
   this->framesCounter++;
-  if (this->terrainManager->shouldUpdateChunck()) return reloadChangedChunk();
+
+  dayNightCycleManager.update();
+  updateLightModel();
+
+  if (this->terrainManager->shouldUpdateChunck()) {
+    if (this->terrainManager->hasRemovedABlock())
+      reloadChangedChunkByRemovedBlock();
+    else
+      reloadChangedChunkByPutedBlock();
+  }
+
   this->chunckManager->update(
-      this->t_renderer->core.renderer3D.frustumPlanes.getAll());
+      this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
+      *t_player->getPosition(), &worldLightModel);
   this->updateChunkByPlayerPosition(t_player);
-  this->terrainManager->update(t_player, t_camera, t_pad,
-                               this->chunckManager->getChuncks(), deltaTime);
-  if (this->framesCounter >= 60) this->framesCounter = 0;
+  this->terrainManager->update(camLookPos, camPosition,
+                               this->chunckManager->getVisibleChunks());
+
+  this->framesCounter = this->framesCounter % 60;
 };
 
 void World::render() {
-  // TODO: Render only chunck in view frustum
-  this->chunckManager->renderer(this->t_renderer, &this->mcPip,
+  this->t_renderer->core.setClearScreenColor(
+      dayNightCycleManager.getSkyColor());
+
+  this->chunckManager->renderer(this->t_renderer, &this->stapip,
                                 this->blockManager);
 
   if (this->terrainManager->targetBlock) {
@@ -82,12 +96,10 @@ const std::vector<Block*> World::getLoadedBlocks() {
   this->loadedBlocks.clear();
   this->loadedBlocks.shrink_to_fit();
 
-  auto chuncks = this->chunckManager->getChuncks();
-  for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->state == ChunkState::Loaded && chuncks[i]->isVisible()) {
-      for (u16 j = 0; j < chuncks[i]->blocks.size(); j++)
-        this->loadedBlocks.push_back(chuncks[i]->blocks[j]);
-    }
+  auto visibleChuncks = this->chunckManager->getVisibleChunks();
+  for (u16 i = 0; i < visibleChuncks.size(); i++) {
+    for (u16 j = 0; j < visibleChuncks[i]->blocks.size(); j++)
+      this->loadedBlocks.push_back(visibleChuncks[i]->blocks[j]);
   }
 
   return this->loadedBlocks;
@@ -98,24 +110,28 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   if (this->lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     this->lastPlayerPosition->set(currentPlayerPos);
     Chunck* currentChunck =
-        this->chunckManager->getChunckByPosition(*t_player->getPosition());
+        this->chunckManager->getChunckByPosition(currentPlayerPos);
 
-    if (currentChunck != nullptr &&
-        t_player->currentChunckId != currentChunck->id) {
+    if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
-      this->scheduleChunksNeighbors(currentChunck);
+      this->scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
   }
 
-  if (this->framesCounter % 30 == 0) {
+  if (this->framesCounter % 3 == 0) {
     this->unloadScheduledChunks();
     this->loadScheduledChunks();
   }
 }
 
-void World::reloadChangedChunk() {
+void World::reloadChangedChunkByPutedBlock() {
   Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(
       this->terrainManager->getModifiedPosition());
+
+  if (this->terrainManager->targetBlock &&
+      this->terrainManager->targetBlock->isAtChunkBorder) {
+    updateNeighBorsChunksByModdedBlock(this->terrainManager->targetBlock);
+  }
 
   if (chunckToUpdate != nullptr) {
     chunckToUpdate->clear();
@@ -124,7 +140,59 @@ void World::reloadChangedChunk() {
   }
 }
 
-void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
+void World::reloadChangedChunkByRemovedBlock() {
+  Block* removedBlock = this->terrainManager->removedBlock;
+  if (removedBlock->isAtChunkBorder)
+    updateNeighBorsChunksByModdedBlock(removedBlock);
+
+  Chunck* chunckToUpdate =
+      this->chunckManager->getChunckById(removedBlock->chunkId);
+  chunckToUpdate->clear();
+  this->terrainManager->buildChunk(chunckToUpdate);
+  this->terrainManager->removedBlock = nullptr;
+  this->terrainManager->setChunckToUpdated();
+}
+
+void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
+  // Front
+  Chunck* frontChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x, changedBlock->offset.y,
+           changedBlock->offset.z + 1));
+
+  // Back
+  Chunck* backChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x, changedBlock->offset.y,
+           changedBlock->offset.z - 1));
+
+  // Right
+  Chunck* rightChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x + 1, changedBlock->offset.y,
+           changedBlock->offset.z));
+  // Left
+  Chunck* leftChunk = this->chunckManager->getChunckByOffset(
+      Vec4(changedBlock->offset.x - 1, changedBlock->offset.y,
+           changedBlock->offset.z));
+
+  if (frontChunk && frontChunk->id != changedBlock->chunkId) {
+    frontChunk->clear();
+    this->terrainManager->buildChunk(frontChunk);
+  } else if (backChunk && backChunk->id != changedBlock->chunkId) {
+    backChunk->clear();
+    this->terrainManager->buildChunk(backChunk);
+  }
+
+  if (rightChunk && rightChunk->id != changedBlock->chunkId) {
+    rightChunk->clear();
+    this->terrainManager->buildChunk(rightChunk);
+  } else if (leftChunk && leftChunk->id != changedBlock->chunkId) {
+    leftChunk->clear();
+    this->terrainManager->buildChunk(leftChunk);
+  }
+}
+
+void World::scheduleChunksNeighbors(Chunck* t_chunck,
+                                    const Vec4 currentPlayerPos,
+                                    u8 force_loading) {
   Vec4 offset = (*t_chunck->maxOffset + *t_chunck->minOffset) / 2;
   auto chuncks = this->chunckManager->getChuncks();
 
@@ -138,27 +206,32 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck, u8 force_loading) {
         chuncks[i]->clear();
         this->terrainManager->buildChunk(chuncks[i]);
       } else if (chuncks[i]->state != ChunkState::Loaded)
-        // Add chunck to load
         this->addChunkToLoadAsync(chuncks[i]);
     } else if (chuncks[i]->state != ChunkState::Clean) {
-      // Add chunck to unload
       this->addChunkToUnloadAsync(chuncks[i]);
     }
   }
+
+  if (tempChuncksToLoad.size()) sortChunksToLoad(currentPlayerPos);
+}
+
+void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
+  std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
+            [currentPlayerPos](const Chunck* a, const Chunck* b) {
+              const float distanceA =
+                  (*a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              const float distanceB =
+                  (*b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              return distanceA < distanceB;
+            });
 }
 
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() == 0) return;
-  int loadPerCall = 0;
 
   for (u16 i = 0; i < tempChuncksToLoad.size(); i++) {
     if (tempChuncksToLoad[i]->state == ChunkState::Loaded) continue;
-    this->terrainManager->buildChunk(tempChuncksToLoad[i]);
-
-    if (loadPerCall >= this->maxLoadPerCall)
-      return;
-    else
-      loadPerCall++;
+    return this->terrainManager->buildChunkAsync(tempChuncksToLoad[i]);
   }
 
   tempChuncksToLoad.clear();
@@ -166,15 +239,10 @@ void World::loadScheduledChunks() {
 
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() == 0) return;
-  int unloadPerCall = 0;
+
   for (u16 i = 0; i < tempChuncksToUnLoad.size(); i++) {
     if (tempChuncksToUnLoad[i]->state == ChunkState::Clean) continue;
-    tempChuncksToUnLoad[i]->clear();
-
-    if (unloadPerCall >= this->maxUnloadPerCall)
-      return;
-    else
-      unloadPerCall++;
+    return tempChuncksToUnLoad[i]->clear();
   }
 
   tempChuncksToUnLoad.clear();
@@ -199,7 +267,7 @@ void World::renderBlockDamageOverlay() {
 
     scale.identity();
     translation.identity();
-    scale.scale(BLOCK_SIZE + 0.01f);
+    scale.scale(BLOCK_SIZE + 0.015f);
     translation.translate(*this->terrainManager->targetBlock->getPosition());
 
     overlay->model = new M4x4(translation * scale);
@@ -238,4 +306,13 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
   tempChuncksToUnLoad.push_back(t_chunck);
+}
+
+void World::updateLightModel() {
+  worldLightModel.lightsPositions = lightsPositions.data();
+  worldLightModel.lightIntensity = dayNightCycleManager.getLightIntensity();
+  worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
+  worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
+  worldLightModel.ambientLightIntensity =
+      dayNightCycleManager.getAmbientLightIntesity();
 }

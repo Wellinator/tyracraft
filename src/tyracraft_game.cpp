@@ -10,28 +10,13 @@ TyraCraftGame::TyraCraftGame(Engine* t_engine)
 }
 TyraCraftGame::~TyraCraftGame() {}
 
-void TyraCraftGame::init() {
-  cameraPosition = Vec4(0.0F, 0.0F, 0.0F, 1.0F);
-  cameraLookAt = Vec4(1.0F, 1.0F, 0.0F, 1.0F);
-  stateManager = new StateManager(engine, &camera);
-}
+void TyraCraftGame::init() { stateManager = new StateManager(engine, &camera); }
 
 void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
-  engine->renderer.core.setFrameLimit(false);
+  engine->renderer.core.setFrameLimit(true);
   stateManager->update(1 / static_cast<float>(engine->info.getFps()));
   engine->renderer.endFrame();
-
-  // Debugger stuff
-  {
-    // printf("FPS: %i\n", engine->info.getFps());
-    // if (FPSCounter == 1) {
-    //   printf("FPS: %i | Free RAM: %f MB\n", engine->info.getFps(),
-    //          engine->info.getAvailableRAM());
-    // }
-    // FPSCounter++;
-    // if (FPSCounter >= 60) FPSCounter = 0;
-  }
 }
 
 }  // namespace TyraCraft

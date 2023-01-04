@@ -20,9 +20,13 @@ Ui::~Ui() {
   for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(armor[i]);
   for (u8 i = 0; i < 10; i++) textureRepository->freeBySprite(breath[i]);
 
-  for (u8 i = 0; i < INVENTORY_SIZE; i++)
-    if (playerInventory[i] != NULL)
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++)
+    if (playerInventory[i]) {
       textureRepository->freeBySprite(*playerInventory[i]);
+      delete playerInventory[i];
+    }
+
+  delete creativeInventory;
 }
 
 void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
@@ -35,10 +39,10 @@ void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->t_itemRepository = itemRepository;
   this->t_player = t_player;
 
-  this->BASE_X_POS = t_renderer->core.getSettings().getWidth() / 2 - 96;
-  this->BASE_Y_POS = t_renderer->core.getSettings().getHeight() - 60;
+  BASE_X_POS = t_renderer->core.getSettings().getWidth() / 2 - 180;
+  BASE_Y_POS = t_renderer->core.getSettings().getHeight() - 144;
 
-  this->loadlHud();
+  loadlHud();
 }
 
 void Ui::update() { this->updateHud(); }
@@ -47,8 +51,8 @@ void Ui::renderInventory() {
   this->t_renderer->renderer2D.render(&empty_slots);
 
   // Draw itens from player inventory
-  for (u8 i = 0; i < INVENTORY_SIZE; i++)
-    if (playerInventory[i] != NULL)
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++)
+    if (playerInventory[i])
       this->t_renderer->renderer2D.render(playerInventory[i]);
 
   this->t_renderer->renderer2D.render(&selected_slot);
@@ -92,34 +96,36 @@ void Ui::loadlHud() {
     std::string armor_fullTexPath =
         FileUtils::fromCwd("assets/hud/armor_full.png");
     armor[i].mode = Tyra::MODE_STRETCH;
-    armor[i].size.set(15.0f, 15.0f);
-    armor[i].position.set(BASE_X_POS + (i * 8.0f), BASE_Y_POS);
+    armor[i].size.set(20.0f, 20.0f);
+    armor[i].position.set(BASE_X_POS + (i * 13.0f), BASE_Y_POS);
     this->t_renderer->core.texture.repository.add(armor_fullTexPath)
         ->addLink(armor[i].id);
 
     std::string health_fullTexPath =
         FileUtils::fromCwd("assets/hud/health_full.png");
     health[i].mode = Tyra::MODE_STRETCH;
-    health[i].size.set(15.0f, 15.0f);
-    health[i].position.set(BASE_X_POS + (i * 8.0f), BASE_Y_POS + 10);
+    health[i].size.set(20.0f, 20.0f);
+    health[i].position.set(BASE_X_POS + (i * 13.0f), BASE_Y_POS + 13);
     this->t_renderer->core.texture.repository.add(health_fullTexPath)
         ->addLink(health[i].id);
 
     std::string breath_fullTexPath =
         FileUtils::fromCwd("assets/hud/breath_full.png");
     breath[i].mode = Tyra::MODE_STRETCH;
-    breath[i].size.set(15.0f, 15.0f);
-    breath[i].position.set(BASE_X_POS + (HUD_WIDTH - 10.0F * 9.0F) + (i * 8.0f),
-                           BASE_Y_POS);
+    breath[i].size.set(20.0f, 20.0f);
+    breath[i].position.set(
+        BASE_X_POS + (HUD_WIDTH - 72.0F - 10.0F * 20.0F) + (i * 13.0f),
+        BASE_Y_POS);
     this->t_renderer->core.texture.repository.add(breath_fullTexPath)
         ->addLink(breath[i].id);
 
     std::string hungry_fullTexPath =
         FileUtils::fromCwd("assets/hud/hungry_full.png");
     hungry[i].mode = Tyra::MODE_STRETCH;
-    hungry[i].size.set(15.0f, 15.0f);
-    hungry[i].position.set(BASE_X_POS + (HUD_WIDTH - 10.0F * 9.0F) + (i * 8.0f),
-                           BASE_Y_POS + 10);
+    hungry[i].size.set(20.0f, 20.0f);
+    hungry[i].position.set(
+        BASE_X_POS + (HUD_WIDTH - 72.0F - 10.0F * 20.0F) + (i * 13.0f),
+        BASE_Y_POS + 13);
     this->t_renderer->core.texture.repository.add(hungry_fullTexPath)
         ->addLink(hungry[i].id);
   }
@@ -127,71 +133,88 @@ void Ui::loadlHud() {
   std::string xp_bar_fullTexPath =
       FileUtils::fromCwd("assets/hud/xp_bar_full.png");
   xp_bar_full.mode = Tyra::MODE_STRETCH;
-  xp_bar_full.size.set(256.0F, 8.0f);
-  xp_bar_full.position.set(BASE_X_POS, BASE_Y_POS + 21);
+  xp_bar_full.size.set(HUD_WIDTH, 12.0f);
+  xp_bar_full.position.set(BASE_X_POS, BASE_Y_POS + 26);
   this->t_renderer->core.texture.repository.add(xp_bar_fullTexPath)
       ->addLink(xp_bar_full.id);
 
   std::string emptySlotsTexPath =
       FileUtils::fromCwd("assets/hud/empty_slots.png");
   empty_slots.mode = Tyra::MODE_STRETCH;
-  empty_slots.size.set(256.0F, 32.0f);
-  empty_slots.position.set(BASE_X_POS, BASE_Y_POS + 29);
+  empty_slots.size.set(HUD_WIDTH, HUD_HEIGHT);
+  empty_slots.position.set(BASE_X_POS, BASE_Y_POS + 35);
   this->t_renderer->core.texture.repository.add(emptySlotsTexPath)
       ->addLink(empty_slots.id);
 
   std::string selectedSlotTexPath =
-      FileUtils::fromCwd("assets/hud/selected_slot.png");
+      FileUtils::fromCwd("assets/hud/selector.png");
   selected_slot.mode = Tyra::MODE_STRETCH;
-  selected_slot.size.set(31.0f, 31.0f);
-  selected_slot.position.set(BASE_X_POS, BASE_Y_POS + 29);
+  selected_slot.size.set(41.0f, 46.0f);
+  selected_slot.position.set(BASE_X_POS, BASE_Y_POS + 35);
   this->t_renderer->core.texture.repository.add(selectedSlotTexPath)
       ->addLink(selected_slot.id);
 }
 
 void Ui::updateHud() {
-  if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
+  if (isInventoryOpened()) {
+    creativeInventory->update();
+  }
 
+  if (this->t_player->selectedSlotHasChanged) this->updateSelectedSlot();
   if (this->t_player->inventoryHasChanged) this->updatePlayerInventory();
 }
 
 void Ui::updateSelectedSlot() {
   u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
-  selected_slot.position.set(
-      BASE_X_POS + ((HUD_WIDTH) / 9.1 * slotIndex) - slotIndex,
-      BASE_Y_POS + 29);
+  selected_slot.position.set(BASE_X_POS + (COL_WIDTH * slotIndex) - slotIndex,
+                             BASE_Y_POS + 35);
   t_player->selectedSlotHasChanged = 0;
 }
 
 void Ui::updatePlayerInventory() {
-  const float BASE_WIDTH = 17.0f;
-  const float BASE_HEIGHT = 17.0f;
-  const float BASE_X = BASE_X_POS + 2;
-  const float BASE_Y = BASE_Y_POS + 29 + 2;
+  const float BASE_X = BASE_X_POS + 5;
+  const float BASE_Y = BASE_Y_POS + 43;
 
   ItemId* inventoryData = this->t_player->getInventoryData();
-  for (u8 i = 0; i < INVENTORY_SIZE; i++) {
+  for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++) {
     if (inventoryData[i] != ItemId::empty) {
-      if (this->playerInventory[i] != NULL) {
+      if (this->playerInventory[i]) {
         this->t_itemRepository->removeTextureLinkByBlockType(
             inventoryData[i], this->playerInventory[i]->id);
         delete this->playerInventory[i];
-        this->playerInventory[i] = NULL;
+        this->playerInventory[i] = nullptr;
       }
 
       Sprite* tempItemSprite = new Sprite();
       tempItemSprite->mode = Tyra::MODE_STRETCH;
-      tempItemSprite->size.set(BASE_WIDTH, BASE_HEIGHT);
-      tempItemSprite->position.set(BASE_X - i + (HUD_WIDTH / 9.1 * i), BASE_Y);
+      tempItemSprite->size.set(31.0F, 31.0F);
+      tempItemSprite->position.set(BASE_X - i + (COL_WIDTH * i), BASE_Y);
       this->t_itemRepository->linkTextureByItemType(inventoryData[i],
                                                     tempItemSprite->id);
 
       this->playerInventory[i] = tempItemSprite;
     } else {
       delete this->playerInventory[i];
-      this->playerInventory[i] = NULL;
+      this->playerInventory[i] = nullptr;
     }
   }
 
   t_player->inventoryHasChanged = 0;
+}
+
+void Ui::loadInventory() {
+  creativeInventory = new Inventory(t_renderer, t_itemRepository);
+  _isInventoryOpened = true;
+}
+
+void Ui::unloadInventory() {
+  delete creativeInventory;
+  _isInventoryOpened = false;
+  creativeInventory = nullptr;
+}
+
+void Ui::renderInventoryMenu(FontManager* t_fontManager) {
+  if (isInventoryOpened() && creativeInventory) {
+    creativeInventory->render(t_fontManager);
+  }
 }

@@ -3,8 +3,10 @@
 #include <renderer/renderer.hpp>
 #include <renderer/renderer.hpp>
 #include <tamtypes.h>
-#include "entities/player.hpp"
+#include "entities/inventory.hpp"
+#include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
+#include "managers/font/font_manager.hpp"
 #include "constants.hpp"
 
 using Tyra::Renderer;
@@ -26,8 +28,14 @@ class Ui {
   void renderHealthBar();
   void renderHungerBar();
   void renderBreathBar();
+  void renderInventoryMenu(FontManager* t_fontManager);
+
+  void loadInventory();
+  void unloadInventory();
+  inline const u8 isInventoryOpened() { return _isInventoryOpened; };
 
   void loadlHud();
+  inline Inventory* getInvetory() { return creativeInventory; };
 
  private:
   Renderer* t_renderer;
@@ -44,13 +52,17 @@ class Ui {
   Sprite breath[10];
 
   // Player inventory ui
-  Sprite* playerInventory[INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
+  Sprite* playerInventory[HOT_INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
                                              NULL, NULL, NULL, NULL};
 
   float BASE_X_POS;
   float BASE_Y_POS;
-  const float HUD_WIDTH = 192.0F;
+  const float HUD_HEIGHT = 67.0F;
+  const float HUD_WIDTH = 496.0F;
+  const float COL_WIDTH = HUD_WIDTH / 12.4F;
 
+  u8 _isInventoryOpened = false;
+  Inventory* creativeInventory = nullptr;
 
   void updateHud();
   void updatePlayerInventory();

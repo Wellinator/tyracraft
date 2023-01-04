@@ -9,4 +9,5 @@ class NewGameOptions {
   bool enableWater = false;
   bool enableCaves = false;
   bool enableTrees = true;
+  float initialTime = 6000;
 };

@@ -12,7 +12,7 @@
 #include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/chunck.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "entities/item.hpp"
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -29,6 +29,7 @@ using Tyra::BBox;
 using Tyra::Engine;
 using Tyra::Math;
 using Tyra::MinecraftPipeline;
+using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
@@ -41,16 +42,19 @@ class TerrainManager {
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             MinecraftPipeline* mcPip, BlockManager* blockManager,
             SoundManager* t_soundManager);
-  void update(Player* t_player, Camera* t_camera, Pad* t_pad,
-              std::vector<Chunck*> chuncks, const float& deltaTime);
+  void update(const Vec4& camLookPos, const Vec4& camPosition,
+              std::vector<Chunck*> chuncks);
   void generateNewTerrain(const NewGameOptions& options);
   inline const int getSeed() { return seed; };
 
   Block* targetBlock = nullptr;
-  void updateTargetBlock(const Vec4& playerPosition, Camera* t_camera,
+  void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
                          std::vector<Chunck*> chuncks);
-  void removeBlock();
-  void putBlock(const Blocks& blockType);
+  void removeBlock(Block* blockToRemove);
+  void putBlock(const Blocks& blockType, Player* t_player);
+  inline const u8 validTargetBlock() {
+    return this->targetBlock != nullptr && this->targetBlock->isBreakable;
+  };
 
   Renderer* t_renderer;
   Engine* engine;
@@ -60,10 +64,13 @@ class TerrainManager {
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
+  void buildChunkAsync(Chunck* t_chunck);
 
   inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
-  inline void setChunckToUpdated() { this->_shouldUpdateChunck = 0; };
+  inline void setChunckToUpdated() { this->_shouldUpdateChunck = false; };
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
+  void breakTargetBlock(const float& deltaTime);
+  void stopBreakTargetBlock();
 
   /**
    * @brief Returns the modified position on putting or removing a block when
@@ -72,17 +79,17 @@ class TerrainManager {
    */
   inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
 
-  int getNoise(int x, int z);
+  inline u8 hasRemovedABlock() { return this->removedBlock != nullptr; };
+  Block* removedBlock = nullptr;
 
  private:
   Ray ray;
-  u8 _shouldUpdateChunck = 0;
-  u8 framesCounter = 0;
+  u8 _shouldUpdateChunck = false;
+  u8 framesCounter = false;
   Vec4 _modifiedPosition;
+
   const u8 UPDATE_TARGET_LIMIT = 3;
 
-  Player* t_player;
-  Camera* t_camera;
   ItemRepository* t_itemRepository;
   MinecraftPipeline* t_mcPip;
 
@@ -101,8 +108,7 @@ class TerrainManager {
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
   const int seed = rand() % 1337;
 
-  FastNoiseLite* noise;
-  void initNoise();
+  int getNoise(const int& x, const int& z);
   void generateTerrainBase(const bool& makeFlat);
   void generateCaves();
   void generateTrees();
@@ -123,16 +129,34 @@ class TerrainManager {
   float getHumidity(int x, int z);
   float getHeightScale(int x, int z);
 
+  u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
+                          const Vec4* chunkMaxOffset);
   u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
   const Vec4 getPositionByIndex(const u16& index);
-  bool isBlockHidden(const Vec4& blockOffset);
-  inline bool isBlockVisible(const Vec4& blockOffset) {
+  bool isBlockHidden(const Vec4* blockOffset);
+
+  /**
+   * @brief Update the visible block faces
+   * @return false if the block is completely hidden
+   *
+   */
+  int getBlockVisibleFaces(const Vec4* t_blockOffset);
+
+  inline bool isBlockTransparentAtIndex(const unsigned int& terrainIndex);
+
+  inline bool isTopFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBottomFaceVisible(const Vec4* t_blockOffset);
+  inline bool isLeftFaceVisible(const Vec4* t_blockOffset);
+  inline bool isRightFaceVisible(const Vec4* t_blockOffset);
+  inline bool isFrontFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBackFaceVisible(const Vec4* t_blockOffset);
+
+  inline bool isBlockVisible(const Vec4* blockOffset) {
     return !isBlockHidden(blockOffset);
   };
 
-  void handlePadControls(Pad* t_pad, const float& deltaTime);
   Vec4* normalizeWorldBlockPosition(Vec4* worldPosition);
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
@@ -142,10 +166,8 @@ class TerrainManager {
   // Breaking control
   u8 _isBreakingBlock = false;
   float breaking_time_pessed = 0.0F;
-  void breakBlock(Block* blockToBreak, const float& deltaTime);
+  float lastTimePlayedBreakingSfx = 0.0F;
 
-  const s8 BLOCK_PLACEMENT_SFX_CH = 1;
-  const s8 BLOCK_FOOTSTEP_SFX_CH = 2;
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);
   void playBreakingBlockSound(const Blocks& blockType);

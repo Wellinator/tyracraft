@@ -16,7 +16,7 @@
 #include "states/game_play/states/survival/survival_playing_state.hpp"
 #include <tyra>
 #include "entities/World.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
 #include "ui.hpp"
 #include <chrono>

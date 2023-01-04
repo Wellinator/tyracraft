@@ -5,19 +5,20 @@
 #include <debug/debug.hpp>
 #include "constants.hpp"
 #include "entities/chunck.hpp"
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "renderer/3d/bbox/bbox.hpp"
 #include <math/m4x4.hpp>
 #include <vector>
+#include "models/world_light_model.hpp"
 
 using Tyra::BBox;
 using Tyra::M4x4;
-using Tyra::MinecraftPipeline;
 using Tyra::Plane;
 using Tyra::Renderer;
+using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
 class ChunckManager {
@@ -26,16 +27,20 @@ class ChunckManager {
   ~ChunckManager();
 
   Chunck* getChunckByPosition(const Vec4& position);
+  Chunck* getChunckByOffset(const Vec4& offset);
   Chunck* getChunckById(const u16 id);
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
+  std::vector<Chunck*> getVisibleChunks();
   void init();
-  void update(const Plane* frustumPlanes);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
+              WorldLightModel* worldLightModel);
   u8 isChunkVisible(Chunck* chunk);
-  void renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+  void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
 
  private:
   std::vector<Chunck*> chuncks;
+  std::vector<Chunck*> visibleChunks;
 
   void generateChunks();
 };

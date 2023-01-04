@@ -1,4 +1,4 @@
-#include "entities/player.hpp"
+#include "entities/player/player.hpp"
 
 using Tyra::Renderer3D;
 
@@ -37,6 +37,9 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
     this->handledItem->init(t_renderer);
     stpip.setRenderer(&t_renderer->core);
   }
+
+  // Set render pip
+  this->setRenderPip(new PlayerFirstPersonRenderPip(this));
 }
 
 Player::~Player() {
@@ -59,147 +62,42 @@ Player::~Player() {
 // Methods
 // ----
 
-void Player::update(const float& deltaTime, Pad& t_pad, Camera& t_camera,
-                    std::vector<Block*> loadedBlocks) {
-  this->shouldRenderPlayerModel = t_camera.getCamType() == CamType::ThirdPerson;
+void Player::update(const float& deltaTime, const Vec4& movementDir,
+                    const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+                    TerrainHeightModel* terrainHeight) {
+  isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
+  if (isMoving) {
+    const Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
+      const bool hasChangedPosition =
+          this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
-  this->handleInputCommands(t_pad);
-
-  const Vec4 nextPlayerPos = getNextPosition(deltaTime, t_pad, t_camera);
-
-  if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-    const u8 hasMoved = this->updatePosition(
-        &loadedBlocks[0], loadedBlocks.size(), deltaTime, nextPlayerPos);
-
-    const u8 canPlayWalkSound = t_pad.getLeftJoyPad().isMoved && hasMoved &&
-                                this->isOnGround &&
-                                this->currentBlock != nullptr;
-    if (canPlayWalkSound) this->playWalkSfx(this->currentBlock->type);
-  }
-
-  TerrainHeightModel terrainHeight =
-      this->getTerrainHeightAtPosition(&loadedBlocks[0], loadedBlocks.size());
-
-  if (this->isFlying) {
-    if (t_pad.getPressed().DpadUp) {
-      this->flyUp(deltaTime, terrainHeight);
-    } else if (t_pad.getPressed().DpadDown) {
-      this->flyDown(deltaTime, terrainHeight);
+      if (hasChangedPosition && this->isOnGround && this->currentBlock) {
+        if (lastTimePlayedWalkSfx > 0.3F) {
+          this->playWalkSfx(this->currentBlock->type);
+          setWalkingAnimation();
+          lastTimePlayedWalkSfx = 0;
+        } else {
+          lastTimePlayedWalkSfx += deltaTime;
+        }
+      }
     }
   } else {
-    this->updateGravity(deltaTime, terrainHeight);
+    unsetWalkingAnimation();
   }
+
+  if (!isFlying) updateGravity(deltaTime, terrainHeight);
+
+  animate();
 
   // this->handledItem->mesh->translation.identity();
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
-void Player::render() {
-  if (shouldRenderPlayerModel) {
-    this->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(mesh.get(), &modelDynpipOptions);
-  }
+void Player::render() { this->renderPip->render(this->t_renderer); }
 
-  if (this->getSelectedInventoryItemType() == ItemId::empty) {
-    this->t_renderer->renderer3D.usePipeline(&dynpip);
-    dynpip.render(armMesh.get(), &armDynpipOptions);
-  }
-
-  // auto& utilityTools = this->t_renderer->renderer3D.utility;
-
-  // Draw Player bbox
-  // { utilityTools.drawBBox(getHitBox()); }
-
-  // if (this->getSelectedInventoryItemType() == ItemId::wooden_axe) {
-  //   // TODO: refactor to handledItem structure
-  //   this->t_renderer->renderer3D.usePipeline(stpip);
-  //   this->stpip.render(this->handledItem->mesh.get(),
-  //                      this->handledItem->options);
-
-  //   utilityTools.drawBBox(
-  //       this->handledItem->mesh.get()->frame->bbox->getTransformed(
-  //           this->handledItem->mesh.get()->getModelMatrix()));
-  // }
-}
-
-void Player::handleInputCommands(const Pad& t_pad) {
-  const PadButtons& clicked = t_pad.getClicked();
-  const PadButtons& pressed = t_pad.getPressed();
-
-  if (clicked.L1) this->moveSelectorToTheLeft();
-  if (clicked.R1) this->moveSelectorToTheRight();
-
-  if (pressed.L2) {
-    this->isBreaking = true;
-    if (!isBreakingAnimationSet) {
-      // FIXME: enable on thrid person only
-      // this->mesh->animation.speed = baseAnimationSpeed * 3;
-      // this->mesh->animation.setSequence(breakBlockSequence);
-
-      this->armMesh->animation.speed = baseAnimationSpeed * 6;
-      this->armMesh->animation.setSequence(armHitingSequence);
-      isBreakingAnimationSet = true;
-    }
-  } else {
-    this->isBreaking = false;
-    isBreakingAnimationSet = false;
-  }
-
-  if (pressed.Cross && this->isOnGround) {
-    this->jump();
-  }
-
-  // TODO: refactore to ingame invetory menu
-  if (isOnGround) {
-    if (clicked.DpadUp) this->selectNextItem();
-    if (clicked.DpadDown) this->selectPreviousItem();
-  }
-
-  // FIXME: Player mesh rotation based on camera direction
-  // if (t_pad.getRightJoyPad().h >= 200) {
-  //   this->mesh->rotation.rotateY(-0.08F);
-  // } else if (t_pad.getRightJoyPad().h <= 100) {
-  //   this->mesh->rotation.rotateY(0.08F);
-  // }
-
-  if (t_pad.getLeftJoyPad().isMoved && isOnGround) {
-    if (!isWalkingAnimationSet) {
-      // TODO: enable on third person only
-      // this->mesh->animation.speed = baseAnimationSpeed;
-      // this->mesh->animation.setSequence(walkSequence);
-
-      this->armMesh->animation.speed = baseAnimationSpeed * 3;
-      this->armMesh->animation.setSequence(armWalkingSequence);
-      isWalkingAnimationSet = true;
-    }
-  } else {
-    isWalkingAnimationSet = false;
-  }
-
-  // If is not animating walking or breaking, set default (standstill);
-  const bool isNotAnimating =
-      (!isBreakingAnimationSet && !isWalkingAnimationSet);
-  if (isNotAnimating) {
-    if (!isStandStillAnimationSet) {
-      this->mesh->animation.setSequence(standStillSequence);
-      this->armMesh->animation.setSequence(armStandStillSequence);
-      this->isStandStillAnimationSet = true;
-    }
-  } else {
-    this->isStandStillAnimationSet = false;
-  }
-
-  this->mesh->update();
-  this->armMesh->update();
-}
-
-Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
-                             const Camera& t_camera) {
-  if (t_pad.getLeftJoyPad().isCentered) return (*mesh->getPosition());
-
-  Vec4 camDir = t_camera.unitCirclePosition.getNormalized();
-  Vec4 sensibility = Vec4((t_pad.getLeftJoyPad().h - 128.0F) / 128.0F, 0.0F,
-                          (t_pad.getLeftJoyPad().v - 128.0F) / 128.0F);
+Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
+                             const Vec4& camDir) {
   Vec4 result =
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
@@ -211,7 +109,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, Pad& t_pad,
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
-                           const TerrainHeightModel& terrainHeight) {
+                           TerrainHeightModel* terrainHeight) {
   const float dTime = std::min(deltaTime, MAX_FRAME_MS);
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
@@ -232,13 +130,13 @@ void Player::updateGravity(const float& deltaTime,
     return;
   }
 
-  if (newYPosition.y < terrainHeight.minHeight) {
-    newYPosition.y = terrainHeight.minHeight;
+  if (newYPosition.y < terrainHeight->minHeight) {
+    newYPosition.y = terrainHeight->minHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = true;
   } else if (newYPosition.y >
-             terrainHeight.maxHeight + this->hitBox->getHeight()) {
-    newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
+             terrainHeight->maxHeight + this->hitBox->getHeight()) {
+    newYPosition.y = terrainHeight->maxHeight + this->hitBox->getHeight();
     this->velocity = -this->velocity;
     this->isOnGround = false;
   }
@@ -285,7 +183,7 @@ void Player::fly(const float& deltaTime,
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
+u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
@@ -305,26 +203,32 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   const float maxCollidableDistance =
       currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (int i = 0; i < blocks_ammount; i++) {
-    // Broad phase
-    // is vertically out of range?
-    if (playerBB.getBottomFace().axisPosition >= t_blocks[i]->maxCorner.y ||
-        playerBB.getTopFace().axisPosition < t_blocks[i]->minCorner.y) {
-      continue;
-    };
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
+    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+      // Broad phase
+      // is vertically out of range?
+      if (playerBB.getBottomFace().axisPosition >=
+              loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
+          playerBB.getTopFace().axisPosition <
+              loadedChunks[chunkIndex]->blocks[i]->minCorner.y) {
+        continue;
+      };
 
-    Vec4 tempInflatedMin = Vec4();
-    Vec4 tempInflatedMax = Vec4();
-    Utils::GetMinkowskiSum(playerMin, playerMax, t_blocks[i]->minCorner,
-                           t_blocks[i]->maxCorner, &tempInflatedMin,
-                           &tempInflatedMax);
+      Vec4 tempInflatedMin = Vec4();
+      Vec4 tempInflatedMax = Vec4();
+      Utils::GetMinkowskiSum(playerMin, playerMax,
+                             loadedChunks[chunkIndex]->blocks[i]->minCorner,
+                             loadedChunks[chunkIndex]->blocks[i]->maxCorner,
+                             &tempInflatedMin, &tempInflatedMax);
 
-    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
-      // Is horizontally collidable?
-      if (tempHitDistance > maxCollidableDistance) continue;
+      if (ray.intersectBox(tempInflatedMin, tempInflatedMax,
+                           &tempHitDistance)) {
+        // Is horizontally collidable?
+        if (tempHitDistance > maxCollidableDistance) continue;
 
-      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
-        finalHitDistance = tempHitDistance;
+        if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
+          finalHitDistance = tempHitDistance;
+        }
       }
     }
   }
@@ -342,14 +246,14 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnX = this->updatePosition(t_blocks, blocks_ammount,
-                                             deltaTime, moveOnXOnly, 1);
+      u8 couldMoveOnX =
+          this->updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1);
       if (couldMoveOnX) return 1;
 
       Vec4 moveOnZOnly =
           Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnZ = this->updatePosition(t_blocks, blocks_ammount,
-                                             deltaTime, moveOnZOnly, 1);
+      u8 couldMoveOnZ =
+          this->updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1);
       if (couldMoveOnZ) return 1;
 
       return 0;
@@ -362,8 +266,8 @@ u8 Player::updatePosition(Block** t_blocks, int blocks_ammount,
   return 1;
 }
 
-TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
-                                                      int blocks_ammount) {
+TerrainHeightModel Player::getTerrainHeightAtPosition(
+    std::vector<Chunck*> loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
@@ -371,28 +275,28 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(Block** t_blocks,
 
   this->currentBlock = nullptr;
 
-  for (int i = 0; i < blocks_ammount; i++) {
-    // Broad phase
-    if (t_blocks[i]->getPosition()->distanceTo(*this->getPosition()) >
-        DUBLE_BLOCK_SIZE)
-      continue;
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
+    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+      // Is on block?
+      if (minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
+          maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
+          minPlayer.z < loadedChunks[chunkIndex]->blocks[i]->maxCorner.z &&
+          maxPlayer.z > loadedChunks[chunkIndex]->blocks[i]->minCorner.z) {
+        const float underBlockHeight =
+            loadedChunks[chunkIndex]->blocks[i]->maxCorner.y;
+        if (minPlayer.y >= underBlockHeight &&
+            underBlockHeight > model.minHeight) {
+          model.minHeight = underBlockHeight;
+          this->currentBlock = loadedChunks[chunkIndex]->blocks[i];
+        }
 
-    u8 isOnBlock = minPlayer.x < t_blocks[i]->maxCorner.x &&
-                   maxPlayer.x > t_blocks[i]->minCorner.x &&
-                   minPlayer.z < t_blocks[i]->maxCorner.z &&
-                   maxPlayer.z > t_blocks[i]->minCorner.z;
-
-    if (!isOnBlock) continue;
-
-    const float underBlockHeight = t_blocks[i]->maxCorner.y;
-    if (minPlayer.y >= underBlockHeight && underBlockHeight > model.minHeight) {
-      model.minHeight = underBlockHeight;
-      this->currentBlock = t_blocks[i];
-    }
-
-    const float overBlockHeight = t_blocks[i]->minCorner.y;
-    if (maxPlayer.y <= overBlockHeight && overBlockHeight < model.maxHeight) {
-      model.maxHeight = overBlockHeight;
+        const float overBlockHeight =
+            loadedChunks[chunkIndex]->blocks[i]->minCorner.y;
+        if (maxPlayer.y <= overBlockHeight &&
+            overBlockHeight < model.maxHeight) {
+          model.maxHeight = overBlockHeight;
+        }
+      }
     }
   }
 
@@ -418,13 +322,13 @@ u8 Player::getSelectedInventorySlot() {
 
 void Player::moveSelectorToTheLeft() {
   selectedInventoryIndex--;
-  if (selectedInventoryIndex < 0) selectedInventoryIndex = INVENTORY_SIZE - 1;
+  if (selectedInventoryIndex < 0) selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
   selectedSlotHasChanged = 1;
 }
 
 void Player::moveSelectorToTheRight() {
   selectedInventoryIndex++;
-  if (selectedInventoryIndex > INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
+  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
 }
 
@@ -529,15 +433,14 @@ void Player::calcStaticBBox() {
 }
 
 void Player::playWalkSfx(const Blocks& blockType) {
-  if (blockType != Blocks::AIR_BLOCK) {
-    SfxBlockModel* blockSfxModel =
-        this->t_blockManager->getStepSoundByBlockType(blockType);
-
-    if (blockSfxModel != nullptr) {
-      this->t_soundManager->setSfxVolume(WALK_SFX_VOL, WALK_SFX_CH);
-      this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound, WALK_SFX_CH);
-    }
+  SfxBlockModel* blockSfxModel =
+      this->t_blockManager->getStepSoundByBlockType(blockType);
+  if (blockSfxModel) {
+    const int ch = this->t_soundManager->getAvailableChannel();
+    this->t_soundManager->setSfxVolume(75, ch);
+    this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
+                                  ch);
+    Tyra::Threading::switchThread();
   }
 }
 
@@ -582,4 +485,75 @@ void Player::selectPreviousItem() {
 void Player::jump() {
   this->velocity += this->lift * this->speed;
   this->isOnGround = false;
+}
+
+void Player::setRenderPip(PlayerRenderPip* pipToSet) {
+  delete this->renderPip;
+  this->renderPip = pipToSet;
+}
+
+void Player::setArmBreakingAnimation() {
+  if (isBreakingAnimationSet) return;
+
+  mesh->animation.speed = baseAnimationSpeed * 3;
+  mesh->animation.setSequence(breakBlockSequence);
+
+  if (isHandFree()) {
+    armMesh->animation.speed = baseAnimationSpeed * 6;
+    armMesh->animation.setSequence(armHitingSequence);
+  }
+
+  isBreakingAnimationSet = true;
+  isBreaking = true;
+}
+
+void Player::unsetArmBreakingAnimation() {
+  if (!isBreakingAnimationSet) return;
+
+  isBreaking = false;
+  isBreakingAnimationSet = false;
+  mesh->animation.setSequence(standStillSequence);
+  armMesh->animation.setSequence(armStandStillSequence);
+}
+
+void Player::setWalkingAnimation() {
+  if (isWalkingAnimationSet) return;
+
+  this->mesh->animation.speed = baseAnimationSpeed;
+  this->mesh->animation.setSequence(walkSequence);
+
+  if (isHandFree()) {
+    this->armMesh->animation.speed = baseAnimationSpeed * 3;
+    this->armMesh->animation.setSequence(armWalkingSequence);
+  }
+
+  isWalkingAnimationSet = true;
+}
+
+void Player::unsetWalkingAnimation() {
+  if (!isWalkingAnimationSet) return;
+
+  isWalkingAnimationSet = false;
+  armMesh->animation.setSequence(armStandStillSequence);
+  mesh->animation.setSequence(standStillSequence);
+}
+
+void Player::animate() {
+  // TODO: check cam type before animate
+  this->mesh->update();
+  if (isHandFree()) this->armMesh->update();
+}
+
+void Player::shiftItemToInventory(const ItemId& itemToShift) {
+  for (size_t i = HOT_INVENTORY_SIZE - 1; i > 0; i--) {
+    inventory[i] = inventory[i - 1];
+  }
+
+  inventory[0] = itemToShift;
+  inventoryHasChanged = true;
+}
+
+void Player::setItemToInventory(const ItemId& itemToShift) {
+  inventory[selectedInventoryIndex] = itemToShift;
+  inventoryHasChanged = true;
 }

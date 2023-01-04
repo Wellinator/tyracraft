@@ -100,7 +100,7 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
 
   ObjLoaderOptions options;
   options.flipUVs = true;
-  options.scale = 250.0F;
+  options.scale = 300.0F;
 
   auto data =
       ObjLoader::load(FileUtils::fromCwd("assets/menu/skybox.obj"), options);
@@ -135,6 +135,7 @@ void StateMainMenu::playClickSound() {
   this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
   this->context->t_soundManager->playSfx(SoundFxCategory::Random,
                                          SoundFX::Click, MENU_SFX_CH);
+  Tyra::Threading::switchThread();
 }
 
 void StateMainMenu::loadMenuSong() {

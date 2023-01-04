@@ -88,7 +88,7 @@ void StateGameMenu::init() {
 }
 
 void StateGameMenu::update(const float& deltaTime) {
-  this->handleInput();
+  this->handleInput(deltaTime);
   Threading::switchThread();
   this->hightLightActiveOption();
   Threading::switchThread();
@@ -117,7 +117,7 @@ void StateGameMenu::render() {
   this->t_renderer->renderer2D.render(&textSelect);
 }
 
-void StateGameMenu::handleInput() {
+void StateGameMenu::handleInput(const float& deltaTime) {
   const PadButtons& clicked =
       this->stateGamePlay->context->t_engine->pad.getClicked();
 
@@ -167,10 +167,11 @@ void StateGameMenu::unloadTextures() {
 }
 
 void StateGameMenu::playClickSound() {
-  this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(50,
-                                                                MENU_SFX_CH);
-  this->stateGamePlay->context->t_soundManager->playSfx(
-      SoundFxCategory::Random, SoundFX::Click, MENU_SFX_CH);
+  const s8 ch =
+      this->stateGamePlay->context->t_soundManager->getAvailableChannel();
+  this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
+  this->stateGamePlay->context->t_soundManager->playSfx(SoundFxCategory::Random,
+                                                        SoundFX::Click, ch);
 }
 
 void StateGameMenu::hightLightActiveOption() {

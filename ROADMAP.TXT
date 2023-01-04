@@ -30,3 +30,30 @@
         🔲 -> Fix walking state;
         🔲 -> Fix amimations state;
         🔲 -> Blocks textures ID;
+
+
+############ TyraCfat Roadmap ############
+
+* Features for pre-alpha release (v0.1.4):
+    ❌ -> Tool (Pickaxe) (WIP);
+    ✅ -> Basic ingame menu for block selection;
+    ✅ -> Implemented tyra manual render mode;
+    ✅ -> BLocks hidden faces culling;
+    ✅ -> Basic ambient and directional lighting effets;
+    ✅ -> Basic Day/Night cycle;
+    ✅ -> Adde tick manager (visible in debug info);
+
+* Bug fixes for pre-alpha release (v0.1.4):
+    ✅ -> Game chashes when creative sound finish;
+    ✅ -> Fixed time scale conversion;
+    ✅ -> Leaves neghboors blocks visibility;
+    ✅ -> Refactor block visibility/transparency/solid check system;
+    🔲 -> Fix block faces transparency (Render transaparent block after solid ones);
+    ✅ -> Duplicated inventory item;
+    ✅ -> Invalid reference to inventory index;
+    ✅ -> Fix player keeps walking when the inventory is opened;
+    🔲 -> Real PS2:
+        ✅ -> Fix walking state;
+        ✅ -> Fix amimations state;
+        ✅ -> Blocks textures ID (Kinda cache at rendering multiple blocks);
+        🔲 -> Fix audio FX;

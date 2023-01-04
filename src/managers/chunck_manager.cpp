@@ -17,23 +17,30 @@ ChunckManager::~ChunckManager() {
 
 void ChunckManager::init() { this->generateChunks(); }
 
-void ChunckManager::update(const Plane* frustumPlanes) {
-  for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->update(frustumPlanes);
+void ChunckManager::update(const Plane* frustumPlanes,
+                           const Vec4& currentPlayerPos,
+                           WorldLightModel* worldLightModel) {
+  this->visibleChunks.clear();
+  for (u16 i = 0; i < chuncks.size(); i++) {
+    chuncks[i]->update(frustumPlanes, currentPlayerPos, worldLightModel);
+    if (chuncks[i]->isVisible() && chuncks[i]->state == ChunkState::Loaded)
+      this->visibleChunks.push_back(chuncks[i]);
+  }
 }
 
-void ChunckManager::renderer(Renderer* t_renderer, MinecraftPipeline* t_mcPip,
+void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                              BlockManager* t_blockManager) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
-    chuncks[i]->renderer(t_renderer, t_mcPip, t_blockManager);
+    chuncks[i]->renderer(t_renderer, stapip, t_blockManager);
 }
 
 void ChunckManager::generateChunks() {
   // TODO: create only the chuncks that'll be rendered
   u16 tempId = 1;
 
-  for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE;
+  for (int x = OVERWORLD_MIN_DISTANCE; x <= OVERWORLD_MAX_DISTANCE;
        x += CHUNCK_SIZE) {
-    for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE;
+    for (int z = OVERWORLD_MIN_DISTANCE; z <= OVERWORLD_MAX_DISTANCE;
          z += CHUNCK_SIZE) {
       Vec4 tempMin = Vec4(x, OVERWORLD_MIN_HEIGH, z);
       Vec4 tempMax =
@@ -54,6 +61,17 @@ Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
   return nullptr;
 };
 
+Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
+  for (u16 i = 0; i < this->chuncks.size(); i++)
+    if (offset.x >= chuncks[i]->minOffset->x &&
+        offset.x <= chuncks[i]->maxOffset->x &&
+        offset.z >= chuncks[i]->minOffset->z &&
+        offset.z <= chuncks[i]->maxOffset->z) {
+      return chuncks[i];
+    }
+  return nullptr;
+};
+
 Chunck* ChunckManager::getChunckById(const u16 id) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
     if (chuncks[i]->id == id) return chuncks[i];
@@ -61,3 +79,7 @@ Chunck* ChunckManager::getChunckById(const u16 id) {
 };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
+
+std::vector<Chunck*> ChunckManager::getVisibleChunks() {
+  return this->visibleChunks;
+}

@@ -7,89 +7,179 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 }
 
 CreativePlayingState::~CreativePlayingState() {
-  this->stateGamePlay->context->t_engine->audio.song.removeListener(
+  stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
   delete this->t_creativeAudioListener;
   delete this->t_fontManager;
 }
 
 void CreativePlayingState::init() {
-  this->t_creativeAudioListener = new CreativeAudioListener(
-      &this->stateGamePlay->context->t_engine->audio.song);
-  this->t_creativeAudioListener->playRandomCreativeSound();
+  this->t_creativeAudioListener =
+      new CreativeAudioListener(&stateGamePlay->context->t_engine->audio.song);
   this->audioListenerId =
-      this->stateGamePlay->context->t_engine->audio.song.addListener(
+      stateGamePlay->context->t_engine->audio.song.addListener(
           this->t_creativeAudioListener);
+  this->t_creativeAudioListener->playRandomCreativeSound();
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
-  this->handleInput();
+  tickManager.update(std::min(deltaTime, MAX_FRAME_MS));
+
+  this->handleInput(deltaTime);
+
+  stateGamePlay->world->update(stateGamePlay->player,
+                               stateGamePlay->context->t_camera->lookPos,
+                               stateGamePlay->context->t_camera->position);
+
+  playerMovementDirection =
+      isInventoryOpened() ? Vec4(0.0F) : playerMovementDirection;
+
+  stateGamePlay->player->update(
+      deltaTime, playerMovementDirection,
+      stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
+      stateGamePlay->world->chunckManager->getVisibleChunks(), &terrainHeight);
+
+  stateGamePlay->ui->update();
+
+  stateGamePlay->context->t_camera->update(
+      stateGamePlay->context->t_engine->pad, *stateGamePlay->player->mesh);
+
+  if (!isSongPlaying()) playNewRandomSong();
 
   Threading::switchThread();
-  this->stateGamePlay->world->update(
-      this->stateGamePlay->player, this->stateGamePlay->context->t_camera,
-      &this->stateGamePlay->context->t_engine->pad, deltaTime);
-
-  Threading::switchThread();
-  this->stateGamePlay->player->update(
-      deltaTime, this->stateGamePlay->context->t_engine->pad,
-      *this->stateGamePlay->context->t_camera,
-      this->stateGamePlay->world->getLoadedBlocks());
-
-  Threading::switchThread();
-  this->stateGamePlay->ui->update();
-
-  Threading::switchThread();
-  this->stateGamePlay->context->t_camera->update(
-      this->stateGamePlay->context->t_engine->pad,
-      *this->stateGamePlay->player->mesh);
 }
 
 void CreativePlayingState::render() {
-  this->stateGamePlay->world->render();
+  stateGamePlay->world->render();
 
-  Threading::switchThread();
-  this->stateGamePlay->player->render();
+  stateGamePlay->player->render();
 
-  Threading::switchThread();
   this->renderCreativeUi();
 
+  if (isInventoryOpened())
+    stateGamePlay->ui->renderInventoryMenu(t_fontManager);
+
   if (debugMode) drawDegubInfo();
+
+  Threading::switchThread();
 }
 
-void CreativePlayingState::handleInput() {
-  const auto& clicked =
-      this->stateGamePlay->context->t_engine->pad.getClicked();
-
-  if (clicked.Cross) {
-    if (elapsedTimeInSec < 0.5F) {
-      this->stateGamePlay->player->toggleFlying();
-    }
-    elapsedTimeInSec = 0.0F;
-  }
+void CreativePlayingState::handleInput(const float& deltaTime) {
+  // FIX: camera moving while in inventory
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
   if (clicked.Select) debugMode = !debugMode;
+  if (debugMode && clicked.Circle) printMemoryInfoToLog();
 
-  if (debugMode && clicked.Circle) {
-    printMemoryInfoToLog();
-    printBlockInfoToLog();
+  if (isInventoryOpened()) {
+    inventoryInputHandler(deltaTime);
+  } else {
+    gamePlayInputHandler(deltaTime);
   }
+}
+
+void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+  const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
+  const auto& lJoyPad = stateGamePlay->context->t_engine->pad.getLeftJoyPad();
+
+  if (clicked.Triangle && !isInventoryOpened()) openInventory();
+
+  // Player commands
+  {
+    playerMovementDirection = Vec4((lJoyPad.h - 128.0F) / 128.0F, 0.0F,
+                                   (lJoyPad.v - 128.0F) / 128.0F);
+    terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
+        stateGamePlay->world->chunckManager->getVisibleChunks());
+
+    if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
+    if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
+
+    if (pressed.L2) {
+      if (stateGamePlay->world->terrainManager->validTargetBlock()) {
+        stateGamePlay->world->terrainManager->breakTargetBlock(deltaTime);
+        stateGamePlay->player->setArmBreakingAnimation();
+      }
+    } else if (stateGamePlay->world->terrainManager->isBreakingBLock()) {
+      stateGamePlay->world->terrainManager->stopBreakTargetBlock();
+      stateGamePlay->player->unsetArmBreakingAnimation();
+    }
+
+    if (clicked.R2) {
+      ItemId activeItemType =
+          stateGamePlay->player->getSelectedInventoryItemType();
+      if (activeItemType != ItemId::empty) {
+        const Blocks blockid =
+            stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
+        if (blockid != Blocks::AIR_BLOCK)
+          stateGamePlay->world->terrainManager->putBlock(blockid,
+                                                         stateGamePlay->player);
+      }
+    }
+
+    if (stateGamePlay->player->isOnGround) {
+      if (pressed.Cross) stateGamePlay->player->jump();
+      if (clicked.DpadUp)
+        stateGamePlay->player->selectNextItem();
+      else if (clicked.DpadDown)
+        stateGamePlay->player->selectPreviousItem();
+    } else if (stateGamePlay->player->isFlying) {
+      if (pressed.DpadUp) {
+        stateGamePlay->player->flyUp(deltaTime, terrainHeight);
+      } else if (pressed.DpadDown) {
+        stateGamePlay->player->flyDown(deltaTime, terrainHeight);
+      }
+    }
+
+    if (clicked.Cross) {
+      if (elapsedTimeInSec < 0.5F) {
+        stateGamePlay->player->toggleFlying();
+      }
+      elapsedTimeInSec = 0.0F;
+    }
+  }
+}
+
+void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
+  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+
+  Inventory* creativeInvetory = stateGamePlay->ui->getInvetory();
+  if (creativeInvetory) {
+    if (clicked.DpadUp)
+      creativeInvetory->moveSelectorUp();
+    else if (clicked.DpadDown)
+      creativeInvetory->moveSelectorDown();
+    else if (clicked.DpadLeft)
+      creativeInvetory->moveSelectorLeft();
+    else if (clicked.DpadRight)
+      creativeInvetory->moveSelectorRight();
+  }
+
+  if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
+  if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
+
+  if (clicked.Cross) {
+    stateGamePlay->player->setItemToInventory(
+        creativeInvetory->getSelectedItem());
+  }
+
+  if (clicked.Circle) closeInventory();
 }
 
 void CreativePlayingState::navigate() {}
 
 void CreativePlayingState::renderCreativeUi() {
-  this->stateGamePlay->ui->renderCrosshair();
-  this->stateGamePlay->ui->renderInventory();
+  stateGamePlay->ui->renderCrosshair();
+  stateGamePlay->ui->renderInventory();
 }
 
 void CreativePlayingState::drawDegubInfo() {
-  Info* info = &this->stateGamePlay->context->t_engine->info;
+  Info* info = &stateGamePlay->context->t_engine->info;
 
   // Draw seed
   std::string seed = std::string("Seed: ").append(
-      std::to_string(this->stateGamePlay->world->getSeed()));
+      std::to_string(stateGamePlay->world->getSeed()));
   this->t_fontManager->printText(
       seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
@@ -98,50 +188,34 @@ void CreativePlayingState::drawDegubInfo() {
   this->t_fontManager->printText(
       fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
-  // Draw print log tip message:
+  // Draw ticks
+  std::string ticks = std::string("Ticks: ").append(
+      std::to_string(static_cast<int>(g_ticksCounter)));
   this->t_fontManager->printText(
-      "Press circle to print debug info to log",
-      FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.8F));
-
-  // Draw Player state:
-  std::string playerStateInfo =
-      std::string("Player state\n")
-          .append(std::string("Is On ground: ") +
-                  std::to_string(this->stateGamePlay->player->isOnGround) +
-                  std::string("\n"))
-          .append(std::string("Is Flaying: ") +
-                  std::to_string(this->stateGamePlay->player->isFlying) +
-                  std::string("\n"))
-          .append(std::string("Is Breaking: ") +
-                  std::to_string(this->stateGamePlay->player->isBreaking) +
-                  std::string("\n"));
-
-  this->t_fontManager->printText(
-      playerStateInfo, FontOptions(Vec2(350.0f, 5.0f), Color(255), 0.8F));
-}
-
-void CreativePlayingState::printBlockInfoToLog() {
-  std::string blocksInfo = std::string("");
-  for (size_t i = (u8)Blocks::STONE_BLOCK; i < (u8)Blocks::TOTAL_OF_BLOCKS;
-       i++) {
-    BlockInfo info =
-        *this->stateGamePlay->world->blockManager->getBlockTexOffsetByType(
-            static_cast<Blocks>(i));
-
-    blocksInfo.append(std::string("\nID: "))
-        .append(std::to_string(i))
-        .append(std::string(" | X: "))
-        .append(std::to_string(info._texOffssetX))
-        .append(std::string(" | Y: "))
-        .append(std::to_string(info._texOffssetX));
-  }
-  TYRA_LOG(blocksInfo.c_str());
+      ticks, FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
-  Info info = this->stateGamePlay->context->t_engine->info;
+  Info info = stateGamePlay->context->t_engine->info;
   std::string freeRam = std::string("Free RAM: ")
                             .append(std::to_string(info.getAvailableRAM()))
                             .append(" MB");
   TYRA_LOG(freeRam.c_str());
+}
+
+void CreativePlayingState::playNewRandomSong() {
+  TYRA_LOG("Song finished, playing a new random song.");
+  this->t_creativeAudioListener->playRandomCreativeSound();
+}
+
+void CreativePlayingState::closeInventory() {
+  stateGamePlay->ui->unloadInventory();
+}
+
+void CreativePlayingState::openInventory() {
+  stateGamePlay->ui->loadInventory();
+}
+
+const u8 CreativePlayingState::isInventoryOpened() {
+  return stateGamePlay->ui->isInventoryOpened();
 }

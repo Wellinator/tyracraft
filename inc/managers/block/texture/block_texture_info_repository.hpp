@@ -14,6 +14,8 @@ class BlockTextureRepository {
 
   BlockInfo* getTextureInfo(const Blocks& blockType);
 
+  const u8 isBlockTransparent(const Blocks& blockType);
+
  private:
   /**
    * @brief Load blocks textures

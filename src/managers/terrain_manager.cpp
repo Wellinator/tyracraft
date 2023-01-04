@@ -20,10 +20,7 @@ TerrainManager::TerrainManager() {
                         OVERWORLD_MAX_DISTANCE);
 }
 
-TerrainManager::~TerrainManager() {
-  delete this->noise;
-  delete this->terrain;
-}
+TerrainManager::~TerrainManager() { delete this->terrain; }
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
                           MinecraftPipeline* mcPip, BlockManager* blockManager,
@@ -35,16 +32,11 @@ void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->t_soundManager = t_soundManager;
 
   this->calcRawBlockBBox(mcPip);
-  this->initNoise();
 }
 
-void TerrainManager::update(Player* t_player, Camera* t_camera, Pad* t_pad,
-                            std::vector<Chunck*> chuncks,
-                            const float& deltaTime) {
-  this->t_player = t_player;
-  this->t_camera = t_camera;
-  this->updateTargetBlock(*t_player->getPosition(), t_camera, chuncks);
-  this->handlePadControls(t_pad, deltaTime);
+void TerrainManager::update(const Vec4& camLookPos, const Vec4& camPosition,
+                            std::vector<Chunck*> chuncks) {
+  this->updateTargetBlock(camLookPos, camPosition, chuncks);
 };
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
@@ -58,9 +50,6 @@ void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
 }
 
 void TerrainManager::generateTerrainBase(const bool& makeFlat) {
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
-
   u32 index = 0;
   u32 noise = 0;
 
@@ -84,11 +73,14 @@ void TerrainManager::generateTerrainBase(const bool& makeFlat) {
 
 void TerrainManager::generateCaves() {
   // TODO: refactor to terrain generation pipeline by terrain type
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_None);
-  this->noise->SetFrequency(0.04F);
-  this->noise->SetFractalLacunarity(1.0F);
-  this->noise->SetFractalOctaves(24);
+
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+  fnl.SetFractalType(FastNoiseLite::FractalType_None);
+  fnl.SetFrequency(0.04F);
+  fnl.SetFractalLacunarity(1.0F);
+  fnl.SetFractalOctaves(24);
 
   u32 index = 0;
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
@@ -108,35 +100,26 @@ void TerrainManager::generateCaves() {
   }
 }
 
-void TerrainManager::initNoise() {
-  // Fast Noise Lite
-  this->noise = new FastNoiseLite();
-  this->noise->SetSeed(this->seed);
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
-  this->noise->SetFractalOctaves(this->octaves);
-  this->noise->SetFractalLacunarity(this->lacunarity);
-  this->noise->SetFrequency(this->frequency);
-}
+int TerrainManager::getNoise(const int& x, const int& z) {
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-int TerrainManager::getNoise(int x, int z) {
   float xNoiseOffset = (float)((x + seed));
   float zNoiseOffset = (float)((z + seed));
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(this->octaves);
-  float y1 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  float y1 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
-  // xNoiseOffset += 1;
-  // zNoiseOffset += 1;
-  this->noise->SetFrequency(this->frequency + 0.01f);
-  this->noise->SetFractalOctaves(this->octaves / 4);
-  float y2 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  fnl.SetFrequency(this->frequency + 0.01f);
+  fnl.SetFractalOctaves(this->octaves / 4);
+  float y2 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
-  // xNoiseOffset += 2;
-  // zNoiseOffset += 2;
-  this->noise->SetFrequency(this->frequency + 0.02f);
-  this->noise->SetFractalOctaves(this->octaves / 16);
-  float y3 = this->noise->GetNoise(xNoiseOffset, zNoiseOffset);
+  fnl.SetFrequency(this->frequency + 0.02f);
+  fnl.SetFractalOctaves(this->octaves / 16);
+  float y3 = fnl.GetNoise(xNoiseOffset, zNoiseOffset);
 
   float scale = getHeightScale(x, z);
 
@@ -197,42 +180,99 @@ float TerrainManager::getHeightScale(int x, int z) {
   return 0.0F;
 }
 
-bool TerrainManager::isBlockHidden(const Vec4& blockOffset) {
-  u8 upBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y - 1,
-                                          blockOffset.z);
-  u8 downBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y + 1,
-                                            blockOffset.z);
-  u8 frontBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
-                                             blockOffset.z + 1);
-  u8 backBlock = this->getBlockTypeByOffset(blockOffset.x, blockOffset.y,
-                                            blockOffset.z - 1);
-  u8 rightBlock = this->getBlockTypeByOffset(blockOffset.x + 1, blockOffset.y,
-                                             blockOffset.z);
-  u8 leftBlock = this->getBlockTypeByOffset(blockOffset.x - 1, blockOffset.y,
-                                            blockOffset.z);
+bool TerrainManager::isBlockHidden(const Vec4* blockOffset) {
+  return isFrontFaceVisible(blockOffset) && isBackFaceVisible(blockOffset) &&
+         isRightFaceVisible(blockOffset) && isLeftFaceVisible(blockOffset) &&
+         isTopFaceVisible(blockOffset) && isBottomFaceVisible(blockOffset);
+}
 
-  // If some nighbor block is transparent set block to visible
-  if (
-      // Up block
-      upBlock == (u8)Blocks::AIR_BLOCK || upBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Down block
-      downBlock == (u8)Blocks::AIR_BLOCK ||
-      downBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Front block
-      frontBlock == (u8)Blocks::AIR_BLOCK ||
-      frontBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Back block
-      backBlock == (u8)Blocks::AIR_BLOCK ||
-      backBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Right block
-      rightBlock == (u8)Blocks::AIR_BLOCK ||
-      rightBlock == (u8)Blocks::GLASS_BLOCK ||
-      // Left block
-      leftBlock == (u8)Blocks::AIR_BLOCK ||
-      leftBlock == (u8)Blocks::GLASS_BLOCK) {
-    return false;
-  } else
-    return true;
+bool TerrainManager::isBlockTransparentAtIndex(
+    const unsigned int& terrainIndex) {
+  if (terrainIndex >= 0 && terrainIndex <= OVERWORLD_SIZE) {
+    return (terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK ||
+            this->t_blockManager->isBlockTransparent(
+                static_cast<Blocks>(terrain[terrainIndex])));
+  }
+
+  return false;
+}
+
+bool TerrainManager::isTopFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->y + 1 >= OVERWORLD_MAX_HEIGH) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x, t_blockOffset->y + 1, t_blockOffset->z);
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+bool TerrainManager::isBottomFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->y - 1 < OVERWORLD_MIN_HEIGH) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z);
+
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+bool TerrainManager::isFrontFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->x - 1 < OVERWORLD_MIN_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z);
+
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+bool TerrainManager::isBackFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->x + 1 >= OVERWORLD_MAX_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(
+      t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z);
+
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+bool TerrainManager::isLeftFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->z - 1 < OVERWORLD_MIN_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
+                                             t_blockOffset->z - 1);
+
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+bool TerrainManager::isRightFaceVisible(const Vec4* t_blockOffset) {
+  if (t_blockOffset->z + 1 >= OVERWORLD_MAX_DISTANCE) return false;
+
+  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
+                                             t_blockOffset->z + 1);
+
+  return isBlockTransparentAtIndex(blockIndex);
+}
+
+int TerrainManager::getBlockVisibleFaces(const Vec4* t_blockOffset) {
+  int result = 0x000000;
+
+  // Front
+  if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+
+  // Back
+  if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+
+  // Right
+  if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+
+  // Left
+  if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+
+  // Top
+  if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
+
+  // Bottom
+  if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+
+  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
+  return result;
 }
 
 u8 TerrainManager::getBlockTypeByOffset(const int& x, const int& y,
@@ -300,54 +340,134 @@ const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
-    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
-      for (int y = OVERWORLD_MIN_DISTANCE; y < OVERWORLD_MAX_DISTANCE; y++) {
+  for (int z = t_chunck->minOffset->z; z <= t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x <= t_chunck->maxOffset->x; x++) {
+      for (int y = t_chunck->minOffset->y; y <= t_chunck->maxOffset->y; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = this->terrain[blockIndex];
-        if (block_type <= (u8)Blocks::AIR_BLOCK) continue;
+
+        if (blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
+            block_type <= (u8)Blocks::AIR_BLOCK)
+          continue;
 
         Vec4 tempBlockOffset = Vec4(x, y, z);
         Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        u8 isHidden = this->isBlockHidden(tempBlockOffset);
+        const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+        const bool isVisible = visibleFaces > 0;
 
         // Are block's coordinates in world range?
-        if (!isHidden &&
+        if (isVisible &&
             tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
-          BlockInfo* blockInfo = this->t_blockManager->getBlockTexOffsetByType(
+          BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
               static_cast<Blocks>(block_type));
-          if (blockInfo != nullptr) {
-            Block* block = new Block(blockInfo);
-            block->index = blockIndex;
 
-            float bright = this->getBlockLuminosity(tempBlockOffset.y);
-            block->color = Color(bright, bright, bright, 128.0F);
+          Block* block = new Block(blockInfo);
+          block->index = blockIndex;
+          block->offset.set(tempBlockOffset);
+          block->chunkId = t_chunck->id;
+          block->visibleFaces = visibleFaces;
+          block->isAtChunkBorder = isBlockAtChunkBorder(
+              &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-            block->setPosition(blockPosition);
-            block->scale.scale(BLOCK_SIZE);
-            block->updateModelMatrix();
+          // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+          // block->color = Color(bright, bright, bright, 128.0F);
 
-            // Calc min and max corners
-            {
-              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
-              block->bbox = new BBox(tempBBox);
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-            }
+          block->setPosition(blockPosition);
+          block->scale.scale(BLOCK_SIZE);
+          block->updateModelMatrix();
 
-            t_chunck->addBlock(block);
+          // Calc min and max corners
+          {
+            BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+            block->bbox = new BBox(tempBBox);
+            block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
           }
+
+          t_chunck->addBlock(block);
         }
       }
     }
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->updateDrawData();
+  t_chunck->loadDrawData();
 }
 
-void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
-                                       Camera* t_camera,
+void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
+  int batchCounter = 0;
+  int z = t_chunck->tempLoadingOffset->z;
+  int x = t_chunck->tempLoadingOffset->x;
+  int y = t_chunck->tempLoadingOffset->y;
+
+  while (batchCounter < LOAD_CHUNK_BATCH) {
+    if (z > t_chunck->maxOffset->z) break;
+
+    unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+    u8 block_type = this->terrain[blockIndex];
+
+    if (!(blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
+          block_type <= (u8)Blocks::AIR_BLOCK)) {
+      Vec4 tempBlockOffset = Vec4(x, y, z);
+      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+      const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+      const bool isVisible = visibleFaces > 0;
+
+      // Are block's coordinates in world range?
+      if (isVisible && tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
+        BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
+            static_cast<Blocks>(block_type));
+
+        Block* block = new Block(blockInfo);
+        block->index = blockIndex;
+        block->offset.set(tempBlockOffset);
+        block->chunkId = t_chunck->id;
+        block->visibleFaces = visibleFaces;
+        block->isAtChunkBorder = isBlockAtChunkBorder(
+            &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+
+        // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+        // block->color = Color(bright, bright, bright, 128.0F);
+
+        block->setPosition(blockPosition);
+        block->scale.scale(BLOCK_SIZE);
+        block->updateModelMatrix();
+
+        // Calc min and max corners
+        {
+          BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+          block->bbox = new BBox(tempBBox);
+          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+        }
+
+        t_chunck->addBlock(block);
+        batchCounter++;
+      }
+    }
+
+    y++;
+    if (y > t_chunck->maxOffset->y) {
+      y = t_chunck->minOffset->y;
+      x++;
+    }
+    if (x > t_chunck->maxOffset->x) {
+      x = t_chunck->minOffset->x;
+      z++;
+    }
+  }
+
+  if (batchCounter >= LOAD_CHUNK_BATCH) {
+    t_chunck->tempLoadingOffset->set(x, y, z);
+    return;
+  }
+
+  t_chunck->state = ChunkState::Loaded;
+  t_chunck->loadDrawData();
+}
+
+void TerrainManager::updateTargetBlock(const Vec4& camLookPos,
+                                       const Vec4& camPosition,
                                        std::vector<Chunck*> chuncks) {
   u8 hitedABlock = 0;
   float tempTargetDistance = -1.0f;
@@ -358,19 +478,15 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   this->targetBlock = nullptr;
 
   // Prepate the raycast
-  Vec4 rayDir = t_camera->lookPos - t_camera->position;
+  Vec4 rayDir = camLookPos - camPosition;
   rayDir.normalize();
-  ray.origin.set(t_camera->position);
+  ray.origin.set(camPosition);
   ray.direction.set(rayDir);
 
   for (u16 h = 0; h < chuncks.size(); h++) {
-    // Isn't loaded or is out of frustum
-    if (chuncks[h]->state != ChunkState::Loaded || !chuncks[h]->isVisible())
-      continue;
-
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
       float distanceFromCurrentBlockToPlayer =
-          playerPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
+          camPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
 
       if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
         // Reset block state
@@ -400,16 +516,15 @@ void TerrainManager::updateTargetBlock(const Vec4& playerPosition,
   }
 }
 
-void TerrainManager::removeBlock() {
-  if (this->targetBlock == nullptr) return;
-
-  this->_modifiedPosition.set(*this->targetBlock->getPosition());
-  terrain[this->targetBlock->index] = (u8)Blocks::AIR_BLOCK;
-  this->_shouldUpdateChunck = 1;
-  this->playDestroyBlockSound(this->targetBlock->type);
+void TerrainManager::removeBlock(Block* blockToRemove) {
+  terrain[blockToRemove->index] = (u8)Blocks::AIR_BLOCK;
+  this->_modifiedPosition.set(*blockToRemove->getPosition());
+  this->removedBlock = blockToRemove;
+  this->_shouldUpdateChunck = true;
+  this->playDestroyBlockSound(blockToRemove->type);
 }
 
-void TerrainManager::putBlock(const Blocks& blockToPlace) {
+void TerrainManager::putBlock(const Blocks& blockToPlace, Player* t_player) {
   if (this->targetBlock == nullptr) return;
 
   int terrainIndex = this->targetBlock->index;
@@ -448,10 +563,11 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
     newBlockPos.y -= DUBLE_BLOCK_SIZE;
   }
 
+  // Is a valid index?
   if (terrainIndex <= OVERWORLD_SIZE &&
       terrainIndex != this->targetBlock->index) {
-    // Prevent to put a block at the player position;
     {
+      // Prevent to put a block at the player position;
       M4x4 tempModel = M4x4();
       tempModel.identity();
       tempModel.scale(BLOCK_SIZE);
@@ -464,7 +580,7 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
 
       Vec4 minPlayerCorner;
       Vec4 maxPlayerCorner;
-      this->t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+      t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
 
       // Will Collide to player?
       if (newBlockPosMax.x > minPlayerCorner.x &&
@@ -477,32 +593,19 @@ void TerrainManager::putBlock(const Blocks& blockToPlace) {
     }
 
     this->_modifiedPosition.set(newBlockPos);
-    this->terrain[terrainIndex] = (u8)blockToPlace;
+    if (this->terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK)
+      this->terrain[terrainIndex] = (u8)blockToPlace;
     this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);
   }
 }
 
-void TerrainManager::handlePadControls(Pad* t_pad, const float& deltaTime) {
-  if (t_pad->getPressed().L2 && this->targetBlock != nullptr) {
-    if (!this->targetBlock->isBreakable) return;
-    this->breakBlock(this->targetBlock, deltaTime);
-  } else if (this->_isBreakingBlock) {
-    this->_isBreakingBlock = false;
-    if (this->targetBlock) this->targetBlock->damage = 0;
-  }
-
-  if (t_pad->getClicked().R2) {
-    ItemId activeItemType = this->t_player->getSelectedInventoryItemType();
-    if (activeItemType != ItemId::empty) {
-      const Blocks blockid =
-          this->t_itemRepository->getItemById(activeItemType)->blockId;
-      if (blockid != Blocks::AIR_BLOCK) this->putBlock(blockid);
-    }
-  }
+void TerrainManager::stopBreakTargetBlock() {
+  this->_isBreakingBlock = false;
+  if (this->targetBlock) this->targetBlock->damage = 0;
 }
 
-void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
+void TerrainManager::breakTargetBlock(const float& deltaTime) {
   if (this->targetBlock == nullptr) return;
 
   if (this->_isBreakingBlock) {
@@ -510,7 +613,7 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
 
     if (breaking_time_pessed >= this->t_blockManager->getBlockBreakingTime()) {
       // Remove block;
-      this->removeBlock();
+      this->removeBlock(this->targetBlock);
 
       // Target block has changed, reseting the pressed time;
       this->breaking_time_pessed = 0;
@@ -519,7 +622,12 @@ void TerrainManager::breakBlock(Block* blockToBreak, const float& deltaTime) {
       this->targetBlock->damage = breaking_time_pessed /
                                   this->t_blockManager->getBlockBreakingTime() *
                                   100;
-      this->playBreakingBlockSound(blockToBreak->type);
+      if (lastTimePlayedBreakingSfx > 0.3F) {
+        this->playBreakingBlockSound(this->targetBlock->type);
+        lastTimePlayedBreakingSfx = 0;
+      } else {
+        lastTimePlayedBreakingSfx += deltaTime;
+      }
     }
   } else {
     this->breaking_time_pessed = 0;
@@ -582,56 +690,88 @@ const Vec4 TerrainManager::calcSpawOffset(int bias) {
 }
 
 float TerrainManager::getContinentalness(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getErosion(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(2);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(2);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getPeaksAndValleys(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
 
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getDensity(int x, int y, int z) {
-  return this->noise->GetNoise((float)(x + seed), (float)(y + seed),
-                               (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+
+  return fnl.GetNoise((float)(x + seed), (float)(y + seed), (float)(z + seed));
 }
 
 float TerrainManager::getTemperature(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
-
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 float TerrainManager::getHumidity(int x, int z) {
-  this->noise->SetFrequency(this->frequency);
-  this->noise->SetFractalOctaves(1);
-
-  return this->noise->GetNoise((float)(x + seed), (float)(z + seed));
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpProgressive);
+  fnl.SetFractalOctaves(1);
+  fnl.SetFractalLacunarity(this->lacunarity);
+  fnl.SetFrequency(this->frequency);
+  return fnl.GetNoise((float)(x + seed), (float)(z + seed));
 }
 
 void TerrainManager::generateTrees() {
-  this->noise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-  this->noise->SetFractalType(FastNoiseLite::FractalType_DomainWarpIndependent);
-  this->noise->SetFractalOctaves(this->octaves);
-  this->noise->SetFractalLacunarity(10.0f);
-  this->noise->SetFrequency(1.0f);
+  FastNoiseLite fnl = FastNoiseLite();
+  fnl.SetSeed(this->seed);
+  fnl.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+  fnl.SetFractalType(FastNoiseLite::FractalType_DomainWarpIndependent);
+  fnl.SetFractalOctaves(this->octaves);
+  fnl.SetFractalLacunarity(10.0f);
+  fnl.SetFrequency(1.0f);
 
   for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
     for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
-      int noise = floor(
-          this->noise->GetNoise((float)(x + seed), (float)(z + seed)) * 7.6);
+      int noise =
+          floor(fnl.GetNoise((float)(x + seed), (float)(z + seed)) * 7.6);
       int modX = noise % 3;
       int modZ = noise % 9;
       u8 treeHeight;
@@ -793,10 +933,12 @@ void TerrainManager::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
 }
 
@@ -805,10 +947,12 @@ void TerrainManager::playDestroyBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
 }
 
@@ -817,9 +961,20 @@ void TerrainManager::playBreakingBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         this->t_blockManager->getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr)
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
       this->t_soundManager->playSfx(blockSfxModel->category,
-                                    blockSfxModel->sound,
-                                    BLOCK_PLACEMENT_SFX_CH);
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
   }
+}
+
+u8 TerrainManager::isBlockAtChunkBorder(const Vec4* blockOffset,
+                                        const Vec4* chunkMinOffset,
+                                        const Vec4* chunkMaxOffset) {
+  return blockOffset->x == chunkMinOffset->x ||
+         blockOffset->x == chunkMaxOffset->x ||
+         blockOffset->z == chunkMinOffset->z ||
+         blockOffset->z == chunkMaxOffset->z;
 }

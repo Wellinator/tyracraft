@@ -3,6 +3,7 @@
 #include "entities/sfx_library_category.hpp"
 #include <tamtypes.h>
 #include <tyra>
+#include <audsrv.h>
 
 enum class SoundFX {
   None,
@@ -27,6 +28,4 @@ class SfxLibrarySound {
 
   audsrv_adpcm_t* _sound;
   SoundFX id;
-  u8 isLoaded;
-  u8 unloadAfterPlay;
 };
