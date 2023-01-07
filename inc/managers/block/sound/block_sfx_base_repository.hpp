@@ -18,9 +18,6 @@ class BlockSfxBaseRepository {
     for (size_t i = 0; i < this->models.size(); i++)
       if (this->models[i]->getType() == blockType) return this->models[i];
 
-    TYRA_WARN("Block sound not found for type: ",
-              std::to_string(blockType).c_str());
-
     return nullptr;
   }
 

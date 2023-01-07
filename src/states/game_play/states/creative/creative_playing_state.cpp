@@ -97,12 +97,12 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
 
     if (pressed.L2) {
-      if (stateGamePlay->world->terrainManager->validTargetBlock()) {
-        stateGamePlay->world->terrainManager->breakTargetBlock(deltaTime);
+      if (stateGamePlay->world->validTargetBlock()) {
+        stateGamePlay->world->breakTargetBlock(deltaTime);
         stateGamePlay->player->setArmBreakingAnimation();
       }
-    } else if (stateGamePlay->world->terrainManager->isBreakingBLock()) {
-      stateGamePlay->world->terrainManager->stopBreakTargetBlock();
+    } else if (stateGamePlay->world->isBreakingBLock()) {
+      stateGamePlay->world->stopBreakTargetBlock();
       stateGamePlay->player->unsetArmBreakingAnimation();
     }
 
@@ -113,8 +113,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         const Blocks blockid =
             stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
         if (blockid != Blocks::AIR_BLOCK)
-          stateGamePlay->world->terrainManager->putBlock(blockid,
-                                                         stateGamePlay->player);
+          stateGamePlay->world->putBlock(blockid, stateGamePlay->player);
       }
     }
 

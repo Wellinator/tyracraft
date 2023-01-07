@@ -1,5 +1,5 @@
 #define FNL_IMPL
-#include <managers/world_generator.hpp>
+#include <managers/cross_craft_world_generator.hpp>
 #define _USE_MATH_DEFINES
 
 static fnl_state state;

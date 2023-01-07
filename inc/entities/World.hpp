@@ -14,13 +14,25 @@
 #include <vector>
 #include <algorithm>
 #include "managers/chunck_manager.hpp"
-#include "managers/terrain_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
 #include "managers/tick_manager.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
+
+#include <renderer/3d/mesh/mesh.hpp>
+#include <renderer/core/3d/bbox/core_bbox.hpp>
+#include <renderer/3d/bbox/bbox.hpp>
+#include <math/vec4.hpp>
+#include <physics/ray.hpp>
+#include <fastmath.h>
+#include <draw_sampling.h>
+#include "entities/item.hpp"
+#include "entities/level.hpp"
+#include "models/sfx_block_model.hpp"
+#include "debug/debug.hpp"
+#include <limits>
 
 // FROM CrossCraft
 #include <stdint.h>
@@ -29,6 +41,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include "managers/cross_craft_world_generator.hpp"
 
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
@@ -43,10 +56,10 @@ class World {
   ~World();
 
   Renderer* t_renderer;
-  TerrainManager* terrainManager;
   BlockManager* blockManager;
   ChunckManager* chunckManager;
   DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
+  SoundManager* t_soundManager;
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
@@ -57,7 +70,42 @@ class World {
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
   const std::vector<Block*> getLoadedBlocks();
   void buildInitialPosition();
-  inline const int getSeed() { return this->terrainManager->getSeed(); };
+
+  // From terrain manager
+  inline const uint32_t getSeed() { return seed; };
+
+  Block* targetBlock = nullptr;
+
+  void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
+                         std::vector<Chunck*> chuncks);
+  void removeBlock(Block* blockToRemove);
+  void putBlock(const Blocks& blockType, Player* t_player);
+  inline const u8 validTargetBlock() {
+    return this->targetBlock != nullptr && this->targetBlock->isBreakable;
+  };
+
+  const Vec4 defineSpawnArea();
+  const Vec4 calcSpawOffset(int bias = 0);
+  void buildChunk(Chunck* t_chunck);
+  void buildChunkAsync(Chunck* t_chunck);
+
+  inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
+  inline void setChunckToUpdated() { this->_shouldUpdateChunck = false; };
+  inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
+  void breakTargetBlock(const float& deltaTime);
+  void stopBreakTargetBlock();
+
+  /**
+   * @brief Returns the modified position on putting or removing a block when
+   * shouldUpdateChunck() is true. It is useful to get the exact chunk by
+   * position.
+   */
+  inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
+
+  inline u8 hasRemovedABlock() { return this->removedBlock != nullptr; };
+  Block* removedBlock = nullptr;
+
+  LevelMap* terrain;
 
  private:
   MinecraftPipeline mcPip;
@@ -94,6 +142,55 @@ class World {
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
   inline void setIntialTime() { g_ticksCounter = worldOptions.initialTime; };
+
+  // From terrain manager
+  Ray ray;
+  u8 _shouldUpdateChunck = false;
+  Vec4 _modifiedPosition;
+  const u8 UPDATE_TARGET_LIMIT = 3;
+  ItemRepository* t_itemRepository;
+
+  // Breaking control
+  u8 _isBreakingBlock = false;
+  float breaking_time_pessed = 0.0F;
+  float lastTimePlayedBreakingSfx = 0.0F;
+
+  // TODO: Refactor to region and cache it. See
+  // https://minecraft.fandom.com/el/wiki/Region_file_format;
+  Vec4 minWorldPos;
+  Vec4 maxWorldPos;
+  BBox* rawBlockBbox;
+
+  const uint32_t seed = rand();
+
+  u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
+                          const Vec4* chunkMaxOffset);
+  unsigned int getIndexByOffset(int x, int y, int z);
+
+  /**
+   * @brief Update the visible block faces
+   * @return false if the block is completely hidden
+   *
+   */
+  int getBlockVisibleFaces(const Vec4* t_blockOffset);
+
+  inline bool isBlockTransparentAtPosition(const float& x, const float& y,
+                                           const float& z);
+
+  inline bool isTopFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBottomFaceVisible(const Vec4* t_blockOffset);
+  inline bool isLeftFaceVisible(const Vec4* t_blockOffset);
+  inline bool isRightFaceVisible(const Vec4* t_blockOffset);
+  inline bool isFrontFaceVisible(const Vec4* t_blockOffset);
+  inline bool isBackFaceVisible(const Vec4* t_blockOffset);
+
+  void calcRawBlockBBox(MinecraftPipeline* mcPip);
+  void getBlockMinMax(Block* t_block);
+  u8 shouldUpdateTargetBlock();
+
+  void playPutBlockSound(const Blocks& blockType);
+  void playDestroyBlockSound(const Blocks& blockType);
+  void playBreakingBlockSound(const Blocks& blockType);
 };
 
 static Level level;
@@ -162,5 +259,3 @@ void updateRemove(uint32_t* updateIDs);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
                      uint32_t* updateIDs);
-
-

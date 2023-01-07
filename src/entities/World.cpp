@@ -13,16 +13,23 @@ using Tyra::Color;
 using Tyra::M4x4;
 
 World::World(const NewGameOptions& options) {
+  printf("\n\n|-----------SEED---------|");
+  printf("\n|           %ld         |\n", seed);
+  printf("|------------------------|\n\n");
+
   this->worldOptions = options;
-  this->terrainManager = new TerrainManager();
   this->blockManager = new BlockManager();
   this->chunckManager = new ChunckManager();
+  this->minWorldPos.set(OVERWORLD_MIN_DISTANCE, OVERWORLD_MIN_HEIGH,
+                        OVERWORLD_MIN_DISTANCE);
+  this->maxWorldPos.set(OVERWORLD_MAX_DISTANCE, OVERWORLD_MAX_HEIGH,
+                        OVERWORLD_MAX_DISTANCE);
+
   CrossCraft_World_Init();
 }
 
 World::~World() {
   delete lastPlayerPosition;
-  delete this->terrainManager;
   delete this->blockManager;
   delete this->chunckManager;
 
@@ -41,10 +48,10 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
   this->blockManager->init(t_renderer, &this->mcPip);
   this->chunckManager->init();
-  this->terrainManager->init(t_renderer, itemRepository, &this->mcPip,
-                             this->blockManager, t_soundManager);
 
-  this->terrainManager->terrain = CrossCraft_World_GetMapPtr();
+  this->calcRawBlockBBox(&mcPip);
+
+  this->terrain = CrossCraft_World_GetMapPtr();
 
   CrossCraft_World_Create_Map(WORLD_SIZE_SMALL);
 
@@ -55,7 +62,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   }
 
   // Define global and local spawn area
-  this->worldSpawnArea.set(this->terrainManager->defineSpawnArea());
+  this->worldSpawnArea.set(this->defineSpawnArea());
   this->spawnArea.set(this->worldSpawnArea);
   this->buildInitialPosition();
   this->setIntialTime();
@@ -68,8 +75,8 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   dayNightCycleManager.update();
   updateLightModel();
 
-  if (this->terrainManager->shouldUpdateChunck()) {
-    if (this->terrainManager->hasRemovedABlock())
+  if (this->shouldUpdateChunck()) {
+    if (this->hasRemovedABlock())
       reloadChangedChunkByRemovedBlock();
     else
       reloadChangedChunkByPutedBlock();
@@ -79,8 +86,9 @@ void World::update(Player* t_player, const Vec4& camLookPos,
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
       *t_player->getPosition(), &worldLightModel);
   this->updateChunkByPlayerPosition(t_player);
-  this->terrainManager->update(camLookPos, camPosition,
-                               this->chunckManager->getVisibleChunks());
+
+  this->updateTargetBlock(camLookPos, camPosition,
+                          this->chunckManager->getVisibleChunks());
 
   this->framesCounter = this->framesCounter % 60;
 };
@@ -92,10 +100,9 @@ void World::render() {
   this->chunckManager->renderer(this->t_renderer, &this->stapip,
                                 this->blockManager);
 
-  if (this->terrainManager->targetBlock) {
-    this->renderTargetBlockHitbox(this->terrainManager->targetBlock);
-    if (this->terrainManager->isBreakingBLock())
-      this->renderBlockDamageOverlay();
+  if (this->targetBlock) {
+    this->renderTargetBlockHitbox(this->targetBlock);
+    if (this->isBreakingBLock()) this->renderBlockDamageOverlay();
   }
 };
 
@@ -104,7 +111,7 @@ void World::buildInitialPosition() {
       this->chunckManager->getChunckByPosition(this->worldSpawnArea);
   if (initialChunck != nullptr) {
     initialChunck->clear();
-    this->terrainManager->buildChunk(initialChunck);
+    this->buildChunk(initialChunck);
     this->scheduleChunksNeighbors(initialChunck, true);
   }
 };
@@ -142,32 +149,31 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 }
 
 void World::reloadChangedChunkByPutedBlock() {
-  Chunck* chunckToUpdate = this->chunckManager->getChunckByPosition(
-      this->terrainManager->getModifiedPosition());
+  Chunck* chunckToUpdate =
+      this->chunckManager->getChunckByPosition(this->getModifiedPosition());
 
-  if (this->terrainManager->targetBlock &&
-      this->terrainManager->targetBlock->isAtChunkBorder) {
-    updateNeighBorsChunksByModdedBlock(this->terrainManager->targetBlock);
+  if (this->targetBlock && this->targetBlock->isAtChunkBorder) {
+    updateNeighBorsChunksByModdedBlock(this->targetBlock);
   }
 
   if (chunckToUpdate != nullptr) {
     chunckToUpdate->clear();
-    this->terrainManager->buildChunk(chunckToUpdate);
-    this->terrainManager->setChunckToUpdated();
+    this->buildChunk(chunckToUpdate);
+    this->setChunckToUpdated();
   }
 }
 
 void World::reloadChangedChunkByRemovedBlock() {
-  Block* removedBlock = this->terrainManager->removedBlock;
+  Block* removedBlock = this->removedBlock;
   if (removedBlock->isAtChunkBorder)
     updateNeighBorsChunksByModdedBlock(removedBlock);
 
   Chunck* chunckToUpdate =
       this->chunckManager->getChunckById(removedBlock->chunkId);
   chunckToUpdate->clear();
-  this->terrainManager->buildChunk(chunckToUpdate);
-  this->terrainManager->removedBlock = nullptr;
-  this->terrainManager->setChunckToUpdated();
+  this->buildChunk(chunckToUpdate);
+  this->removedBlock = nullptr;
+  this->setChunckToUpdated();
 }
 
 void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
@@ -192,18 +198,18 @@ void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
 
   if (frontChunk && frontChunk->id != changedBlock->chunkId) {
     frontChunk->clear();
-    this->terrainManager->buildChunk(frontChunk);
+    this->buildChunk(frontChunk);
   } else if (backChunk && backChunk->id != changedBlock->chunkId) {
     backChunk->clear();
-    this->terrainManager->buildChunk(backChunk);
+    this->buildChunk(backChunk);
   }
 
   if (rightChunk && rightChunk->id != changedBlock->chunkId) {
     rightChunk->clear();
-    this->terrainManager->buildChunk(rightChunk);
+    this->buildChunk(rightChunk);
   } else if (leftChunk && leftChunk->id != changedBlock->chunkId) {
     leftChunk->clear();
-    this->terrainManager->buildChunk(leftChunk);
+    this->buildChunk(leftChunk);
   }
 }
 
@@ -222,7 +228,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     } else {
       if (force_loading) {
         chuncks[i]->clear();
-        terrainManager->buildChunkAsync(chuncks[i]);
+        buildChunkAsync(chuncks[i]);
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
@@ -246,7 +252,7 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0) {
     if (tempChuncksToLoad[0]->state != ChunkState::Loaded)
-      return this->terrainManager->buildChunkAsync(tempChuncksToLoad[0]);
+      return this->buildChunkAsync(tempChuncksToLoad[0]);
     tempChuncksToLoad.erase(tempChuncksToLoad.begin());
   };
 }
@@ -259,8 +265,8 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
-  McpipBlock* overlay = this->blockManager->getDamageOverlay(
-      this->terrainManager->targetBlock->damage);
+  McpipBlock* overlay =
+      this->blockManager->getDamageOverlay(this->targetBlock->damage);
   if (overlay != nullptr) {
     if (this->overlayData.size() > 0) {
       // Clear last overlay;
@@ -278,7 +284,7 @@ void World::renderBlockDamageOverlay() {
     scale.identity();
     translation.identity();
     scale.scale(BLOCK_SIZE + 0.015f);
-    translation.translate(*this->terrainManager->targetBlock->getPosition());
+    translation.translate(*this->targetBlock->getPosition());
 
     overlay->model = new M4x4(translation * scale);
     overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
@@ -327,6 +333,473 @@ void World::updateLightModel() {
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.ambientLightIntensity =
       dayNightCycleManager.getAmbientLightIntesity();
+}
+
+unsigned int World::getIndexByOffset(int x, int y, int z) {
+  return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
+}
+
+bool World::isBlockTransparentAtPosition(const float& x, const float& y,
+                                         const float& z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
+    return blockType <= (u8)Blocks::AIR_BLOCK ||
+           this->blockManager->isBlockTransparent(
+               static_cast<Blocks>(blockType));
+  } else {
+    return false;
+  }
+}
+
+bool World::isTopFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y + 1,
+                                      t_blockOffset->z);
+}
+
+bool World::isBottomFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y - 1,
+                                      t_blockOffset->z);
+}
+
+bool World::isFrontFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
+                                      t_blockOffset->z);
+}
+
+bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
+                                      t_blockOffset->z);
+}
+
+bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
+                                      t_blockOffset->z - 1);
+}
+
+bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
+                                      t_blockOffset->z + 1);
+}
+
+int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
+  int result = 0x000000;
+
+  // Front
+  if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+
+  // Back
+  if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+
+  // Right
+  if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+
+  // Left
+  if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+
+  // Top
+  if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
+
+  // Bottom
+  if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+
+  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
+  return result;
+}
+
+void World::calcRawBlockBBox(MinecraftPipeline* mcPip) {
+  const auto& blockData = mcPip->getBlockData();
+  this->rawBlockBbox = new BBox(blockData.vertices, blockData.count);
+}
+
+u8 World::shouldUpdateTargetBlock() {
+  return this->framesCounter == this->UPDATE_TARGET_LIMIT;
+}
+
+const Vec4 World::defineSpawnArea() {
+  Vec4 spawPos = this->calcSpawOffset();
+  return spawPos;
+}
+
+const Vec4 World::calcSpawOffset(int bias) {
+  bool found = false;
+  u8 airBlockCounter = 0;
+  // Pick a X and Z coordinates based on the seed;
+  int posX = ((seed + bias) % HALF_OVERWORLD_H_DISTANCE);
+  int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE);
+  Vec4 result;
+
+  for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
+    u8 type = GetBlockFromMap(terrain, posX, posY, posZ);
+    if (type != (u8)Blocks::AIR_BLOCK && airBlockCounter >= 4) {
+      found = true;
+      result = Vec4(posX, posY + 2, posZ);
+      break;
+    }
+
+    if (type == (u8)Blocks::AIR_BLOCK)
+      airBlockCounter++;
+    else
+      airBlockCounter = 0;
+  }
+
+  if (found)
+    return result * DUBLE_BLOCK_SIZE;
+  else
+    return calcSpawOffset(bias + 1);
+}
+
+void World::removeBlock(Block* blockToRemove) {
+  SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
+                blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
+  this->_modifiedPosition.set(*blockToRemove->getPosition());
+  this->removedBlock = blockToRemove;
+  this->_shouldUpdateChunck = true;
+  this->playDestroyBlockSound(blockToRemove->type);
+}
+
+void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
+  if (this->targetBlock == nullptr) return;
+
+  int terrainIndex = this->targetBlock->index;
+  Vec4 targetPos = ray.at(this->targetBlock->distance);
+  Vec4 newBlockPos = *this->targetBlock->getPosition();
+
+  // Front
+  if (std::round(targetPos.z) ==
+      this->targetBlock->bbox->getFrontFace().axisPosition) {
+    terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    newBlockPos.z += DUBLE_BLOCK_SIZE;
+    // Back
+  } else if (std::round(targetPos.z) ==
+             this->targetBlock->bbox->getBackFace().axisPosition) {
+    terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
+    newBlockPos.z -= DUBLE_BLOCK_SIZE;
+    // Right
+  } else if (std::round(targetPos.x) ==
+             this->targetBlock->bbox->getRightFace().axisPosition) {
+    terrainIndex += OVERWORLD_V_DISTANCE;
+    newBlockPos.x += DUBLE_BLOCK_SIZE;
+    // Left
+  } else if (std::round(targetPos.x) ==
+             this->targetBlock->bbox->getLeftFace().axisPosition) {
+    terrainIndex -= OVERWORLD_V_DISTANCE;
+    newBlockPos.x -= DUBLE_BLOCK_SIZE;
+    // Up
+  } else if (std::round(targetPos.y) ==
+             this->targetBlock->bbox->getTopFace().axisPosition) {
+    terrainIndex++;
+    newBlockPos.y += DUBLE_BLOCK_SIZE;
+    // Down
+  } else if (std::round(targetPos.y) ==
+             this->targetBlock->bbox->getBottomFace().axisPosition) {
+    terrainIndex--;
+    newBlockPos.y -= DUBLE_BLOCK_SIZE;
+  }
+
+  // Is a valid index?
+  if (terrainIndex <= OVERWORLD_SIZE &&
+      terrainIndex != this->targetBlock->index) {
+    {
+      // Prevent to put a block at the player position;
+      M4x4 tempModel = M4x4();
+      tempModel.identity();
+      tempModel.scale(BLOCK_SIZE);
+      tempModel.translate(newBlockPos);
+
+      BBox tempBBox = this->rawBlockBbox->getTransformed(tempModel);
+      Vec4 newBlockPosMin;
+      Vec4 newBlockPosMax;
+      tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+
+      Vec4 minPlayerCorner;
+      Vec4 maxPlayerCorner;
+      t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+      // Will Collide to player?
+      if (newBlockPosMax.x > minPlayerCorner.x &&
+          newBlockPosMin.x < maxPlayerCorner.x &&
+          newBlockPosMax.z > minPlayerCorner.z &&
+          newBlockPosMin.z < maxPlayerCorner.z &&
+          newBlockPosMax.y > minPlayerCorner.y &&
+          newBlockPosMin.y < maxPlayerCorner.y)
+        return;  // Return on collision
+    }
+
+    const Vec4 blockOffset = newBlockPos / BLOCK_SIZE;
+
+    blockOffset.print();
+
+    this->_modifiedPosition.set(newBlockPos);
+
+    if (terrain->blocks[terrainIndex] == (u8)Blocks::AIR_BLOCK) {
+      terrain->blocks[terrainIndex] = (u8)blockToPlace;
+    }
+
+    this->_shouldUpdateChunck = 1;
+    this->playPutBlockSound(blockToPlace);
+  }
+}
+
+void World::stopBreakTargetBlock() {
+  this->_isBreakingBlock = false;
+  if (this->targetBlock) this->targetBlock->damage = 0;
+}
+
+void World::breakTargetBlock(const float& deltaTime) {
+  if (this->targetBlock == nullptr) return;
+
+  if (this->_isBreakingBlock) {
+    this->breaking_time_pessed += deltaTime;
+
+    if (breaking_time_pessed >= this->blockManager->getBlockBreakingTime()) {
+      // Remove block;
+      this->removeBlock(this->targetBlock);
+
+      // Target block has changed, reseting the pressed time;
+      this->breaking_time_pessed = 0;
+    } else {
+      // Update damage overlay
+      this->targetBlock->damage = breaking_time_pessed /
+                                  this->blockManager->getBlockBreakingTime() *
+                                  100;
+      if (lastTimePlayedBreakingSfx > 0.3F) {
+        this->playBreakingBlockSound(this->targetBlock->type);
+        lastTimePlayedBreakingSfx = 0;
+      } else {
+        lastTimePlayedBreakingSfx += deltaTime;
+      }
+    }
+  } else {
+    this->breaking_time_pessed = 0;
+    this->_isBreakingBlock = true;
+  }
+}
+
+void World::playPutBlockSound(const Blocks& blockType) {
+  if (blockType != Blocks::AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->blockManager->getDigSoundByBlockType(blockType);
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
+  }
+}
+
+void World::playDestroyBlockSound(const Blocks& blockType) {
+  if (blockType != Blocks::AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->blockManager->getDigSoundByBlockType(blockType);
+
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
+  }
+}
+
+void World::playBreakingBlockSound(const Blocks& blockType) {
+  if (blockType != Blocks::AIR_BLOCK) {
+    SfxBlockModel* blockSfxModel =
+        this->blockManager->getDigSoundByBlockType(blockType);
+
+    if (blockSfxModel != nullptr) {
+      const int ch = this->t_soundManager->getAvailableChannel();
+      this->t_soundManager->playSfx(blockSfxModel->category,
+                                    blockSfxModel->sound, ch);
+    }
+    Tyra::Threading::switchThread();
+  }
+}
+
+u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
+                               const Vec4* chunkMinOffset,
+                               const Vec4* chunkMaxOffset) {
+  return blockOffset->x == chunkMinOffset->x ||
+         blockOffset->x == chunkMaxOffset->x ||
+         blockOffset->z == chunkMinOffset->z ||
+         blockOffset->z == chunkMaxOffset->z;
+}
+
+void World::buildChunk(Chunck* t_chunck) {
+  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
+      for (int y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
+        unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+        u8 block_type = GetBlockFromMap(terrain, x, y, z);
+
+        if (block_type <= (u8)Blocks::AIR_BLOCK ||
+            !BoundCheckMap(terrain, x, y, z))
+          continue;
+
+        Vec4 tempBlockOffset = Vec4(x, y, z);
+        Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+        const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+        const bool isVisible = visibleFaces > 0;
+
+        // Are block's coordinates in world range?
+        if (isVisible) {
+          BlockInfo* blockInfo = this->blockManager->getBlockInfoByType(
+              static_cast<Blocks>(block_type));
+          if (blockInfo) {
+            Block* block = new Block(blockInfo);
+            block->index = blockIndex;
+            block->offset.set(tempBlockOffset);
+            block->chunkId = t_chunck->id;
+            block->visibleFaces = visibleFaces;
+            block->isAtChunkBorder = isBlockAtChunkBorder(
+                &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+
+            // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+            // block->color = Color(bright, bright, bright, 128.0F);
+
+            block->setPosition(blockPosition);
+            block->scale.scale(BLOCK_SIZE);
+            block->updateModelMatrix();
+
+            // Calc min and max corners
+            {
+              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+            }
+
+            t_chunck->addBlock(block);
+          }
+        }
+      }
+    }
+  }
+
+  t_chunck->state = ChunkState::Loaded;
+  t_chunck->loadDrawData();
+}
+
+void World::buildChunkAsync(Chunck* t_chunck) {
+  int batchCounter = 0;
+  int z = t_chunck->tempLoadingOffset->z;
+  int x = t_chunck->tempLoadingOffset->x;
+  int y = t_chunck->tempLoadingOffset->y;
+
+  while (batchCounter < LOAD_CHUNK_BATCH) {
+    if (z >= t_chunck->maxOffset->z) break;
+
+    unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+    u8 block_type = GetBlockFromMap(terrain, x, y, z);
+    if (block_type > (u8)Blocks::AIR_BLOCK &&
+        block_type < (u8)Blocks::TOTAL_OF_BLOCKS) {
+      Vec4 tempBlockOffset = Vec4(x, y, z);
+      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+      const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+      const bool isVisible = visibleFaces > 0;
+
+      // Are block's coordinates in world range?
+      if (isVisible && BoundCheckMap(terrain, x, y, z)) {
+        BlockInfo* blockInfo = this->blockManager->getBlockInfoByType(
+            static_cast<Blocks>(block_type));
+
+        if (blockInfo) {
+          Block* block = new Block(blockInfo);
+          block->index = blockIndex;
+          block->offset.set(tempBlockOffset);
+          block->chunkId = t_chunck->id;
+          block->visibleFaces = visibleFaces;
+          block->isAtChunkBorder = isBlockAtChunkBorder(
+              &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+
+          // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+          // block->color = Color(bright, bright, bright, 128.0F);
+
+          block->setPosition(blockPosition);
+          block->scale.scale(BLOCK_SIZE);
+          block->updateModelMatrix();
+
+          // Calc min and max corners
+          {
+            BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+            block->bbox = new BBox(tempBBox);
+            block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+          }
+
+          t_chunck->addBlock(block);
+        }
+        batchCounter++;
+      }
+    }
+
+    y++;
+    if (y > t_chunck->maxOffset->y) {
+      y = t_chunck->minOffset->y;
+      x++;
+    }
+    if (x > t_chunck->maxOffset->x) {
+      x = t_chunck->minOffset->x;
+      z++;
+    }
+  }
+
+  if (batchCounter >= LOAD_CHUNK_BATCH) {
+    t_chunck->tempLoadingOffset->set(x, y, z);
+    return;
+  }
+
+  t_chunck->state = ChunkState::Loaded;
+  t_chunck->loadDrawData();
+}
+
+void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
+                              std::vector<Chunck*> chuncks) {
+  u8 hitedABlock = 0;
+  float tempTargetDistance = -1.0f;
+  float tempPlayerDistance = -1.0f;
+  Block* tempTargetBlock = nullptr;
+
+  // Reset the current target block;
+  this->targetBlock = nullptr;
+
+  // Prepate the raycast
+  Vec4 rayDir = camLookPos - camPosition;
+  rayDir.normalize();
+  ray.origin.set(camPosition);
+  ray.direction.set(rayDir);
+
+  for (u16 h = 0; h < chuncks.size(); h++) {
+    for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
+      float distanceFromCurrentBlockToPlayer =
+          camPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
+
+      if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
+        // Reset block state
+        chuncks[h]->blocks[i]->isTarget = 0;
+        chuncks[h]->blocks[i]->distance = -1.0f;
+
+        float intersectionPoint;
+        if (ray.intersectBox(chuncks[h]->blocks[i]->minCorner,
+                             chuncks[h]->blocks[i]->maxCorner,
+                             &intersectionPoint)) {
+          hitedABlock = 1;
+          if (tempTargetDistance == -1.0f ||
+              (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
+            tempTargetBlock = chuncks[h]->blocks[i];
+            tempTargetDistance = intersectionPoint;
+            tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+          }
+        }
+      }
+    }
+  }
+
+  if (hitedABlock) {
+    this->targetBlock = tempTargetBlock;
+    this->targetBlock->isTarget = 1;
+    this->targetBlock->distance = tempTargetDistance;
+  }
 }
 
 // From CrossCraft
@@ -708,83 +1181,6 @@ void CrossCraft_World_Create_Map(uint8_t size) {
   level.map.blocks = new uint8_t[blockCount];
   level.map.data = new uint8_t[blockCount];
 }
-
-// #include <nbt.h>
-
-/**
- * @brief Tries to load a world
- * @returns If the world was loaded
- */
-// bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
-//     char buf[256] = {0};
-
-//     strcpy(buf, prefix);
-//     strcat(buf, "save.ccc");
-
-//     FILE* fptr = fopen(buf, "r");
-//     if(fptr) {
-//         slot = 5;
-//         // TODO: Load and convert
-
-//         fclose(fptr);
-//         return true;
-//     }
-
-//     if(slot >= 5) {
-//         return false;
-//     }
-//     sprintf(buf, "%slevel%d.mclevel", prefix, slot);
-
-//     TYRA_LOG("Attempting load.");
-//     TYRA_LOG(buf);
-
-//     nbt_node* root = nbt_parse_path(buf);
-
-//     if(root == NULL) {
-//         CC_Internal_Log_Message(CC_LOG_WARN, "Could not load!");
-//         return false;
-//     }
-
-//     nbt_node* abt = nbt_find_by_name(root, "About");
-
-//     if(abt != NULL) {
-//         level.about.name = nbt_find_by_name(abt, "Name")->payload.tag_string;
-//         level.about.author = nbt_find_by_name(abt,
-//         "Author")->payload.tag_string; level.about.createdOn =
-//         nbt_find_by_name(abt, "CreatedOn")->payload.tag_long;
-
-//         CC_Internal_Log_Message(CC_LOG_TRACE, level.about.name);
-//         CC_Internal_Log_Message(CC_LOG_TRACE, level.about.author);
-//     }
-
-//     nbt_node *map = nbt_find_by_name(root, "Map");
-//     if(map != NULL) {
-//         level.map.width = nbt_find_by_name(map, "Width")->payload.tag_short;
-//         level.map.length = nbt_find_by_name(map,
-//         "Length")->payload.tag_short; level.map.height =
-//         nbt_find_by_name(map, "Height")->payload.tag_short;
-
-//         nbt_node* spawn = nbt_find_by_name(map, "Spawn");
-
-//         level.map.spawnX = nbt_list_item(spawn, 0)->payload.tag_short;
-//         level.map.spawnY = nbt_list_item(spawn, 1)->payload.tag_short;
-//         level.map.spawnZ = nbt_list_item(spawn, 2)->payload.tag_short;
-
-//         uint32_t blockCount = level.map.length * level.map.height *
-//         level.map.width; level.map.blocks = malloc(blockCount);
-//         level.map.data = malloc(blockCount);
-
-//         struct nbt_byte_array byteArray = nbt_find_by_name(map,
-//         "Blocks")->payload.tag_byte_array; memcpy(level.map.blocks,
-//         byteArray.data, blockCount); byteArray = nbt_find_by_name(map,
-//         "Data")->payload.tag_byte_array; memcpy(level.map.data,
-//         byteArray.data, blockCount);
-//     }
-
-//     nbt_free(root);
-
-//     return true;
-// }
 
 /**
  * @brief Generates the world
