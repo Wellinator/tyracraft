@@ -655,9 +655,6 @@ void World::buildChunk(Chunck* t_chunck) {
             block->isAtChunkBorder = isBlockAtChunkBorder(
                 &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-            // float bright = this->getBlockLuminosity(tempBlockOffset.y);
-            // block->color = Color(bright, bright, bright, 128.0F);
-
             block->setPosition(blockPosition);
             block->scale.scale(BLOCK_SIZE);
             block->updateModelMatrix();
@@ -712,9 +709,6 @@ void World::buildChunkAsync(Chunck* t_chunck) {
           block->visibleFaces = visibleFaces;
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
-
-          // float bright = this->getBlockLuminosity(tempBlockOffset.y);
-          // block->color = Color(bright, bright, bright, 128.0F);
 
           block->setPosition(blockPosition);
           block->scale.scale(BLOCK_SIZE);
