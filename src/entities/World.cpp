@@ -460,45 +460,38 @@ void World::removeBlock(Block* blockToRemove) {
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
   if (this->targetBlock == nullptr) return;
 
-  int terrainIndex = this->targetBlock->index;
   Vec4 targetPos = ray.at(this->targetBlock->distance);
-  Vec4 newBlockPos = *this->targetBlock->getPosition();
+  Vec4 blockOffset = Vec4(targetBlock->offset);
 
   // Front
   if (std::round(targetPos.z) ==
       this->targetBlock->bbox->getFrontFace().axisPosition) {
-    terrainIndex += OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-    newBlockPos.z += DUBLE_BLOCK_SIZE;
+    blockOffset.z++;
     // Back
   } else if (std::round(targetPos.z) ==
              this->targetBlock->bbox->getBackFace().axisPosition) {
-    terrainIndex -= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE;
-    newBlockPos.z -= DUBLE_BLOCK_SIZE;
+    blockOffset.z--;
     // Right
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getRightFace().axisPosition) {
-    terrainIndex += OVERWORLD_V_DISTANCE;
-    newBlockPos.x += DUBLE_BLOCK_SIZE;
+    blockOffset.x++;
     // Left
   } else if (std::round(targetPos.x) ==
              this->targetBlock->bbox->getLeftFace().axisPosition) {
-    terrainIndex -= OVERWORLD_V_DISTANCE;
-    newBlockPos.x -= DUBLE_BLOCK_SIZE;
+    blockOffset.x--;
     // Up
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getTopFace().axisPosition) {
-    terrainIndex++;
-    newBlockPos.y += DUBLE_BLOCK_SIZE;
+    blockOffset.y++;
     // Down
   } else if (std::round(targetPos.y) ==
              this->targetBlock->bbox->getBottomFace().axisPosition) {
-    terrainIndex--;
-    newBlockPos.y -= DUBLE_BLOCK_SIZE;
+    blockOffset.y--;
   }
 
   // Is a valid index?
-  if (terrainIndex <= OVERWORLD_SIZE &&
-      terrainIndex != this->targetBlock->index) {
+  if (BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z)) {
+    Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
     {
       // Prevent to put a block at the player position;
       M4x4 tempModel = M4x4();
@@ -524,15 +517,13 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
           newBlockPosMin.y < maxPlayerCorner.y)
         return;  // Return on collision
     }
-
-    const Vec4 blockOffset = newBlockPos / BLOCK_SIZE;
-
-    blockOffset.print();
-
     this->_modifiedPosition.set(newBlockPos);
 
-    if (terrain->blocks[terrainIndex] == (u8)Blocks::AIR_BLOCK) {
-      terrain->blocks[terrainIndex] = (u8)blockToPlace;
+    const uint8_t blockType =
+        GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z);
+    if (blockType == (u8)Blocks::AIR_BLOCK) {
+      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                    (u8)blockToPlace);
     }
 
     this->_shouldUpdateChunck = 1;
@@ -626,8 +617,8 @@ u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
 }
 
 void World::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
-    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
+  for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
+    for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
       for (int y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = GetBlockFromMap(terrain, x, y, z);
