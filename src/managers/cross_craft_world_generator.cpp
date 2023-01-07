@@ -843,7 +843,7 @@ void CrossCraft_WorldGenerator_Generate_Woods(LevelMap* map) {
   // Planting Flora
   TYRA_LOG("Planting...");
   create_plants(map, heightMap, 1);
-  srand(time(0) + 1);
+  srand(state.seed + 1);
   create_plants(map, heightMap, 1);
 
   delete[] heightMap;

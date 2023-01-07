@@ -25,7 +25,7 @@ World::World(const NewGameOptions& options) {
   this->maxWorldPos.set(OVERWORLD_MAX_DISTANCE, OVERWORLD_MAX_HEIGH,
                         OVERWORLD_MAX_DISTANCE);
 
-  CrossCraft_World_Init();
+  CrossCraft_World_Init(seed);
 }
 
 World::~World() {
@@ -1100,9 +1100,9 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
   updateSunlight();
 }
 
-void CrossCraft_World_Init() {
+void CrossCraft_World_Init(const uint32_t& seed) {
   TYRA_LOG("Generating base level template");
-  srand(time(NULL));
+  srand(seed);
 
   CrossCraft_WorldGenerator_Init(rand());
 

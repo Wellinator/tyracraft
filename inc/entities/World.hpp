@@ -196,7 +196,7 @@ class World {
 static Level level;
 
 // FROM CrossCraft
-void CrossCraft_World_Init();
+void CrossCraft_World_Init(const uint32_t& seed);
 void CrossCraft_World_Deinit();
 
 /**
