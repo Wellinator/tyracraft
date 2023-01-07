@@ -14,6 +14,7 @@
 #include "entities/chunck.hpp"
 #include "entities/player/player.hpp"
 #include "entities/item.hpp"
+#include "entities/level.hpp"
 #include "3libs/FastNoiseLite/FastNoiseLite.h"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "managers/block_manager.hpp"
@@ -24,6 +25,10 @@
 #include <chrono>
 #include "models/new_game_model.hpp"
 #include <stdint.h>
+#include <limits>
+
+// From CrossCraft
+#include "managers/world_generator.hpp"
 
 using Tyra::BBox;
 using Tyra::Engine;
@@ -45,7 +50,7 @@ class TerrainManager {
   void update(const Vec4& camLookPos, const Vec4& camPosition,
               std::vector<Chunck*> chuncks);
   void generateNewTerrain(const NewGameOptions& options);
-  inline const int getSeed() { return seed; };
+  inline const uint32_t getSeed() { return seed; };
 
   Block* targetBlock = nullptr;
   void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
@@ -82,6 +87,8 @@ class TerrainManager {
   inline u8 hasRemovedABlock() { return this->removedBlock != nullptr; };
   Block* removedBlock = nullptr;
 
+  LevelMap* terrain;
+
  private:
   Ray ray;
   u8 _shouldUpdateChunck = false;
@@ -95,7 +102,6 @@ class TerrainManager {
 
   // TODO: Refactor to region and cache it. See
   // https://minecraft.fandom.com/el/wiki/Region_file_format;
-  u8* terrain = new u8[OVERWORLD_SIZE];
   Vec4 minWorldPos;
   Vec4 maxWorldPos;
   BBox* rawBlockBbox;
@@ -106,7 +112,7 @@ class TerrainManager {
   const float lacunarity = 2.4f;
   const float persistance = .45f;
   int octaves = sqrt(OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
-  const int seed = rand() % 1337;
+  const uint32_t seed = rand();
 
   int getNoise(const int& x, const int& z);
   void generateTerrainBase(const bool& makeFlat);
@@ -134,7 +140,6 @@ class TerrainManager {
   u8 getBlockTypeByOffset(const int& x, const int& y, const int& z);
   unsigned int getIndexByOffset(int x, int y, int z);
   unsigned int getIndexByPosition(Vec4* pos);
-  const Vec4 getPositionByIndex(const u16& index);
   bool isBlockHidden(const Vec4* blockOffset);
 
   /**
@@ -144,7 +149,8 @@ class TerrainManager {
    */
   int getBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline bool isBlockTransparentAtIndex(const unsigned int& terrainIndex);
+  inline bool isBlockTransparentAtPosition(const float& x, const float& y,
+                                           const float& z);
 
   inline bool isTopFaceVisible(const Vec4* t_blockOffset);
   inline bool isBottomFaceVisible(const Vec4* t_blockOffset);

@@ -7,18 +7,16 @@ SoundManager::SoundManager(Engine* t_engine) {
 
 SoundManager::~SoundManager() { delete soundLibrary; }
 
-AdpcmResult SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound) {
-  return this->playSfx(idCategory, idSound, getAvailableChannel());
+void SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound) {
+  return;
+  this->playSfx(idCategory, idSound, getAvailableChannel());
 };
 
-AdpcmResult SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound,
-                                  const s8& t_ch) {
+void SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound,
+                           const s8& t_ch) {
+  return;
   SfxLibrarySound* t_sound = this->getSound(idCategory, idSound);
-  TYRA_ASSERT(t_sound, "Sound FX not found in sound library");
-  const AdpcmResult result =
-      this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
-  Tyra::Threading::switchThread();
-  return result;
+  if (t_sound) this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
 };
 
 void SoundManager::setSfxVolume(const u8& t_vol, const s8& t_ch) {

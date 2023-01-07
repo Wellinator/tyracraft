@@ -18,7 +18,7 @@ BlockInfo* BlockTextureRepository::getTextureInfo(const Blocks& blockType) {
       (u8)blockType < (u8)Blocks::TOTAL_OF_BLOCKS) {
     return this->models[(u8)blockType];
   }
-  TYRA_WARN("Block texture info not found. BLockType -> ",
+  TYRA_WARN("getTextureInfo: block texture info not found. BlockType -> ",
             std::to_string((u8)blockType).c_str(), " Was it registered?");
   return nullptr;
 }
@@ -28,7 +28,7 @@ const u8 BlockTextureRepository::isBlockTransparent(const Blocks& blockType) {
       (u8)blockType < (u8)Blocks::TOTAL_OF_BLOCKS) {
     return this->models[(u8)blockType]->_isTransparent;
   }
-  TYRA_WARN("Block texture info not found. BLockType -> ",
+  TYRA_WARN("isBlockTransparent: Block texture info not found. BlockType -> ",
             std::to_string((u8)blockType).c_str(), " Was it registered?");
   return false;
 }
@@ -47,7 +47,7 @@ void BlockTextureRepository::loadTextures() {
   this->models.push_back(
       new BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}, false));
   this->models.push_back(
-      new BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, true));
+      new BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, false));
   this->models.push_back(
       new BlockInfo(Blocks::BEDROCK_BLOCK, true, {0, 7}, false, false));
   this->models.push_back(

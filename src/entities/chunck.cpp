@@ -9,7 +9,7 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
   this->tempLoadingOffset->set(minOffset);
   this->minOffset->set(minOffset);
   this->maxOffset->set(maxOffset);
-  this->center->set(((maxOffset - minOffset) / 2 + minOffset));
+  this->center->set((maxOffset + minOffset) / 2);
 
   // Used to fix the edge of the chunk. It must contain all blocks;
   const Vec4 offsetFix = Vec4(0.5F);
@@ -47,6 +47,11 @@ void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
   ambientLightIntesity = worldLightModel->ambientLightIntensity;
   this->updateFrustumCheck(frustumPlanes);
   // if (isVisible()) applyFOG(currentPlayerPos);
+  // if (!isVisible() && isDrawDataLoaded()) {
+  //   clearDrawData();
+  // } else if (isVisible() && !isDrawDataLoaded()) {
+  //   loadDrawData();
+  // }
 }
 
 void Chunck::applyFOG(const Vec4& originPosition) {

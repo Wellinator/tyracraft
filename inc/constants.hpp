@@ -2,22 +2,26 @@
 
 #include <math/vec4.hpp>
 
-#define OVERWORLD_H_DISTANCE 256  // Total horizontal overworld distance;
-#define OVERWORLD_V_DISTANCE 128  // Total vertical overworld distance;
+#define OVERWORLD_H_DISTANCE 128  // Total horizontal overworld distance;
+#define OVERWORLD_V_DISTANCE 64   // Total vertical overworld distance;
+
 #define HALF_OVERWORLD_H_DISTANCE \
   (OVERWORLD_H_DISTANCE / 2)  // Half horizontal overworld distance;
 #define HALF_OVERWORLD_V_DISTANCE \
   (OVERWORLD_V_DISTANCE / 2)  // Half vertical overworld distance;
-#define OVERWORLD_MIN_DISTANCE \
-  -HALF_OVERWORLD_H_DISTANCE  // Min overworld width;
-#define OVERWORLD_MAX_DISTANCE \
-  HALF_OVERWORLD_H_DISTANCE  // Max overworld width;
-#define OVERWORLD_MIN_HEIGH \
-  -HALF_OVERWORLD_V_DISTANCE  // Min overworld layer for badblock;
-#define OVERWORLD_MAX_HEIGH \
-  HALF_OVERWORLD_V_DISTANCE  // Max overworld heigh layer;
+
+#define OVERWORLD_MIN_DISTANCE 0                     // Min overworld width;
+#define OVERWORLD_MAX_DISTANCE OVERWORLD_H_DISTANCE  // Max overworld width;
+
+#define OVERWORLD_MIN_HEIGH 0  // Min overworld layer for badblock;
+#define OVERWORLD_MAX_HEIGH OVERWORLD_V_DISTANCE  // Max overworld heigh layer;
+
 #define OVERWORLD_SIZE \
-  ((OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE) * OVERWORLD_V_DISTANCE)
+  (OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)
+
+#define WORLD_SIZE_SMALL 0
+#define WORLD_SIZE_NORMAL 1
+#define WORLD_SIZE_HUGE 2
 
 // Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
 #define CHUNCK_SIZE 8
@@ -34,7 +38,7 @@
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
 #define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 32
+#define LOAD_CHUNK_BATCH 128
 
 /**
  * Define blocks IDs

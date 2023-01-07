@@ -11,7 +11,7 @@ using Tyra::Vec4;
 
 TerrainManager::TerrainManager() {
   printf("\n\n|-----------SEED---------|");
-  printf("\n|           %d         |\n", seed);
+  printf("\n|           %ld         |\n", seed);
   printf("|------------------------|\n\n");
 
   this->minWorldPos.set(OVERWORLD_MIN_DISTANCE, OVERWORLD_MIN_HEIGH,
@@ -20,7 +20,7 @@ TerrainManager::TerrainManager() {
                         OVERWORLD_MAX_DISTANCE);
 }
 
-TerrainManager::~TerrainManager() { delete this->terrain; }
+TerrainManager::~TerrainManager() {}
 
 void TerrainManager::init(Renderer* t_renderer, ItemRepository* itemRepository,
                           MinecraftPipeline* mcPip, BlockManager* blockManager,
@@ -41,34 +41,34 @@ void TerrainManager::update(const Vec4& camLookPos, const Vec4& camPosition,
 
 void TerrainManager::generateNewTerrain(const NewGameOptions& options) {
   // TODO: refactor to terrain generation pipeline by terrain type
-  this->generateTerrainBase(options.makeFlat);
-  if (options.enableCaves) this->generateCaves();
-  if (options.enableWater) this->generateWater();
-  if (options.enableTrees) this->generateTrees();
+  // this->generateTerrainBase(options.makeFlat);
+  // if (options.enableCaves) this->generateCaves();
+  // if (options.enableWater) this->generateWater();
+  // if (options.enableTrees) this->generateTrees();
 
   // TODO: refactor -> use local noise variable in each function;
 }
 
 void TerrainManager::generateTerrainBase(const bool& makeFlat) {
-  u32 index = 0;
-  u32 noise = 0;
+  // u32 index = 0;
+  // u32 noise = 0;
 
-  for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
-    for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
-      noise = getNoise(x, z);
-      for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
-        if (y == OVERWORLD_MIN_HEIGH)
-          this->terrain[index] = (u8)Blocks::BEDROCK_BLOCK;
-        else if (makeFlat) {
-          this->terrain[index] =
-              y <= 0 ? (u8)Blocks::GRASS_BLOCK : (u8)Blocks::AIR_BLOCK;
-        } else {
-          this->terrain[index] = this->getBlock(noise, y);
-        }
-        index++;
-      }
-    }
-  }
+  // for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
+  //   for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
+  //     noise = getNoise(x, z);
+  //     for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
+  //       if (y == OVERWORLD_MIN_HEIGH)
+  //         this->terrain[index] = (u8)Blocks::BEDROCK_BLOCK;
+  //       else if (makeFlat) {
+  //         this->terrain[index] =
+  //             y <= 0 ? (u8)Blocks::GRASS_BLOCK : (u8)Blocks::AIR_BLOCK;
+  //       } else {
+  //         this->terrain[index] = this->getBlock(noise, y);
+  //       }
+  //       index++;
+  //     }
+  //   }
+  // }
 }
 
 void TerrainManager::generateCaves() {
@@ -92,7 +92,7 @@ void TerrainManager::generateCaves() {
         }
 
         const float density = getDensity(x, y, z);
-        if (density <= -0.2F) this->terrain[index] = (u8)Blocks::AIR_BLOCK;
+        // if (density <= -0.2F) this->terrain[index] = (u8)Blocks::AIR_BLOCK;
 
         index++;
       }
@@ -186,68 +186,47 @@ bool TerrainManager::isBlockHidden(const Vec4* blockOffset) {
          isTopFaceVisible(blockOffset) && isBottomFaceVisible(blockOffset);
 }
 
-bool TerrainManager::isBlockTransparentAtIndex(
-    const unsigned int& terrainIndex) {
-  if (terrainIndex >= 0 && terrainIndex <= OVERWORLD_SIZE) {
-    return (terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK ||
-            this->t_blockManager->isBlockTransparent(
-                static_cast<Blocks>(terrain[terrainIndex])));
+bool TerrainManager::isBlockTransparentAtPosition(const float& x,
+                                                  const float& y,
+                                                  const float& z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
+    return blockType <= (u8)Blocks::AIR_BLOCK ||
+           this->t_blockManager->isBlockTransparent(
+               static_cast<Blocks>(blockType));
+  } else {
+    return false;
   }
-
-  return false;
 }
 
 bool TerrainManager::isTopFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->y + 1 >= OVERWORLD_MAX_HEIGH) return false;
-
-  unsigned int blockIndex = getIndexByOffset(
-      t_blockOffset->x, t_blockOffset->y + 1, t_blockOffset->z);
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y + 1,
+                                      t_blockOffset->z);
 }
 
 bool TerrainManager::isBottomFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->y - 1 < OVERWORLD_MIN_HEIGH) return false;
-
-  unsigned int blockIndex = getIndexByOffset(
-      t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z);
-
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y - 1,
+                                      t_blockOffset->z);
 }
 
 bool TerrainManager::isFrontFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->x - 1 < OVERWORLD_MIN_DISTANCE) return false;
-
-  unsigned int blockIndex = getIndexByOffset(
-      t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z);
-
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
+                                      t_blockOffset->z);
 }
 
 bool TerrainManager::isBackFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->x + 1 >= OVERWORLD_MAX_DISTANCE) return false;
-
-  unsigned int blockIndex = getIndexByOffset(
-      t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z);
-
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
+                                      t_blockOffset->z);
 }
 
 bool TerrainManager::isLeftFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->z - 1 < OVERWORLD_MIN_DISTANCE) return false;
-
-  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
-                                             t_blockOffset->z - 1);
-
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
+                                      t_blockOffset->z - 1);
 }
 
 bool TerrainManager::isRightFaceVisible(const Vec4* t_blockOffset) {
-  if (t_blockOffset->z + 1 >= OVERWORLD_MAX_DISTANCE) return false;
-
-  unsigned int blockIndex = getIndexByOffset(t_blockOffset->x, t_blockOffset->y,
-                                             t_blockOffset->z + 1);
-
-  return isBlockTransparentAtIndex(blockIndex);
+  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
+                                      t_blockOffset->z + 1);
 }
 
 int TerrainManager::getBlockVisibleFaces(const Vec4* t_blockOffset) {
@@ -277,77 +256,28 @@ int TerrainManager::getBlockVisibleFaces(const Vec4* t_blockOffset) {
 
 u8 TerrainManager::getBlockTypeByOffset(const int& x, const int& y,
                                         const int& z) {
-  return terrain[this->getIndexByOffset(x, y, z)];
+  return (u8)GetBlockFromMap(terrain, x, y, z);
 }
 
 unsigned int TerrainManager::getIndexByPosition(Vec4* normalizedWorldPosition) {
-  int offsetZ = (normalizedWorldPosition->z / DUBLE_BLOCK_SIZE) +
-                HALF_OVERWORLD_H_DISTANCE;
-  int offsetX = (normalizedWorldPosition->x / DUBLE_BLOCK_SIZE) +
-                HALF_OVERWORLD_H_DISTANCE;
-  int offsetY = (normalizedWorldPosition->y / DUBLE_BLOCK_SIZE) +
-                HALF_OVERWORLD_V_DISTANCE;
-
-  int _z = offsetZ >= 0 && offsetZ < OVERWORLD_H_DISTANCE
-               ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE
-               : 0;
-  int _x = offsetX >= 0 && offsetX < OVERWORLD_H_DISTANCE
-               ? offsetX * OVERWORLD_V_DISTANCE
-               : 0;
-  int _y = offsetY >= 0 && offsetY < OVERWORLD_V_DISTANCE ? offsetY : 0;
-
-  return _z + _x + _y;
+  const Vec4 offsetPos = (*normalizedWorldPosition) / DUBLE_BLOCK_SIZE;
+  return (offsetPos.y * terrain->length * terrain->width) +
+         (offsetPos.z * terrain->width) + offsetPos.x;
 }
 
 unsigned int TerrainManager::getIndexByOffset(int x, int y, int z) {
-  int offsetZ = z + HALF_OVERWORLD_H_DISTANCE;
-  int offsetX = x + HALF_OVERWORLD_H_DISTANCE;
-  int offsetY = y + HALF_OVERWORLD_V_DISTANCE;
-
-  int _z = offsetZ > 0 && z < OVERWORLD_H_DISTANCE
-               ? offsetZ * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE
-               : 0;
-  int _x = offsetX > 0 && x < OVERWORLD_H_DISTANCE
-               ? offsetX * OVERWORLD_V_DISTANCE
-               : 0;
-  int _y = offsetY > 0 && y < OVERWORLD_V_DISTANCE ? offsetY : 0;
-
-  return _z + _x + _y;
-}
-
-const Vec4 TerrainManager::getPositionByIndex(const u16& index) {
-  int mod = index;
-  int z = OVERWORLD_MIN_DISTANCE;
-  int x = OVERWORLD_MIN_DISTANCE;
-  int y = OVERWORLD_MIN_HEIGH;
-
-  if (mod >= OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE) {
-    z = floor(mod / (OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)) -
-        HALF_OVERWORLD_H_DISTANCE;
-    mod = mod % (OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE);
-  }
-
-  if (mod >= OVERWORLD_V_DISTANCE) {
-    x = floor(mod / OVERWORLD_V_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
-    mod = mod % OVERWORLD_H_DISTANCE;
-  }
-
-  if (mod < OVERWORLD_V_DISTANCE) {
-    y = mod - HALF_OVERWORLD_V_DISTANCE;
-  }
-
-  return Vec4(x, y, z) * DUBLE_BLOCK_SIZE;
+  return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
 void TerrainManager::buildChunk(Chunck* t_chunck) {
-  for (int z = t_chunck->minOffset->z; z <= t_chunck->maxOffset->z; z++) {
-    for (int x = t_chunck->minOffset->x; x <= t_chunck->maxOffset->x; x++) {
-      for (int y = t_chunck->minOffset->y; y <= t_chunck->maxOffset->y; y++) {
+  for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
+    for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
+      for (int y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
-        u8 block_type = this->terrain[blockIndex];
+        u8 block_type = GetBlockFromMap(terrain, x, y, z);
 
-        if (blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
-            block_type <= (u8)Blocks::AIR_BLOCK)
+        if (block_type <= (u8)Blocks::AIR_BLOCK ||
+            !BoundCheckMap(terrain, x, y, z))
           continue;
 
         Vec4 tempBlockOffset = Vec4(x, y, z);
@@ -357,11 +287,68 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
         const bool isVisible = visibleFaces > 0;
 
         // Are block's coordinates in world range?
-        if (isVisible &&
-            tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
+        if (isVisible) {
           BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
               static_cast<Blocks>(block_type));
+          if (blockInfo) {
+            Block* block = new Block(blockInfo);
+            block->index = blockIndex;
+            block->offset.set(tempBlockOffset);
+            block->chunkId = t_chunck->id;
+            block->visibleFaces = visibleFaces;
+            block->isAtChunkBorder = isBlockAtChunkBorder(
+                &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
+            // float bright = this->getBlockLuminosity(tempBlockOffset.y);
+            // block->color = Color(bright, bright, bright, 128.0F);
+
+            block->setPosition(blockPosition);
+            block->scale.scale(BLOCK_SIZE);
+            block->updateModelMatrix();
+
+            // Calc min and max corners
+            {
+              BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+            }
+
+            t_chunck->addBlock(block);
+          }
+        }
+      }
+    }
+  }
+
+  t_chunck->state = ChunkState::Loaded;
+  t_chunck->loadDrawData();
+}
+
+void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
+  int batchCounter = 0;
+  int z = t_chunck->tempLoadingOffset->z;
+  int x = t_chunck->tempLoadingOffset->x;
+  int y = t_chunck->tempLoadingOffset->y;
+
+  while (batchCounter < LOAD_CHUNK_BATCH) {
+    if (z >= t_chunck->maxOffset->z) break;
+
+    unsigned int blockIndex = this->getIndexByOffset(x, y, z);
+    u8 block_type = GetBlockFromMap(terrain, x, y, z);
+    if (block_type > (u8)Blocks::AIR_BLOCK &&
+        block_type < (u8)Blocks::TOTAL_OF_BLOCKS) {
+      Vec4 tempBlockOffset = Vec4(x, y, z);
+      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+      const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
+      const bool isVisible = visibleFaces > 0;
+
+      // Are block's coordinates in world range?
+      if (isVisible && BoundCheckMap(terrain, x, y, z)) {
+        BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
+            static_cast<Blocks>(block_type));
+
+        if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
           block->offset.set(tempBlockOffset);
@@ -386,62 +373,6 @@ void TerrainManager::buildChunk(Chunck* t_chunck) {
 
           t_chunck->addBlock(block);
         }
-      }
-    }
-  }
-
-  t_chunck->state = ChunkState::Loaded;
-  t_chunck->loadDrawData();
-}
-
-void TerrainManager::buildChunkAsync(Chunck* t_chunck) {
-  int batchCounter = 0;
-  int z = t_chunck->tempLoadingOffset->z;
-  int x = t_chunck->tempLoadingOffset->x;
-  int y = t_chunck->tempLoadingOffset->y;
-
-  while (batchCounter < LOAD_CHUNK_BATCH) {
-    if (z > t_chunck->maxOffset->z) break;
-
-    unsigned int blockIndex = this->getIndexByOffset(x, y, z);
-    u8 block_type = this->terrain[blockIndex];
-
-    if (!(blockIndex < 0 || blockIndex >= OVERWORLD_SIZE ||
-          block_type <= (u8)Blocks::AIR_BLOCK)) {
-      Vec4 tempBlockOffset = Vec4(x, y, z);
-      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
-
-      const int visibleFaces = this->getBlockVisibleFaces(&tempBlockOffset);
-      const bool isVisible = visibleFaces > 0;
-
-      // Are block's coordinates in world range?
-      if (isVisible && tempBlockOffset.collidesBox(minWorldPos, maxWorldPos)) {
-        BlockInfo* blockInfo = this->t_blockManager->getBlockInfoByType(
-            static_cast<Blocks>(block_type));
-
-        Block* block = new Block(blockInfo);
-        block->index = blockIndex;
-        block->offset.set(tempBlockOffset);
-        block->chunkId = t_chunck->id;
-        block->visibleFaces = visibleFaces;
-        block->isAtChunkBorder = isBlockAtChunkBorder(
-            &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
-
-        // float bright = this->getBlockLuminosity(tempBlockOffset.y);
-        // block->color = Color(bright, bright, bright, 128.0F);
-
-        block->setPosition(blockPosition);
-        block->scale.scale(BLOCK_SIZE);
-        block->updateModelMatrix();
-
-        // Calc min and max corners
-        {
-          BBox tempBBox = this->rawBlockBbox->getTransformed(block->model);
-          block->bbox = new BBox(tempBBox);
-          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-        }
-
-        t_chunck->addBlock(block);
         batchCounter++;
       }
     }
@@ -517,7 +448,8 @@ void TerrainManager::updateTargetBlock(const Vec4& camLookPos,
 }
 
 void TerrainManager::removeBlock(Block* blockToRemove) {
-  terrain[blockToRemove->index] = (u8)Blocks::AIR_BLOCK;
+  SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
+                blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
   this->_modifiedPosition.set(*blockToRemove->getPosition());
   this->removedBlock = blockToRemove;
   this->_shouldUpdateChunck = true;
@@ -592,9 +524,16 @@ void TerrainManager::putBlock(const Blocks& blockToPlace, Player* t_player) {
         return;  // Return on collision
     }
 
+    const Vec4 blockOffset = newBlockPos / BLOCK_SIZE;
+
+    blockOffset.print();
+
     this->_modifiedPosition.set(newBlockPos);
-    if (this->terrain[terrainIndex] == (u8)Blocks::AIR_BLOCK)
-      this->terrain[terrainIndex] = (u8)blockToPlace;
+
+    if (terrain->blocks[terrainIndex] == (u8)Blocks::AIR_BLOCK) {
+      terrain->blocks[terrainIndex] = (u8)blockToPlace;
+    }
+
     this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);
   }
@@ -654,25 +593,23 @@ Vec4* TerrainManager::normalizeWorldBlockPosition(Vec4* worldPosition) {
 }
 
 const Vec4 TerrainManager::defineSpawnArea() {
+  // Vec4 spawPos = Vec4(terrain->spawnX, terrain->spawnY, terrain->spawnZ);
   Vec4 spawPos = this->calcSpawOffset();
   return spawPos;
 }
 
 const Vec4 TerrainManager::calcSpawOffset(int bias) {
-  u8 found = 0;
+  bool found = false;
   u8 airBlockCounter = 0;
   // Pick a X and Z coordinates based on the seed;
-  int posX =
-      ((seed + bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
-  int posZ =
-      ((seed - bias) % HALF_OVERWORLD_H_DISTANCE) - HALF_OVERWORLD_H_DISTANCE;
+  int posX = ((seed + bias) % HALF_OVERWORLD_H_DISTANCE);
+  int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE);
   Vec4 result;
 
   for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
-    int index = this->getIndexByOffset(posX, posY, posZ);
-    u8 type = this->terrain[index];
+    u8 type = GetBlockFromMap(terrain, posX, posY, posZ);
     if (type != (u8)Blocks::AIR_BLOCK && airBlockCounter >= 4) {
-      found = 1;
+      found = true;
       result = Vec4(posX, posY + 2, posZ);
       break;
     }
@@ -813,49 +750,51 @@ TreeType TerrainManager::getTreeType(const int& x, const int& z) {
 void TerrainManager::placeTreeAt(const int& x, const int& z,
                                  const u8& treeHeight, const Blocks& logType,
                                  const Blocks& leaveType) {
-  for (int y = OVERWORLD_MAX_HEIGH - 1; y >= OVERWORLD_MIN_HEIGH; y--) {
-    int index = this->getIndexByOffset(x, y, z);
-    u8 type = this->terrain[index];
+  // for (int y = OVERWORLD_MAX_HEIGH - 1; y >= OVERWORLD_MIN_HEIGH; y--) {
+  //   int index = 0;//this->getIndexByOffset(x, y, z);
+  //   u8 type = this->terrain[index];
 
-    if (y >= 0 && type != (u8)Blocks::AIR_BLOCK &&
-        (type == (u8)Blocks::GRASS_BLOCK || type == (u8)Blocks::DIRTY_BLOCK)) {
-      for (int j = 0; j <= (treeHeight + 1); j++) {
-        u32 treeBlockIndex = this->getIndexByOffset(x, y + j, z);
+  //   if (y >= 0 && type != (u8)Blocks::AIR_BLOCK &&
+  //       (type == (u8)Blocks::GRASS_BLOCK || type == (u8)Blocks::DIRTY_BLOCK))
+  //       {
+  //     for (int j = 0; j <= (treeHeight + 1); j++) {
+  //       u32 treeBlockIndex = this->getIndexByOffset(x, y + j, z);
 
-        // Place logs
-        if (j <= treeHeight &&
-            this->terrain[treeBlockIndex] == (u8)Blocks::AIR_BLOCK)
-          this->terrain[treeBlockIndex] = (u8)logType;
+  //       // Place logs
+  //       if (j <= treeHeight &&
+  //           this->terrain[treeBlockIndex] == (u8)Blocks::AIR_BLOCK)
+  //         this->terrain[treeBlockIndex] = (u8)logType;
 
-        // Place leaves
-        if (j >= treeHeight - 3) {
-          Vec4 center = Vec4(x, y + j, z);
+  //       // Place leaves
+  //       if (j >= treeHeight - 3) {
+  //         Vec4 center = Vec4(x, y + j, z);
 
-          int radianOffset = 0;
-          if (j == (treeHeight - 3) || j == (treeHeight - 2))
-            radianOffset = 3;
-          else if (j == (treeHeight - 1))
-            radianOffset = 2;
-          else if (j == treeHeight)
-            radianOffset = 1;
+  //         int radianOffset = 0;
+  //         if (j == (treeHeight - 3) || j == (treeHeight - 2))
+  //           radianOffset = 3;
+  //         else if (j == (treeHeight - 1))
+  //           radianOffset = 2;
+  //         else if (j == treeHeight)
+  //           radianOffset = 1;
 
-          for (int k = -2; k < 3; k++) {
-            for (int l = -2; l < 3; l++) {
-              u32 treeLeaveBlockIndex =
-                  this->getIndexByOffset(x + k, y + j, z + l);
-              Vec4 leafPos = Vec4(x + k, y + j, z + l);
+  //         for (int k = -2; k < 3; k++) {
+  //           for (int l = -2; l < 3; l++) {
+  //             u32 treeLeaveBlockIndex =
+  //                 this->getIndexByOffset(x + k, y + j, z + l);
+  //             Vec4 leafPos = Vec4(x + k, y + j, z + l);
 
-              if (this->terrain[treeLeaveBlockIndex] == (u8)Blocks::AIR_BLOCK &&
-                  center.distanceTo(leafPos) <= radianOffset) {
-                this->terrain[treeLeaveBlockIndex] = (u8)leaveType;
-              }
-            }
-          }
-        }
-      }
-      break;
-    }
-  }
+  //             if (this->terrain[treeLeaveBlockIndex] == (u8)Blocks::AIR_BLOCK
+  //             &&
+  //                 center.distanceTo(leafPos) <= radianOffset) {
+  //               this->terrain[treeLeaveBlockIndex] = (u8)leaveType;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     break;
+  //   }
+  // }
 }
 
 void TerrainManager::placeOakTreeAt(const int& x, const int& z,
@@ -876,42 +815,42 @@ void TerrainManager::calcRawBlockBBox(MinecraftPipeline* mcPip) {
 }
 
 void TerrainManager::generateWater() {
-  int index = 0;
-  for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
-    for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
-      for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
-        if (this->terrain[index] == (u8)Blocks::AIR_BLOCK) {
-          // If Y is lower than 0, then fill with water;
-          if (y < 0) this->terrain[index] = (u8)Blocks::WATER_BLOCK;
+  // int index = 0;
+  // for (int z = OVERWORLD_MIN_DISTANCE; z < OVERWORLD_MAX_DISTANCE; z++) {
+  //   for (int x = OVERWORLD_MIN_DISTANCE; x < OVERWORLD_MAX_DISTANCE; x++) {
+  //     for (int y = OVERWORLD_MIN_HEIGH; y < OVERWORLD_MAX_HEIGH; y++) {
+  //       if (this->terrain[index] == (u8)Blocks::AIR_BLOCK) {
+  //         // If Y is lower than 0, then fill with water;
+  //         if (y < 0) this->terrain[index] = (u8)Blocks::WATER_BLOCK;
 
-          // Place sand arround the watter;
-          u8 leftIndex = this->getBlockTypeByOffset(x - 1, y, z);
-          u8 rightIndex = this->getBlockTypeByOffset(x + 1, y, z);
-          u8 frontIndex = this->getBlockTypeByOffset(x, y, z - 1);
-          u8 backIndex = this->getBlockTypeByOffset(x, y, z + 1);
+  //         // Place sand arround the watter;
+  //         u8 leftIndex = this->getBlockTypeByOffset(x - 1, y, z);
+  //         u8 rightIndex = this->getBlockTypeByOffset(x + 1, y, z);
+  //         u8 frontIndex = this->getBlockTypeByOffset(x, y, z - 1);
+  //         u8 backIndex = this->getBlockTypeByOffset(x, y, z + 1);
 
-          if (this->terrain[leftIndex] == (u8)Blocks::DIRTY_BLOCK ||
-              this->terrain[leftIndex] == (u8)Blocks::GRASS_BLOCK) {
-            this->terrain[leftIndex] = (u8)Blocks::SAND_BLOCK;
-          }
-          if (this->terrain[rightIndex] == (u8)Blocks::DIRTY_BLOCK ||
-              this->terrain[rightIndex] == (u8)Blocks::GRASS_BLOCK) {
-            this->terrain[rightIndex] = (u8)Blocks::SAND_BLOCK;
-          }
-          if (this->terrain[frontIndex] == (u8)Blocks::DIRTY_BLOCK ||
-              this->terrain[frontIndex] == (u8)Blocks::GRASS_BLOCK) {
-            this->terrain[frontIndex] = (u8)Blocks::SAND_BLOCK;
-          }
-          if (this->terrain[backIndex] == (u8)Blocks::DIRTY_BLOCK ||
-              this->terrain[backIndex] == (u8)Blocks::GRASS_BLOCK) {
-            this->terrain[backIndex] = (u8)Blocks::SAND_BLOCK;
-          }
-        };
+  //         if (this->terrain[leftIndex] == (u8)Blocks::DIRTY_BLOCK ||
+  //             this->terrain[leftIndex] == (u8)Blocks::GRASS_BLOCK) {
+  //           this->terrain[leftIndex] = (u8)Blocks::SAND_BLOCK;
+  //         }
+  //         if (this->terrain[rightIndex] == (u8)Blocks::DIRTY_BLOCK ||
+  //             this->terrain[rightIndex] == (u8)Blocks::GRASS_BLOCK) {
+  //           this->terrain[rightIndex] = (u8)Blocks::SAND_BLOCK;
+  //         }
+  //         if (this->terrain[frontIndex] == (u8)Blocks::DIRTY_BLOCK ||
+  //             this->terrain[frontIndex] == (u8)Blocks::GRASS_BLOCK) {
+  //           this->terrain[frontIndex] = (u8)Blocks::SAND_BLOCK;
+  //         }
+  //         if (this->terrain[backIndex] == (u8)Blocks::DIRTY_BLOCK ||
+  //             this->terrain[backIndex] == (u8)Blocks::GRASS_BLOCK) {
+  //           this->terrain[backIndex] = (u8)Blocks::SAND_BLOCK;
+  //         }
+  //       };
 
-        index++;
-      }
-    }
-  }
+  //       index++;
+  //     }
+  //   }
+  // }
 }
 
 u8 TerrainManager::shouldUpdateTargetBlock() {

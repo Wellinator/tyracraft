@@ -22,9 +22,8 @@ class SoundManager {
     return this->soundLibrary->getSound(idCategory, idSound);
   }
 
-  AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound);
-  AdpcmResult playSfx(SoundFxCategory idCategory, SoundFX idSound,
-                      const s8& t_ch);
+  void playSfx(SoundFxCategory idCategory, SoundFX idSound);
+  void playSfx(SoundFxCategory idCategory, SoundFX idSound, const s8& t_ch);
 
   void setSfxVolume(const u8& t_vol, const s8& t_ch);
 

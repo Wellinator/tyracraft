@@ -23,7 +23,7 @@ void ChunckManager::update(const Plane* frustumPlanes,
   this->visibleChunks.clear();
   for (u16 i = 0; i < chuncks.size(); i++) {
     chuncks[i]->update(frustumPlanes, currentPlayerPos, worldLightModel);
-    if (chuncks[i]->isVisible() && chuncks[i]->state == ChunkState::Loaded)
+    if (chuncks[i]->state == ChunkState::Loaded)
       this->visibleChunks.push_back(chuncks[i]);
   }
 }
@@ -38,16 +38,15 @@ void ChunckManager::generateChunks() {
   // TODO: create only the chuncks that'll be rendered
   u16 tempId = 1;
 
-  for (int x = OVERWORLD_MIN_DISTANCE; x <= OVERWORLD_MAX_DISTANCE;
-       x += CHUNCK_SIZE) {
-    for (int z = OVERWORLD_MIN_DISTANCE; z <= OVERWORLD_MAX_DISTANCE;
-         z += CHUNCK_SIZE) {
-      Vec4 tempMin = Vec4(x, OVERWORLD_MIN_HEIGH, z);
-      Vec4 tempMax =
-          Vec4(x + CHUNCK_SIZE, OVERWORLD_MAX_HEIGH, z + CHUNCK_SIZE);
-      Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
-      this->chuncks.push_back(tempChunck);
-      tempId++;
+  for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNCK_SIZE) {
+    for (size_t z = 0; z < OVERWORLD_MAX_DISTANCE; z += CHUNCK_SIZE) {
+      for (size_t y = 0; y < OVERWORLD_MAX_HEIGH; y += CHUNCK_SIZE) {
+        Vec4 tempMin = Vec4(x, y, z);
+        Vec4 tempMax = Vec4(x + CHUNCK_SIZE, y + CHUNCK_SIZE, z + CHUNCK_SIZE);
+        Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
+        this->chuncks.push_back(tempChunck);
+        tempId++;
+      }
     }
   }
 };
