@@ -89,21 +89,9 @@ class World {
   void buildChunk(Chunck* t_chunck);
   void buildChunkAsync(Chunck* t_chunck);
 
-  inline u8 shouldUpdateChunck() { return this->_shouldUpdateChunck; };
-  inline void setChunckToUpdated() { this->_shouldUpdateChunck = false; };
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
   void stopBreakTargetBlock();
-
-  /**
-   * @brief Returns the modified position on putting or removing a block when
-   * shouldUpdateChunck() is true. It is useful to get the exact chunk by
-   * position.
-   */
-  inline const Vec4 getModifiedPosition() { return this->_modifiedPosition; };
-
-  inline u8 hasRemovedABlock() { return this->removedBlock != nullptr; };
-  Block* removedBlock = nullptr;
 
   LevelMap* terrain;
 
@@ -132,9 +120,7 @@ class World {
                                u8 force_loading = 0);
   void loadScheduledChunks();
   void unloadScheduledChunks();
-  void updateNeighBorsChunksByModdedBlock(Block* changedBlock);
-  void reloadChangedChunkByRemovedBlock();
-  void reloadChangedChunkByPutedBlock();
+  void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();
@@ -145,8 +131,6 @@ class World {
 
   // From terrain manager
   Ray ray;
-  u8 _shouldUpdateChunck = false;
-  Vec4 _modifiedPosition;
   const u8 UPDATE_TARGET_LIMIT = 3;
   ItemRepository* t_itemRepository;
 

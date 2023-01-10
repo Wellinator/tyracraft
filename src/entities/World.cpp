@@ -70,13 +70,6 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   dayNightCycleManager.update();
   updateLightModel();
 
-  if (this->shouldUpdateChunck()) {
-    if (this->hasRemovedABlock())
-      reloadChangedChunkByRemovedBlock();
-    else
-      reloadChangedChunkByPutedBlock();
-  }
-
   this->chunckManager->update(
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
       *t_player->getPosition(), &worldLightModel);
@@ -143,101 +136,76 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   }
 }
 
-void World::reloadChangedChunkByPutedBlock() {
-  Chunck* chunckToUpdate =
-      this->chunckManager->getChunckByPosition(this->getModifiedPosition());
+void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
+  Chunck* currentChunk = chunckManager->getChunckByOffset(pos);
 
-  if (this->targetBlock && this->targetBlock->isAtChunkBorder) {
-    updateNeighBorsChunksByModdedBlock(this->targetBlock);
-  }
+  if (!currentChunk) return;
 
-  if (chunckToUpdate != nullptr) {
-    chunckToUpdate->clear();
-    this->buildChunk(chunckToUpdate);
-    this->setChunckToUpdated();
-  }
-}
+  const u8 isAtBorder = isBlockAtChunkBorder(&pos, currentChunk->minOffset,
+                                             currentChunk->maxOffset);
 
-void World::reloadChangedChunkByRemovedBlock() {
-  Block* removedBlock = this->removedBlock;
-  if (removedBlock->isAtChunkBorder) {
-    updateNeighBorsChunksByModdedBlock(removedBlock);
-  }
+  if (isAtBorder) {
+    if (currentChunk->maxOffset->z - 1 == pos.z) {
+      // Left
+      Chunck* leftChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x, pos.y, pos.z + 1));
+      if (leftChunk && leftChunk->id != currentChunk->id) {
+        leftChunk->clear();
+        buildChunk(leftChunk);
+      }
+    } else if (currentChunk->minOffset->z == pos.z) {
+      // Right
+      Chunck* rightChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x, pos.y, pos.z - 1));
 
-  Chunck* chunckToUpdate =
-      this->chunckManager->getChunckById(removedBlock->chunkId);
-  chunckToUpdate->clear();
-  this->buildChunk(chunckToUpdate);
-  this->removedBlock = nullptr;
-  this->setChunckToUpdated();
-}
-
-void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
-  Chunck* currentChunk = chunckManager->getChunckById(changedBlock->chunkId);
-
-  if (currentChunk->maxOffset->z - 1 == changedBlock->offset.z) {
-    // Left
-    Chunck* leftChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x, changedBlock->offset.y,
-             changedBlock->offset.z + 1));
-    if (leftChunk && leftChunk->id != changedBlock->chunkId) {
-      leftChunk->clear();
-      buildChunk(leftChunk);
+      if (rightChunk && rightChunk->id != currentChunk->id) {
+        rightChunk->clear();
+        buildChunk(rightChunk);
+      }
     }
-  } else if (currentChunk->minOffset->z == changedBlock->offset.z) {
-    // Right
-    Chunck* rightChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x, changedBlock->offset.y,
-             changedBlock->offset.z - 1));
 
-    if (rightChunk && rightChunk->id != changedBlock->chunkId) {
-      rightChunk->clear();
-      buildChunk(rightChunk);
+    if (currentChunk->maxOffset->x - 1 == pos.x) {
+      // Front
+      Chunck* frontChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x + 1, pos.y, pos.z));
+
+      if (frontChunk && frontChunk->id != currentChunk->id) {
+        frontChunk->clear();
+        buildChunk(frontChunk);
+      }
+    } else if (currentChunk->minOffset->x == pos.x) {
+      // Back
+      Chunck* backChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x - 1, pos.y, pos.z));
+      if (backChunk && backChunk->id != currentChunk->id) {
+        backChunk->clear();
+        buildChunk(backChunk);
+      }
     }
-  }
 
-  if (currentChunk->maxOffset->x - 1 == changedBlock->offset.x) {
-    // Front
-    Chunck* frontChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x + 1, changedBlock->offset.y,
-             changedBlock->offset.z));
+    if (currentChunk->maxOffset->y - 1 == pos.y) {
+      // Top
+      Chunck* topChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x, pos.y + 1, pos.z));
 
-    if (frontChunk && frontChunk->id != changedBlock->chunkId) {
-      frontChunk->clear();
-      buildChunk(frontChunk);
-    }
-  } else if (currentChunk->minOffset->x == changedBlock->offset.x) {
-    // Back
-    Chunck* backChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x - 1, changedBlock->offset.y,
-             changedBlock->offset.z));
-    if (backChunk && backChunk->id != changedBlock->chunkId) {
-      backChunk->clear();
-      buildChunk(backChunk);
+      if (topChunk && topChunk->id != currentChunk->id) {
+        topChunk->clear();
+        buildChunk(topChunk);
+      }
+    } else if (currentChunk->minOffset->y == pos.y) {
+      // Bottom
+      Chunck* bottomChunk =
+          chunckManager->getChunckByOffset(Vec4(pos.x, pos.y - 1, pos.z));
+
+      if (bottomChunk && bottomChunk->id != currentChunk->id) {
+        bottomChunk->clear();
+        buildChunk(bottomChunk);
+      }
     }
   }
 
-  if (currentChunk->maxOffset->y - 1 == changedBlock->offset.y) {
-    // Top
-    Chunck* topChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x, changedBlock->offset.y + 1,
-             changedBlock->offset.z));
-
-    if (topChunk && topChunk->id != changedBlock->chunkId) {
-      topChunk->clear();
-      buildChunk(topChunk);
-    }
-  } else if (currentChunk->minOffset->y == changedBlock->offset.y) {
-    // Bottom
-    Chunck* bottomChunk = chunckManager->getChunckByOffset(
-        Vec4(changedBlock->offset.x, changedBlock->offset.y - 1,
-             changedBlock->offset.z));
-
-    if (bottomChunk && bottomChunk->id != changedBlock->chunkId) {
-      bottomChunk->clear();
-      buildChunk(bottomChunk);
-    }
-  }
+  currentChunk->clear();
+  buildChunk(currentChunk);
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck,
@@ -478,10 +446,8 @@ const Vec4 World::calcSpawOffset(int bias) {
 void World::removeBlock(Block* blockToRemove) {
   SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
                 blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
-  this->_modifiedPosition.set(*blockToRemove->getPosition());
-  this->removedBlock = blockToRemove;
-  this->_shouldUpdateChunck = true;
-  this->playDestroyBlockSound(blockToRemove->type);
+  updateNeighBorsChunksByModdedPosition(blockToRemove->offset);
+  playDestroyBlockSound(blockToRemove->type);
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
@@ -544,8 +510,6 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
           newBlockPosMin.y < maxPlayerCorner.y)
         return;  // Return on collision
     }
-    this->_modifiedPosition.set(newBlockPos);
-
     const uint8_t blockType =
         GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z);
     if (blockType == (u8)Blocks::AIR_BLOCK) {
@@ -553,9 +517,10 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
                     (u8)blockToPlace);
     }
 
-    this->_shouldUpdateChunck = 1;
     this->playPutBlockSound(blockToPlace);
   }
+
+  updateNeighBorsChunksByModdedPosition(blockOffset);
 }
 
 void World::stopBreakTargetBlock() {
