@@ -37,7 +37,7 @@
 * Features for pre-alpha release (v0.1.4):
     ❌ -> Tool (Pickaxe) (WIP);
     🔲 -> Fix blocks visibility on modify world;
-    🔲 -> Update world options menu;
+    ✅ -> Update world options menu;
     ✅ -> Basic ingame menu for block selection;
     ✅ -> Implemented tyra manual render mode;
     ✅ -> BLocks hidden faces culling;
@@ -50,7 +50,7 @@
     ✅ -> Fixed time scale conversion;
     ✅ -> Leaves neghboors blocks visibility;
     ✅ -> Refactor block visibility/transparency/solid check system;
-    🔲 -> Fix block faces transparency (Render transaparent block after solid ones);
+    ✅ -> Fix block faces transparency (Render transaparent block after solid ones);
     ✅ -> Duplicated inventory item;
     ✅ -> Invalid reference to inventory index;
     ✅ -> Fix player keeps walking when the inventory is opened;
