@@ -47,7 +47,8 @@
     🔲 -> Add World size options;
     🔲 -> Add input for seed;
     🔲 -> Add ingame options: Draw distance;
-    🔲 -> Add support for textures;
+    🔲 -> Add support for custom textures;
+    🔲 -> Add particles system;
     🔲 -> Add save support;
 
 * Bug fixes for pre-alpha release (v0.1.4):
