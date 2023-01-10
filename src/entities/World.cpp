@@ -20,11 +20,6 @@ World::World(const NewGameOptions& options) {
   this->worldOptions = options;
   this->blockManager = new BlockManager();
   this->chunckManager = new ChunckManager();
-  this->minWorldPos.set(OVERWORLD_MIN_DISTANCE, OVERWORLD_MIN_HEIGH,
-                        OVERWORLD_MIN_DISTANCE);
-  this->maxWorldPos.set(OVERWORLD_MAX_DISTANCE, OVERWORLD_MAX_HEIGH,
-                        OVERWORLD_MAX_DISTANCE);
-
   CrossCraft_World_Init(seed);
 }
 
@@ -165,8 +160,9 @@ void World::reloadChangedChunkByPutedBlock() {
 
 void World::reloadChangedChunkByRemovedBlock() {
   Block* removedBlock = this->removedBlock;
-  if (removedBlock->isAtChunkBorder)
+  if (removedBlock->isAtChunkBorder) {
     updateNeighBorsChunksByModdedBlock(removedBlock);
+  }
 
   Chunck* chunckToUpdate =
       this->chunckManager->getChunckById(removedBlock->chunkId);
@@ -177,39 +173,70 @@ void World::reloadChangedChunkByRemovedBlock() {
 }
 
 void World::updateNeighBorsChunksByModdedBlock(Block* changedBlock) {
-  // Front
-  Chunck* frontChunk = this->chunckManager->getChunckByOffset(
-      Vec4(changedBlock->offset.x, changedBlock->offset.y,
-           changedBlock->offset.z + 1));
+  Chunck* currentChunk = chunckManager->getChunckById(changedBlock->chunkId);
 
-  // Back
-  Chunck* backChunk = this->chunckManager->getChunckByOffset(
-      Vec4(changedBlock->offset.x, changedBlock->offset.y,
-           changedBlock->offset.z - 1));
+  if (currentChunk->maxOffset->z - 1 == changedBlock->offset.z) {
+    // Left
+    Chunck* leftChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x, changedBlock->offset.y,
+             changedBlock->offset.z + 1));
+    if (leftChunk && leftChunk->id != changedBlock->chunkId) {
+      leftChunk->clear();
+      buildChunk(leftChunk);
+    }
+  } else if (currentChunk->minOffset->z == changedBlock->offset.z) {
+    // Right
+    Chunck* rightChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x, changedBlock->offset.y,
+             changedBlock->offset.z - 1));
 
-  // Right
-  Chunck* rightChunk = this->chunckManager->getChunckByOffset(
-      Vec4(changedBlock->offset.x + 1, changedBlock->offset.y,
-           changedBlock->offset.z));
-  // Left
-  Chunck* leftChunk = this->chunckManager->getChunckByOffset(
-      Vec4(changedBlock->offset.x - 1, changedBlock->offset.y,
-           changedBlock->offset.z));
-
-  if (frontChunk && frontChunk->id != changedBlock->chunkId) {
-    frontChunk->clear();
-    this->buildChunk(frontChunk);
-  } else if (backChunk && backChunk->id != changedBlock->chunkId) {
-    backChunk->clear();
-    this->buildChunk(backChunk);
+    if (rightChunk && rightChunk->id != changedBlock->chunkId) {
+      rightChunk->clear();
+      buildChunk(rightChunk);
+    }
   }
 
-  if (rightChunk && rightChunk->id != changedBlock->chunkId) {
-    rightChunk->clear();
-    this->buildChunk(rightChunk);
-  } else if (leftChunk && leftChunk->id != changedBlock->chunkId) {
-    leftChunk->clear();
-    this->buildChunk(leftChunk);
+  if (currentChunk->maxOffset->x - 1 == changedBlock->offset.x) {
+    // Front
+    Chunck* frontChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x + 1, changedBlock->offset.y,
+             changedBlock->offset.z));
+
+    if (frontChunk && frontChunk->id != changedBlock->chunkId) {
+      frontChunk->clear();
+      buildChunk(frontChunk);
+    }
+  } else if (currentChunk->minOffset->x == changedBlock->offset.x) {
+    // Back
+    Chunck* backChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x - 1, changedBlock->offset.y,
+             changedBlock->offset.z));
+    if (backChunk && backChunk->id != changedBlock->chunkId) {
+      backChunk->clear();
+      buildChunk(backChunk);
+    }
+  }
+
+  if (currentChunk->maxOffset->y - 1 == changedBlock->offset.y) {
+    // Top
+    Chunck* topChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x, changedBlock->offset.y + 1,
+             changedBlock->offset.z));
+
+    if (topChunk && topChunk->id != changedBlock->chunkId) {
+      topChunk->clear();
+      buildChunk(topChunk);
+    }
+  } else if (currentChunk->minOffset->y == changedBlock->offset.y) {
+    // Bottom
+    Chunck* bottomChunk = chunckManager->getChunckByOffset(
+        Vec4(changedBlock->offset.x, changedBlock->offset.y - 1,
+             changedBlock->offset.z));
+
+    if (bottomChunk && bottomChunk->id != changedBlock->chunkId) {
+      bottomChunk->clear();
+      buildChunk(bottomChunk);
+    }
   }
 }
 
@@ -610,16 +637,18 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
 u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
                                const Vec4* chunkMinOffset,
                                const Vec4* chunkMaxOffset) {
-  return blockOffset->x == chunkMinOffset->x ||
-         blockOffset->x == chunkMaxOffset->x ||
+  return blockOffset->y == chunkMinOffset->y ||
+         blockOffset->y == chunkMaxOffset->y - 1 ||
+         blockOffset->x == chunkMinOffset->x ||
+         blockOffset->x == chunkMaxOffset->x - 1 ||
          blockOffset->z == chunkMinOffset->z ||
-         blockOffset->z == chunkMaxOffset->z;
+         blockOffset->z == chunkMaxOffset->z - 1;
 }
 
 void World::buildChunk(Chunck* t_chunck) {
-  for (int x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
-    for (int z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
-      for (int y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
+  for (size_t x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
+    for (size_t z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
+      for (size_t y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
         unsigned int blockIndex = this->getIndexByOffset(x, y, z);
         u8 block_type = GetBlockFromMap(terrain, x, y, z);
 
@@ -670,12 +699,12 @@ void World::buildChunk(Chunck* t_chunck) {
 
 void World::buildChunkAsync(Chunck* t_chunck) {
   int batchCounter = 0;
-  int z = t_chunck->tempLoadingOffset->z;
   int x = t_chunck->tempLoadingOffset->x;
   int y = t_chunck->tempLoadingOffset->y;
+  int z = t_chunck->tempLoadingOffset->z;
 
   while (batchCounter < LOAD_CHUNK_BATCH) {
-    if (z >= t_chunck->maxOffset->z) break;
+    if (x >= t_chunck->maxOffset->x) break;
 
     unsigned int blockIndex = this->getIndexByOffset(x, y, z);
     u8 block_type = GetBlockFromMap(terrain, x, y, z);
@@ -719,13 +748,13 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     }
 
     y++;
-    if (y > t_chunck->maxOffset->y) {
+    if (y >= t_chunck->maxOffset->y) {
       y = t_chunck->minOffset->y;
-      x++;
-    }
-    if (x > t_chunck->maxOffset->x) {
-      x = t_chunck->minOffset->x;
       z++;
+    }
+    if (z >= t_chunck->maxOffset->z) {
+      z = t_chunck->minOffset->z;
+      x++;
     }
   }
 
@@ -1123,15 +1152,8 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
 void CrossCraft_World_Deinit() {
   TYRA_LOG("Destroying the world");
-
-  if (level.map.blocks) free(level.map.blocks);
-
-  if (level.map.data) free(level.map.data);
-
-  // if (level.entities.entities) free(level.entities.entities);
-
-  // if (level.tileEntities.entities) free(level.tileEntities.entities);
-
+  if (level.map.blocks) delete[] level.map.blocks;
+  if (level.map.data) delete[] level.map.data;
   TYRA_LOG("World freed");
 }
 

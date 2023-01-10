@@ -12,20 +12,20 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id) {
   this->center->set((maxOffset + minOffset) / 2);
 
   // Used to fix the edge of the chunk. It must contain all blocks;
-  const Vec4 offsetFix = Vec4(0.5F);
-  const Vec4 min = minOffset - offsetFix;
-  const Vec4 max = maxOffset + offsetFix;
+  // const Vec4 offsetFix = Vec4(1.0F);
+  const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;  // + offsetFix;
+  const Vec4 tempMax = maxOffset * DUBLE_BLOCK_SIZE;  // + offsetFix;
 
   u32 count = 8;
   Vec4 _vertices[count] = {
-      Vec4(min) * DUBLE_BLOCK_SIZE,
-      Vec4(max.x, min.y, min.z) * DUBLE_BLOCK_SIZE,
-      Vec4(min.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
-      Vec4(min.x, min.y, max.z) * DUBLE_BLOCK_SIZE,
-      Vec4(max) * DUBLE_BLOCK_SIZE,
-      Vec4(min.x, max.y, max.z) * DUBLE_BLOCK_SIZE,
-      Vec4(max.x, min.y, max.z) * DUBLE_BLOCK_SIZE,
-      Vec4(max.x, max.y, min.z) * DUBLE_BLOCK_SIZE,
+      Vec4(tempMin),
+      Vec4(tempMax.x, tempMin.y, tempMin.z),
+      Vec4(tempMin.x, tempMax.y, tempMin.z),
+      Vec4(tempMin.x, tempMin.y, tempMax.z),
+      Vec4(tempMax),
+      Vec4(tempMin.x, tempMax.y, tempMax.z),
+      Vec4(tempMax.x, tempMin.y, tempMax.z),
+      Vec4(tempMax.x, tempMax.y, tempMin.z),
   };
   this->bbox = new BBox(_vertices, count);
 
@@ -125,6 +125,8 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     delete lightMatrix;
     delete rawMatrix;
     delete baseColor;
+
+    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
   }
 };
 

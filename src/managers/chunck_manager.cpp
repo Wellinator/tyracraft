@@ -31,7 +31,8 @@ void ChunckManager::update(const Plane* frustumPlanes,
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                              BlockManager* t_blockManager) {
   for (u16 i = 0; i < this->chuncks.size(); i++)
-    chuncks[i]->renderer(t_renderer, stapip, t_blockManager);
+    if (chuncks[i]->isVisible())
+      chuncks[i]->renderer(t_renderer, stapip, t_blockManager);
 }
 
 void ChunckManager::generateChunks() {
@@ -61,11 +62,13 @@ Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
 };
 
 Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
-  for (u16 i = 0; i < this->chuncks.size(); i++)
-    if (offset.x >= chuncks[i]->minOffset->x &&
-        offset.x <= chuncks[i]->maxOffset->x &&
+  for (size_t i = 0; i < chuncks.size(); i++)
+    if (chuncks[i]->isVisible() && offset.x >= chuncks[i]->minOffset->x &&
+        offset.x < chuncks[i]->maxOffset->x &&
+        offset.y >= chuncks[i]->minOffset->y &&
+        offset.y < chuncks[i]->maxOffset->y &&
         offset.z >= chuncks[i]->minOffset->z &&
-        offset.z <= chuncks[i]->maxOffset->z) {
+        offset.z < chuncks[i]->maxOffset->z) {
       return chuncks[i];
     }
   return nullptr;

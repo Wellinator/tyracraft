@@ -67,7 +67,19 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
                     TerrainHeightModel* terrainHeight) {
   isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
-    const Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    // Vec4 min, max;
+    // auto tempPositionMatrix = M4x4();
+    // tempPositionMatrix.identity();
+    auto nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+
+    // tempPositionMatrix.translate(nextPlayerPos);
+    // const auto tempPlayerBbox =
+    // getHitBox().getTransformed(tempPositionMatrix);
+    // tempPlayerBbox.getMinMax(&min, &max);
+
+    // if (min.x < MAX_WORLD_POS.x && max.x > MIN_WORLD_POS.x &&
+    //     min.y < MAX_WORLD_POS.y && max.y > MIN_WORLD_POS.y &&
+    //     min.z < MAX_WORLD_POS.z && max.z > MIN_WORLD_POS.z) {
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
           this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
@@ -102,8 +114,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
-  result *=
-      (this->speed * sensibility.length() * FIXED_FRAME_MS);
+  result *= (this->speed * sensibility.length() * FIXED_FRAME_MS);
   return result + *mesh->getPosition();
 }
 
