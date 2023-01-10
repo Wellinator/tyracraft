@@ -36,6 +36,8 @@
 
 * Features for pre-alpha release (v0.1.4):
     ❌ -> Tool (Pickaxe) (WIP);
+    🔲 -> Fix blocks visibility on modify world;
+    🔲 -> Update world options menu;
     ✅ -> Basic ingame menu for block selection;
     ✅ -> Implemented tyra manual render mode;
     ✅ -> BLocks hidden faces culling;
