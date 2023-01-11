@@ -447,38 +447,36 @@ void World::removeBlock(Block* blockToRemove) {
   SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
                 blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
   updateNeighBorsChunksByModdedPosition(blockToRemove->offset);
-  playDestroyBlockSound(blockToRemove->type);
+  // playDestroyBlockSound(blockToRemove->type);
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
-  if (this->targetBlock == nullptr) return;
-
-  Vec4 targetPos = ray.at(this->targetBlock->distance);
+  Vec4 targetPos = ray.at(targetBlock->distance);
   Vec4 blockOffset = Vec4(targetBlock->offset);
 
   // Front
   if (std::round(targetPos.z) ==
-      this->targetBlock->bbox->getFrontFace().axisPosition) {
+      targetBlock->bbox->getFrontFace().axisPosition) {
     blockOffset.z++;
     // Back
   } else if (std::round(targetPos.z) ==
-             this->targetBlock->bbox->getBackFace().axisPosition) {
+             targetBlock->bbox->getBackFace().axisPosition) {
     blockOffset.z--;
     // Right
   } else if (std::round(targetPos.x) ==
-             this->targetBlock->bbox->getRightFace().axisPosition) {
+             targetBlock->bbox->getRightFace().axisPosition) {
     blockOffset.x++;
     // Left
   } else if (std::round(targetPos.x) ==
-             this->targetBlock->bbox->getLeftFace().axisPosition) {
+             targetBlock->bbox->getLeftFace().axisPosition) {
     blockOffset.x--;
     // Up
   } else if (std::round(targetPos.y) ==
-             this->targetBlock->bbox->getTopFace().axisPosition) {
+             targetBlock->bbox->getTopFace().axisPosition) {
     blockOffset.y++;
     // Down
   } else if (std::round(targetPos.y) ==
-             this->targetBlock->bbox->getBottomFace().axisPosition) {
+             targetBlock->bbox->getBottomFace().axisPosition) {
     blockOffset.y--;
   }
 
@@ -517,7 +515,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
                     (u8)blockToPlace);
     }
 
-    this->playPutBlockSound(blockToPlace);
+    // this->playPutBlockSound(blockToPlace);
   }
 
   updateNeighBorsChunksByModdedPosition(blockOffset);
@@ -546,7 +544,7 @@ void World::breakTargetBlock(const float& deltaTime) {
                                   this->blockManager->getBlockBreakingTime() *
                                   100;
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        this->playBreakingBlockSound(this->targetBlock->type);
+        // this->playBreakingBlockSound(this->targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;

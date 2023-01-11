@@ -109,7 +109,8 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     if (clicked.R2) {
       ItemId activeItemType =
           stateGamePlay->player->getSelectedInventoryItemType();
-      if (activeItemType != ItemId::empty) {
+      if (activeItemType != ItemId::empty &&
+          stateGamePlay->world->validTargetBlock()) {
         const Blocks blockid =
             stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
         if (blockid != Blocks::AIR_BLOCK)
