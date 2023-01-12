@@ -29,6 +29,8 @@ class ChunckManager {
   Chunck* getChunckByPosition(const Vec4& position);
   Chunck* getChunckByOffset(const Vec4& offset);
   Chunck* getChunckById(const u16 id);
+  inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
+
   std::vector<Chunck*> getChuncks() { return this->chuncks; };
   std::vector<Chunck*> getVisibleChunks();
   void init();

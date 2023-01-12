@@ -33,7 +33,7 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-enum class ChunkState { Loaded, Clean };
+enum class ChunkState { Loaded, Loading, Clean };
 
 class Chunck {
  public:

@@ -302,8 +302,9 @@ void World::addChunkToLoadAsync(Chunck* t_chunck) {
 
   // Avoid unload and load the same chunk at the same time
   for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
-    if (tempChuncksToUnLoad[i]->id == t_chunck->id)
-      tempChuncksToUnLoad.erase(tempChuncksToUnLoad.begin() + i);
+    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+
+  t_chunck->state = ChunkState::Loading;
 
   tempChuncksToLoad.push_back(t_chunck);
 }

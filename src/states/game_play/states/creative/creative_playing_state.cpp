@@ -193,6 +193,18 @@ void CreativePlayingState::drawDegubInfo() {
       std::to_string(static_cast<int>(g_ticksCounter)));
   this->t_fontManager->printText(
       ticks, FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
+
+  // Draw loaded chunks counter
+  std::string loadedChunks =
+      std::string("Chunks loaded: ")
+          .append(std::to_string(static_cast<int>(
+              stateGamePlay->world->chunckManager->getVisibleChunksCounter())))
+          .append(" / ")
+          .append(
+              std::to_string(DRAW_DISTANCE_IN_CHUNKS * DRAW_DISTANCE_IN_CHUNKS *
+                             DRAW_DISTANCE_IN_CHUNKS));
+  this->t_fontManager->printText(
+      loadedChunks, FontOptions(Vec2(5.0f, 60.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
