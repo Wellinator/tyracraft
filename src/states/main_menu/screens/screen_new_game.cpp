@@ -244,31 +244,34 @@ void ScreenNewGame::handleInput() {
 }
 
 void ScreenNewGame::updateModel() {
-  if (this->selectedOption == ScreenNewGameOptions::FlatWorld)
-    this->model.makeFlat = !this->model.makeFlat;
-  else if (this->selectedOption == ScreenNewGameOptions::EnableTrees)
-    this->model.enableTrees = !this->model.enableTrees;
-  else if (this->selectedOption == ScreenNewGameOptions::EnableWater)
-    this->model.enableWater = !this->model.enableWater;
-  else if (this->selectedOption == ScreenNewGameOptions::EnableCaves)
-    this->model.enableCaves = !this->model.enableCaves;
+  // if (this->selectedOption == ScreenNewGameOptions::FlatWorld)
+  //   this->model.makeFlat = !this->model.makeFlat;
+  // else if (this->selectedOption == ScreenNewGameOptions::EnableTrees)
+  //   this->model.enableTrees = !this->model.enableTrees;
+  // else if (this->selectedOption == ScreenNewGameOptions::EnableWater)
+  //   this->model.enableWater = !this->model.enableWater;
+  // else if (this->selectedOption == ScreenNewGameOptions::EnableCaves)
+  //   this->model.enableCaves = !this->model.enableCaves;
 }
 
 void ScreenNewGame::backToMainMenu() {
   this->context->setScreen(new ScreenMain(this->context));
 }
 
-void ScreenNewGame::createNewWorld() { this->context->loadGame(this->model); }
+void ScreenNewGame::createNewWorld() {
+  this->model.seed = (uint32_t)std::stoi(this->inputSeed);
+  this->context->loadGame(this->model);
+}
 
 void ScreenNewGame::renderSelectedOptions() {
-  if (this->model.makeFlat)
-    this->t_renderer->renderer2D.render(&checkboxFilledFlatWorld);
-  if (this->model.enableTrees)
-    this->t_renderer->renderer2D.render(&checkboxFilledEnableTrees);
-  if (this->model.enableWater)
-    this->t_renderer->renderer2D.render(&checkboxFilledEnableWater);
-  if (this->model.enableCaves)
-    this->t_renderer->renderer2D.render(&checkboxFilledEnableCaves);
+  // if (this->model.makeFlat)
+  //   this->t_renderer->renderer2D.render(&checkboxFilledFlatWorld);
+  // if (this->model.enableTrees)
+  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableTrees);
+  // if (this->model.enableWater)
+  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableWater);
+  // if (this->model.enableCaves)
+  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableCaves);
 
   if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
     this->t_renderer->renderer2D.render(&slotCreateNewWorldActive);

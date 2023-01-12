@@ -145,7 +145,7 @@ class World {
   Vec4 maxWorldPos;
   BBox* rawBlockBbox;
 
-  const uint32_t seed = rand();
+  uint32_t seed;
 
   u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
                           const Vec4* chunkMaxOffset);
@@ -185,9 +185,8 @@ void CrossCraft_World_Deinit();
 
 /**
  * Creates an empty map with a selected world size.
- * @param size Size Constant
  */
-void CrossCraft_World_Create_Map(uint8_t size);
+void CrossCraft_World_Create_Map();
 
 /**
  * This method should ONLY be used by a client in single-player or a server for
@@ -206,14 +205,6 @@ void CrossCraft_World_Spawn();
  * @returns If the world was loaded
  */
 // bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
-
-typedef enum {
-  WORLD_TYPE_ORIGINAL = 0,
-  WORLD_TYPE_FLAT = 1,
-  WORLD_TYPE_ISLAND = 2,
-  WORLD_TYPE_WOODS = 3,
-  WORLD_TYPE_FLOATING = 4
-} WorldType;
 
 /**
  * @brief Generates the world

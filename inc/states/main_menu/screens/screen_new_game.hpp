@@ -62,7 +62,8 @@ class ScreenNewGame : public ScreenBase {
   ScreenNewGameOptions selectedOption = ScreenNewGameOptions::None;
   ScreenNewGameOptions activeOption = ScreenNewGameOptions::CreateNewWorld;
 
-  NewGameOptions model;
+  NewGameOptions model = NewGameOptions();
+  std::string inputSeed = std::to_string(rand());
 
   const float CHECKBOX_WIDTH = 160;
   const float CHECKBOX_HIGHT_OFFSET = 240;

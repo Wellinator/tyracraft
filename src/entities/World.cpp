@@ -13,6 +13,8 @@ using Tyra::Color;
 using Tyra::M4x4;
 
 World::World(const NewGameOptions& options) {
+  seed = options.seed > 0 ? options.seed : rand();
+
   printf("\n\n|-----------SEED---------|");
   printf("\n|           %ld         |\n", seed);
   printf("|------------------------|\n\n");
@@ -48,13 +50,9 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
 
   this->terrain = CrossCraft_World_GetMapPtr();
 
-  CrossCraft_World_Create_Map(WORLD_SIZE_SMALL);
+  CrossCraft_World_Create_Map();
 
-  if (worldOptions.makeFlat) {
-    CrossCraft_World_GenerateMap(WorldType::WORLD_TYPE_FLAT);
-  } else {
-    CrossCraft_World_GenerateMap(WorldType::WORLD_TYPE_ORIGINAL);
-  }
+  CrossCraft_World_GenerateMap(worldOptions.type);
 
   // Define global and local spawn area
   this->worldSpawnArea.set(this->defineSpawnArea());
@@ -413,6 +411,11 @@ u8 World::shouldUpdateTargetBlock() {
 
 const Vec4 World::defineSpawnArea() {
   Vec4 spawPos = this->calcSpawOffset();
+
+  level.map.spawnX = spawPos.x;
+  level.map.spawnY = spawPos.y;
+  level.map.spawnZ = spawPos.z;
+
   return spawPos;
 }
 
@@ -1121,32 +1124,10 @@ void CrossCraft_World_Deinit() {
   TYRA_LOG("World freed");
 }
 
-void CrossCraft_World_Create_Map(uint8_t size) {
-  switch (size) {
-    case WORLD_SIZE_SMALL: {
-      level.map.length = 128;
-      level.map.width = 128;
-      level.map.height = 64;
-      break;
-    }
-    case WORLD_SIZE_HUGE: {
-      level.map.length = 256;
-      level.map.width = 256;
-      level.map.height = 64;
-      break;
-    }
-    case WORLD_SIZE_NORMAL:
-    default: {
-      level.map.length = 192;
-      level.map.width = 192;
-      level.map.height = 64;
-      break;
-    }
-  }
-
-  level.map.spawnX = level.map.length / 2;
-  level.map.spawnY = level.map.height / 2;
-  level.map.spawnZ = level.map.width / 2;
+void CrossCraft_World_Create_Map() {
+  level.map.length = OVERWORLD_H_DISTANCE;
+  level.map.width = OVERWORLD_H_DISTANCE;
+  level.map.height = OVERWORLD_V_DISTANCE;
 
   uint32_t blockCount = level.map.length * level.map.height * level.map.width;
   level.map.blocks = new uint8_t[blockCount];
