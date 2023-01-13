@@ -37,7 +37,7 @@ It's Minecraft for Sony PlayStation 2 built with Tyra Engine!
 
 ### Prerequisites
 
-- Tyra environment - [Tyra](https://github.com/ps2dev/ps2dev)
+- Tyra environment - [Tyra](https://github.com/H4570/tyra)
 - PS2 Emulator [PCSX2](https://pcsx2.net/) or [PS2Link](https://github.com/ps2dev/ps2link) for a real PS2
 
 ### Building
