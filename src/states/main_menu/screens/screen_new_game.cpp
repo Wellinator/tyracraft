@@ -3,255 +3,249 @@
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
+  this->inputSeed = getSeed();
   this->init();
 }
 
 ScreenNewGame::~ScreenNewGame() {
-  this->t_renderer->getTextureRepository().free(
-      checkboxUnfilledWhiteBorderTexture->id);
-  this->t_renderer->getTextureRepository().free(
-      checkboxFilledWhiteBorderTexture->id);
-  this->t_renderer->getTextureRepository().freeBySprite(backgroundNewGame);
-  this->t_renderer->getTextureRepository().freeBySprite(textFlatWorld);
-  this->t_renderer->getTextureRepository().freeBySprite(textEnableTrees);
-  this->t_renderer->getTextureRepository().freeBySprite(textEnableWater);
-  this->t_renderer->getTextureRepository().freeBySprite(textEnableCaves);
-  this->t_renderer->getTextureRepository().freeBySprite(textCreateNewWorld);
-  this->t_renderer->getTextureRepository().freeBySprite(slotCreateNewWorld);
-  this->t_renderer->getTextureRepository().freeBySprite(textBack);
-  this->t_renderer->getTextureRepository().freeBySprite(textSelect);
-  this->t_renderer->getTextureRepository().freeBySprite(btnTriangle);
-  this->t_renderer->getTextureRepository().freeBySprite(btnCross);
-  this->t_renderer->getTextureRepository().freeBySprite(
-      slotCreateNewWorldActive);
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+
+  textureRepo->free(slotTexture->id);
+  textureRepo->free(slotActiveTexture->id);
+
+  textureRepo->freeBySprite(backgroundNewGame);
+  textureRepo->freeBySprite(slotSeedInput);
+
+  textureRepo->freeBySprite(btnTriangle);
+  textureRepo->freeBySprite(btnCross);
+  textureRepo->freeBySprite(btnCircle);
 }
 
 void ScreenNewGame::update() {
+  fpsCounter++;
   this->handleInput();
-  this->hightLightActiveOption();
 }
 
 void ScreenNewGame::render() {
   this->t_renderer->renderer2D.render(&backgroundNewGame);
-  this->t_renderer->renderer2D.render(&checkboxUnfilledFlatWorld);
-  this->t_renderer->renderer2D.render(&checkboxUnfilledEnableTrees);
-  this->t_renderer->renderer2D.render(&checkboxUnfilledEnableWater);
-  this->t_renderer->renderer2D.render(&checkboxUnfilledEnableCaves);
   this->renderSelectedOptions();
 
-  this->t_renderer->renderer2D.render(&textFlatWorld);
-  this->t_renderer->renderer2D.render(&textEnableTrees);
-  this->t_renderer->renderer2D.render(&textEnableWater);
-  this->t_renderer->renderer2D.render(&textEnableCaves);
-  this->t_renderer->renderer2D.render(&textCreateNewWorld);
+  if (isEditingSeed) {
+    FontOptions options;
+    options.position = Vec2(175, 232);
+    options.color = Color(168, 160, 50);
 
-  this->t_renderer->renderer2D.render(&textBack);
-  this->t_renderer->renderer2D.render(&textSelect);
+    if (fpsCounter < 128) {
+      this->context->t_fontManager->printText(this->tempSeed.c_str(), options);
+    } else {
+      this->context->t_fontManager->printText(this->tempSeedMask.c_str(),
+                                              options);
+    }
+
+  } else {
+    this->context->t_fontManager->printText(
+        std::string("Seed: ").append(this->inputSeed).c_str(), 140, 232);
+  }
+
+  switch (this->model.type) {
+    case WorldType::WORLD_TYPE_ORIGINAL:
+      this->context->t_fontManager->printText("World Type: Original", 130, 277);
+      break;
+    case WorldType::WORLD_TYPE_FLAT:
+      this->context->t_fontManager->printText("World Type: Flat", 150, 277);
+      break;
+    case WorldType::WORLD_TYPE_ISLAND:
+      this->context->t_fontManager->printText("World Type: Island", 135, 277);
+      break;
+    case WorldType::WORLD_TYPE_WOODS:
+      this->context->t_fontManager->printText("World Type: Woods", 140, 277);
+      break;
+    case WorldType::WORLD_TYPE_FLOATING:
+      this->context->t_fontManager->printText("World Type: Floating", 130, 277);
+      break;
+
+    default:
+      break;
+  }
+
+  this->context->t_fontManager->printText("Create New World", 145, 322);
+
   this->t_renderer->renderer2D.render(&btnTriangle);
   this->t_renderer->renderer2D.render(&btnCross);
+
+  if (isEditingSeed) {
+    this->context->t_fontManager->printText("Confirm", 35, 407);
+    this->context->t_fontManager->printText("Cancel", 160, 407);
+  } else {
+    if (activeOption == ScreenNewGameOptions::Seed) {
+      this->context->t_fontManager->printText("Edit", 35, 407);
+      this->context->t_fontManager->printText("Random", 280, 407);
+      this->t_renderer->renderer2D.render(&btnCircle);
+    } else {
+      this->context->t_fontManager->printText("Select", 35, 407);
+    }
+    this->context->t_fontManager->printText("Back", 160, 407);
+  }
 }
 
 void ScreenNewGame::init() {
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+
+  slotTexture = textureRepo->add(FileUtils::fromCwd("assets/menu/slot.png"));
+  slotActiveTexture =
+      textureRepo->add(FileUtils::fromCwd("assets/menu/slot_active.png"));
+
   backgroundNewGame.mode = Tyra::MODE_STRETCH;
   backgroundNewGame.size.set(512, 512);
   backgroundNewGame.position.set(0, 0);
 
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/background_new_game.png"))
+  textureRepo->add(FileUtils::fromCwd("assets/menu/background_new_game.png"))
       ->addLink(backgroundNewGame.id);
 
-  // Checkbox
-  {
-    checkboxUnfilledFlatWorld.mode = Tyra::MODE_STRETCH;
-    checkboxUnfilledFlatWorld.size.set(16, 16);
-    checkboxUnfilledFlatWorld.position.set(132, 205);
+  slotSeed.mode = Tyra::MODE_STRETCH;
+  slotSeed.size.set(256, 32);
+  slotSeed.position.set(125, 230);
+  slotTexture->addLink(slotSeed.id);
 
-    checkboxUnfilledEnableTrees.mode = Tyra::MODE_STRETCH;
-    checkboxUnfilledEnableTrees.size.set(16, 16);
-    checkboxUnfilledEnableTrees.position.set(132, 205 + 30);
+  slotSeedActive.mode = Tyra::MODE_STRETCH;
+  slotSeedActive.size.set(256, 32);
+  slotSeedActive.position.set(125, 230);
+  slotActiveTexture->addLink(slotSeedActive.id);
 
-    checkboxUnfilledEnableWater.mode = Tyra::MODE_STRETCH;
-    checkboxUnfilledEnableWater.size.set(16, 16);
-    checkboxUnfilledEnableWater.position.set(132, 205 + 60);
+  slotSeedInput.mode = Tyra::MODE_STRETCH;
+  slotSeedInput.size.set(256, 32);
+  slotSeedInput.position.set(125, 230);
+  textureRepo->add(FileUtils::fromCwd("assets/menu/slot_input.png"))
+      ->addLink(slotSeedInput.id);
 
-    checkboxUnfilledEnableCaves.mode = Tyra::MODE_STRETCH;
-    checkboxUnfilledEnableCaves.size.set(16, 16);
-    checkboxUnfilledEnableCaves.position.set(132, 205 + 90);
+  slotWorldType.mode = Tyra::MODE_STRETCH;
+  slotWorldType.size.set(256, 32);
+  slotWorldType.position.set(125, 275);
+  slotTexture->addLink(slotWorldType.id);
 
-    checkboxUnfilledWhiteBorderTexture =
-        this->t_renderer->getTextureRepository().add(FileUtils::fromCwd(
-            "assets/textures/ui/checkbox_unfilled_white_border.png"));
+  slotWorldTypeActive.mode = Tyra::MODE_STRETCH;
+  slotWorldTypeActive.size.set(256, 32);
+  slotWorldTypeActive.position.set(125, 275);
+  slotActiveTexture->addLink(slotWorldTypeActive.id);
 
-    checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledFlatWorld.id);
-    checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableTrees.id);
-    checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableWater.id);
-    checkboxUnfilledWhiteBorderTexture->addLink(checkboxUnfilledEnableCaves.id);
+  slotCreateNewWorld.mode = Tyra::MODE_STRETCH;
+  slotCreateNewWorld.size.set(256, 32);
+  slotCreateNewWorld.position.set(125, 320);
+  slotTexture->addLink(slotCreateNewWorld.id);
 
-    checkboxFilledFlatWorld.mode = Tyra::MODE_STRETCH;
-    checkboxFilledFlatWorld.size.set(16, 16);
-    checkboxFilledFlatWorld.position.set(132, 205);
+  slotCreateNewWorldActive.mode = Tyra::MODE_STRETCH;
+  slotCreateNewWorldActive.size.set(256, 32);
+  slotCreateNewWorldActive.position.set(125, 320);
+  slotActiveTexture->addLink(slotCreateNewWorldActive.id);
 
-    checkboxFilledEnableTrees.mode = Tyra::MODE_STRETCH;
-    checkboxFilledEnableTrees.size.set(16, 16);
-    checkboxFilledEnableTrees.position.set(132, 205 + 30);
+  btnCross.mode = Tyra::MODE_STRETCH;
+  btnCross.size.set(25, 25);
+  btnCross.position.set(15,
+                        this->t_renderer->core.getSettings().getHeight() - 40);
 
-    checkboxFilledEnableWater.mode = Tyra::MODE_STRETCH;
-    checkboxFilledEnableWater.size.set(16, 16);
-    checkboxFilledEnableWater.position.set(132, 205 + 60);
+  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+      ->addLink(btnCross.id);
 
-    checkboxFilledEnableCaves.mode = Tyra::MODE_STRETCH;
-    checkboxFilledEnableCaves.size.set(16, 16);
-    checkboxFilledEnableCaves.position.set(132, 205 + 90);
+  btnTriangle.mode = Tyra::MODE_STRETCH;
+  btnTriangle.size.set(25, 25);
+  btnTriangle.position.set(
+      140, this->t_renderer->core.getSettings().getHeight() - 40);
 
-    checkboxFilledWhiteBorderTexture =
-        this->t_renderer->getTextureRepository().add(FileUtils::fromCwd(
-            "assets/textures/ui/checkbox_filled_white_border.png"));
+  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
+      ->addLink(btnTriangle.id);
 
-    checkboxFilledWhiteBorderTexture->addLink(checkboxFilledFlatWorld.id);
-    checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableTrees.id);
-    checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableWater.id);
-    checkboxFilledWhiteBorderTexture->addLink(checkboxFilledEnableCaves.id);
-  }
+  btnCircle.mode = Tyra::MODE_STRETCH;
+  btnCircle.size.set(25, 25);
+  btnCircle.position.set(260,
+                         this->t_renderer->core.getSettings().getHeight() - 40);
 
-  // Checkbox text options
-  {
-    textFlatWorld.mode = Tyra::MODE_STRETCH;
-    textFlatWorld.size.set(128, 16);
-    textFlatWorld.position.set(132 + 20, 205);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_flat_world.png"))
-        ->addLink(textFlatWorld.id);
-
-    textEnableTrees.mode = Tyra::MODE_STRETCH;
-    textEnableTrees.size.set(128, 16);
-    textEnableTrees.position.set(132 + 20, 205 + 30);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_enable_trees.png"))
-        ->addLink(textEnableTrees.id);
-
-    textEnableWater.mode = Tyra::MODE_STRETCH;
-    textEnableWater.size.set(256, 32);
-    textEnableWater.position.set(132 + 20, 205 + 60);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_enable_water.png"))
-        ->addLink(textEnableWater.id);
-
-    textEnableCaves.mode = Tyra::MODE_STRETCH;
-    textEnableCaves.size.set(256, 32);
-    textEnableCaves.position.set(132 + 20, 205 + 90);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_enable_caves.png"))
-        ->addLink(textEnableCaves.id);
-  }
-
-  textCreateNewWorld.mode = Tyra::MODE_STRETCH;
-  textCreateNewWorld.size.set(256, 34);
-  textCreateNewWorld.position.set(120, 327);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_create_new_world.png"))
-      ->addLink(textCreateNewWorld.id);
-
-  // Slot
-  {
-    slotCreateNewWorld.mode = Tyra::MODE_STRETCH;
-    slotCreateNewWorld.size.set(256, 32);
-    slotCreateNewWorld.position.set(125, 320);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/slot.png"))
-        ->addLink(slotCreateNewWorld.id);
-
-    slotCreateNewWorldActive.mode = Tyra::MODE_STRETCH;
-    slotCreateNewWorldActive.size.set(256, 32);
-    slotCreateNewWorldActive.position.set(125, 320);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/slot_active.png"))
-        ->addLink(slotCreateNewWorldActive.id);
-  }
-
-  // Buttons
-  {
-    btnCross.mode = Tyra::MODE_STRETCH;
-    btnCross.size.set(25, 25);
-    btnCross.position.set(
-        15, this->t_renderer->core.getSettings().getHeight() - 40);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
-        ->addLink(btnCross.id);
-
-    textSelect.mode = Tyra::MODE_STRETCH;
-    textSelect.size.set(64, 15);
-    textSelect.position.set(
-        15 + 30, this->t_renderer->core.getSettings().getHeight() - 36);
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_select.png"))
-        ->addLink(textSelect.id);
-
-    btnTriangle.mode = Tyra::MODE_STRETCH;
-    btnTriangle.size.set(25, 25);
-    btnTriangle.position.set(
-        124, this->t_renderer->core.getSettings().getHeight() - 40);
-
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
-        ->addLink(btnTriangle.id);
-
-    textBack.mode = Tyra::MODE_STRETCH;
-    textBack.size.set(64, 15);
-    textBack.position.set(
-        124 + 30, this->t_renderer->core.getSettings().getHeight() - 36);
-    this->t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd("assets/menu/text_back.png"))
-        ->addLink(textBack.id);
-  }
+  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_circle.png"))
+      ->addLink(btnCircle.id);
 }
 
 void ScreenNewGame::handleInput() {
-  // Change active option
-  {
-    if (this->context->context->t_engine->pad.getClicked().DpadDown) {
-      int nextOption = (int)this->activeOption + 1;
-      if (nextOption > 4)
-        this->activeOption = ScreenNewGameOptions::FlatWorld;
-      else
-        this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
-    } else if (this->context->context->t_engine->pad.getClicked().DpadUp) {
-      int nextOption = (int)this->activeOption - 1;
-      if (nextOption < 0)
-        this->activeOption = ScreenNewGameOptions::CreateNewWorld;
-      else
-        this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
-    }
+  if (isEditingSeed) {
+    handleSeedInput();
+  } else {
+    handleOptionsSelection();
+  }
+}
+
+void ScreenNewGame::handleOptionsSelection() {
+  auto clickedButtons = this->context->context->t_engine->pad.getClicked();
+
+  if (clickedButtons.DpadDown) {
+    int nextOption = (int)this->activeOption + 1;
+    if (nextOption > 2)
+      this->activeOption = ScreenNewGameOptions::Seed;
+    else
+      this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
+  } else if (clickedButtons.DpadUp) {
+    int nextOption = (int)this->activeOption - 1;
+    if (nextOption < 0)
+      this->activeOption = ScreenNewGameOptions::CreateNewWorld;
+    else
+      this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
   }
 
-  if (this->context->context->t_engine->pad.getClicked().Triangle) {
+  if (clickedButtons.Triangle) {
     this->context->playClickSound();
     this->backToMainMenu();
-  } else if (this->context->context->t_engine->pad.getClicked().Cross) {
+  } else if (clickedButtons.Cross) {
     this->context->playClickSound();
     this->selectedOption = this->activeOption;
     this->updateModel();
     if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld)
       return this->createNewWorld();
+    else if (this->selectedOption == ScreenNewGameOptions::Seed)
+      startEditingSeed();
+  } else if (clickedButtons.Circle &&
+             activeOption == ScreenNewGameOptions::Seed) {
+    inputSeed = getSeed();
+  }
+}
+
+void ScreenNewGame::handleSeedInput() {
+  auto clickedButtons = this->context->context->t_engine->pad.getClicked();
+  auto validChars = this->context->t_fontManager->NumericValidChars;
+  std::size_t found = validChars.find(tempSeed[editingIndex]);
+  u8 currentCharIndex = found != std::string::npos ? found : 0;
+
+  if (clickedButtons.DpadDown) {
+    u16 newCharIndex = currentCharIndex - 1 < 0 ? validChars.length() - 1
+                                                : currentCharIndex - 1;
+
+    tempSeed[editingIndex] = validChars[newCharIndex];
+  } else if (clickedButtons.DpadUp) {
+    u16 newCharIndex =
+        currentCharIndex + 1 >= validChars.length() ? 0 : currentCharIndex + 1;
+
+    tempSeed[editingIndex] = validChars[newCharIndex];
+  } else if (clickedButtons.DpadLeft) {
+    s8 prev = editingIndex - 1;
+    editingIndex = prev < 0 ? (u8)(tempSeed.length() - 1) : (u8)prev;
+  } else if (clickedButtons.DpadRight) {
+    u8 next = editingIndex + 1;
+    editingIndex = next > tempSeed.length() - 1 ? 0 : (u8)next;
+  }
+
+  updateTempSeedMask();
+
+  if (clickedButtons.Triangle) {
+    cancelEditingSeed();
+  } else if (clickedButtons.Cross) {
+    saveSeed();
   }
 }
 
 void ScreenNewGame::updateModel() {
-  // if (this->selectedOption == ScreenNewGameOptions::FlatWorld)
-  //   this->model.makeFlat = !this->model.makeFlat;
-  // else if (this->selectedOption == ScreenNewGameOptions::EnableTrees)
-  //   this->model.enableTrees = !this->model.enableTrees;
-  // else if (this->selectedOption == ScreenNewGameOptions::EnableWater)
-  //   this->model.enableWater = !this->model.enableWater;
-  // else if (this->selectedOption == ScreenNewGameOptions::EnableCaves)
-  //   this->model.enableCaves = !this->model.enableCaves;
+  if (this->activeOption == ScreenNewGameOptions::WorldType) {
+    int nextOption = (int)this->model.type + 1;
+    if (nextOption > 4)
+      this->model.type = WorldType::WORLD_TYPE_ORIGINAL;
+    else
+      this->model.type = static_cast<WorldType>(nextOption);
+  }
 }
 
 void ScreenNewGame::backToMainMenu() {
@@ -259,47 +253,54 @@ void ScreenNewGame::backToMainMenu() {
 }
 
 void ScreenNewGame::createNewWorld() {
-  this->model.seed = (uint32_t)std::stoi(this->inputSeed);
-  this->context->loadGame(this->model);
+  model.seed = std::stoull(inputSeed);
+  context->loadGame(model);
 }
 
 void ScreenNewGame::renderSelectedOptions() {
-  // if (this->model.makeFlat)
-  //   this->t_renderer->renderer2D.render(&checkboxFilledFlatWorld);
-  // if (this->model.enableTrees)
-  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableTrees);
-  // if (this->model.enableWater)
-  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableWater);
-  // if (this->model.enableCaves)
-  //   this->t_renderer->renderer2D.render(&checkboxFilledEnableCaves);
+  isEditingSeed ? this->t_renderer->renderer2D.render(&slotSeedInput)
+                : this->t_renderer->renderer2D.render(&slotSeed);
 
-  if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
+  this->t_renderer->renderer2D.render(&slotCreateNewWorld);
+  this->t_renderer->renderer2D.render(&slotWorldType);
+
+  if (this->activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
+    this->t_renderer->renderer2D.render(&slotSeedActive);
+  else if (this->activeOption == ScreenNewGameOptions::WorldType)
+    this->t_renderer->renderer2D.render(&slotWorldTypeActive);
+  else if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
     this->t_renderer->renderer2D.render(&slotCreateNewWorldActive);
-  else
-    this->t_renderer->renderer2D.render(&slotCreateNewWorld);
 }
 
-void ScreenNewGame::hightLightActiveOption() {
-  // Reset sprite colors
-  {
-    this->textFlatWorld.color = Tyra::Color(128, 128, 128);
-    this->textEnableTrees.color = Tyra::Color(128, 128, 128);
-    this->textEnableWater.color = Tyra::Color(128, 128, 128);
-    this->textEnableCaves.color = Tyra::Color(128, 128, 128);
-    this->textCreateNewWorld.color = Tyra::Color(128, 128, 128);
+void ScreenNewGame::saveSeed() {
+  inputSeed = std::string(tempSeed.c_str());
+  isEditingSeed = false;
+}
+
+void ScreenNewGame::cancelEditingSeed() {
+  tempSeed = "";
+  isEditingSeed = false;
+}
+
+void ScreenNewGame::startEditingSeed() {
+  tempSeed = std::string(inputSeed.c_str());
+  editingIndex = tempSeed.length() - 1;
+  updateTempSeedMask();
+  isEditingSeed = true;
+}
+
+void ScreenNewGame::updateTempSeedMask() {
+  tempSeedMask = std::string(tempSeed.c_str());
+  tempSeedMask[editingIndex] = '_';
+}
+
+std::string ScreenNewGame::getSeed() {
+  static uint32_t Z;
+  if (Z & 1) {
+    Z = (Z >> 1);
+  } else {
+    Z = (Z >> 1) ^ 0x7FFFF159;
   }
 
-  Sprite* t_selectedOptionSprite = NULL;
-  if (this->activeOption == ScreenNewGameOptions::FlatWorld)
-    t_selectedOptionSprite = &this->textFlatWorld;
-  else if (this->activeOption == ScreenNewGameOptions::EnableTrees)
-    t_selectedOptionSprite = &this->textEnableTrees;
-  else if (this->activeOption == ScreenNewGameOptions::EnableWater)
-    t_selectedOptionSprite = &this->textEnableWater;
-  else if (this->activeOption == ScreenNewGameOptions::EnableCaves)
-    t_selectedOptionSprite = &this->textEnableCaves;
-  else if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
-    t_selectedOptionSprite = &this->textCreateNewWorld;
-
-  t_selectedOptionSprite->color = Tyra::Color(230, 230, 0);
+  return std::to_string(Z);
 }

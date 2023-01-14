@@ -2,22 +2,19 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/state_main_menu.hpp"
 #include "models/new_game_model.hpp"
+#include "managers/font/font_options.hpp"
 #include <tamtypes.h>
 #include <tyra>
+#include <string>
 
+using Tyra::Color;
 using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
+using Tyra::TextureRepository;
 
-enum class ScreenNewGameOptions {
-  FlatWorld,
-  EnableTrees,
-  EnableWater,
-  EnableCaves,
-  CreateNewWorld,
-  None
-};
+enum class ScreenNewGameOptions { Seed, WorldType, CreateNewWorld, None };
 
 class ScreenNewGame : public ScreenBase {
  public:
@@ -33,46 +30,46 @@ class ScreenNewGame : public ScreenBase {
 
   Sprite backgroundNewGame;
 
-  Sprite checkboxUnfilledFlatWorld;
-  Sprite checkboxUnfilledEnableTrees;
-  Sprite checkboxUnfilledEnableWater;
-  Sprite checkboxUnfilledEnableCaves;
-  Sprite checkboxFilledFlatWorld;
-  Sprite checkboxFilledEnableTrees;
-  Sprite checkboxFilledEnableWater;
-  Sprite checkboxFilledEnableCaves;
+  Sprite slotSeed;
+  Sprite slotSeedActive;
+  Sprite slotSeedInput;
 
-  Sprite textFlatWorld;
-  Sprite textEnableTrees;
-  Sprite textEnableWater;
-  Sprite textEnableCaves;
-  Sprite textCreateNewWorld;
+  Sprite slotWorldType;
+  Sprite slotWorldTypeActive;
 
   Sprite slotCreateNewWorld;
   Sprite slotCreateNewWorldActive;
 
-  Sprite textBack;
-  Sprite textSelect;
   Sprite btnTriangle;
   Sprite btnCross;
+  Sprite btnCircle;
 
-  Texture* checkboxUnfilledWhiteBorderTexture;
-  Texture* checkboxFilledWhiteBorderTexture;
+  Texture* slotTexture;
+  Texture* slotActiveTexture;
 
   ScreenNewGameOptions selectedOption = ScreenNewGameOptions::None;
   ScreenNewGameOptions activeOption = ScreenNewGameOptions::CreateNewWorld;
 
   NewGameOptions model = NewGameOptions();
-  std::string inputSeed = std::to_string(rand());
 
-  const float CHECKBOX_WIDTH = 160;
-  const float CHECKBOX_HIGHT_OFFSET = 240;
-  const float CHECKBOX_HIGHT_OPTION_OFFSET = 40;
+  u8 fpsCounter = 0;
+
+  std::string inputSeed;
+  std::string tempSeed;
+  std::string tempSeedMask;
+  u8 isEditingSeed = false;
+  u8 editingIndex = 0;
 
   void handleInput();
+  void handleOptionsSelection();
+  void handleSeedInput();
+  void updateTempSeedMask();
   void backToMainMenu();
   void createNewWorld();
-  void hightLightActiveOption();
   void updateModel();
   void renderSelectedOptions();
+  void saveSeed();
+  void startEditingSeed();
+  void cancelEditingSeed();
+  std::string getSeed();
 };

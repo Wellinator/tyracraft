@@ -14,6 +14,12 @@ using Tyra::Vec2;
 
 class FontManager {
  public:
+  const std::string AlphanumericValidChars = std::string(
+      "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+  const std::string AlphaValidChars =
+      std::string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+  const std::string NumericValidChars = std::string("1234567890");
+
   FontManager(Renderer* renderer);
   ~FontManager();
 

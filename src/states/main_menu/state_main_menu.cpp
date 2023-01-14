@@ -159,6 +159,6 @@ const std::string StateMainMenu::getRandonMenuSongName() {
 }
 
 void StateMainMenu::setScreen(ScreenBase* screen) {
-  if (this->screen != nullptr) delete this->screen;
+  if (this->screen) delete this->screen;
   this->screen = screen;
 }

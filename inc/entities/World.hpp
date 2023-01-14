@@ -72,7 +72,7 @@ class World {
   void buildInitialPosition();
 
   // From terrain manager
-  inline const uint32_t getSeed() { return seed; };
+  const uint32_t getSeed() { return seed; };
 
   Block* targetBlock = nullptr;
 

@@ -13,7 +13,7 @@ using Tyra::Color;
 using Tyra::M4x4;
 
 World::World(const NewGameOptions& options) {
-  seed = options.seed > 0 ? options.seed : rand();
+  seed = options.seed;
 
   printf("\n\n|-----------SEED---------|");
   printf("\n|           %ld         |\n", seed);
