@@ -29,7 +29,7 @@
 
 # TyraCraft (Alpha version)
 
-It's an Minecraft for Play Station 2 built with Tyra Engine!
+It's Minecraft for the Play Station 2 built with Tyra Engine!
 
 ## Getting Started
 
