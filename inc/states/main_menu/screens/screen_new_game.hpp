@@ -12,6 +12,7 @@ using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
+using Tyra::Math;
 using Tyra::TextureRepository;
 
 enum class ScreenNewGameOptions { Seed, WorldType, CreateNewWorld, None };

@@ -295,12 +295,19 @@ void ScreenNewGame::updateTempSeedMask() {
 }
 
 std::string ScreenNewGame::getSeed() {
-  static uint32_t Z;
-  if (Z & 1) {
-    Z = (Z >> 1);
-  } else {
-    Z = (Z >> 1) ^ 0x7FFFF159;
-  }
+  std::string result = "";
 
-  return std::to_string(Z);
+  // Rnadom over max int number 4294967295
+  result.append(std::to_string(Math::randomi(0, 4)));
+  result.append(std::to_string(Math::randomi(0, 2)));
+  result.append(std::to_string(Math::randomi(0, 9)));
+  result.append(std::to_string(Math::randomi(0, 4)));
+  result.append(std::to_string(Math::randomi(0, 9)));
+  result.append(std::to_string(Math::randomi(0, 6)));
+  result.append(std::to_string(Math::randomi(0, 7)));
+  result.append(std::to_string(Math::randomi(0, 2)));
+  result.append(std::to_string(Math::randomi(0, 9)));
+  result.append(std::to_string(Math::randomi(0, 5)));
+
+  return result;
 }
