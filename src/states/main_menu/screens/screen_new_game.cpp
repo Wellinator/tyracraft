@@ -91,15 +91,15 @@ void ScreenNewGame::render() {
 void ScreenNewGame::init() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
 
-  slotTexture = textureRepo->add(FileUtils::fromCwd("assets/menu/slot.png"));
+  slotTexture = textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
   slotActiveTexture =
-      textureRepo->add(FileUtils::fromCwd("assets/menu/slot_active.png"));
+      textureRepo->add(FileUtils::fromCwd("textures/gui/slot_active.png"));
 
   backgroundNewGame.mode = Tyra::MODE_STRETCH;
   backgroundNewGame.size.set(512, 512);
   backgroundNewGame.position.set(0, 0);
 
-  textureRepo->add(FileUtils::fromCwd("assets/menu/background_new_game.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/menu/background_new_game.png"))
       ->addLink(backgroundNewGame.id);
 
   slotSeed.mode = Tyra::MODE_STRETCH;
@@ -115,7 +115,7 @@ void ScreenNewGame::init() {
   slotSeedInput.mode = Tyra::MODE_STRETCH;
   slotSeedInput.size.set(256, 32);
   slotSeedInput.position.set(125, 230);
-  textureRepo->add(FileUtils::fromCwd("assets/menu/slot_input.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/slot_input.png"))
       ->addLink(slotSeedInput.id);
 
   slotWorldType.mode = Tyra::MODE_STRETCH;
@@ -143,7 +143,7 @@ void ScreenNewGame::init() {
   btnCross.position.set(15,
                         this->t_renderer->core.getSettings().getHeight() - 40);
 
-  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
@@ -151,7 +151,7 @@ void ScreenNewGame::init() {
   btnTriangle.position.set(
       140, this->t_renderer->core.getSettings().getHeight() - 40);
 
-  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
 
   btnCircle.mode = Tyra::MODE_STRETCH;
@@ -159,7 +159,7 @@ void ScreenNewGame::init() {
   btnCircle.position.set(260,
                          this->t_renderer->core.getSettings().getHeight() - 40);
 
-  textureRepo->add(FileUtils::fromCwd("assets/textures/ui/btn_circle.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_circle.png"))
       ->addLink(btnCircle.id);
 }
 
@@ -313,7 +313,7 @@ std::string ScreenNewGame::getSeed() {
 }
 
 void ScreenNewGame::getAvailableTexturePacks() {
-  char* texturePackPath = "assets/texture_packs/default/info.json";
+  char* texturePackPath = "textures/texture_packs/default/info.json";
 
   std::ifstream info(FileUtils::fromCwd(texturePackPath));
   nlohmann::json data = nlohmann::json::parse(info);

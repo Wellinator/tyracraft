@@ -20,7 +20,7 @@ void StateLoadingGame::init() {
   this->BASE_HEIGHT = height - 120;
 
   // Background
-  std::string backgroundTex = FileUtils::fromCwd("loading/background.png");
+  std::string backgroundTex = FileUtils::fromCwd("textures/gui/loading/background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -29,7 +29,7 @@ void StateLoadingGame::init() {
       ->addLink(background->id);
 
   // State desc
-  std::string stateLoadingText = FileUtils::fromCwd("loading/loading.png");
+  std::string stateLoadingText = FileUtils::fromCwd("textures/gui/loading/loading.png");
   loadingStateText = new Sprite;
   loadingStateText->mode = Tyra::MODE_STRETCH;
   loadingStateText->size.set(256, 16);
@@ -40,7 +40,7 @@ void StateLoadingGame::init() {
 
   // Loading slot
   std::string loadingSlotTex =
-      FileUtils::fromCwd("loading/empty_loading_bar.png");
+      FileUtils::fromCwd("textures/gui/loading/empty_loading_bar.png");
   loadingSlot = new Sprite;
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
@@ -49,7 +49,7 @@ void StateLoadingGame::init() {
       ->addLink(loadingSlot->id);
 
   // Loading bar
-  std::string loadingprogressTex = FileUtils::fromCwd("loading/load.png");
+  std::string loadingprogressTex = FileUtils::fromCwd("textures/gui/loading/load.png");
   loadingprogress = new Sprite;
   loadingprogress->mode = Tyra::MODE_STRETCH;
   loadingprogress->size.set(this->_percent / 100 * 253, 9);

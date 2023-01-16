@@ -18,7 +18,7 @@ void StateGameMenu::init() {
   overlay.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/overlay.png"))
+      .add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
       ->addLink(overlay.id);
 
   // Load slots
@@ -30,7 +30,7 @@ void StateGameMenu::init() {
   raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 40);
 
   this->textureRawSlot = this->t_renderer->getTextureRepository().add(
-      FileUtils::fromCwd("assets/game_menu/slot.png"));
+      FileUtils::fromCwd("textures/gui/slot.png"));
 
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
@@ -40,7 +40,7 @@ void StateGameMenu::init() {
   active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/slot_active.png"))
+      .add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
 
   // Texts
@@ -49,7 +49,7 @@ void StateGameMenu::init() {
   textGameMenu.position.set(halfWidth - 64, halfHeight - 100);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/text_game_menu.png"))
+      .add(FileUtils::fromCwd("textures/gui/text_game_menu.png"))
       ->addLink(textGameMenu.id);
 
   textBackToGame.mode = Tyra::MODE_STRETCH;
@@ -57,7 +57,7 @@ void StateGameMenu::init() {
   textBackToGame.position.set(halfWidth - 64, 240 + 9);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/text_back_to_game.png"))
+      .add(FileUtils::fromCwd("textures/gui/text_back_to_game.png"))
       ->addLink(textBackToGame.id);
 
   textQuitToTitle.mode = Tyra::MODE_STRETCH;
@@ -65,7 +65,7 @@ void StateGameMenu::init() {
   textQuitToTitle.position.set(halfWidth - 64, 240 + 49);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/text_quit_to_title.png"))
+      .add(FileUtils::fromCwd("textures/gui/text_quit_to_title.png"))
       ->addLink(textQuitToTitle.id);
 
   // Buttons
@@ -75,7 +75,7 @@ void StateGameMenu::init() {
                         this->t_renderer->core.getSettings().getHeight() - 40);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
 
   textSelect.mode = Tyra::MODE_STRETCH;
@@ -83,7 +83,7 @@ void StateGameMenu::init() {
   textSelect.position.set(
       15 + 30, this->t_renderer->core.getSettings().getHeight() - 36);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/game_menu/text_select.png"))
+      .add(FileUtils::fromCwd("textures/gui/text_select.png"))
       ->addLink(textSelect.id);
 }
 

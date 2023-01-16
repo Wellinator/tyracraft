@@ -14,8 +14,8 @@ void StateSplashScreen::init() {
   const float width = 512;
   const float height = 512;
 
-  std::string tyracraftSplash = FileUtils::fromCwd("splash/tyracraft.png");
-  std::string tyraSplash = FileUtils::fromCwd("splash/tyra.png");
+  std::string tyracraftSplash = FileUtils::fromCwd("textures/gui/splash/tyracraft.png");
+  std::string tyraSplash = FileUtils::fromCwd("textures/gui/splash/tyra.png");
 
   tyracraft = new Sprite;
   tyracraft->mode = Tyra::MODE_STRETCH;

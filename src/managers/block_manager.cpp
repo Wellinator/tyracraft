@@ -39,7 +39,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
 
 void BlockManager::loadBlocksTextures(Renderer* t_renderer) {
   this->blocksTexAtlas = t_renderer->core.texture.repository.add(
-      FileUtils::fromCwd("assets/textures/block/texture_atlas.png"));
+      FileUtils::fromCwd("textures/block/texture_atlas.png"));
 }
 
 void BlockManager::registerBlockSoundsEffects() {

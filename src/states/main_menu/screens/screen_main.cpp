@@ -80,13 +80,13 @@ void ScreenMain::init() {
 
   // TODO: Refactor to use the same texture, use texture link
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/slot.png"))
+      .add(FileUtils::fromCwd("textures/gui/slot.png"))
       ->addLink(raw_slot[0].id);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/slot.png"))
+      .add(FileUtils::fromCwd("textures/gui/slot.png"))
       ->addLink(raw_slot[1].id);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/slot.png"))
+      .add(FileUtils::fromCwd("textures/gui/slot.png"))
       ->addLink(raw_slot[2].id);
 
   active_slot.mode = Tyra::MODE_STRETCH;
@@ -94,7 +94,7 @@ void ScreenMain::init() {
   active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/slot_active.png"))
+      .add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
 
   // Buttons
@@ -104,7 +104,7 @@ void ScreenMain::init() {
                         this->t_renderer->core.getSettings().getHeight() - 40);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
 }
 

@@ -41,7 +41,7 @@ void ScreenAbout::init() {
   about_background.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/about_background.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/about_background.png"))
       ->addLink(about_background.id);
 
   about_text_1.mode = Tyra::MODE_STRETCH;
@@ -49,7 +49,7 @@ void ScreenAbout::init() {
   about_text_1.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/about_text_1.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/about_text_1.png"))
       ->addLink(about_text_1.id);
 
   about_text_2.mode = Tyra::MODE_STRETCH;
@@ -57,7 +57,7 @@ void ScreenAbout::init() {
   about_text_2.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/about_text_2.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/about_text_2.png"))
       ->addLink(about_text_2.id);
 
   about_text_3.mode = Tyra::MODE_STRETCH;
@@ -65,7 +65,7 @@ void ScreenAbout::init() {
   about_text_3.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/about_text_3.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/about_text_3.png"))
       ->addLink(about_text_3.id);
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
@@ -74,7 +74,7 @@ void ScreenAbout::init() {
       15, this->t_renderer->core.getSettings().getHeight() - 40);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
 
   textBack.mode = Tyra::MODE_STRETCH;
@@ -82,7 +82,7 @@ void ScreenAbout::init() {
   textBack.position.set(15 + 30,
                         this->t_renderer->core.getSettings().getHeight() - 36);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_back.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/text_back.png"))
       ->addLink(textBack.id);
 }
 

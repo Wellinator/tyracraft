@@ -352,7 +352,7 @@ void Player::loadMesh() {
   options.animation.count = 10;
 
   auto data = ObjLoader::load(
-      FileUtils::fromCwd("meshes/player/model/player.obj"), options);
+      FileUtils::fromCwd("models/player/player.obj"), options);
   data.get()->loadNormals = false;
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
@@ -362,8 +362,9 @@ void Player::loadMesh() {
 
   this->mesh->scale.identity();
 
+  // FIXME: link player texture to avoid loading it twice
   this->t_renderer->getTextureRepository().addByMesh(
-      this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+      this->mesh.get(), FileUtils::fromCwd("textures/entity/player/"), "png");
 
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
@@ -377,7 +378,7 @@ void Player::loadArmMesh() {
   options.animation.count = 21;
 
   auto data =
-      ObjLoader::load(FileUtils::fromCwd("meshes/player/arm/arm.obj"), options);
+      ObjLoader::load(FileUtils::fromCwd("models/player_arm/arm.obj"), options);
   data.get()->loadNormals = false;
 
   this->armMesh = std::make_unique<DynamicMesh>(data.get());
@@ -394,8 +395,9 @@ void Player::loadArmMesh() {
   this->armMesh->rotation.identity();
   this->armMesh->rotation.rotateY(-3.24);
 
+  // FIXME: link player texture to avoid loading it twice
   this->t_renderer->getTextureRepository().addByMesh(
-      this->armMesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+      this->armMesh.get(), FileUtils::fromCwd("textures/entity/player/"), "png");
 
   this->armMesh->animation.loop = true;
   this->armMesh->animation.setSequence(armStandStillSequence);

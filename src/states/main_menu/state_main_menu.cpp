@@ -46,10 +46,10 @@ void StateMainMenu::init() {
   title[1].position.set(halfWidth, 64);
 
   this->context->t_engine->renderer.getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/title_1.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/title_1.png"))
       ->addLink(title[0].id);
   this->context->t_engine->renderer.getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/title_2.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/title_2.png"))
       ->addLink(title[1].id);
 
   this->loadMenuSong();
@@ -103,12 +103,13 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
   options.scale = 300.0F;
 
   auto data =
-      ObjLoader::load(FileUtils::fromCwd("assets/menu/skybox.obj"), options);
+      ObjLoader::load(FileUtils::fromCwd("models/skybox/skybox.obj"), options);
   // data->normalsEnabled = false;
   this->menuSkybox = new StaticMesh(data.get());
 
   renderer->core.texture.repository.addByMesh(
-      this->menuSkybox, FileUtils::fromCwd("assets/menu/"), "png");
+      this->menuSkybox, FileUtils::fromCwd("textures/entity/skybox/menu/1/"),
+      "png");
 }
 
 void StateMainMenu::unloadTextures() {

@@ -53,7 +53,7 @@ void FontManager::loadFontChars() {
     charSprite->mode = Tyra::MODE_STRETCH;
     charSprite->size.set(32.0F, 32.0F);
 
-    std::string charPath = "font/chars/";
+    std::string charPath = "textures/font/chars/";
     charPath.append(std::to_string(code));
     charPath.append(".png");
 

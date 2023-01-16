@@ -51,35 +51,35 @@ void ItemRepository::loadItems() {
   dirt.blockId = Blocks::DIRTY_BLOCK;
   this->items.push_back(&dirt);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/dirt.png"))
+      .add(FileUtils::fromCwd("textures/items/dirt.png"))
       ->addLink(dirt.sprite.id);
 
   sand.id = ItemId::sand;
   sand.blockId = Blocks::SAND_BLOCK;
   this->items.push_back(&sand);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/sand.png"))
+      .add(FileUtils::fromCwd("textures/items/sand.png"))
       ->addLink(sand.sprite.id);
 
   stone.id = ItemId::stone;
   stone.blockId = Blocks::STONE_BLOCK;
   this->items.push_back(&stone);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/stone.png"))
+      .add(FileUtils::fromCwd("textures/items/stone.png"))
       ->addLink(stone.sprite.id);
 
   bricks.id = ItemId::bricks;
   bricks.blockId = Blocks::BRICKS_BLOCK;
   this->items.push_back(&bricks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/bricks.png"))
+      .add(FileUtils::fromCwd("textures/items/bricks.png"))
       ->addLink(bricks.sprite.id);
 
   glass.id = ItemId::glass;
   glass.blockId = Blocks::GLASS_BLOCK;
   this->items.push_back(&glass);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/glass.png"))
+      .add(FileUtils::fromCwd("textures/items/glass.png"))
       ->addLink(glass.sprite.id);
 
   //------------------------------Ores and Minerals blocks----------------------
@@ -87,42 +87,42 @@ void ItemRepository::loadItems() {
   coal_ore_block.blockId = Blocks::COAL_ORE_BLOCK;
   this->items.push_back(&coal_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/coal_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/coal_ore_block.png"))
       ->addLink(coal_ore_block.sprite.id);
 
   diamond_ore_block.id = ItemId::diamond_ore_block;
   diamond_ore_block.blockId = Blocks::DIAMOND_ORE_BLOCK;
   this->items.push_back(&diamond_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/diamond_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/diamond_ore_block.png"))
       ->addLink(diamond_ore_block.sprite.id);
 
   iron_ore_block.id = ItemId::iron_ore_block;
   iron_ore_block.blockId = Blocks::IRON_ORE_BLOCK;
   this->items.push_back(&iron_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/iron_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/iron_ore_block.png"))
       ->addLink(iron_ore_block.sprite.id);
 
   gold_ore_block.id = ItemId::gold_ore_block;
   gold_ore_block.blockId = Blocks::GOLD_ORE_BLOCK;
   this->items.push_back(&gold_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/gold_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/gold_ore_block.png"))
       ->addLink(gold_ore_block.sprite.id);
 
   redstone_ore_block.id = ItemId::redstone_ore_block;
   redstone_ore_block.blockId = Blocks::REDSTONE_ORE_BLOCK;
   this->items.push_back(&redstone_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/redstone_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/redstone_ore_block.png"))
       ->addLink(redstone_ore_block.sprite.id);
 
   emerald_ore_block.id = ItemId::emerald_ore_block;
   emerald_ore_block.blockId = Blocks::EMERALD_ORE_BLOCK;
   this->items.push_back(&emerald_ore_block);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/emerald_ore_block.png"))
+      .add(FileUtils::fromCwd("textures/items/emerald_ore_block.png"))
       ->addLink(emerald_ore_block.sprite.id);
 
   // -------------- Wood Planks ------------------------
@@ -130,28 +130,28 @@ void ItemRepository::loadItems() {
   oak_planks.blockId = Blocks::OAK_PLANKS_BLOCK;
   this->items.push_back(&oak_planks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/oak_planks.png"))
+      .add(FileUtils::fromCwd("textures/items/oak_planks.png"))
       ->addLink(oak_planks.sprite.id);
 
   spruce_planks.id = ItemId::spruce_planks;
   spruce_planks.blockId = Blocks::SPRUCE_PLANKS_BLOCK;
   this->items.push_back(&spruce_planks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/spruce_planks.png"))
+      .add(FileUtils::fromCwd("textures/items/spruce_planks.png"))
       ->addLink(spruce_planks.sprite.id);
 
   birch_planks.id = ItemId::birch_planks;
   birch_planks.blockId = Blocks::BIRCH_PLANKS_BLOCK;
   this->items.push_back(&birch_planks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/birch_planks.png"))
+      .add(FileUtils::fromCwd("textures/items/birch_planks.png"))
       ->addLink(birch_planks.sprite.id);
 
   acacia_planks.id = ItemId::acacia_planks;
   acacia_planks.blockId = Blocks::ACACIA_PLANKS_BLOCK;
   this->items.push_back(&acacia_planks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/acacia_planks.png"))
+      .add(FileUtils::fromCwd("textures/items/acacia_planks.png"))
       ->addLink(acacia_planks.sprite.id);
 
   // --------------------------Stone Bricks-------------------------
@@ -159,21 +159,21 @@ void ItemRepository::loadItems() {
   stone_brick.blockId = Blocks::STONE_BRICK_BLOCK;
   this->items.push_back(&stone_brick);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/stone_brick.png"))
+      .add(FileUtils::fromCwd("textures/items/stone_brick.png"))
       ->addLink(stone_brick.sprite.id);
 
   cracked_stone_bricks.id = ItemId::cracked_stone_bricks;
   cracked_stone_bricks.blockId = Blocks::CRACKED_STONE_BRICKS_BLOCK;
   this->items.push_back(&cracked_stone_bricks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/cracked_stone_bricks.png"))
+      .add(FileUtils::fromCwd("textures/items/cracked_stone_bricks.png"))
       ->addLink(cracked_stone_bricks.sprite.id);
 
   mossy_stone_bricks.id = ItemId::mossy_stone_bricks;
   mossy_stone_bricks.blockId = Blocks::MOSSY_STONE_BRICKS_BLOCK;
   this->items.push_back(&mossy_stone_bricks);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/items/mossy_stone_bricks.png"))
+      .add(FileUtils::fromCwd("textures/items/mossy_stone_bricks.png"))
       ->addLink(mossy_stone_bricks.sprite.id);
 
   chiseled_stone_bricks.id = ItemId::chiseled_stone_bricks;
@@ -181,7 +181,7 @@ void ItemRepository::loadItems() {
   this->items.push_back(&chiseled_stone_bricks);
   this->t_renderer->getTextureRepository()
       .add(
-          FileUtils::fromCwd("assets/textures/items/chiseled_stone_bricks.png"))
+          FileUtils::fromCwd("textures/items/chiseled_stone_bricks.png"))
       ->addLink(chiseled_stone_bricks.sprite.id);
 
   // -------------------- Tools ----------------
@@ -189,7 +189,7 @@ void ItemRepository::loadItems() {
   //   wooden_axe.blockId = Blocks::VOID;
   //   this->items.push_back(&wooden_axe);
   //   this->t_renderer->getTextureRepository()
-  //       .add(FileUtils::fromCwd("assets/textures/items/wooden_axe.png"))
+  //       .add(FileUtils::fromCwd("textures/items/wooden_axe.png"))
   //       ->addLink(wooden_axe.sprite.id);
 }
 
