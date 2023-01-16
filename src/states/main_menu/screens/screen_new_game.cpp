@@ -311,3 +311,17 @@ std::string ScreenNewGame::getSeed() {
 
   return result;
 }
+
+void ScreenNewGame::getAvailableTexturePacks() {
+  char* texturePackPath = "assets/texture_packs/default/info.json";
+
+  std::ifstream info(FileUtils::fromCwd(texturePackPath));
+  nlohmann::json data = nlohmann::json::parse(info);
+
+  TYRA_LOG("");
+  TYRA_LOG("---------JSON---------");
+  std::string author = data["author"].get<std::string>();
+  TYRA_LOG("Author: ", author.c_str());
+  TYRA_LOG("---------JSON---------");
+  TYRA_LOG("");
+}

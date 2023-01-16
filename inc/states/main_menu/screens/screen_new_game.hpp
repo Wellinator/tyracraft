@@ -6,13 +6,15 @@
 #include <tamtypes.h>
 #include <tyra>
 #include <string>
+#include <fstream>
+#include <3libs/nlohmann/json.hpp>
 
 using Tyra::Color;
 using Tyra::FileUtils;
+using Tyra::Math;
 using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
-using Tyra::Math;
 using Tyra::TextureRepository;
 
 enum class ScreenNewGameOptions { Seed, WorldType, CreateNewWorld, None };
@@ -73,4 +75,6 @@ class ScreenNewGame : public ScreenBase {
   void startEditingSeed();
   void cancelEditingSeed();
   std::string getSeed();
+
+  void getAvailableTexturePacks();
 };
