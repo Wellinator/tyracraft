@@ -54,7 +54,9 @@ float Utils::FOG_LINEAR(const float& d, const float& start, const float& end,
   return (end - d / end - start) * 1 / end;
 }
 
-float Utils::FOG_EXP(float d, float density) { return expf_fast(-(d * density)); }
+float Utils::FOG_EXP(float d, float density) {
+  return expf_fast(-(d * density));
+}
 
 float Utils::FOG_EXP2(float d, float density) {
   return exp(-pow((d * density), 2));
@@ -195,6 +197,19 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
     if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
     if (B <= 0) result = CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
   }
+
+  return result;
+}
+
+std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
+  std::vector<UtilDirectory> result;
+
+  DIR* dirp = opendir(dir.c_str());
+  dirent* dp;
+  while ((dp = readdir(dirp)) != NULL) {
+    result.push_back(UtilDirectory(dp->d_name, S_ISDIR(dp->d_stat.st_mode)));
+  }
+  (void)closedir(dirp);
 
   return result;
 }
