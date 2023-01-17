@@ -94,4 +94,5 @@ class Utils {
   static float expf_fast(float a);
 
   static std::vector<UtilDirectory> listDir(const std::string& dir);
+  static std::vector<UtilDirectory> listDir(const char* dir);
 };

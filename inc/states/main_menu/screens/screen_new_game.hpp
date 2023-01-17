@@ -2,6 +2,7 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/state_main_menu.hpp"
 #include "models/new_game_model.hpp"
+#include "models/texture_pack_info_model.hpp"
 #include "managers/font/font_options.hpp"
 #include <tamtypes.h>
 #include <tyra>
@@ -62,6 +63,9 @@ class ScreenNewGame : public ScreenBase {
   std::string tempSeedMask;
   u8 isEditingSeed = false;
   u8 editingIndex = 0;
+
+  std::vector<TexturePackInfoModel*> texturePacks;
+  TexturePackInfoModel* selectedTexturePack;
 
   void handleInput();
   void handleOptionsSelection();

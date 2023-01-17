@@ -43,7 +43,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->mcPip.setRenderer(&t_renderer->core);
   this->stapip.setRenderer(&t_renderer->core);
 
-  this->blockManager->init(t_renderer, &this->mcPip);
+  this->blockManager->init(t_renderer, &this->mcPip, worldOptions.texturePack);
   this->chunckManager->init();
 
   this->calcRawBlockBBox(&mcPip);

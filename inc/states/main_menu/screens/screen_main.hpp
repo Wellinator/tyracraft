@@ -5,6 +5,8 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/state_main_menu.hpp"
 #include "managers/font/font_options.hpp"
+#include "utils.hpp"
+#include "models/block_info_model.hpp"
 
 using Tyra::FileUtils;
 using Tyra::Renderer;

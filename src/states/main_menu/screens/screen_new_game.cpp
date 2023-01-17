@@ -19,6 +19,11 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
   textureRepo->freeBySprite(btnCircle);
+
+  for (size_t i = 0; i < texturePacks.size(); i++) {
+    textureRepo->freeBySprite(texturePacks.at(i)->icon);
+    delete texturePacks.at(i);
+  }
 }
 
 void ScreenNewGame::update() {
@@ -28,7 +33,17 @@ void ScreenNewGame::update() {
 
 void ScreenNewGame::render() {
   this->t_renderer->renderer2D.render(&backgroundNewGame);
+  
   this->renderSelectedOptions();
+
+  this->t_renderer->renderer2D.render(selectedTexturePack->icon);
+
+  Color infoColor = Color(70, 70, 70);
+  this->context->t_fontManager->printText("NEW WORLD", FontOptions(Vec2(190, 140), infoColor, 0.8F));
+  this->context->t_fontManager->printText("Texture Packs: ", FontOptions(Vec2(190, 157), infoColor, 0.8F));
+  this->context->t_fontManager->printText(selectedTexturePack->title.c_str(), FontOptions(Vec2(190, 172), infoColor, 0.8F));
+  this->context->t_fontManager->printText("By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
+  this->context->t_fontManager->printText(selectedTexturePack->author.c_str(), FontOptions(Vec2(230, 187), infoColor, 0.8F));
 
   if (isEditingSeed) {
     FontOptions options;
@@ -89,6 +104,8 @@ void ScreenNewGame::render() {
 }
 
 void ScreenNewGame::init() {
+  getAvailableTexturePacks();
+
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
 
   slotTexture = textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
@@ -99,7 +116,8 @@ void ScreenNewGame::init() {
   backgroundNewGame.size.set(512, 512);
   backgroundNewGame.position.set(0, 0);
 
-  textureRepo->add(FileUtils::fromCwd("textures/gui/menu/background_new_game.png"))
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/menu/background_new_game.png"))
       ->addLink(backgroundNewGame.id);
 
   slotSeed.mode = Tyra::MODE_STRETCH;
@@ -254,6 +272,7 @@ void ScreenNewGame::backToMainMenu() {
 
 void ScreenNewGame::createNewWorld() {
   model.seed = std::stoull(inputSeed);
+  model.texturePack = selectedTexturePack->path;
   context->loadGame(model);
 }
 
@@ -313,15 +332,37 @@ std::string ScreenNewGame::getSeed() {
 }
 
 void ScreenNewGame::getAvailableTexturePacks() {
-  char* texturePackPath = "textures/texture_packs/default/info.json";
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+  std::string pathPrefix = "textures/texture_packs/";
+  auto texturePacksFolders = Utils::listDir(FileUtils::fromCwd(pathPrefix));
+  u8 tempId = 0;
 
-  std::ifstream info(FileUtils::fromCwd(texturePackPath));
-  nlohmann::json data = nlohmann::json::parse(info);
+  for (size_t i = 0; i < texturePacksFolders.size(); i++) {
+    const auto& dir = texturePacksFolders.at(i);
+    if (dir.isDir) {
+      auto texturePackInfoPath = pathPrefix + dir.name + "/info.json";
+      TexturePackInfoModel* model = new TexturePackInfoModel();
 
-  TYRA_LOG("");
-  TYRA_LOG("---------JSON---------");
-  std::string author = data["author"].get<std::string>();
-  TYRA_LOG("Author: ", author.c_str());
-  TYRA_LOG("---------JSON---------");
-  TYRA_LOG("");
+      std::ifstream texPackInfo(FileUtils::fromCwd(texturePackInfoPath));
+      nlohmann::json data = nlohmann::json::parse(texPackInfo);
+
+      model->id = tempId++;
+      model->path = dir.name;
+      model->author = data["author"].get<std::string>();
+      model->title = data["title"].get<std::string>();
+      model->description = data["description"].get<std::string>();
+
+      model->icon.size.set(64, 64);
+      model->icon.position.set(127, 146);
+      model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
+      model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
+
+      textureRepo->add(FileUtils::fromCwd(pathPrefix + dir.name + "/icon.png"))
+          ->addLink(model->icon.id);
+
+      texturePacks.push_back(model);
+
+      if (dir.name == "default") selectedTexturePack = model;
+    }
+  }
 }

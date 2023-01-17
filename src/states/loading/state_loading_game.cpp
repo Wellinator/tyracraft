@@ -114,7 +114,7 @@ void StateLoadingGame::createEntities() {
 }
 
 void StateLoadingGame::initItemRepository() {
-  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer);
+  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer, this->worldOptions.texturePack);
 
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;

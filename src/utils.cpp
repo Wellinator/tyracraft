@@ -201,10 +201,10 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
   return result;
 }
 
-std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
+std::vector<UtilDirectory> Utils::listDir(const char* dir) {
   std::vector<UtilDirectory> result;
 
-  DIR* dirp = opendir(dir.c_str());
+  DIR* dirp = opendir(dir);
   dirent* dp;
   while ((dp = readdir(dirp)) != NULL) {
     result.push_back(UtilDirectory(dp->d_name, S_ISDIR(dp->d_stat.st_mode)));
@@ -212,4 +212,8 @@ std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
   (void)closedir(dirp);
 
   return result;
+}
+
+std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
+  return Utils::listDir(dir.c_str());
 }

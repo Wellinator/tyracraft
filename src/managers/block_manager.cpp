@@ -29,17 +29,21 @@ BlockManager::~BlockManager() {
   this->damage_overlay.clear();
 }
 
-void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
+void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
+                        const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->t_blockTextureRepository = new BlockTextureRepository(mcPip);
-  this->loadBlocksTextures(t_renderer);
+  this->loadBlocksTextures(texturePack);
   this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
 }
 
-void BlockManager::loadBlocksTextures(Renderer* t_renderer) {
-  this->blocksTexAtlas = t_renderer->core.texture.repository.add(
-      FileUtils::fromCwd("textures/block/texture_atlas.png"));
+void BlockManager::loadBlocksTextures(const std::string& texturePack) {
+  const std::string pathPrefix = "textures/texture_packs/";
+  const std::string path = pathPrefix + texturePack + "/texture_atlas.png";
+
+  blocksTexAtlas =
+      t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
 }
 
 void BlockManager::registerBlockSoundsEffects() {
@@ -52,7 +56,7 @@ BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
-    return this->t_blockTextureRepository->isBlockTransparent(blockType);
+  return this->t_blockTextureRepository->isBlockTransparent(blockType);
 }
 
 float BlockManager::getBlockBreakingTime() {

@@ -17,7 +17,7 @@ class ItemRepository {
 
   ItemRepository();
   ~ItemRepository();
-  void init(Renderer* t_renderer);
+  void init(Renderer* t_renderer, const std::string& texturePack);
   Item* getItemById(ItemId& itemId);
 
   u8 linkTextureByItemType(ItemId itemType, const u32 t_spriteId);
@@ -26,7 +26,7 @@ class ItemRepository {
 
  private:
   std::vector<Item*> items;
-  void loadItems();
+  void loadItems(const std::string& texturePack);
 
   // Items reg
   //  Items Blocks
