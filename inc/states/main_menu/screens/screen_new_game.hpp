@@ -18,7 +18,7 @@ using Tyra::Sprite;
 using Tyra::Texture;
 using Tyra::TextureRepository;
 
-enum class ScreenNewGameOptions { Seed, WorldType, CreateNewWorld, None };
+enum class ScreenNewGameOptions { TexturePack, Seed, WorldType, CreateNewWorld, None };
 
 class ScreenNewGame : public ScreenBase {
  public:
@@ -36,6 +36,7 @@ class ScreenNewGame : public ScreenBase {
 
   Sprite slotSeed;
   Sprite slotSeedActive;
+  Sprite slotTextureActive;
   Sprite slotSeedInput;
 
   Sprite slotWorldType;
@@ -45,8 +46,11 @@ class ScreenNewGame : public ScreenBase {
   Sprite slotCreateNewWorldActive;
 
   Sprite btnTriangle;
+  Sprite btnTriangleTexturePack;
   Sprite btnCross;
   Sprite btnCircle;
+  Sprite btnDpadLeft;
+  Sprite btnDpadRight;
 
   Texture* slotTexture;
   Texture* slotActiveTexture;
@@ -80,5 +84,7 @@ class ScreenNewGame : public ScreenBase {
   void cancelEditingSeed();
   std::string getSeed();
 
+  void selectPreviousTexturePack();
+  void selectNextTexturePack();
   void getAvailableTexturePacks();
 };

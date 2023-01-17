@@ -15,6 +15,7 @@ ScreenNewGame::~ScreenNewGame() {
 
   textureRepo->freeBySprite(backgroundNewGame);
   textureRepo->freeBySprite(slotSeedInput);
+  textureRepo->freeBySprite(slotTextureActive);
 
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
@@ -33,17 +34,24 @@ void ScreenNewGame::update() {
 
 void ScreenNewGame::render() {
   this->t_renderer->renderer2D.render(&backgroundNewGame);
-  
+
   this->renderSelectedOptions();
 
   this->t_renderer->renderer2D.render(selectedTexturePack->icon);
 
   Color infoColor = Color(70, 70, 70);
-  this->context->t_fontManager->printText("NEW WORLD", FontOptions(Vec2(190, 140), infoColor, 0.8F));
-  this->context->t_fontManager->printText("Texture Packs: ", FontOptions(Vec2(190, 157), infoColor, 0.8F));
-  this->context->t_fontManager->printText(selectedTexturePack->title.c_str(), FontOptions(Vec2(190, 172), infoColor, 0.8F));
-  this->context->t_fontManager->printText("By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
-  this->context->t_fontManager->printText(selectedTexturePack->author.c_str(), FontOptions(Vec2(230, 187), infoColor, 0.8F));
+  this->context->t_fontManager->printText(
+      "NEW WORLD", FontOptions(Vec2(190, 140), infoColor, 0.8F));
+  this->context->t_fontManager->printText(
+      "Texture Packs: ", FontOptions(Vec2(190, 157), infoColor, 0.8F));
+  this->context->t_fontManager->printText(
+      selectedTexturePack->title.c_str(),
+      FontOptions(Vec2(190, 172), infoColor, 0.8F));
+  this->context->t_fontManager->printText(
+      "By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
+  this->context->t_fontManager->printText(
+      selectedTexturePack->author.c_str(),
+      FontOptions(Vec2(230, 187), infoColor, 0.8F));
 
   if (isEditingSeed) {
     FontOptions options;
@@ -85,21 +93,34 @@ void ScreenNewGame::render() {
 
   this->context->t_fontManager->printText("Create New World", 145, 322);
 
-  this->t_renderer->renderer2D.render(&btnTriangle);
-  this->t_renderer->renderer2D.render(&btnCross);
-
   if (isEditingSeed) {
+    this->t_renderer->renderer2D.render(&btnTriangle);
+    this->t_renderer->renderer2D.render(&btnCross);
+
     this->context->t_fontManager->printText("Confirm", 35, 407);
     this->context->t_fontManager->printText("Cancel", 160, 407);
   } else {
-    if (activeOption == ScreenNewGameOptions::Seed) {
-      this->context->t_fontManager->printText("Edit", 35, 407);
-      this->context->t_fontManager->printText("Random", 280, 407);
-      this->t_renderer->renderer2D.render(&btnCircle);
+    if (activeOption == ScreenNewGameOptions::TexturePack) {
+      this->t_renderer->renderer2D.render(&btnDpadLeft);
+      this->t_renderer->renderer2D.render(&btnDpadRight);
+      this->t_renderer->renderer2D.render(&btnTriangleTexturePack);
+
+      this->context->t_fontManager->printText("Prev", 35, 407);
+      this->context->t_fontManager->printText("Next", 160, 407);
+      this->context->t_fontManager->printText("Back", 280, 407);
     } else {
-      this->context->t_fontManager->printText("Select", 35, 407);
+      this->t_renderer->renderer2D.render(&btnTriangle);
+      this->t_renderer->renderer2D.render(&btnCross);
+
+      if (activeOption == ScreenNewGameOptions::Seed) {
+        this->context->t_fontManager->printText("Edit", 35, 407);
+        this->context->t_fontManager->printText("Random", 280, 407);
+        this->t_renderer->renderer2D.render(&btnCircle);
+      } else {
+        this->context->t_fontManager->printText("Select", 35, 407);
+      }
+      this->context->t_fontManager->printText("Back", 160, 407);
     }
-    this->context->t_fontManager->printText("Back", 160, 407);
   }
 }
 
@@ -136,6 +157,13 @@ void ScreenNewGame::init() {
   textureRepo->add(FileUtils::fromCwd("textures/gui/slot_input.png"))
       ->addLink(slotSeedInput.id);
 
+  slotTextureActive.mode = Tyra::MODE_STRETCH;
+  slotTextureActive.size.set(68, 68);
+  slotTextureActive.position.set(125, 144);
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/slot_texture_pack_active.png"))
+      ->addLink(slotTextureActive.id);
+
   slotWorldType.mode = Tyra::MODE_STRETCH;
   slotWorldType.size.set(256, 32);
   slotWorldType.position.set(125, 275);
@@ -169,8 +197,15 @@ void ScreenNewGame::init() {
   btnTriangle.position.set(
       140, this->t_renderer->core.getSettings().getHeight() - 40);
 
-  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
-      ->addLink(btnTriangle.id);
+  btnTriangleTexturePack.mode = Tyra::MODE_STRETCH;
+  btnTriangleTexturePack.size.set(25, 25);
+  btnTriangleTexturePack.position.set(
+      260, this->t_renderer->core.getSettings().getHeight() - 40);
+
+  Texture* btnTriangleTexture =
+      textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"));
+  btnTriangleTexture->addLink(btnTriangle.id);
+  btnTriangleTexture->addLink(btnTriangleTexturePack.id);
 
   btnCircle.mode = Tyra::MODE_STRETCH;
   btnCircle.size.set(25, 25);
@@ -179,6 +214,22 @@ void ScreenNewGame::init() {
 
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_circle.png"))
       ->addLink(btnCircle.id);
+
+  btnDpadLeft.mode = Tyra::MODE_STRETCH;
+  btnDpadLeft.size.set(28, 28);
+  btnDpadLeft.position.set(
+      15, this->t_renderer->core.getSettings().getHeight() - 33);
+
+  textureRepo->add(FileUtils::fromCwd("textures/gui/pad_left.png"))
+      ->addLink(btnDpadLeft.id);
+
+  btnDpadRight.mode = Tyra::MODE_STRETCH;
+  btnDpadRight.size.set(28, 28);
+  btnDpadRight.position.set(
+      133, this->t_renderer->core.getSettings().getHeight() - 33);
+
+  textureRepo->add(FileUtils::fromCwd("textures/gui/pad_right.png"))
+      ->addLink(btnDpadRight.id);
 }
 
 void ScreenNewGame::handleInput() {
@@ -195,7 +246,7 @@ void ScreenNewGame::handleOptionsSelection() {
   if (clickedButtons.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
     if (nextOption > 2)
-      this->activeOption = ScreenNewGameOptions::Seed;
+      this->activeOption = ScreenNewGameOptions::TexturePack;
     else
       this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
   } else if (clickedButtons.DpadUp) {
@@ -204,6 +255,13 @@ void ScreenNewGame::handleOptionsSelection() {
       this->activeOption = ScreenNewGameOptions::CreateNewWorld;
     else
       this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
+  }
+
+  if (activeOption == ScreenNewGameOptions::TexturePack) {
+    if (clickedButtons.DpadLeft)
+      selectPreviousTexturePack();
+    else if (clickedButtons.DpadRight)
+      selectNextTexturePack();
   }
 
   if (clickedButtons.Triangle) {
@@ -283,7 +341,9 @@ void ScreenNewGame::renderSelectedOptions() {
   this->t_renderer->renderer2D.render(&slotCreateNewWorld);
   this->t_renderer->renderer2D.render(&slotWorldType);
 
-  if (this->activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
+  if (this->activeOption == ScreenNewGameOptions::TexturePack)
+    this->t_renderer->renderer2D.render(&slotTextureActive);
+  else if (this->activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
     this->t_renderer->renderer2D.render(&slotSeedActive);
   else if (this->activeOption == ScreenNewGameOptions::WorldType)
     this->t_renderer->renderer2D.render(&slotWorldTypeActive);
@@ -355,7 +415,6 @@ void ScreenNewGame::getAvailableTexturePacks() {
       model->icon.size.set(64, 64);
       model->icon.position.set(127, 146);
       model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
-      model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
 
       textureRepo->add(FileUtils::fromCwd(pathPrefix + dir.name + "/icon.png"))
           ->addLink(model->icon.id);
@@ -365,4 +424,26 @@ void ScreenNewGame::getAvailableTexturePacks() {
       if (dir.name == "default") selectedTexturePack = model;
     }
   }
+}
+
+void ScreenNewGame::selectPreviousTexturePack() {
+  u16 idx;
+  for (size_t i = 0; i < texturePacks.size(); i++)
+    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+
+  if (idx == 0)
+    selectedTexturePack = texturePacks.at(texturePacks.size() - 1);
+  else
+    selectedTexturePack = texturePacks.at(idx - 1);
+}
+
+void ScreenNewGame::selectNextTexturePack() {
+  u16 idx;
+  for (size_t i = 0; i < texturePacks.size(); i++)
+    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+
+  if (idx == texturePacks.size() - 1)
+    selectedTexturePack = texturePacks.at(0);
+  else
+    selectedTexturePack = texturePacks.at(idx + 1);
 }

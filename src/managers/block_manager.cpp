@@ -40,7 +40,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
 
 void BlockManager::loadBlocksTextures(const std::string& texturePack) {
   const std::string pathPrefix = "textures/texture_packs/";
-  const std::string path = pathPrefix + texturePack + "/texture_atlas.png";
+  const std::string path = pathPrefix + texturePack + "/block/texture_atlas.png";
 
   blocksTexAtlas =
       t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
