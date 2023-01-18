@@ -245,7 +245,7 @@ void ScreenNewGame::handleOptionsSelection() {
 
   if (clickedButtons.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
-    if (nextOption > 2)
+    if (nextOption > (u8)ScreenNewGameOptions::CreateNewWorld)
       this->activeOption = ScreenNewGameOptions::TexturePack;
     else
       this->activeOption = static_cast<ScreenNewGameOptions>(nextOption);
