@@ -26,7 +26,6 @@ World::World(const NewGameOptions& options) {
 }
 
 World::~World() {
-  delete lastPlayerPosition;
   delete this->blockManager;
   delete this->chunckManager;
 
@@ -117,8 +116,8 @@ const std::vector<Block*> World::getLoadedBlocks() {
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-  if (lastPlayerPosition->distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
-    lastPlayerPosition->set(currentPlayerPos);
+  if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
+    lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck =
         chunckManager->getChunckByPosition(currentPlayerPos);
 
@@ -215,7 +214,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
         floor(t_chunck->center->distanceTo(*chuncks[i]->center) / CHUNCK_SIZE) +
         1;
 
-    if (distance > DRAW_DISTANCE_IN_CHUNKS) {
+    if (distance > worldOptions.drawDistance) {
       if (chuncks[i]->state != ChunkState::Clean)
         addChunkToUnloadAsync(chuncks[i]);
     } else {
@@ -780,6 +779,16 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
     this->targetBlock = tempTargetBlock;
     this->targetBlock->isTarget = 1;
     this->targetBlock->distance = tempTargetDistance;
+  }
+}
+
+void World::setDrawDistace(const u8& drawDistanceInChunks) {
+  if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
+      drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
+    worldOptions.drawDistance = drawDistanceInChunks;
+    Chunck* currentChunck =
+        chunckManager->getChunckByPosition(lastPlayerPosition);
+    if (currentChunck) scheduleChunksNeighbors(currentChunck, lastPlayerPosition);
   }
 }
 

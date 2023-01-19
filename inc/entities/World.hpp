@@ -95,13 +95,15 @@ class World {
 
   LevelMap* terrain;
 
+  void setDrawDistace(const u8& drawDistanceInChunks);
+
  private:
   MinecraftPipeline mcPip;
   StaticPipeline stapip;
   std::vector<Block*> loadedBlocks;
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
-  Vec4* lastPlayerPosition = new Vec4();
+  Vec4 lastPlayerPosition;
   u8 framesCounter = 0;
   NewGameOptions worldOptions = NewGameOptions();
 
