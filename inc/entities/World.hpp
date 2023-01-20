@@ -41,6 +41,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "managers/cross_craft_world_generator.hpp"
 
 using Tyra::McpipBlock;
@@ -96,6 +97,7 @@ class World {
   LevelMap* terrain;
 
   void setDrawDistace(const u8& drawDistanceInChunks);
+  inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
 
  private:
   MinecraftPipeline mcPip;

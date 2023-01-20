@@ -406,7 +406,7 @@ void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
   int numPatches = map->width * map->length / 3000;
 
   for (int i = 0; i < numPatches; i++) {
-    uint8_t flowerType = (rand() % 2 == 0) ? 37 : 38;
+    // uint8_t flowerType = (rand() % 2 == 0) ? 37 : 38;
     uint16_t x = rand() % map->length;
     uint16_t z = rand() % map->width;
 
@@ -443,7 +443,7 @@ void create_shrooms(LevelMap* map, int16_t* heightmap) {
   int numPatches = map->width * map->length * map->height / 2000;
 
   for (int i = 0; i < numPatches; i++) {
-    uint8_t mushType = (rand() % 2 == 0) ? 39 : 40;
+    // uint8_t mushType = (rand() % 2 == 0) ? 39 : 40;
     uint16_t x = rand() % map->length;
     uint16_t y = rand() % map->height;
     uint16_t z = rand() % map->width;

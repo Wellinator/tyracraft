@@ -293,8 +293,9 @@ void ScreenNewGame::handleSeedInput() {
 
     tempSeed[editingIndex] = validChars[newCharIndex];
   } else if (clickedButtons.DpadUp) {
-    u16 newCharIndex =
-        currentCharIndex + 1 >= validChars.length() ? 0 : currentCharIndex + 1;
+    u16 newCharIndex = currentCharIndex + 1 >= (u16)validChars.length()
+                           ? 0
+                           : currentCharIndex + 1;
 
     tempSeed[editingIndex] = validChars[newCharIndex];
   } else if (clickedButtons.DpadLeft) {
@@ -427,7 +428,7 @@ void ScreenNewGame::getAvailableTexturePacks() {
 }
 
 void ScreenNewGame::selectPreviousTexturePack() {
-  u16 idx;
+  u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
     if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
 
@@ -438,7 +439,7 @@ void ScreenNewGame::selectPreviousTexturePack() {
 }
 
 void ScreenNewGame::selectNextTexturePack() {
-  u16 idx;
+  u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
     if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
 

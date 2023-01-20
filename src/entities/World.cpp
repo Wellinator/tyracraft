@@ -56,6 +56,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   // Define global and local spawn area
   this->worldSpawnArea.set(this->defineSpawnArea());
   this->spawnArea.set(this->worldSpawnArea);
+  this->lastPlayerPosition.set(worldSpawnArea);
   this->buildInitialPosition();
   this->setIntialTime();
 };
@@ -70,6 +71,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   this->chunckManager->update(
       this->t_renderer->core.renderer3D.frustumPlanes.getAll(),
       *t_player->getPosition(), &worldLightModel);
+
   this->updateChunkByPlayerPosition(t_player);
 
   this->updateTargetBlock(camLookPos, camPosition,
@@ -97,7 +99,7 @@ void World::buildInitialPosition() {
   if (initialChunck != nullptr) {
     initialChunck->clear();
     this->buildChunk(initialChunck);
-    this->scheduleChunksNeighbors(initialChunck, true);
+    this->scheduleChunksNeighbors(initialChunck, lastPlayerPosition, true);
   }
 };
 
@@ -215,7 +217,9 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
         1;
 
     if (distance > worldOptions.drawDistance) {
-      if (chuncks[i]->state != ChunkState::Clean)
+      if (force_loading)
+        chuncks[i]->clear();
+      else if (chuncks[i]->state != ChunkState::Clean)
         addChunkToUnloadAsync(chuncks[i]);
     } else {
       if (force_loading) {
@@ -307,7 +311,7 @@ void World::addChunkToLoadAsync(Chunck* t_chunck) {
 }
 
 void World::addChunkToUnloadAsync(Chunck* t_chunck) {
-  // Avoid being suplicated;
+  // Avoid being duplicated;
   for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
     if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
 
@@ -788,7 +792,8 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
     worldOptions.drawDistance = drawDistanceInChunks;
     Chunck* currentChunck =
         chunckManager->getChunckByPosition(lastPlayerPosition);
-    if (currentChunck) scheduleChunksNeighbors(currentChunck, lastPlayerPosition);
+    if (currentChunck)
+      scheduleChunksNeighbors(currentChunck, lastPlayerPosition, true);
   }
 }
 

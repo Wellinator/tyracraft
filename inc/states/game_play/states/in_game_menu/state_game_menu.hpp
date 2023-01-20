@@ -1,6 +1,10 @@
 #pragma once
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
+#include "managers/font/font_manager.hpp"
+#include "constants.hpp"
+#include "entities/World.hpp"
+#include <string>
 #include <tamtypes.h>
 #include <tyra>
 
@@ -10,7 +14,7 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions { BackToGame, QuitToTitle, None };
+enum class GameMenuOptions { DrawDistance, BackToGame, QuitToTitle, None };
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -26,6 +30,7 @@ class StateGameMenu : public PlayingStateBase {
 
  private:
   Renderer* t_renderer;
+  FontManager* fontManager;
 
   // Overlay
   Sprite overlay;
@@ -44,6 +49,9 @@ class StateGameMenu : public PlayingStateBase {
   Sprite textQuitToTitle;
   Sprite textSelect;
 
+  Sprite horizontalScrollArea;
+  Sprite horizontalScrollHandler;
+
   GameMenuOptions selectedOption = GameMenuOptions::None;
   GameMenuOptions activeOption = GameMenuOptions::BackToGame;
 
@@ -55,4 +63,7 @@ class StateGameMenu : public PlayingStateBase {
   void hightLightActiveOption();
   void navigate();
   void unloadTextures();
+  void increaseDrawDistance();
+  void decreaseDrawDistance();
+  void updateDrawDistanceScroll();
 };
