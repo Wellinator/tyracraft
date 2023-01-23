@@ -35,8 +35,8 @@
 ############ TyraCraft 0.1.4 Roadmap ############
 
 * Features for pre-alpha release (v0.1.4):
-    ❌ -> Tool (Pickaxe) (WIP);
-    🔲 -> Fix blocks visibility on modify world;
+    ⚠️ -> Tool (Pickaxe) (WIP);
+    ✅ -> Fix blocks visibility on modify world;
     ✅ -> Update world options menu;
     ✅ -> Basic ingame menu for block selection;
     ✅ -> Implemented tyra manual render mode;
@@ -44,12 +44,12 @@
     ✅ -> Basic ambient and directional lighting effets;
     ✅ -> Basic Day/Night cycle;
     ✅ -> Adde tick manager (visible in debug info);
-    🔲 -> Add World size options;
-    🔲 -> Add input for seed;
-    🔲 -> Add ingame options: Draw distance;
-    🔲 -> Add support for custom textures;
-    🔲 -> Add particles system;
-    🔲 -> Add save support;
+    ⛔ -> Add World size options (Discontinued);
+    ✅ -> Add input for seed;
+    ✅ -> Add ingame options: Draw distance;
+    ✅ -> Add support for custom textures;
+    ⚠️ -> Add particles system;
+    ⚠️ -> Add save support;
 
 * Bug fixes for pre-alpha release (v0.1.4):
     ✅ -> Game chashes when creative sound finish;
@@ -64,4 +64,4 @@
         ✅ -> Fix walking state;
         ✅ -> Fix amimations state;
         ✅ -> Blocks textures ID (Kinda cache at rendering multiple blocks);
-        🔲 -> Fix audio FX;
+        ⚠️ -> Fix audio FX;
