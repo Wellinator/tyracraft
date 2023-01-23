@@ -8,10 +8,12 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#include "./utils.hpp"
+#include "utils.hpp"
 #include <fastmath.h>
 #include <physics/ray.hpp>
 #include <renderer/3d/bbox/bbox.hpp>
+#include <sifrpc.h>
+#include <loadfile.h>
 
 using Tyra::BBox;
 using Tyra::Math;
@@ -209,7 +211,7 @@ std::vector<UtilDirectory> Utils::listDir(const char* dir) {
   while ((dp = readdir(dirp)) != NULL) {
     result.push_back(UtilDirectory(dp->d_name, S_ISDIR(dp->d_stat.st_mode)));
   }
-  (void)closedir(dirp);
+  closedir(dirp);
 
   return result;
 }

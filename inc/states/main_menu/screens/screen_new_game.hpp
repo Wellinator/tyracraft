@@ -7,8 +7,10 @@
 #include <tamtypes.h>
 #include <tyra>
 #include <string>
+#include <vector>
 #include <fstream>
 #include <3libs/nlohmann/json.hpp>
+#include <utils.hpp>
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -17,8 +19,15 @@ using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
 using Tyra::TextureRepository;
+using json = nlohmann::json;
 
-enum class ScreenNewGameOptions { TexturePack, Seed, WorldType, CreateNewWorld, None };
+enum class ScreenNewGameOptions {
+  TexturePack,
+  Seed,
+  WorldType,
+  CreateNewWorld,
+  None
+};
 
 class ScreenNewGame : public ScreenBase {
  public:
@@ -69,7 +78,7 @@ class ScreenNewGame : public ScreenBase {
   u8 editingIndex = 0;
 
   std::vector<TexturePackInfoModel*> texturePacks;
-  TexturePackInfoModel* selectedTexturePack;
+  TexturePackInfoModel* selectedTexturePack = nullptr;
 
   void handleInput();
   void handleOptionsSelection();

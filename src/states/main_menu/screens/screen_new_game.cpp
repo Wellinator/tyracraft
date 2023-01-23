@@ -37,21 +37,23 @@ void ScreenNewGame::render() {
 
   this->renderSelectedOptions();
 
-  this->t_renderer->renderer2D.render(selectedTexturePack->icon);
-
   Color infoColor = Color(70, 70, 70);
   this->context->t_fontManager->printText(
       "NEW WORLD", FontOptions(Vec2(190, 140), infoColor, 0.8F));
   this->context->t_fontManager->printText(
       "Texture Packs: ", FontOptions(Vec2(190, 157), infoColor, 0.8F));
   this->context->t_fontManager->printText(
-      selectedTexturePack->title.c_str(),
-      FontOptions(Vec2(190, 172), infoColor, 0.8F));
-  this->context->t_fontManager->printText(
       "By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
-  this->context->t_fontManager->printText(
-      selectedTexturePack->author.c_str(),
-      FontOptions(Vec2(230, 187), infoColor, 0.8F));
+
+  if (selectedTexturePack) {
+    this->t_renderer->renderer2D.render(selectedTexturePack->icon);
+    this->context->t_fontManager->printText(
+        selectedTexturePack->title.c_str(),
+        FontOptions(Vec2(190, 172), infoColor, 0.8F));
+    this->context->t_fontManager->printText(
+        selectedTexturePack->author.c_str(),
+        FontOptions(Vec2(230, 187), infoColor, 0.8F));
+  }
 
   if (isEditingSeed) {
     FontOptions options;
@@ -395,36 +397,48 @@ std::string ScreenNewGame::getSeed() {
 void ScreenNewGame::getAvailableTexturePacks() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   std::string pathPrefix = "textures/texture_packs/";
-  auto texturePacksFolders = Utils::listDir(FileUtils::fromCwd(pathPrefix));
-  u8 tempId = 0;
+  std::vector<UtilDirectory> texturePacksFolders =
+      Utils::listDir(FileUtils::fromCwd(pathPrefix));
+  u8 tempId = 1;
 
   for (size_t i = 0; i < texturePacksFolders.size(); i++) {
-    const auto& dir = texturePacksFolders.at(i);
+    const UtilDirectory dir = texturePacksFolders.at(i);
     if (dir.isDir) {
-      auto texturePackInfoPath = pathPrefix + dir.name + "/info.json";
-      TexturePackInfoModel* model = new TexturePackInfoModel();
-
+      std::string textureDir = pathPrefix + dir.name;
+      std::string texturePackInfoPath = textureDir + "/info.json";
       std::ifstream texPackInfo(FileUtils::fromCwd(texturePackInfoPath));
-      nlohmann::json data = nlohmann::json::parse(texPackInfo);
 
-      model->id = tempId++;
-      model->path = dir.name;
-      model->author = data["author"].get<std::string>();
-      model->title = data["title"].get<std::string>();
-      model->description = data["description"].get<std::string>();
+      if (texPackInfo.is_open()) {
+        TexturePackInfoModel* model = new TexturePackInfoModel();
+        json data = json::parse(texPackInfo);
 
-      model->icon.size.set(64, 64);
-      model->icon.position.set(127, 146);
-      model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
+        model->id = tempId++;
+        model->path = std::string(dir.name);
+        model->author = data["author"].get<std::string>();
+        model->title = data["title"].get<std::string>();
+        model->description = data["description"].get<std::string>();
 
-      textureRepo->add(FileUtils::fromCwd(pathPrefix + dir.name + "/icon.png"))
-          ->addLink(model->icon.id);
+        model->icon.size.set(64, 64);
+        model->icon.position.set(127, 146);
+        model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
 
-      texturePacks.push_back(model);
+        textureRepo->add(FileUtils::fromCwd(textureDir + "/icon.png"))
+            ->addLink(model->icon.id);
 
-      if (dir.name == "default") selectedTexturePack = model;
+        texturePacks.push_back(model);
+
+        if (dir.name.compare("default") == 0) {
+          TYRA_LOG("Setting  selectedTexturePack...");
+          selectedTexturePack = model;
+        }
+
+        texPackInfo.close();
+      }
     }
   }
+
+  if (!selectedTexturePack && texturePacks.size())
+    selectedTexturePack = texturePacks[0];
 }
 
 void ScreenNewGame::selectPreviousTexturePack() {
