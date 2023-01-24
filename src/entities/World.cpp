@@ -21,6 +21,7 @@ World::World(const NewGameOptions& options) {
 
   this->worldOptions = options;
   this->blockManager = new BlockManager();
+  this->cloudsManager = new CloudsManager();
   this->chunckManager = new ChunckManager();
   CrossCraft_World_Init(seed);
 }
@@ -28,6 +29,7 @@ World::World(const NewGameOptions& options) {
 World::~World() {
   delete this->blockManager;
   delete this->chunckManager;
+  delete this->cloudsManager;
 
   CrossCraft_World_Deinit();
 }
@@ -43,6 +45,7 @@ void World::init(Renderer* t_renderer, ItemRepository* itemRepository,
   this->stapip.setRenderer(&t_renderer->core);
 
   this->blockManager->init(t_renderer, &this->mcPip, worldOptions.texturePack);
+  this->cloudsManager->init(t_renderer);
   this->chunckManager->init();
 
   this->calcRawBlockBBox(&mcPip);
@@ -65,6 +68,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
                    const Vec4& camPosition) {
   this->framesCounter++;
 
+  cloudsManager->update();
   dayNightCycleManager.update();
   updateLightModel();
 
@@ -84,6 +88,7 @@ void World::render() {
   this->t_renderer->core.setClearScreenColor(
       dayNightCycleManager.getSkyColor());
 
+  cloudsManager->render();
   this->chunckManager->renderer(this->t_renderer, &this->stapip,
                                 this->blockManager);
 

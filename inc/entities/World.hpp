@@ -14,6 +14,7 @@
 #include <vector>
 #include <algorithm>
 #include "managers/chunck_manager.hpp"
+#include "managers/clouds_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
@@ -58,6 +59,7 @@ class World {
 
   Renderer* t_renderer;
   BlockManager* blockManager;
+  CloudsManager* cloudsManager;
   ChunckManager* chunckManager;
   DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
   SoundManager* t_soundManager;
