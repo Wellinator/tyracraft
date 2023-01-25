@@ -9,17 +9,16 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
-  delete this->t_creativeAudioListener;
   delete this->t_fontManager;
 }
 
 void CreativePlayingState::init() {
-  this->t_creativeAudioListener =
-      new CreativeAudioListener(&stateGamePlay->context->t_engine->audio.song);
+  this->creativeAudioListener.init(
+      &stateGamePlay->context->t_engine->audio.song);
   this->audioListenerId =
       stateGamePlay->context->t_engine->audio.song.addListener(
-          this->t_creativeAudioListener);
-  this->t_creativeAudioListener->playRandomCreativeSound();
+          &creativeAudioListener);
+  this->creativeAudioListener.playRandomCreativeSound();
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
@@ -205,7 +204,7 @@ void CreativePlayingState::printMemoryInfoToLog() {
 
 void CreativePlayingState::playNewRandomSong() {
   TYRA_LOG("Song finished, playing a new random song.");
-  this->t_creativeAudioListener->playRandomCreativeSound();
+  this->creativeAudioListener.playRandomCreativeSound();
 }
 
 void CreativePlayingState::closeInventory() {

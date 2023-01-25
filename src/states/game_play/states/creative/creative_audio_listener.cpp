@@ -1,11 +1,11 @@
 
 #include "states/game_play/states/creative/creative_audio_listener.hpp"
 
-CreativeAudioListener::CreativeAudioListener(AudioSong* t_song) {
-  this->t_song = t_song;
-}
+CreativeAudioListener::CreativeAudioListener() {}
 
 CreativeAudioListener::~CreativeAudioListener() {}
+
+void CreativeAudioListener::init(AudioSong* t_song) { this->t_song = t_song; }
 
 void CreativeAudioListener::onAudioTick() {}
 

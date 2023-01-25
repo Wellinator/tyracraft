@@ -36,7 +36,7 @@ class CreativePlayingState : public PlayingStateBase {
   void inventoryInputHandler(const float& deltaTime);
 
   inline const u8 isSongPlaying() {
-    return t_creativeAudioListener->t_song->isPlaying();
+    return creativeAudioListener.t_song->isPlaying();
   };
 
   /**
@@ -45,7 +45,7 @@ class CreativePlayingState : public PlayingStateBase {
    */
   void printMemoryInfoToLog();
 
-  CreativeAudioListener* t_creativeAudioListener = nullptr;
+  CreativeAudioListener creativeAudioListener;
   FontManager* t_fontManager = nullptr;
   u32 audioListenerId;
   float elapsedTimeInSec;
