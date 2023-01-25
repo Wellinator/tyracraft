@@ -5,20 +5,20 @@ CreativeAudioListener::CreativeAudioListener() {}
 
 CreativeAudioListener::~CreativeAudioListener() {}
 
-void CreativeAudioListener::init(AudioSong* t_song) { this->t_song = t_song; }
+void CreativeAudioListener::init(AudioSong* audioSong) { t_song = audioSong; }
 
 void CreativeAudioListener::onAudioTick() {}
 
 void CreativeAudioListener::onAudioFinish() {}
 
 void CreativeAudioListener::playRandomCreativeSound() {
-  this->t_song->stop();
-  const std::string songName = this->getRandonMenuSongName();
+  t_song->stop();
+  const std::string songName = getRandonMenuSongName();
   TYRA_LOG("Playing song -> ", songName.c_str());
-  this->t_song->load(FileUtils::fromCwd(songName));
-  this->t_song->inLoop = false;
-  this->t_song->setVolume(90);
-  this->t_song->play();
+  t_song->load(FileUtils::fromCwd(songName));
+  t_song->inLoop = false;
+  t_song->setVolume(90);
+  t_song->play();
 }
 
 const std::string CreativeAudioListener::getRandonMenuSongName() {

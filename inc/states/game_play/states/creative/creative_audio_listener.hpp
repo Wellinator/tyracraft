@@ -15,7 +15,7 @@ class CreativeAudioListener : public AudioListener {
   CreativeAudioListener();
   ~CreativeAudioListener();
 
-  void init(AudioSong* t_song);
+  void init(AudioSong* audioSong);
   void onAudioTick();
   void onAudioFinish();
   void playRandomCreativeSound();
