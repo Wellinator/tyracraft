@@ -3,7 +3,7 @@
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
-  this->inputSeed = getSeed();
+  this->inputSeed = std::to_string(1);//getSeed();
   this->init();
 }
 

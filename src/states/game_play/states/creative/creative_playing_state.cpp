@@ -137,24 +137,23 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
-  Inventory* creativeInvetory = stateGamePlay->ui->getInvetory();
-  if (creativeInvetory) {
-    if (clicked.DpadUp)
-      creativeInvetory->moveSelectorUp();
-    else if (clicked.DpadDown)
-      creativeInvetory->moveSelectorDown();
-    else if (clicked.DpadLeft)
-      creativeInvetory->moveSelectorLeft();
-    else if (clicked.DpadRight)
-      creativeInvetory->moveSelectorRight();
-  }
+  Inventory& creativeInvetory = *stateGamePlay->ui->getInvetory();
+
+  if (clicked.DpadUp)
+    creativeInvetory.moveSelectorUp();
+  else if (clicked.DpadDown)
+    creativeInvetory.moveSelectorDown();
+  else if (clicked.DpadLeft)
+    creativeInvetory.moveSelectorLeft();
+  else if (clicked.DpadRight)
+    creativeInvetory.moveSelectorRight();
 
   if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
   if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
 
   if (clicked.Cross) {
     stateGamePlay->player->setItemToInventory(
-        creativeInvetory->getSelectedItem());
+        creativeInvetory.getSelectedItem());
   }
 
   if (clicked.Circle) closeInventory();
@@ -168,7 +167,7 @@ void CreativePlayingState::renderCreativeUi() {
 }
 
 void CreativePlayingState::drawDegubInfo() {
-  Info* info = &stateGamePlay->context->t_engine->info;
+  const Info& info = stateGamePlay->context->t_engine->info;
 
   // Draw seed
   std::string seed = std::string("Seed: ").append(
@@ -176,7 +175,7 @@ void CreativePlayingState::drawDegubInfo() {
   fontManager.printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
-  std::string fps = std::string("FPS: ").append(std::to_string(info->getFps()));
+  std::string fps = std::string("FPS: ").append(std::to_string(info.getFps()));
   fontManager.printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
