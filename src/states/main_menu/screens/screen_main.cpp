@@ -37,7 +37,7 @@ void ScreenMain::render() {
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    this->context->t_fontManager->printText("Play Game", fontOptions);
+    this->context->fontManager.printText("Play Game", fontOptions);
   }
 
   // How To Play
@@ -47,7 +47,7 @@ void ScreenMain::render() {
     fontOptions.color.set(this->activeOption == ScreenMainOptions::HowToPlay
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    this->context->t_fontManager->printText("How to Play", fontOptions);
+    this->context->fontManager.printText("How to Play", fontOptions);
   }
 
   // About
@@ -57,11 +57,11 @@ void ScreenMain::render() {
     fontOptions.color.set(this->activeOption == ScreenMainOptions::About
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    this->context->t_fontManager->printText("About", fontOptions);
+    this->context->fontManager.printText("About", fontOptions);
   }
 
   this->t_renderer->renderer2D.render(&btnCross);
-  this->context->t_fontManager->printText("Select", 35, 407);
+  this->context->fontManager.printText("Select", 35, 407);
 }
 
 void ScreenMain::init() {

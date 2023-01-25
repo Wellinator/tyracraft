@@ -1,11 +1,13 @@
 #include "managers/font/font_manager.hpp"
 
-FontManager::FontManager(Renderer* renderer) {
+FontManager::FontManager() {}
+
+FontManager::~FontManager() { this->unloadFontChars(); };
+
+void FontManager::init(Renderer* renderer) {
   this->t_renderer = renderer;
   this->loadFontChars();
 }
-
-FontManager::~FontManager() { this->unloadFontChars(); };
 
 void FontManager::printText(const std::string& text,
                             const FontOptions& options) {

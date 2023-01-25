@@ -20,8 +20,10 @@ class FontManager {
       std::string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
   const std::string NumericValidChars = std::string("1234567890");
 
-  FontManager(Renderer* renderer);
+  FontManager();
   ~FontManager();
+
+  void init(Renderer* renderer);
 
   void printText(const std::string& text, const FontOptions& options);
 

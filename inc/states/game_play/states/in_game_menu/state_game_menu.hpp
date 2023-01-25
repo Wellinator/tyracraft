@@ -30,7 +30,7 @@ class StateGameMenu : public PlayingStateBase {
 
  private:
   Renderer* t_renderer;
-  FontManager* fontManager;
+  FontManager fontManager;
 
   // Overlay
   Sprite overlay;

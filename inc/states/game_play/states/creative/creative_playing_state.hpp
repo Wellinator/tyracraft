@@ -46,7 +46,7 @@ class CreativePlayingState : public PlayingStateBase {
   void printMemoryInfoToLog();
 
   CreativeAudioListener creativeAudioListener;
-  FontManager* t_fontManager = nullptr;
+  FontManager fontManager;
   u32 audioListenerId;
   float elapsedTimeInSec;
   u8 debugMode = false;

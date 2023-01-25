@@ -2,12 +2,11 @@
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {
-  t_fontManager = new FontManager(&t_context->context->t_engine->renderer);
+  fontManager.init(&t_context->context->t_engine->renderer);
 }
 
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(audioListenerId);
-  delete t_fontManager;
 }
 
 void CreativePlayingState::init() {
@@ -52,8 +51,7 @@ void CreativePlayingState::render() {
 
   renderCreativeUi();
 
-  if (isInventoryOpened())
-    stateGamePlay->ui->renderInventoryMenu(t_fontManager);
+  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu(&fontManager);
 
   if (debugMode) drawDegubInfo();
 
@@ -175,19 +173,17 @@ void CreativePlayingState::drawDegubInfo() {
   // Draw seed
   std::string seed = std::string("Seed: ").append(
       std::to_string(stateGamePlay->world->getSeed()));
-  t_fontManager->printText(seed,
-                           FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
+  fontManager.printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
   std::string fps = std::string("FPS: ").append(std::to_string(info->getFps()));
-  t_fontManager->printText(fps,
-                           FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
+  fontManager.printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
   std::string ticks = std::string("Ticks: ").append(
       std::to_string(static_cast<int>(g_ticksCounter)));
-  t_fontManager->printText(ticks,
-                           FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
+  fontManager.printText(ticks,
+                        FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
