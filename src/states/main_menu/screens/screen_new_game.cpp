@@ -3,7 +3,7 @@
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
-  this->inputSeed = std::to_string(1);//getSeed();
+  this->inputSeed = getSeed();
   this->init();
 }
 
@@ -63,8 +63,7 @@ void ScreenNewGame::render() {
     if (fpsCounter < 128) {
       this->context->fontManager.printText(this->tempSeed.c_str(), options);
     } else {
-      this->context->fontManager.printText(this->tempSeedMask.c_str(),
-                                              options);
+      this->context->fontManager.printText(this->tempSeedMask.c_str(), options);
     }
 
   } else {
