@@ -97,8 +97,6 @@ class Chunck {
 
   inline const bool hasDataToDraw() { return vertices.size() > 0; };
 
-  VertexBlockData vertexBlockData;
-
   Vec4 sunPosition;
   float sunLightIntensity;
   float ambientLightIntesity;

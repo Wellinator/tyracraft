@@ -32,7 +32,7 @@ BlockManager::~BlockManager() {
 void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
                         const std::string& texturePack) {
   this->t_renderer = t_renderer;
-  this->t_blockTextureRepository = new BlockTextureRepository(mcPip);
+  this->t_blockTextureRepository = new BlockTextureRepository();
   this->loadBlocksTextures(texturePack);
   this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
@@ -40,7 +40,8 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
 
 void BlockManager::loadBlocksTextures(const std::string& texturePack) {
   const std::string pathPrefix = "textures/texture_packs/";
-  const std::string path = pathPrefix + texturePack + "/block/texture_atlas.png";
+  const std::string path =
+      pathPrefix + texturePack + "/block/texture_atlas.png";
 
   blocksTexAtlas =
       t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));

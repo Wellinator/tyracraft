@@ -176,13 +176,13 @@ void Chunck::loadDrawData() {
 
   const float scale = 1.0F / 16.0F;
   const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-  const Vec4* rawData = vertexBlockData.getVertexData();
+  const Vec4* rawData = VertexBlockData::getVertexData();
 
   for (size_t i = 0; i < blocks.size(); i++) {
     int vert = 0;
 
     if (blocks[i]->isTopFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(120, 120, 120));
         verticesNormals.push_back(Vec4(0.0F, 1.0F, 0.0F));
@@ -202,7 +202,7 @@ void Chunck::loadDrawData() {
     vert = 6;
 
     if (blocks[i]->isBottomFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(60, 60, 60));
         verticesNormals.push_back(Vec4(0.0F, -1.0F, 0.0F));
@@ -221,7 +221,7 @@ void Chunck::loadDrawData() {
     vert = 12;
 
     if (blocks[i]->isLeftFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(70, 70, 70));
         verticesNormals.push_back(Vec4(0.0F, 0.0F, -1.0F));
@@ -240,7 +240,7 @@ void Chunck::loadDrawData() {
     vert = 18;
 
     if (blocks[i]->isRightFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(100, 100, 100));
         verticesNormals.push_back(Vec4(0.0F, 0.0F, 1.0F));
@@ -259,7 +259,7 @@ void Chunck::loadDrawData() {
     vert = 24;
 
     if (blocks[i]->isBackFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(80, 80, 80));
         verticesNormals.push_back(Vec4(1.0F, 0.0F, 0.0F));
@@ -279,7 +279,7 @@ void Chunck::loadDrawData() {
     vert = 30;
 
     if (blocks[i]->isFrontFaceVisible()) {
-      for (size_t j = 0; j < vertexBlockData.FACES_COUNT; j++) {
+      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
         // verticesColors.push_back(Color(110, 110, 110));
         verticesNormals.push_back(Vec4(-1.0F, 0.0F, 0.0F));
