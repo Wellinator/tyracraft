@@ -32,7 +32,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
       stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
-      stateGamePlay->world->chunckManager->getVisibleChunks(), &terrainHeight);
+      stateGamePlay->world->chunckManager.getVisibleChunks(), &terrainHeight);
 
   stateGamePlay->ui->update();
 
@@ -84,7 +84,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     playerMovementDirection = Vec4((lJoyPad.h - 128.0F) / 128.0F, 0.0F,
                                    (lJoyPad.v - 128.0F) / 128.0F);
     terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
-        stateGamePlay->world->chunckManager->getVisibleChunks());
+        stateGamePlay->world->chunckManager.getVisibleChunks());
 
     if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
@@ -126,7 +126,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     }
 
     if (clicked.Cross) {
-      if (elapsedTimeInSec < 0.5F) {
+      if (elapsedTimeInSec < 0.45F) {
         stateGamePlay->player->toggleFlying();
       }
       elapsedTimeInSec = 0.0F;

@@ -57,10 +57,10 @@ class World {
   ~World();
 
   Renderer* t_renderer;
-  BlockManager* blockManager;
-  ChunckManager* chunckManager;
-  DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
   SoundManager* t_soundManager;
+  BlockManager blockManager;
+  ChunckManager chunckManager;
+  DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
@@ -78,7 +78,7 @@ class World {
   Block* targetBlock = nullptr;
 
   void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
-                         std::vector<Chunck*> chuncks);
+                         const std::vector<Chunck*>& chuncks);
   void removeBlock(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player);
   inline const u8 validTargetBlock() {
@@ -135,7 +135,6 @@ class World {
 
   // From terrain manager
   Ray ray;
-  const u8 UPDATE_TARGET_LIMIT = 3;
   ItemRepository* t_itemRepository;
 
   // Breaking control
@@ -174,7 +173,6 @@ class World {
 
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
   void getBlockMinMax(Block* t_block);
-  u8 shouldUpdateTargetBlock();
 
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);

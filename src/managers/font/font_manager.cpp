@@ -27,7 +27,7 @@ void FontManager::printText(const std::string& text,
         continue;
       }
 
-      Sprite spriteToPrint = *fontCharAt->t_sprite;
+      Sprite& spriteToPrint = *fontCharAt->t_sprite;
       spriteToPrint.position.set(options.position.x + cursorX,
                                  options.position.y + cursorY);
       spriteToPrint.color.set(options.color);

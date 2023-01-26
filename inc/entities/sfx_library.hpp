@@ -16,8 +16,8 @@ class SfxLibrary {
   SfxLibrary(Audio* t_audio);
   ~SfxLibrary();
 
-  SfxLibraryCategory* getCategory(SoundFxCategory idCategory);
-  SfxLibrarySound* getSound(SoundFxCategory idCategory, SoundFX idSound);
+  SfxLibraryCategory* getCategory(const SoundFxCategory& idCategory);
+  SfxLibrarySound* getSound(const SoundFxCategory& idCategory, const SoundFX& idSound);
 
  private:
   Audio* t_audio;

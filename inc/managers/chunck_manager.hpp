@@ -28,11 +28,13 @@ class ChunckManager {
 
   Chunck* getChunckByPosition(const Vec4& position);
   Chunck* getChunckByOffset(const Vec4& offset);
-  Chunck* getChunckById(const u16 id);
+  Chunck* getChunckById(const u16& id);
+
+  std::vector<Chunck*>& getChuncks() { return chuncks; };
+
+  std::vector<Chunck*>& getVisibleChunks();
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
 
-  std::vector<Chunck*> getChuncks() { return this->chuncks; };
-  std::vector<Chunck*> getVisibleChunks();
   void init();
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
               WorldLightModel* worldLightModel);

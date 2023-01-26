@@ -37,7 +37,7 @@ enum class ChunkState { Loaded, Loading, Clean };
 
 class Chunck {
  public:
-  Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id);
+  Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
   ~Chunck();
 
   u16 id = 0;

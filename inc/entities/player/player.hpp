@@ -49,14 +49,12 @@ using Tyra::Vec4;
 /** Player 3D object class  */
 class Player {
  public:
-  std::unique_ptr<DynamicMesh> mesh;
-  std::unique_ptr<DynamicMesh> armMesh;
   Player(Renderer* t_renderer, SoundManager* t_soundManager,
          BlockManager* t_blockManager);
   ~Player();
 
   void update(const float& deltaTime, const Vec4& movementDir,
-              const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+              const Vec4& camDir, const std::vector<Chunck*>& loadedChunks,
               TerrainHeightModel* terrainHeight);
   void render();
 
@@ -70,6 +68,9 @@ class Player {
   inline const u8 isHoldingAnItem() {
     return getSelectedInventoryItemType() != ItemId::empty;
   };
+
+  std::unique_ptr<DynamicMesh> mesh;
+  std::unique_ptr<DynamicMesh> armMesh;
 
   Vec4 spawnArea;
   u16 currentChunckId = 0;
@@ -110,7 +111,7 @@ class Player {
   void setItemToInventory(const ItemId& itemToShift);
 
   TerrainHeightModel getTerrainHeightAtPosition(
-      std::vector<Chunck*> loadedChunks);
+      const std::vector<Chunck*>& loadedChunks);
 
  private:
   BlockManager* t_blockManager;
@@ -120,7 +121,7 @@ class Player {
                        const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
-  const float L_JOYPAD_DEAD_ZONE = 0.15F;
+  const float L_JOYPAD_DEAD_ZONE = 0.20F;
 
   // Forces values
   float speed = 100;
@@ -137,8 +138,9 @@ class Player {
   void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(std::vector<Chunck*> loadedChunks, const float& deltaTime,
-                    const Vec4& nextPlayerPos, u8 isColliding = 0);
+  u8 updatePosition(const std::vector<Chunck*>& loadedChunks,
+                    const float& deltaTime, const Vec4& nextPlayerPos,
+                    u8 isColliding = 0);
 
   // Inventory
 
