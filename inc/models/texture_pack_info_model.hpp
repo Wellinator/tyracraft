@@ -7,9 +7,6 @@ using Tyra::Sprite;
 
 class TexturePackInfoModel {
  public:
-  TexturePackInfoModel(){};
-  ~TexturePackInfoModel(){};
-
   u8 id;
   std::string path;
   std::string author;

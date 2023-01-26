@@ -15,7 +15,6 @@
 #include "entities/item.hpp"
 #include <tamtypes.h>
 #include "managers/items_repository.hpp"
-#include "managers/collision_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
