@@ -105,7 +105,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     }
   }
 
-  if (framesCounter % 3 == 0) {
+  if (framesCounter % 2 == 0) {
     unloadScheduledChunks();
     loadScheduledChunks();
   }
@@ -199,7 +199,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     } else {
       if (force_loading) {
         chuncks[i]->clear();
-        buildChunkAsync(chuncks[i]);
+        buildChunkAsync(chuncks[i], worldOptions.drawDistance);
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
@@ -223,16 +223,25 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0) {
     if (tempChuncksToLoad[0]->state != ChunkState::Loaded)
-      return buildChunkAsync(tempChuncksToLoad[0]);
+      return buildChunkAsync(tempChuncksToLoad[0], worldOptions.drawDistance);
     tempChuncksToLoad.erase(tempChuncksToLoad.begin());
   };
 }
 
 void World::unloadScheduledChunks() {
-  if (tempChuncksToUnLoad.size() > 0) {
-    tempChuncksToUnLoad[0]->clear();
-    tempChuncksToUnLoad.erase(tempChuncksToUnLoad.begin());
+  const size_t size = tempChuncksToUnLoad.size();
+  const u8 limit = 2;
+  u8 counter = 0;
+
+  for (size_t i = 0; i < size; i++) {
+    if (tempChuncksToUnLoad[i]->state != ChunkState::Clean) {
+      tempChuncksToUnLoad[i]->clear();
+      counter++;
+      if (counter >= limit) return;
+    }
   }
+
+  tempChuncksToUnLoad.clear();
 }
 
 void World::renderBlockDamageOverlay() {
@@ -634,13 +643,13 @@ void World::buildChunk(Chunck* t_chunck) {
   t_chunck->loadDrawData();
 }
 
-void World::buildChunkAsync(Chunck* t_chunck) {
+void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   int batchCounter = 0;
   int x = t_chunck->tempLoadingOffset->x;
   int y = t_chunck->tempLoadingOffset->y;
   int z = t_chunck->tempLoadingOffset->z;
 
-  while (batchCounter < LOAD_CHUNK_BATCH) {
+  while (batchCounter < LOAD_CHUNK_BATCH * loading_speed) {
     if (x >= t_chunck->maxOffset->x) break;
 
     unsigned int blockIndex = getIndexByOffset(x, y, z);
@@ -695,7 +704,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     }
   }
 
-  if (batchCounter >= LOAD_CHUNK_BATCH) {
+  if (batchCounter >= LOAD_CHUNK_BATCH * loading_speed) {
     t_chunck->tempLoadingOffset->set(x, y, z);
     return;
   }

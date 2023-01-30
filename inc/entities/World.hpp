@@ -88,7 +88,7 @@ class World {
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
-  void buildChunkAsync(Chunck* t_chunck);
+  void buildChunkAsync(Chunck* t_chunck, const u8& loading_speed);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
