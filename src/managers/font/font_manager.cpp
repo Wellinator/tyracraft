@@ -11,20 +11,21 @@ void FontManager::printText(const std::string& text,
                             const FontOptions& options) {
   float cursorX = 0.0F;
   float cursorY = 0.0F;
+  const u16 stringLenth = text.size();
 
-  for (size_t i = 0; i < text.size(); i++) {
+  for (size_t i = 0; i < stringLenth; i++) {
     const u8 charCode = getCodeFromChar(text.at(i));
-    const FontChar* fontCharAt = getFontChatByCode(charCode);
+    const Sprite* fontCharAt = getFontChatByCode(charCode);
 
     if (fontCharAt != nullptr) {
       // Break line
-      if (fontCharAt->_charCode == LINE_FEED) {
+      if (charCode == LINE_FEED) {
         cursorY += BASE_LINE_HEIGHT * options.scale;
         cursorX = 0;
         continue;
       }
 
-      Sprite spriteToPrint = *fontCharAt->t_sprite;
+      Sprite spriteToPrint = *fontCharAt;
       spriteToPrint.position.set(options.position.x + cursorX,
                                  options.position.y + cursorY);
       spriteToPrint.color.set(options.color);
@@ -60,8 +61,7 @@ void FontManager::loadFontChars() {
         .add(FileUtils::fromCwd(charPath))
         ->addLink(charSprite->id);
 
-    FontChar* fontChar = new FontChar(code, charSprite);
-    printable_ascii_chars_sprites[code] = fontChar;
+    printable_ascii_chars_sprites[code] = charSprite;
   }
 };
 
@@ -71,6 +71,6 @@ void FontManager::unloadFontChars() {
   }
 }
 
-const FontChar* FontManager::getFontChatByCode(const u8& code) {
+const Sprite* FontManager::getFontChatByCode(const u8& code) {
   return printable_ascii_chars_sprites[code];
 }

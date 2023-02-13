@@ -1,9 +1,9 @@
 #pragma once
 #include <tamtypes.h>
 #include <vector>
+#include <array>
 #include <string>
 #include "tyra"
-#include "managers/font/font_char.hpp"
 #include "managers/font/font_options.hpp"
 
 using Tyra::Color;
@@ -35,7 +35,7 @@ class FontManager {
 
  private:
   Renderer* t_renderer;
-  FontChar* printable_ascii_chars_sprites[256];
+  std::array<Sprite*, 256> printable_ascii_chars_sprites;
   u8 char_widths[256] = {
       8,  6,  9,  6,  6,  6,  6,  6,  6,  96, 0,  6,  14, 0,  6,  6,  6,  6,
       6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  0,  0,  0,  0,  4,  4,  8,  12,
@@ -60,5 +60,5 @@ class FontManager {
   void loadFontChars();
   void unloadFontChars();
   inline const u8 getCodeFromChar(const char& c) { return int(c); };
-  const FontChar* getFontChatByCode(const u8& code);
+  inline const Sprite* getFontChatByCode(const u8& code);
 };
