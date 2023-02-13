@@ -9,7 +9,6 @@ FontManager::~FontManager() { this->unloadFontChars(); };
 
 void FontManager::printText(const std::string& text,
                             const FontOptions& options) {
-  // TODO: implement line break
   float cursorX = 0.0F;
   float cursorY = 0.0F;
 

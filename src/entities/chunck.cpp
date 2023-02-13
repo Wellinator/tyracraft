@@ -68,8 +68,6 @@ void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
   t_block->color.b = isTarget ? 160 : 116;
 }
 
-// TODO: initi info and color bag once per chunk loading
-// TODO: calc light info once per chunk loading
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
   if (isDrawDataLoaded()) {

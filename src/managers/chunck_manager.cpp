@@ -36,7 +36,6 @@ void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void ChunckManager::generateChunks() {
-  // TODO: create only the chuncks that'll be rendered
   u16 tempId = 1;
 
   for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNCK_SIZE) {
