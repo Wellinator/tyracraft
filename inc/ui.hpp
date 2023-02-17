@@ -11,6 +11,7 @@
 
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::Texture;
 
 class Ui {
  public:
@@ -50,6 +51,10 @@ class Ui {
   Sprite hungry[10];
   Sprite armor[10];
   Sprite breath[10];
+  Texture* healthTexture;
+  Texture* hungryTexture;
+  Texture* armorTexture;
+  Texture* breathTexture;
 
   // Player inventory ui
   Sprite* playerInventory[HOT_INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
