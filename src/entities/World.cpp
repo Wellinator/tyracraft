@@ -668,13 +668,15 @@ void World::buildChunk(Chunck* t_chunck) {
 }
 
 void World::buildChunkAsync(Chunck* t_chunck) {
-  int batchCounter = 0;
-  int x = t_chunck->tempLoadingOffset->x;
-  int y = t_chunck->tempLoadingOffset->y;
-  int z = t_chunck->tempLoadingOffset->z;
+  uint16_t safeWhileBreak = 0;
+  uint16_t batchCounter = 0;
+  uint16_t x = t_chunck->tempLoadingOffset->x;
+  uint16_t y = t_chunck->tempLoadingOffset->y;
+  uint16_t z = t_chunck->tempLoadingOffset->z;
 
   while (batchCounter < LOAD_CHUNK_BATCH) {
     if (x >= t_chunck->maxOffset->x) break;
+    safeWhileBreak++;
 
     unsigned int blockIndex = this->getIndexByOffset(x, y, z);
     u8 block_type = GetBlockFromMap(terrain, x, y, z);
@@ -726,6 +728,8 @@ void World::buildChunkAsync(Chunck* t_chunck) {
       z = t_chunck->minOffset->z;
       x++;
     }
+
+    if (safeWhileBreak > CHUNCK_LENGTH) break;
   }
 
   if (batchCounter >= LOAD_CHUNK_BATCH) {
