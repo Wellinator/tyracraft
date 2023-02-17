@@ -472,7 +472,7 @@ void Player::selectNextItem() {
   int currentItemId = (int)inventory[selectedInventoryIndex];
   ItemId nextItem;
 
-  if ((currentItemId + 1) >= (int)ItemId::wooden_axe) {
+  if ((currentItemId + 1) >= (int)ItemId::total_of_items) {
     nextItem = ItemId::empty;
   } else {
     nextItem = static_cast<ItemId>(currentItemId + 1);
@@ -487,7 +487,7 @@ void Player::selectPreviousItem() {
   ItemId previousItem;
 
   if ((currentItemId - 1) < 0) {
-    previousItem = ItemId::chiseled_stone_bricks;
+    previousItem = ItemId::emerald_ore_block;
   } else {
     previousItem = static_cast<ItemId>(currentItemId - 1);
   }
