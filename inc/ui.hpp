@@ -28,7 +28,7 @@ class Ui {
   void renderHealthBar();
   void renderHungerBar();
   void renderBreathBar();
-  void renderInventoryMenu(FontManager* t_fontManager);
+  void renderInventoryMenu();
 
   void loadInventory();
   void unloadInventory();

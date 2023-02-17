@@ -1,16 +1,13 @@
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
+#include "managers/font/font_manager.hpp"
 
 StateGameMenu::StateGameMenu(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
-  fontManager = new FontManager(t_renderer);
   this->init();
 }
 
-StateGameMenu::~StateGameMenu() {
-  this->unloadTextures();
-  delete fontManager;
-}
+StateGameMenu::~StateGameMenu() { this->unloadTextures(); }
 
 void StateGameMenu::init() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
@@ -123,7 +120,7 @@ void StateGameMenu::render() {
   drawDistanceLabel.position.set(165, 180);
   if (activeOption == GameMenuOptions::DrawDistance)
     drawDistanceLabel.color.set(128, 128, 0);
-  fontManager->printText("Draw Distance", drawDistanceLabel);
+  FontManager_printText("Draw Distance", drawDistanceLabel);
   t_renderer->renderer2D.render(horizontalScrollArea);
   t_renderer->renderer2D.render(horizontalScrollHandler);
 

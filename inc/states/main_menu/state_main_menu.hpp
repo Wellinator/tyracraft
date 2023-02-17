@@ -51,8 +51,6 @@ class StateMainMenu : public GameState {
   void playClickSound();
 
   StaticMesh* menuSkybox;
-  FontManager* t_fontManager;
-
  private:
   Renderer* t_renderer;
   Sprite title[2];

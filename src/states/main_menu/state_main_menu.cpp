@@ -15,13 +15,9 @@ using Tyra::RendererSettings;
 
 StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
   this->init();
-  this->t_fontManager = new FontManager(&t_context->t_engine->renderer);
 }
 
-StateMainMenu::~StateMainMenu() {
-  delete t_fontManager;
-  this->unloadTextures();
-}
+StateMainMenu::~StateMainMenu() { this->unloadTextures(); }
 
 void StateMainMenu::init() {
   /**

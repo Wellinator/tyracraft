@@ -214,8 +214,8 @@ void Ui::unloadInventory() {
   creativeInventory = nullptr;
 }
 
-void Ui::renderInventoryMenu(FontManager* t_fontManager) {
+void Ui::renderInventoryMenu() {
   if (isInventoryOpened() && creativeInventory) {
-    creativeInventory->render(t_fontManager);
+    creativeInventory->render();
   }
 }
