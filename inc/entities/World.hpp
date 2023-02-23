@@ -141,9 +141,7 @@ class World {
   u8 _isBreakingBlock = false;
   float breaking_time_pessed = 0.0F;
   float lastTimePlayedBreakingSfx = 0.0F;
-
-  // TODO: Refactor to region and cache it. See
-  // https://minecraft.fandom.com/el/wiki/Region_file_format;
+  
   Vec4 minWorldPos;
   Vec4 maxWorldPos;
   BBox* rawBlockBbox;

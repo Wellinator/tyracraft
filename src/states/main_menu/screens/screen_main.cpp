@@ -2,6 +2,7 @@
 #include "states/main_menu/screens/screen_how_to_play.hpp"
 #include "states/main_menu/screens/screen_about.hpp"
 #include "states/main_menu/screens/screen_new_game.hpp"
+#include "managers/font/font_manager.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
@@ -37,7 +38,7 @@ void ScreenMain::render() {
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    this->context->fontManager.printText("Play Game", fontOptions);
+    FontManager_printText("Play Game", fontOptions);
   }
 
   // How To Play
@@ -47,7 +48,7 @@ void ScreenMain::render() {
     fontOptions.color.set(this->activeOption == ScreenMainOptions::HowToPlay
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    this->context->fontManager.printText("How to Play", fontOptions);
+    FontManager_printText("How to Play", fontOptions);
   }
 
   // About
@@ -57,11 +58,11 @@ void ScreenMain::render() {
     fontOptions.color.set(this->activeOption == ScreenMainOptions::About
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    this->context->fontManager.printText("About", fontOptions);
+    FontManager_printText("About", fontOptions);
   }
 
   this->t_renderer->renderer2D.render(&btnCross);
-  this->context->fontManager.printText("Select", 35, 407);
+  FontManager_printText("Select", 35, 407);
 }
 
 void ScreenMain::init() {

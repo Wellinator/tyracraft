@@ -12,9 +12,10 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   this->t_blockManager = t_blockManager;
   this->t_soundManager = t_soundManager;
 
-  this->loadMesh();
-  this->loadArmMesh();
-  this->calcStaticBBox();
+  loadPlayerTexture();
+  loadMesh();
+  loadArmMesh();
+  calcStaticBBox();
 
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
@@ -46,11 +47,8 @@ Player::~Player() {
   currentBlock = nullptr;
   delete hitBox;
   delete handledItem;
-  delete renderPip;
-
-  this->t_renderer->getTextureRepository().freeByMesh(mesh.get());
-  this->t_renderer->getTextureRepository().freeByMesh(armMesh.get());
-
+  delete this->renderPip;
+  t_renderer->getTextureRepository().free(playerTexture);
   walkSequence.clear();
   breakBlockSequence.clear();
   standStillSequence.clear();
@@ -124,6 +122,8 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
   const float dTime = FIXED_FRAME_MS;
+  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
+  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
   Vec4 acceleration = GRAVITY * dTime;
@@ -132,24 +132,24 @@ void Player::updateGravity(const float& deltaTime,
   // Increase the position by velocity
   Vec4 newYPosition = *mesh->getPosition() - (this->velocity * dTime);
 
-  if (newYPosition.y + hitBox->getHeight() >=
-          OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
-      newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
+  if (newYPosition.y + hitBox->getHeight() > worldMaxHeight ||
+      newYPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
     this->mesh->getPosition()->set(this->spawnArea);
-
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     return;
   }
+
+  const float heightLimit =
+      terrainHeight->maxHeight - this->hitBox->getHeight();
 
   if (newYPosition.y < terrainHeight->minHeight) {
     newYPosition.y = terrainHeight->minHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = true;
-  } else if (newYPosition.y >
-             terrainHeight->maxHeight + this->hitBox->getHeight()) {
-    newYPosition.y = terrainHeight->maxHeight + this->hitBox->getHeight();
+  } else if (newYPosition.y > heightLimit) {
+    newYPosition.y = heightLimit;
     this->velocity = -this->velocity;
     this->isOnGround = false;
   }
@@ -360,12 +360,11 @@ void Player::loadMesh() {
 
   this->mesh->rotation.identity();
   this->mesh->rotation.rotateY(-3.14F);
-
   this->mesh->scale.identity();
 
-  // FIXME: link player texture to avoid loading it twice
-  this->t_renderer->getTextureRepository().addByMesh(
-      this->mesh.get(), FileUtils::fromCwd("textures/entity/player/"), "png");
+  auto& materials = this->mesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    playerTexture->addLink(materials[i]->id);
 
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
@@ -396,10 +395,9 @@ void Player::loadArmMesh() {
   this->armMesh->rotation.identity();
   this->armMesh->rotation.rotateY(-3.24);
 
-  // FIXME: link player texture to avoid loading it twice
-  this->t_renderer->getTextureRepository().addByMesh(
-      this->armMesh.get(), FileUtils::fromCwd("textures/entity/player/"),
-      "png");
+  auto& materials = this->armMesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    playerTexture->addLink(materials[i]->id);
 
   this->armMesh->animation.loop = true;
   this->armMesh->animation.setSequence(armStandStillSequence);
@@ -475,7 +473,7 @@ void Player::selectNextItem() {
   int currentItemId = (int)inventory[selectedInventoryIndex];
   ItemId nextItem;
 
-  if ((currentItemId + 1) >= (int)ItemId::wooden_axe) {
+  if ((currentItemId + 1) >= (int)ItemId::total_of_items) {
     nextItem = ItemId::empty;
   } else {
     nextItem = static_cast<ItemId>(currentItemId + 1);
@@ -490,7 +488,7 @@ void Player::selectPreviousItem() {
   ItemId previousItem;
 
   if ((currentItemId - 1) < 0) {
-    previousItem = ItemId::chiseled_stone_bricks;
+    previousItem = ItemId::emerald_ore_block;
   } else {
     previousItem = static_cast<ItemId>(currentItemId - 1);
   }
@@ -573,4 +571,9 @@ void Player::shiftItemToInventory(const ItemId& itemToShift) {
 void Player::setItemToInventory(const ItemId& itemToShift) {
   inventory[selectedInventoryIndex] = itemToShift;
   inventoryHasChanged = true;
+}
+
+void Player::loadPlayerTexture() {
+  playerTexture = t_renderer->getTextureRepository().add(
+      FileUtils::fromCwd("textures/entity/player/steve.png"));
 }

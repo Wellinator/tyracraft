@@ -129,7 +129,9 @@ class Player {
   Vec4 lift = Vec4(0.0f, -2.2F, 0.0f);
   Vec4 velocity = Vec4(0.0f);
   BBox* hitBox;
+  Texture* playerTexture;
 
+  void loadPlayerTexture();
   void loadMesh();
   void loadArmMesh();
   void calcStaticBBox();

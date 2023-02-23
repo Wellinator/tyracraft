@@ -1,4 +1,5 @@
 #include "tyracraft_game.hpp"
+#include "managers/font/font_manager.hpp"
 
 namespace TyraCraft {
 
@@ -8,9 +9,13 @@ TyraCraftGame::TyraCraftGame(Engine* t_engine)
     : camera(engine->renderer.core.getSettings()) {
   engine = t_engine;
 }
+
 TyraCraftGame::~TyraCraftGame() {}
 
-void TyraCraftGame::init() { stateManager = new StateManager(engine, &camera); }
+void TyraCraftGame::init() {
+  FontManager_init(&engine->renderer);
+  stateManager = new StateManager(engine, &camera);
+}
 
 void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
