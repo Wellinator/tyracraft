@@ -14,16 +14,18 @@ class SoundManager {
   SoundManager(Engine* t_engine);
   ~SoundManager();
 
-  SfxLibraryCategory* getCategory(SoundFxCategory idCategory) {
+  SfxLibraryCategory* getCategory(const SoundFxCategory& idCategory) {
     return this->soundLibrary->getCategory(idCategory);
   }
 
-  SfxLibrarySound* getSound(SoundFxCategory idCategory, SoundFX idSound) {
+  SfxLibrarySound* getSound(const SoundFxCategory& idCategory,
+                            const SoundFX& idSound) {
     return this->soundLibrary->getSound(idCategory, idSound);
   }
 
-  void playSfx(SoundFxCategory idCategory, SoundFX idSound);
-  void playSfx(SoundFxCategory idCategory, SoundFX idSound, const s8& t_ch);
+  void playSfx(const SoundFxCategory& idCategory, const SoundFX& idSound);
+  void playSfx(const SoundFxCategory& idCategory, const SoundFX& idSound,
+               const s8& t_ch);
 
   void setSfxVolume(const u8& t_vol, const s8& t_ch);
 

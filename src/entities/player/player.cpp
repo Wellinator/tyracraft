@@ -47,6 +47,7 @@ Player::~Player() {
   currentBlock = nullptr;
   delete hitBox;
   delete handledItem;
+  delete this->renderPip;
   t_renderer->getTextureRepository().free(playerTexture);
   walkSequence.clear();
   breakBlockSequence.clear();
@@ -61,14 +62,15 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+                    const Vec4& camDir,
+                    const std::vector<Chunck*>& loadedChunks,
                     TerrainHeightModel* terrainHeight) {
   isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
     // Vec4 min, max;
     // auto tempPositionMatrix = M4x4();
     // tempPositionMatrix.identity();
-    auto nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
 
     // tempPositionMatrix.translate(nextPlayerPos);
     // const auto tempPlayerBbox =
@@ -104,7 +106,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
-void Player::render() { this->renderPip->render(this->t_renderer); }
+void Player::render() { renderPip->render(t_renderer); }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Vec4& camDir) {
@@ -194,12 +196,12 @@ void Player::fly(const float& deltaTime,
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
+u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
-  Vec4 playerMin = Vec4();
-  Vec4 playerMax = Vec4();
+  Vec4 playerMin;
+  Vec4 playerMax;
   BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
 
@@ -221,12 +223,15 @@ u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
       if (playerBB.getBottomFace().axisPosition >=
               loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
           playerBB.getTopFace().axisPosition <
-              loadedChunks[chunkIndex]->blocks[i]->minCorner.y) {
+              loadedChunks[chunkIndex]->blocks[i]->minCorner.y ||
+          currentPlayerPos.distanceTo(
+              *loadedChunks[chunkIndex]->blocks[i]->getPosition()) >
+              DUBLE_BLOCK_SIZE * 2) {
         continue;
       };
 
-      Vec4 tempInflatedMin = Vec4();
-      Vec4 tempInflatedMax = Vec4();
+      Vec4 tempInflatedMin;
+      Vec4 tempInflatedMax;
       Utils::GetMinkowskiSum(playerMin, playerMax,
                              loadedChunks[chunkIndex]->blocks[i]->minCorner,
                              loadedChunks[chunkIndex]->blocks[i]->maxCorner,
@@ -252,33 +257,29 @@ u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
     if (timeToHit < deltaTime ||
         finalHitDistance <
             this->mesh->getPosition()->distanceTo(nextPlayerPos)) {
-      if (isColliding) return 0;
+      if (isColliding) return false;
 
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnX =
-          this->updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1);
-      if (couldMoveOnX) return 1;
+      if (updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1)) return true;
 
       Vec4 moveOnZOnly =
           Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnZ =
-          this->updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1);
-      if (couldMoveOnZ) return 1;
+      if (updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1)) return true;
 
-      return 0;
+      return false;
     }
   }
 
   // Apply new position;
   mesh->getPosition()->x = nextPlayerPos.x;
   mesh->getPosition()->z = nextPlayerPos.z;
-  return 1;
+  return true;
 }
 
 TerrainHeightModel Player::getTerrainHeightAtPosition(
-    std::vector<Chunck*> loadedChunks) {
+    const std::vector<Chunck*>& loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;

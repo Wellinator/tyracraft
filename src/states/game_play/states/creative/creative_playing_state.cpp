@@ -6,23 +6,20 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
-  delete this->t_creativeAudioListener;
 }
 
 void CreativePlayingState::init() {
-  this->t_creativeAudioListener =
-      new CreativeAudioListener(&stateGamePlay->context->t_engine->audio.song);
-  this->audioListenerId =
-      stateGamePlay->context->t_engine->audio.song.addListener(
-          this->t_creativeAudioListener);
-  this->t_creativeAudioListener->playRandomCreativeSound();
+  creativeAudioListener.init(&stateGamePlay->context->t_engine->audio.song);
+  audioListenerId = stateGamePlay->context->t_engine->audio.song.addListener(
+      &creativeAudioListener);
+  creativeAudioListener.playRandomCreativeSound();
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
   tickManager.update(FIXED_FRAME_MS);
 
-  this->handleInput(deltaTime);
+  handleInput(deltaTime);
 
   stateGamePlay->world->update(stateGamePlay->player,
                                stateGamePlay->context->t_camera->lookPos,
@@ -34,7 +31,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
       stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
-      stateGamePlay->world->chunckManager->getVisibleChunks(), &terrainHeight);
+      stateGamePlay->world->chunckManager.getVisibleChunks(), &terrainHeight);
 
   stateGamePlay->ui->update();
 
@@ -51,10 +48,9 @@ void CreativePlayingState::render() {
 
   stateGamePlay->player->render();
 
-  this->renderCreativeUi();
+  renderCreativeUi();
 
-  if (isInventoryOpened())
-    stateGamePlay->ui->renderInventoryMenu();
+  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
 
   if (debugMode) drawDegubInfo();
 
@@ -87,7 +83,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     playerMovementDirection = Vec4((lJoyPad.h - 128.0F) / 128.0F, 0.0F,
                                    (lJoyPad.v - 128.0F) / 128.0F);
     terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
-        stateGamePlay->world->chunckManager->getVisibleChunks());
+        stateGamePlay->world->chunckManager.getVisibleChunks());
 
     if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
@@ -129,7 +125,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     }
 
     if (clicked.Cross) {
-      if (elapsedTimeInSec < 0.5F) {
+      if (elapsedTimeInSec < 0.45F) {
         stateGamePlay->player->toggleFlying();
       }
       elapsedTimeInSec = 0.0F;
@@ -140,24 +136,23 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
-  Inventory* creativeInvetory = stateGamePlay->ui->getInvetory();
-  if (creativeInvetory) {
-    if (clicked.DpadUp)
-      creativeInvetory->moveSelectorUp();
-    else if (clicked.DpadDown)
-      creativeInvetory->moveSelectorDown();
-    else if (clicked.DpadLeft)
-      creativeInvetory->moveSelectorLeft();
-    else if (clicked.DpadRight)
-      creativeInvetory->moveSelectorRight();
-  }
+  Inventory& creativeInvetory = *stateGamePlay->ui->getInvetory();
+
+  if (clicked.DpadUp)
+    creativeInvetory.moveSelectorUp();
+  else if (clicked.DpadDown)
+    creativeInvetory.moveSelectorDown();
+  else if (clicked.DpadLeft)
+    creativeInvetory.moveSelectorLeft();
+  else if (clicked.DpadRight)
+    creativeInvetory.moveSelectorRight();
 
   if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
   if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
 
   if (clicked.Cross) {
     stateGamePlay->player->setItemToInventory(
-        creativeInvetory->getSelectedItem());
+        creativeInvetory.getSelectedItem());
   }
 
   if (clicked.Circle) closeInventory();
@@ -171,15 +166,14 @@ void CreativePlayingState::renderCreativeUi() {
 }
 
 void CreativePlayingState::drawDegubInfo() {
-  Info* info = &stateGamePlay->context->t_engine->info;
-
   // Draw seed
   std::string seed = std::string("Seed: ").append(
       std::to_string(stateGamePlay->world->getSeed()));
   FontManager_printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
-  std::string fps = std::string("FPS: ").append(std::to_string(info->getFps()));
+  std::string fps = std::string("FPS: ").append(
+      std::to_string(stateGamePlay->context->t_engine->info.getFps()));
   FontManager_printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
@@ -190,16 +184,17 @@ void CreativePlayingState::drawDegubInfo() {
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
-  Info info = stateGamePlay->context->t_engine->info;
-  std::string freeRam = std::string("Free RAM: ")
-                            .append(std::to_string(info.getAvailableRAM()))
-                            .append(" MB");
+  std::string freeRam =
+      std::string("Free RAM: ")
+          .append(std::to_string(
+              stateGamePlay->context->t_engine->info.getAvailableRAM()))
+          .append(" MB");
   TYRA_LOG(freeRam.c_str());
 }
 
 void CreativePlayingState::playNewRandomSong() {
   TYRA_LOG("Song finished, playing a new random song.");
-  this->t_creativeAudioListener->playRandomCreativeSound();
+  creativeAudioListener.playRandomCreativeSound();
 }
 
 void CreativePlayingState::closeInventory() {

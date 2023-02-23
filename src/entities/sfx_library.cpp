@@ -18,7 +18,7 @@ void SfxLibrary::buildSoundFXLibraries(Audio* t_audio) {
   categories.push_back(new SfxStepCategory(t_audio));
 }
 
-SfxLibraryCategory* SfxLibrary::getCategory(SoundFxCategory idCategory) {
+SfxLibraryCategory* SfxLibrary::getCategory(const SoundFxCategory& idCategory) {
   for (size_t i = 0; i < categories.size(); i++)
     if (categories[i]->id == idCategory) return categories[i];
 
@@ -26,8 +26,8 @@ SfxLibraryCategory* SfxLibrary::getCategory(SoundFxCategory idCategory) {
   return nullptr;
 }
 
-SfxLibrarySound* SfxLibrary::getSound(SoundFxCategory idCategory,
-                                      SoundFX idSound) {
+SfxLibrarySound* SfxLibrary::getSound(const SoundFxCategory& idCategory,
+                                      const SoundFX& idSound) {
   SfxLibraryCategory* t_category = this->getCategory(idCategory);
   if (t_category != nullptr) return t_category->getSound(idSound);
 

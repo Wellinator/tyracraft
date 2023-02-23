@@ -9,7 +9,7 @@ using Tyra::MinecraftPipeline;
 
 class BlockTextureRepository {
  public:
-  BlockTextureRepository(MinecraftPipeline* t_mcPip);
+  BlockTextureRepository();
   ~BlockTextureRepository();
 
   BlockInfo* getTextureInfo(const Blocks& blockType);
@@ -25,6 +25,5 @@ class BlockTextureRepository {
    */
   void loadTextures();
 
-  MinecraftPipeline* t_mcPip;
-  std::vector<BlockInfo*> models;
+  std::vector<BlockInfo> models;
 };

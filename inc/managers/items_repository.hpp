@@ -20,9 +20,10 @@ class ItemRepository {
   void init(Renderer* t_renderer, const std::string& texturePack);
   Item* getItemById(ItemId& itemId);
 
-  u8 linkTextureByItemType(ItemId itemType, const u32 t_spriteId);
-  void removeTextureLinkByBlockType(ItemId itemType, const u32 t_spriteId);
-  Sprite* getSpriteByItemType(ItemId itemType);
+  u8 linkTextureByItemType(const ItemId& itemType, const u32& t_spriteId);
+  void removeTextureLinkByBlockType(const ItemId& itemType,
+                                    const u32& t_spriteId);
+  Sprite* getSpriteByItemType(const ItemId& itemType);
 
  private:
   std::vector<Item*> items;

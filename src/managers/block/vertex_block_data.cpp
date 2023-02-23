@@ -28,8 +28,7 @@ const Vec4* VertexBlockData::getVertexData() {
                                        5, 2, 1, 5, 6, 2,
 
                                        // Front
-                                       3, 8, 4, 3, 7, 8,
-                                      };
+                                       3, 8, 4, 3, 7, 8};
 
   Vec4* result = new Vec4[VETEX_COUNT];
 
