@@ -28,8 +28,6 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
       Vec4(tempMax.x, tempMax.y, tempMin.z),
   };
   this->bbox = new BBox(_vertices, count);
-
-  loadBags();
 };
 
 Chunck::~Chunck() {
@@ -314,8 +312,6 @@ void Chunck::deallocDrawBags(StaPipBag* bag) {
     delete bag->lighting;
   }
 }
-
-void Chunck::loadBags() { return; }
 
 void Chunck::sortBlockByTransparency() {
   std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {

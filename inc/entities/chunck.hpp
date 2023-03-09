@@ -91,7 +91,6 @@ class Chunck {
     this->tempLoadingOffset->set(*minOffset);
   };
 
-  void loadBags();
   void deallocDrawBags(StaPipBag* bag);
   StaPipBag* getDrawData();
 
