@@ -10,6 +10,7 @@ BlockStepSfxRepository::~BlockStepSfxRepository() {
     delete models[i];
   }
   models.clear();
+  models.shrink_to_fit();
 }
 
 void BlockStepSfxRepository::loadModels() {

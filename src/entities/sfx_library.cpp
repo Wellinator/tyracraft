@@ -10,6 +10,7 @@ SfxLibrary::~SfxLibrary() {
     delete categories[i];
   }
   categories.clear();
+  categories.shrink_to_fit();
 }
 
 void SfxLibrary::buildSoundFXLibraries(Audio* t_audio) {

@@ -242,6 +242,7 @@ void World::unloadScheduledChunks() {
   }
 
   tempChuncksToUnLoad.clear();
+  tempChuncksToUnLoad.shrink_to_fit();
 }
 
 void World::renderBlockDamageOverlay() {

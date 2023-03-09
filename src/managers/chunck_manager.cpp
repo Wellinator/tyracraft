@@ -13,6 +13,7 @@ ChunckManager::~ChunckManager() {
     chuncks[i] = NULL;
   }
   chuncks.clear();
+  chuncks.shrink_to_fit();
 }
 
 void ChunckManager::init() { generateChunks(); }
@@ -21,6 +22,7 @@ void ChunckManager::update(const Plane* frustumPlanes,
                            const Vec4& currentPlayerPos,
                            WorldLightModel* worldLightModel) {
   visibleChunks.clear();
+  visibleChunks.shrink_to_fit();
   for (u16 i = 0; i < chuncks.size(); i++) {
     chuncks[i]->update(frustumPlanes, currentPlayerPos, worldLightModel);
     if (chuncks[i]->state == ChunkState::Loaded)

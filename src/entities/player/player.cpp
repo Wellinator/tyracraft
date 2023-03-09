@@ -50,11 +50,22 @@ Player::~Player() {
   delete this->renderPip;
   t_renderer->getTextureRepository().free(playerTexture);
   walkSequence.clear();
+  walkSequence.shrink_to_fit();
+
   breakBlockSequence.clear();
+  breakBlockSequence.shrink_to_fit();
+
   standStillSequence.clear();
+  standStillSequence.shrink_to_fit();
+
   armStandStillSequence.clear();
+  armStandStillSequence.shrink_to_fit();
+
   armWalkingSequence.clear();
+  armWalkingSequence.shrink_to_fit();
+
   armHitingSequence.clear();
+  armHitingSequence.shrink_to_fit();
 }
 
 // ----

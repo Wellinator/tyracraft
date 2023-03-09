@@ -2,7 +2,10 @@
 
 BlockTextureRepository::BlockTextureRepository() { loadTextures(); }
 
-BlockTextureRepository::~BlockTextureRepository() { models.clear(); }
+BlockTextureRepository::~BlockTextureRepository() {
+  models.clear();
+  models.shrink_to_fit();
+}
 
 BlockInfo* BlockTextureRepository::getTextureInfo(const Blocks& blockType) {
   for (u8 i = 0; i < models.size(); i++)
