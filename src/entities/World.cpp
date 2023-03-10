@@ -35,7 +35,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   stapip.setRenderer(&t_renderer->core);
   blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
   chunckManager.init();
-  cloudsManager->init(t_renderer);
+  cloudsManager.init(t_renderer);
   calcRawBlockBBox(&mcPip);
 
   terrain = CrossCraft_World_GetMapPtr();
@@ -54,7 +54,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
                    const Vec4& camPosition) {
   framesCounter++;
 
-  cloudsManager->update();
+  cloudsManager.update();
   dayNightCycleManager.update();
   updateLightModel();
 
@@ -68,7 +68,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
 void World::render() {
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-  cloudsManager->render();
+  cloudsManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);

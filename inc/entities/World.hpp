@@ -61,7 +61,7 @@ class World {
   SoundManager* t_soundManager;
   BlockManager blockManager;
   ChunckManager chunckManager;
-  CloudsManager* cloudsManager;
+  CloudsManager cloudsManager;
   DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
@@ -143,7 +143,7 @@ class World {
   u8 _isBreakingBlock = false;
   float breaking_time_pessed = 0.0F;
   float lastTimePlayedBreakingSfx = 0.0F;
-  
+
   Vec4 minWorldPos;
   Vec4 maxWorldPos;
   BBox* rawBlockBbox;
