@@ -12,9 +12,10 @@ using Tyra::Math;
 
 class CreativeAudioListener : public AudioListener {
  public:
-  CreativeAudioListener(AudioSong* t_song);
+  CreativeAudioListener();
   ~CreativeAudioListener();
 
+  void init(AudioSong* audioSong);
   void onAudioTick();
   void onAudioFinish();
   void playRandomCreativeSound();

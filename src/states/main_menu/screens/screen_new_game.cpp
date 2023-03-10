@@ -38,21 +38,18 @@ void ScreenNewGame::render() {
   this->renderSelectedOptions();
 
   Color infoColor = Color(70, 70, 70);
-  this->context->t_fontManager->printText(
-      "NEW WORLD", FontOptions(Vec2(190, 140), infoColor, 0.8F));
-  this->context->t_fontManager->printText(
-      "Texture Packs: ", FontOptions(Vec2(190, 157), infoColor, 0.8F));
-  this->context->t_fontManager->printText(
-      "By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
+  FontManager_printText("NEW WORLD",
+                        FontOptions(Vec2(190, 140), infoColor, 0.8F));
+  FontManager_printText("Texture Packs: ",
+                        FontOptions(Vec2(190, 157), infoColor, 0.8F));
+  FontManager_printText("By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
 
   if (selectedTexturePack) {
     this->t_renderer->renderer2D.render(selectedTexturePack->icon);
-    this->context->t_fontManager->printText(
-        selectedTexturePack->title.c_str(),
-        FontOptions(Vec2(190, 172), infoColor, 0.8F));
-    this->context->t_fontManager->printText(
-        selectedTexturePack->author.c_str(),
-        FontOptions(Vec2(230, 187), infoColor, 0.8F));
+    FontManager_printText(selectedTexturePack->title.c_str(),
+                          FontOptions(Vec2(190, 172), infoColor, 0.8F));
+    FontManager_printText(selectedTexturePack->author.c_str(),
+                          FontOptions(Vec2(230, 187), infoColor, 0.8F));
   }
 
   if (isEditingSeed) {
@@ -61,67 +58,66 @@ void ScreenNewGame::render() {
     options.color = Color(168, 160, 50);
 
     if (fpsCounter < 128) {
-      this->context->t_fontManager->printText(this->tempSeed.c_str(), options);
+      FontManager_printText(this->tempSeed.c_str(), options);
     } else {
-      this->context->t_fontManager->printText(this->tempSeedMask.c_str(),
-                                              options);
+      FontManager_printText(this->tempSeedMask.c_str(), options);
     }
 
   } else {
-    this->context->t_fontManager->printText(
-        std::string("Seed: ").append(this->inputSeed).c_str(), 140, 232);
+    FontManager_printText(std::string("Seed: ").append(this->inputSeed).c_str(),
+                          140, 232);
   }
 
   switch (this->model.type) {
     case WorldType::WORLD_TYPE_ORIGINAL:
-      this->context->t_fontManager->printText("World Type: Original", 130, 277);
+      FontManager_printText("World Type: Original", 130, 277);
       break;
     case WorldType::WORLD_TYPE_FLAT:
-      this->context->t_fontManager->printText("World Type: Flat", 150, 277);
+      FontManager_printText("World Type: Flat", 150, 277);
       break;
     case WorldType::WORLD_TYPE_ISLAND:
-      this->context->t_fontManager->printText("World Type: Island", 135, 277);
+      FontManager_printText("World Type: Island", 135, 277);
       break;
     case WorldType::WORLD_TYPE_WOODS:
-      this->context->t_fontManager->printText("World Type: Woods", 140, 277);
+      FontManager_printText("World Type: Woods", 140, 277);
       break;
     case WorldType::WORLD_TYPE_FLOATING:
-      this->context->t_fontManager->printText("World Type: Floating", 130, 277);
+      FontManager_printText("World Type: Floating", 130, 277);
       break;
 
     default:
       break;
   }
 
-  this->context->t_fontManager->printText("Create New World", 145, 322);
+  FontManager_printText("Create New World", 145, 322);
 
   if (isEditingSeed) {
     this->t_renderer->renderer2D.render(&btnTriangle);
     this->t_renderer->renderer2D.render(&btnCross);
 
-    this->context->t_fontManager->printText("Confirm", 35, 407);
-    this->context->t_fontManager->printText("Cancel", 160, 407);
+    FontManager_printText("Confirm", 35, 407);
+    FontManager_printText("Cancel", 160, 407);
   } else {
     if (activeOption == ScreenNewGameOptions::TexturePack) {
       this->t_renderer->renderer2D.render(&btnDpadLeft);
       this->t_renderer->renderer2D.render(&btnDpadRight);
       this->t_renderer->renderer2D.render(&btnTriangleTexturePack);
 
-      this->context->t_fontManager->printText("Prev", 35, 407);
-      this->context->t_fontManager->printText("Next", 160, 407);
-      this->context->t_fontManager->printText("Back", 280, 407);
+      FontManager_printText("Prev", 35, 407);
+      FontManager_printText("Next", 160, 407);
+      FontManager_printText("Back", 280, 407);
     } else {
       this->t_renderer->renderer2D.render(&btnTriangle);
       this->t_renderer->renderer2D.render(&btnCross);
 
       if (activeOption == ScreenNewGameOptions::Seed) {
-        this->context->t_fontManager->printText("Edit", 35, 407);
-        this->context->t_fontManager->printText("Random", 280, 407);
+        FontManager_printText("Edit", 35, 407);
+        FontManager_printText("Random", 280, 407);
         this->t_renderer->renderer2D.render(&btnCircle);
       } else {
-        this->context->t_fontManager->printText("Select", 35, 407);
+        FontManager_printText("Select", 35, 407);
       }
-      this->context->t_fontManager->printText("Back", 160, 407);
+      FontManager_printText("Back", 160, 407);
     }
   }
 }
@@ -285,7 +281,7 @@ void ScreenNewGame::handleOptionsSelection() {
 
 void ScreenNewGame::handleSeedInput() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
-  auto validChars = this->context->t_fontManager->NumericValidChars;
+  auto validChars = NumericValidChars;
   std::size_t found = validChars.find(tempSeed[editingIndex]);
   u8 currentCharIndex = found != std::string::npos ? found : 0;
 

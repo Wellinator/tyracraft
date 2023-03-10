@@ -3,17 +3,20 @@
 Context::Context(Engine* t_engine, Camera* t_camera) {
   this->t_engine = t_engine;
   this->t_camera = t_camera;
-  this->t_soundManager = new SoundManager(t_engine);
+  t_soundManager = new SoundManager(t_engine);
 }
 
-Context::~Context() { delete this->state; }
+Context::~Context() {
+  delete state;
+  delete t_soundManager;
+}
 
 void Context::update(const float& deltaTime) {
-  this->state->update(deltaTime);
-  this->state->render();
+  state->update(deltaTime);
+  state->render();
 }
 
 void Context::setState(GameState* newState) {
-  if (this->state != nullptr) delete this->state;
-  this->state = newState;
+  if (state != nullptr) delete state;
+  state = newState;
 }

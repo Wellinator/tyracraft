@@ -20,7 +20,8 @@ void StateLoadingGame::init() {
   this->BASE_HEIGHT = height - 120;
 
   // Background
-  std::string backgroundTex = FileUtils::fromCwd("textures/gui/loading/background.png");
+  std::string backgroundTex =
+      FileUtils::fromCwd("textures/gui/loading/background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -29,7 +30,8 @@ void StateLoadingGame::init() {
       ->addLink(background->id);
 
   // State desc
-  std::string stateLoadingText = FileUtils::fromCwd("textures/gui/loading/loading.png");
+  std::string stateLoadingText =
+      FileUtils::fromCwd("textures/gui/loading/loading.png");
   loadingStateText = new Sprite;
   loadingStateText->mode = Tyra::MODE_STRETCH;
   loadingStateText->size.set(256, 16);
@@ -49,7 +51,8 @@ void StateLoadingGame::init() {
       ->addLink(loadingSlot->id);
 
   // Loading bar
-  std::string loadingprogressTex = FileUtils::fromCwd("textures/gui/loading/load.png");
+  std::string loadingprogressTex =
+      FileUtils::fromCwd("textures/gui/loading/load.png");
   loadingprogress = new Sprite;
   loadingprogress->mode = Tyra::MODE_STRETCH;
   loadingprogress->size.set(this->_percent / 100 * 253, 9);
@@ -106,7 +109,7 @@ void StateLoadingGame::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
   this->stateGamePlay->player = new Player(
       &this->context->t_engine->renderer, this->context->t_soundManager,
-      this->stateGamePlay->world->blockManager);
+      &this->stateGamePlay->world->blockManager);
   this->stateGamePlay->itemRepository = new ItemRepository();
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
@@ -114,7 +117,8 @@ void StateLoadingGame::createEntities() {
 }
 
 void StateLoadingGame::initItemRepository() {
-  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer, this->worldOptions.texturePack);
+  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer,
+                                            this->worldOptions.texturePack);
 
   setPercent(35.0F);
   this->shouldInitItemRepository = 0;

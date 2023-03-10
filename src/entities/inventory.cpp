@@ -140,7 +140,7 @@ void Inventory::update() {
   selector_overlay.color.a = percent * 128;
 }
 
-void Inventory::render(FontManager* t_fontManager) {
+void Inventory::render() {
   t_renderer->renderer2D.render(itemframe);
 
   // Draw itens at each slot
@@ -152,9 +152,9 @@ void Inventory::render(FontManager* t_fontManager) {
 
   // Texts
   t_renderer->renderer2D.render(btnCross);
-  t_fontManager->printText("Select Item", 35, 407);
+  FontManager_printText("Select Item", 35, 407);
   t_renderer->renderer2D.render(btnCircle);
-  t_fontManager->printText("Exit", 210, 407);
+  FontManager_printText("Exit", 210, 407);
 }
 
 void Inventory::moveSelectorUp() {

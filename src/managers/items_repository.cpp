@@ -202,8 +202,8 @@ Item* ItemRepository::getItemById(ItemId& itemId) {
   return NULL;
 }
 
-u8 ItemRepository::linkTextureByItemType(ItemId itemType,
-                                         const u32 t_spriteId) {
+u8 ItemRepository::linkTextureByItemType(const ItemId& itemType,
+                                         const u32& t_spriteId) {
   Sprite* baseSprite = getSpriteByItemType(itemType);
   if (baseSprite) {
     this->t_renderer->getTextureRepository()
@@ -214,8 +214,8 @@ u8 ItemRepository::linkTextureByItemType(ItemId itemType,
   return false;
 }
 
-void ItemRepository::removeTextureLinkByBlockType(ItemId itemType,
-                                                  const u32 t_spriteId) {
+void ItemRepository::removeTextureLinkByBlockType(const ItemId& itemType,
+                                                  const u32& t_spriteId) {
   Texture* tex = this->t_renderer->getTextureRepository().getBySpriteId(
       getSpriteByItemType(itemType)->id);
   if (tex) {
@@ -224,7 +224,7 @@ void ItemRepository::removeTextureLinkByBlockType(ItemId itemType,
   }
 }
 
-Sprite* ItemRepository::getSpriteByItemType(ItemId itemType) {
+Sprite* ItemRepository::getSpriteByItemType(const ItemId& itemType) {
   for (size_t i = 0; i < items.size(); i++)
     if (items[i]->id == itemType) return &items[i]->sprite;
   return nullptr;

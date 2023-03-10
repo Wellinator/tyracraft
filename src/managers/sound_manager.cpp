@@ -7,13 +7,14 @@ SoundManager::SoundManager(Engine* t_engine) {
 
 SoundManager::~SoundManager() { delete soundLibrary; }
 
-void SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound) {
+void SoundManager::playSfx(const SoundFxCategory& idCategory,
+                           const SoundFX& idSound) {
   return;
   this->playSfx(idCategory, idSound, getAvailableChannel());
 };
 
-void SoundManager::playSfx(SoundFxCategory idCategory, SoundFX idSound,
-                           const s8& t_ch) {
+void SoundManager::playSfx(const SoundFxCategory& idCategory,
+                           const SoundFX& idSound, const s8& t_ch) {
   return;
   SfxLibrarySound* t_sound = this->getSound(idCategory, idSound);
   if (t_sound) this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
