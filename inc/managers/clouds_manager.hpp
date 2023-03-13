@@ -44,4 +44,10 @@ class CloudsManager {
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;
   Texture* cloudsTex = nullptr;
+
+  float XMap = 1;
+  float YMap = 1;
+
+  void calcUVMapping();
+  void updateCloudsPosition();
 };

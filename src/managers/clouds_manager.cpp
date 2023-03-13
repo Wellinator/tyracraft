@@ -1,19 +1,6 @@
 #include "managers/clouds_manager.hpp"
 
-CloudsManager::CloudsManager() {
-  const float scale = 1.0F / 4.0F;
-  const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-  const u8 X = 1;
-  const u8 Y = 1;
-
-  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-}
+CloudsManager::CloudsManager() { calcUVMapping(); }
 
 CloudsManager::~CloudsManager() {}
 
@@ -24,7 +11,31 @@ void CloudsManager::init(Renderer* renderer) {
       FileUtils::fromCwd("/textures/environment/clouds.png"));
 }
 
-void CloudsManager::update(){};
+void CloudsManager::calcUVMapping() {
+  uvMap.clear();
+  uvMap.shrink_to_fit();
+
+  const float scale = 1.0F / 4.0F;
+  const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
+
+  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+};
+
+void CloudsManager::updateCloudsPosition() {
+  XMap += 0.00001F;
+  YMap += 0.00001F;
+  if (XMap > 4.0F) XMap = 1;
+  if (YMap > 4.0F) YMap = 1;
+  calcUVMapping();
+}
+
+void CloudsManager::update() { updateCloudsPosition(); };
 
 void CloudsManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
