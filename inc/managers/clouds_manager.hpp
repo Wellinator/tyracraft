@@ -30,8 +30,8 @@ class CloudsManager {
 
  private:
   std::vector<Vec4> vertices = {
-      Vec4(-1, -1, 0), Vec4(-1, 1, 0), Vec4(1, 1, 0),
-      Vec4(-1, -1, 0), Vec4(1, 1, 0),  Vec4(1, -1, 0),
+      Vec4(-1.0F, 1.0F, -1.0), Vec4(1.0F, 1.0F, 1.0),  Vec4(1.0F, 1.0F, -1.0),
+      Vec4(-1.0F, 1.0F, -1.0), Vec4(-1.0F, 1.0F, 1.0), Vec4(1.0F, 1.0F, 1.0),
   };
 
   std::vector<Vec4> verticesNormals = {

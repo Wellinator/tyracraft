@@ -31,9 +31,10 @@ void CloudsManager::render() {
 
   M4x4 rawMatrix;
   rawMatrix.identity();
-//   rawMatrix.rotateX(1.57F);
-  rawMatrix.scale(100.0F);
-  rawMatrix.translateY(-50.0F);
+
+  rawMatrix.scaleX(3000.0F);
+  rawMatrix.scaleZ(3000.0F);
+  rawMatrix.translateY(MAX_WORLD_POS.y);
 
   StaPipTextureBag textureBag;
   textureBag.texture = cloudsTex;
@@ -41,14 +42,11 @@ void CloudsManager::render() {
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
-  infoBag.blendingEnabled = true;
-  infoBag.shadingType = Tyra::TyraShadingFlat;
   infoBag.textureMappingType = Tyra::TyraNearest;
-  infoBag.transformationType = Tyra::TyraMP;
-  infoBag.frustumCulling =
-      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+  infoBag.fullClipChecks = true;
+  infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
+      PipelineInfoBagFrustumCulling_Precise;
 
-  // Apply multiple colors
   StaPipColorBag colorBag;
   Color baseColor = Color(128.0F, 128.0F, 128.0F);
   colorBag.single = &baseColor;
@@ -61,4 +59,21 @@ void CloudsManager::render() {
   bag.texture = &textureBag;
 
   stapip.core.render(&bag);
+
+  // // Render sky limits || Debug content
+  // {
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[0], rawMatrix * vertices[1], Color(255, 0, 0));
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[1], rawMatrix * vertices[2], Color(255, 0, 0));
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[2], rawMatrix * vertices[0], Color(255, 0, 0));
+
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[3], rawMatrix * vertices[4], Color(255, 0, 0));
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[4], rawMatrix * vertices[5], Color(255, 0, 0));
+  //   t_renderer->renderer3D.utility.drawLine(
+  //       rawMatrix * vertices[5], rawMatrix * vertices[3], Color(255, 0, 0));
+  // }
 };

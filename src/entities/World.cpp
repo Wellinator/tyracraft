@@ -68,8 +68,10 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
 void World::render() {
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-  cloudsManager.render();
+
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
+  cloudsManager.render();
+
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
     if (isBreakingBLock() && targetBlock->damage > 0)
