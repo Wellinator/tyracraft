@@ -65,3 +65,15 @@
         ✅ -> Fix amimations state;
         ✅ -> Blocks textures ID (Kinda cache at rendering multiple blocks);
         ⚠️ -> Fix audio FX;
+
+############ TyraCraft 0.1.5 Roadmap ############
+
+* Features for pre-alpha release (v0.1.5):
+    ✅ -> Add basic sky texture;
+    ⚠️ -> Add particles system;
+    🔲 -> Tool (Pickaxe) (WIP);
+    🔲 -> Add save support;
+
+* Bug fixes for pre-alpha release (v0.1.5):
+    🔲 -> Real PS2:
+        ⚠️ -> Fix audio FX;
