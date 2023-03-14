@@ -73,6 +73,7 @@
     ⚠️ -> Add particles system;
     🔲 -> Tool (Pickaxe) (WIP);
     🔲 -> Add save support;
+    🔲 -> Add warning message on start game;
 
 * Bug fixes for pre-alpha release (v0.1.5):
     🔲 -> Real PS2:
