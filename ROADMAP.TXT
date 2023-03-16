@@ -72,7 +72,8 @@
     ✅ -> Add basic sky texture;
     ⚠️ -> Add particles system;
     🔲 -> Tool (Pickaxe) (WIP);
-    🔲 -> Add save support;
+    ✅ -> Add save support;
+    🔲 -> Add auto save feature;
     🔲 -> Add warning message on start game;
 
 * Bug fixes for pre-alpha release (v0.1.5):
