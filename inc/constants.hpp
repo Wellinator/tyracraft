@@ -173,3 +173,5 @@ typedef enum {
   WORLD_TYPE_WOODS = 3,
   WORLD_TYPE_FLOATING = 4
 } WorldType;
+
+#define SAVE_FILE_EXTENSION "tcw"

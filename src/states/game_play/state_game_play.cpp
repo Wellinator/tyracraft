@@ -5,6 +5,7 @@
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
+#include "managers/save_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::FileUtils;
@@ -84,4 +85,10 @@ void StateGamePlay::unpauseGame() {
 
 void StateGamePlay::quitToTitle() {
   this->context->setState(new StateMainMenu(this->context));
+}
+
+void StateGamePlay::saveGame() { SaveManager::SaveGame(this, saveFileName.c_str()); }
+
+void StateGamePlay::loadGame() {
+  SaveManager::LoadSavedGame(this, saveFileName.c_str());
 }

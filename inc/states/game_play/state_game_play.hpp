@@ -22,10 +22,10 @@
 #include <chrono>
 
 using Tyra::Audio;
+using Tyra::Info;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
-using Tyra::Info;
 using Tyra::StaticMesh;
 
 enum class GameMode { Survival, Creative };
@@ -47,6 +47,9 @@ class StateGamePlay : public GameState {
   void setPlayingState(PlayingStateBase* t_playingState);
   PlayingStateBase* getPreviousState();
 
+  void saveGame();
+  void loadGame();
+
   // Rotating skybox
   StaticMesh* menuSkybox;
 
@@ -56,6 +59,7 @@ class StateGamePlay : public GameState {
   ItemRepository* itemRepository;
 
  private:
+  std::string saveFileName = FileUtils::fromCwd("my_world.tcw");
   PlayingStateBase* state = nullptr;
   PlayingStateBase* previousState = nullptr;
   u8 paused = false;

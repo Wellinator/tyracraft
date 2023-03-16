@@ -100,6 +100,7 @@ class World {
 
   void setDrawDistace(const u8& drawDistanceInChunks);
   inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
+  inline NewGameOptions* getWorldOptions() { return &worldOptions; };
 
  private:
   MinecraftPipeline mcPip;
