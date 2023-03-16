@@ -94,6 +94,8 @@ class SaveManager {
         savedData["playerPosition"]["y"].get<float>(),
         savedData["playerPosition"]["z"].get<float>());
 
+    //TODO: add hot inventory state to save file;
+
     TYRA_LOG("Loading camera params...");
     state->context->t_camera->pitch =
         savedData["cameraParams"]["pitch"].get<float>();
