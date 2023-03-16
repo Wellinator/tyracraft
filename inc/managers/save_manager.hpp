@@ -82,62 +82,65 @@ class SaveManager {
 
     TYRA_LOG("Decompressing data...");
     std::ifstream saveFile(fullPath);
-    std::string compressed_data((std::istreambuf_iterator<char>(saveFile)),
-                                std::istreambuf_iterator<char>());
-    std::string decompressed_data =
-        gzip::decompress(compressed_data.data(), compressed_data.size());
-    json savedData = json::parse(decompressed_data);
+    if (saveFile) {
+      std::string compressed_data((std::istreambuf_iterator<char>(saveFile)),
+                                  std::istreambuf_iterator<char>());
+      std::string decompressed_data =
+          gzip::decompress(compressed_data.data(), compressed_data.size());
+      json savedData = json::parse(decompressed_data);
 
-    TYRA_LOG("Loading player Position...");
-    state->player->getPosition()->set(
-        savedData["playerPosition"]["x"].get<float>(),
-        savedData["playerPosition"]["y"].get<float>(),
-        savedData["playerPosition"]["z"].get<float>());
+      TYRA_LOG("Loading player Position...");
+      state->player->getPosition()->set(
+          savedData["playerPosition"]["x"].get<float>(),
+          savedData["playerPosition"]["y"].get<float>(),
+          savedData["playerPosition"]["z"].get<float>());
 
-    //TODO: add hot inventory state to save file;
+      // TODO: add hot inventory state to save file;
 
-    TYRA_LOG("Loading camera params...");
-    state->context->t_camera->pitch =
-        savedData["cameraParams"]["pitch"].get<float>();
-    state->context->t_camera->yaw =
-        savedData["cameraParams"]["yaw"].get<float>();
+      TYRA_LOG("Loading camera params...");
+      state->context->t_camera->pitch =
+          savedData["cameraParams"]["pitch"].get<float>();
+      state->context->t_camera->yaw =
+          savedData["cameraParams"]["yaw"].get<float>();
 
-    TYRA_LOG("Loading world pptions...");
-    NewGameOptions* gameOptions = state->world->getWorldOptions();
-    gameOptions->seed = savedData["gameOptions"]["seed"].get<uint32_t>();
-    gameOptions->drawDistance =
-        savedData["gameOptions"]["drawDistance"].get<u8>();
-    gameOptions->initialTime =
-        savedData["gameOptions"]["initialTime"].get<float>();
-    gameOptions->type = savedData["gameOptions"]["type"].get<WorldType>();
-    gameOptions->texturePack =
-        savedData["gameOptions"]["texturePack"].get<std::string>();
+      TYRA_LOG("Loading world pptions...");
+      NewGameOptions* gameOptions = state->world->getWorldOptions();
+      gameOptions->seed = savedData["gameOptions"]["seed"].get<uint32_t>();
+      gameOptions->drawDistance =
+          savedData["gameOptions"]["drawDistance"].get<u8>();
+      gameOptions->initialTime =
+          savedData["gameOptions"]["initialTime"].get<float>();
+      gameOptions->type = savedData["gameOptions"]["type"].get<WorldType>();
+      gameOptions->texturePack =
+          savedData["gameOptions"]["texturePack"].get<std::string>();
 
-    TYRA_LOG("Loading tick state...");
-    // These are global scope variables;
-    g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<float>();
-    elapsedRealTime = savedData["tickState"]["elapsedRealTime"].get<double>();
-    ticksDayCounter = savedData["tickState"]["ticksDayCounter"].get<uint16_t>();
+      TYRA_LOG("Loading tick state...");
+      // These are global scope variables;
+      g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<float>();
+      elapsedRealTime = savedData["tickState"]["elapsedRealTime"].get<double>();
+      ticksDayCounter =
+          savedData["tickState"]["ticksDayCounter"].get<uint16_t>();
 
-    TYRA_LOG("Loading world state...");
-    LevelMap* t_map = CrossCraft_World_GetMapPtr();
-    t_map->width = savedData["worldLevel"]["map"]["width"].get<uint16_t>();
-    t_map->length = savedData["worldLevel"]["map"]["length"].get<uint16_t>();
-    t_map->height = savedData["worldLevel"]["map"]["height"].get<uint16_t>();
-    t_map->spawnX = savedData["worldLevel"]["map"]["spawnX"].get<uint16_t>();
-    t_map->spawnY = savedData["worldLevel"]["map"]["spawnY"].get<uint16_t>();
-    t_map->spawnZ = savedData["worldLevel"]["map"]["spawnZ"].get<uint16_t>();
+      TYRA_LOG("Loading world state...");
+      LevelMap* t_map = CrossCraft_World_GetMapPtr();
+      t_map->width = savedData["worldLevel"]["map"]["width"].get<uint16_t>();
+      t_map->length = savedData["worldLevel"]["map"]["length"].get<uint16_t>();
+      t_map->height = savedData["worldLevel"]["map"]["height"].get<uint16_t>();
+      t_map->spawnX = savedData["worldLevel"]["map"]["spawnX"].get<uint16_t>();
+      t_map->spawnY = savedData["worldLevel"]["map"]["spawnY"].get<uint16_t>();
+      t_map->spawnZ = savedData["worldLevel"]["map"]["spawnZ"].get<uint16_t>();
 
-    TYRA_LOG("Loading blocks data...");
-    const char* tempBLocksBuffer =
-        savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str();
+      TYRA_LOG("Loading blocks data...");
+      const char* tempBLocksBuffer =
+          savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str();
 
-    for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
-      uint8_t number = tempBLocksBuffer[i] - 48;
-      t_map->blocks[i] = number;
+      for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
+        uint8_t number = tempBLocksBuffer[i] - 48;
+        t_map->blocks[i] = number;
+      }
+
+      TYRA_LOG("Reloading world data...");
+      state->world->reloadWorldArea(*state->player->getPosition());
     }
-
-    TYRA_LOG("Reloading world data...");
-    state->world->reloadWorldArea(*state->player->getPosition());
   };
 };
