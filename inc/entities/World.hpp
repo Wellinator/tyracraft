@@ -102,6 +102,9 @@ class World {
   inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
   inline NewGameOptions* getWorldOptions() { return &worldOptions; };
 
+  void resetWorldData();
+  void reloadWorldArea(const Vec4& position);
+
  private:
   MinecraftPipeline mcPip;
   StaticPipeline stapip;

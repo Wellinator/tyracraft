@@ -18,6 +18,10 @@ ChunckManager::~ChunckManager() {
 
 void ChunckManager::init() { generateChunks(); }
 
+void ChunckManager::clearAllChunks() {
+  for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
+}
+
 void ChunckManager::update(const Plane* frustumPlanes,
                            const Vec4& currentPlayerPos,
                            WorldLightModel* worldLightModel) {

@@ -88,6 +88,8 @@ void World::buildInitialPosition() {
   }
 };
 
+void World::resetWorldData() { chunckManager.clearAllChunks(); }
+
 const std::vector<Block*> World::getLoadedBlocks() {
   loadedBlocks.clear();
   loadedBlocks.shrink_to_fit();
@@ -114,6 +116,14 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   if (framesCounter % 2 == 0) {
     unloadScheduledChunks();
     loadScheduledChunks();
+  }
+}
+
+void World::reloadWorldArea(const Vec4& position) {
+  Chunck* currentChunck = chunckManager.getChunckByPosition(position);
+  if (currentChunck) {
+    buildChunk(currentChunck);
+    scheduleChunksNeighbors(currentChunck, position, true);
   }
 }
 

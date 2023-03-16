@@ -10,13 +10,13 @@
 #include "entities/level.hpp"
 #include <3libs/nlohmann/json.hpp>
 #include <fstream>
-#include <stdint.h>
 #include <vector>
 #include <3libs/gzip/compress.hpp>
 #include <3libs/gzip/config.hpp>
 #include <3libs/gzip/decompress.hpp>
 #include <3libs/gzip/utils.hpp>
 #include <3libs/gzip/version.hpp>
+#include <stdint.h>
 
 using Tyra::FileUtils;
 using json = nlohmann::json;
@@ -30,6 +30,10 @@ class SaveManager {
     jsonfile["playerPosition"]["x"] = state->player->getPosition()->x;
     jsonfile["playerPosition"]["y"] = state->player->getPosition()->y;
     jsonfile["playerPosition"]["z"] = state->player->getPosition()->z;
+
+    TYRA_LOG("Saving camera params...");
+    jsonfile["cameraParams"]["pitch"] = state->context->t_camera->pitch;
+    jsonfile["cameraParams"]["yaw"] = state->context->t_camera->yaw;
 
     TYRA_LOG("Saving World Options...");
     jsonfile["gameOptions"]["seed"] = state->world->getWorldOptions()->seed;
@@ -56,15 +60,16 @@ class SaveManager {
     jsonfile["worldLevel"]["map"]["spawnY"] = t_map->spawnY;
     jsonfile["worldLevel"]["map"]["spawnZ"] = t_map->spawnZ;
 
-    std::ostringstream tempBlocksBuffer;
-    for (size_t i = 0; i < OVERWORLD_SIZE; i++)
-      tempBlocksBuffer << std::to_string(t_map->blocks[i]);
-    jsonfile["worldLevel"]["map"]["blocks"] = tempBlocksBuffer.str();
+    std::string tempBlocksBuffer;
+    for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
+      tempBlocksBuffer.push_back(t_map->blocks[i] + '0');
+    }
+    jsonfile["worldLevel"]["map"]["blocks"] = tempBlocksBuffer;
 
     TYRA_LOG("Compressing data...");
     auto rawData = jsonfile.dump();
     std::string compressed_data =
-        gzip::compress(rawData.data(), rawData.size(), Z_BEST_COMPRESSION);
+        gzip::compress(rawData.data(), rawData.size());
 
     std::ofstream saveFile(fullPath);
     saveFile << compressed_data;
@@ -72,6 +77,9 @@ class SaveManager {
   };
 
   static void LoadSavedGame(StateGamePlay* state, const char* fullPath) {
+    TYRA_LOG("Reseting world data...");
+    state->world->resetWorldData();
+
     TYRA_LOG("Decompressing data...");
     std::ifstream saveFile(fullPath);
     std::string compressed_data((std::istreambuf_iterator<char>(saveFile)),
@@ -86,7 +94,13 @@ class SaveManager {
         savedData["playerPosition"]["y"].get<float>(),
         savedData["playerPosition"]["z"].get<float>());
 
-    TYRA_LOG("Loading World Options...");
+    TYRA_LOG("Loading camera params...");
+    state->context->t_camera->pitch =
+        savedData["cameraParams"]["pitch"].get<float>();
+    state->context->t_camera->yaw =
+        savedData["cameraParams"]["yaw"].get<float>();
+
+    TYRA_LOG("Loading world pptions...");
     NewGameOptions* gameOptions = state->world->getWorldOptions();
     gameOptions->seed = savedData["gameOptions"]["seed"].get<uint32_t>();
     gameOptions->drawDistance =
@@ -103,7 +117,7 @@ class SaveManager {
     elapsedRealTime = savedData["tickState"]["elapsedRealTime"].get<double>();
     ticksDayCounter = savedData["tickState"]["ticksDayCounter"].get<uint16_t>();
 
-    TYRA_LOG("Loading World State...");
+    TYRA_LOG("Loading world state...");
     LevelMap* t_map = CrossCraft_World_GetMapPtr();
     t_map->width = savedData["worldLevel"]["map"]["width"].get<uint16_t>();
     t_map->length = savedData["worldLevel"]["map"]["length"].get<uint16_t>();
@@ -111,7 +125,17 @@ class SaveManager {
     t_map->spawnX = savedData["worldLevel"]["map"]["spawnX"].get<uint16_t>();
     t_map->spawnY = savedData["worldLevel"]["map"]["spawnY"].get<uint16_t>();
     t_map->spawnZ = savedData["worldLevel"]["map"]["spawnZ"].get<uint16_t>();
-    t_map->blocks = reinterpret_cast<uint8_t*>(const_cast<char*>(
-        savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str()));
+
+    TYRA_LOG("Loading blocks data...");
+    const char* tempBLocksBuffer =
+        savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str();
+
+    for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
+      uint8_t number = tempBLocksBuffer[i] - 48;
+      t_map->blocks[i] = number;
+    }
+
+    TYRA_LOG("Reloading world data...");
+    state->world->reloadWorldArea(*state->player->getPosition());
   };
 };

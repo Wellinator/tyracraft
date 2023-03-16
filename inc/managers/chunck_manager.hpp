@@ -41,6 +41,7 @@ class ChunckManager {
   u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
+  void clearAllChunks();
 
  private:
   std::vector<Chunck*> chuncks;
