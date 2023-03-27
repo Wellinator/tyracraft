@@ -209,7 +209,7 @@ std::vector<UtilDirectory> Utils::listDir(const char* dir) {
   DIR* dirp = opendir(dir);
   dirent* dp;
   while ((dp = readdir(dirp)) != NULL) {
-    result.push_back(UtilDirectory(dp->d_name, S_ISDIR(dp->d_stat.st_mode)));
+    result.push_back(UtilDirectory(dp));
   }
   closedir(dirp);
 
