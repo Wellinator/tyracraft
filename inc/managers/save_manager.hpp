@@ -80,9 +80,10 @@ class SaveManager {
     TYRA_LOG("Reseting world data...");
     state->world->resetWorldData();
 
-    TYRA_LOG("Decompressing data...");
+    TYRA_LOG("Reading save file from : ", fullPath);
     std::ifstream saveFile(fullPath);
     if (saveFile) {
+      TYRA_LOG("Decompressing data...");
       std::string compressed_data((std::istreambuf_iterator<char>(saveFile)),
                                   std::istreambuf_iterator<char>());
       std::string decompressed_data =
@@ -141,6 +142,32 @@ class SaveManager {
 
       TYRA_LOG("Reloading world data...");
       state->world->reloadWorldArea(*state->player->getPosition());
+    } else {
+      TYRA_ERROR("Save file not found at: ", fullPath);
     }
   };
+
+  static NewGameOptions* GetNewGameOptionsFromSaveFile(const char* fullPath) {
+    NewGameOptions* model = new NewGameOptions();
+
+    TYRA_LOG("Decompressing data...");
+    std::ifstream saveFile(fullPath);
+    if (saveFile) {
+      std::string compressed_data((std::istreambuf_iterator<char>(saveFile)),
+                                  std::istreambuf_iterator<char>());
+      std::string decompressed_data =
+          gzip::decompress(compressed_data.data(), compressed_data.size());
+      json savedData = json::parse(decompressed_data);
+
+      TYRA_LOG("Loading world pptions...");
+      model->seed = savedData["gameOptions"]["seed"].get<uint32_t>();
+      model->drawDistance = savedData["gameOptions"]["drawDistance"].get<u8>();
+      model->initialTime = savedData["gameOptions"]["initialTime"].get<float>();
+      model->type = savedData["gameOptions"]["type"].get<WorldType>();
+      model->texturePack =
+          savedData["gameOptions"]["texturePack"].get<std::string>();
+    }
+
+    return model;
+  }
 };
