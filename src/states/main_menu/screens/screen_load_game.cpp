@@ -300,7 +300,5 @@ void ScreenLoadGame::selectNextSave() {
 }
 
 void ScreenLoadGame::loadSelectedSave() {
-  const NewGameOptions model = NewGameOptions();
-  // TODO: Read savefile and load world
-  context->loadSavedGame(model);
+  context->loadSavedGame(selectedSavedGame->path);
 }

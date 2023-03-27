@@ -1,5 +1,6 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "states/loading/state_loading_game.hpp"
+#include "states/loading/state_loading_saved_game.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
@@ -125,6 +126,12 @@ void StateMainMenu::unloadTextures() {
 
 void StateMainMenu::loadGame(const NewGameOptions& options) {
   this->context->setState(new StateLoadingGame(this->context, options));
+  delete this->screen;
+}
+
+void StateMainMenu::loadSavedGame(const std::string save_file_full_path) {
+  this->context->setState(
+      new StateLoadingSavedGame(this->context, save_file_full_path));
   delete this->screen;
 }
 

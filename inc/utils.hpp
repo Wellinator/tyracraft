@@ -18,6 +18,7 @@
 #include <string>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <loadfile.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -29,11 +30,13 @@ using Tyra::Plane;
 using Tyra::Vec4;
 
 struct UtilDirectory {
-  UtilDirectory(char* _name, const u8& _isDir) {
-    name = std::string(_name);
-    isDir = _isDir;
+  UtilDirectory(dirent* dt) {
+    isDir = S_ISDIR(dt->d_stat.st_mode);
+    name = std::string(dt->d_name);
+    createdAt = std::string(ctime(&dt->d_stat.st_ctim.tv_sec));
   };
 
+  std::string createdAt;
   std::string name;
   u8 isDir;
 };

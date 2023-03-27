@@ -48,9 +48,11 @@ class StateMainMenu : public GameState {
   void setScreen(ScreenBase* screen);
 
   void loadGame(const NewGameOptions& options);
+  void loadSavedGame(const std::string save_file_full_path);
   void playClickSound();
 
   StaticMesh* menuSkybox;
+
  private:
   Renderer* t_renderer;
   Sprite title[2];

@@ -2,6 +2,7 @@
 #include "states/main_menu/screens/screen_how_to_play.hpp"
 #include "states/main_menu/screens/screen_about.hpp"
 #include "states/main_menu/screens/screen_new_game.hpp"
+#include "states/main_menu/screens/screen_load_game.hpp"
 #include "managers/font/font_manager.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
@@ -152,6 +153,8 @@ void ScreenMain::navigate() {
 
   if (selectedOption == ScreenMainOptions::NewGame)
     context->setScreen(new ScreenNewGame(context));
+  if (selectedOption == ScreenMainOptions::LoadGame)
+    context->setScreen(new ScreenLoadGame(context));
   else if (selectedOption == ScreenMainOptions::HowToPlay)
     context->setScreen(new ScreenHowToPlay(context));
   else if (selectedOption == ScreenMainOptions::About)
