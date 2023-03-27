@@ -172,8 +172,9 @@ void ScreenLoadGame::render() {
   FontManager_printText("Next", 225, 407);
   t_renderer->renderer2D.render(btnDpadDown);
   FontManager_printText("Prev", 320, 407);
-  t_renderer->renderer2D.render(btnSelect);
-  FontManager_printText("Origin", 425, 407);
+
+  // t_renderer->renderer2D.render(btnSelect);
+  // FontManager_printText("Origin", 425, 407);
 }
 
 void ScreenLoadGame::handleInput() { handleOptionsSelection(); }
@@ -187,9 +188,10 @@ void ScreenLoadGame::handleOptionsSelection() {
     selectPreviousSave();
   }
 
-  if (clickedButtons.Select) {
-    toggleSaveOrigin();
-  }
+  // TODO: implements loading from MC
+  // if (clickedButtons.Select) {
+  //   toggleSaveOrigin();
+  // }
 
   if (clickedButtons.Triangle) {
     context->playClickSound();
