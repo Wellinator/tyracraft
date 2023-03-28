@@ -8,6 +8,7 @@ u8 LINE_FEED = 10;
 u8 NULL_CHAR = 0;
 u8 BACK_SPACE = 8;
 u8 BASE_LINE_HEIGHT = 20;
+std::string SpecialValidChars = std::string(" -_");
 std::string AlphanumericValidChars = std::string(
     "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 std::string AlphaValidChars =

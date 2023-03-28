@@ -16,6 +16,7 @@ using Tyra::Vec2;
  * @brief Declaration of global tick variables
  *
  */
+extern std::string SpecialValidChars;
 extern std::string AlphanumericValidChars;
 extern std::string AlphaValidChars;
 extern std::string NumericValidChars;
