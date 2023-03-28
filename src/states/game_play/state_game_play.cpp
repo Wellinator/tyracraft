@@ -87,8 +87,9 @@ void StateGamePlay::quitToTitle() {
   this->context->setState(new StateMainMenu(this->context));
 }
 
-void StateGamePlay::saveGame() { SaveManager::SaveGame(this, saveFileName.c_str()); }
-
-void StateGamePlay::loadGame() {
-  SaveManager::LoadSavedGame(this, saveFileName.c_str());
+void StateGamePlay::saveGame() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + this->world->getWorldOptions()->name + ".tcw");
+  SaveManager::SaveGame(this, saveFileName.c_str());
+  TYRA_LOG("Saving at: ", saveFileName.c_str());
 }

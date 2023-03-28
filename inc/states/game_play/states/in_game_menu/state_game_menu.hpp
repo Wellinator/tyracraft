@@ -14,7 +14,13 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions { DrawDistance, BackToGame, QuitToTitle, None };
+enum class GameMenuOptions {
+  DrawDistance,
+  SaveGame,
+  BackToGame,
+  QuitToTitle,
+  None
+};
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -36,17 +42,11 @@ class StateGameMenu : public PlayingStateBase {
 
   // Slots
   Texture* textureRawSlot;
-  Sprite raw_slot[2];
+  Sprite raw_slot[3];
   Sprite active_slot;
 
   // Buttons
   Sprite btnCross;
-
-  // Text slot option
-  Sprite textGameMenu;
-  Sprite textBackToGame;
-  Sprite textQuitToTitle;
-  Sprite textSelect;
 
   Sprite horizontalScrollArea;
   Sprite horizontalScrollHandler;

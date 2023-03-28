@@ -29,12 +29,16 @@ void StateGameMenu::init() {
   raw_slot[1].mode = Tyra::MODE_STRETCH;
   raw_slot[1].size.set(SLOT_WIDTH, 35);
   raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 40);
+  raw_slot[2].mode = Tyra::MODE_STRETCH;
+  raw_slot[2].size.set(SLOT_WIDTH, 35);
+  raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 80);
 
   this->textureRawSlot = this->t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/gui/slot.png"));
 
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
+  this->textureRawSlot->addLink(raw_slot[2].id);
 
   horizontalScrollArea.mode = Tyra::MODE_STRETCH;
   horizontalScrollArea.size.set(SLOT_WIDTH, 32);
@@ -58,31 +62,6 @@ void StateGameMenu::init() {
       .add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
 
-  // Texts
-  textGameMenu.mode = Tyra::MODE_STRETCH;
-  textGameMenu.size.set(128, 16);
-  textGameMenu.position.set(halfWidth - 64, halfHeight - 200);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/text_game_menu.png"))
-      ->addLink(textGameMenu.id);
-
-  textBackToGame.mode = Tyra::MODE_STRETCH;
-  textBackToGame.size.set(128, 16);
-  textBackToGame.position.set(halfWidth - 64, 240 + 9);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/text_back_to_game.png"))
-      ->addLink(textBackToGame.id);
-
-  textQuitToTitle.mode = Tyra::MODE_STRETCH;
-  textQuitToTitle.size.set(128, 16);
-  textQuitToTitle.position.set(halfWidth - 64, 240 + 49);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/text_quit_to_title.png"))
-      ->addLink(textQuitToTitle.id);
-
   // Buttons
   btnCross.mode = Tyra::MODE_STRETCH;
   btnCross.size.set(25, 25);
@@ -92,14 +71,6 @@ void StateGameMenu::init() {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
-
-  textSelect.mode = Tyra::MODE_STRETCH;
-  textSelect.size.set(64, 15);
-  textSelect.position.set(
-      15 + 30, this->t_renderer->core.getSettings().getHeight() - 36);
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/text_select.png"))
-      ->addLink(textSelect.id);
 
   updateDrawDistanceScroll();
 }
@@ -111,7 +82,8 @@ void StateGameMenu::update(const float& deltaTime) {
 }
 
 void StateGameMenu::render() {
-  // Render the game under menu
+  const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
+  const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
   stateGamePlay->getPreviousState()->render();
 
   t_renderer->renderer2D.render(overlay);
@@ -126,15 +98,34 @@ void StateGameMenu::render() {
 
   t_renderer->renderer2D.render(raw_slot[0]);
   t_renderer->renderer2D.render(raw_slot[1]);
+  t_renderer->renderer2D.render(raw_slot[2]);
   if (activeOption != GameMenuOptions::DrawDistance)
     t_renderer->renderer2D.render(active_slot);
 
-  t_renderer->renderer2D.render(textGameMenu);
-  t_renderer->renderer2D.render(textBackToGame);
-  t_renderer->renderer2D.render(textQuitToTitle);
+  FontManager_printText("Game Menu", halfWidth - 64, halfHeight - 200);
+
+  FontOptions saveGameLabel;
+  saveGameLabel.position.set(halfWidth - 65, 240 + 3);
+  if (activeOption == GameMenuOptions::SaveGame)
+    saveGameLabel.color.set(128, 128, 0);
+  FontManager_printText("Save Game", saveGameLabel);
+
+  FontOptions backToGameLabel;
+  backToGameLabel.position.set(halfWidth - 80, 240 + 43);
+  if (activeOption == GameMenuOptions::BackToGame)
+    backToGameLabel.color.set(128, 128, 0);
+  FontManager_printText("Back to Game", backToGameLabel);
+
+  FontOptions quitToTitleLabel;
+  quitToTitleLabel.position.set(halfWidth - 75, 240 + 83);
+  if (activeOption == GameMenuOptions::QuitToTitle)
+    quitToTitleLabel.color.set(128, 128, 0);
+  FontManager_printText("Quit to Title", quitToTitleLabel);
 
   t_renderer->renderer2D.render(btnCross);
-  t_renderer->renderer2D.render(textSelect);
+
+  FontManager_printText("Select", 15 + 30,
+                        this->t_renderer->core.getSettings().getHeight() - 36);
 }
 
 void StateGameMenu::handleInput(const float& deltaTime) {
@@ -143,7 +134,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
 
   if (clicked.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
-    if (nextOption > 2)
+    if (nextOption > (int)GameMenuOptions::QuitToTitle)
       this->activeOption = GameMenuOptions::DrawDistance;
     else
       this->activeOption = static_cast<GameMenuOptions>(nextOption);
@@ -161,6 +152,13 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       decreaseDrawDistance();
     else if (clicked.DpadRight)
       increaseDrawDistance();
+  }
+
+  if (activeOption == GameMenuOptions::SaveGame) {
+    if (clicked.Cross) {
+      this->playClickSound();
+      this->stateGamePlay->saveGame();
+    }
   }
 
   if (clicked.Cross) {
@@ -186,10 +184,6 @@ void StateGameMenu::unloadTextures() {
   textureRepository->freeBySprite(overlay);
   textureRepository->freeBySprite(active_slot);
   textureRepository->freeBySprite(btnCross);
-  textureRepository->freeBySprite(textSelect);
-  textureRepository->freeBySprite(textGameMenu);
-  textureRepository->freeBySprite(textBackToGame);
-  textureRepository->freeBySprite(textQuitToTitle);
   textureRepository->freeBySprite(horizontalScrollArea);
   textureRepository->freeBySprite(horizontalScrollHandler);
 }
@@ -203,21 +197,16 @@ void StateGameMenu::playClickSound() {
 }
 
 void StateGameMenu::hightLightActiveOption() {
-  // Reset sprite colors
-  {
-    this->textBackToGame.color = Tyra::Color(128, 128, 128);
-    this->textQuitToTitle.color = Tyra::Color(128, 128, 128);
-  }
-
   Sprite* t_selectedOptionSprite = nullptr;
-  if (this->activeOption == GameMenuOptions::BackToGame) {
-    t_selectedOptionSprite = &this->textBackToGame;
+  if (this->activeOption == GameMenuOptions::SaveGame) {
     this->active_slot.position.y =
         (0 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::QuitToTitle) {
-    t_selectedOptionSprite = &this->textQuitToTitle;
+  } else if (this->activeOption == GameMenuOptions::BackToGame) {
     this->active_slot.position.y =
         (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
+  } else if (this->activeOption == GameMenuOptions::QuitToTitle) {
+    this->active_slot.position.y =
+        (2 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
   }
 
   if (t_selectedOptionSprite) {
