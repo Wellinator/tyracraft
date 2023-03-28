@@ -14,12 +14,15 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->free(slotActiveTexture->id);
 
   textureRepo->freeBySprite(backgroundNewGame);
+  textureRepo->freeBySprite(tab2);
   textureRepo->freeBySprite(slotSeedInput);
+  textureRepo->freeBySprite(slotWorldNameInput);
   textureRepo->freeBySprite(slotTextureActive);
-
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
   textureRepo->freeBySprite(btnCircle);
+  textureRepo->freeBySprite(btnL1);
+  textureRepo->freeBySprite(btnR1);
 
   for (size_t i = 0; i < texturePacks.size(); i++) {
     textureRepo->freeBySprite(texturePacks.at(i)->icon);
@@ -30,16 +33,23 @@ ScreenNewGame::~ScreenNewGame() {
 void ScreenNewGame::update() {
   fpsCounter++;
   this->handleInput();
+  fpsCounter %= 50;
 }
 
 void ScreenNewGame::render() {
   this->t_renderer->renderer2D.render(&backgroundNewGame);
+  this->t_renderer->renderer2D.render(tab2);
+  this->t_renderer->renderer2D.render(btnL1);
+  this->t_renderer->renderer2D.render(btnR1);
 
   this->renderSelectedOptions();
 
+  FontManager_printText(
+      "Load", FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
+  FontManager_printText(
+      "Create", FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
+
   Color infoColor = Color(70, 70, 70);
-  FontManager_printText("NEW WORLD",
-                        FontOptions(Vec2(190, 140), infoColor, 0.8F));
   FontManager_printText("Texture Packs: ",
                         FontOptions(Vec2(190, 157), infoColor, 0.8F));
   FontManager_printText("By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
@@ -52,12 +62,27 @@ void ScreenNewGame::render() {
                           FontOptions(Vec2(230, 187), infoColor, 0.8F));
   }
 
+  if (isEditingWorldName) {
+    FontOptions options;
+    options.position = Vec2(130, 220);
+    options.color = Color(168, 160, 50);
+
+    if (fpsCounter < 25) {
+      FontManager_printText(this->tempWorldName.c_str(), options);
+    } else {
+      FontManager_printText(this->tempWorldNameMask.c_str(), options);
+    }
+
+  } else {
+    FontManager_printText(this->inputWorldName.c_str(), 140, 220);
+  }
+
   if (isEditingSeed) {
     FontOptions options;
     options.position = Vec2(175, 232);
     options.color = Color(168, 160, 50);
 
-    if (fpsCounter < 128) {
+    if (fpsCounter < 25) {
       FontManager_printText(this->tempSeed.c_str(), options);
     } else {
       FontManager_printText(this->tempSeedMask.c_str(), options);
@@ -65,33 +90,33 @@ void ScreenNewGame::render() {
 
   } else {
     FontManager_printText(std::string("Seed: ").append(this->inputSeed).c_str(),
-                          140, 232);
+                          140, 258);
   }
 
   switch (this->model.type) {
     case WorldType::WORLD_TYPE_ORIGINAL:
-      FontManager_printText("World Type: Original", 130, 277);
+      FontManager_printText("World Type: Original", 130, 295);
       break;
     case WorldType::WORLD_TYPE_FLAT:
-      FontManager_printText("World Type: Flat", 150, 277);
+      FontManager_printText("World Type: Flat", 150, 295);
       break;
     case WorldType::WORLD_TYPE_ISLAND:
-      FontManager_printText("World Type: Island", 135, 277);
+      FontManager_printText("World Type: Island", 135, 295);
       break;
     case WorldType::WORLD_TYPE_WOODS:
-      FontManager_printText("World Type: Woods", 140, 277);
+      FontManager_printText("World Type: Woods", 140, 295);
       break;
     case WorldType::WORLD_TYPE_FLOATING:
-      FontManager_printText("World Type: Floating", 130, 277);
+      FontManager_printText("World Type: Floating", 130, 295);
       break;
 
     default:
       break;
   }
 
-  FontManager_printText("Create New World", 145, 322);
+  FontManager_printText("Create New World", 145, 332);
 
-  if (isEditingSeed) {
+  if (isEditingSeed || isEditingWorldName) {
     this->t_renderer->renderer2D.render(&btnTriangle);
     this->t_renderer->renderer2D.render(&btnCross);
 
@@ -114,6 +139,8 @@ void ScreenNewGame::render() {
         FontManager_printText("Edit", 35, 407);
         FontManager_printText("Random", 280, 407);
         this->t_renderer->renderer2D.render(&btnCircle);
+      } else if (activeOption == ScreenNewGameOptions::WorldName) {
+        FontManager_printText("Edit", 35, 407);
       } else {
         FontManager_printText("Select", 35, 407);
       }
@@ -134,53 +161,86 @@ void ScreenNewGame::init() {
   backgroundNewGame.mode = Tyra::MODE_STRETCH;
   backgroundNewGame.size.set(512, 512);
   backgroundNewGame.position.set(0, 0);
-
   textureRepo
-      ->add(FileUtils::fromCwd("textures/gui/menu/background_new_game.png"))
+      ->add(FileUtils::fromCwd("textures/gui/menu/load_game_background.png"))
       ->addLink(backgroundNewGame.id);
 
+  tab2.mode = Tyra::MODE_STRETCH;
+  tab2.size.set(256, 256);
+  tab2.position.set(128, 128);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/tab2.png"))
+      ->addLink(tab2.id);
+
+  btnL1.mode = Tyra::MODE_STRETCH;
+  btnL1.size.set(32, 32);
+  btnL1.position.set(100.0F, 132.0F);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_L1.png"))
+      ->addLink(btnL1.id);
+
+  btnR1.mode = Tyra::MODE_STRETCH;
+  btnR1.size.set(32, 32);
+  btnR1.position.set(390.0F, 132.0F);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_R1.png"))
+      ->addLink(btnR1.id);
+
+  slotWorldName.mode = Tyra::MODE_STRETCH;
+  slotWorldName.size.set(slotWidth, slotHeight);
+  slotWorldName.position.set(133, 218);
+  slotTexture->addLink(slotWorldName.id);
+
+  slotWorldNameActive.mode = Tyra::MODE_STRETCH;
+  slotWorldNameActive.size.set(slotWidth, slotHeight);
+  slotWorldNameActive.position.set(133, 218);
+  slotActiveTexture->addLink(slotWorldNameActive.id);
+
+  slotWorldNameInput.mode = Tyra::MODE_STRETCH;
+  slotWorldNameInput.size.set(slotWidth, slotHeight);
+  slotWorldNameInput.position.set(133, 218);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/slot_input.png"))
+      ->addLink(slotWorldNameInput.id);
+
   slotSeed.mode = Tyra::MODE_STRETCH;
-  slotSeed.size.set(256, 32);
-  slotSeed.position.set(125, 230);
+  slotSeed.size.set(slotWidth, slotHeight);
+  slotSeed.position.set(133, 255);
   slotTexture->addLink(slotSeed.id);
 
   slotSeedActive.mode = Tyra::MODE_STRETCH;
-  slotSeedActive.size.set(256, 32);
-  slotSeedActive.position.set(125, 230);
+  slotSeedActive.size.set(slotWidth, slotHeight);
+  slotSeedActive.position.set(133, 255);
   slotActiveTexture->addLink(slotSeedActive.id);
 
   slotSeedInput.mode = Tyra::MODE_STRETCH;
-  slotSeedInput.size.set(256, 32);
-  slotSeedInput.position.set(125, 230);
+  slotSeedInput.size.set(slotWidth, slotHeight);
+  slotSeedInput.position.set(133, 255);
   textureRepo->add(FileUtils::fromCwd("textures/gui/slot_input.png"))
       ->addLink(slotSeedInput.id);
 
-  slotTextureActive.mode = Tyra::MODE_STRETCH;
-  slotTextureActive.size.set(68, 68);
-  slotTextureActive.position.set(125, 144);
-  textureRepo
-      ->add(FileUtils::fromCwd("textures/gui/slot_texture_pack_active.png"))
-      ->addLink(slotTextureActive.id);
-
   slotWorldType.mode = Tyra::MODE_STRETCH;
-  slotWorldType.size.set(256, 32);
-  slotWorldType.position.set(125, 275);
+  slotWorldType.size.set(slotWidth, slotHeight);
+  slotWorldType.position.set(133, 292);
   slotTexture->addLink(slotWorldType.id);
 
   slotWorldTypeActive.mode = Tyra::MODE_STRETCH;
-  slotWorldTypeActive.size.set(256, 32);
-  slotWorldTypeActive.position.set(125, 275);
+  slotWorldTypeActive.size.set(slotWidth, slotHeight);
+  slotWorldTypeActive.position.set(133, 292);
   slotActiveTexture->addLink(slotWorldTypeActive.id);
 
   slotCreateNewWorld.mode = Tyra::MODE_STRETCH;
-  slotCreateNewWorld.size.set(256, 32);
-  slotCreateNewWorld.position.set(125, 320);
+  slotCreateNewWorld.size.set(slotWidth, slotHeight);
+  slotCreateNewWorld.position.set(133, 329);
   slotTexture->addLink(slotCreateNewWorld.id);
 
   slotCreateNewWorldActive.mode = Tyra::MODE_STRETCH;
-  slotCreateNewWorldActive.size.set(256, 32);
-  slotCreateNewWorldActive.position.set(125, 320);
+  slotCreateNewWorldActive.size.set(slotWidth, slotHeight);
+  slotCreateNewWorldActive.position.set(133, 329);
   slotActiveTexture->addLink(slotCreateNewWorldActive.id);
+
+  slotTextureActive.mode = Tyra::MODE_STRETCH;
+  slotTextureActive.size.set(52, 52);
+  slotTextureActive.position.set(133, 156);
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/slot_texture_pack_active.png"))
+      ->addLink(slotTextureActive.id);
 
   btnCross.mode = Tyra::MODE_STRETCH;
   btnCross.size.set(25, 25);
@@ -233,6 +293,8 @@ void ScreenNewGame::init() {
 void ScreenNewGame::handleInput() {
   if (isEditingSeed) {
     handleSeedInput();
+  } else if (isEditingWorldName) {
+    handleWorldNameInput();
   } else {
     handleOptionsSelection();
   }
@@ -240,6 +302,10 @@ void ScreenNewGame::handleInput() {
 
 void ScreenNewGame::handleOptionsSelection() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
+
+  if (clickedButtons.L1 || clickedButtons.R1) {
+    context->setScreen(new ScreenLoadGame(context));
+  }
 
   if (clickedButtons.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
@@ -271,6 +337,8 @@ void ScreenNewGame::handleOptionsSelection() {
     this->updateModel();
     if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld)
       return this->createNewWorld();
+    else if (this->selectedOption == ScreenNewGameOptions::WorldName)
+      startEditingWorldName();
     else if (this->selectedOption == ScreenNewGameOptions::Seed)
       startEditingSeed();
   } else if (clickedButtons.Circle &&
@@ -313,6 +381,41 @@ void ScreenNewGame::handleSeedInput() {
   }
 }
 
+void ScreenNewGame::handleWorldNameInput() {
+  auto clickedButtons = this->context->context->t_engine->pad.getClicked();
+  auto validChars = SpecialValidChars + AlphanumericValidChars;
+  std::size_t found = validChars.find(tempWorldName[editingIndexWorldName]);
+  u8 currentCharIndex = found != std::string::npos ? found : 0;
+
+  if (clickedButtons.DpadDown) {
+    u16 newCharIndex = currentCharIndex - 1 < 0 ? validChars.length() - 1
+                                                : currentCharIndex - 1;
+
+    tempWorldName[editingIndexWorldName] = validChars[newCharIndex];
+  } else if (clickedButtons.DpadUp) {
+    u16 newCharIndex = currentCharIndex + 1 >= (u16)validChars.length()
+                           ? 0
+                           : currentCharIndex + 1;
+
+    tempWorldName[editingIndexWorldName] = validChars[newCharIndex];
+  } else if (clickedButtons.DpadLeft) {
+    s8 prev = editingIndexWorldName - 1;
+    editingIndexWorldName =
+        prev < 0 ? (u8)(tempWorldName.length() - 1) : (u8)prev;
+  } else if (clickedButtons.DpadRight) {
+    u8 next = editingIndexWorldName + 1;
+    editingIndexWorldName = next > tempWorldName.length() - 1 ? 0 : (u8)next;
+  }
+
+  updateTempWorldNameMask();
+
+  if (clickedButtons.Triangle) {
+    cancelEditingWorldName();
+  } else if (clickedButtons.Cross) {
+    saveWorldName();
+  }
+}
+
 void ScreenNewGame::updateModel() {
   if (this->activeOption == ScreenNewGameOptions::WorldType) {
     int nextOption = (int)this->model.type + 1;
@@ -328,26 +431,33 @@ void ScreenNewGame::backToMainMenu() {
 }
 
 void ScreenNewGame::createNewWorld() {
+  model.name = inputWorldName;
   model.seed = std::stoull(inputSeed);
   model.texturePack = selectedTexturePack->path;
   context->loadGame(model);
 }
 
 void ScreenNewGame::renderSelectedOptions() {
-  isEditingSeed ? this->t_renderer->renderer2D.render(&slotSeedInput)
-                : this->t_renderer->renderer2D.render(&slotSeed);
+  isEditingWorldName ? t_renderer->renderer2D.render(&slotWorldNameInput)
+                     : t_renderer->renderer2D.render(&slotWorldName);
 
-  this->t_renderer->renderer2D.render(&slotCreateNewWorld);
-  this->t_renderer->renderer2D.render(&slotWorldType);
+  isEditingSeed ? t_renderer->renderer2D.render(&slotSeedInput)
+                : t_renderer->renderer2D.render(&slotSeed);
 
-  if (this->activeOption == ScreenNewGameOptions::TexturePack)
-    this->t_renderer->renderer2D.render(&slotTextureActive);
-  else if (this->activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
-    this->t_renderer->renderer2D.render(&slotSeedActive);
-  else if (this->activeOption == ScreenNewGameOptions::WorldType)
-    this->t_renderer->renderer2D.render(&slotWorldTypeActive);
-  else if (this->activeOption == ScreenNewGameOptions::CreateNewWorld)
-    this->t_renderer->renderer2D.render(&slotCreateNewWorldActive);
+  t_renderer->renderer2D.render(&slotCreateNewWorld);
+  t_renderer->renderer2D.render(&slotWorldType);
+
+  if (activeOption == ScreenNewGameOptions::TexturePack)
+    t_renderer->renderer2D.render(&slotTextureActive);
+  else if (activeOption == ScreenNewGameOptions::WorldName &&
+           !isEditingWorldName)
+    t_renderer->renderer2D.render(&slotWorldNameActive);
+  else if (activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
+    t_renderer->renderer2D.render(&slotSeedActive);
+  else if (activeOption == ScreenNewGameOptions::WorldType)
+    t_renderer->renderer2D.render(&slotWorldTypeActive);
+  else if (activeOption == ScreenNewGameOptions::CreateNewWorld)
+    t_renderer->renderer2D.render(&slotCreateNewWorldActive);
 }
 
 void ScreenNewGame::saveSeed() {
@@ -370,6 +480,28 @@ void ScreenNewGame::startEditingSeed() {
 void ScreenNewGame::updateTempSeedMask() {
   tempSeedMask = std::string(tempSeed.c_str());
   tempSeedMask[editingIndex] = '_';
+}
+
+void ScreenNewGame::saveWorldName() {
+  inputWorldName = std::string(tempWorldName.c_str());
+  isEditingWorldName = false;
+}
+
+void ScreenNewGame::cancelEditingWorldName() {
+  tempWorldName = "";
+  isEditingWorldName = false;
+}
+
+void ScreenNewGame::startEditingWorldName() {
+  tempWorldName = std::string(inputWorldName.c_str());
+  editingIndexWorldName = tempWorldName.length() - 1;
+  updateTempWorldNameMask();
+  isEditingWorldName = true;
+}
+
+void ScreenNewGame::updateTempWorldNameMask() {
+  tempWorldNameMask = std::string(tempWorldName.c_str());
+  tempWorldNameMask[editingIndexWorldName] = '_';
 }
 
 std::string ScreenNewGame::getSeed() {
@@ -414,8 +546,8 @@ void ScreenNewGame::getAvailableTexturePacks() {
         model->title = data["title"].get<std::string>();
         model->description = data["description"].get<std::string>();
 
-        model->icon.size.set(64, 64);
-        model->icon.position.set(127, 146);
+        model->icon.size.set(48, 48);
+        model->icon.position.set(135, 158);
         model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
 
         textureRepo->add(FileUtils::fromCwd(textureDir + "/icon.png"))

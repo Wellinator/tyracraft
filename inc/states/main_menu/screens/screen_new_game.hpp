@@ -1,6 +1,5 @@
 #pragma once
 #include "states/main_menu/screens/screen_base.hpp"
-#include "states/main_menu/state_main_menu.hpp"
 #include "models/new_game_model.hpp"
 #include "models/texture_pack_info_model.hpp"
 #include "managers/font/font_options.hpp"
@@ -21,8 +20,11 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using json = nlohmann::json;
 
+class StateMainMenu;
+
 enum class ScreenNewGameOptions {
   TexturePack,
+  WorldName,
   Seed,
   WorldType,
   CreateNewWorld,
@@ -42,11 +44,15 @@ class ScreenNewGame : public ScreenBase {
   Renderer* t_renderer;
 
   Sprite backgroundNewGame;
+  Sprite tab2;
 
+  Sprite slotWorldName;
+  Sprite slotWorldNameActive;
+  Sprite slotWorldNameInput;
   Sprite slotSeed;
   Sprite slotSeedActive;
-  Sprite slotTextureActive;
   Sprite slotSeedInput;
+  Sprite slotTextureActive;
 
   Sprite slotWorldType;
   Sprite slotWorldTypeActive;
@@ -60,6 +66,8 @@ class ScreenNewGame : public ScreenBase {
   Sprite btnCircle;
   Sprite btnDpadLeft;
   Sprite btnDpadRight;
+  Sprite btnL1;
+  Sprite btnR1;
 
   Texture* slotTexture;
   Texture* slotActiveTexture;
@@ -70,6 +78,8 @@ class ScreenNewGame : public ScreenBase {
   NewGameOptions model = NewGameOptions();
 
   u8 fpsCounter = 0;
+  const float slotWidth = 246.0F;
+  const float slotHeight = 32.0F;
 
   std::string inputSeed;
   std::string tempSeed;
@@ -77,13 +87,19 @@ class ScreenNewGame : public ScreenBase {
   u8 isEditingSeed = false;
   u8 editingIndex = 0;
 
+  std::string inputWorldName = "New World        ";
+  std::string tempWorldName;
+  std::string tempWorldNameMask;
+  u8 isEditingWorldName = false;
+  u8 editingIndexWorldName = 0;
+
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;
 
   void handleInput();
   void handleOptionsSelection();
   void handleSeedInput();
-  void updateTempSeedMask();
+  void handleWorldNameInput();
   void backToMainMenu();
   void createNewWorld();
   void updateModel();
@@ -91,6 +107,11 @@ class ScreenNewGame : public ScreenBase {
   void saveSeed();
   void startEditingSeed();
   void cancelEditingSeed();
+  void updateTempSeedMask();
+  void saveWorldName();
+  void startEditingWorldName();
+  void cancelEditingWorldName();
+  void updateTempWorldNameMask();
   std::string getSeed();
 
   void selectPreviousTexturePack();
