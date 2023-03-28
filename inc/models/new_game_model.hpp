@@ -12,4 +12,5 @@ class NewGameOptions {
   WorldType type = WorldType::WORLD_TYPE_ORIGINAL;
   float initialTime = 6000;
   std::string texturePack = "default";
+  std::string name;
 };
