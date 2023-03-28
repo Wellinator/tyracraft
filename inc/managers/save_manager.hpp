@@ -36,6 +36,7 @@ class SaveManager {
     jsonfile["cameraParams"]["yaw"] = state->context->t_camera->yaw;
 
     TYRA_LOG("Saving World Options...");
+    jsonfile["gameOptions"]["name"] = state->world->getWorldOptions()->name;
     jsonfile["gameOptions"]["seed"] = state->world->getWorldOptions()->seed;
     jsonfile["gameOptions"]["drawDistance"] =
         state->world->getWorldOptions()->drawDistance;
@@ -106,6 +107,7 @@ class SaveManager {
 
       TYRA_LOG("Loading world pptions...");
       NewGameOptions* gameOptions = state->world->getWorldOptions();
+      gameOptions->name = savedData["gameOptions"]["name"].get<std::string>();
       gameOptions->seed = savedData["gameOptions"]["seed"].get<uint32_t>();
       gameOptions->drawDistance =
           savedData["gameOptions"]["drawDistance"].get<u8>();
