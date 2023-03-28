@@ -26,6 +26,9 @@ class TyraCraftGame : public Tyra::Game {
   StateManager* stateManager;
 
   Tyra::Engine* engine;
+
+  void checkNeededDirectories();
+  void checkSavesDir();
 };
 
 }  // namespace TyraCraft
