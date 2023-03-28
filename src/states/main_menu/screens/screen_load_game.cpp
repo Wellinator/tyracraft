@@ -182,6 +182,10 @@ void ScreenLoadGame::handleInput() { handleOptionsSelection(); }
 void ScreenLoadGame::handleOptionsSelection() {
   auto clickedButtons = context->context->t_engine->pad.getClicked();
 
+  if (clickedButtons.L1 || clickedButtons.R1) {
+    context->setScreen(new ScreenNewGame(context));
+  }
+
   if (clickedButtons.DpadDown) {
     selectNextSave();
   } else if (clickedButtons.DpadUp) {

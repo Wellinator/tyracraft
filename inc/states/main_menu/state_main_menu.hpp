@@ -22,6 +22,8 @@
 #include "states/context.hpp"
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "states/main_menu/screens/screen_new_game.hpp"
+#include "states/main_menu/screens/screen_load_game.hpp"
 #include "models/new_game_model.hpp"
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
@@ -64,6 +66,9 @@ class StateMainMenu : public GameState {
 
   const float SLOT_WIDTH = 160;
   const u8 MENU_SFX_CH = 1;
+
+  void navigateToCreateGameScreen() { setScreen(new ScreenNewGame(this)); };
+  void navigateToLoadGameScreen() { setScreen(new ScreenLoadGame(this)); };
 
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);

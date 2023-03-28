@@ -1,6 +1,5 @@
 #pragma once
 #include "states/main_menu/screens/screen_base.hpp"
-#include "states/main_menu/state_main_menu.hpp"
 #include "models/new_game_model.hpp"
 #include "models/save_info_model.hpp"
 #include "managers/font/font_options.hpp"
@@ -23,6 +22,8 @@ using Tyra::TextureRepository;
 
 enum class ScreenLoadGameOptions { ToggleSaveOrigin, SaveFile, None };
 enum class ScreenLoadGameSaveOrigin { Mass, MemoryCard };
+
+class StateMainMenu;
 
 class ScreenLoadGame : public ScreenBase {
  public:
