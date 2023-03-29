@@ -32,7 +32,7 @@ void ScreenMain::render() {
   // New Game
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 64, 230 + 6));
+    fontOptions.position.set(Vec2(256 - 60, 230 + 6));
     fontOptions.color.set(activeOption == ScreenMainOptions::NewGame
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
