@@ -9,11 +9,16 @@ u8 NULL_CHAR = 0;
 u8 BACK_SPACE = 8;
 u8 BASE_LINE_HEIGHT = 20;
 std::string SpecialValidChars = std::string(" -_");
-std::string AlphanumericValidChars = std::string(
-    "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-std::string AlphaValidChars =
-    std::string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 std::string NumericValidChars = std::string("1234567890");
+std::string UpperCaseAlphaChars = std::string("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+std::string LowerCaseAlphaChars = std::string("abcdefghijklmnopqrstuvwxyz");
+
+std::string AlphaValidChars =
+    std::string(UpperCaseAlphaChars + LowerCaseAlphaChars);
+std::string AlphanumericValidChars =
+    std::string(NumericValidChars + AlphaValidChars);
+std::string AllValidChars =
+    std::string(SpecialValidChars + AlphanumericValidChars);
 
 Renderer* g_t_renderer = nullptr;
 std::array<Sprite*, 256> printable_ascii_chars_sprites;

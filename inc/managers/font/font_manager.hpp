@@ -17,9 +17,12 @@ using Tyra::Vec2;
  *
  */
 extern std::string SpecialValidChars;
+extern std::string UpperCaseAlphaChars;
+extern std::string LowerCaseAlphaChars;
 extern std::string AlphanumericValidChars;
 extern std::string AlphaValidChars;
 extern std::string NumericValidChars;
+extern std::string AllValidChars;
 extern std::array<Sprite*, 256> printable_ascii_chars_sprites;
 extern u8 char_widths[256];
 extern u8 LINE_FEED;
