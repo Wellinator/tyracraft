@@ -219,3 +219,9 @@ std::vector<UtilDirectory> Utils::listDir(const char* dir) {
 std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
   return Utils::listDir(dir.c_str());
 }
+
+std::string Utils::trim(std::string& str) {
+  str.erase(str.find_last_not_of(' ') + 1);
+  str.erase(0, str.find_first_not_of(' '));
+  return str;
+}

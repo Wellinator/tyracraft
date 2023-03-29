@@ -98,4 +98,6 @@ class Utils {
 
   static std::vector<UtilDirectory> listDir(const std::string& dir);
   static std::vector<UtilDirectory> listDir(const char* dir);
+
+  static std::string trim(std::string& str);
 };
