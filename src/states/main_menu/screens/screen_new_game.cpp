@@ -76,12 +76,15 @@ void ScreenNewGame::render() {
     }
 
   } else {
-    FontManager_printText(inputWorldName.c_str(), 130, 220);
+    FontOptions options;
+    options.position = Vec2(242, 220);
+    options.alignment = TextAlignment::Center;
+    FontManager_printText(inputWorldName, options);
   }
 
   if (isEditingSeed) {
     FontOptions options;
-    options.position = Vec2(175, 232);
+    options.position = Vec2(175, 258);
     options.color = Color(168, 160, 50);
 
     if (fpsCounter < 25) {
@@ -91,8 +94,10 @@ void ScreenNewGame::render() {
     }
 
   } else {
-    FontManager_printText(std::string("Seed: ").append(this->inputSeed).c_str(),
-                          140, 258);
+    FontOptions options;
+    options.position = Vec2(242, 258);
+    options.alignment = TextAlignment::Center;
+    FontManager_printText("Seed: " + inputSeed, options);
   }
 
   switch (this->model.type) {
