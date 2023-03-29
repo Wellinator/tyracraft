@@ -129,38 +129,31 @@ void ScreenLoadGame::render() {
   // Render saves slots
   const float iconOffsetY = 196.0F;
   const float iconHeight = 42.0F;
-  if (totalOfSaves < 5) {
-    for (size_t i = 0; i < totalOfSaves; i++) {
-      const float iconYPosition = (i * iconHeight) + iconOffsetY - i;
-      savedGamesList[i]->icon.position.set(140.0F, iconYPosition);
-      t_renderer->renderer2D.render(savedGamesList[i]->icon);
+  const uint8_t itemsPerPage = savedGamesList.size() >= MAX_ITEMS_PER_PAGE
+                                   ? MAX_ITEMS_PER_PAGE
+                                   : savedGamesList.size();
 
-      if (selectedSavedGame->id == savedGamesList[i]->id) {
-        FontManager_printText(
-            savedGamesList[i]->title.c_str(),
-            FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
-      } else {
-        FontManager_printText(savedGamesList[i]->title.c_str(), 173.0F,
-                              iconYPosition);
-      }
-    }
-  } else {
-    size_t page = currentSaveIndex;
-    if (currentSaveIndex + 3 == totalOfSaves) page = currentSaveIndex;
+  size_t pageIndex = currentSaveIndex;
+  if (totalOfSaves <= itemsPerPage || currentSaveIndex < itemsPerPage)
+    pageIndex = 0;
+  else if (currentSaveIndex + itemsPerPage <= totalOfSaves)
+    pageIndex = currentSaveIndex;
+  else {
+    pageIndex = totalOfSaves - itemsPerPage;
+  }
 
-    for (size_t i = page; i < page; i++) {
-      const float iconYPosition = (i * iconHeight) + iconOffsetY - i;
-      savedGamesList[i]->icon.position.set(140.0F, iconYPosition);
-      t_renderer->renderer2D.render(savedGamesList[i]->icon);
+  for (size_t i = 0; i < itemsPerPage; i++) {
+    SaveInfoModel* item = savedGamesList[pageIndex + i];
+    const float iconYPosition = (i * iconHeight) + iconOffsetY - i;
+    item->icon.position.set(140.0F, iconYPosition);
+    t_renderer->renderer2D.render(item->icon);
 
-      if (selectedSavedGame->id == savedGamesList[i]->id) {
-        FontManager_printText(
-            savedGamesList[i]->title.c_str(),
-            FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
-      } else {
-        FontManager_printText(savedGamesList[i]->title.c_str(), 173.0F,
-                              iconYPosition);
-      }
+    if (selectedSavedGame->id == item->id) {
+      FontManager_printText(
+          item->title.c_str(),
+          FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
+    } else {
+      FontManager_printText(item->title.c_str(), 173.0F, iconYPosition);
     }
   }
 
@@ -289,9 +282,11 @@ void ScreenLoadGame::selectPreviousSave() {
     if (savedGamesList.at(i)->id == selectedSavedGame->id) idx = i;
 
   if (idx == 0)
-    selectedSavedGame = savedGamesList.at(savedGamesList.size() - 1);
+    currentSaveIndex = savedGamesList.size() - 1;
   else
-    selectedSavedGame = savedGamesList.at(idx - 1);
+    currentSaveIndex = idx - 1;
+
+  selectedSavedGame = savedGamesList.at(currentSaveIndex);
 }
 
 void ScreenLoadGame::selectNextSave() {
@@ -300,9 +295,11 @@ void ScreenLoadGame::selectNextSave() {
     if (savedGamesList.at(i)->id == selectedSavedGame->id) idx = i;
 
   if (idx == savedGamesList.size() - 1)
-    selectedSavedGame = savedGamesList.at(0);
+    currentSaveIndex = 0;
   else
-    selectedSavedGame = savedGamesList.at(idx + 1);
+    currentSaveIndex = idx + 1;
+
+  selectedSavedGame = savedGamesList.at(currentSaveIndex);
 }
 
 void ScreenLoadGame::loadSelectedSave() {

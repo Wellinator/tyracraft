@@ -11,6 +11,7 @@
 #include <fstream>
 #include <3libs/nlohmann/json.hpp>
 #include <utils.hpp>
+#include <stdint.h>
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -55,6 +56,7 @@ class ScreenLoadGame : public ScreenBase {
 
   u8 currentSaveIndex = 0;
   u8 totalOfSaves = 0;
+  const u8 MAX_ITEMS_PER_PAGE = 4;
 
   Texture* slotTexture;
   Texture* slotActiveTexture;
