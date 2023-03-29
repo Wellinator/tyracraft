@@ -31,9 +31,14 @@ extern u8 BACK_SPACE;
 extern u8 BASE_LINE_HEIGHT;
 
 void FontManager_init(Renderer* t_renderer);
+
 void FontManager_printText(const std::string& text, const FontOptions& options);
 void FontManager_printText(const char* text, const FontOptions& options);
 void FontManager_printText(const char* text, const float& x, const float& y);
+
+float FontManager_calcLinePadding(const std::string& text,
+                                  const TextAlignment alignment);
+
 void FontManager_loadFontChars(Renderer* t_renderer);
 void FontManager_unloadFontChars();
 inline const u8 FontManager_getCodeFromChar(const char& c) { return int(c); };

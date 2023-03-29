@@ -58,6 +58,7 @@ void FontManager_printText(const std::string& text,
   float cursorX = 0.0F;
   float cursorY = 0.0F;
   const u16 stringLenth = text.size();
+  float padding = FontManager_calcLinePadding(text, options.alignment);
 
   for (size_t i = 0; i < stringLenth; i++) {
     const u8 charCode = FontManager_getCodeFromChar(text.at(i));
@@ -72,7 +73,7 @@ void FontManager_printText(const std::string& text,
       }
 
       Sprite spriteToPrint = *fontCharAt;
-      spriteToPrint.position.set(options.position.x + cursorX,
+      spriteToPrint.position.set(options.position.x + cursorX - padding,
                                  options.position.y + cursorY);
       spriteToPrint.color.set(options.color);
       spriteToPrint.scale = options.scale;
@@ -88,6 +89,24 @@ void FontManager_printText(const std::string& text,
                     .c_str());
     }
   }
+}
+
+float FontManager_calcLinePadding(const std::string& text,
+                                  const TextAlignment alignment) {
+  float padding = 0.0F;
+
+  if (alignment == TextAlignment::Left)
+    return padding;
+  else {
+    const size_t stringLenth = text.size();
+
+    for (size_t i = 0; i < stringLenth; i++) {
+      const u8 charCode = FontManager_getCodeFromChar(text.at(i));
+      padding += char_widths[charCode] + 2;
+    }
+  }
+
+  return alignment == TextAlignment::Center ? padding / 2 : padding;
 }
 
 void FontManager_loadFontChars(Renderer* t_renderer) {
