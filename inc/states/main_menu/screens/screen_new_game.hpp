@@ -63,7 +63,9 @@ class ScreenNewGame : public ScreenBase {
   Sprite btnTriangle;
   Sprite btnTriangleTexturePack;
   Sprite btnCross;
+  Sprite btnSquare;
   Sprite btnCircle;
+  Sprite btnStart;
   Sprite btnDpadLeft;
   Sprite btnDpadRight;
   Sprite btnL1;
@@ -81,13 +83,17 @@ class ScreenNewGame : public ScreenBase {
   const float slotWidth = 246.0F;
   const float slotHeight = 32.0F;
 
+  const u8 MAX_WORLD_NAME_LENGTH = 17;
+  const u8 MIN_WORLD_NAME_LENGTH = 1;
+
   std::string inputSeed;
   std::string tempSeed;
   std::string tempSeedMask;
   u8 isEditingSeed = false;
   u8 editingIndex = 0;
 
-  std::string inputWorldName = "New World        ";
+  char tempNewChar = ' ';
+  std::string inputWorldName = "New World";
   std::string tempWorldName;
   std::string tempWorldNameMask;
   u8 isEditingWorldName = false;
@@ -96,6 +102,7 @@ class ScreenNewGame : public ScreenBase {
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;
 
+  std::string getSeed();
   void handleInput();
   void handleOptionsSelection();
   void handleSeedInput();
@@ -112,8 +119,9 @@ class ScreenNewGame : public ScreenBase {
   void startEditingWorldName();
   void cancelEditingWorldName();
   void updateTempWorldNameMask();
-  std::string getSeed();
-
+  void updateTempWorldNameMaskCursor();
+  void addWorldNameLastChar();
+  void removeWorldNameLastChar();
   void selectPreviousTexturePack();
   void selectNextTexturePack();
   void getAvailableTexturePacks();

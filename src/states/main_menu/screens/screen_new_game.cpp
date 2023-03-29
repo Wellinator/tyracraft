@@ -20,6 +20,8 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->freeBySprite(slotTextureActive);
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
+  textureRepo->freeBySprite(btnSquare);
+  textureRepo->freeBySprite(btnStart);
   textureRepo->freeBySprite(btnCircle);
   textureRepo->freeBySprite(btnL1);
   textureRepo->freeBySprite(btnR1);
@@ -74,7 +76,7 @@ void ScreenNewGame::render() {
     }
 
   } else {
-    FontManager_printText(this->inputWorldName.c_str(), 140, 220);
+    FontManager_printText(inputWorldName.c_str(), 130, 220);
   }
 
   if (isEditingSeed) {
@@ -116,12 +118,22 @@ void ScreenNewGame::render() {
 
   FontManager_printText("Create New World", 145, 332);
 
-  if (isEditingSeed || isEditingWorldName) {
+  if (isEditingSeed) {
     this->t_renderer->renderer2D.render(&btnTriangle);
     this->t_renderer->renderer2D.render(&btnCross);
 
     FontManager_printText("Confirm", 35, 407);
     FontManager_printText("Cancel", 160, 407);
+  } else if (isEditingWorldName) {
+    this->t_renderer->renderer2D.render(&btnCross);
+    this->t_renderer->renderer2D.render(&btnTriangle);
+    this->t_renderer->renderer2D.render(&btnSquare);
+    this->t_renderer->renderer2D.render(&btnStart);
+
+    FontManager_printText("Select", 35, 407);
+    FontManager_printText("Cancel", 160, 407);
+    FontManager_printText("Bksp", 285, 407);
+    FontManager_printText("Confirm", 405, 407);
   } else {
     if (activeOption == ScreenNewGameOptions::TexturePack) {
       this->t_renderer->renderer2D.render(&btnDpadLeft);
@@ -246,9 +258,22 @@ void ScreenNewGame::init() {
   btnCross.size.set(25, 25);
   btnCross.position.set(15,
                         this->t_renderer->core.getSettings().getHeight() - 40);
-
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
+
+  btnStart.mode = Tyra::MODE_STRETCH;
+  btnStart.size.set(25, 25);
+  btnStart.position.set(380,
+                        this->t_renderer->core.getSettings().getHeight() - 40);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_start.png"))
+      ->addLink(btnStart.id);
+
+  btnSquare.mode = Tyra::MODE_STRETCH;
+  btnSquare.size.set(25, 25);
+  btnSquare.position.set(260,
+                         this->t_renderer->core.getSettings().getHeight() - 40);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_square.png"))
+      ->addLink(btnSquare.id);
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
   btnTriangle.size.set(25, 25);
@@ -398,13 +423,6 @@ void ScreenNewGame::handleWorldNameInput() {
                            : currentCharIndex + 1;
 
     tempWorldName[editingIndexWorldName] = validChars[newCharIndex];
-  } else if (clickedButtons.DpadLeft) {
-    s8 prev = editingIndexWorldName - 1;
-    editingIndexWorldName =
-        prev < 0 ? (u8)(tempWorldName.length() - 1) : (u8)prev;
-  } else if (clickedButtons.DpadRight) {
-    u8 next = editingIndexWorldName + 1;
-    editingIndexWorldName = next > tempWorldName.length() - 1 ? 0 : (u8)next;
   }
 
   updateTempWorldNameMask();
@@ -412,6 +430,10 @@ void ScreenNewGame::handleWorldNameInput() {
   if (clickedButtons.Triangle) {
     cancelEditingWorldName();
   } else if (clickedButtons.Cross) {
+    addWorldNameLastChar();
+  } else if (clickedButtons.Square) {
+    removeWorldNameLastChar();
+  } else if (clickedButtons.Start) {
     saveWorldName();
   }
 }
@@ -483,8 +505,24 @@ void ScreenNewGame::updateTempSeedMask() {
 }
 
 void ScreenNewGame::saveWorldName() {
-  inputWorldName = std::string(tempWorldName.c_str());
+  inputWorldName = Utils::trim(tempWorldName);
   isEditingWorldName = false;
+}
+
+void ScreenNewGame::removeWorldNameLastChar() {
+  if (tempWorldName.size() > MIN_WORLD_NAME_LENGTH) tempWorldName.pop_back();
+  updateTempWorldNameMaskCursor();
+}
+
+void ScreenNewGame::addWorldNameLastChar() {
+  tempNewChar = tempWorldName.at(tempWorldName.size() - 1);
+  if (tempWorldName.size() < MAX_WORLD_NAME_LENGTH)
+    tempWorldName.push_back(tempNewChar);
+  updateTempWorldNameMaskCursor();
+}
+
+void ScreenNewGame::updateTempWorldNameMaskCursor() {
+  editingIndexWorldName = tempWorldName.length() - 1;
 }
 
 void ScreenNewGame::cancelEditingWorldName() {
@@ -494,7 +532,7 @@ void ScreenNewGame::cancelEditingWorldName() {
 
 void ScreenNewGame::startEditingWorldName() {
   tempWorldName = std::string(inputWorldName.c_str());
-  editingIndexWorldName = tempWorldName.length() - 1;
+  updateTempWorldNameMaskCursor();
   updateTempWorldNameMask();
   isEditingWorldName = true;
 }
