@@ -687,7 +687,7 @@ void ScreenNewGame::renderWorldNameDialog() {
   FontManager_printText("Ops!", titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
-  dialogueOptions.position = Vec2(246, 190);
+  dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
   FontManager_printText("A world with the same", dialogueOptions);
