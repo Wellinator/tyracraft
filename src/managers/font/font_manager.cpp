@@ -28,7 +28,7 @@ u8 char_widths[256] = {
     12, 4,  10, 10, 10, 12, 4,  12, 4,  12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
     12, 4,  4,  10, 12, 10, 12, 14, 12, 12, 12, 12, 12, 12, 12, 12, 8,  12, 12,
     12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 8,  12, 8,  12,
-    12, 6,  12, 12, 12, 12, 12, 10, 12, 12, 4,  12, 10, 6,  12, 12, 12, 12, 12,
+    12, 6,  12, 12, 12, 12, 12, 10, 12, 12, 8,  12, 10, 6,  12, 12, 12, 12, 12,
     12, 12, 8,  12, 12, 12, 12, 12, 12, 10, 4,  10, 14, 4,  12, 0,  6,  12, 10,
     12, 8,  8,  8,  16, 12, 6,  20, 0,  12, 0,  0,  6,  6,  10, 10, 6,  6,  12,
     12, 16, 12, 6,  20, 0,  12, 12, 3,  4,  10, 12, 12, 12, 4,  12, 10, 16, 8,
@@ -59,6 +59,7 @@ void FontManager_printText(const std::string& text,
   float cursorY = 0.0F;
   const u16 stringLenth = text.size();
   float padding = FontManager_calcLinePadding(text, options.alignment);
+  padding *= options.scale;
 
   for (size_t i = 0; i < stringLenth; i++) {
     const u8 charCode = FontManager_getCodeFromChar(text.at(i));
@@ -99,10 +100,9 @@ float FontManager_calcLinePadding(const std::string& text,
     return padding;
   else {
     const size_t stringLenth = text.size();
-
     for (size_t i = 0; i < stringLenth; i++) {
       const u8 charCode = FontManager_getCodeFromChar(text.at(i));
-      padding += char_widths[charCode] + 2;
+      padding += (char_widths[charCode] + 2);
     }
   }
 
