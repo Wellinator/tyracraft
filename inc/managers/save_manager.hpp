@@ -172,4 +172,9 @@ class SaveManager {
 
     return model;
   }
+
+  static bool CheckIfSaveExist(const char* fullPath) {
+    struct stat buffer;
+    return (stat(fullPath, &buffer) == 0);
+  }
 };
