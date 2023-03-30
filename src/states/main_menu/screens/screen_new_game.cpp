@@ -1,5 +1,6 @@
 #include "states/main_menu/screens/screen_new_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "managers/save_manager.hpp"
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
@@ -25,6 +26,10 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->freeBySprite(btnCircle);
   textureRepo->freeBySprite(btnL1);
   textureRepo->freeBySprite(btnR1);
+  textureRepo->freeBySprite(btnDpadLeft);
+  textureRepo->freeBySprite(btnDpadRight);
+  textureRepo->freeBySprite(dialogWindow);
+  textureRepo->freeBySprite(overlay);
 
   for (size_t i = 0; i < texturePacks.size(); i++) {
     textureRepo->freeBySprite(texturePacks.at(i)->icon);
@@ -163,6 +168,10 @@ void ScreenNewGame::render() {
       }
       FontManager_printText("Back", 160, 407);
     }
+  }
+
+  if (needToChangeWorldName) {
+    renderWorldNameDialog();
   }
 }
 
@@ -318,6 +327,18 @@ void ScreenNewGame::init() {
 
   textureRepo->add(FileUtils::fromCwd("textures/gui/pad_right.png"))
       ->addLink(btnDpadRight.id);
+
+  dialogWindow.mode = Tyra::MODE_STRETCH;
+  dialogWindow.size.set(256, 256);
+  dialogWindow.position.set(128, 120);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/window.png"))
+      ->addLink(dialogWindow.id);
+
+  overlay.mode = Tyra::MODE_STRETCH;
+  overlay.size.set(512, 448);
+  overlay.position.set(0, 0);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
+      ->addLink(overlay.id);
 }
 
 void ScreenNewGame::handleInput() {
@@ -332,6 +353,15 @@ void ScreenNewGame::handleInput() {
 
 void ScreenNewGame::handleOptionsSelection() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
+
+  if (needToChangeWorldName) {
+    if (clickedButtons.Cross) {
+      this->context->playClickSound();
+      needToChangeWorldName = false;
+      activeOption = ScreenNewGameOptions::WorldName;
+    }
+    return;
+  }
 
   if (clickedButtons.L1 || clickedButtons.R1) {
     context->setScreen(new ScreenLoadGame(context));
@@ -365,9 +395,14 @@ void ScreenNewGame::handleOptionsSelection() {
     this->context->playClickSound();
     this->selectedOption = this->activeOption;
     this->updateModel();
-    if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld)
-      return this->createNewWorld();
-    else if (this->selectedOption == ScreenNewGameOptions::WorldName)
+    if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld) {
+      if (canCreateANewWorldWithCurrentName()) {
+        createNewWorld();
+      } else {
+        needToChangeWorldName = true;
+      }
+      return;
+    } else if (this->selectedOption == ScreenNewGameOptions::WorldName)
       startEditingWorldName();
     else if (this->selectedOption == ScreenNewGameOptions::Seed)
       startEditingSeed();
@@ -455,6 +490,13 @@ void ScreenNewGame::updateModel() {
 
 void ScreenNewGame::backToMainMenu() {
   this->context->setScreen(new ScreenMain(this->context));
+}
+
+bool ScreenNewGame::canCreateANewWorldWithCurrentName() {
+  std::string tempSaveFileName =
+      FileUtils::fromCwd("saves/" + inputWorldName + ".tcw");
+
+  return !SaveManager::CheckIfSaveExist(tempSaveFileName.c_str());
 }
 
 void ScreenNewGame::createNewWorld() {
@@ -632,4 +674,28 @@ void ScreenNewGame::selectNextTexturePack() {
     selectedTexturePack = texturePacks.at(0);
   else
     selectedTexturePack = texturePacks.at(idx + 1);
+}
+
+void ScreenNewGame::renderWorldNameDialog() {
+  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(dialogWindow);
+
+  FontOptions titleOptions = FontOptions();
+  titleOptions.position = Vec2(246, 135);
+  titleOptions.scale = 0.9F;
+  titleOptions.alignment = TextAlignment::Center;
+  FontManager_printText("Ops!", titleOptions);
+
+  FontOptions dialogueOptions = FontOptions();
+  dialogueOptions.position = Vec2(246, 190);
+  dialogueOptions.scale = 0.6F;
+  dialogueOptions.alignment = TextAlignment::Center;
+  FontManager_printText("A world with the same", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText(" name already exists", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText("Please change it", dialogueOptions);
+
+  t_renderer->renderer2D.render(btnCross);
+  FontManager_printText("Confirm", 40, 407);
 }

@@ -70,6 +70,8 @@ class ScreenNewGame : public ScreenBase {
   Sprite btnDpadRight;
   Sprite btnL1;
   Sprite btnR1;
+  Sprite overlay;
+  Sprite dialogWindow;
 
   Texture* slotTexture;
   Texture* slotActiveTexture;
@@ -98,6 +100,7 @@ class ScreenNewGame : public ScreenBase {
   std::string tempWorldNameMask;
   u8 isEditingWorldName = false;
   u8 editingIndexWorldName = 0;
+  u8 needToChangeWorldName = 0;
 
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;
@@ -109,8 +112,10 @@ class ScreenNewGame : public ScreenBase {
   void handleWorldNameInput();
   void backToMainMenu();
   void createNewWorld();
+  bool canCreateANewWorldWithCurrentName();
   void updateModel();
   void renderSelectedOptions();
+  void renderWorldNameDialog();
   void saveSeed();
   void startEditingSeed();
   void cancelEditingSeed();
