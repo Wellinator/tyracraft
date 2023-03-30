@@ -41,6 +41,7 @@ class StateGamePlay : public GameState {
   void update(const float& deltaTime);
   void render();
 
+  void inline hideWelcomeMessage() { this->hideWelcome(); };
   void inline backToGame() { this->unpauseGame(); };
   void quitToTitle();
 
@@ -61,9 +62,12 @@ class StateGamePlay : public GameState {
   PlayingStateBase* state = nullptr;
   PlayingStateBase* previousState = nullptr;
   u8 paused = false;
+  u8 isAtWelcomeState = false;
 
   void handleGameMode(const GameMode& gameMode);
   void handleInput();
   void pauseGame();
   void unpauseGame();
+  void displayWelcome();
+  void hideWelcome();
 };
