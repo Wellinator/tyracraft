@@ -17,8 +17,8 @@ using Tyra::Threading;
 enum class GameMenuOptions {
   DrawDistance,
   SaveGame,
-  BackToGame,
-  QuitToTitle,
+  SaveAndQuit,
+  QuitWithoutSave,
   None
 };
 
@@ -46,13 +46,16 @@ class StateGameMenu : public PlayingStateBase {
   Sprite horizontalScrollArea;
   Sprite horizontalScrollHandler;
   Sprite dialogWindow;
+  Sprite btnStart;
 
   GameMenuOptions selectedOption = GameMenuOptions::None;
-  GameMenuOptions activeOption = GameMenuOptions::BackToGame;
+  GameMenuOptions activeOption = GameMenuOptions::SaveGame;
 
   u8 needSaveOverwriteConfirmation = false;
+  u8 needSaveAndQuitConfirmation = false;
+  u8 needQuitWithoutSaveConfirmation = false;
 
-  const float SLOT_WIDTH = 160;
+  const float SLOT_WIDTH = 230;
   const float SLOT_HIGHT_OFFSET = 240;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
   const u8 MENU_SFX_CH = 1;
@@ -64,4 +67,6 @@ class StateGameMenu : public PlayingStateBase {
   void decreaseDrawDistance();
   void updateDrawDistanceScroll();
   void renderSaveOverwritingDialog();
+  void renderSaveAndQuitDialog();
+  void renderQuitWithoutSavingDialog();
 };

@@ -62,8 +62,8 @@ void StateGameMenu::init() {
       ->addLink(active_slot.id);
 
   dialogWindow.mode = Tyra::MODE_STRETCH;
-  dialogWindow.size.set(256, 256);
-  dialogWindow.position.set(halfWidth - 128, 120);
+  dialogWindow.size.set(260, 260);
+  dialogWindow.position.set(halfWidth - 130, 120);
   textureRepo->add(FileUtils::fromCwd("textures/gui/window.png"))
       ->addLink(dialogWindow.id);
 
@@ -82,6 +82,13 @@ void StateGameMenu::init() {
                            t_renderer->core.getSettings().getHeight() - 40);
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
+
+  btnStart.mode = Tyra::MODE_STRETCH;
+  btnStart.size.set(25, 25);
+  btnStart.position.set(185,
+                        this->t_renderer->core.getSettings().getHeight() - 40);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_start.png"))
+      ->addLink(btnStart.id);
 
   updateDrawDistanceScroll();
 }
@@ -116,28 +123,37 @@ void StateGameMenu::render() {
   FontManager_printText("Game Menu", halfWidth - 64, halfHeight - 200);
 
   FontOptions saveGameLabel;
-  saveGameLabel.position.set(halfWidth - 65, 240 + 3);
+  saveGameLabel.position.set(246, 240 + 3);
+  saveGameLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::SaveGame)
     saveGameLabel.color.set(128, 128, 0);
   FontManager_printText("Save Game", saveGameLabel);
 
   FontOptions backToGameLabel;
-  backToGameLabel.position.set(halfWidth - 80, 240 + 43);
-  if (activeOption == GameMenuOptions::BackToGame)
+  backToGameLabel.position.set(246, 240 + 43);
+  backToGameLabel.alignment = TextAlignment::Center;
+  if (activeOption == GameMenuOptions::SaveAndQuit)
     backToGameLabel.color.set(128, 128, 0);
-  FontManager_printText("Back to Game", backToGameLabel);
+  FontManager_printText("Save and Quit", backToGameLabel);
 
   FontOptions quitToTitleLabel;
-  quitToTitleLabel.position.set(halfWidth - 75, 240 + 83);
-  if (activeOption == GameMenuOptions::QuitToTitle)
+  quitToTitleLabel.position.set(246, 240 + 83);
+  quitToTitleLabel.alignment = TextAlignment::Center;
+  if (activeOption == GameMenuOptions::QuitWithoutSave)
     quitToTitleLabel.color.set(128, 128, 0);
-  FontManager_printText("Quit to Title", quitToTitleLabel);
+  FontManager_printText("Quit Without Save", quitToTitleLabel);
 
   if (needSaveOverwriteConfirmation) {
     renderSaveOverwritingDialog();
+  } else if (needSaveAndQuitConfirmation) {
+    renderSaveAndQuitDialog();
+  } else if (needQuitWithoutSaveConfirmation) {
+    renderQuitWithoutSavingDialog();
   } else {
     t_renderer->renderer2D.render(btnCross);
     FontManager_printText("Select", 40, 407);
+    t_renderer->renderer2D.render(btnStart);
+    FontManager_printText("Back to game", 205, 407);
   }
 }
 
@@ -154,11 +170,28 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       needSaveOverwriteConfirmation = false;
     }
     return;
+  } else if (needSaveAndQuitConfirmation) {
+    if (clicked.Cross) {
+      playClickSound();
+      stateGamePlay->saveGame();
+      stateGamePlay->quitToTitle();
+    } else if (clicked.Triangle) {
+      needSaveAndQuitConfirmation = false;
+    }
+    return;
+  } else if (needQuitWithoutSaveConfirmation) {
+    if (clicked.Cross) {
+      this->playClickSound();
+      stateGamePlay->quitToTitle();
+    } else if (clicked.Triangle) {
+      needQuitWithoutSaveConfirmation = false;
+    }
+    return;
   }
 
   if (clicked.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
-    if (nextOption > (int)GameMenuOptions::QuitToTitle)
+    if (nextOption > (int)GameMenuOptions::QuitWithoutSave)
       this->activeOption = GameMenuOptions::DrawDistance;
     else
       this->activeOption = static_cast<GameMenuOptions>(nextOption);
@@ -166,7 +199,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   } else if (clicked.DpadUp) {
     int nextOption = (int)this->activeOption - 1;
     if (nextOption < 0)
-      this->activeOption = GameMenuOptions::QuitToTitle;
+      this->activeOption = GameMenuOptions::QuitWithoutSave;
     else
       this->activeOption = static_cast<GameMenuOptions>(nextOption);
   }
@@ -178,8 +211,9 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       increaseDrawDistance();
   }
 
-  if (activeOption == GameMenuOptions::SaveGame) {
-    if (clicked.Cross) {
+  if (clicked.Cross) {
+    this->playClickSound();
+    if (activeOption == GameMenuOptions::SaveGame) {
       this->playClickSound();
 
       std::string saveFileName = FileUtils::fromCwd(
@@ -191,11 +225,14 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       } else {
         stateGamePlay->saveGame();
       }
+    } else if (activeOption == GameMenuOptions::SaveAndQuit) {
+      this->playClickSound();
+      needSaveAndQuitConfirmation = true;
+    } else if (activeOption == GameMenuOptions::QuitWithoutSave) {
+      this->playClickSound();
+      needQuitWithoutSaveConfirmation = true;
     }
-  }
 
-  if (clicked.Cross) {
-    this->playClickSound();
     this->selectedOption = this->activeOption;
   }
 }
@@ -203,10 +240,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
 void StateGameMenu::navigate() {
   if (this->selectedOption == GameMenuOptions::None) {
     return;
-  } else if (this->selectedOption == GameMenuOptions::BackToGame)
-    this->stateGamePlay->backToGame();
-  else if (this->selectedOption == GameMenuOptions::QuitToTitle)
-    this->stateGamePlay->quitToTitle();
+  }
 }
 
 void StateGameMenu::unloadTextures() {
@@ -221,6 +255,7 @@ void StateGameMenu::unloadTextures() {
   textureRepository->freeBySprite(horizontalScrollArea);
   textureRepository->freeBySprite(horizontalScrollHandler);
   textureRepository->freeBySprite(dialogWindow);
+  textureRepository->freeBySprite(btnStart);
 }
 
 void StateGameMenu::playClickSound() {
@@ -236,10 +271,10 @@ void StateGameMenu::hightLightActiveOption() {
   if (this->activeOption == GameMenuOptions::SaveGame) {
     this->active_slot.position.y =
         (0 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::BackToGame) {
+  } else if (this->activeOption == GameMenuOptions::SaveAndQuit) {
     this->active_slot.position.y =
         (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::QuitToTitle) {
+  } else if (this->activeOption == GameMenuOptions::QuitWithoutSave) {
     this->active_slot.position.y =
         (2 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
   }
@@ -295,6 +330,60 @@ void StateGameMenu::renderSaveOverwritingDialog() {
 
   t_renderer->renderer2D.render(btnCross);
   FontManager_printText("Overwrite", 40, 407);
+
+  t_renderer->renderer2D.render(btnTriangle);
+  FontManager_printText("Cancel", 205, 407);
+}
+
+void StateGameMenu::renderSaveAndQuitDialog() {
+  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(dialogWindow);
+
+  FontOptions titleOptions = FontOptions();
+  titleOptions.position = Vec2(246, 135);
+  titleOptions.scale = 0.9F;
+  titleOptions.alignment = TextAlignment::Center;
+  FontManager_printText("Save and Quit?", titleOptions);
+
+  FontOptions dialogueOptions = FontOptions();
+  dialogueOptions.position = Vec2(246, 180);
+  dialogueOptions.scale = 0.6F;
+  dialogueOptions.alignment = TextAlignment::Center;
+  FontManager_printText("Any previous save", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText(" will be overwritten", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText("Do you want to continue?", dialogueOptions);
+
+  t_renderer->renderer2D.render(btnCross);
+  FontManager_printText("Save and quit", 40, 407);
+
+  btnTriangle.position.x = 225;
+  t_renderer->renderer2D.render(btnTriangle);
+  FontManager_printText("Cancel", 245, 407);
+  btnTriangle.position.x = 185;
+}
+
+void StateGameMenu::renderQuitWithoutSavingDialog() {
+  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(dialogWindow);
+
+  FontOptions titleOptions = FontOptions();
+  titleOptions.position = Vec2(246, 135);
+  titleOptions.scale = 0.9F;
+  titleOptions.alignment = TextAlignment::Center;
+  FontManager_printText("Are you sure?", titleOptions);
+
+  FontOptions dialogueOptions = FontOptions();
+  dialogueOptions.position = Vec2(246, 190);
+  dialogueOptions.scale = 0.6F;
+  dialogueOptions.alignment = TextAlignment::Center;
+  FontManager_printText("All unsaved progress will be lost", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText("Do you want to continue?", dialogueOptions);
+
+  t_renderer->renderer2D.render(btnCross);
+  FontManager_printText("Quit", 40, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
   FontManager_printText("Cancel", 205, 407);
