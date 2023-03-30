@@ -78,9 +78,9 @@
     ✅ -> Add warning message on start game;
     🔲 -> Popup messages system;
     🔲 -> Dialog messages;
-        🔲 -> Message if exists any world with the same name before create a new game;
+        ✅ -> Message if exists any world with the same name before create a new game;
         ✅ -> Confirm before override an existing save;
-        🔲 -> Confirm before exit without saveing;
+        🔲 -> Confirm before exit without save;
 
 * Bug fixes for pre-alpha release (v0.1.5):
     🔲 -> Real PS2:
