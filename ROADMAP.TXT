@@ -75,9 +75,10 @@
     ✅ -> Add save support;
     🔲 -> Add auto save feature;
     🔲 -> Add "Quit Without Save" and "Save and Quit" at in game menu;
-    🔲 -> Add warning message on start game;
+    ✅ -> Add warning message on start game;
     🔲 -> Popup messages system;
     🔲 -> Dialog messages;
+        🔲 -> Message if exists any world with the same name before create a new game;
         ✅ -> Confirm before override an existing save;
         🔲 -> Confirm before exit without saveing;
 
