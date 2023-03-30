@@ -78,7 +78,7 @@ void StateGameMenu::init() {
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
   btnTriangle.size.set(25, 25);
-  btnTriangle.position.set(170,
+  btnTriangle.position.set(185,
                            t_renderer->core.getSettings().getHeight() - 40);
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
@@ -138,13 +138,13 @@ void StateGameMenu::render() {
     t_renderer->renderer2D.render(dialogWindow);
 
     FontOptions titleOptions = FontOptions();
-    titleOptions.position = Vec2(258, 135);
+    titleOptions.position = Vec2(246, 135);
     titleOptions.scale = 0.9F;
     titleOptions.alignment = TextAlignment::Center;
     FontManager_printText("Overwrite Save Game?", titleOptions);
 
     FontOptions dialogueOptions = FontOptions();
-    dialogueOptions.position = Vec2(320, 190);
+    dialogueOptions.position = Vec2(246, 190);
     dialogueOptions.scale = 0.6F;
     dialogueOptions.alignment = TextAlignment::Center;
     FontManager_printText("A local save will be overwritten.", dialogueOptions);
@@ -155,7 +155,7 @@ void StateGameMenu::render() {
     FontManager_printText("Overwrite", 40, 407);
 
     t_renderer->renderer2D.render(btnTriangle);
-    FontManager_printText("Cancel", 190, 407);
+    FontManager_printText("Cancel", 205, 407);
   } else {
     t_renderer->renderer2D.render(btnCross);
     FontManager_printText("Select", 40, 407);
