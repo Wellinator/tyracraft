@@ -121,15 +121,18 @@ void ScreenLoadGame::render() {
   FontManager_printText("USB", 130.0F, 160.0F);
   FontManager_printText("MC", 210.0F, 160.0F);
 
-  FontManager_printText(std::to_string(currentSaveIndex + 1).c_str(), 280.0F,
-                        160.0F);
-  FontManager_printText("/", 320.0F, 160.0F);
-  FontManager_printText(std::to_string(totalOfSaves).c_str(), 335.0F, 160.0F);
+  FontOptions currentSaveFontOptions = FontOptions();
+  currentSaveFontOptions.alignment = TextAlignment::Right;
+  currentSaveFontOptions.position = Vec2(360.0F, 160.0F);
+  std::string infoString = 
+      std::to_string(totalOfSaves > 0 ? currentSaveIndex + 1 : 0) + " / " +
+      std::to_string(totalOfSaves);
+  FontManager_printText(infoString, currentSaveFontOptions);
 
   // Render saves slots
   const float iconOffsetY = 196.0F;
   const float iconHeight = 42.0F;
-  const uint8_t itemsPerPage = savedGamesList.size() >= MAX_ITEMS_PER_PAGE
+  const u8 itemsPerPage = savedGamesList.size() >= MAX_ITEMS_PER_PAGE
                                    ? MAX_ITEMS_PER_PAGE
                                    : savedGamesList.size();
 
