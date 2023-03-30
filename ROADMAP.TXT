@@ -78,7 +78,7 @@
     🔲 -> Add warning message on start game;
     🔲 -> Popup messages system;
     🔲 -> Dialog messages;
-        🔲 -> Confirm before override an existing save;
+        ✅ -> Confirm before override an existing save;
         🔲 -> Confirm before exit without saveing;
 
 * Bug fixes for pre-alpha release (v0.1.5):
