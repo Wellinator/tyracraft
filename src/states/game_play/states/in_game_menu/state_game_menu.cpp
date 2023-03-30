@@ -134,28 +134,7 @@ void StateGameMenu::render() {
   FontManager_printText("Quit to Title", quitToTitleLabel);
 
   if (needSaveOverwriteConfirmation) {
-    t_renderer->renderer2D.render(overlay);
-    t_renderer->renderer2D.render(dialogWindow);
-
-    FontOptions titleOptions = FontOptions();
-    titleOptions.position = Vec2(246, 135);
-    titleOptions.scale = 0.9F;
-    titleOptions.alignment = TextAlignment::Center;
-    FontManager_printText("Overwrite Save Game?", titleOptions);
-
-    FontOptions dialogueOptions = FontOptions();
-    dialogueOptions.position = Vec2(246, 190);
-    dialogueOptions.scale = 0.6F;
-    dialogueOptions.alignment = TextAlignment::Center;
-    FontManager_printText("A local save will be overwritten.", dialogueOptions);
-    dialogueOptions.position.y += 15;
-    FontManager_printText("Do you want to continue?", dialogueOptions);
-
-    t_renderer->renderer2D.render(btnCross);
-    FontManager_printText("Overwrite", 40, 407);
-
-    t_renderer->renderer2D.render(btnTriangle);
-    FontManager_printText("Cancel", 205, 407);
+    renderSaveOverwritingDialog();
   } else {
     t_renderer->renderer2D.render(btnCross);
     FontManager_printText("Select", 40, 407);
@@ -294,4 +273,29 @@ void StateGameMenu::updateDrawDistanceScroll() {
       (porcentage * SLOT_WIDTH) - (porcentage * horizontalScrollHandler.size.x);
 
   horizontalScrollHandler.position.x = min + value;
+}
+
+void StateGameMenu::renderSaveOverwritingDialog() {
+  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(dialogWindow);
+
+  FontOptions titleOptions = FontOptions();
+  titleOptions.position = Vec2(246, 135);
+  titleOptions.scale = 0.9F;
+  titleOptions.alignment = TextAlignment::Center;
+  FontManager_printText("Overwrite Save Game?", titleOptions);
+
+  FontOptions dialogueOptions = FontOptions();
+  dialogueOptions.position = Vec2(246, 190);
+  dialogueOptions.scale = 0.6F;
+  dialogueOptions.alignment = TextAlignment::Center;
+  FontManager_printText("A local save will be overwritten.", dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText("Do you want to continue?", dialogueOptions);
+
+  t_renderer->renderer2D.render(btnCross);
+  FontManager_printText("Overwrite", 40, 407);
+
+  t_renderer->renderer2D.render(btnTriangle);
+  FontManager_printText("Cancel", 205, 407);
 }

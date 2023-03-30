@@ -63,4 +63,5 @@ class StateGameMenu : public PlayingStateBase {
   void increaseDrawDistance();
   void decreaseDrawDistance();
   void updateDrawDistanceScroll();
+  void renderSaveOverwritingDialog();
 };
