@@ -1,5 +1,6 @@
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/save_manager.hpp"
 
 StateGameMenu::StateGameMenu(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {
@@ -10,16 +11,16 @@ StateGameMenu::StateGameMenu(StateGamePlay* t_context)
 StateGameMenu::~StateGameMenu() { this->unloadTextures(); }
 
 void StateGameMenu::init() {
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
 
-  // Overlay
+  // OverlayL
   overlay.mode = Tyra::MODE_STRETCH;
   overlay.size.set(halfWidth * 2, halfHeight * 2);
   overlay.position.set(0, 0);
 
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
       ->addLink(overlay.id);
 
   // Load slots
@@ -33,8 +34,8 @@ void StateGameMenu::init() {
   raw_slot[2].size.set(SLOT_WIDTH, 35);
   raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 80);
 
-  this->textureRawSlot = this->t_renderer->getTextureRepository().add(
-      FileUtils::fromCwd("textures/gui/slot.png"));
+  this->textureRawSlot =
+      textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
 
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
@@ -43,24 +44,28 @@ void StateGameMenu::init() {
   horizontalScrollArea.mode = Tyra::MODE_STRETCH;
   horizontalScrollArea.size.set(SLOT_WIDTH, 32);
   horizontalScrollArea.position.set(halfWidth - SLOT_WIDTH / 2, 215);
-  t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/horizontal_scroll_area.png"))
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/horizontal_scroll_area.png"))
       ->addLink(horizontalScrollArea.id);
 
   horizontalScrollHandler.mode = Tyra::MODE_STRETCH;
   horizontalScrollHandler.size.set(16, 16);
   horizontalScrollHandler.position.set(halfWidth - SLOT_WIDTH / 2, 215);
-  t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/horizontal_scroll_handler.png"))
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/horizontal_scroll_handler.png"))
       ->addLink(horizontalScrollHandler.id);
 
   active_slot.mode = Tyra::MODE_STRETCH;
   active_slot.size.set(SLOT_WIDTH, 35);
   active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/slot_active.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
+
+  dialogWindow.mode = Tyra::MODE_STRETCH;
+  dialogWindow.size.set(256, 256);
+  dialogWindow.position.set(halfWidth - 128, 120);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/window.png"))
+      ->addLink(dialogWindow.id);
 
   // Buttons
   btnCross.mode = Tyra::MODE_STRETCH;
@@ -68,9 +73,15 @@ void StateGameMenu::init() {
   btnCross.position.set(15,
                         this->t_renderer->core.getSettings().getHeight() - 40);
 
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
+
+  btnTriangle.mode = Tyra::MODE_STRETCH;
+  btnTriangle.size.set(25, 25);
+  btnTriangle.position.set(170,
+                           t_renderer->core.getSettings().getHeight() - 40);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
+      ->addLink(btnTriangle.id);
 
   updateDrawDistanceScroll();
 }
@@ -122,15 +133,49 @@ void StateGameMenu::render() {
     quitToTitleLabel.color.set(128, 128, 0);
   FontManager_printText("Quit to Title", quitToTitleLabel);
 
-  t_renderer->renderer2D.render(btnCross);
+  if (needSaveOverwriteConfirmation) {
+    t_renderer->renderer2D.render(overlay);
+    t_renderer->renderer2D.render(dialogWindow);
 
-  FontManager_printText("Select", 15 + 30,
-                        this->t_renderer->core.getSettings().getHeight() - 36);
+    FontOptions titleOptions = FontOptions();
+    titleOptions.position = Vec2(258, 135);
+    titleOptions.scale = 0.9F;
+    titleOptions.alignment = TextAlignment::Center;
+    FontManager_printText("Overwrite Save Game?", titleOptions);
+
+    FontOptions dialogueOptions = FontOptions();
+    dialogueOptions.position = Vec2(320, 190);
+    dialogueOptions.scale = 0.6F;
+    dialogueOptions.alignment = TextAlignment::Center;
+    FontManager_printText("A local save will be overwritten.", dialogueOptions);
+    dialogueOptions.position.y += 15;
+    FontManager_printText("Do you want to continue?", dialogueOptions);
+
+    t_renderer->renderer2D.render(btnCross);
+    FontManager_printText("Overwrite", 40, 407);
+
+    t_renderer->renderer2D.render(btnTriangle);
+    FontManager_printText("Cancel", 190, 407);
+  } else {
+    t_renderer->renderer2D.render(btnCross);
+    FontManager_printText("Select", 40, 407);
+  }
 }
 
 void StateGameMenu::handleInput(const float& deltaTime) {
   const PadButtons& clicked =
       this->stateGamePlay->context->t_engine->pad.getClicked();
+
+  if (needSaveOverwriteConfirmation) {
+    if (clicked.Cross) {
+      this->playClickSound();
+      stateGamePlay->saveGame();
+      needSaveOverwriteConfirmation = false;
+    } else if (clicked.Triangle) {
+      needSaveOverwriteConfirmation = false;
+    }
+    return;
+  }
 
   if (clicked.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
@@ -157,7 +202,16 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   if (activeOption == GameMenuOptions::SaveGame) {
     if (clicked.Cross) {
       this->playClickSound();
-      this->stateGamePlay->saveGame();
+
+      std::string saveFileName = FileUtils::fromCwd(
+          "saves/" + this->stateGamePlay->world->getWorldOptions()->name +
+          ".tcw");
+
+      if (SaveManager::CheckIfSaveExist(saveFileName.c_str())) {
+        needSaveOverwriteConfirmation = true;
+      } else {
+        stateGamePlay->saveGame();
+      }
     }
   }
 
@@ -184,8 +238,10 @@ void StateGameMenu::unloadTextures() {
   textureRepository->freeBySprite(overlay);
   textureRepository->freeBySprite(active_slot);
   textureRepository->freeBySprite(btnCross);
+  textureRepository->freeBySprite(btnTriangle);
   textureRepository->freeBySprite(horizontalScrollArea);
   textureRepository->freeBySprite(horizontalScrollHandler);
+  textureRepository->freeBySprite(dialogWindow);
 }
 
 void StateGameMenu::playClickSound() {

@@ -37,22 +37,20 @@ class StateGameMenu : public PlayingStateBase {
  private:
   Renderer* t_renderer;
 
-  // Overlay
-  Sprite overlay;
-
-  // Slots
   Texture* textureRawSlot;
+  Sprite overlay;
   Sprite raw_slot[3];
   Sprite active_slot;
-
-  // Buttons
   Sprite btnCross;
-
+  Sprite btnTriangle;
   Sprite horizontalScrollArea;
   Sprite horizontalScrollHandler;
+  Sprite dialogWindow;
 
   GameMenuOptions selectedOption = GameMenuOptions::None;
   GameMenuOptions activeOption = GameMenuOptions::BackToGame;
+
+  u8 needSaveOverwriteConfirmation = false;
 
   const float SLOT_WIDTH = 160;
   const float SLOT_HIGHT_OFFSET = 240;
