@@ -29,6 +29,7 @@
 #include "entities/sfx_library_sound.hpp"
 #include "tyra"
 #include "managers/font/font_manager.hpp"
+#include "managers/sound_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -74,5 +75,4 @@ class StateMainMenu : public GameState {
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
-  const std::string getRandonMenuSongName();
 };

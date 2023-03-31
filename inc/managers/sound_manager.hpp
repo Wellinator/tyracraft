@@ -8,11 +8,14 @@
 using Tyra::AdpcmResult;
 using Tyra::Audio;
 using Tyra::Engine;
+using Tyra::Math;
 
 class SoundManager {
  public:
   SoundManager(Engine* t_engine);
   ~SoundManager();
+
+  static const std::string GetRandonSongFromPath(const std::string& songsDir);
 
   SfxLibraryCategory* getCategory(const SoundFxCategory& idCategory) {
     return this->soundLibrary->getCategory(idCategory);
