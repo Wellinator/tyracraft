@@ -26,35 +26,23 @@ void ScreenMain::render() {
   t_renderer->renderer2D.render(&raw_slot[0]);
   t_renderer->renderer2D.render(&raw_slot[1]);
   t_renderer->renderer2D.render(&raw_slot[2]);
-  t_renderer->renderer2D.render(&raw_slot[3]);
   t_renderer->renderer2D.render(&active_slot);
 
   // New Game
   {
     FontOptions fontOptions;
     fontOptions.position.set(Vec2(256 - 60, 230 + 6));
-    fontOptions.color.set(activeOption == ScreenMainOptions::NewGame
+    fontOptions.color.set(activeOption == ScreenMainOptions::PlayGame
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    FontManager_printText("New Game", fontOptions);
-  }
-
-  // Load Game
-  {
-    FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 64, 230 + 46));
-    fontOptions.color.set(activeOption == ScreenMainOptions::LoadGame
-                              ? Tyra::Color(255, 255, 0)
-                              : Tyra::Color(255, 255, 255));
-
-    FontManager_printText("Load Game", fontOptions);
+    FontManager_printText("Play Game", fontOptions);
   }
 
   // How To Play
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 72, 230 + 86));
+    fontOptions.position.set(Vec2(256 - 72, 230 + 46));
     fontOptions.color.set(activeOption == ScreenMainOptions::HowToPlay
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
@@ -64,7 +52,7 @@ void ScreenMain::render() {
   // About
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 42, 230 + 126));
+    fontOptions.position.set(Vec2(256 - 42, 230 + 86));
     fontOptions.color.set(activeOption == ScreenMainOptions::About
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
@@ -88,9 +76,6 @@ void ScreenMain::init() {
   raw_slot[2].mode = Tyra::MODE_STRETCH;
   raw_slot[2].size.set(SLOT_WIDTH, 35);
   raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 230 + 80);
-  raw_slot[3].mode = Tyra::MODE_STRETCH;
-  raw_slot[3].size.set(SLOT_WIDTH, 35);
-  raw_slot[3].position.set(halfWidth - SLOT_WIDTH / 2, 230 + 120);
 
   raw_slot_texture = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/gui/slot.png"));
@@ -98,7 +83,6 @@ void ScreenMain::init() {
   raw_slot_texture->addLink(raw_slot[0].id);
   raw_slot_texture->addLink(raw_slot[1].id);
   raw_slot_texture->addLink(raw_slot[2].id);
-  raw_slot_texture->addLink(raw_slot[3].id);
 
   active_slot.mode = Tyra::MODE_STRETCH;
   active_slot.size.set(SLOT_WIDTH, 35);
@@ -124,7 +108,7 @@ void ScreenMain::handleInput() {
     if (context->context->t_engine->pad.getClicked().DpadDown) {
       int nextOption = (int)activeOption + 1;
       if (nextOption > static_cast<uint8_t>(ScreenMainOptions::About))
-        activeOption = ScreenMainOptions::NewGame;
+        activeOption = ScreenMainOptions::PlayGame;
       else
         activeOption = static_cast<ScreenMainOptions>(nextOption);
     } else if (context->context->t_engine->pad.getClicked().DpadUp) {
@@ -151,9 +135,7 @@ void ScreenMain::hightLightActiveOption() {
 void ScreenMain::navigate() {
   if (selectedOption == ScreenMainOptions::None) return;
 
-  if (selectedOption == ScreenMainOptions::NewGame)
-    context->setScreen(new ScreenNewGame(context));
-  if (selectedOption == ScreenMainOptions::LoadGame)
+  if (selectedOption == ScreenMainOptions::PlayGame)
     context->setScreen(new ScreenLoadGame(context));
   else if (selectedOption == ScreenMainOptions::HowToPlay)
     context->setScreen(new ScreenHowToPlay(context));

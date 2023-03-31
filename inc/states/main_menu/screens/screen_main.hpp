@@ -14,7 +14,7 @@ using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
 
-enum class ScreenMainOptions { NewGame, LoadGame, HowToPlay, About, None };
+enum class ScreenMainOptions { PlayGame, HowToPlay, About, None };
 
 class ScreenMain : public ScreenBase {
  public:
@@ -30,7 +30,7 @@ class ScreenMain : public ScreenBase {
 
   // Slots
   Texture* raw_slot_texture;
-  Sprite raw_slot[4];
+  Sprite raw_slot[3];
   Sprite active_slot;
   Sprite textBack;
 
@@ -38,7 +38,7 @@ class ScreenMain : public ScreenBase {
   Sprite btnTriangle;
 
   ScreenMainOptions selectedOption = ScreenMainOptions::None;
-  ScreenMainOptions activeOption = ScreenMainOptions::NewGame;
+  ScreenMainOptions activeOption = ScreenMainOptions::PlayGame;
 
   const float SLOT_WIDTH = 160;
   const float SLOT_HIGHT_OFFSET = 230;
