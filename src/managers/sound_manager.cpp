@@ -46,7 +46,7 @@ const std::string SoundManager::GetRandonSongFromPath(
     }
   }
   if (availableSongs.size() > 0) {
-    int randSongIndex = rand() % (availableSongs.size() - 1);
+    int randSongIndex = Math::randomi(0, (availableSongs.size() - 1));
     return availableSongs.at(randSongIndex);
   } else
     return std::string("");
