@@ -18,6 +18,7 @@ ScreenLoadGame::~ScreenLoadGame() {
   textureRepo->freeBySprite(btnSelect);
   textureRepo->freeBySprite(btnL1);
   textureRepo->freeBySprite(btnR1);
+  textureRepo->freeBySprite(selectedSaveOverlay);
 
   unloadSaved();
 }
@@ -99,6 +100,14 @@ void ScreenLoadGame::init() {
 
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_select.png"))
       ->addLink(btnSelect.id);
+
+  selectedSaveOverlay.mode = Tyra::MODE_STRETCH;
+  selectedSaveOverlay.size.set(240, 40);
+  selectedSaveOverlay.position.set(136, 0);
+  selectedSaveOverlay.color.a = 48;
+
+  textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
+      ->addLink(selectedSaveOverlay.id);
 }
 
 void ScreenLoadGame::update() { handleInput(); }
@@ -149,15 +158,19 @@ void ScreenLoadGame::render() {
     SaveInfoModel* item = savedGamesList[pageIndex + i];
     const float iconYPosition = (i * iconHeight) + iconOffsetY - i;
     item->icon.position.set(140.0F, iconYPosition);
-    t_renderer->renderer2D.render(item->icon);
 
     if (selectedSavedGame->id == item->id) {
+      selectedSaveOverlay.position.y = iconYPosition - 4;
+      t_renderer->renderer2D.render(selectedSaveOverlay);
+
       FontManager_printText(
           item->title.c_str(),
           FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
     } else {
       FontManager_printText(item->title.c_str(), 173.0F, iconYPosition);
     }
+
+    t_renderer->renderer2D.render(item->icon);
   }
 
   t_renderer->renderer2D.render(btnTriangle);
@@ -308,9 +321,10 @@ void ScreenLoadGame::selectNextSave() {
 }
 
 void ScreenLoadGame::loadSelectedSave() {
-  if(selectedSavedGame){
+  if (selectedSavedGame) {
     return context->loadSavedGame(selectedSavedGame->path);
   }
 
-  TYRA_ERROR("No selected save data to load! Please choose one or save a game first.");
+  TYRA_ERROR(
+      "No selected save data to load! Please choose one or save a game first.");
 }

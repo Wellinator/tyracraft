@@ -51,6 +51,7 @@ class ScreenLoadGame : public ScreenBase {
   Sprite btnSelect;
   Sprite btnL1;
   Sprite btnR1;
+  Sprite selectedSaveOverlay;
 
   std::array<Sprite, 3> saveFiles;
 
