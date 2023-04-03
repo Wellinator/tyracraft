@@ -70,6 +70,7 @@
 
 * Features for pre-alpha release (v0.1.5):
     ✅ -> Add basic sky texture;
+    ✅ -> Dynamic songs loading;
     ⚠️ -> Add particles system;
     🔲 -> Tool (Pickaxe) (WIP);
     ✅ -> Add save support;
