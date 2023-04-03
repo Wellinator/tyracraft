@@ -124,7 +124,7 @@ void ScreenLoadGame::render() {
   FontOptions currentSaveFontOptions = FontOptions();
   currentSaveFontOptions.alignment = TextAlignment::Right;
   currentSaveFontOptions.position = Vec2(360.0F, 160.0F);
-  std::string infoString = 
+  std::string infoString =
       std::to_string(totalOfSaves > 0 ? currentSaveIndex + 1 : 0) + " / " +
       std::to_string(totalOfSaves);
   FontManager_printText(infoString, currentSaveFontOptions);
@@ -133,8 +133,8 @@ void ScreenLoadGame::render() {
   const float iconOffsetY = 196.0F;
   const float iconHeight = 42.0F;
   const u8 itemsPerPage = savedGamesList.size() >= MAX_ITEMS_PER_PAGE
-                                   ? MAX_ITEMS_PER_PAGE
-                                   : savedGamesList.size();
+                              ? MAX_ITEMS_PER_PAGE
+                              : savedGamesList.size();
 
   size_t pageIndex = currentSaveIndex;
   if (totalOfSaves <= itemsPerPage || currentSaveIndex < itemsPerPage)
@@ -182,10 +182,12 @@ void ScreenLoadGame::handleOptionsSelection() {
     context->setScreen(new ScreenNewGame(context));
   }
 
-  if (clickedButtons.DpadDown) {
-    selectNextSave();
-  } else if (clickedButtons.DpadUp) {
-    selectPreviousSave();
+  if (savedGamesList.size() > 0) {
+    if (clickedButtons.DpadDown) {
+      selectNextSave();
+    } else if (clickedButtons.DpadUp) {
+      selectPreviousSave();
+    }
   }
 
   // TODO: implements loading from MC
@@ -306,5 +308,9 @@ void ScreenLoadGame::selectNextSave() {
 }
 
 void ScreenLoadGame::loadSelectedSave() {
-  context->loadSavedGame(selectedSavedGame->path);
+  if(selectedSavedGame){
+    return context->loadSavedGame(selectedSavedGame->path);
+  }
+
+  TYRA_ERROR("No selected save data to load! Please choose one or save a game first.");
 }
