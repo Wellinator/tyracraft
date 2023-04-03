@@ -103,7 +103,8 @@ void StateGamePlay::hideWelcome() {
 }
 
 void StateGamePlay::quitToTitle() {
-  this->context->setState(new StateMainMenu(this->context));
+  if (paused) unpauseGame();
+  context->setState(new StateMainMenu(context));
 }
 
 void StateGamePlay::saveGame() {
