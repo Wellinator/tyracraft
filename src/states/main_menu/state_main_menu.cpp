@@ -18,7 +18,12 @@ StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
   this->init();
 }
 
-StateMainMenu::~StateMainMenu() { this->unloadTextures(); }
+StateMainMenu::~StateMainMenu() {
+  TYRA_LOG("Stopping menu song");
+  context->t_engine->audio.song.stop();
+
+  this->unloadTextures();
+}
 
 void StateMainMenu::init() {
   /**

@@ -12,7 +12,6 @@ void CreativePlayingState::init() {
   creativeAudioListener.init(&stateGamePlay->context->t_engine->audio.song);
   audioListenerId = stateGamePlay->context->t_engine->audio.song.addListener(
       &creativeAudioListener);
-  creativeAudioListener.playRandomCreativeSound();
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
