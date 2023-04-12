@@ -29,6 +29,8 @@ ItemRepository::~ItemRepository() {
   this->t_renderer->getTextureRepository().freeBySprite(spruce_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(birch_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(acacia_planks.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(oak_log.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(birch_log.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(stone_brick.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       cracked_stone_bricks.sprite);
@@ -157,6 +159,21 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/acacia_planks.png"))
       ->addLink(acacia_planks.sprite.id);
+
+  // -------------- Wood Log ------------------------
+  oak_log.id = ItemId::oak_log;
+  oak_log.blockId = Blocks::OAK_LOG_BLOCK;
+  this->items.push_back(&oak_log);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/oak_log.png"))
+      ->addLink(oak_log.sprite.id);
+
+  birch_log.id = ItemId::birch_log;
+  birch_log.blockId = Blocks::BIRCH_LOG_BLOCK;
+  this->items.push_back(&birch_log);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/birch_log.png"))
+      ->addLink(birch_log.sprite.id);
 
   // --------------------------Stone Bricks-------------------------
   stone_brick.id = ItemId::stone_brick;

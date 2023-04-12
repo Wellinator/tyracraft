@@ -51,6 +51,10 @@ class ItemRepository {
   Item birch_planks;
   Item acacia_planks;
 
+  // Wood log
+  Item oak_log;
+  Item birch_log;
+
   // Stone Bricks
   Item stone_brick;
   Item cracked_stone_bricks;

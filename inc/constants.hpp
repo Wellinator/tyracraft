@@ -119,6 +119,10 @@ enum class ItemId {
   birch_planks,
   acacia_planks,
 
+  // Wood Log
+  oak_log,
+  birch_log,
+
   // Stone Bricks
   stone_brick,
   cracked_stone_bricks,

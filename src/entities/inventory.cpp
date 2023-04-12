@@ -34,20 +34,24 @@ void Inventory::init() {
 }
 
 void Inventory::load_slots_data() {
+  const u8 firstItem = (u8)ItemId::dirt;
+  const u8 lastItem = (u8)ItemId::total_of_items;
   u8 index = 0;
-  for (size_t i = (u8)ItemId::dirt; i < (u8)ItemId::total_of_items; i++) {
+
+  for (size_t i = firstItem; i < lastItem; i++) {
     slots_data[index] = static_cast<ItemId>(i);
     index++;
   }
 }
 
 void Inventory::load_active_slots_data() {
+  const u8 lastItem = (u8)ItemId::total_of_items;
   u8 index = 0;
+
   for (int i = 0; i < ROWS; i++) {
     for (int j = 0; j < COLS; j++) {
-      active_slots_data[index] = index < (u8)ItemId::total_of_items - 1
-                                     ? slots_data[index]
-                                     : ItemId::empty;
+      active_slots_data[index] =
+          index < lastItem - 1 ? slots_data[index] : ItemId::empty;
       index++;
     }
   }
