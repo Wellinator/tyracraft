@@ -39,11 +39,11 @@ void BlockTextureRepository::loadTextures() {
 
   // Ores and Minerals
   models.push_back(BlockInfo(Blocks::GOLD_ORE_BLOCK, true, {0, 8}, false));
-  models.push_back(BlockInfo(Blocks::IRON_ORE_BLOCK, true, {2, 8}, false));
-  models.push_back(BlockInfo(Blocks::COAL_ORE_BLOCK, true, {1, 8}, false));
-  models.push_back(BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {4, 8}, false));
   models.push_back(BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true, {1, 8}, false));
+  models.push_back(BlockInfo(Blocks::IRON_ORE_BLOCK, true, {2, 8}, false));
   models.push_back(BlockInfo(Blocks::EMERALD_ORE_BLOCK, true, {3, 8}, false));
+  models.push_back(BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {4, 8}, false));
+  models.push_back(BlockInfo(Blocks::COAL_ORE_BLOCK, true, {5, 8}, false));
 
   // Wood Planks
   models.push_back(BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}, false));
