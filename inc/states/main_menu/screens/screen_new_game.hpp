@@ -75,6 +75,7 @@ class ScreenNewGame : public ScreenBase {
 
   Texture* slotTexture;
   Texture* slotActiveTexture;
+  Texture* btnTriangleTexture;
 
   ScreenNewGameOptions selectedOption = ScreenNewGameOptions::None;
   ScreenNewGameOptions activeOption = ScreenNewGameOptions::CreateNewWorld;

@@ -2,7 +2,9 @@
 
 CloudsManager::CloudsManager() { calcUVMapping(); }
 
-CloudsManager::~CloudsManager() {}
+CloudsManager::~CloudsManager() {
+  t_renderer->getTextureRepository().free(cloudsTex->id);
+}
 
 void CloudsManager::init(Renderer* renderer) {
   t_renderer = renderer;

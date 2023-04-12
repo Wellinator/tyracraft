@@ -13,13 +13,13 @@ ScreenNewGame::~ScreenNewGame() {
 
   textureRepo->free(slotTexture->id);
   textureRepo->free(slotActiveTexture->id);
+  textureRepo->free(btnTriangleTexture->id);
 
   textureRepo->freeBySprite(backgroundNewGame);
   textureRepo->freeBySprite(tab2);
   textureRepo->freeBySprite(slotSeedInput);
   textureRepo->freeBySprite(slotWorldNameInput);
   textureRepo->freeBySprite(slotTextureActive);
-  textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
   textureRepo->freeBySprite(btnSquare);
   textureRepo->freeBySprite(btnStart);
@@ -299,7 +299,7 @@ void ScreenNewGame::init() {
   btnTriangleTexturePack.position.set(
       260, this->t_renderer->core.getSettings().getHeight() - 40);
 
-  Texture* btnTriangleTexture =
+  btnTriangleTexture =
       textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"));
   btnTriangleTexture->addLink(btnTriangle.id);
   btnTriangleTexture->addLink(btnTriangleTexturePack.id);

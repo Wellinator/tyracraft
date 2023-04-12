@@ -51,6 +51,10 @@ void StateMainMenu::init() {
 
   this->loadMenuSong();
   this->setScreen(new ScreenMain(this));
+  TYRA_LOG("\n\n\nTotal of loaded textures in repository: ",
+           this->context->t_engine->renderer.getTextureRepository()
+               .getTexturesCount(),
+           "\n\n\n");
 }
 
 void StateMainMenu::update(const float& deltaTime) {
@@ -113,12 +117,9 @@ void StateMainMenu::unloadTextures() {
   this->context->t_engine->renderer.getTextureRepository().freeByMesh(
       menuSkybox);
 
-  for (u8 i = 0; i < 2; i++) {
-    this->context->t_engine->renderer.getTextureRepository().free(
-        this->context->t_engine->renderer.getTextureRepository()
-            .getBySpriteId(title[i].id)
-            ->id);
-  }
+  for (u8 i = 0; i < 2; i++)
+    this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+        title[i]);
 
   delete this->menuSkybox;
   delete this->skyboxOptions;

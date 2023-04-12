@@ -11,6 +11,9 @@ ScreenLoadGame::~ScreenLoadGame() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
 
   textureRepo->freeBySprite(backgroundLoadGame);
+  textureRepo->freeBySprite(tab1);
+  textureRepo->freeBySprite(toggleBtnOn);
+  textureRepo->freeBySprite(toggleBtnOff);
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
   textureRepo->freeBySprite(btnDpadUp);
