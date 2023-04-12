@@ -51,10 +51,6 @@ void StateMainMenu::init() {
 
   this->loadMenuSong();
   this->setScreen(new ScreenMain(this));
-  TYRA_LOG("\n\n\nTotal of loaded textures in repository: ",
-           this->context->t_engine->renderer.getTextureRepository()
-               .getTexturesCount(),
-           "\n\n\n");
 }
 
 void StateMainMenu::update(const float& deltaTime) {
