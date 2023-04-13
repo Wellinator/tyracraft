@@ -9,7 +9,6 @@
 [![Discord](https://img.shields.io/badge/discord-PS2--Scene-brightgreen?logo=discord)](https://discord.gg/7dCr6ThSN5)
 [![Discord](https://img.shields.io/badge/discord-TyraCraft-brightgreen?logo=discord)](https://discord.gg/MD6GCJ6K)
 
-
 <br />
 <p align="center">
   <a href="https://github.com/Wellinator/tyracraft">
@@ -29,9 +28,9 @@
    </p>
 </p>
 
-# TyraCraft (Alpha version)
+# TyraCraft (Pre-Alpha Version)
 
-It's an Minecraft for Play Station 2 built with Tyra Engine!
+It's a voxel like game for Play Station 2 built with Tyra Engine!
 
 ## Getting Started
 
