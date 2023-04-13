@@ -11,7 +11,7 @@
 
 <br />
 <p align="center">
-  <a href="https://github.com/Wellinator/tyracraft">
+  <a href="https://wellinator.github.io/tyracraft">
     <img src="https://i.ibb.co/nbDpRhy/Tyra-Craft-Banner.png" alt="Logo" width="100%" height="auto">
   </a>
 
@@ -31,7 +31,18 @@
 # TyraCraft (Pre-Alpha Version)
 
 It's a voxel like game for Play Station 2 built with Tyra Engine!
+<br>
+<br>
+<br>
+# Visit our [Official Page](https://wellinator.github.io/tyracraft) 
 
+<div align = center>
+
+[<img src="https://wellinator.github.io/tyracraft/assets/img/logo.webp" style="padding-top: 20px" width="250"/>](https://wellinator.github.io/tyracraft)
+
+</div>
+
+# Contribute
 ## Getting Started
 
 ### Prerequisites
