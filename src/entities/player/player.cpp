@@ -125,23 +125,22 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
-  result *= (this->speed * sensibility.length() * FIXED_FRAME_MS);
+  result *= (this->speed * sensibility.length() * deltaTime);
   return result + *mesh->getPosition();
 }
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
-  const float dTime = FIXED_FRAME_MS;
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  Vec4 acceleration = GRAVITY * dTime;
+  Vec4 acceleration = GRAVITY * deltaTime;
   this->velocity += acceleration;
 
   // Increase the position by velocity
-  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * dTime);
+  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * deltaTime);
 
   if (newYPosition.y + hitBox->getHeight() > worldMaxHeight ||
       newYPosition.y < worldMinHeight) {
@@ -173,14 +172,14 @@ void Player::updateGravity(const float& deltaTime,
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
   const Vec4 upDir = GRAVITY * -10.0F * deltaTime;
-  this->fly(FIXED_FRAME_MS, terrainHeight, upDir);
+  this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
   const Vec4 downDir = GRAVITY * 10.0F * deltaTime;
-  this->fly(FIXED_FRAME_MS, terrainHeight, downDir);
+  this->fly(deltaTime, terrainHeight, downDir);
 }
 
 /** Fly in given direction */

@@ -13,7 +13,7 @@ TickManager::TickManager() {}
 TickManager::~TickManager() {}
 
 void TickManager::update(const float& deltaTime) {
-  updateTicks(FIXED_FRAME_MS);
+  updateTicks(deltaTime);
 }
 
 void TickManager::updateTicks(const float& deltaTime) {

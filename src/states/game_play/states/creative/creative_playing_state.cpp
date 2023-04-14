@@ -15,8 +15,9 @@ void CreativePlayingState::init() {
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
+  if (deltaTime <= 0.0F) return;
   elapsedTimeInSec += deltaTime;
-  tickManager.update(FIXED_FRAME_MS);
+  tickManager.update(deltaTime);
 
   handleInput(deltaTime);
 
