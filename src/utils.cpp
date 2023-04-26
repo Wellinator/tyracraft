@@ -190,13 +190,12 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
     //           frustumPlanes[i].normal.y * vmin.y +
     //           frustumPlanes[i].normal.z * vmin.z + frustumPlanes[i].distance;
     float A = frustumPlanes[i].normal.dot3(vmin) + frustumPlanes[i].distance;
+    if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
     // float B = frustumPlanes[i].normal.x * vmax.x +
     //           frustumPlanes[i].normal.y * vmax.y +
     //           frustumPlanes[i].normal.z * vmax.z + frustumPlanes[i].distance;
     float B = frustumPlanes[i].normal.dot3(vmax) + frustumPlanes[i].distance;
-
-    if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
     if (B <= 0) result = CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
   }
 
