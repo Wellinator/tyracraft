@@ -105,7 +105,7 @@ void ScreenAbout::renderAboutText1() {
   FontManager_printText("to the PlayStation 2 scene.", fontOptions);
   fontOptions.position.y += 20;
   FontManager_printText(
-      "We have put a lot of time and efford into this project!", fontOptions);
+      "We have put a lot of time and effort into this project!", fontOptions);
   fontOptions.position.y += 20;
   FontManager_printText("We hope you enjoy it!", fontOptions);
 

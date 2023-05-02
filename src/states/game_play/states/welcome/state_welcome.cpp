@@ -53,7 +53,7 @@ void StateWelcome::render() {
   textOption.scale = 0.8F;
   FontManager_printText("Hey guys! A message from Wellinator!", textOption);
   textOption.position.y += 20;
-  FontManager_printText("Keep on mind that this is a pre-alpha release",
+  FontManager_printText("Keep in mind that this is a pre-alpha release",
                         textOption);
   textOption.position.y += 20;
   FontManager_printText("it will surely contain many bugs and weird behaviour.",
