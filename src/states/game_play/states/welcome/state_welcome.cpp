@@ -51,7 +51,7 @@ void StateWelcome::render() {
   textOption.position.set(halfWidth - 10, 185);
   textOption.alignment = TextAlignment::Center;
   textOption.scale = 0.8F;
-  FontManager_printText("Hey guys! A message from Wellinator...", textOption);
+  FontManager_printText("Hey guys! A message from Wellinator!", textOption);
   textOption.position.y += 20;
   FontManager_printText("Keep on mind that this is a pre-alpha release",
                         textOption);
