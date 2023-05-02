@@ -11,8 +11,6 @@ ScreenAbout::ScreenAbout(StateMainMenu* t_context) : ScreenBase(t_context) {
 
 ScreenAbout::~ScreenAbout() {
   this->t_renderer->getTextureRepository().freeBySprite(about_background);
-  this->t_renderer->getTextureRepository().freeBySprite(about_text_2);
-  this->t_renderer->getTextureRepository().freeBySprite(about_text_3);
   this->t_renderer->getTextureRepository().freeBySprite(btnTriangle);
   this->t_renderer->getTextureRepository().freeBySprite(textBack);
 }
@@ -45,22 +43,6 @@ void ScreenAbout::init() {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/menu/about_background.png"))
       ->addLink(about_background.id);
-
-  about_text_2.mode = Tyra::MODE_STRETCH;
-  about_text_2.size.set(512, 512);
-  about_text_2.position.set(0, 0);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/menu/about_text_2.png"))
-      ->addLink(about_text_2.id);
-
-  about_text_3.mode = Tyra::MODE_STRETCH;
-  about_text_3.size.set(512, 512);
-  about_text_3.position.set(0, 0);
-
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("textures/gui/menu/about_text_3.png"))
-      ->addLink(about_text_3.id);
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
   btnTriangle.size.set(25, 25);

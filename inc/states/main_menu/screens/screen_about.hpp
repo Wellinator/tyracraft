@@ -20,8 +20,6 @@ class ScreenAbout : public ScreenBase {
  private:
   Renderer* t_renderer;
   Sprite about_background;
-  Sprite about_text_2;
-  Sprite about_text_3;
   Sprite textBack;
   Sprite btnTriangle;
   u8 alpha = 1;
