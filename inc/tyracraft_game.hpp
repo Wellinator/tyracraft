@@ -8,7 +8,6 @@
 #include "entities/chunck.hpp"
 #include "entities/Block.hpp"
 #include "camera.hpp"
-#include "managers/terrain_manager.hpp"
 #include "managers/state_manager.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
 
@@ -27,6 +26,9 @@ class TyraCraftGame : public Tyra::Game {
   StateManager* stateManager;
 
   Tyra::Engine* engine;
+
+  void checkNeededDirectories();
+  void checkSavesDir();
 };
 
 }  // namespace TyraCraft

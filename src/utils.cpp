@@ -8,10 +8,12 @@
 # Sandro Sobczyński <sandro.sobczynski@gmail.com>
 */
 
-#include "./utils.hpp"
+#include "utils.hpp"
 #include <fastmath.h>
 #include <physics/ray.hpp>
 #include <renderer/3d/bbox/bbox.hpp>
+#include <sifrpc.h>
+#include <loadfile.h>
 
 using Tyra::BBox;
 using Tyra::Math;
@@ -54,7 +56,9 @@ float Utils::FOG_LINEAR(const float& d, const float& start, const float& end,
   return (end - d / end - start) * 1 / end;
 }
 
-float Utils::FOG_EXP(float d, float density) { return expf_fast(-(d * density)); }
+float Utils::FOG_EXP(float d, float density) {
+  return expf_fast(-(d * density));
+}
 
 float Utils::FOG_EXP2(float d, float density) {
   return exp(-pow((d * density), 2));
@@ -186,15 +190,37 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
     //           frustumPlanes[i].normal.y * vmin.y +
     //           frustumPlanes[i].normal.z * vmin.z + frustumPlanes[i].distance;
     float A = frustumPlanes[i].normal.dot3(vmin) + frustumPlanes[i].distance;
+    if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
     // float B = frustumPlanes[i].normal.x * vmax.x +
     //           frustumPlanes[i].normal.y * vmax.y +
     //           frustumPlanes[i].normal.z * vmax.z + frustumPlanes[i].distance;
     float B = frustumPlanes[i].normal.dot3(vmax) + frustumPlanes[i].distance;
-
-    if (A < 0) return CoreBBoxFrustum::OUTSIDE_FRUSTUM;
     if (B <= 0) result = CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
   }
 
   return result;
+}
+
+std::vector<UtilDirectory> Utils::listDir(const char* dir) {
+  std::vector<UtilDirectory> result;
+
+  DIR* dirp = opendir(dir);
+  dirent* dp;
+  while ((dp = readdir(dirp)) != NULL) {
+    result.push_back(UtilDirectory(dp));
+  }
+  closedir(dirp);
+
+  return result;
+}
+
+std::vector<UtilDirectory> Utils::listDir(const std::string& dir) {
+  return Utils::listDir(dir.c_str());
+}
+
+std::string Utils::trim(std::string& str) {
+  str.erase(str.find_last_not_of(' ') + 1);
+  str.erase(0, str.find_first_not_of(' '));
+  return str;
 }

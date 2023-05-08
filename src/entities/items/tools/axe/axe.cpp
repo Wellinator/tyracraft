@@ -24,7 +24,7 @@ void Axe::init(Renderer* t_renderer) {
   objOptions.flipUVs = true;
   objOptions.scale = 1.5F;
 
-  auto data = ObjLoader::load(FileUtils::fromCwd("meshes/tools/axe/axe.obj"),
+  auto data = ObjLoader::load(FileUtils::fromCwd("models/tools/axe/axe.obj"),
                               objOptions);
 
   data.get()->loadNormals = false;
@@ -44,7 +44,7 @@ void Axe::init(Renderer* t_renderer) {
 
   // TODO: load texture by material
   t_renderer->getTextureRepository().addByMesh(
-      mesh.get(), FileUtils::fromCwd("meshes/tools/axe/wooden/"), "png");
+      mesh.get(), FileUtils::fromCwd("textures/entity/tools/axe/wooden/"), "png");
 }
 
 void Axe::allocateOptions() {

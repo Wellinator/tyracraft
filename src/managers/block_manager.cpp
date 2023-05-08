@@ -21,25 +21,32 @@ BlockManager::~BlockManager() {
     this->blockSfxRepositories[i] = NULL;
   }
   this->blockSfxRepositories.clear();
+  this->blockSfxRepositories.shrink_to_fit();
 
   for (u8 i = 0; i < this->damage_overlay.size(); i++) {
     delete this->damage_overlay[i];
     this->damage_overlay[i] = NULL;
   }
   this->damage_overlay.clear();
+  this->damage_overlay.shrink_to_fit();
 }
 
-void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip) {
+void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
+                        const std::string& texturePack) {
   this->t_renderer = t_renderer;
-  this->t_blockTextureRepository = new BlockTextureRepository(mcPip);
-  this->loadBlocksTextures(t_renderer);
+  this->t_blockTextureRepository = new BlockTextureRepository();
+  this->loadBlocksTextures(texturePack);
   this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
 }
 
-void BlockManager::loadBlocksTextures(Renderer* t_renderer) {
-  this->blocksTexAtlas = t_renderer->core.texture.repository.add(
-      FileUtils::fromCwd("assets/textures/block/texture_atlas.png"));
+void BlockManager::loadBlocksTextures(const std::string& texturePack) {
+  const std::string pathPrefix = "textures/texture_packs/";
+  const std::string path =
+      pathPrefix + texturePack + "/block/texture_atlas.png";
+
+  blocksTexAtlas =
+      t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
 }
 
 void BlockManager::registerBlockSoundsEffects() {
@@ -52,7 +59,7 @@ BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
-    return this->t_blockTextureRepository->isBlockTransparent(blockType);
+  return this->t_blockTextureRepository->isBlockTransparent(blockType);
 }
 
 float BlockManager::getBlockBreakingTime() {

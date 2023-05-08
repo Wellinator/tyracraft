@@ -1,7 +1,7 @@
 #include "tyracraft_game.hpp"
 #include "engine.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
   Tyra::EngineOptions options;
   
   options.loadUsbDriver = true;

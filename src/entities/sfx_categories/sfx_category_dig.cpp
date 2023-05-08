@@ -11,6 +11,7 @@ SfxDigCategory::~SfxDigCategory() {
     delete sounds[i];
   }
   sounds.clear();
+  sounds.shrink_to_fit();
 };
 
 void SfxDigCategory::loadSounds() {

@@ -1,6 +1,10 @@
 #pragma once
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
+#include "managers/font/font_manager.hpp"
+#include "constants.hpp"
+#include "entities/World.hpp"
+#include <string>
 #include <tamtypes.h>
 #include <tyra>
 
@@ -10,7 +14,13 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions { BackToGame, QuitToTitle, None };
+enum class GameMenuOptions {
+  DrawDistance,
+  SaveGame,
+  SaveAndQuit,
+  QuitWithoutSave,
+  None
+};
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -27,27 +37,25 @@ class StateGameMenu : public PlayingStateBase {
  private:
   Renderer* t_renderer;
 
-  // Overlay
-  Sprite overlay;
-
-  // Slots
   Texture* textureRawSlot;
-  Sprite raw_slot[2];
+  Sprite overlay;
+  Sprite raw_slot[3];
   Sprite active_slot;
-
-  // Buttons
   Sprite btnCross;
-
-  // Text slot option
-  Sprite textGameMenu;
-  Sprite textBackToGame;
-  Sprite textQuitToTitle;
-  Sprite textSelect;
+  Sprite btnTriangle;
+  Sprite horizontalScrollArea;
+  Sprite horizontalScrollHandler;
+  Sprite dialogWindow;
+  Sprite btnStart;
 
   GameMenuOptions selectedOption = GameMenuOptions::None;
-  GameMenuOptions activeOption = GameMenuOptions::BackToGame;
+  GameMenuOptions activeOption = GameMenuOptions::SaveGame;
 
-  const float SLOT_WIDTH = 160;
+  u8 needSaveOverwriteConfirmation = false;
+  u8 needSaveAndQuitConfirmation = false;
+  u8 needQuitWithoutSaveConfirmation = false;
+
+  const float SLOT_WIDTH = 230;
   const float SLOT_HIGHT_OFFSET = 240;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
   const u8 MENU_SFX_CH = 1;
@@ -55,4 +63,10 @@ class StateGameMenu : public PlayingStateBase {
   void hightLightActiveOption();
   void navigate();
   void unloadTextures();
+  void increaseDrawDistance();
+  void decreaseDrawDistance();
+  void updateDrawDistanceScroll();
+  void renderSaveOverwritingDialog();
+  void renderSaveAndQuitDialog();
+  void renderQuitWithoutSavingDialog();
 };

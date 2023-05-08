@@ -9,10 +9,9 @@
 [![Discord](https://img.shields.io/badge/discord-PS2--Scene-brightgreen?logo=discord)](https://discord.gg/7dCr6ThSN5)
 [![Discord](https://img.shields.io/badge/discord-TyraCraft-brightgreen?logo=discord)](https://discord.gg/MD6GCJ6K)
 
-
 <br />
 <p align="center">
-  <a href="https://github.com/Wellinator/tyracraft">
+  <a href="https://wellinator.github.io/tyracraft">
     <img src="https://i.ibb.co/nbDpRhy/Tyra-Craft-Banner.png" alt="Logo" width="100%" height="auto">
   </a>
 
@@ -29,10 +28,21 @@
    </p>
 </p>
 
-# TyraCraft (Alpha version)
+# TyraCraft (Pre-Alpha Version)
 
-It's Minecraft for Sony PlayStation 2 built with Tyra Engine!
+It's a voxel like game for Play Station 2 built with Tyra Engine!
+<br>
+<br>
+<br>
+# Visit our [Official Page](https://wellinator.github.io/tyracraft) 
 
+<div align = center>
+
+[<img src="https://wellinator.github.io/tyracraft/assets/img/logo.webp" style="padding-top: 20px" width="250"/>](https://wellinator.github.io/tyracraft)
+
+</div>
+
+# Contribute
 ## Getting Started
 
 ### Prerequisites

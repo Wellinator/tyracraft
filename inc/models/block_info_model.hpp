@@ -14,7 +14,7 @@ class BlockInfo {
    * @param isSolid bool is a solid block
    *
    */
-  BlockInfo(const Blocks& type, const u8 isSingle,
+  BlockInfo(const Blocks& type, const u8& isSingle,
             const std::initializer_list<u8>& facesMap,
             const bool& isTransparent, const bool& isBreakable = true,
             const bool& isSolid = false) {

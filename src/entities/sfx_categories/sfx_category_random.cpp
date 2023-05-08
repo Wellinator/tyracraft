@@ -11,6 +11,7 @@ SfxRandomCategory::~SfxRandomCategory() {
     delete sounds[i];
   }
   sounds.clear();
+  sounds.shrink_to_fit();
 };
 
 void SfxRandomCategory::loadSounds() {

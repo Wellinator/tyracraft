@@ -23,7 +23,7 @@ class Inventory {
   ~Inventory();
 
   void update();
-  void render(FontManager* t_fontManager);
+  void render();
 
   void moveSelectorUp();
   void moveSelectorDown();

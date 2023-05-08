@@ -27,7 +27,7 @@ void ScreenHowToPlay::init() {
   how_to_play.position.set(0, 0);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/how_to_play.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/how_to_play.png"))
       ->addLink(how_to_play.id);
 
   btnTriangle.mode = Tyra::MODE_STRETCH;
@@ -36,7 +36,7 @@ void ScreenHowToPlay::init() {
       15, this->t_renderer->core.getSettings().getHeight() - 40);
 
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_triangle.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
 
   textBack.mode = Tyra::MODE_STRETCH;
@@ -44,7 +44,7 @@ void ScreenHowToPlay::init() {
   textBack.position.set(15 + 30,
                         this->t_renderer->core.getSettings().getHeight() - 36);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/menu/text_back.png"))
+      .add(FileUtils::fromCwd("textures/gui/menu/text_back.png"))
       ->addLink(textBack.id);
 }
 

@@ -33,11 +33,11 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-enum class ChunkState { Loaded, Clean };
+enum class ChunkState { Loaded, Loading, Clean };
 
 class Chunck {
  public:
-  Chunck(const Vec4& minOffset, const Vec4& maxOffset, u16 id);
+  Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
   ~Chunck();
 
   u16 id = 0;
@@ -91,13 +91,10 @@ class Chunck {
     this->tempLoadingOffset->set(*minOffset);
   };
 
-  void loadBags();
   void deallocDrawBags(StaPipBag* bag);
   StaPipBag* getDrawData();
 
   inline const bool hasDataToDraw() { return vertices.size() > 0; };
-
-  VertexBlockData vertexBlockData;
 
   Vec4 sunPosition;
   float sunLightIntensity;

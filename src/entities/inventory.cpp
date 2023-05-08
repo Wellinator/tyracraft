@@ -34,20 +34,24 @@ void Inventory::init() {
 }
 
 void Inventory::load_slots_data() {
+  const u8 firstItem = (u8)ItemId::dirt;
+  const u8 lastItem = (u8)ItemId::total_of_items;
   u8 index = 0;
-  for (size_t i = (u8)ItemId::dirt; i < (u8)ItemId::total_of_items; i++) {
+
+  for (size_t i = firstItem; i < lastItem; i++) {
     slots_data[index] = static_cast<ItemId>(i);
     index++;
   }
 }
 
 void Inventory::load_active_slots_data() {
+  const u8 lastItem = (u8)ItemId::total_of_items;
   u8 index = 0;
+
   for (int i = 0; i < ROWS; i++) {
     for (int j = 0; j < COLS; j++) {
-      active_slots_data[index] = index < (u8)ItemId::total_of_items - 1
-                                     ? slots_data[index]
-                                     : ItemId::empty;
+      active_slots_data[index] =
+          index < lastItem - 1 ? slots_data[index] : ItemId::empty;
       index++;
     }
   }
@@ -100,21 +104,21 @@ void Inventory::load_sprites() {
   itemframe.size.set(512.0F, 512.0F);
   itemframe.position.set(BASE_X_POS, BASE_Y_POS);
   t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/hud/tab_items.png"))
+      .add(FileUtils::fromCwd("textures/gui/tab_items.png"))
       ->addLink(itemframe.id);
 
   selector_overlay.mode = Tyra::MODE_STRETCH;
   selector_overlay.size.set(32.0f, 32.0f);
   selector_overlay.position.set(BASE_X_POS + 18, BASE_Y_POS + 36);
   t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/hud/selector_overlay.png"))
+      .add(FileUtils::fromCwd("textures/gui/selector_overlay.png"))
       ->addLink(selector_overlay.id);
 
   scroller.mode = Tyra::MODE_STRETCH;
   scroller.size.set(32.0f, 32.0f);
   scroller.position.set(BASE_X_POS + 350, BASE_Y_POS + 36);
   t_renderer->core.texture.repository
-      .add(FileUtils::fromCwd("assets/hud/scroller.png"))
+      .add(FileUtils::fromCwd("textures/gui/scroller.png"))
       ->addLink(scroller.id);
 
   // Buttons
@@ -122,14 +126,14 @@ void Inventory::load_sprites() {
   btnCross.size.set(25, 25);
   btnCross.position.set(15, t_renderer->core.getSettings().getHeight() - 40);
   t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_cross.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
 
   btnCircle.mode = Tyra::MODE_STRETCH;
   btnCircle.size.set(25, 25);
   btnCircle.position.set(190, t_renderer->core.getSettings().getHeight() - 40);
   t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd("assets/textures/ui/btn_circle.png"))
+      .add(FileUtils::fromCwd("textures/gui/btn_circle.png"))
       ->addLink(btnCircle.id);
 }
 
@@ -140,7 +144,7 @@ void Inventory::update() {
   selector_overlay.color.a = percent * 128;
 }
 
-void Inventory::render(FontManager* t_fontManager) {
+void Inventory::render() {
   t_renderer->renderer2D.render(itemframe);
 
   // Draw itens at each slot
@@ -152,9 +156,9 @@ void Inventory::render(FontManager* t_fontManager) {
 
   // Texts
   t_renderer->renderer2D.render(btnCross);
-  t_fontManager->printText("Select Item", 35, 407);
+  FontManager_printText("Select Item", 35, 407);
   t_renderer->renderer2D.render(btnCircle);
-  t_fontManager->printText("Exit", 210, 407);
+  FontManager_printText("Exit", 210, 407);
 }
 
 void Inventory::moveSelectorUp() {

@@ -14,6 +14,11 @@
 #include <renderer/3d/mesh/mesh.hpp>
 #include <math/vec4.hpp>
 #include <math/math.hpp>
+#include <vector>
+#include <string>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <loadfile.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -23,6 +28,18 @@ using Tyra::CoreBBoxFrustum;
 using Tyra::Mesh;
 using Tyra::Plane;
 using Tyra::Vec4;
+
+struct UtilDirectory {
+  UtilDirectory(dirent* dt) {
+    isDir = S_ISDIR(dt->d_stat.st_mode);
+    name = std::string(dt->d_name);
+    createdAt = std::string(ctime(&dt->d_stat.st_ctim.tv_sec));
+  };
+
+  std::string createdAt;
+  std::string name;
+  u8 isDir;
+};
 
 // enum eDirection { RIGHT, LEFT, UP, DOWN, FRONT, BACK };
 
@@ -78,4 +95,9 @@ class Utils {
   /* Schraudolph's published algorithm with John's constants */
   /* 1065353216 - 486411 = 1064866805 */
   static float expf_fast(float a);
+
+  static std::vector<UtilDirectory> listDir(const std::string& dir);
+  static std::vector<UtilDirectory> listDir(const char* dir);
+
+  static std::string trim(std::string& str);
 };

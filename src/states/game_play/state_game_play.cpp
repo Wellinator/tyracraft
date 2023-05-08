@@ -1,10 +1,12 @@
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
+#include "states/game_play/states/welcome/state_welcome.hpp"
 #include "states/loading/state_loading_game.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
+#include "managers/save_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::FileUtils;
@@ -42,6 +44,7 @@ void StateGamePlay::handleGameMode(const GameMode& gameMode) {
 void StateGamePlay::init() {
   // TODO: add in game skybox;
   this->state->init();
+  displayWelcome();
 }
 
 void StateGamePlay::update(const float& deltaTime) {
@@ -61,7 +64,11 @@ PlayingStateBase* StateGamePlay::getPreviousState() {
 }
 
 void StateGamePlay::handleInput() {
-  if (this->context->t_engine->pad.getClicked().Start) {
+  const PadButtons& clicked = this->context->t_engine->pad.getClicked();
+
+  if (isAtWelcomeState) {
+    if (clicked.Cross || clicked.Start) hideWelcome();
+  } else if (clicked.Start) {
     if (this->paused)
       this->unpauseGame();
     else
@@ -82,6 +89,27 @@ void StateGamePlay::unpauseGame() {
   this->paused = false;
 }
 
+void StateGamePlay::displayWelcome() {
+  this->previousState = this->state;
+  this->state = new StateWelcome(this);
+  this->isAtWelcomeState = true;
+}
+
+void StateGamePlay::hideWelcome() {
+  delete this->state;
+  this->state = this->previousState;
+  this->previousState = nullptr;
+  this->isAtWelcomeState = false;
+}
+
 void StateGamePlay::quitToTitle() {
-  this->context->setState(new StateMainMenu(this->context));
+  if (paused) unpauseGame();
+  context->setState(new StateMainMenu(context));
+}
+
+void StateGamePlay::saveGame() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + this->world->getWorldOptions()->name + ".tcw");
+  SaveManager::SaveGame(this, saveFileName.c_str());
+  TYRA_LOG("Saving at: ", saveFileName.c_str());
 }

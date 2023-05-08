@@ -22,10 +22,10 @@
 #include <chrono>
 
 using Tyra::Audio;
+using Tyra::Info;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
-using Tyra::Info;
 using Tyra::StaticMesh;
 
 enum class GameMode { Survival, Creative };
@@ -41,11 +41,14 @@ class StateGamePlay : public GameState {
   void update(const float& deltaTime);
   void render();
 
+  void inline hideWelcomeMessage() { this->hideWelcome(); };
   void inline backToGame() { this->unpauseGame(); };
   void quitToTitle();
 
   void setPlayingState(PlayingStateBase* t_playingState);
   PlayingStateBase* getPreviousState();
+
+  void saveGame();
 
   // Rotating skybox
   StaticMesh* menuSkybox;
@@ -59,9 +62,12 @@ class StateGamePlay : public GameState {
   PlayingStateBase* state = nullptr;
   PlayingStateBase* previousState = nullptr;
   u8 paused = false;
+  u8 isAtWelcomeState = false;
 
   void handleGameMode(const GameMode& gameMode);
   void handleInput();
   void pauseGame();
   void unpauseGame();
+  void displayWelcome();
+  void hideWelcome();
 };

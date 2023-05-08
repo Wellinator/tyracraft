@@ -29,7 +29,8 @@ class BlockManager {
  public:
   BlockManager();
   ~BlockManager();
-  void init(Renderer* t_renderer, MinecraftPipeline* mcPip);
+  void init(Renderer* t_renderer, MinecraftPipeline* mcPip,
+            const std::string& texturePack);
 
   BlockInfo* getBlockInfoByType(const Blocks& blockType);
   const u8 isBlockTransparent(const Blocks& blockType);
@@ -43,7 +44,7 @@ class BlockManager {
  private:
   void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
-  void loadBlocksTextures(Renderer* t_renderer);
+  void loadBlocksTextures(const std::string& texturePack);
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;

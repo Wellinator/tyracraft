@@ -12,9 +12,10 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   this->t_blockManager = t_blockManager;
   this->t_soundManager = t_soundManager;
 
-  this->loadMesh();
-  this->loadArmMesh();
-  this->calcStaticBBox();
+  loadPlayerTexture();
+  loadMesh();
+  loadArmMesh();
+  calcStaticBBox();
 
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
@@ -46,16 +47,25 @@ Player::~Player() {
   currentBlock = nullptr;
   delete hitBox;
   delete handledItem;
-
-  this->t_renderer->getTextureRepository().freeByMesh(mesh.get());
-  this->t_renderer->getTextureRepository().freeByMesh(armMesh.get());
-
+  delete this->renderPip;
+  t_renderer->getTextureRepository().free(playerTexture);
   walkSequence.clear();
+  walkSequence.shrink_to_fit();
+
   breakBlockSequence.clear();
+  breakBlockSequence.shrink_to_fit();
+
   standStillSequence.clear();
+  standStillSequence.shrink_to_fit();
+
   armStandStillSequence.clear();
+  armStandStillSequence.shrink_to_fit();
+
   armWalkingSequence.clear();
+  armWalkingSequence.shrink_to_fit();
+
   armHitingSequence.clear();
+  armHitingSequence.shrink_to_fit();
 }
 
 // ----
@@ -63,11 +73,24 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    const Vec4& camDir, std::vector<Chunck*> loadedChunks,
+                    const Vec4& camDir,
+                    const std::vector<Chunck*>& loadedChunks,
                     TerrainHeightModel* terrainHeight) {
   isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
-    const Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    // Vec4 min, max;
+    // auto tempPositionMatrix = M4x4();
+    // tempPositionMatrix.identity();
+    Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+
+    // tempPositionMatrix.translate(nextPlayerPos);
+    // const auto tempPlayerBbox =
+    // getHitBox().getTransformed(tempPositionMatrix);
+    // tempPlayerBbox.getMinMax(&min, &max);
+
+    // if (min.x < MAX_WORLD_POS.x && max.x > MIN_WORLD_POS.x &&
+    //     min.y < MAX_WORLD_POS.y && max.y > MIN_WORLD_POS.y &&
+    //     min.z < MAX_WORLD_POS.z && max.z > MIN_WORLD_POS.z) {
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
           this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
@@ -94,7 +117,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
-void Player::render() { this->renderPip->render(this->t_renderer); }
+void Player::render() { renderPip->render(t_renderer); }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Vec4& camDir) {
@@ -102,41 +125,41 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
-  result *=
-      (this->speed * sensibility.length() * std::min(deltaTime, MAX_FRAME_MS));
+  result *= (this->speed * sensibility.length() * deltaTime);
   return result + *mesh->getPosition();
 }
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
-  const float dTime = std::min(deltaTime, MAX_FRAME_MS);
+  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
+  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  Vec4 acceleration = GRAVITY * dTime;
+  Vec4 acceleration = GRAVITY * deltaTime;
   this->velocity += acceleration;
 
   // Increase the position by velocity
-  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * dTime);
+  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * deltaTime);
 
-  if (newYPosition.y + hitBox->getHeight() >=
-          OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
-      newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
+  if (newYPosition.y + hitBox->getHeight() > worldMaxHeight ||
+      newYPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
     this->mesh->getPosition()->set(this->spawnArea);
-
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     return;
   }
+
+  const float heightLimit =
+      terrainHeight->maxHeight - this->hitBox->getHeight();
 
   if (newYPosition.y < terrainHeight->minHeight) {
     newYPosition.y = terrainHeight->minHeight;
     this->velocity = Vec4(0.0f, 0.0f, 0.0f);
     this->isOnGround = true;
-  } else if (newYPosition.y >
-             terrainHeight->maxHeight + this->hitBox->getHeight()) {
-    newYPosition.y = terrainHeight->maxHeight + this->hitBox->getHeight();
+  } else if (newYPosition.y > heightLimit) {
+    newYPosition.y = heightLimit;
     this->velocity = -this->velocity;
     this->isOnGround = false;
   }
@@ -149,14 +172,14 @@ void Player::updateGravity(const float& deltaTime,
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
   const Vec4 upDir = GRAVITY * -10.0F * deltaTime;
-  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, upDir);
+  this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
   const Vec4 downDir = GRAVITY * 10.0F * deltaTime;
-  this->fly(std::min(deltaTime, MAX_FRAME_MS), terrainHeight, downDir);
+  this->fly(deltaTime, terrainHeight, downDir);
 }
 
 /** Fly in given direction */
@@ -183,12 +206,12 @@ void Player::fly(const float& deltaTime,
   mesh->getPosition()->set(newYPosition);
 }
 
-u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
+u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
-  Vec4 playerMin = Vec4();
-  Vec4 playerMax = Vec4();
+  Vec4 playerMin;
+  Vec4 playerMax;
   BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
 
@@ -210,12 +233,15 @@ u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
       if (playerBB.getBottomFace().axisPosition >=
               loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
           playerBB.getTopFace().axisPosition <
-              loadedChunks[chunkIndex]->blocks[i]->minCorner.y) {
+              loadedChunks[chunkIndex]->blocks[i]->minCorner.y ||
+          currentPlayerPos.distanceTo(
+              *loadedChunks[chunkIndex]->blocks[i]->getPosition()) >
+              DUBLE_BLOCK_SIZE * 2) {
         continue;
       };
 
-      Vec4 tempInflatedMin = Vec4();
-      Vec4 tempInflatedMax = Vec4();
+      Vec4 tempInflatedMin;
+      Vec4 tempInflatedMax;
       Utils::GetMinkowskiSum(playerMin, playerMax,
                              loadedChunks[chunkIndex]->blocks[i]->minCorner,
                              loadedChunks[chunkIndex]->blocks[i]->maxCorner,
@@ -241,33 +267,29 @@ u8 Player::updatePosition(std::vector<Chunck*> loadedChunks,
     if (timeToHit < deltaTime ||
         finalHitDistance <
             this->mesh->getPosition()->distanceTo(nextPlayerPos)) {
-      if (isColliding) return 0;
+      if (isColliding) return false;
 
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnX =
-          this->updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1);
-      if (couldMoveOnX) return 1;
+      if (updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1)) return true;
 
       Vec4 moveOnZOnly =
           Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
-      u8 couldMoveOnZ =
-          this->updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1);
-      if (couldMoveOnZ) return 1;
+      if (updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1)) return true;
 
-      return 0;
+      return false;
     }
   }
 
   // Apply new position;
   mesh->getPosition()->x = nextPlayerPos.x;
   mesh->getPosition()->z = nextPlayerPos.z;
-  return 1;
+  return true;
 }
 
 TerrainHeightModel Player::getTerrainHeightAtPosition(
-    std::vector<Chunck*> loadedChunks) {
+    const std::vector<Chunck*>& loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
@@ -322,13 +344,15 @@ u8 Player::getSelectedInventorySlot() {
 
 void Player::moveSelectorToTheLeft() {
   selectedInventoryIndex--;
-  if (selectedInventoryIndex < 0) selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
+  if (selectedInventoryIndex < 0)
+    selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
   selectedSlotHasChanged = 1;
 }
 
 void Player::moveSelectorToTheRight() {
   selectedInventoryIndex++;
-  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1) selectedInventoryIndex = 0;
+  if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1)
+    selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
 }
 
@@ -338,19 +362,19 @@ void Player::loadMesh() {
   options.flipUVs = true;
   options.animation.count = 10;
 
-  auto data = ObjLoader::load(
-      FileUtils::fromCwd("meshes/player/model/player.obj"), options);
+  auto data =
+      ObjLoader::load(FileUtils::fromCwd("models/player/player.obj"), options);
   data.get()->loadNormals = false;
 
   this->mesh = std::make_unique<DynamicMesh>(data.get());
 
   this->mesh->rotation.identity();
   this->mesh->rotation.rotateY(-3.14F);
-
   this->mesh->scale.identity();
 
-  this->t_renderer->getTextureRepository().addByMesh(
-      this->mesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+  auto& materials = this->mesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    playerTexture->addLink(materials[i]->id);
 
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
@@ -364,7 +388,7 @@ void Player::loadArmMesh() {
   options.animation.count = 21;
 
   auto data =
-      ObjLoader::load(FileUtils::fromCwd("meshes/player/arm/arm.obj"), options);
+      ObjLoader::load(FileUtils::fromCwd("models/player_arm/arm.obj"), options);
   data.get()->loadNormals = false;
 
   this->armMesh = std::make_unique<DynamicMesh>(data.get());
@@ -381,8 +405,9 @@ void Player::loadArmMesh() {
   this->armMesh->rotation.identity();
   this->armMesh->rotation.rotateY(-3.24);
 
-  this->t_renderer->getTextureRepository().addByMesh(
-      this->armMesh.get(), FileUtils::fromCwd("meshes/player/"), "png");
+  auto& materials = this->armMesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    playerTexture->addLink(materials[i]->id);
 
   this->armMesh->animation.loop = true;
   this->armMesh->animation.setSequence(armStandStillSequence);
@@ -458,7 +483,7 @@ void Player::selectNextItem() {
   int currentItemId = (int)inventory[selectedInventoryIndex];
   ItemId nextItem;
 
-  if ((currentItemId + 1) >= (int)ItemId::wooden_axe) {
+  if ((currentItemId + 1) >= (int)ItemId::total_of_items) {
     nextItem = ItemId::empty;
   } else {
     nextItem = static_cast<ItemId>(currentItemId + 1);
@@ -473,7 +498,7 @@ void Player::selectPreviousItem() {
   ItemId previousItem;
 
   if ((currentItemId - 1) < 0) {
-    previousItem = ItemId::chiseled_stone_bricks;
+    previousItem = ItemId::emerald_ore_block;
   } else {
     previousItem = static_cast<ItemId>(currentItemId - 1);
   }
@@ -556,4 +581,9 @@ void Player::shiftItemToInventory(const ItemId& itemToShift) {
 void Player::setItemToInventory(const ItemId& itemToShift) {
   inventory[selectedInventoryIndex] = itemToShift;
   inventoryHasChanged = true;
+}
+
+void Player::loadPlayerTexture() {
+  playerTexture = t_renderer->getTextureRepository().add(
+      FileUtils::fromCwd("textures/entity/player/steve.png"));
 }

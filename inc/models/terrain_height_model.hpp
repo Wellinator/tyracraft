@@ -3,9 +3,6 @@
 
 class TerrainHeightModel {
  public:
-  TerrainHeightModel(){};
-  ~TerrainHeightModel(){};
-
   float minHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   float maxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 

@@ -22,11 +22,14 @@
 #include "states/context.hpp"
 #include "states/main_menu/screens/screen_base.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "states/main_menu/screens/screen_new_game.hpp"
+#include "states/main_menu/screens/screen_load_game.hpp"
 #include "models/new_game_model.hpp"
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "tyra"
 #include "managers/font/font_manager.hpp"
+#include "managers/sound_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::Mesh;
@@ -48,10 +51,10 @@ class StateMainMenu : public GameState {
   void setScreen(ScreenBase* screen);
 
   void loadGame(const NewGameOptions& options);
+  void loadSavedGame(const std::string save_file_full_path);
   void playClickSound();
 
   StaticMesh* menuSkybox;
-  FontManager* t_fontManager;
 
  private:
   Renderer* t_renderer;
@@ -65,9 +68,11 @@ class StateMainMenu : public GameState {
   const float SLOT_WIDTH = 160;
   const u8 MENU_SFX_CH = 1;
 
+  void navigateToCreateGameScreen() { setScreen(new ScreenNewGame(this)); };
+  void navigateToLoadGameScreen() { setScreen(new ScreenLoadGame(this)); };
+
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
-  const std::string getRandonMenuSongName();
 };
