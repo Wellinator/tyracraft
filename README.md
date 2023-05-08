@@ -42,13 +42,14 @@ It's a voxel like game for Play Station 2 built with Tyra Engine!
 
 </div>
 
-# Contribute
-## Getting Started
+## Getting Started:
 
 ### Prerequisites
 
-- Tyra environment - [Tyra](https://github.com/ps2dev/ps2dev)
+- Tyra environment - [Tyra](https://github.com/H4570/tyra)
+- PS2DEV enviroment - [PS2DEV](https://github.com/ps2dev/ps2dev)
 - PS2 Emulator [PCSX2](https://pcsx2.net/) or [PS2Link](https://github.com/ps2dev/ps2link) for a real PS2
+
 
 ### Building
 
@@ -69,7 +70,7 @@ It's a voxel like game for Play Station 2 built with Tyra Engine!
 
 **Built With love with Tyra Engine** [Tyra](https://github.com/h4570/tyra)
 
-## Authors
+## Author
 
 - [@Wellinator](https://github.com/wellinator)
 
@@ -80,3 +81,5 @@ It's a voxel like game for Play Station 2 built with Tyra Engine!
 ## References
 
 - [Tyra Engine](https://github.com/h4570/tyra)
+- [PS2SDK](https://github.com/ps2dev/ps2sdk.git)
+- [CrossCraft](https://github.com/CrossCraft/CrossCraft-Classic)
