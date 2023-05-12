@@ -241,6 +241,7 @@ void World::loadScheduledChunks() {
     if (tempChuncksToLoad[0]->state != ChunkState::Loaded)
       return buildChunkAsync(tempChuncksToLoad[0], worldOptions.drawDistance);
     tempChuncksToLoad.erase(tempChuncksToLoad.begin());
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   };
 }
 
@@ -335,6 +336,14 @@ unsigned int World::getIndexByOffset(int x, int y, int z) {
   return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
+bool World::isAirAtPosition(const float& x, const float& y, const float& z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
+    return blockType == (u8)Blocks::AIR_BLOCK;
+  }
+  return false;
+}
+
 bool World::isBlockTransparentAtPosition(const float& x, const float& y,
                                          const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
@@ -396,6 +405,37 @@ int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
 
   // Bottom
   if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+
+  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
+  return result;
+}
+
+int World::getWaterBlockVisibleFaces(const Vec4* t_blockOffset) {
+  int result = 0x000000;
+
+  // Front
+  if (isAirAtPosition(t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z))
+    result = result | FRONT_VISIBLE;
+
+  // Back
+  if (isAirAtPosition(t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z))
+    result = result | BACK_VISIBLE;
+
+  // Right
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1))
+    result = result | RIGHT_VISIBLE;
+
+  // Left
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z - 1))
+    result = result | LEFT_VISIBLE;
+
+  // Top
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y + 1, t_blockOffset->z))
+    result = result | TOP_VISIBLE;
+
+  // Bottom
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z))
+    result = result | BOTTOM_VISIBLE;
 
   // printf("Result for index %i -> 0x%X\n", blockIndex, result);
   return result;
@@ -622,7 +662,11 @@ void World::buildChunk(Chunck* t_chunck) {
         Vec4 tempBlockOffset = Vec4(x, y, z);
         Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-        const int visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+        const int visibleFaces =
+            block_type == (u8)Blocks::WATER_BLOCK
+                ? getWaterBlockVisibleFaces(&tempBlockOffset)
+                : getBlockVisibleFaces(&tempBlockOffset);
+
         const bool isVisible = visibleFaces > 0;
 
         // Are block's coordinates in world range?
@@ -678,7 +722,10 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
       Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-      const int visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+      const int visibleFaces = block_type == (u8)Blocks::WATER_BLOCK
+                                   ? getWaterBlockVisibleFaces(&tempBlockOffset)
+                                   : getBlockVisibleFaces(&tempBlockOffset);
+
       const bool isVisible = visibleFaces > 0;
 
       // Are block's coordinates in world range?
@@ -730,8 +777,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     return;
   }
 
-  t_chunck->state = ChunkState::Loaded;
   t_chunck->loadDrawData();
+  t_chunck->state = ChunkState::Loaded;
 }
 
 void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,

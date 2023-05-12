@@ -90,3 +90,14 @@ u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
 std::vector<Chunck*>& ChunckManager::getVisibleChunks() {
   return visibleChunks;
 }
+
+void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
+  std::sort(chuncks.begin(), chuncks.end(),
+            [playerPosition](const Chunck* a, const Chunck* b) {
+              const float distanceA =
+                  (*a->center * DUBLE_BLOCK_SIZE).distanceTo(*playerPosition);
+              const float distanceB =
+                  (*b->center * DUBLE_BLOCK_SIZE).distanceTo(*playerPosition);
+              return distanceA >= distanceB;
+            });
+}

@@ -164,8 +164,11 @@ class World {
    *
    */
   int getBlockVisibleFaces(const Vec4* t_blockOffset);
+  int getWaterBlockVisibleFaces(const Vec4* t_blockOffset);
 
   inline bool isBlockTransparentAtPosition(const float& x, const float& y,
+                                           const float& z);
+  inline bool isAirAtPosition(const float& x, const float& y,
                                            const float& z);
 
   inline bool isTopFaceVisible(const Vec4* t_blockOffset);

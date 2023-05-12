@@ -42,6 +42,7 @@ class ChunckManager {
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void clearAllChunks();
+  void sortChunkByPlayerPosition(Vec4* playerPosition);
 
  private:
   std::vector<Chunck*> chuncks;

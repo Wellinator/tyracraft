@@ -30,7 +30,7 @@ void BlockTextureRepository::loadTextures() {
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,
                              {0, 0, 0, 5, 0, 1, 0, 1, 0, 1, 0, 1}, false));
   models.push_back(BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}, false));
-  models.push_back(BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, false));
+  models.push_back(BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, true));
   models.push_back(
       BlockInfo(Blocks::BEDROCK_BLOCK, true, {0, 7}, false, false));
   models.push_back(BlockInfo(Blocks::SAND_BLOCK, true, {2, 7}, false));
