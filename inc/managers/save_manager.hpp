@@ -75,6 +75,9 @@ class SaveManager {
     std::ofstream saveFile(fullPath);
     saveFile << compressed_data;
     saveFile.close();
+
+    tempBlocksBuffer.clear();
+    tempBlocksBuffer.shrink_to_fit();
   };
 
   static void LoadSavedGame(StateGamePlay* state, const char* fullPath) {
