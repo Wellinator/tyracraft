@@ -71,10 +71,10 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
-    M4x4 lightMatrix;
-    lightMatrix.identity();
-    lightMatrix.scale(10);
-    lightMatrix.translate(sunPosition);
+    // M4x4 lightMatrix;
+    // lightMatrix.identity();
+    // lightMatrix.scale(10);
+    // lightMatrix.translate(sunPosition);
 
     M4x4 rawMatrix;
     rawMatrix.identity();
@@ -87,10 +87,10 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     dirLightsBag.setDirectionalLightDirection(
         (sunPosition - CENTER_WORLD_POS).getNormalized(), 0);
 
-    StaPipLightingBag lightBag;
-    lightBag.lightMatrix = &lightMatrix;
-    lightBag.dirLights = &dirLightsBag;
-    lightBag.normals = verticesNormals.data();
+    // StaPipLightingBag lightBag;
+    // lightBag.lightMatrix = &lightMatrix;
+    // lightBag.dirLights = &dirLightsBag;
+    // lightBag.normals = verticesNormals.data();
 
     StaPipTextureBag textureBag;
     textureBag.texture = t_blockManager->getBlocksTexture();
@@ -103,14 +103,16 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     // Apply multiple colors
     StaPipColorBag colorBag;
-    // colorBag.many = verticesColors.data();
-    Color baseColor = Color(110.0F, 110.0F, 110.0F);
-    colorBag.single = &baseColor;
+    colorBag.many = verticesColors.data();
+    // Color baseColor = Color(110.0F, 110.0F, 110.0F);
+    // colorBag.single = &baseColor;
 
     StaPipBag bag;
     bag.count = vertices.size();
     bag.vertices = vertices.data();
-    bag.lighting = &lightBag;
+    
+    // bag.lighting = &lightBag;
+
     bag.color = &colorBag;
     bag.info = &infoBag;
     bag.texture = &textureBag;
@@ -161,8 +163,8 @@ void Chunck::clearDrawData() {
   verticesColors.shrink_to_fit();
   uvMap.clear();
   uvMap.shrink_to_fit();
-  verticesNormals.clear();
-  verticesNormals.shrink_to_fit();
+  // verticesNormals.clear();
+  // verticesNormals.shrink_to_fit();
 
   _isDrawDataLoaded = false;
 }
@@ -180,8 +182,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isTopFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(120, 120, 120));
-        verticesNormals.push_back(Vec4(0.0F, 1.0F, 0.0F));
+        verticesColors.push_back(Color(120, 120, 120));
+        // verticesNormals.push_back(Vec4(0.0F, 1.0F, 0.0F));
       }
 
       const u8& X = blocks[i]->topMapX();
@@ -200,8 +202,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isBottomFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(60, 60, 60));
-        verticesNormals.push_back(Vec4(0.0F, -1.0F, 0.0F));
+        verticesColors.push_back(Color(60, 60, 60));
+        // verticesNormals.push_back(Vec4(0.0F, -1.0F, 0.0F));
       }
       const u8& X = blocks[i]->bottomMapX();
       const u8& Y = blocks[i]->bottomMapY();
@@ -219,8 +221,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isLeftFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(70, 70, 70));
-        verticesNormals.push_back(Vec4(0.0F, 0.0F, -1.0F));
+        verticesColors.push_back(Color(70, 70, 70));
+        // verticesNormals.push_back(Vec4(0.0F, 0.0F, -1.0F));
       }
       const u8& X = blocks[i]->leftMapX();
       const u8& Y = blocks[i]->leftMapY();
@@ -238,8 +240,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isRightFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(100, 100, 100));
-        verticesNormals.push_back(Vec4(0.0F, 0.0F, 1.0F));
+        verticesColors.push_back(Color(100, 100, 100));
+        // verticesNormals.push_back(Vec4(0.0F, 0.0F, 1.0F));
       }
       const u8& X = blocks[i]->rightMapX();
       const u8& Y = blocks[i]->rightMapY();
@@ -257,8 +259,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isBackFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(80, 80, 80));
-        verticesNormals.push_back(Vec4(1.0F, 0.0F, 0.0F));
+        verticesColors.push_back(Color(80, 80, 80));
+        // verticesNormals.push_back(Vec4(1.0F, 0.0F, 0.0F));
       }
 
       const u8& X = blocks[i]->backMapX();
@@ -277,8 +279,8 @@ void Chunck::loadDrawData() {
     if (blocks[i]->isFrontFaceVisible()) {
       for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
         vertices.push_back(blocks[i]->model * rawData[vert++]);
-        // verticesColors.push_back(Color(110, 110, 110));
-        verticesNormals.push_back(Vec4(-1.0F, 0.0F, 0.0F));
+        verticesColors.push_back(Color(110, 110, 110));
+        // verticesNormals.push_back(Vec4(-1.0F, 0.0F, 0.0F));
       }
       const u8& X = blocks[i]->frontMapX();
       const u8& Y = blocks[i]->frontMapY();
