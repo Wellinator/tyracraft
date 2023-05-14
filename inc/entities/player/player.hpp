@@ -120,7 +120,7 @@ class Player {
                        const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
-  const float L_JOYPAD_DEAD_ZONE = 0.20F;
+  const float L_JOYPAD_DEAD_ZONE = 0.35F;
 
   // Forces values
   float speed = 100;

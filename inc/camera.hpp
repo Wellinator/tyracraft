@@ -52,5 +52,5 @@ class Camera {
   // TODO: Implements third person cam
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
-  const float R_JOYPAD_DEAD_ZONE = 0.15F;
+  const float R_JOYPAD_DEAD_ZONE = 0.35F;
 };
