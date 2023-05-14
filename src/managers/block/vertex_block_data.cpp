@@ -12,23 +12,23 @@ const Vec4* VertexBlockData::getVertexData() {
       Vec4(-1.0F, 1.0F, 1.0),  Vec4(-1.0F, 1.0F, -1.0),
   };
 
-  u32 vertexFacesIndex[VETEX_COUNT] = {// Top
-                                       8, 6, 5, 8, 7, 6,
+  u32 vertexFacesIndex[VETEX_COUNT] = {// Top OK
+                                       5, 7, 8, 5, 6, 7,
 
                                        // Bottom
-                                       1, 3, 4, 1, 2, 3,
+                                       2, 4, 3, 2, 1, 4,
 
                                        // Left
-                                       1, 8, 5, 1, 4, 8,
+                                       2, 5, 1, 2, 6, 5,
 
-                                       // Right
-                                       6, 3, 2, 6, 7, 3,
+                                       // Right OK
+                                       4, 7, 3, 4, 8, 7,
 
                                        // Back
-                                       5, 2, 1, 5, 6, 2,
+                                       3, 6, 2, 3, 7, 6,
 
                                        // Front
-                                       3, 8, 4, 3, 7, 8};
+                                       1, 8, 4, 1, 5, 8};
 
   Vec4* result = new Vec4[VETEX_COUNT];
 
