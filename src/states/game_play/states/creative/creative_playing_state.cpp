@@ -181,6 +181,18 @@ void CreativePlayingState::drawDegubInfo() {
       std::to_string(static_cast<int>(g_ticksCounter)));
   FontManager_printText(ticks,
                         FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
+  // Draw Player Position
+  const Vec4 pos = *stateGamePlay->player->getPosition();
+  std::string playerPosition =
+      std::string("Player Position ")
+          .append(" X: ")
+          .append(std::to_string(static_cast<int>(pos.x / DUBLE_BLOCK_SIZE)))
+          .append("   Y: ")
+          .append(std::to_string(static_cast<int>(pos.y / DUBLE_BLOCK_SIZE)))
+          .append("   Z: ")
+          .append(std::to_string(static_cast<int>(pos.z / DUBLE_BLOCK_SIZE)));
+  FontManager_printText(playerPosition,
+                        FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
