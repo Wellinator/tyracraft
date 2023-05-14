@@ -615,7 +615,7 @@ std::array<u8, 4> Chunck::getCornersAOValues(
 float Chunck::calcAOIntensity(u8 AOValue) {
   switch (AOValue) {
     case 0:
-      return 0.6F;
+      return 0.5F;
 
     case 1:
       return 0.7F;
