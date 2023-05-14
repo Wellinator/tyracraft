@@ -15,6 +15,8 @@
 #define BOTTOM_VISIBLE 0x000001
 #define HIDDEN_BLOCK 0x000000
 
+enum class FACE_SIDE { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
+
 using Tyra::BBox;
 using Tyra::Color;
 using Tyra::M4x4;
@@ -27,7 +29,7 @@ class Block {
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
   int index;                        // Index at terrain;
   Vec4 offset;                      // Terrain offset;
-  u32 chunkId = 0;;
+  u32 chunkId = 0;
 
   // Block state
   u8 isTarget = false;

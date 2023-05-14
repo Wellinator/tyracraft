@@ -14,6 +14,8 @@
 #include "managers/block/vertex_block_data.hpp"
 #include <math/m4x4.hpp>
 #include "models/world_light_model.hpp"
+#include "entities/level.hpp"
+#include <array>
 
 using Tyra::BBox;
 using Tyra::BBoxFace;
@@ -59,7 +61,7 @@ class Chunck {
   void clear();
   void updateFrustumCheck(const Plane* frustumPlanes);
 
-  void loadDrawData();
+  void loadDrawData(LevelMap* level);
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
@@ -101,4 +103,11 @@ class Chunck {
   float ambientLightIntesity;
 
   u8 _isDrawDataLoaded = false;
+
+  bool isBlockOpaque(u8 block_type);
+  std::array<u8, 8> getFaceNeightbors(LevelMap* terrain, FACE_SIDE faceSide,
+                                      Block* block);
+  std::array<u8, 4> getCornersAOValues(std::array<u8, 8> blocksNeightbors);
+  u8 getVertexAO(bool side1, bool corner, bool side2);
+  float calcAOIntensity(u8 AOValue);
 };

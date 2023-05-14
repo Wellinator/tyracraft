@@ -16,6 +16,7 @@
 #include <loadfile.h>
 
 using Tyra::BBox;
+using Tyra::Color;
 using Tyra::Math;
 using Tyra::Mesh;
 using Tyra::Ray;
@@ -223,4 +224,9 @@ std::string Utils::trim(std::string& str) {
   str.erase(str.find_last_not_of(' ') + 1);
   str.erase(0, str.find_first_not_of(' '));
   return str;
+}
+
+Color Utils::IntensifyColor(Color* color, const float intensity) {
+  return Color(color->r * intensity, color->g * intensity, color->b * intensity,
+               color->a);
 }

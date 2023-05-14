@@ -24,6 +24,7 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using Tyra::BBox;
+using Tyra::Color;
 using Tyra::CoreBBoxFrustum;
 using Tyra::Mesh;
 using Tyra::Plane;
@@ -100,4 +101,6 @@ class Utils {
   static std::vector<UtilDirectory> listDir(const char* dir);
 
   static std::string trim(std::string& str);
+
+  static Color IntensifyColor(Color* color, const float intensity);
 };

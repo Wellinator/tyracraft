@@ -366,23 +366,23 @@ bool World::isBottomFaceVisible(const Vec4* t_blockOffset) {
 }
 
 bool World::isFrontFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z - 1);
 }
 
-bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z + 1);
+}
+
+bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
+                                      t_blockOffset->z);
+}
+
+bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
+                                      t_blockOffset->z);
 }
 
 int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
@@ -414,19 +414,19 @@ int World::getWaterBlockVisibleFaces(const Vec4* t_blockOffset) {
   int result = 0x000000;
 
   // Front
-  if (isAirAtPosition(t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z))
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z - 1))
     result = result | FRONT_VISIBLE;
 
   // Back
-  if (isAirAtPosition(t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z))
+  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1))
     result = result | BACK_VISIBLE;
 
   // Right
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1))
+  if (isAirAtPosition(t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z))
     result = result | RIGHT_VISIBLE;
 
   // Left
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z - 1))
+  if (isAirAtPosition(t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z))
     result = result | LEFT_VISIBLE;
 
   // Top
@@ -485,6 +485,7 @@ const Vec4 World::calcSpawOffset(int bias) {
 }
 
 void World::removeBlock(Block* blockToRemove) {
+  blockToRemove->getPosition()->print("Removing: ");
   SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
                 blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
   updateNeighBorsChunksByModdedPosition(blockToRemove->offset);
@@ -701,7 +702,7 @@ void World::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->loadDrawData();
+  t_chunck->loadDrawData(terrain);
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
@@ -777,7 +778,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     return;
   }
 
-  t_chunck->loadDrawData();
+  t_chunck->loadDrawData(terrain);
   t_chunck->state = ChunkState::Loaded;
 }
 

@@ -102,6 +102,10 @@ enum class Blocks {
 
 enum class GAME_MODE { SURVIVAL, CREATIVE };
 
+// TODO: Move to liht manager
+#define MAX_AO_VALUE 3
+#define AO_BASE_COLOR Color()
+
 enum class ItemId {
   // None
   empty,

@@ -104,13 +104,11 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     // Apply multiple colors
     StaPipColorBag colorBag;
     colorBag.many = verticesColors.data();
-    // Color baseColor = Color(110.0F, 110.0F, 110.0F);
-    // colorBag.single = &baseColor;
 
     StaPipBag bag;
     bag.count = vertices.size();
     bag.vertices = vertices.data();
-    
+
     // bag.lighting = &lightBag;
 
     bag.color = &colorBag;
@@ -169,7 +167,7 @@ void Chunck::clearDrawData() {
   _isDrawDataLoaded = false;
 }
 
-void Chunck::loadDrawData() {
+void Chunck::loadDrawData(LevelMap* terrain) {
   sortBlockByTransparency();
 
   const float scale = 1.0F / 16.0F;
@@ -180,11 +178,38 @@ void Chunck::loadDrawData() {
     int vert = 0;
 
     if (blocks[i]->isTopFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(120, 120, 120));
-        // verticesNormals.push_back(Vec4(0.0F, 1.0F, 0.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::TOP, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(120, 120, 120);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      // DEBUG Vertices Colors
+      // verticesColors.push_back(Color(255, 0, 0));
+      // verticesColors.push_back(Color(0, 255, 0));
+      // verticesColors.push_back(Color(0, 0, 255));
+      // verticesColors.push_back(Color(255, 255, 0));
+      // verticesColors.push_back(Color(0, 255, 255));
+      // verticesColors.push_back(Color(255, 0, 255));
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->topMapX();
       const u8& Y = blocks[i]->topMapY();
@@ -200,11 +225,31 @@ void Chunck::loadDrawData() {
     vert = 6;
 
     if (blocks[i]->isBottomFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(60, 60, 60));
-        // verticesNormals.push_back(Vec4(0.0F, -1.0F, 0.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(80, 80, 80);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+
       const u8& X = blocks[i]->bottomMapX();
       const u8& Y = blocks[i]->bottomMapY();
 
@@ -219,69 +264,148 @@ void Chunck::loadDrawData() {
     vert = 12;
 
     if (blocks[i]->isLeftFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(70, 70, 70));
-        // verticesNormals.push_back(Vec4(0.0F, 0.0F, -1.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::LEFT, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(90, 90, 90);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+
       const u8& X = blocks[i]->leftMapX();
       const u8& Y = blocks[i]->leftMapY();
 
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-
       uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
       uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 18;
 
     if (blocks[i]->isRightFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(100, 100, 100));
-        // verticesNormals.push_back(Vec4(0.0F, 0.0F, 1.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::RIGHT, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(100, 100, 100);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+
       const u8& X = blocks[i]->rightMapX();
       const u8& Y = blocks[i]->rightMapY();
 
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 24;
 
     if (blocks[i]->isBackFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(80, 80, 80));
-        // verticesNormals.push_back(Vec4(1.0F, 0.0F, 0.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::BACK, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(105, 105, 105);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->backMapX();
       const u8& Y = blocks[i]->backMapY();
 
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
       uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
     }
     vert = 30;
 
     if (blocks[i]->isFrontFaceVisible()) {
-      for (size_t j = 0; j < VertexBlockData::FACES_COUNT; j++) {
-        vertices.push_back(blocks[i]->model * rawData[vert++]);
-        verticesColors.push_back(Color(110, 110, 110));
-        // verticesNormals.push_back(Vec4(-1.0F, 0.0F, 0.0F));
-      }
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::FRONT, blocks[i]);
+      std::array<u8, 4> AOCornersValues = getCornersAOValues(faceNeightbors);
+      auto faceBaseColor = new Color(110, 110, 110);
+
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+      vertices.push_back(blocks[i]->model * rawData[vert++]);
+
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(Utils::IntensifyColor(
+          faceBaseColor, calcAOIntensity(AOCornersValues[3])));
+
       const u8& X = blocks[i]->frontMapX();
       const u8& Y = blocks[i]->frontMapY();
 
@@ -319,4 +443,187 @@ void Chunck::sortBlockByTransparency() {
   std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {
     return (u8)a->hasTransparency < (u8)b->hasTransparency;
   });
+}
+
+bool Chunck::isBlockOpaque(u8 block_type) {
+  return block_type != (u8)Blocks::VOID &&
+         block_type != (u8)Blocks::AIR_BLOCK &&
+         block_type != (u8)Blocks::WATER_BLOCK &&
+         block_type != (u8)Blocks::TOTAL_OF_BLOCKS;
+}
+
+/**
+ * Result order:
+ * 7  0  1
+ * 6     2
+ * 5  4  3
+ *
+ */
+std::array<u8, 8> Chunck::getFaceNeightbors(LevelMap* terrain,
+                                            FACE_SIDE faceSide, Block* block) {
+  auto pos = block->offset;
+  auto faceNeightbors = std::array<u8, 8>();
+  auto result = std::array<u8, 8>();
+
+  switch (faceSide) {
+    case FACE_SIDE::TOP:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
+      break;
+
+    case FACE_SIDE::BOTTOM:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
+      break;
+
+    case FACE_SIDE::LEFT:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
+      break;
+
+    case FACE_SIDE::RIGHT:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
+      break;
+
+    case FACE_SIDE::BACK:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
+      break;
+
+    case FACE_SIDE::FRONT:
+      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1);
+      faceNeightbors[1] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
+      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1);
+      faceNeightbors[3] =
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
+      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1);
+      faceNeightbors[5] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
+      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1);
+      faceNeightbors[7] =
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
+      break;
+
+    default:
+      break;
+  }
+
+  result[0] = isBlockOpaque(faceNeightbors[0]);
+  result[1] = isBlockOpaque(faceNeightbors[1]);
+  result[2] = isBlockOpaque(faceNeightbors[2]);
+  result[3] = isBlockOpaque(faceNeightbors[3]);
+  result[4] = isBlockOpaque(faceNeightbors[4]);
+  result[5] = isBlockOpaque(faceNeightbors[5]);
+  result[6] = isBlockOpaque(faceNeightbors[6]);
+  result[7] = isBlockOpaque(faceNeightbors[7]);
+
+  return result;
+}
+
+// TODO: Move to liht manager
+u8 Chunck::getVertexAO(bool side1, bool corner, bool side2) {
+  if (side1 && side2) {
+    return 0;
+  } else if ((side1 && corner && !side2) || (!side1 && corner && side2)) {
+    return 1;
+  } else if (!side1 && !corner && !side2) {
+    return 3;
+  } else {
+    return 2;
+  }
+}
+
+// TODO: Move to liht manager
+/**
+ * @brief Return 4 values of AO possibility, one for each corner
+ *
+ * @param blocksNeightbors
+ * @return std::array<bool, 4>
+ *
+ * Result struct:
+ * 2  3
+ * 0  1
+ */
+std::array<u8, 4> Chunck::getCornersAOValues(
+    std::array<u8, 8> blocksNeightbors) {
+  auto result = std::array<u8, 4>() = {
+      getVertexAO(blocksNeightbors[6], blocksNeightbors[5],
+                  blocksNeightbors[4]),
+      getVertexAO(blocksNeightbors[4], blocksNeightbors[3],
+                  blocksNeightbors[2]),
+      getVertexAO(blocksNeightbors[0], blocksNeightbors[7],
+                  blocksNeightbors[6]),
+      getVertexAO(blocksNeightbors[2], blocksNeightbors[1],
+                  blocksNeightbors[0]),
+  };
+  return result;
+}
+
+// TODO: Move to liht manager
+float Chunck::calcAOIntensity(u8 AOValue) {
+  switch (AOValue) {
+    case 0:
+      return 0.6F;
+
+    case 1:
+      return 0.7F;
+
+    case 2:
+      return 0.8F;
+
+    default:
+      return 1.0F;
+  }
 }
