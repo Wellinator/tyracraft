@@ -60,3 +60,67 @@ float LightManager::calcAOIntensity(u8 AOValue) {
       return 1.0F;
   }
 }
+
+Color LightManager::IntensifyColor(Color* color, const float intensity) {
+  return Color(color->r * intensity, color->g * intensity, color->b * intensity,
+               color->a);
+}
+
+void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                                    FACE_SIDE faceSide, LevelMap* t_terrain) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  float lightLevel;
+  float intensity = 0.3F;
+
+  switch (faceSide) {
+    case FACE_SIDE::TOP:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x,
+                          targetBlock->offset.y + 1, targetBlock->offset.z);
+      break;
+
+    case FACE_SIDE::BOTTOM:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x,
+                          targetBlock->offset.y - 1, targetBlock->offset.z);
+      break;
+
+    case FACE_SIDE::LEFT:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x + 1,
+                          targetBlock->offset.y, targetBlock->offset.z);
+      break;
+
+    case FACE_SIDE::RIGHT:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x - 1,
+                          targetBlock->offset.y, targetBlock->offset.z);
+      break;
+
+    case FACE_SIDE::BACK:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x,
+                          targetBlock->offset.y, targetBlock->offset.z + 1);
+      break;
+
+    case FACE_SIDE::FRONT:
+      lightLevel =
+          GetLightFromMap(t_terrain, targetBlock->offset.x,
+                          targetBlock->offset.y, targetBlock->offset.z - 1);
+      break;
+
+    default:
+      return;
+  }
+
+  /**
+   *
+   *
+   *  I've built this formula:
+   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
+   */
+  const float factor =
+      (intensity + (lightLevel / MAX_LIGHT_VALUE)) / (intensity + 1.0F);
+
+  *baseColor = LightManager::IntensifyColor(baseColor, factor);
+}

@@ -183,7 +183,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::TOP, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(120, 120, 120);
+      auto faceColor = Color(120, 120, 120);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::TOP,
+                                     terrain);
 
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -200,18 +202,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
       // verticesColors.push_back(Color(0, 255, 255));
       // verticesColors.push_back(Color(255, 0, 255));
 
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->topMapX();
       const u8& Y = blocks[i]->topMapY();
@@ -231,7 +233,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(80, 80, 80);
+      auto faceColor = Color(80, 80, 80);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BOTTOM,
+                                     terrain);
 
       // Add raw vertices + block model
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -246,18 +250,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
        * Base color + AO value
        *
        */
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       /**
        * Add UV mapping
@@ -281,7 +285,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::LEFT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(90, 90, 90);
+      auto faceColor = Color(90, 90, 90);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::LEFT,
+                                     terrain);
 
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -290,18 +296,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->leftMapX();
       const u8& Y = blocks[i]->leftMapY();
@@ -321,7 +327,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::RIGHT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(100, 100, 100);
+      auto faceColor = Color(100, 100, 100);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::RIGHT,
+                                     terrain);
 
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -330,18 +338,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->rightMapX();
       const u8& Y = blocks[i]->rightMapY();
@@ -361,7 +369,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::BACK, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(105, 105, 105);
+      auto faceColor = Color(105, 105, 105);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BACK,
+                                     terrain);
 
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -370,18 +380,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->backMapX();
       const u8& Y = blocks[i]->backMapY();
@@ -401,7 +411,9 @@ void Chunck::loadDrawData(LevelMap* terrain) {
           getFaceNeightbors(terrain, FACE_SIDE::FRONT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceBaseColor = new Color(110, 110, 110);
+      auto faceColor = Color(110, 110, 110);
+      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::FRONT,
+                                     terrain);
 
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
@@ -410,18 +422,18 @@ void Chunck::loadDrawData(LevelMap* terrain) {
       vertices.push_back(blocks[i]->model * rawData[vert++]);
       vertices.push_back(blocks[i]->model * rawData[vert++]);
 
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(Utils::IntensifyColor(
-          faceBaseColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+      verticesColors.push_back(LightManager::IntensifyColor(
+          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 
       const u8& X = blocks[i]->frontMapX();
       const u8& Y = blocks[i]->frontMapY();

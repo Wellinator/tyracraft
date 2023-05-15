@@ -37,7 +37,7 @@
 
 // FROM CrossCraft
 #include <stdint.h>
-#include "level.hpp"
+#include "entities/level.hpp"
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>

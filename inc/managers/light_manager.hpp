@@ -5,6 +5,7 @@
 #include <tyra>
 #include <math.h>
 #include <array>
+#include "entities/Block.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -22,6 +23,9 @@ class LightManager {
       std::array<u8, 8> blocksNeightbors);
   static u8 getVertexAO(bool side1, bool corner, bool side2);
   static float calcAOIntensity(u8 AOValue);
+  static Color IntensifyColor(Color* color, const float intensity);
+  static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                               FACE_SIDE faceSide, LevelMap* t_terrain);
 
  private:
   LevelMap* terrain = nullptr;

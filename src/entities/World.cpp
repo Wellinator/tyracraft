@@ -46,8 +46,10 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   worldSpawnArea.set(defineSpawnArea());
   spawnArea.set(worldSpawnArea);
   lastPlayerPosition.set(worldSpawnArea);
-  buildInitialPosition();
   setIntialTime();
+
+  CrossCraft_World_PropagateSunLight(static_cast<uint32_t>(g_ticksCounter));
+  buildInitialPosition();
 };
 
 void World::update(Player* t_player, const Vec4& camLookPos,
@@ -57,6 +59,8 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   cloudsManager.update();
   dayNightCycleManager.update();
   updateLightModel();
+
+  if (static_cast<uint32_t>(g_ticksCounter) % 10 == 0) updateSpread();
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition(), &worldLightModel);
@@ -486,9 +490,12 @@ const Vec4 World::calcSpawOffset(int bias) {
 
 void World::removeBlock(Block* blockToRemove) {
   blockToRemove->getPosition()->print("Removing: ");
-  SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
-                blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
-  updateNeighBorsChunksByModdedPosition(blockToRemove->offset);
+  const Vec4 offsetToRemove = blockToRemove->offset;
+  SetBlockInMap(terrain, offsetToRemove.x, offsetToRemove.y, offsetToRemove.z,
+                (u8)Blocks::AIR_BLOCK);
+  CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
+                                 offsetToRemove.z);
+  updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
 }
 
@@ -891,10 +898,26 @@ void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
 
   auto blk = GetBlockFromMap(map, x, y, z);
 
-  if ((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) ||
-       (blk >= 37 && blk <= 40)) &&
+  if ((blk == (u8)Blocks::AIR_BLOCK || blk == (u8)Blocks::GLASS_BLOCK ||
+       blk == (u8)Blocks::OAK_LEAVES_BLOCK
+       //  Liquids range
+       //  || (blk >= 8 && blk <= 11)
+       || (blk == (u8)Blocks::WATER_BLOCK)
+       // Vegetation range
+       //  || (blk >= 37 && blk <= 40)
+       ) &&
       GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
-    if (blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) {
+    if (blk == (u8)Blocks::OAK_LEAVES_BLOCK
+
+        //  Liquids range
+        //  || (blk >= 8 && blk <= 11)
+
+        || (blk == (u8)Blocks::WATER_BLOCK)
+
+        // Vegetation range
+        //  || (blk >= 37 && blk <= 40)
+
+    ) {
       lightLevel -= 2;
     }
     SetLightInMap(map, x, y, z, lightLevel - 1);
@@ -906,7 +929,7 @@ void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) {
   auto map = CrossCraft_World_GetMapPtr();
   if (!BoundCheckMap(map, x, y, z)) return;
 
-  if (GetBlockFromMap(map, x, y, z) == 0 &&
+  if (GetBlockFromMap(map, x, y, z) == (u8)Blocks::AIR_BLOCK &&
       GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
     SetLightInMap(map, x, y, z, lightLevel - 1);
     sunlightBfsQueue.emplace(x, y, z, 0);
@@ -1094,9 +1117,18 @@ void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
   for (int y2 = map->height - 1; y2 >= 0; y2--) {
     auto blk = GetBlockFromMap(map, x, y2, z);
 
-    if (blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
+    if (blk == (u8)Blocks::OAK_LEAVES_BLOCK
+
+        //  Liquids range
+        //  || (blk >= 8 && blk <= 11)
+
+        || (blk == (u8)Blocks::WATER_BLOCK)
+
+        // Vegetation range
+        //  || (blk >= 37 && blk <= 40)
+    ) {
       lv -= 2;
-    } else if (blk != 0 && blk != 20) {
+    } else if (blk != (u8)Blocks::AIR_BLOCK && blk != (u8)Blocks::GLASS_BLOCK) {
       lv = 0;
     }
 
@@ -1113,11 +1145,18 @@ void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+
   singleCheck(x, y, z);
   singleCheck(x + 1, y, z);
   singleCheck(x - 1, y, z);
   singleCheck(x, y, z + 1);
   singleCheck(x, y, z - 1);
+  // if (BoundCheckMap(map, x, y, z)) singleCheck(x, y, z);
+  // if (BoundCheckMap(map, x + 1, y, z)) singleCheck(x + 1, y, z);
+  // if (BoundCheckMap(map, x - 1, y, z)) singleCheck(x - 1, y, z);
+  // if (BoundCheckMap(map, x, y, z + 1)) singleCheck(x, y, z + 1);
+  // if (BoundCheckMap(map, x, y, z - 1)) singleCheck(x, y, z - 1);
 
   updateSunlightRemove();
   updateSunlight();
@@ -1138,9 +1177,20 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
       for (int y = map->height - 1; y >= 0; y--) {
         auto blk = GetBlockFromMap(map, x, y, z);
 
-        if (blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
+        if (blk == (u8)Blocks::OAK_LEAVES_BLOCK
+
+            // Vegetation
+            // (blk >= 37 && blk <= 40)
+
+            // Liquids
+            // || (blk >= 8 && blk <= 11)
+
+            || (blk == (u8)Blocks::WATER_BLOCK)
+
+        ) {
           lv -= 2;
-        } else if (blk != 0 && blk != 20) {
+        } else if (blk != (u8)Blocks::AIR_BLOCK &&
+                   blk != (u8)Blocks::GLASS_BLOCK) {
           break;
         }
 
@@ -1190,7 +1240,7 @@ void CrossCraft_World_Create_Map() {
 
   uint32_t blockCount = level.map.length * level.map.height * level.map.width;
   level.map.blocks = new uint8_t[blockCount];
-  // level.map.data = new uint8_t[blockCount];
+  level.map.data = new uint8_t[blockCount];
 }
 
 /**
