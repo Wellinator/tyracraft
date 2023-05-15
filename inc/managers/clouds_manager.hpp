@@ -1,5 +1,3 @@
-// Based on https://gist.github.com/luuthevinh/42227ad9712e86ab9d5c3ab37a56936c
-
 #pragma once
 
 #include "constants.hpp"
