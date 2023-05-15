@@ -25,6 +25,4 @@ class LightManager {
 
  private:
   LevelMap* terrain = nullptr;
-
-  std::array<u8, (OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE)> shadowMap;
 };
