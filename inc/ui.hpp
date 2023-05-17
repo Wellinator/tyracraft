@@ -58,7 +58,7 @@ class Ui {
 
   // Player inventory ui
   Sprite* playerInventory[HOT_INVENTORY_SIZE] = {NULL, NULL, NULL, NULL, NULL,
-                                             NULL, NULL, NULL, NULL};
+                                                 NULL, NULL, NULL, NULL};
 
   float BASE_X_POS;
   float BASE_Y_POS;

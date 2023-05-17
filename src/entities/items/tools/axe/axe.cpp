@@ -44,7 +44,8 @@ void Axe::init(Renderer* t_renderer) {
 
   // TODO: load texture by material
   t_renderer->getTextureRepository().addByMesh(
-      mesh.get(), FileUtils::fromCwd("textures/entity/tools/axe/wooden/"), "png");
+      mesh.get(), FileUtils::fromCwd("textures/entity/tools/axe/wooden/"),
+      "png");
 }
 
 void Axe::allocateOptions() {

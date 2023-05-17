@@ -12,9 +12,7 @@ TickManager::TickManager() {}
 
 TickManager::~TickManager() {}
 
-void TickManager::update(const float& deltaTime) {
-  updateTicks(deltaTime);
-}
+void TickManager::update(const float& deltaTime) { updateTicks(deltaTime); }
 
 void TickManager::updateTicks(const float& deltaTime) {
   elapsedRealTime += deltaTime;

@@ -27,7 +27,7 @@ class Block {
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
   int index;                        // Index at terrain;
   Vec4 offset;                      // Terrain offset;
-  u32 chunkId = 0;;
+  u32 chunkId = 0;
 
   // Block state
   u8 isTarget = false;

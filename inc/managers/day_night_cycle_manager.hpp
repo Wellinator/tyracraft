@@ -43,9 +43,7 @@ class DayNightCycleManager {
   void updateEntitiesPosition();
   void updateCurrentAngle();
   void updateIntensityByAngle();
-  inline const float getLightScaleFromAngle() {
-    return _intensity;
-  };
+  inline const float getLightScaleFromAngle() { return _intensity; };
 
   Vec4 center = CENTER_WORLD_POS;
   Vec4 sunPosition;

@@ -15,5 +15,4 @@ class SaveGameModel {
   NewGameOptions gameOptions;
   Level worldLevel;
   Vec4 playerPosition;
-  
 };

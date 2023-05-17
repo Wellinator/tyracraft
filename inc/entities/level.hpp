@@ -29,7 +29,9 @@ uint8_t GetDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetBlockFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 
-void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z, uint8_t block);
-void SetLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z, uint16_t light);
+void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                   uint8_t block);
+void SetLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                   uint16_t light);
 
 bool BoundCheckMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);

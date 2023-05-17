@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
   Tyra::EngineOptions options;
-  
+
   options.loadUsbDriver = true;
   // options.writeLogsToFile = true;
 
