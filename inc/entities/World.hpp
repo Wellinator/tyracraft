@@ -69,6 +69,10 @@ class World {
   void update(Player* t_player, const Vec4& camLookPos,
               const Vec4& camPosition);
   void render();
+  void generate();
+  void generateLight();
+  void generateSpawnArea();
+  void loadSpawnArea();
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
   const std::vector<Block*> getLoadedBlocks();
@@ -87,6 +91,7 @@ class World {
     return this->targetBlock != nullptr && this->targetBlock->isBreakable;
   };
 
+  void setSavedSpawnArea(Vec4 pos);
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
@@ -168,8 +173,7 @@ class World {
 
   inline bool isBlockTransparentAtPosition(const float& x, const float& y,
                                            const float& z);
-  inline bool isAirAtPosition(const float& x, const float& y,
-                                           const float& z);
+  inline bool isAirAtPosition(const float& x, const float& y, const float& z);
 
   inline bool isTopFaceVisible(const Vec4* t_blockOffset);
   inline bool isBottomFaceVisible(const Vec4* t_blockOffset);
@@ -193,9 +197,9 @@ void CrossCraft_World_Init(const uint32_t& seed);
 void CrossCraft_World_Deinit();
 
 /**
- * Creates an empty map with a selected world size.
+ * Allocate memory for an empty map with a selected world size.
  */
-void CrossCraft_World_Create_Map();
+void AllocateMapData();
 
 /**
  * This method should ONLY be used by a client in single-player or a server for
@@ -238,6 +242,7 @@ void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
 void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
 void updateSunlightRemove();
 void updateSunlight();
+void singleCheck(uint16_t x, uint16_t y, uint16_t z);
 void updateRemove();
 void updateRemove(uint32_t* updateIDs);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
