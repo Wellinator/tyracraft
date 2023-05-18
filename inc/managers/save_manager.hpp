@@ -136,6 +136,8 @@ class SaveManager {
       t_map->spawnY = savedData["worldLevel"]["map"]["spawnY"].get<uint16_t>();
       t_map->spawnZ = savedData["worldLevel"]["map"]["spawnZ"].get<uint16_t>();
 
+      state->world->setSavedSpawnArea(*state->player->getPosition());
+
       TYRA_LOG("Loading blocks data...");
       const char* tempBLocksBuffer =
           savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str();
@@ -145,8 +147,8 @@ class SaveManager {
         t_map->blocks[i] = number;
       }
 
-      TYRA_LOG("Reloading world data...");
-      state->world->reloadWorldArea(*state->player->getPosition());
+      // TYRA_LOG("Reloading world data...");
+      // state->world->reloadWorldArea(*state->player->getPosition());
     } else {
       TYRA_ERROR("Save file not found at: ", fullPath);
     }

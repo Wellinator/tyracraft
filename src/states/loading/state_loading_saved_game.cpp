@@ -79,6 +79,8 @@ void StateLoadingSavedGame::update(const float& deltaTime) {
     return this->initUI();
   } else if (this->shouldInitWorld) {
     return this->initWorld();
+  } else if (this->shouldLoadSavedData) {
+    return this->loadSavedData();
   } else if (this->shouldInitPlayer) {
     return this->initPlayer();
   }
@@ -142,9 +144,19 @@ void StateLoadingSavedGame::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository,
                                    this->context->t_soundManager);
-  setPercent(90.0F);
+  setPercent(70.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");
+}
+
+void StateLoadingSavedGame::loadSavedData() {
+  SaveManager::LoadSavedGame(this->stateGamePlay, saveFileFullPath.c_str());
+  this->stateGamePlay->world->generateLight();
+  this->stateGamePlay->world->loadSpawnArea();
+
+  setPercent(80.0F);
+  this->shouldLoadSavedData = 0;
+  TYRA_LOG("loadSavedWorld");
 }
 
 void StateLoadingSavedGame::initPlayer() {
@@ -159,7 +171,6 @@ void StateLoadingSavedGame::initPlayer() {
 
 void StateLoadingSavedGame::nextState() {
   TYRA_LOG("nextState");
-  SaveManager::LoadSavedGame(this->stateGamePlay, saveFileFullPath.c_str());
   this->context->setState(this->stateGamePlay);
 }
 

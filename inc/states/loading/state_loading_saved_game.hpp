@@ -42,6 +42,7 @@ class StateLoadingSavedGame : public GameState {
  private:
   u8 shouldCreatedEntities = 1;
   u8 shouldInitWorld = 1;
+  u8 shouldLoadSavedData = 1;
   u8 shouldInitItemRepository = 1;
   u8 shouldInitUI = 1;
   u8 shouldInitPlayer = 1;
@@ -65,6 +66,7 @@ class StateLoadingSavedGame : public GameState {
   void initItemRepository();
   void initUI();
   void initWorld();
+  void loadSavedData();
   void initPlayer();
 
   void nextState();
