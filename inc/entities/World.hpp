@@ -202,7 +202,7 @@ void CrossCraft_World_Deinit();
 void AllocateMapData();
 
 /**
- * This method should ONLY be used by a client in single-player or a server for
+ * This method should ONLY be used by a clien t in single-player or a server for
  * internal use.
  * @return Returns a pointer to the level
  */
@@ -241,7 +241,6 @@ void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
                uint32_t* updateIDs);
 void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
 void updateSunlightRemove();
-void updateSunlight();
 void singleCheck(uint16_t x, uint16_t y, uint16_t z);
 void updateRemove();
 void updateRemove(uint32_t* updateIDs);
@@ -249,6 +248,12 @@ void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
                      uint32_t* updateIDs);
 
+void updateSunlight();
 void propagateSunLightAddBFSQueue();
 void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
                           u8 nextLightValue);
+void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+
+void propagateSunlightRemovalQueue();
+void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);

@@ -72,6 +72,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   cloudsManager.update();
   dayNightCycleManager.update();
   updateLightModel();
+  updateSunlight();
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition(), &worldLightModel);
@@ -1015,9 +1016,9 @@ void updateSpread(uint32_t* updateIDs) {
 }
 
 void updateSunlight() {
-  // if (sunlightRemovalBfsQueue.empty() == false) {
-  //   propagateSunlightRemovalQueue();
-  // }
+  if (sunlightRemovalBfsQueue.empty() == false) {
+    propagateSunlightRemovalQueue();
+  }
 
   if (sunlightBfsQueue.empty() == false) {
     propagateSunLightAddBFSQueue();
@@ -1028,8 +1029,7 @@ void propagateSunLightAddBFSQueue() {
   // do the algorithm
   while (!sunlightBfsQueue.empty()) {
     // get the light value
-    LightNode lightNode = sunlightBfsQueue.front();
-
+    auto lightNode = sunlightBfsQueue.front();
     auto map = CrossCraft_World_GetMapPtr();
 
     // get the index
@@ -1048,7 +1048,7 @@ void propagateSunLightAddBFSQueue() {
     if (nextLightValue <= 0) {
       continue;
     }
-    
+
     // propagate thought x positive
     if (BoundCheckMap(map, nx + 1, ny, nz)) {
       floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
@@ -1093,11 +1093,81 @@ void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
       nextLightValue -= 1;
 
     if (GetSunLightFromMap(map, x, y, z) < nextLightValue) {
-      SetSunLightInMap(map, x, y, z, nextLightValue);
-      if (nextLightValue > 0) {
-        sunlightBfsQueue.emplace(x, y, z, nextLightValue);
-      }
+      addSunLight(x, y, z, nextLightValue);
     }
+  }
+}
+
+void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, lightLevel);
+    sunlightBfsQueue.emplace(x, y, z, lightLevel);
+  }
+}
+
+void propagateSunlightRemovalQueue() {
+  while (!sunlightRemovalBfsQueue.empty()) {
+    // get the light value
+    LightNode lightNode = sunlightRemovalBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    // get the index
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    // auto lightValue = GetSunLightFromMap(map, nx, ny, nz);
+    sunlightRemovalBfsQueue.pop();
+
+    // propagate thought x positive
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillSunlightRemove(nx + 1, ny, nz, lightValue);
+    }
+
+    // propagate thought y positive
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillSunlightRemove(nx, ny + 1, nz, lightValue);
+    }
+
+    // propagate thought z positive
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillSunlightRemove(nx, ny, nz + 1, lightValue);
+    }
+
+    // propagate thought x negative
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillSunlightRemove(nx - 1, ny, nz, lightValue);
+    }
+
+    // propagate thought y negative
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillSunlightRemove(nx, ny - 1, nz, lightValue);
+    }
+
+    // propagate thought z negative
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillSunlightRemove(nx, ny, nz - 1, lightValue);
+    }
+  }
+}
+
+void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
+                             u8 lightLevel) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto neighborLevel = GetSunLightFromMap(map, x, y, z);
+
+  if (neighborLevel != 0 && neighborLevel < lightLevel) {
+    removeSunLight(x, y, z, neighborLevel);
+  } else if (neighborLevel >= lightLevel) {
+    addSunLight(x, y, z, neighborLevel);
+  }
+}
+
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    sunlightRemovalBfsQueue.emplace(x, y, z, lightLevel);
+    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, 0);
   }
 }
 
