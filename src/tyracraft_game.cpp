@@ -18,7 +18,8 @@ TyraCraftGame::~TyraCraftGame() {}
 void TyraCraftGame::init() {
   checkNeededDirectories();
 
-  engine->renderer.core.setFrameLimit(false);
+  engine->renderer.core.setFrameLimit(true);
+  
   FontManager_init(&engine->renderer);
   stateManager = new StateManager(engine, &camera);
 }
