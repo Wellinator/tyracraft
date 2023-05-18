@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "entities/World.hpp"
 #include <queue>
+#include <stack>
 
 using Tyra::Color;
 using Tyra::M4x4;
@@ -874,6 +875,7 @@ struct LightNode {
 std::queue<LightNode> lightBfsQueue;
 std::queue<LightNode> lightRemovalBfsQueue;
 
+// std::stack<LightNode> sunlightBfsQueue;
 std::queue<LightNode> sunlightBfsQueue;
 std::queue<LightNode> sunlightRemovalBfsQueue;
 
@@ -939,25 +941,6 @@ void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
     }
     SetBlockLightInMap(map, x, y, z, lightLevel - 1);
     lightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
-  //  Liquids range
-  //  || (b >= 8 && b <= 11)
-  // Vegetation range
-  //  || (b >= 37 && b <= 40)
-  if (b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK ||
-      b == Blocks::OAK_LEAVES_BLOCK || b == Blocks::WATER_BLOCK) {
-    int currentLightLvl = GetSunLightFromMap(map, x, y, z) + 1;
-    if (currentLightLvl < lightLevel) {
-      SetSunLightInMap(map, x, y, z, lightLevel - 1);
-      sunlightBfsQueue.emplace(x, y, z, 0);
-    }
   }
 }
 
@@ -1032,23 +1015,88 @@ void updateSpread(uint32_t* updateIDs) {
 }
 
 void updateSunlight() {
+  // if (sunlightRemovalBfsQueue.empty() == false) {
+  //   propagateSunlightRemovalQueue();
+  // }
+
+  if (sunlightBfsQueue.empty() == false) {
+    propagateSunLightAddBFSQueue();
+  }
+}
+
+void propagateSunLightAddBFSQueue() {
+  // do the algorithm
   while (!sunlightBfsQueue.empty()) {
-    auto node = sunlightBfsQueue.front();
+    // get the light value
+    LightNode lightNode = sunlightBfsQueue.front();
 
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
+    auto map = CrossCraft_World_GetMapPtr();
 
+    // get the index
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    // auto lightValue = GetSunLightFromMap(map, nx, ny, nz);
     sunlightBfsQueue.pop();
-    int lightLevel = node.val - 1;
 
-    if (lightLevel > 0) {
-      propagate(nx + 1, ny, nz, lightLevel);
-      propagate(nx - 1, ny, nz, lightLevel);
-      propagate(nx, ny + 1, nz, lightLevel);
-      propagate(nx, ny - 1, nz, lightLevel);
-      propagate(nx, ny, nz + 1, lightLevel);
-      propagate(nx, ny, nz - 1, lightLevel);
+    // next value
+    s8 nextLightValue = (lightValue - 1);
+
+    // if reached the end; stop propagation
+    if (nextLightValue <= 0) {
+      continue;
+    }
+    
+    // propagate thought x positive
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
+    }
+
+    // propagate thought y positive
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillSunlightAdd(nx, ny + 1, nz, nextLightValue);
+    }
+
+    // propagate thought z positive
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillSunlightAdd(nx, ny, nz + 1, nextLightValue);
+    }
+
+    // propagate thought x negative
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillSunlightAdd(nx - 1, ny, nz, nextLightValue);
+    }
+
+    // propagate thought y negative
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillSunlightAdd(nx, ny - 1, nz, nextLightValue);
+    }
+
+    // propagate thought z negative
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillSunlightAdd(nx, ny, nz - 1, nextLightValue);
+    }
+  }
+}
+
+void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                          u8 nextLightValue) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+
+  if (b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK) {
+    // Apply filter, redure light by 1
+    if (nextLightValue >= 1 &&
+        (b == Blocks::OAK_LEAVES_BLOCK || b == Blocks::WATER_BLOCK))
+      nextLightValue -= 1;
+
+    if (GetSunLightFromMap(map, x, y, z) < nextLightValue) {
+      SetSunLightInMap(map, x, y, z, nextLightValue);
+      if (nextLightValue > 0) {
+        sunlightBfsQueue.emplace(x, y, z, nextLightValue);
+      }
     }
   }
 }

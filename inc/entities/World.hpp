@@ -248,3 +248,7 @@ void updateRemove(uint32_t* updateIDs);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
                      uint32_t* updateIDs);
+
+void propagateSunLightAddBFSQueue();
+void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                          u8 nextLightValue);
