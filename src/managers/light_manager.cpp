@@ -69,7 +69,7 @@ Color LightManager::IntensifyColor(Color* color, const float intensity) {
 void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                     FACE_SIDE faceSide, LevelMap* t_terrain) {
   const float MAX_LIGHT_VALUE = 15.0F;
-  float lightLevel;
+  int lightLevel;
   float intensity = 0.3F;
 
   switch (faceSide) {
@@ -121,6 +121,7 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
    */
   const float factor =
       (intensity + (lightLevel / MAX_LIGHT_VALUE)) / (intensity + 1.0F);
-
   *baseColor = LightManager::IntensifyColor(baseColor, factor);
+
+  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, factor);
 }
