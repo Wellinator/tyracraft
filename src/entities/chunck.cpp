@@ -175,15 +175,22 @@ void Chunck::loadDrawData(LevelMap* terrain) {
   const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
   const Vec4* rawData = VertexBlockData::getVertexData();
 
+  // TODO: refactor to sunlight brighness
+  auto baseFaceColor = Color(120, 120, 120);
+
   for (size_t i = 0; i < blocks.size(); i++) {
     int vert = 0;
 
     if (blocks[i]->isTopFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::TOP, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(120, 120, 120);
+
+      //   Top face 100% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::TOP,
                                      terrain);
 
@@ -229,11 +236,15 @@ void Chunck::loadDrawData(LevelMap* terrain) {
     vert = 6;
 
     if (blocks[i]->isBottomFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(80, 80, 80);
+
+      //   Top face 50% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BOTTOM,
                                      terrain);
 
@@ -281,11 +292,15 @@ void Chunck::loadDrawData(LevelMap* terrain) {
     vert = 12;
 
     if (blocks[i]->isLeftFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::LEFT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(90, 90, 90);
+
+      //   Top face 60% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::LEFT,
                                      terrain);
 
@@ -323,11 +338,15 @@ void Chunck::loadDrawData(LevelMap* terrain) {
     vert = 18;
 
     if (blocks[i]->isRightFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::RIGHT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(100, 100, 100);
+
+      //   Top face 80% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::RIGHT,
                                      terrain);
 
@@ -365,11 +384,15 @@ void Chunck::loadDrawData(LevelMap* terrain) {
     vert = 24;
 
     if (blocks[i]->isBackFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::BACK, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(105, 105, 105);
+
+      //   Top face 60% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BACK,
                                      terrain);
 
@@ -407,11 +430,15 @@ void Chunck::loadDrawData(LevelMap* terrain) {
     vert = 30;
 
     if (blocks[i]->isFrontFaceVisible()) {
+      Color faceColor = baseFaceColor;
       auto faceNeightbors =
           getFaceNeightbors(terrain, FACE_SIDE::FRONT, blocks[i]);
       std::array<u8, 4> AOCornersValues =
           LightManager::getCornersAOValues(faceNeightbors);
-      auto faceColor = Color(110, 110, 110);
+
+      //   Top face 80% of the base color
+      LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+
       LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::FRONT,
                                      terrain);
 
