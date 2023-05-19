@@ -256,6 +256,16 @@ void propagateSunlightRemovalQueue();
 void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
 void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+
+void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void removeLight(uint16_t x, uint16_t y, uint16_t z);
+void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void updateBlockLights();
+void propagateLightRemovalQueue();
+void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void propagateLightAddQueue();
+void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
+
 bool inline IsTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
          block == Blocks::WATER_BLOCK || block == Blocks::GLASS_BLOCK;

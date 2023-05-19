@@ -74,6 +74,7 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
   updateLightModel();
   updateSunlight();
+  updateBlockLights();
 
   // Update chunk light data every 250 ticks
   // TODO: refactor to event system
@@ -584,6 +585,13 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       updateSunlight();
+
+      // For test only
+      // if (blockToPlace == Blocks::REDSTONE_ORE_BLOCK) {
+      //   addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, 14);
+      //   updateBlockLights();
+      // }
+
       chunckManager.enqueueChunksToReloadLight();
     }
 
@@ -1163,6 +1171,144 @@ void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   if (lightLevel > 0) {
     sunlightRemovalBfsQueue.emplace(x, y, z, lightLevel);
     SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, 0);
+  }
+}
+
+void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    auto map = CrossCraft_World_GetMapPtr();
+    lightBfsQueue.emplace(x, y, z, lightLevel);
+    SetBlockLightInMap(map, x, y, z, lightLevel);
+  }
+}
+
+void removeLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  u8 lightLevel = GetBlockLightFromMap(map, x, y, z);
+  removeLight(x, y, z, lightLevel);
+}
+
+void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    auto map = CrossCraft_World_GetMapPtr();
+    lightRemovalBfsQueue.emplace(x, y, z, lightLevel);
+    SetBlockLightInMap(map, x, y, z, lightLevel);
+  }
+}
+
+void updateBlockLights() {
+  if (lightRemovalBfsQueue.empty() == false) {
+    propagateLightRemovalQueue();
+  }
+
+  if (lightBfsQueue.empty() == false) {
+    propagateLightAddQueue();
+  }
+}
+
+void propagateLightRemovalQueue() {
+  while (lightRemovalBfsQueue.empty() == false) {
+    // get the light value
+    LightNode lightNode = lightRemovalBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    // get the index
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillLightRemove(nx + 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillLightRemove(nx, ny + 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillLightRemove(nx, ny, nz + 1, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillLightRemove(nx - 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillLightRemove(nx, ny - 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillLightRemove(nx, ny, nz - 1, lightValue);
+    }
+  }
+}
+
+void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto neighborLevel = GetBlockLightFromMap(map, x, y, z);
+
+  if (neighborLevel != 0 && neighborLevel < lightLevel) {
+    removeLight(x, y, z);
+  } else if (neighborLevel >= lightLevel) {
+    addBlockLight(x, y, z, neighborLevel);
+  }
+}
+
+void propagateLightAddQueue() {
+  while (!lightBfsQueue.empty()) {
+    auto lightNode = lightBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightBfsQueue.pop();
+
+    s16 nextLightValue = lightValue - 1;
+
+    if (nextLightValue <= 0) {
+      continue;
+    }
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillLightAdd(nx + 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillLightAdd(nx, ny + 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillLightAdd(nx, ny, nz + 1, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillLightAdd(nx - 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillLightAdd(nx, ny - 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillLightAdd(nx, ny, nz - 1, nextLightValue);
+    }
+  }
+}
+
+void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+  auto isTransparent = b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK;
+  if (isTransparent) {
+    if (GetBlockLightFromMap(map, x, y, z) < nextLightValue) {
+      addBlockLight(x, y, z, nextLightValue);
+    }
   }
 }
 
