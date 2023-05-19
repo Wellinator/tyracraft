@@ -42,7 +42,7 @@ Chunck::~Chunck() {
 void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
                     WorldLightModel* worldLightModel) {
   sunPosition.set(worldLightModel->sunPosition);
-  sunLightIntensity = worldLightModel->lightIntensity;
+  sunLightIntensity = worldLightModel->sunLightIntensity;
   ambientLightIntesity = worldLightModel->ambientLightIntensity;
   this->updateFrustumCheck(frustumPlanes);
   // if (isVisible()) applyFOG(currentPlayerPos);
@@ -72,26 +72,8 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
-    // M4x4 lightMatrix;
-    // lightMatrix.identity();
-    // lightMatrix.scale(10);
-    // lightMatrix.translate(sunPosition);
-
     M4x4 rawMatrix;
     rawMatrix.identity();
-
-    PipelineDirLightsBag dirLightsBag;
-    dirLightsBag.setAmbientColor(Color(
-        ambientLightIntesity, ambientLightIntesity, ambientLightIntesity));
-    dirLightsBag.setDirectionalLightColor(
-        Color(sunLightIntensity, sunLightIntensity, sunLightIntensity), 0);
-    dirLightsBag.setDirectionalLightDirection(
-        (sunPosition - CENTER_WORLD_POS).getNormalized(), 0);
-
-    // StaPipLightingBag lightBag;
-    // lightBag.lightMatrix = &lightMatrix;
-    // lightBag.dirLights = &dirLightsBag;
-    // lightBag.normals = verticesNormals.data();
 
     StaPipTextureBag textureBag;
     textureBag.texture = t_blockManager->getBlocksTexture();
@@ -286,19 +268,18 @@ void Chunck::loadUVFaceData(const u8& X, const u8& Y) {
 }
 
 void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
-  // TODO: refactor to sunlight brighness
   auto baseFaceColor = Color(120, 120, 120);
 
   if (t_block->isTopFaceVisible()) {
     Color faceColor = baseFaceColor;
     auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::TOP, t_block);
-    std::array<u8, 4> AOCornersValues =
-        LightManager::getCornersAOValues(faceNeightbors);
 
     //   Top face 100% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 1.0F);
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   terrain);
+
+    // Apply sunlight and block light to face
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
+                                   sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 
@@ -309,8 +290,10 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
 
     //   Top face 50% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+
+    // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   terrain);
+                                   terrain, sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 
@@ -321,8 +304,9 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // X-side faces 60% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
+    // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   terrain);
+                                   terrain, sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 
@@ -333,8 +317,9 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // X-side faces 60% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
+    // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   terrain);
+                                   terrain, sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 
@@ -345,8 +330,9 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Z-side faces 80% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
+    // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
-                                   terrain);
+                                   terrain, sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 
@@ -357,8 +343,9 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Z-side faces 80% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
+    // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   terrain);
+                                   terrain, sunLightIntensity);
     loadLightFaceDataWithAO(&faceColor, faceNeightbors);
   }
 }

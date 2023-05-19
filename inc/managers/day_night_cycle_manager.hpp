@@ -33,7 +33,7 @@ class DayNightCycleManager {
    */
   const Color getSkyColor();
 
-  const float getLightIntensity();
+  const float getSunLightIntensity();
   const float getAmbientLightIntesity();
   inline const u8 isDay() {
     return (g_ticksCounter > DAY_SUNRISE || g_ticksCounter < DAY_SUNSET);

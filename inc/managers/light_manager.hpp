@@ -23,9 +23,10 @@ class LightManager {
       std::array<u8, 8> blocksNeightbors);
   static u8 getVertexAO(bool side1, bool corner, bool side2);
   static float calcAOIntensity(u8 AOValue);
-  static inline Color IntensifyColor(Color* color, const float intensity);
+  static Color IntensifyColor(Color* color, const float intensity);
   static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                               FACE_SIDE faceSide, LevelMap* t_terrain);
+                               FACE_SIDE faceSide, LevelMap* t_terrain,
+                               const float sunlightIntensity);
 
  private:
   LevelMap* terrain = nullptr;

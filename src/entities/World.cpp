@@ -71,8 +71,14 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
   cloudsManager.update();
   dayNightCycleManager.update();
+
   updateLightModel();
   updateSunlight();
+
+  // Update chunk light data every 200 ticks
+  // TODO: refactor to event system
+  if ((static_cast<uint32_t>(g_ticksCounter) % 200) == 0)
+    chunckManager.reloadLightData(terrain);
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition(), &worldLightModel);
@@ -341,7 +347,8 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
 
 void World::updateLightModel() {
   worldLightModel.lightsPositions = lightsPositions.data();
-  worldLightModel.lightIntensity = dayNightCycleManager.getLightIntensity();
+  worldLightModel.sunLightIntensity =
+      dayNightCycleManager.getSunLightIntensity();
   worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.ambientLightIntensity =

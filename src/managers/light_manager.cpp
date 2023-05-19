@@ -67,46 +67,66 @@ Color LightManager::IntensifyColor(Color* color, const float intensity) {
 }
 
 void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                                    FACE_SIDE faceSide, LevelMap* t_terrain) {
+                                    FACE_SIDE faceSide, LevelMap* t_terrain,
+                                    const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
-  int lightLevel;
   float intensity = 0.3F;
+  u8 sunLightLevel;
+  u8 lightLevel;
 
   switch (faceSide) {
     case FACE_SIDE::TOP:
-      lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x,
-                          targetBlock->offset.y + 1, targetBlock->offset.z);
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
+                             targetBlock->offset.y + 1, targetBlock->offset.z);
+      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
+                                        targetBlock->offset.y + 1,
+                                        targetBlock->offset.z);
       break;
 
     case FACE_SIDE::BOTTOM:
-      lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x,
-                          targetBlock->offset.y - 1, targetBlock->offset.z);
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
+                             targetBlock->offset.y - 1, targetBlock->offset.z);
+      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
+                                        targetBlock->offset.y - 1,
+                                        targetBlock->offset.z);
       break;
 
     case FACE_SIDE::LEFT:
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x + 1,
+                             targetBlock->offset.y, targetBlock->offset.z);
       lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x + 1,
-                          targetBlock->offset.y, targetBlock->offset.z);
+          GetBlockLightFromMap(t_terrain, targetBlock->offset.x + 1,
+                               targetBlock->offset.y, targetBlock->offset.z);
       break;
 
     case FACE_SIDE::RIGHT:
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x - 1,
+                             targetBlock->offset.y, targetBlock->offset.z);
       lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x - 1,
-                          targetBlock->offset.y, targetBlock->offset.z);
+          GetBlockLightFromMap(t_terrain, targetBlock->offset.x - 1,
+                               targetBlock->offset.y, targetBlock->offset.z);
       break;
 
     case FACE_SIDE::BACK:
-      lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x,
-                          targetBlock->offset.y, targetBlock->offset.z + 1);
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
+                             targetBlock->offset.y, targetBlock->offset.z + 1);
+      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
+                                        targetBlock->offset.y,
+                                        targetBlock->offset.z + 1);
       break;
 
     case FACE_SIDE::FRONT:
-      lightLevel =
-          GetLightFromMap(t_terrain, targetBlock->offset.x,
-                          targetBlock->offset.y, targetBlock->offset.z - 1);
+      sunLightLevel =
+          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
+                             targetBlock->offset.y, targetBlock->offset.z - 1);
+      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
+                                        targetBlock->offset.y,
+                                        targetBlock->offset.z - 1);
       break;
 
     default:
@@ -114,14 +134,19 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
   }
 
   /**
-   *
-   *
    *  I've built this formula:
    * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
    */
-  const float factor =
-      (intensity + (lightLevel / MAX_LIGHT_VALUE)) / (intensity + 1.0F);
-  *baseColor = LightManager::IntensifyColor(baseColor, factor);
+  // const float sunLightFactor = (intensity + (sunLightLevel /
+  // MAX_LIGHT_VALUE)) / (intensity + 1.0F);
+  const float sunLightFactor =
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE;
 
-  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, factor);
+  const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+  *baseColor = LightManager::IntensifyColor(
+      baseColor, std::max(sunLightFactor, lightLevelFactor));
+
+  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
+  // printf("SunlightIntensity: %f\n", sunlightIntensity);
 }

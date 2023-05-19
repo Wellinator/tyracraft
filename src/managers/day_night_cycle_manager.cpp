@@ -10,11 +10,9 @@ void DayNightCycleManager::update() {
   updateEntitiesPosition();
 }
 
-const float DayNightCycleManager::getLightIntensity() {
+const float DayNightCycleManager::getSunLightIntensity() {
   float intensity = getLightScaleFromAngle();
-
-  intensity *= isDay() ? dayLightIntensity : nightLightIntensity;
-  return baseLightIntensity + intensity;
+  return std::max(intensity, 0.2F);
 }
 
 const float DayNightCycleManager::getAmbientLightIntesity() {
@@ -28,6 +26,7 @@ void DayNightCycleManager::updateCurrentAngle() {
 }
 
 void DayNightCycleManager::updateEntitiesPosition() {
+  // FIXME: sun and moon rotating positions
   const float angle = currentAngleInDegrees;
   Vec4 offset =
       center + Vec4(Math::sin(Math::ANG2RAD * angle) * circleRad,
@@ -49,5 +48,7 @@ const Color DayNightCycleManager::getSkyColor() {
 }
 
 void DayNightCycleManager::updateIntensityByAngle() {
-  _intensity = std::abs(Math::sin(currentAngleInDegrees * Math::ANG2RAD));
+  _intensity =
+      Utils::reRangeScale(0.0F, 1.0F, -1.0F, 1.0F,
+                          Math::sin(Math::ANG2RAD * currentAngleInDegrees));
 }
