@@ -144,7 +144,6 @@ void World::reloadWorldArea(const Vec4& position) {
 }
 
 void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
-  TYRA_LOG("updateNeighBorsChunksByModdedPosition...");
   Chunck* currentChunk = chunckManager.getChunckByOffset(pos);
   if (!currentChunk) return;
 
@@ -213,7 +212,6 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
 
   currentChunk->clear();
   buildChunk(currentChunk);
-  TYRA_LOG("updateNeighBorsChunksByModdedPosition END...");
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck,
@@ -503,7 +501,6 @@ const Vec4 World::calcSpawOffset(int bias) {
 }
 
 void World::removeBlock(Block* blockToRemove) {
-  TYRA_LOG("removeBlock");
   const Vec4 offsetToRemove = blockToRemove->offset;
   SetBlockInMap(terrain, offsetToRemove.x, offsetToRemove.y, offsetToRemove.z,
                 (u8)Blocks::AIR_BLOCK);
@@ -576,8 +573,9 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
     if (blockType == (u8)Blocks::AIR_BLOCK) {
       SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                     (u8)blockToPlace);
-      CrossCraft_World_CheckSunLight(blockOffset.x, blockOffset.y,
-                                     blockOffset.z);
+
+      removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
+      updateSunlight();
     }
 
     // playPutBlockSound(blockToPlace);
@@ -1026,55 +1024,43 @@ void updateSunlight() {
 }
 
 void propagateSunLightAddBFSQueue() {
-  // do the algorithm
   while (!sunlightBfsQueue.empty()) {
-    // get the light value
     auto lightNode = sunlightBfsQueue.front();
     auto map = CrossCraft_World_GetMapPtr();
 
-    // get the index
     uint16_t nx = lightNode.x;
     uint16_t ny = lightNode.y;
     uint16_t nz = lightNode.z;
     uint8_t lightValue = lightNode.val;
 
-    // auto lightValue = GetSunLightFromMap(map, nx, ny, nz);
     sunlightBfsQueue.pop();
 
-    // next value
-    s8 nextLightValue = (lightValue - 1);
+    int nextLightValue = lightValue - 1;
 
-    // if reached the end; stop propagation
-    if (nextLightValue <= 0) {
+    if (nextLightValue < 0) {
       continue;
     }
 
-    // propagate thought x positive
     if (BoundCheckMap(map, nx + 1, ny, nz)) {
       floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
     }
 
-    // propagate thought y positive
     if (BoundCheckMap(map, nx, ny + 1, nz)) {
       floodFillSunlightAdd(nx, ny + 1, nz, nextLightValue);
     }
 
-    // propagate thought z positive
     if (BoundCheckMap(map, nx, ny, nz + 1)) {
       floodFillSunlightAdd(nx, ny, nz + 1, nextLightValue);
     }
 
-    // propagate thought x negative
     if (BoundCheckMap(map, nx - 1, ny, nz)) {
       floodFillSunlightAdd(nx - 1, ny, nz, nextLightValue);
     }
 
-    // propagate thought y negative
     if (BoundCheckMap(map, nx, ny - 1, nz)) {
       floodFillSunlightAdd(nx, ny - 1, nz, nextLightValue);
     }
 
-    // propagate thought z negative
     if (BoundCheckMap(map, nx, ny, nz - 1)) {
       floodFillSunlightAdd(nx, ny, nz - 1, nextLightValue);
     }
@@ -1087,19 +1073,20 @@ void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
   auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
 
   if (b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK) {
-    // Apply filter, redure light by 1
-    if (nextLightValue >= 1 &&
-        (b == Blocks::OAK_LEAVES_BLOCK || b == Blocks::WATER_BLOCK))
-      nextLightValue -= 1;
-
-    if (GetSunLightFromMap(map, x, y, z) < nextLightValue) {
+    if (GetSunLightFromMap(map, x, y, z) + 1 < nextLightValue) {
       addSunLight(x, y, z, nextLightValue);
     }
   }
 }
 
+void addSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+  addSunLight(x, y, z, lightLevel);
+}
+
 void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
-  if (lightLevel > 0) {
+  if (lightLevel >= 0) {
     SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, lightLevel);
     sunlightBfsQueue.emplace(x, y, z, lightLevel);
   }
@@ -1117,35 +1104,28 @@ void propagateSunlightRemovalQueue() {
     uint16_t nz = lightNode.z;
     uint8_t lightValue = lightNode.val;
 
-    // auto lightValue = GetSunLightFromMap(map, nx, ny, nz);
     sunlightRemovalBfsQueue.pop();
 
-    // propagate thought x positive
     if (BoundCheckMap(map, nx + 1, ny, nz)) {
       floodFillSunlightRemove(nx + 1, ny, nz, lightValue);
     }
 
-    // propagate thought y positive
     if (BoundCheckMap(map, nx, ny + 1, nz)) {
       floodFillSunlightRemove(nx, ny + 1, nz, lightValue);
     }
 
-    // propagate thought z positive
     if (BoundCheckMap(map, nx, ny, nz + 1)) {
       floodFillSunlightRemove(nx, ny, nz + 1, lightValue);
     }
 
-    // propagate thought x negative
     if (BoundCheckMap(map, nx - 1, ny, nz)) {
       floodFillSunlightRemove(nx - 1, ny, nz, lightValue);
     }
 
-    // propagate thought y negative
     if (BoundCheckMap(map, nx, ny - 1, nz)) {
       floodFillSunlightRemove(nx, ny - 1, nz, lightValue);
     }
 
-    // propagate thought z negative
     if (BoundCheckMap(map, nx, ny, nz - 1)) {
       floodFillSunlightRemove(nx, ny, nz - 1, lightValue);
     }
@@ -1158,35 +1138,22 @@ void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
   auto neighborLevel = GetSunLightFromMap(map, x, y, z);
 
   if (neighborLevel != 0 && neighborLevel < lightLevel) {
-    removeSunLight(x, y, z, neighborLevel);
+    removeSunLight(x, y, z);
   } else if (neighborLevel >= lightLevel) {
     addSunLight(x, y, z, neighborLevel);
   }
+}
+
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+  removeSunLight(x, y, z, lightLevel);
 }
 
 void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   if (lightLevel > 0) {
     sunlightRemovalBfsQueue.emplace(x, y, z, lightLevel);
     SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, 0);
-  }
-}
-
-void updateSunlightRemove() {
-  while (!sunlightRemovalBfsQueue.empty()) {
-    auto node = sunlightRemovalBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel = node.val;
-    sunlightRemovalBfsQueue.pop();
-
-    propagateRemove(nx + 1, ny, nz, lightLevel);
-    propagateRemove(nx - 1, ny, nz, lightLevel);
-    propagateRemove(nx, ny + 1, nz, lightLevel);
-    propagateRemove(nx, ny - 1, nz, lightLevel);
-    propagateRemove(nx, ny, nz + 1, lightLevel);
-    propagateRemove(nx, ny, nz - 1, lightLevel);
   }
 }
 
@@ -1213,68 +1180,50 @@ void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z,
   updateSpread(updateIDs);
 }
 
-void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
-  TYRA_LOG("singleCheck at:", x, " ", y, " ", z);
-  if (y == 0) return;
-
+void singleCheck(uint16_t x, uint16_t z) {
   auto map = CrossCraft_World_GetMapPtr();
   const auto ticks = static_cast<uint32_t>(g_ticksCounter);
-  auto lv = 4;
+  auto newLightValue = 4;
 
   if (ticks >= 0 && ticks <= 12000) {
-    lv = 15;
+    newLightValue = 15;
   }
 
-  for (int y2 = map->height - 1; y2 >= 0; y2--) {
-    auto blk = GetBlockFromMap(map, x, y2, z);
+  for (int y = map->height - 1; y >= 0; y--) {
+    auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
 
-    if (blk == (u8)Blocks::OAK_LEAVES_BLOCK
-
-        //  Liquids range
-        //  || (blk >= 8 && blk <= 11)
-
-        || (blk == (u8)Blocks::WATER_BLOCK)
-
-        // Vegetation range
-        //  || (blk >= 37 && blk <= 40)
-    ) {
-      if (lv >= 2)
-        lv -= 2;
+    //  Liquids range
+    //  || (blk >= 8 && blk <= 11)
+    // Vegetation range
+    //  || (blk >= 37 && blk <= 40)
+    if (b == Blocks::OAK_LEAVES_BLOCK || (b == Blocks::WATER_BLOCK)) {
+      if (newLightValue >= 2)
+        newLightValue -= 2;
       else
-        lv = 0;
-    } else if (blk != (u8)Blocks::AIR_BLOCK && blk != (u8)Blocks::GLASS_BLOCK) {
-      lv = 0;
+        newLightValue = 0;
+    } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK) {
+      newLightValue = 0;
     }
 
-    auto lv2 = GetSunLightFromMap(map, x, y2, z);
+    auto currentLightValue = GetSunLightFromMap(map, x, y, z);
 
-    if (lv2 < lv) {
-      SetSunLightInMap(map, x, y2, z, lv2);
-      sunlightRemovalBfsQueue.emplace(x, y2, z, lv2);
+    if (newLightValue < currentLightValue) {
+      removeSunLight(x, y, z, newLightValue);
     } else {
-      SetSunLightInMap(map, x, y2, z, lv);
-      sunlightBfsQueue.emplace(x, y2, z, lv);
+      addSunLight(x, y, z, currentLightValue);
     }
-    // if (lv2 < lv) {
-    //   SetSunLightInMap(map, x, y2, z, lv);
-    //   sunlightRemovalBfsQueue.emplace(x, y2, z, lv);
-    // } else {
-    //   SetSunLightInMap(map, x, y2, z, lv2);
-    //   sunlightBfsQueue.emplace(x, y2, z, lv2);
-    // }
+
+    // if (currentLightValue < newLightVa
   }
 }
 
 bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  TYRA_LOG("Checking SunLight at:", x, " ", y, " ", z);
+  singleCheck(x, z);
+  singleCheck(x + 1, z);
+  singleCheck(x - 1, z);
+  singleCheck(x, z + 1);
+  singleCheck(x, z - 1);
 
-  singleCheck(x, y, z);
-  singleCheck(x + 1, y, z);
-  singleCheck(x - 1, y, z);
-  singleCheck(x, y, z + 1);
-  singleCheck(x, y, z - 1);
-
-  updateSunlightRemove();
   updateSunlight();
 
   return true;
@@ -1286,7 +1235,7 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
 
   for (int x = 0; x < map->length; x++) {
     for (int z = 0; z < map->width; z++) {
-      auto lv = 4;
+      u8 lv = 4;
       auto isDay = tick >= 0 && tick <= 12000;
       if (isDay) {
         lv = 15;
@@ -1299,7 +1248,10 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
         // Liquids
         // || (b >= 8 && b <= 11)
         if (b == Blocks::OAK_LEAVES_BLOCK || b == Blocks::WATER_BLOCK) {
-          lv -= 2;
+          if (lv >= 2)
+            lv -= 2;
+          else
+            lv = 0;
         } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK) {
           lv = 0;
         }

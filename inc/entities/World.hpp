@@ -239,9 +239,7 @@ void checkAddID();
 void updateID(uint16_t x, uint16_t z, uint32_t* updateIDs);
 void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
                uint32_t* updateIDs);
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
-void updateSunlightRemove();
-void singleCheck(uint16_t x, uint16_t y, uint16_t z);
+void singleCheck(uint16_t x, uint16_t z);
 void updateRemove();
 void updateRemove(uint32_t* updateIDs);
 void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
@@ -256,4 +254,9 @@ void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 
 void propagateSunlightRemovalQueue();
 void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
 void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+bool inline IsTransparent(Blocks block) {
+  return block == Blocks::AIR_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
+         block == Blocks::WATER_BLOCK || block == Blocks::GLASS_BLOCK;
+};

@@ -49,7 +49,7 @@ uint8_t GetBlockLightFromMap(LevelMap* map, uint16_t x, uint16_t y,
 
 uint8_t GetSunLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
-  return (map->lightData[index] & 0xF0);
+  return ((map->lightData[index] >> 4) & 0xF);
 }
 
 void SetBlockLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
