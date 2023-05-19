@@ -13,6 +13,7 @@
 #include <math/m4x4.hpp>
 #include <vector>
 #include "models/world_light_model.hpp"
+#include "entities/level.hpp"
 
 using Tyra::BBox;
 using Tyra::M4x4;
@@ -43,6 +44,8 @@ class ChunckManager {
                 BlockManager* t_blockManager);
   void clearAllChunks();
   void sortChunkByPlayerPosition(Vec4* playerPosition);
+
+  void reloadLightData(LevelMap* terrain);
 
  private:
   std::vector<Chunck*> chuncks;

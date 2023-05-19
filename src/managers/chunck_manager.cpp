@@ -101,3 +101,9 @@ void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
               return distanceA >= distanceB;
             });
 }
+
+void ChunckManager::reloadLightData(LevelMap* terrain) {
+  for (size_t i = 0; i < visibleChunks.size(); i++) {
+    visibleChunks[i]->reloadLightData(terrain);
+  }
+}
