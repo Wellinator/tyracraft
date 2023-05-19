@@ -75,13 +75,13 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   updateLightModel();
   updateSunlight();
 
-  // Update chunk light data every 200 ticks
+  // Update chunk light data every 250 ticks
   // TODO: refactor to event system
-  if ((static_cast<uint32_t>(g_ticksCounter) % 200) == 0)
-    chunckManager.reloadLightData(terrain);
+  if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0)
+    chunckManager.enqueueChunksToReloadLight();
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       *t_player->getPosition(), &worldLightModel);
+                       *t_player->getPosition(), &worldLightModel, terrain);
   updateChunkByPlayerPosition(t_player);
   updateTargetBlock(camLookPos, camPosition, chunckManager.getVisibleChunks());
 
@@ -513,7 +513,7 @@ void World::removeBlock(Block* blockToRemove) {
                 (u8)Blocks::AIR_BLOCK);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
-  chunckManager.reloadLightData(CrossCraft_World_GetMapPtr());
+  chunckManager.enqueueChunksToReloadLight();
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
 }
@@ -584,7 +584,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       updateSunlight();
-      chunckManager.reloadLightData(CrossCraft_World_GetMapPtr());
+      chunckManager.enqueueChunksToReloadLight();
     }
 
     // playPutBlockSound(blockToPlace);
@@ -1205,7 +1205,13 @@ void singleCheck(uint16_t x, uint16_t z) {
     //  || (blk >= 8 && blk <= 11)
     // Vegetation range
     //  || (blk >= 37 && blk <= 40)
-    if (b == Blocks::OAK_LEAVES_BLOCK || (b == Blocks::WATER_BLOCK)) {
+    // TODO: refactor to getLightFilterByBlock function
+    if (b == Blocks::OAK_LEAVES_BLOCK) {
+      if (newLightValue >= 1)
+        newLightValue -= 1;
+      else
+        newLightValue = 0;
+    } else if (b == Blocks::WATER_BLOCK) {
       if (newLightValue >= 2)
         newLightValue -= 2;
       else
@@ -1252,11 +1258,17 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
 
       for (int y = map->height - 1; y >= 0; y--) {
         auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+        // TODO: refactor to getLightFilterByBlock function
         // Vegetation
         // (b >= 37 && b <= 40)
         // Liquids
         // || (b >= 8 && b <= 11)
-        if (b == Blocks::OAK_LEAVES_BLOCK || b == Blocks::WATER_BLOCK) {
+        if (b == Blocks::OAK_LEAVES_BLOCK) {
+          if (lv >= 1)
+            lv -= 1;
+          else
+            lv = 0;
+        } else if (b == Blocks::WATER_BLOCK) {
           if (lv >= 2)
             lv -= 2;
           else

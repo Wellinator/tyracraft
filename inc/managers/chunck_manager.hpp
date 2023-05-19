@@ -12,6 +12,7 @@
 #include "renderer/3d/bbox/bbox.hpp"
 #include <math/m4x4.hpp>
 #include <vector>
+#include <queue>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 
@@ -38,18 +39,22 @@ class ChunckManager {
 
   void init();
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
-              WorldLightModel* worldLightModel);
+              WorldLightModel* worldLightModel, LevelMap* terrain);
   u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void clearAllChunks();
   void sortChunkByPlayerPosition(Vec4* playerPosition);
 
-  void reloadLightData(LevelMap* terrain);
+  void enqueueChunksToReloadLight();
 
  private:
+  std::queue<Chunck*> chuncksToUpdateLight;
   std::vector<Chunck*> chuncks;
   std::vector<Chunck*> visibleChunks;
 
+  LevelMap* map = nullptr;
   void generateChunks();
+
+  void reloadLightData(LevelMap* terrain);
 };
