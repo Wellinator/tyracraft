@@ -171,312 +171,223 @@ void Chunck::clearDrawData() {
 void Chunck::loadDrawData(LevelMap* terrain) {
   sortBlockByTransparency();
 
-  const float scale = 1.0F / 16.0F;
-  const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-  const Vec4* rawData = VertexBlockData::getVertexData();
-
-  // TODO: refactor to sunlight brighness
-  auto baseFaceColor = Color(120, 120, 120);
-
   for (size_t i = 0; i < blocks.size(); i++) {
-    int vert = 0;
-
-    if (blocks[i]->isTopFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::TOP, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 100% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 1.0F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::TOP,
-                                     terrain);
-
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      // DEBUG Vertices Colors
-      // verticesColors.push_back(Color(255, 0, 0));
-      // verticesColors.push_back(Color(0, 255, 0));
-      // verticesColors.push_back(Color(0, 0, 255));
-      // verticesColors.push_back(Color(255, 255, 0));
-      // verticesColors.push_back(Color(0, 255, 255));
-      // verticesColors.push_back(Color(255, 0, 255));
-
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      const u8& X = blocks[i]->topMapX();
-      const u8& Y = blocks[i]->topMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
-    vert = 6;
-
-    if (blocks[i]->isBottomFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 50% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 0.5F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BOTTOM,
-                                     terrain);
-
-      // Add raw vertices + block model
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      /**
-       * Add vertex color
-       * Base color + AO value
-       *
-       */
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      /**
-       * Add UV mapping
-       *
-       */
-      const u8& X = blocks[i]->bottomMapX();
-      const u8& Y = blocks[i]->bottomMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
-    vert = 12;
-
-    if (blocks[i]->isLeftFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::LEFT, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 60% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::LEFT,
-                                     terrain);
-
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      const u8& X = blocks[i]->leftMapX();
-      const u8& Y = blocks[i]->leftMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
-    vert = 18;
-
-    if (blocks[i]->isRightFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::RIGHT, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 80% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::RIGHT,
-                                     terrain);
-
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      const u8& X = blocks[i]->rightMapX();
-      const u8& Y = blocks[i]->rightMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
-    vert = 24;
-
-    if (blocks[i]->isBackFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::BACK, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 60% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::BACK,
-                                     terrain);
-
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      const u8& X = blocks[i]->backMapX();
-      const u8& Y = blocks[i]->backMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
-    vert = 30;
-
-    if (blocks[i]->isFrontFaceVisible()) {
-      Color faceColor = baseFaceColor;
-      auto faceNeightbors =
-          getFaceNeightbors(terrain, FACE_SIDE::FRONT, blocks[i]);
-      std::array<u8, 4> AOCornersValues =
-          LightManager::getCornersAOValues(faceNeightbors);
-
-      //   Top face 80% of the base color
-      LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-      LightManager::ApplyLightToFace(&faceColor, blocks[i], FACE_SIDE::FRONT,
-                                     terrain);
-
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-      vertices.push_back(blocks[i]->model * rawData[vert++]);
-
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-      verticesColors.push_back(LightManager::IntensifyColor(
-          &faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-
-      const u8& X = blocks[i]->frontMapX();
-      const u8& Y = blocks[i]->frontMapY();
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-      uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-      uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-    }
+    loadMeshData(blocks[i]);
+    loadUVData(blocks[i]);
+    loadLightData(terrain, blocks[i]);
   }
 
   _isDrawDataLoaded = true;
-  delete rawData;
+}
+
+void Chunck::reloadLightData(LevelMap* terrain) {
+  verticesColors.clear();
+  verticesColors.shrink_to_fit();
+
+  for (size_t i = 0; i < blocks.size(); i++) {
+    loadLightData(terrain, blocks[i]);
+  }
+}
+
+void Chunck::loadMeshData(Block* t_block) {
+  const Vec4* rawData = VertexBlockData::getVertexData();
+  int vert;
+
+  if (t_block->isTopFaceVisible()) {
+    vert = 0;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+  if (t_block->isBottomFaceVisible()) {
+    vert = 6;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+  if (t_block->isLeftFaceVisible()) {
+    vert = 12;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+  if (t_block->isRightFaceVisible()) {
+    vert = 18;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+  if (t_block->isBackFaceVisible()) {
+    vert = 24;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+  if (t_block->isFrontFaceVisible()) {
+    vert = 30;
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.push_back(t_block->model * rawData[vert++]);
+  }
+
+  delete[] rawData;
+}
+
+void Chunck::loadUVData(Block* t_block) {
+  if (t_block->isTopFaceVisible()) {
+    loadUVFaceData(t_block->topMapX(), t_block->topMapY());
+  }
+  if (t_block->isBottomFaceVisible()) {
+    loadUVFaceData(t_block->bottomMapX(), t_block->bottomMapY());
+  }
+  if (t_block->isLeftFaceVisible()) {
+    loadUVFaceData(t_block->leftMapX(), t_block->leftMapY());
+  }
+  if (t_block->isRightFaceVisible()) {
+    loadUVFaceData(t_block->rightMapX(), t_block->rightMapY());
+  }
+  if (t_block->isBackFaceVisible()) {
+    loadUVFaceData(t_block->backMapX(), t_block->backMapY());
+  }
+  if (t_block->isFrontFaceVisible()) {
+    loadUVFaceData(t_block->frontMapX(), t_block->frontMapY());
+  }
+}
+
+void Chunck::loadUVFaceData(const u8& X, const u8& Y) {
+  const float scale = 1.0F / 16.0F;
+  const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
+
+  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+
+  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+}
+
+void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
+  // TODO: refactor to sunlight brighness
+  auto baseFaceColor = Color(120, 120, 120);
+
+  if (t_block->isTopFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::TOP, t_block);
+    std::array<u8, 4> AOCornersValues =
+        LightManager::getCornersAOValues(faceNeightbors);
+
+    //   Top face 100% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+
+  if (t_block->isBottomFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors =
+        getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, t_block);
+
+    //   Top face 50% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+
+  if (t_block->isLeftFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::LEFT, t_block);
+
+    // X-side faces 60% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+
+  if (t_block->isRightFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::RIGHT, t_block);
+
+    // X-side faces 60% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+
+  if (t_block->isBackFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::BACK, t_block);
+
+    // Z-side faces 80% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+
+  if (t_block->isFrontFaceVisible()) {
+    Color faceColor = baseFaceColor;
+    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::FRONT, t_block);
+
+    // Z-side faces 80% of the base color
+    LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
+                                   terrain);
+    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+  }
+}
+
+void Chunck::loadLightFaceDataWithAO(Color* faceColor,
+                                     std::array<u8, 8>& faceNeightbors) {
+  std::array<u8, 4> AOCornersValues =
+      LightManager::getCornersAOValues(faceNeightbors);
+
+  // DEBUG Vertices Colors
+  // verticesColors.push_back(Color(255, 0, 0));
+  // verticesColors.push_back(Color(0, 255, 0));
+  // verticesColors.push_back(Color(0, 0, 255));
+  // verticesColors.push_back(Color(255, 255, 0));
+  // verticesColors.push_back(Color(0, 255, 255));
+  // verticesColors.push_back(Color(255, 0, 255));
+
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
+  verticesColors.push_back(LightManager::IntensifyColor(
+      faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {

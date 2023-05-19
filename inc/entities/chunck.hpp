@@ -61,7 +61,8 @@ class Chunck {
   void clear();
   void updateFrustumCheck(const Plane* frustumPlanes);
 
-  void loadDrawData(LevelMap* level);
+  void loadDrawData(LevelMap* terrain);
+  void reloadLightData(LevelMap* terrain);
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
@@ -79,7 +80,6 @@ class Chunck {
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
-  std::vector<Vec4> verticesNormals;
   std::vector<Vec4> uvMap;
 
   float getVisibityByPosition(float d);
@@ -110,4 +110,11 @@ class Chunck {
   std::array<u8, 4> getCornersAOValues(std::array<u8, 8> blocksNeightbors);
   u8 getVertexAO(bool side1, bool corner, bool side2);
   float calcAOIntensity(u8 AOValue);
+
+  void loadMeshData(Block* t_block);
+  void loadUVData(Block* t_block);
+  void loadUVFaceData(const u8& X, const u8& Y);
+  void loadLightData(LevelMap* terrain, Block* t_block);
+  void loadLightFaceDataWithAO(Color* faceColor,
+                               std::array<u8, 8>& faceNeightbors);
 };
