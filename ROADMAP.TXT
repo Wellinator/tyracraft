@@ -86,3 +86,18 @@
 * Bug fixes for pre-alpha release (v0.1.5):
     🔲 -> Real PS2:
         ⚠️ -> Fix audio FX;
+
+############ TyraCraft 0.2.x Roadmap ############
+
+* Features for pre-alpha release (v0.2.x):
+    🔲 -> Add particles system;
+    🔲 -> Tool (Pickaxe) (WIP);
+    🔲 -> Add auto save feature;
+    🔲 -> Popup messages system;
+    🔲 -> Sun light system;
+
+* Bug fixes for pre-alpha release (v0.2.x):
+    🔲 -> Fix Day/Night cycle:
+    🔲 -> Update light in moded chunks:
+    🔲 -> Real PS2:
+        ⚠️ -> Fix audio FX;
