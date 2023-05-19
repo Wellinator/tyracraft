@@ -94,9 +94,11 @@
     🔲 -> Tool (Pickaxe) (WIP);
     🔲 -> Add auto save feature;
     🔲 -> Popup messages system;
-    🔲 -> Sun light system;
+    ⚠️ -> Sun light system;
+    ✅ -> pre-calculated ambient occlusion;
 
 * Bug fixes for pre-alpha release (v0.2.x):
+    🔲 -> Fix height collision when jumping:
     🔲 -> Fix Day/Night cycle:
     🔲 -> Update light in moded chunks:
     🔲 -> Real PS2:
