@@ -506,6 +506,7 @@ void World::removeBlock(Block* blockToRemove) {
                 (u8)Blocks::AIR_BLOCK);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
+  chunckManager.reloadLightData(CrossCraft_World_GetMapPtr());
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
 }
@@ -576,6 +577,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       updateSunlight();
+      chunckManager.reloadLightData(CrossCraft_World_GetMapPtr());
     }
 
     // playPutBlockSound(blockToPlace);
