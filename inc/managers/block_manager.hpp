@@ -38,8 +38,10 @@ class BlockManager {
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
-  float getBlockBreakingTime();
   McpipBlock* getDamageOverlay(const float& damage_percentage);
+
+  float getBlockBreakingTime();
+  u8 getBlockLightValue(Blocks blockType);
 
  private:
   void registerBlockSoundsEffects();

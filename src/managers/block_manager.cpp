@@ -62,12 +62,6 @@ const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
   return this->t_blockTextureRepository->isBlockTransparent(blockType);
 }
 
-float BlockManager::getBlockBreakingTime() {
-  // TODO: refactor -> receive block info and tool to calc breaking time;
-  // ref: https://minecraft.fandom.com/wiki/Breaking
-  return 0.5F;
-}
-
 void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {
   float offsetY = mcPip->getTextureOffset() * 15;
   for (u8 i = 0; i <= 10; i++) {
@@ -106,4 +100,23 @@ SfxBlockModel* BlockManager::getStepSoundByBlockType(const Blocks& blockType) {
   TYRA_WARN("Block sound not found for type: ",
             std::to_string((u8)blockType).c_str());
   return nullptr;
+}
+
+float BlockManager::getBlockBreakingTime() {
+  // TODO: refactor -> receive block info and tool to calc breaking time;
+  // ref: https://minecraft.fandom.com/wiki/Breaking
+  return 0.5F;
+}
+
+u8 BlockManager::getBlockLightValue(Blocks blockType) {
+  switch (blockType) {
+    case Blocks::GLOWSTONE_BLOCK:
+      return 15;
+
+    case Blocks::JACK_O_LANTERN_BLOCK:
+      return 15;
+
+    default:
+      return 0;
+  }
 }
