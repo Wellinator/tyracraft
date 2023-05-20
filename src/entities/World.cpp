@@ -512,9 +512,13 @@ void World::removeBlock(Block* blockToRemove) {
   const Vec4 offsetToRemove = blockToRemove->offset;
   SetBlockInMap(terrain, offsetToRemove.x, offsetToRemove.y, offsetToRemove.z,
                 (u8)Blocks::AIR_BLOCK);
+
+  // Update sunlight and block light at position
+  removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
   chunckManager.enqueueChunksToReloadLight();
+
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
 }
@@ -577,20 +581,21 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
           newBlockPosMin.y < maxPlayerCorner.y)
         return;  // Return on collision
     }
-    const uint8_t blockType =
-        GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z);
-    if (blockType == (u8)Blocks::AIR_BLOCK) {
+    const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
+        GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+
+    if (blockTypeAtTargetPosition == Blocks::AIR_BLOCK) {
       SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                    (u8)blockToPlace);
+                    static_cast<u8>(blockToPlace));
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       updateSunlight();
 
-      // For test only
-      // if (blockToPlace == Blocks::REDSTONE_ORE_BLOCK) {
-      //   addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, 14);
-      //   updateBlockLights();
-      // }
+      const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
+      if (lightValue > 0) {
+        addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+        updateBlockLights();
+      }
 
       chunckManager.enqueueChunksToReloadLight();
     }
