@@ -49,7 +49,10 @@ class Block {
   BBox* bbox = nullptr;
 
   u32 visibleFaces = 0x000000;
-
+  /**
+   * Order: Top, Bottom, Left, Right, Front, Back
+   * @param facesMap 12 length array pair of integers col, row
+   */
   std::array<u8, 12> facesMap = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   inline const u8& topMapX() { return facesMap[0]; };

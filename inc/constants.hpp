@@ -73,6 +73,11 @@ enum class Blocks {
   MOSSY_STONE_BRICKS_BLOCK,
   CHISELED_STONE_BRICKS_BLOCK,
 
+  // Light Emissors
+  GLOWSTONE_BLOCK,
+  JACK_O_LANTERN_BLOCK,
+  PUMPKIN_BLOCK,
+
   // Woods
   OAK_LOG_BLOCK,
   OAK_LEAVES_BLOCK,
@@ -140,6 +145,11 @@ enum class ItemId {
   gold_ore_block,
   redstone_ore_block,
   emerald_ore_block,
+
+  pumpkin,
+  // Light Emissors
+  glowstone,
+  jack_o_lantern,
 
   // TODO: move total_of_items to the end of enum this is temp!
   // Helper

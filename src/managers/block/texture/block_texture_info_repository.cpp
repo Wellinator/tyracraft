@@ -37,6 +37,10 @@ void BlockTextureRepository::loadTextures() {
   models.push_back(BlockInfo(Blocks::GLASS_BLOCK, true, {0, 9}, true));
   models.push_back(BlockInfo(Blocks::BRICKS_BLOCK, true, {4, 6}, false));
 
+  models.push_back(BlockInfo(Blocks::PUMPKIN_BLOCK, false,
+                             {1, 13, 1, 13, 0, 13, 0, 13, 3, 13, 0, 13},
+                             false));
+
   // Ores and Minerals
   models.push_back(BlockInfo(Blocks::GOLD_ORE_BLOCK, true, {0, 8}, false));
   models.push_back(BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true, {1, 8}, false));
@@ -47,11 +51,18 @@ void BlockTextureRepository::loadTextures() {
 
   // Wood Planks
   models.push_back(BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}, false));
-  models.push_back(
+  models.push_back( 
       BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true, {1, 11}, false));
   models.push_back(BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true, {3, 11}, false));
   models.push_back(
       BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true, {2, 11}, false));
+
+  // Light Emissor
+  models.push_back(
+      BlockInfo(Blocks::GLOWSTONE_BLOCK, true, {4, 13}, false, true, true));
+  models.push_back(BlockInfo(Blocks::JACK_O_LANTERN_BLOCK, false,
+                             {1, 13, 1, 13, 0, 13, 0, 13, 2, 13, 0, 13},
+                             false));
 
   // Stone bricks
   models.push_back(BlockInfo(Blocks::STONE_BRICK_BLOCK, true, {1, 6}, false));

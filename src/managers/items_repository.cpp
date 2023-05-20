@@ -25,6 +25,11 @@ ItemRepository::~ItemRepository() {
       redstone_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       emerald_ore_block.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(glowstone.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(jack_o_lantern.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(pumpkin.sprite);
+
   this->t_renderer->getTextureRepository().freeBySprite(oak_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(spruce_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(birch_planks.sprite);
@@ -88,6 +93,13 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/glass.png"))
       ->addLink(glass.sprite.id);
 
+  pumpkin.id = ItemId::pumpkin;
+  pumpkin.blockId = Blocks::PUMPKIN_BLOCK;
+  this->items.push_back(&pumpkin);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/pumpkin.png"))
+      ->addLink(pumpkin.sprite.id);
+
   //------------------------------Ores and Minerals blocks----------------------
   coal_ore_block.id = ItemId::coal_ore_block;
   coal_ore_block.blockId = Blocks::COAL_ORE_BLOCK;
@@ -130,6 +142,21 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/emerald_ore_block.png"))
       ->addLink(emerald_ore_block.sprite.id);
+
+  // -------------- Light Emissors ------------------------
+  glowstone.id = ItemId::glowstone;
+  glowstone.blockId = Blocks::GLOWSTONE_BLOCK;
+  this->items.push_back(&glowstone);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/glowstone.png"))
+      ->addLink(glowstone.sprite.id);
+
+  jack_o_lantern.id = ItemId::jack_o_lantern;
+  jack_o_lantern.blockId = Blocks::JACK_O_LANTERN_BLOCK;
+  this->items.push_back(&jack_o_lantern);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/jack_o_lantern.png"))
+      ->addLink(jack_o_lantern.sprite.id);
 
   // -------------- Wood Planks ------------------------
   oak_planks.id = ItemId::oak_planks;

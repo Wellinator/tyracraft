@@ -36,6 +36,7 @@ class ItemRepository {
   Item stone;
   Item bricks;
   Item glass;
+  Item pumpkin;
 
   // Ores and Minerals blocks
   Item coal_ore_block;
@@ -54,6 +55,10 @@ class ItemRepository {
   // Wood log
   Item oak_log;
   Item birch_log;
+
+  // Light Emissor
+  Item glowstone;
+  Item jack_o_lantern;
 
   // Stone Bricks
   Item stone_brick;
