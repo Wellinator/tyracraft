@@ -99,6 +99,8 @@
 
 * Bug fixes for pre-alpha release (v0.2.x):
     🔲 -> Fix height collision when jumping:
+    🔲 -> Fix block light remove:
+    🔲 -> Fix light data when changes world save:
     🔲 -> Fix Day/Night cycle:
     🔲 -> Update light in moded chunks:
     🔲 -> Real PS2:
