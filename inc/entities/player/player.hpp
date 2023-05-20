@@ -76,7 +76,8 @@ class Player {
 
   // Phisycs variables
   Ray ray;
-  Block* currentBlock = nullptr;
+  Block* currentBottomBlock = nullptr;
+  Block* currentUpperBlock = nullptr;
 
   // Inventory
   u8 inventoryHasChanged = 1;

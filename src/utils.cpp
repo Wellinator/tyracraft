@@ -225,3 +225,21 @@ std::string Utils::trim(std::string& str) {
   str.erase(0, str.find_first_not_of(' '));
   return str;
 }
+
+bool Utils::AABBCollides(BBox* A, BBox* B) {
+  Vec4 minA, maxA, minB, maxB;
+  A->getMinMax(&minA, &maxA);
+  B->getMinMax(&minB, &maxB);
+
+  return minA.x <= maxB.x && maxA.x >= minB.x && minA.y <= maxB.y &&
+         maxA.y >= minB.y && minA.z <= maxB.z && maxA.z >= minB.z;
+}
+
+bool Utils::AABBCollidesXZ(BBox* A, BBox* B) {
+  Vec4 minA, maxA, minB, maxB;
+  A->getMinMax(&minA, &maxA);
+  B->getMinMax(&minB, &maxB);
+
+  return minA.x <= maxB.x && maxA.x >= minB.x && minA.z <= maxB.z &&
+         maxA.z >= minB.z;
+}
