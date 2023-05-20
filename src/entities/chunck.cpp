@@ -400,10 +400,9 @@ void Chunck::sortBlockByTransparency() {
 }
 
 bool Chunck::isBlockOpaque(u8 block_type) {
-  return block_type != (u8)Blocks::VOID &&
-         block_type != (u8)Blocks::AIR_BLOCK &&
-         block_type != (u8)Blocks::WATER_BLOCK &&
-         block_type != (u8)Blocks::TOTAL_OF_BLOCKS;
+  return block_type != (u8)Blocks::AIR_BLOCK &&
+         block_type != (u8)Blocks::GLASS_BLOCK &&
+         block_type != (u8)Blocks::WATER_BLOCK;
 }
 
 /**
