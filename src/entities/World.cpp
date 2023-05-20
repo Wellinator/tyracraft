@@ -22,6 +22,8 @@ World::World(const NewGameOptions& options) {
 
   worldOptions = options;
   CrossCraft_World_Init(seed);
+  AllocateMapData();
+  setIntialTime();
 }
 
 World::~World() {
@@ -38,8 +40,6 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   chunckManager.init();
   cloudsManager.init(t_renderer);
   calcRawBlockBBox(&mcPip);
-  AllocateMapData();
-  setIntialTime();
   terrain = CrossCraft_World_GetMapPtr();
 };
 
@@ -589,13 +589,16 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
                     static_cast<u8>(blockToPlace));
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
-      updateSunlight();
 
       const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
       if (lightValue > 0) {
         addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
-        updateBlockLights();
+      } else {
+        removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
       }
+
+      updateSunlight();
+      updateBlockLights();
 
       chunckManager.enqueueChunksToReloadLight();
     }
@@ -1194,11 +1197,9 @@ void removeLight(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
-  if (lightLevel > 0) {
-    auto map = CrossCraft_World_GetMapPtr();
-    lightRemovalBfsQueue.emplace(x, y, z, lightLevel);
-    SetBlockLightInMap(map, x, y, z, lightLevel);
-  }
+  auto map = CrossCraft_World_GetMapPtr();
+  lightRemovalBfsQueue.emplace(x, y, z, lightLevel);
+  SetBlockLightInMap(map, x, y, z, 0);
 }
 
 void updateBlockLights() {
@@ -1445,15 +1446,16 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
-  LevelMap map = {.width = 256,
-                  .length = 256,
-                  .height = 64,
+  LevelMap map = {.width = OVERWORLD_H_DISTANCE,
+                  .length = OVERWORLD_H_DISTANCE,
+                  .height = OVERWORLD_V_DISTANCE,
 
                   .spawnX = 128,
                   .spawnY = 59,
                   .spawnZ = 128,
 
                   .blocks = NULL,
+                  .lightData = NULL,
                   .data = NULL};
   level.map = map;
 
