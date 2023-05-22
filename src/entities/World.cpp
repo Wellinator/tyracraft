@@ -527,6 +527,7 @@ void World::removeBlock(Block* blockToRemove) {
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
+  updateBlockLights();
   chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
