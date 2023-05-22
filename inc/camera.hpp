@@ -42,11 +42,14 @@ class Camera {
   float camSpeed = 4.0F;
   float pitch, yaw;
 
-  void update(Pad& t_pad, Mesh& t_mesh);
+  void update();
+  void setPositionByMesh(Mesh* t_mesh);
+  void setLookDirectionByPad(Pad* t_pad);
 
   CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &lookPos); }
 
   inline const CamType getCamType() const { return camera_type; }
+  inline float getCamY() { return CAMERA_Y; };
 
  private:
   // TODO: Implements third person cam

@@ -64,8 +64,11 @@ void StateMainMenu::update(const float& deltaTime) {
 
   // Update skybox and camera;
   {
-    this->context->t_camera->update(this->context->t_engine->pad,
-                                    *this->menuSkybox);
+    // this->context->t_camera->update(this->context->t_engine->pad,
+    //                                 *this->menuSkybox);
+    this->context->t_camera->setPositionByMesh(menuSkybox);
+    this->context->t_camera->update();
+
     this->menuSkybox->rotation.rotateY(0.0001F);
   }
 
