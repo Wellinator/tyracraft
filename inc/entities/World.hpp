@@ -198,11 +198,6 @@ void CrossCraft_World_Init(const uint32_t& seed);
 void CrossCraft_World_Deinit();
 
 /**
- * Allocate memory for an empty map with a selected world size.
- */
-void AllocateMapData();
-
-/**
  * This method should ONLY be used by a clien t in single-player or a server for
  * internal use.
  * @return Returns a pointer to the level

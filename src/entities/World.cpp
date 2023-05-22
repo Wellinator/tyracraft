@@ -23,7 +23,6 @@ World::World(const NewGameOptions& options) {
   worldOptions = options;
   setIntialTime();
   CrossCraft_World_Init(seed);
-  AllocateMapData();
 }
 
 World::~World() {
@@ -1466,6 +1465,7 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
+  uint32_t blockCount = OVERWORLD_SIZE;
   LevelMap map = {.width = OVERWORLD_H_DISTANCE,
                   .length = OVERWORLD_H_DISTANCE,
                   .height = OVERWORLD_V_DISTANCE,
@@ -1474,10 +1474,19 @@ void CrossCraft_World_Init(const uint32_t& seed) {
                   .spawnY = 59,
                   .spawnZ = 128,
 
-                  .blocks = nullptr,
-                  .lightData = nullptr,
-                  .data = nullptr};
+                  .blocks = new uint8_t[blockCount],
+                  .lightData = new uint8_t[blockCount],
+                  .data = new uint8_t[blockCount]};
+
   level.map = map;
+
+  // For some reason I need to clear the array garbage
+  // I was initialized with new key word, very weird!
+  for (size_t i = 0; i < blockCount; i++) {
+    level.map.blocks[i] = 0;
+    level.map.lightData[i] = 0;
+    level.map.data[i] = 0;
+  }
 
   TYRA_LOG("Generated base level template");
 }
@@ -1488,17 +1497,6 @@ void CrossCraft_World_Deinit() {
   if (level.map.data) delete[] level.map.data;
   if (level.map.lightData) delete[] level.map.lightData;
   TYRA_LOG("World freed");
-}
-
-void AllocateMapData() {
-  level.map.length = OVERWORLD_H_DISTANCE;
-  level.map.width = OVERWORLD_H_DISTANCE;
-  level.map.height = OVERWORLD_V_DISTANCE;
-
-  uint32_t blockCount = level.map.length * level.map.height * level.map.width;
-  level.map.blocks = new uint8_t[blockCount];
-  level.map.data = new uint8_t[blockCount];
-  level.map.lightData = new uint8_t[blockCount];
 }
 
 /**

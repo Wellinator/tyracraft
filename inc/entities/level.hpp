@@ -1,7 +1,9 @@
 #pragma once
 
+#include <constants.hpp>
 #include <stdint.h>
 #include <stdbool.h>
+#include <array>
 
 typedef struct {
   uint16_t width;
