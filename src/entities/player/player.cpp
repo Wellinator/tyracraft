@@ -45,6 +45,8 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
 
 Player::~Player() {
   currentBottomBlock = nullptr;
+  currentUpperBlock = nullptr;
+
   delete hitBox;
   delete handledItem;
   delete this->renderPip;
@@ -82,11 +84,11 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
 
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
-          this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
+          updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
-      if (hasChangedPosition && this->isOnGround && currentBottomBlock) {
+      if (hasChangedPosition && isOnGround && currentBottomBlock) {
         if (lastTimePlayedWalkSfx > 0.3F) {
-          this->playWalkSfx(currentBottomBlock->type);
+          playWalkSfx(currentBottomBlock->type);
           setWalkingAnimation();
           lastTimePlayedWalkSfx = 0;
         } else {
@@ -109,15 +111,15 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
 void Player::render() {
   renderPip->render(t_renderer);
 
-  // Debug content
-  if (currentUpperBlock) {
-    t_renderer->renderer3D.utility.drawBBox(*currentUpperBlock->bbox,
-                                            Color(200, 0, 0));
-  }
-  if (currentBottomBlock) {
-    t_renderer->renderer3D.utility.drawBBox(*currentBottomBlock->bbox,
-                                            Color(0, 200, 0));
-  }
+  // // Debug content
+  // if (currentUpperBlock) {
+  //   t_renderer->renderer3D.utility.drawBBox(*currentUpperBlock->bbox,
+  //                                           Color(200, 0, 0));
+  // }
+  // if (currentBottomBlock) {
+  //   t_renderer->renderer3D.utility.drawBBox(*currentBottomBlock->bbox,
+  //                                           Color(0, 200, 0));
+  // }
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,

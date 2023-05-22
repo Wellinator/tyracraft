@@ -47,6 +47,7 @@ class ChunckManager {
   void sortChunkByPlayerPosition(Vec4* playerPosition);
 
   void enqueueChunksToReloadLight();
+  void reloadLightData(LevelMap* terrain);
 
  private:
   std::queue<Chunck*> chuncksToUpdateLight;
@@ -56,5 +57,8 @@ class ChunckManager {
   LevelMap* map = nullptr;
   void generateChunks();
 
-  void reloadLightData(LevelMap* terrain);
+  void reloadLightDataAsync(LevelMap* terrain);
+  void clearLightDataAsync() {
+    while (!chuncksToUpdateLight.empty()) chuncksToUpdateLight.pop();
+  };
 };

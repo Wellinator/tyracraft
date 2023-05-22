@@ -78,8 +78,9 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
   // Update chunk light data every 250 ticks
   // TODO: refactor to event system
-  if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0)
+  if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0) {
     chunckManager.enqueueChunksToReloadLight();
+  }
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition(), &worldLightModel, terrain);
@@ -517,7 +518,7 @@ void World::removeBlock(Block* blockToRemove) {
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
-  chunckManager.enqueueChunksToReloadLight();
+  chunckManager.reloadLightData(terrain);
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
@@ -600,7 +601,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
       updateSunlight();
       updateBlockLights();
 
-      chunckManager.enqueueChunksToReloadLight();
+      chunckManager.reloadLightData(terrain);
     }
 
     // playPutBlockSound(blockToPlace);

@@ -25,8 +25,7 @@ void CreativePlayingState::update(const float& deltaTime) {
                                stateGamePlay->context->t_camera->lookPos,
                                stateGamePlay->context->t_camera->position);
 
-  playerMovementDirection =
-      isInventoryOpened() ? Vec4(0.0F) : playerMovementDirection;
+  if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
@@ -39,8 +38,6 @@ void CreativePlayingState::update(const float& deltaTime) {
       stateGamePlay->context->t_engine->pad, *stateGamePlay->player->mesh);
 
   if (!isSongPlaying()) playNewRandomSong();
-
-  Threading::switchThread();
 }
 
 void CreativePlayingState::render() {
@@ -53,8 +50,6 @@ void CreativePlayingState::render() {
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
 
   if (debugMode) drawDegubInfo();
-
-  Threading::switchThread();
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {

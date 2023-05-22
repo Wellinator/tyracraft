@@ -30,10 +30,11 @@ void ChunckManager::update(const Plane* frustumPlanes,
   visibleChunks.shrink_to_fit();
   for (u16 i = 0; i < chuncks.size(); i++) {
     chuncks[i]->update(frustumPlanes, currentPlayerPos, worldLightModel);
-    if (chuncks[i]->state == ChunkState::Loaded)
+    if (chuncks[i]->state == ChunkState::Loaded &&
+        chuncks[i]->isDrawDataLoaded())
       visibleChunks.push_back(chuncks[i]);
   }
-  reloadLightData(terrain);
+  reloadLightDataAsync(terrain);
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -106,15 +107,31 @@ void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
 
 void ChunckManager::enqueueChunksToReloadLight() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
-    chuncksToUpdateLight.push(visibleChunks[i]);
+    if (visibleChunks[i]->isDrawDataLoaded())
+      chuncksToUpdateLight.push(visibleChunks[i]);
+  }
+}
+
+void ChunckManager::reloadLightDataAsync(LevelMap* terrain) {
+  if (chuncksToUpdateLight.empty() == false) {
+    if (chuncksToUpdateLight.size() > 0) {
+      auto chunk = chuncksToUpdateLight.front();
+      chunk->reloadLightData(terrain);
+      chuncksToUpdateLight.pop();
+    }
+
+    if (chuncksToUpdateLight.size() > 0) {
+      auto chunk = chuncksToUpdateLight.front();
+      chunk->reloadLightData(terrain);
+      chuncksToUpdateLight.pop();
+    }
+    return;
   }
 }
 
 void ChunckManager::reloadLightData(LevelMap* terrain) {
-  if (chuncksToUpdateLight.empty() == false) {
-    auto chunk = chuncksToUpdateLight.front();
-    chunk->reloadLightData(terrain);
-    chuncksToUpdateLight.pop();
-    return;
+  for (size_t i = 0; i < visibleChunks.size(); i++) {
+    visibleChunks[i]->reloadLightData(terrain);
   }
+  clearLightDataAsync();
 }
