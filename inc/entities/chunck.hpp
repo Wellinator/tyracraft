@@ -56,13 +56,12 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
-              WorldLightModel* worldLightModel);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
   void clear();
   void updateFrustumCheck(const Plane* frustumPlanes);
 
   void loadDrawData(LevelMap* terrain);
-  void reloadLightData(LevelMap* terrain);
+  void reloadLightData(LevelMap* terrain, WorldLightModel* t_worldLightModel);
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 

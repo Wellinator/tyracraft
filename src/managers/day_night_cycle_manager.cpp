@@ -4,6 +4,15 @@ DayNightCycleManager::DayNightCycleManager() {}
 
 DayNightCycleManager::~DayNightCycleManager() {}
 
+void DayNightCycleManager::init() {
+  printf("Initiating Day/Night Manager...\n");
+  updateCurrentAngle();
+  updateIntensityByAngle();
+  updateEntitiesPosition();
+  printf("Day/Night Manager initiated!\n");
+  printf("getSunLightIntensity: %f\n", getSunLightIntensity());
+}
+
 void DayNightCycleManager::update() {
   updateCurrentAngle();
   updateIntensityByAngle();

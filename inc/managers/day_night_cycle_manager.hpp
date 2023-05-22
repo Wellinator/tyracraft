@@ -18,6 +18,7 @@ class DayNightCycleManager {
  public:
   DayNightCycleManager();
   ~DayNightCycleManager();
+  void init();
   void update();
 
   float currentAngleInDegrees = 0.0F;

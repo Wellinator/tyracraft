@@ -39,11 +39,7 @@ Chunck::~Chunck() {
   delete this->bbox;
 };
 
-void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
-                    WorldLightModel* worldLightModel) {
-  sunPosition.set(worldLightModel->sunPosition);
-  sunLightIntensity = worldLightModel->sunLightIntensity;
-  ambientLightIntesity = worldLightModel->ambientLightIntensity;
+void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
   this->updateFrustumCheck(frustumPlanes);
   // if (isVisible()) applyFOG(currentPlayerPos);
   // if (!isVisible() && isDrawDataLoaded()) {
@@ -162,9 +158,14 @@ void Chunck::loadDrawData(LevelMap* terrain) {
   _isDrawDataLoaded = true;
 }
 
-void Chunck::reloadLightData(LevelMap* terrain) {
+void Chunck::reloadLightData(LevelMap* terrain,
+                             WorldLightModel* t_worldLightModel) {
   verticesColors.clear();
   verticesColors.shrink_to_fit();
+
+  sunPosition.set(t_worldLightModel->sunPosition);
+  sunLightIntensity = t_worldLightModel->sunLightIntensity;
+  ambientLightIntesity = t_worldLightModel->ambientLightIntensity;
 
   for (size_t i = 0; i < blocks.size(); i++) {
     loadLightData(terrain, blocks[i]);

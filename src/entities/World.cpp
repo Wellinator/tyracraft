@@ -21,9 +21,9 @@ World::World(const NewGameOptions& options) {
   printf("|------------------------|\n\n");
 
   worldOptions = options;
+  setIntialTime();
   CrossCraft_World_Init(seed);
   AllocateMapData();
-  setIntialTime();
 }
 
 World::~World() {
@@ -33,20 +33,32 @@ World::~World() {
 
 void World::init(Renderer* renderer, ItemRepository* itemRepository,
                  SoundManager* t_soundManager) {
+  // Set renders
   t_renderer = renderer;
   mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
+
+  // Init light stuff
+  dayNightCycleManager.init();
+  initWorldLightModel();
+
+  terrain = CrossCraft_World_GetMapPtr();
   blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
-  chunckManager.init();
+  chunckManager.init(&worldLightModel, terrain);
   cloudsManager.init(t_renderer);
   calcRawBlockBBox(&mcPip);
-  terrain = CrossCraft_World_GetMapPtr();
 };
 
 void World::generate() { CrossCraft_World_GenerateMap(worldOptions.type); }
 
 void World::generateLight() {
+  dayNightCycleManager.update();
+  updateLightModel();
+
   CrossCraft_World_PropagateSunLight(static_cast<uint32_t>(g_ticksCounter));
+  updateSunlight();
+  updateBlockLights();
+  chunckManager.reloadLightDataOfAllChunks();
 }
 
 void World::loadSpawnArea() { buildInitialPosition(); }
@@ -72,18 +84,17 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   cloudsManager.update();
   dayNightCycleManager.update();
 
-  updateLightModel();
-  updateSunlight();
-  updateBlockLights();
-
   // Update chunk light data every 250 ticks
   // TODO: refactor to event system
   if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0) {
+    updateLightModel();
+    updateSunlight();
+    updateBlockLights();
     chunckManager.enqueueChunksToReloadLight();
   }
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       *t_player->getPosition(), &worldLightModel, terrain);
+                       *t_player->getPosition());
   updateChunkByPlayerPosition(t_player);
   updateTargetBlock(camLookPos, camPosition, chunckManager.getVisibleChunks());
 
@@ -348,11 +359,10 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
 }
 
 void World::updateLightModel() {
-  worldLightModel.lightsPositions = lightsPositions.data();
-  worldLightModel.sunLightIntensity =
-      dayNightCycleManager.getSunLightIntensity();
   worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
+  worldLightModel.sunLightIntensity =
+      dayNightCycleManager.getSunLightIntensity();
   worldLightModel.ambientLightIntensity =
       dayNightCycleManager.getAmbientLightIntesity();
 }
@@ -518,7 +528,7 @@ void World::removeBlock(Block* blockToRemove) {
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
-  chunckManager.reloadLightData(terrain);
+  chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   // playDestroyBlockSound(blockToRemove->type);
@@ -601,7 +611,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
       updateSunlight();
       updateBlockLights();
 
-      chunckManager.reloadLightData(terrain);
+      chunckManager.reloadLightData();
     }
 
     // playPutBlockSound(blockToPlace);
@@ -887,6 +897,15 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
     if (currentChunck)
       scheduleChunksNeighbors(currentChunck, lastPlayerPosition, true);
   }
+}
+
+void World::initWorldLightModel() {
+  worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
+  worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
+  worldLightModel.sunLightIntensity =
+      dayNightCycleManager.getSunLightIntensity();
+  worldLightModel.ambientLightIntensity =
+      dayNightCycleManager.getAmbientLightIntesity();
 }
 
 // From CrossCraft
@@ -1455,9 +1474,9 @@ void CrossCraft_World_Init(const uint32_t& seed) {
                   .spawnY = 59,
                   .spawnZ = 128,
 
-                  .blocks = NULL,
-                  .lightData = NULL,
-                  .data = NULL};
+                  .blocks = nullptr,
+                  .lightData = nullptr,
+                  .data = nullptr};
   level.map = map;
 
   TYRA_LOG("Generated base level template");

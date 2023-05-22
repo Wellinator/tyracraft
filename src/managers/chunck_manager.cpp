@@ -16,25 +16,28 @@ ChunckManager::~ChunckManager() {
   chuncks.shrink_to_fit();
 }
 
-void ChunckManager::init() { generateChunks(); }
+void ChunckManager::init(WorldLightModel* t_worldLightModel,
+                         LevelMap* t_terrain) {
+  worldLightModel = t_worldLightModel;
+  terrain = t_terrain;
+  this->generateChunks();
+}
 
 void ChunckManager::clearAllChunks() {
   for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
 }
 
 void ChunckManager::update(const Plane* frustumPlanes,
-                           const Vec4& currentPlayerPos,
-                           WorldLightModel* worldLightModel,
-                           LevelMap* terrain) {
+                           const Vec4& currentPlayerPos) {
   visibleChunks.clear();
   visibleChunks.shrink_to_fit();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->update(frustumPlanes, currentPlayerPos, worldLightModel);
+    chuncks[i]->update(frustumPlanes, currentPlayerPos);
     if (chuncks[i]->state == ChunkState::Loaded &&
         chuncks[i]->isDrawDataLoaded())
       visibleChunks.push_back(chuncks[i]);
   }
-  reloadLightDataAsync(terrain);
+  reloadLightDataAsync();
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -112,26 +115,35 @@ void ChunckManager::enqueueChunksToReloadLight() {
   }
 }
 
-void ChunckManager::reloadLightDataAsync(LevelMap* terrain) {
+void ChunckManager::reloadLightDataAsync() {
   if (chuncksToUpdateLight.empty() == false) {
     if (chuncksToUpdateLight.size() > 0) {
       auto chunk = chuncksToUpdateLight.front();
-      chunk->reloadLightData(terrain);
+      chunk->reloadLightData(terrain, worldLightModel);
       chuncksToUpdateLight.pop();
     }
 
     if (chuncksToUpdateLight.size() > 0) {
       auto chunk = chuncksToUpdateLight.front();
-      chunk->reloadLightData(terrain);
+      chunk->reloadLightData(terrain, worldLightModel);
       chuncksToUpdateLight.pop();
     }
     return;
   }
 }
 
-void ChunckManager::reloadLightData(LevelMap* terrain) {
+void ChunckManager::reloadLightData() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
-    visibleChunks[i]->reloadLightData(terrain);
+    visibleChunks[i]->reloadLightData(terrain, worldLightModel);
+  }
+  clearLightDataAsync();
+}
+
+// Needed to initiate light in all chunks. The visibleChunks will be available
+// after the first update...
+void ChunckManager::reloadLightDataOfAllChunks() {
+  for (size_t i = 0; i < chuncks.size(); i++) {
+    chuncks[i]->reloadLightData(terrain, worldLightModel);
   }
   clearLightDataAsync();
 }

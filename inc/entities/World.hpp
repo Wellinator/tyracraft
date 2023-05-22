@@ -62,7 +62,7 @@ class World {
   BlockManager blockManager;
   ChunckManager chunckManager;
   CloudsManager cloudsManager;
-  DayNightCycleManager dayNightCycleManager = DayNightCycleManager();
+  DayNightCycleManager dayNightCycleManager;
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
@@ -126,7 +126,6 @@ class World {
   std::vector<Chunck*> tempChuncksToLoad;
   std::vector<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
-  std::vector<Vec4> lightsPositions = {Vec4(0, 0, 0)};
 
   WorldLightModel worldLightModel;
 
@@ -188,6 +187,8 @@ class World {
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);
   void playBreakingBlockSound(const Blocks& blockType);
+
+  void initWorldLightModel();
 };
 
 static Level level;
