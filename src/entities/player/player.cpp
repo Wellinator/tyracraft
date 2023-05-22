@@ -505,7 +505,7 @@ void Player::selectPreviousItem() {
   ItemId previousItem;
 
   if ((currentItemId - 1) < 0) {
-    previousItem = ItemId::emerald_ore_block;
+    previousItem = static_cast<ItemId>((u8)ItemId::total_of_items - 1);
   } else {
     previousItem = static_cast<ItemId>(currentItemId - 1);
   }
