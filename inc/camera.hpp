@@ -43,6 +43,7 @@ class Camera {
   float pitch, yaw;
 
   void update();
+  void reset();
   void setPositionByMesh(Mesh* t_mesh);
   void setLookDirectionByPad(Pad* t_pad);
 

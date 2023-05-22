@@ -57,3 +57,9 @@ void Camera::setLookDirectionByPad(Pad* t_pad) {
     if (pitch < -89.0F) pitch = -89.0F;
   }
 }
+
+void Camera::reset() {
+  yaw = 0;
+  pitch = 0;
+  update();
+}

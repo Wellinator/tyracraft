@@ -36,6 +36,7 @@ void StateMainMenu::init() {
       this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
 
   this->loadSkybox(&this->context->t_engine->renderer);
+  this->context->t_camera->reset();
 
   // Load title
   // Title
