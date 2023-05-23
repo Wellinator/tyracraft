@@ -734,6 +734,7 @@ void World::buildChunk(Chunck* t_chunck) {
         if (isVisible) {
           BlockInfo* blockInfo =
               blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
+
           if (blockInfo) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
@@ -762,7 +763,7 @@ void World::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->loadDrawData(terrain);
+  t_chunck->loadDrawData(terrain, &worldLightModel);
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
@@ -790,7 +791,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       const bool isVisible = visibleFaces > 0;
 
       // Are block's coordinates in world range?
-      if (isVisible && BoundCheckMap(terrain, x, y, z)) {
+      if (isVisible) {
         BlockInfo* blockInfo =
             blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
 
@@ -838,7 +839,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     return;
   }
 
-  t_chunck->loadDrawData(terrain);
+  t_chunck->loadDrawData(terrain, &worldLightModel);
   t_chunck->state = ChunkState::Loaded;
 }
 

@@ -60,7 +60,7 @@ class Chunck {
   void clear();
   void updateFrustumCheck(const Plane* frustumPlanes);
 
-  void loadDrawData(LevelMap* terrain);
+  void loadDrawData(LevelMap* terrain, WorldLightModel* t_worldLightModel);
   void reloadLightData(LevelMap* terrain, WorldLightModel* t_worldLightModel);
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
