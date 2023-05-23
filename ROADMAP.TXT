@@ -98,8 +98,11 @@
     ✅ -> Block light system;
     ✅ -> pre-calculated ambient occlusion;
     🔲 -> Implement water phisycs:
+        🔲 -> Gravity:
+        🔲 -> Waterl flood fill:
 
 * Bug fixes for pre-alpha release (v0.2.x):
+    🔲 -> Fix block light after loading save:
     ✅ -> Remove camera rotation at main memu:
     ✅ -> Fix height collision when jumping:
     ✅ -> Fix block light remove:
