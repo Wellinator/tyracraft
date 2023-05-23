@@ -401,16 +401,17 @@ void Player::loadArmMesh() {
   this->armMesh = std::make_unique<DynamicMesh>(data.get());
 
   this->armMesh->scale.identity();
-  this->armMesh->scale.scaleX(0.7F);
-  this->armMesh->scale.scaleZ(1.1F);
+  this->armMesh->scale.scaleX(0.85F);
+  this->armMesh->scale.scaleZ(1.15F);
 
   this->armMesh->translation.identity();
-  this->armMesh->translation.translateZ(-13.5F);
-  this->armMesh->translation.translateY(-8.0F);
-  this->armMesh->translation.translateX(5.0F);
+  this->armMesh->translation.translateZ(-13.0F);
+  this->armMesh->translation.translateY(-8.5F);
+  this->armMesh->translation.translateX(3.5F);
 
   this->armMesh->rotation.identity();
   this->armMesh->rotation.rotateY(-3.24);
+  this->armMesh->rotation.rotateX(0.35);
 
   auto& materials = this->armMesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
