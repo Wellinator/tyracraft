@@ -178,12 +178,29 @@ void Chunck::loadMeshData(Block* t_block) {
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    Vec4 v0 = rawData[vert++];
+    Vec4 v1 = rawData[vert++];
+    Vec4 v2 = rawData[vert++];
+    Vec4 v3 = rawData[vert++];
+    Vec4 v4 = rawData[vert++];
+    Vec4 v5 = rawData[vert++];
+
+    // TODO: move to a block builder
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      v0.y *= 0.9F;
+      v1.y *= 0.9F;
+      v2.y *= 0.9F;
+      v3.y *= 0.9F;
+      v4.y *= 0.9F;
+      v5.y *= 0.9F;
+    }
+
+    vertices.push_back(t_block->model * v0);
+    vertices.push_back(t_block->model * v1);
+    vertices.push_back(t_block->model * v2);
+    vertices.push_back(t_block->model * v3);
+    vertices.push_back(t_block->model * v4);
+    vertices.push_back(t_block->model * v5);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
