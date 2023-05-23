@@ -55,6 +55,8 @@ void World::generateLight() {
   updateLightModel();
 
   initSunLight(static_cast<uint32_t>(g_ticksCounter));
+  initBlockLight(&blockManager);
+
   updateSunlight();
   updateBlockLights();
   chunckManager.reloadLightDataOfAllChunks();
@@ -1421,7 +1423,7 @@ void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 void initSunLight(uint32_t tick) {
-  printf("Propagating SunLight...\n");
+  TYRA_LOG("Initiating SunLight...");
   auto map = CrossCraft_World_GetMapPtr();
 
   for (int x = 0; x < map->length; x++) {
@@ -1460,8 +1462,23 @@ void initSunLight(uint32_t tick) {
       }
     }
   }
+}
 
-  updateSunlight();
+void initBlockLight(BlockManager* blockManager) {
+  TYRA_LOG("Initiating block Lights...");
+  auto map = CrossCraft_World_GetMapPtr();
+
+  for (int x = 0; x < map->length; x++) {
+    for (int z = 0; z < map->width; z++) {
+      for (int y = map->height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+        auto lightValue = blockManager->getBlockLightValue(b);
+        if (lightValue > 0) {
+          addBlockLight(x, y, z, lightValue);
+        }
+      }
+    }
+  }
 }
 
 void CrossCraft_World_Init(const uint32_t& seed) {
