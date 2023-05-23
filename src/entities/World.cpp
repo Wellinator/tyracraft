@@ -525,9 +525,11 @@ void World::removeBlock(Block* blockToRemove) {
 
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
-  CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
-                                 offsetToRemove.z);
+  checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+
+  updateSunlight();
   updateBlockLights();
+
   chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
@@ -600,6 +602,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
                     static_cast<u8>(blockToPlace));
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
+      checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
 
       const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
       if (lightValue > 0) {
@@ -1404,16 +1407,16 @@ void singleCheck(uint16_t x, uint16_t z) {
   }
 }
 
-bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  singleCheck(x, z);
-  singleCheck(x + 1, z);
-  singleCheck(x - 1, z);
-  singleCheck(x, z + 1);
-  singleCheck(x, z - 1);
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
+  removeSunLight(x + 1, y, z);
+  removeSunLight(x - 1, y, z);
+  removeSunLight(x, y + 1, z);
+  removeSunLight(x, y - 1, z);
+  removeSunLight(x, y, z + 1);
+  removeSunLight(x, y, z - 1);
+  removeSunLight(x, y, z);
 
-  updateSunlight();
-
-  return true;
+  return;
 }
 
 void CrossCraft_World_PropagateSunLight(uint32_t tick) {

@@ -222,7 +222,6 @@ void CrossCraft_World_Spawn();
 void CrossCraft_World_GenerateMap(WorldType worldType);
 
 void CrossCraft_World_PropagateSunLight(uint32_t tick);
-bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z);
 
 void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
                                uint16_t light, uint32_t* updateIDs);
@@ -246,6 +245,10 @@ void updateSunlight();
 void propagateSunLightAddBFSQueue();
 void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
                           u8 nextLightValue);
+
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
+
+void addSunLight(uint16_t x, uint16_t y, uint16_t z);
 void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 
 void propagateSunlightRemovalQueue();
