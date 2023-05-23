@@ -221,7 +221,7 @@ void CrossCraft_World_Spawn();
  */
 void CrossCraft_World_GenerateMap(WorldType worldType);
 
-void CrossCraft_World_PropagateSunLight(uint32_t tick);
+void initSunLight(uint32_t tick);
 
 void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
                                uint16_t light, uint32_t* updateIDs);

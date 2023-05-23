@@ -54,7 +54,7 @@ void World::generateLight() {
   dayNightCycleManager.update();
   updateLightModel();
 
-  CrossCraft_World_PropagateSunLight(static_cast<uint32_t>(g_ticksCounter));
+  initSunLight(static_cast<uint32_t>(g_ticksCounter));
   updateSunlight();
   updateBlockLights();
   chunckManager.reloadLightDataOfAllChunks();
@@ -1420,7 +1420,7 @@ void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
   return;
 }
 
-void CrossCraft_World_PropagateSunLight(uint32_t tick) {
+void initSunLight(uint32_t tick) {
   printf("Propagating SunLight...\n");
   auto map = CrossCraft_World_GetMapPtr();
 
