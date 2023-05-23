@@ -100,6 +100,8 @@
     🔲 -> Implement water phisycs:
 
 * Bug fixes for pre-alpha release (v0.2.x):
+    ✅ -> Player arm position and scale;
+    🔲 -> No sun light on async loaded chunks;
     ✅ -> Remove camera rotation at main memu:
     ✅ -> Fix height collision when jumping:
     ✅ -> Fix block light remove:
