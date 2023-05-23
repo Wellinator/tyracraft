@@ -113,6 +113,9 @@ class Player {
   TerrainHeightModel getTerrainHeightAtPosition(
       const std::vector<Chunck*>& loadedChunks);
 
+  bool isOnWater();
+  bool isUnderWater();
+
  private:
   BlockManager* t_blockManager;
   SoundManager* t_soundManager;

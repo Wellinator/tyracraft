@@ -234,23 +234,28 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
   for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
     for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
       // Broad phase
+
+      auto block = loadedChunks[chunkIndex]->blocks[i];
+
+      // Prevent colliding to water horizontally
+      const bool isWater = block->type == Blocks::WATER_BLOCK;
+
       // is vertically out of range?
-      if (playerBB.getBottomFace().axisPosition >=
-              loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
-          playerBB.getTopFace().axisPosition <
-              loadedChunks[chunkIndex]->blocks[i]->minCorner.y ||
-          currentPlayerPos.distanceTo(
-              *loadedChunks[chunkIndex]->blocks[i]->getPosition()) >
-              DUBLE_BLOCK_SIZE * 2) {
+      const bool isOutOfRange =
+          playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
+          playerBB.getTopFace().axisPosition < block->minCorner.y ||
+          currentPlayerPos.distanceTo(*block->getPosition()) >
+              DUBLE_BLOCK_SIZE * 2;
+
+      if (isWater || isOutOfRange) {
         continue;
       };
 
       Vec4 tempInflatedMin;
       Vec4 tempInflatedMax;
-      Utils::GetMinkowskiSum(playerMin, playerMax,
-                             loadedChunks[chunkIndex]->blocks[i]->minCorner,
-                             loadedChunks[chunkIndex]->blocks[i]->maxCorner,
-                             &tempInflatedMin, &tempInflatedMax);
+      Utils::GetMinkowskiSum(playerMin, playerMax, block->minCorner,
+                             block->maxCorner, &tempInflatedMin,
+                             &tempInflatedMax);
 
       if (ray.intersectBox(tempInflatedMin, tempInflatedMax,
                            &tempHitDistance)) {
@@ -593,4 +598,14 @@ void Player::setItemToInventory(const ItemId& itemToShift) {
 void Player::loadPlayerTexture() {
   playerTexture = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/entity/player/steve.png"));
+}
+
+bool Player::isOnWater() {
+  return currentBottomBlock != nullptr &&
+         currentBottomBlock->type == Blocks::WATER_BLOCK;
+}
+
+bool Player::isUnderWater() {
+  return currentUpperBlock != nullptr &&
+         currentUpperBlock->type == Blocks::WATER_BLOCK;
 }

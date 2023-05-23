@@ -108,7 +108,10 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
       }
     }
 
-    if (stateGamePlay->player->isOnGround) {
+    if (stateGamePlay->player->isOnWater() ||
+        stateGamePlay->player->isUnderWater()) {
+      if (clicked.Cross) stateGamePlay->player->jump();
+    } else if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
       if (clicked.DpadUp)
         stateGamePlay->player->selectNextItem();
