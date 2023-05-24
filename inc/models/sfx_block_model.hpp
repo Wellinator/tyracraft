@@ -21,6 +21,14 @@ class SfxBlockModel {
   SoundFxCategory category;
   SoundFX sound = SoundFX::None;
 
+  void print() {
+    printf("\n#SfxBlockModel#\n");
+    printf("Type: %i\n", _blockType);
+    printf("SoundFxCategory: %i\n", (u8)category);
+    printf("SoundFX: %i\n", (u8)sound);
+    printf("#SfxBlockModel#\n\n");
+  }
+
  private:
   u8 _blockType;
 };
