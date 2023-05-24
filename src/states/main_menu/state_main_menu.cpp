@@ -154,7 +154,7 @@ void StateMainMenu::loadMenuSong() {
   if (randSong.size() > 0) {
     this->context->t_engine->audio.song.load(randSong.c_str());
     this->context->t_engine->audio.song.inLoop = true;
-    this->context->t_engine->audio.song.setVolume(80);
+    this->context->t_engine->audio.song.setVolume(65);
     this->context->t_engine->audio.song.play();
   }
 }
