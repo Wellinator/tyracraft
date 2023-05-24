@@ -473,7 +473,6 @@ void Player::playWalkSfx(const Blocks& blockType) {
     this->t_soundManager->setSfxVolume(75, ch);
     this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
                                   ch);
-    Tyra::Threading::switchThread();
   }
 }
 

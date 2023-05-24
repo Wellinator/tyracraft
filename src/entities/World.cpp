@@ -37,6 +37,9 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
 
+  // Set soundManager ref
+  this->t_soundManager = t_soundManager;
+
   // Init light stuff
   dayNightCycleManager.init();
   initWorldLightModel();
@@ -535,7 +538,7 @@ void World::removeBlock(Block* blockToRemove) {
   chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
-  // playDestroyBlockSound(blockToRemove->type);
+  playDestroyBlockSound(blockToRemove->type);
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
@@ -619,7 +622,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
       chunckManager.reloadLightData();
     }
 
-    // playPutBlockSound(blockToPlace);
+    playPutBlockSound(blockToPlace);
   }
 
   updateNeighBorsChunksByModdedPosition(blockOffset);
@@ -647,7 +650,7 @@ void World::breakTargetBlock(const float& deltaTime) {
       targetBlock->damage =
           breaking_time_pessed / blockManager.getBlockBreakingTime() * 100;
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        // playBreakingBlockSound(targetBlock->type);
+        playBreakingBlockSound(targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;
@@ -668,7 +671,6 @@ void World::playPutBlockSound(const Blocks& blockType) {
       t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
                               ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 
@@ -682,7 +684,6 @@ void World::playDestroyBlockSound(const Blocks& blockType) {
       t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
                               ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 
@@ -696,7 +697,6 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
       t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
                               ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 

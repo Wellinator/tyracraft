@@ -18,14 +18,14 @@ BlockManager::~BlockManager() {
 
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
-    this->blockSfxRepositories[i] = NULL;
+    this->blockSfxRepositories[i] = nullptr;
   }
   this->blockSfxRepositories.clear();
   this->blockSfxRepositories.shrink_to_fit();
 
   for (u8 i = 0; i < this->damage_overlay.size(); i++) {
     delete this->damage_overlay[i];
-    this->damage_overlay[i] = NULL;
+    this->damage_overlay[i] = nullptr;
   }
   this->damage_overlay.clear();
   this->damage_overlay.shrink_to_fit();
