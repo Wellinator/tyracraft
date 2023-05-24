@@ -27,6 +27,8 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PUMPKIN_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
 
   // Ores and Minerals
   models.push_back(new SfxBlockModel(Blocks::GOLD_ORE_BLOCK,
@@ -73,4 +75,10 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::BIRCH_PLANKS_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Wood1));
+
+  // Light blocks
+  models.push_back(new SfxBlockModel(Blocks::JACK_O_LANTERN_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GLOWSTONE_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
 }

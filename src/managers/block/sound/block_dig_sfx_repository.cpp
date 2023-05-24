@@ -27,6 +27,8 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PUMPKIN_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
 
   // Ores and Minerals
   models.push_back(new SfxBlockModel(Blocks::GOLD_ORE_BLOCK,
@@ -73,4 +75,9 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFxCategory::Dig, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::BIRCH_PLANKS_BLOCK,
                                      SoundFxCategory::Dig, SoundFX::Wood1));
+
+  models.push_back(new SfxBlockModel(Blocks::JACK_O_LANTERN_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GLOWSTONE_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
 }
