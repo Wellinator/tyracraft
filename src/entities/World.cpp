@@ -680,7 +680,7 @@ void World::playPutBlockSound(const Blocks& blockType) {
 void World::playDestroyBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        blockManager.getDigSoundByBlockType(blockType);
+        blockManager.getBrokenSoundByBlockType(blockType);
 
     if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();

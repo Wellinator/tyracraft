@@ -13,6 +13,7 @@
 #include "entities/sfx_library_sound.hpp"
 #include "managers/block/sound/block_sfx_base_repository.hpp"
 #include "managers/block/sound/block_dig_sfx_repository.hpp"
+#include "managers/block/sound/block_broken_sfx_repository.hpp"
 #include "managers/block/sound/block_step_sfx_repository.hpp"
 #include "managers/block/texture/block_texture_info_repository.hpp"
 #include "models/block_info_model.hpp"
@@ -35,6 +36,7 @@ class BlockManager {
   BlockInfo* getBlockInfoByType(const Blocks& blockType);
   const u8 isBlockTransparent(const Blocks& blockType);
 
+  SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
