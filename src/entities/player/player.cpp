@@ -469,10 +469,12 @@ void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
-    const int ch = this->t_soundManager->getAvailableChannel();
-    this->t_soundManager->setSfxVolume(75, ch);
-    this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                                  ch);
+    const int ch = t_soundManager->getAvailableChannel();
+    SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+    auto config = SfxConfig::getStepSoundConfig(blockType);
+    sound->_sound->pitch = config->_pitch;
+    t_soundManager->setSfxVolume(config->_volume, ch);
+    t_soundManager->playSfx(sound, ch);
   }
 }
 

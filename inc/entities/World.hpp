@@ -21,6 +21,8 @@
 #include "managers/tick_manager.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
+#include "entities/sfx_config.hpp"
+#include "models/sfx_config_model.hpp"
 
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/3d/bbox/core_bbox.hpp>

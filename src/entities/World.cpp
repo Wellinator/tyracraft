@@ -666,10 +666,13 @@ void World::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getPlaceSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
   }
 }
@@ -679,10 +682,13 @@ void World::playDestroyBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBrokenSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
   }
 }
@@ -692,10 +698,13 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBreakingSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
   }
 }

@@ -19,6 +19,10 @@ void SoundManager::playSfx(const SoundFxCategory& idCategory,
   if (t_sound) this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
 };
 
+void SoundManager::playSfx(SfxLibrarySound* t_sound, const s8& t_ch) {
+  if (t_sound) this->t_engine->audio.adpcm.tryPlay(t_sound->_sound, t_ch);
+};
+
 void SoundManager::setSfxVolume(const u8& t_vol, const s8& t_ch) {
   return this->t_engine->audio.adpcm.setVolume(t_vol, t_ch);
 };
