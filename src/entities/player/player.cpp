@@ -1,4 +1,5 @@
 #include "entities/player/player.hpp"
+#include "entities/level.hpp"
 
 using Tyra::Renderer3D;
 
@@ -77,7 +78,7 @@ Player::~Player() {
 void Player::update(const float& deltaTime, const Vec4& movementDir,
                     const Vec4& camDir,
                     const std::vector<Chunck*>& loadedChunks,
-                    TerrainHeightModel* terrainHeight) {
+                    TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
   isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
     Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
@@ -100,6 +101,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
     unsetWalkingAnimation();
   }
 
+  updateWaterState(t_terrain);
   if (!isFlying) updateGravity(deltaTime, terrainHeight);
 
   animate();
@@ -603,12 +605,21 @@ void Player::loadPlayerTexture() {
       FileUtils::fromCwd("textures/entity/player/steve.png"));
 }
 
-bool Player::isOnWater() {
-  return currentBottomBlock != nullptr &&
-         currentBottomBlock->type == Blocks::WATER_BLOCK;
+void Player::updateWaterState(LevelMap* terrain) {
+  Vec4 min, max;
+  BBox bbox = getHitBox();
+  bbox.getMinMax(&min, &max);
+
+  auto blockBottom =
+      static_cast<Blocks>(getBlockByWorldPosition(terrain, &min));
+  auto blockTop = static_cast<Blocks>(getBlockByWorldPosition(terrain, &max));
+
+  _isOnWater = blockBottom == Blocks::WATER_BLOCK;
+  _isUnderWater = blockTop == Blocks::WATER_BLOCK;
+
+  // printf("isOnWater: %i | isUnderWater: %i\n", _isOnWater, _isUnderWater);
 }
 
-bool Player::isUnderWater() {
-  return currentUpperBlock != nullptr &&
-         currentUpperBlock->type == Blocks::WATER_BLOCK;
-}
+bool Player::isOnWater() { return _isOnWater; }
+
+bool Player::isUnderWater() { return _isUnderWater; }

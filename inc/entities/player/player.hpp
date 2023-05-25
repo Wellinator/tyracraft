@@ -56,7 +56,7 @@ class Player {
 
   void update(const float& deltaTime, const Vec4& movementDir,
               const Vec4& camDir, const std::vector<Chunck*>& loadedChunks,
-              TerrainHeightModel* terrainHeight);
+              TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
   void setRenderPip(PlayerRenderPip* pipToSet);
@@ -177,4 +177,8 @@ class Player {
   std::vector<u32> armWalkingSequence = {0, 1, 2, 3,  4,  5, 6,
                                          7, 8, 9, 10, 11, 12};
   std::vector<u32> armHitingSequence = {13, 14, 15, 16, 17, 18, 19, 20};
+
+  u8 _isOnWater;
+  u8 _isUnderWater;
+  void updateWaterState(LevelMap* terrain);
 };
