@@ -17,7 +17,6 @@ enum class SoundFX {
   Sand1,
   Snow1,
   Stone1,
-  WetGrass1,
   Wood1
 };
 
