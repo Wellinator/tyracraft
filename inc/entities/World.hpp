@@ -21,6 +21,8 @@
 #include "managers/tick_manager.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
+#include "entities/sfx_config.hpp"
+#include "models/sfx_config_model.hpp"
 
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/3d/bbox/core_bbox.hpp>
@@ -221,9 +223,6 @@ void CrossCraft_World_Spawn();
  */
 void CrossCraft_World_GenerateMap(WorldType worldType);
 
-void CrossCraft_World_PropagateSunLight(uint32_t tick);
-bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z);
-
 void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
                                uint16_t light, uint32_t* updateIDs);
 void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z,
@@ -246,6 +245,12 @@ void updateSunlight();
 void propagateSunLightAddBFSQueue();
 void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
                           u8 nextLightValue);
+
+void initSunLight(uint32_t tick);
+void initBlockLight(BlockManager* blockManager);
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
+
+void addSunLight(uint16_t x, uint16_t y, uint16_t z);
 void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 
 void propagateSunlightRemovalQueue();

@@ -146,8 +146,13 @@ void Chunck::clearDrawData() {
   _isDrawDataLoaded = false;
 }
 
-void Chunck::loadDrawData(LevelMap* terrain) {
+void Chunck::loadDrawData(LevelMap* terrain,
+                          WorldLightModel* t_worldLightModel) {
   sortBlockByTransparency();
+
+  sunPosition.set(t_worldLightModel->sunPosition);
+  sunLightIntensity = t_worldLightModel->sunLightIntensity;
+  ambientLightIntesity = t_worldLightModel->ambientLightIntensity;
 
   for (size_t i = 0; i < blocks.size(); i++) {
     loadMeshData(blocks[i]);

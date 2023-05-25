@@ -102,7 +102,9 @@
         🔲 -> Waterl flood fill:
 
 * Bug fixes for pre-alpha release (v0.2.x):
-    🔲 -> Fix block light after loading save:
+    ✅ -> Player arm position and scale;
+    ✅ -> No sun light on async loaded chunks;
+    ✅ -> Fix block light after loading save:
     ✅ -> Remove camera rotation at main memu:
     ✅ -> Fix height collision when jumping:
     ✅ -> Fix block light remove:
@@ -110,5 +112,5 @@
     ✅ -> Fix Day/Night cycle:
     ✅ -> Update light in moded chunks:
         ✅ -> Increase light update speed (maybe two chunks per frame):
-    🔲 -> Real PS2:
-        ⚠️ -> Fix audio FX;
+    ✅ -> Real PS2:
+        ✅ -> Fix audio FX;

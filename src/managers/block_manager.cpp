@@ -18,14 +18,14 @@ BlockManager::~BlockManager() {
 
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
-    this->blockSfxRepositories[i] = NULL;
+    this->blockSfxRepositories[i] = nullptr;
   }
   this->blockSfxRepositories.clear();
   this->blockSfxRepositories.shrink_to_fit();
 
   for (u8 i = 0; i < this->damage_overlay.size(); i++) {
     delete this->damage_overlay[i];
-    this->damage_overlay[i] = NULL;
+    this->damage_overlay[i] = nullptr;
   }
   this->damage_overlay.clear();
   this->damage_overlay.shrink_to_fit();
@@ -51,6 +51,7 @@ void BlockManager::loadBlocksTextures(const std::string& texturePack) {
 
 void BlockManager::registerBlockSoundsEffects() {
   this->blockSfxRepositories.push_back(new BlockDigSfxRepository());
+  this->blockSfxRepositories.push_back(new BlockBrokenSfxRepository());
   this->blockSfxRepositories.push_back(new BlockStepSfxRepository());
 }
 
@@ -79,6 +80,17 @@ McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
     if (i >= normal_damage) return damage_overlay[i];
 
   TYRA_WARN("Block damage overlay not loaded");
+  return nullptr;
+}
+
+SfxBlockModel* BlockManager::getBrokenSoundByBlockType(
+    const Blocks& blockType) {
+  for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)
+    if (blockSfxRepositories[i]->id == SoundFxCategory::Broken)
+      return blockSfxRepositories[i]->getModel((u8)blockType);
+
+  TYRA_WARN("Block sound not found for type: ",
+            std::to_string((u8)blockType).c_str());
   return nullptr;
 }
 

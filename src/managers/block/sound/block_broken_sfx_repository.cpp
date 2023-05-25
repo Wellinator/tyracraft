@@ -1,11 +1,11 @@
-#include "managers/block/sound/block_dig_sfx_repository.hpp"
+#include "managers/block/sound/block_broken_sfx_repository.hpp"
 
-BlockDigSfxRepository::BlockDigSfxRepository()
-    : BlockSfxBaseRepository(SoundFxCategory::Dig) {
+BlockBrokenSfxRepository::BlockBrokenSfxRepository()
+    : BlockSfxBaseRepository(SoundFxCategory::Broken) {
   loadModels();
 }
 
-BlockDigSfxRepository::~BlockDigSfxRepository() {
+BlockBrokenSfxRepository::~BlockBrokenSfxRepository() {
   for (size_t i = 0; i < models.size(); i++) {
     delete models[i];
   }
@@ -13,7 +13,7 @@ BlockDigSfxRepository::~BlockDigSfxRepository() {
   models.shrink_to_fit();
 }
 
-void BlockDigSfxRepository::loadModels() {
+void BlockBrokenSfxRepository::loadModels() {
   // Base Blocks
   models.push_back(new SfxBlockModel(Blocks::GRASS_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Grass1));
@@ -25,8 +25,8 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFX::Sand1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Dig,
-                                     SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK,
+                                     SoundFxCategory::Random, SoundFX::Glass1));
   models.push_back(new SfxBlockModel(Blocks::PUMPKIN_BLOCK,
                                      SoundFxCategory::Dig, SoundFX::Stone1));
 

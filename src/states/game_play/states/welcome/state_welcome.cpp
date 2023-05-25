@@ -90,5 +90,5 @@ void StateWelcome::playClickSound() {
       this->stateGamePlay->context->t_soundManager->getAvailableChannel();
   this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
   this->stateGamePlay->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                        SoundFX::Click, ch);
+                                                        SoundFX::WoodClick, ch);
 }

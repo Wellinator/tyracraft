@@ -37,6 +37,9 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
 
+  // Set soundManager ref
+  this->t_soundManager = t_soundManager;
+
   // Init light stuff
   dayNightCycleManager.init();
   initWorldLightModel();
@@ -54,7 +57,9 @@ void World::generateLight() {
   dayNightCycleManager.update();
   updateLightModel();
 
-  CrossCraft_World_PropagateSunLight(static_cast<uint32_t>(g_ticksCounter));
+  initSunLight(static_cast<uint32_t>(g_ticksCounter));
+  initBlockLight(&blockManager);
+
   updateSunlight();
   updateBlockLights();
   chunckManager.reloadLightDataOfAllChunks();
@@ -525,13 +530,15 @@ void World::removeBlock(Block* blockToRemove) {
 
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
-  CrossCraft_World_CheckSunLight(offsetToRemove.x, offsetToRemove.y,
-                                 offsetToRemove.z);
+  checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+
+  updateSunlight();
   updateBlockLights();
+
   chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
-  // playDestroyBlockSound(blockToRemove->type);
+  playDestroyBlockSound(blockToRemove->type);
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
@@ -600,6 +607,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
                     static_cast<u8>(blockToPlace));
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
+      checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
 
       const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
       if (lightValue > 0) {
@@ -614,7 +622,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
       chunckManager.reloadLightData();
     }
 
-    // playPutBlockSound(blockToPlace);
+    playPutBlockSound(blockToPlace);
   }
 
   updateNeighBorsChunksByModdedPosition(blockOffset);
@@ -642,7 +650,7 @@ void World::breakTargetBlock(const float& deltaTime) {
       targetBlock->damage =
           breaking_time_pessed / blockManager.getBlockBreakingTime() * 100;
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        // playBreakingBlockSound(targetBlock->type);
+        playBreakingBlockSound(targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;
@@ -658,26 +666,30 @@ void World::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getPlaceSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 
 void World::playDestroyBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        blockManager.getDigSoundByBlockType(blockType);
+        blockManager.getBrokenSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBrokenSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 
@@ -686,12 +698,14 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBreakingSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
     }
-    Tyra::Threading::switchThread();
   }
 }
 
@@ -731,6 +745,7 @@ void World::buildChunk(Chunck* t_chunck) {
         if (isVisible) {
           BlockInfo* blockInfo =
               blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
+
           if (blockInfo) {
             Block* block = new Block(blockInfo);
             block->index = blockIndex;
@@ -759,7 +774,7 @@ void World::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->state = ChunkState::Loaded;
-  t_chunck->loadDrawData(terrain);
+  t_chunck->loadDrawData(terrain, &worldLightModel);
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
@@ -787,7 +802,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       const bool isVisible = visibleFaces > 0;
 
       // Are block's coordinates in world range?
-      if (isVisible && BoundCheckMap(terrain, x, y, z)) {
+      if (isVisible) {
         BlockInfo* blockInfo =
             blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
 
@@ -835,7 +850,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     return;
   }
 
-  t_chunck->loadDrawData(terrain);
+  t_chunck->loadDrawData(terrain, &worldLightModel);
   t_chunck->state = ChunkState::Loaded;
 }
 
@@ -1404,20 +1419,20 @@ void singleCheck(uint16_t x, uint16_t z) {
   }
 }
 
-bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  singleCheck(x, z);
-  singleCheck(x + 1, z);
-  singleCheck(x - 1, z);
-  singleCheck(x, z + 1);
-  singleCheck(x, z - 1);
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
+  removeSunLight(x + 1, y, z);
+  removeSunLight(x - 1, y, z);
+  removeSunLight(x, y + 1, z);
+  removeSunLight(x, y - 1, z);
+  removeSunLight(x, y, z + 1);
+  removeSunLight(x, y, z - 1);
+  removeSunLight(x, y, z);
 
-  updateSunlight();
-
-  return true;
+  return;
 }
 
-void CrossCraft_World_PropagateSunLight(uint32_t tick) {
-  printf("Propagating SunLight...\n");
+void initSunLight(uint32_t tick) {
+  TYRA_LOG("Initiating SunLight...");
   auto map = CrossCraft_World_GetMapPtr();
 
   for (int x = 0; x < map->length; x++) {
@@ -1456,8 +1471,23 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
       }
     }
   }
+}
 
-  updateSunlight();
+void initBlockLight(BlockManager* blockManager) {
+  TYRA_LOG("Initiating block Lights...");
+  auto map = CrossCraft_World_GetMapPtr();
+
+  for (int x = 0; x < map->length; x++) {
+    for (int z = 0; z < map->width; z++) {
+      for (int y = map->height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+        auto lightValue = blockManager->getBlockLightValue(b);
+        if (lightValue > 0) {
+          addBlockLight(x, y, z, lightValue);
+        }
+      }
+    }
+  }
 }
 
 void CrossCraft_World_Init(const uint32_t& seed) {

@@ -21,7 +21,7 @@ void CreativeAudioListener::playRandomCreativeSound() {
     TYRA_LOG("Playing song -> ", sonfToPlay.c_str());
     t_song->load(sonfToPlay);
     t_song->inLoop = false;
-    t_song->setVolume(90);
+    t_song->setVolume(65);
     t_song->play();
   }
 }

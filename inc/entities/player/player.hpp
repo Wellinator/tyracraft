@@ -25,6 +25,8 @@
 #include "entities/player/player_render_pip.hpp"
 #include "entities/player/player_first_person_render_pip.hpp"
 #include "entities/player/player_third_person_render_pip.hpp"
+#include "entities/sfx_config.hpp"
+#include "models/sfx_config_model.hpp"
 #include <tyra>
 
 using Tyra::Audio;

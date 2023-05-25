@@ -40,11 +40,6 @@ void SfxDigCategory::loadSounds() {
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/dig/stone1.adpcm"));
   sounds.push_back(stone1);
 
-  SfxLibrarySound* wetGrass1 = new SfxLibrarySound(SoundFX::WetGrass1);
-  wetGrass1->_sound = this->t_audio->adpcm.load(
-      FileUtils::fromCwd("sounds/dig/wet_grass1.adpcm"));
-  sounds.push_back(wetGrass1);
-
   SfxLibrarySound* wood1 = new SfxLibrarySound(SoundFX::Wood1);
   wood1->_sound =
       this->t_audio->adpcm.load(FileUtils::fromCwd("sounds/dig/wood1.adpcm"));
