@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <array>
+#include <tyra>
+
+using Tyra::Vec4;
 
 typedef struct {
   uint16_t width;
@@ -28,6 +31,8 @@ typedef struct {
 uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
 
 void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y, uint32_t* z);
+
+uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos);
 
 uint8_t GetDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);

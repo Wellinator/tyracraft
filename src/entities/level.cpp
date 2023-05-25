@@ -68,3 +68,12 @@ void SetSunLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
 bool BoundCheckMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   return (x < map->length && y < map->height && z < map->width);
 }
+
+uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos) {
+  Vec4 result = *pos / (DUBLE_BLOCK_SIZE);
+  auto x = static_cast<uint16_t>(result.x);
+  auto y = static_cast<uint16_t>(result.y);
+  auto z = static_cast<uint16_t>(result.z);
+
+  return BoundCheckMap(map, x, y, z) ? GetBlockFromMap(map, x, y, z) : NULL;
+}
