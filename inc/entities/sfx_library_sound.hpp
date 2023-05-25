@@ -10,6 +10,7 @@ enum class SoundFX {
 
   // Random
   Click,
+  WoodClick,
 
   // Dig
   Grass1,

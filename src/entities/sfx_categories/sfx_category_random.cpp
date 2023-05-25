@@ -19,4 +19,9 @@ void SfxRandomCategory::loadSounds() {
   clickSfx->_sound = this->t_audio->adpcm.load(
       FileUtils::fromCwd("sounds/random/click.adpcm"));
   sounds.push_back(clickSfx);
+
+  SfxLibrarySound* woodClickSfx = new SfxLibrarySound(SoundFX::WoodClick);
+  woodClickSfx->_sound = this->t_audio->adpcm.load(
+      FileUtils::fromCwd("sounds/random/wood_click.adpcm"));
+  sounds.push_back(woodClickSfx);
 }
