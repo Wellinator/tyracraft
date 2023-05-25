@@ -191,6 +191,11 @@ void CreativePlayingState::drawDegubInfo() {
           .append(std::to_string(static_cast<int>(pos.z / DUBLE_BLOCK_SIZE)));
   FontManager_printText(playerPosition,
                         FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
+
+  // Draw version
+  std::string version = std::string("Version: ").append(VERSION);
+  FontManager_printText(version,
+                        FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {
