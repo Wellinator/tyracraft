@@ -144,7 +144,7 @@ void StateMainMenu::loadSavedGame(const std::string save_file_full_path) {
 void StateMainMenu::playClickSound() {
   this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
   this->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                         SoundFX::Click, MENU_SFX_CH);
+                                         SoundFX::WoodClick, MENU_SFX_CH);
   Tyra::Threading::switchThread();
 }
 
