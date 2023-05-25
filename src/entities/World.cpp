@@ -673,6 +673,7 @@ void World::playPutBlockSound(const Blocks& blockType) {
       sound->_sound->pitch = config->_pitch;
       t_soundManager->setSfxVolume(config->_volume, ch);
       t_soundManager->playSfx(sound, ch);
+      delete config;
     }
   }
 }
@@ -689,6 +690,7 @@ void World::playDestroyBlockSound(const Blocks& blockType) {
       sound->_sound->pitch = config->_pitch;
       t_soundManager->setSfxVolume(config->_volume, ch);
       t_soundManager->playSfx(sound, ch);
+      delete config;
     }
   }
 }
@@ -705,6 +707,7 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
       sound->_sound->pitch = config->_pitch;
       t_soundManager->setSfxVolume(config->_volume, ch);
       t_soundManager->playSfx(sound, ch);
+      delete config;
     }
   }
 }
