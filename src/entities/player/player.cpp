@@ -480,6 +480,7 @@ void Player::playWalkSfx(const Blocks& blockType) {
     sound->_sound->pitch = config->_pitch;
     t_soundManager->setSfxVolume(config->_volume, ch);
     t_soundManager->playSfx(sound, ch);
+    delete config;
   }
 }
 
