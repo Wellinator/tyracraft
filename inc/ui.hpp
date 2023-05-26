@@ -30,6 +30,7 @@ class Ui {
   void renderHungerBar();
   void renderBreathBar();
   void renderInventoryMenu();
+  void renderUnderWaterOverlay();
 
   void loadInventory();
   void unloadInventory();
@@ -47,6 +48,7 @@ class Ui {
   Sprite empty_slots;
   Sprite selected_slot;
   Sprite xp_bar_full;
+  Sprite underWaterOverlay;
   Sprite health[10];
   Sprite hungry[10];
   Sprite armor[10];

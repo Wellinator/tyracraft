@@ -111,8 +111,10 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (stateGamePlay->player->isOnWater() ||
         stateGamePlay->player->isUnderWater()) {
-      if (clicked.Cross) stateGamePlay->player->jump();
-    } else if (stateGamePlay->player->isOnGround) {
+      if (pressed.Cross) stateGamePlay->player->swim();
+    }
+
+    if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
       if (clicked.DpadUp)
         stateGamePlay->player->selectNextItem();
@@ -163,6 +165,9 @@ void CreativePlayingState::inventoryInputHandler(const float& deltaTime) {
 void CreativePlayingState::navigate() {}
 
 void CreativePlayingState::renderCreativeUi() {
+  if (stateGamePlay->player->isUnderWater())
+    stateGamePlay->ui->renderUnderWaterOverlay();
+
   stateGamePlay->ui->renderCrosshair();
   stateGamePlay->ui->renderInventory();
 }

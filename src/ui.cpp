@@ -14,6 +14,7 @@ Ui::~Ui() {
   textureRepository->freeBySprite(empty_slots);
   textureRepository->freeBySprite(selected_slot);
   textureRepository->freeBySprite(xp_bar_full);
+  textureRepository->freeBySprite(underWaterOverlay);
 
   textureRepository->free(healthTexture->id);
   textureRepository->free(hungryTexture->id);
@@ -58,6 +59,10 @@ void Ui::renderCrosshair() { this->t_renderer->renderer2D.render(&crosshair); }
 
 void Ui::renderExperienceBar() {
   this->t_renderer->renderer2D.render(&xp_bar_full);
+}
+
+void Ui::renderUnderWaterOverlay() {
+  t_renderer->renderer2D.render(underWaterOverlay);
 }
 
 void Ui::renderArmorBar() {
@@ -132,6 +137,13 @@ void Ui::loadlHud() {
   xp_bar_full.position.set(BASE_X_POS, BASE_Y_POS + 26);
   this->t_renderer->core.texture.repository.add(xp_bar_fullTexPath)
       ->addLink(xp_bar_full.id);
+
+  underWaterOverlay.mode = Tyra::MODE_STRETCH;
+  underWaterOverlay.size.set(width, height);
+  underWaterOverlay.position.set(0, 0);
+  this->t_renderer->core.texture.repository
+      .add(FileUtils::fromCwd("textures/misc/underwater.png"))
+      ->addLink(underWaterOverlay.id);
 
   std::string emptySlotsTexPath =
       FileUtils::fromCwd("textures/gui/empty_slots.png");
