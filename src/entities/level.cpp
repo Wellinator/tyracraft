@@ -75,5 +75,5 @@ uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos) {
   auto y = static_cast<uint16_t>(result.y);
   auto z = static_cast<uint16_t>(result.z);
 
-  return BoundCheckMap(map, x, y, z) ? GetBlockFromMap(map, x, y, z) : NULL;
+  return BoundCheckMap(map, x, y, z) ? GetBlockFromMap(map, x, y, z) : 0;
 }
