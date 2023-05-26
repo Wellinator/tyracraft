@@ -875,22 +875,24 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
-      float distanceFromCurrentBlockToPlayer =
-          camPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
+      auto block = chuncks[h]->blocks[i];
 
-      if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
+      u8 isBreakable = block->type != Blocks::WATER_BLOCK;
+      float distanceFromCurrentBlockToPlayer =
+          camPosition.distanceTo(*block->getPosition());
+
+      if (isBreakable && distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
         // Reset block state
-        chuncks[h]->blocks[i]->isTarget = 0;
-        chuncks[h]->blocks[i]->distance = -1.0f;
+        block->isTarget = 0;
+        block->distance = -1.0f;
 
         float intersectionPoint;
-        if (ray.intersectBox(chuncks[h]->blocks[i]->minCorner,
-                             chuncks[h]->blocks[i]->maxCorner,
+        if (ray.intersectBox(block->minCorner, block->maxCorner,
                              &intersectionPoint)) {
           hitedABlock = 1;
           if (tempTargetDistance == -1.0f ||
               (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-            tempTargetBlock = chuncks[h]->blocks[i];
+            tempTargetBlock = block;
             tempTargetDistance = intersectionPoint;
             tempPlayerDistance = distanceFromCurrentBlockToPlayer;
           }
