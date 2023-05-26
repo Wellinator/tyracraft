@@ -19,7 +19,17 @@ enum class SoundFX {
   Sand1,
   Snow1,
   Stone1,
-  Wood1
+  Wood1,
+
+  //Liquid
+  Splash,
+  Splash1,
+  Splash2,
+  Swim1,
+  Swim2,
+  Swim3,
+  Swim4,
+  Water
 };
 
 class SfxLibrarySound {
