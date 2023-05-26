@@ -162,6 +162,8 @@ class Player {
   float lastTimePlayedWalkSfx = 0.0F;
   void playWalkSfx(const Blocks& blockType);
   void playSwimSfx();
+  void playSplashSfx();
+  u8 isSubmerged = false;
 
   void animate();
 

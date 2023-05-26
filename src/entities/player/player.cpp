@@ -89,7 +89,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
           updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
       if (hasChangedPosition) {
-        if (lastTimePlayedWalkSfx > 0.3) {
+        if (lastTimePlayedWalkSfx > 0.35) {
           if (isOnWater() || isUnderWater()) {
             playSwimSfx();
           } else if (isOnGround && currentBottomBlock) {
@@ -509,6 +509,21 @@ void Player::playSwimSfx() {
       static_cast<u8>(SoundFX::Swim1), static_cast<u8>(SoundFX::Swim4)));
 
   const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 30;
+
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+  sound->_sound->pitch = randPich;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
+void Player::playSplashSfx() {
+  const int ch = t_soundManager->getAvailableChannel();
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Splash), static_cast<u8>(SoundFX::Splash2)));
+
+  const u8 randPich = Tyra::Math::randomi(60, 140);
   const u8 volume = 60;
 
   SfxLibrarySound* sound =
@@ -643,16 +658,28 @@ void Player::loadPlayerTexture() {
 }
 
 void Player::updateStateInWater(LevelMap* terrain) {
-  Vec4 min, max;
+  Vec4 min, mid, max, top, bottom;
   BBox bbox = getHitBox();
   bbox.getMinMax(&min, &max);
+  mid = ((max - min) / 2) + min;
+
+  bottom.set(mid.x, min.y, mid.z);
+  top.set(mid.x, max.y, mid.z);
 
   auto blockBottom =
-      static_cast<Blocks>(getBlockByWorldPosition(terrain, &min));
-  auto blockTop = static_cast<Blocks>(getBlockByWorldPosition(terrain, &max));
+      static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));
+  auto blockTop = static_cast<Blocks>(getBlockByWorldPosition(terrain, &top));
 
   _isOnWater = blockBottom == Blocks::WATER_BLOCK;
   _isUnderWater = blockTop == Blocks::WATER_BLOCK;
+
+  if (!isSubmerged && _isUnderWater) {
+    isSubmerged = true;
+    playSplashSfx();
+  } else if (isSubmerged && !_isUnderWater) {
+    isSubmerged = false;
+    playSplashSfx();
+  }
 
   // printf("isOnWater: %i | isUnderWater: %i\n", _isOnWater, _isUnderWater);
 }
