@@ -186,14 +186,14 @@ void Player::updateGravity(const float& deltaTime,
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
-  const Vec4 upDir = GRAVITY;
+  const Vec4 upDir = GRAVITY * 1.7F;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
-  const Vec4 downDir = -GRAVITY;
+  const Vec4 downDir = -GRAVITY  * 1.7F;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
