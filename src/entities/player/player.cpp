@@ -88,11 +88,16 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
       const bool hasChangedPosition =
           updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
-      if (hasChangedPosition && isOnGround && currentBottomBlock) {
-        if (lastTimePlayedWalkSfx > 0.3F) {
-          playWalkSfx(currentBottomBlock->type);
+      if (hasChangedPosition) {
+        if (lastTimePlayedWalkSfx > 0.3) {
+          if (isOnWater() || isUnderWater()) {
+            playSwimSfx();
+          } else if (isOnGround && currentBottomBlock) {
+            playWalkSfx(currentBottomBlock->type);
+          }
+
           setWalkingAnimation();
-          lastTimePlayedWalkSfx = 0;
+          lastTimePlayedWalkSfx = 0.0F;
         } else {
           lastTimePlayedWalkSfx += deltaTime;
         }
@@ -494,6 +499,23 @@ void Player::playWalkSfx(const Blocks& blockType) {
     t_soundManager->playSfx(sound, ch);
     delete config;
   }
+}
+
+// Pitch values from
+// https://minecraft.fandom.com/wiki/Water#cite_note-bugMC-177092-7
+void Player::playSwimSfx() {
+  const int ch = t_soundManager->getAvailableChannel();
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Swim1), static_cast<u8>(SoundFX::Swim4)));
+
+  const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 60;
+
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+  sound->_sound->pitch = randPich;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
 }
 
 void Player::toggleFlying() {
