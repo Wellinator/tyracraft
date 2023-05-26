@@ -79,6 +79,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
                     const Vec4& camDir,
                     const std::vector<Chunck*>& loadedChunks,
                     TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
+  updateStateInWater(t_terrain);
   isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
   if (isMoving) {
     Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
@@ -101,7 +102,6 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
     unsetWalkingAnimation();
   }
 
-  updateWaterState(t_terrain);
   if (!isFlying) updateGravity(deltaTime, terrainHeight);
 
   animate();
@@ -131,6 +131,9 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
   result.normalize();
   result *= (this->speed * sensibility.length() * deltaTime);
+
+  if (_isOnWater || _isUnderWater) result *= 0.6F;
+
   return result + *mesh->getPosition();
 }
 
@@ -138,16 +141,19 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  Vec4 acceleration = GRAVITY * deltaTime;
-  velocity += acceleration;
+  float acceleration = GRAVITY.y * deltaTime;
+  velocity.y += acceleration;
+  if (_isOnWater || _isUnderWater) {
+    velocity.y *= 0.6F;
+  }
 
   // Increase the position by velocity
-  Vec4 newYPosition = *mesh->getPosition() - (velocity * deltaTime);
+  float newYPosition = mesh->getPosition()->y - velocity.y;
 
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
-  if (newYPosition.y + hitBox->getHeight() > worldMaxHeight ||
-      newYPosition.y < worldMinHeight) {
+  if (newYPosition + hitBox->getHeight() > worldMaxHeight ||
+      newYPosition < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
     mesh->getPosition()->set(spawnArea);
@@ -158,31 +164,31 @@ void Player::updateGravity(const float& deltaTime,
   const float playerHeight = std::abs(hitBox->getHeight());
   const float heightLimit = terrainHeight->maxHeight - playerHeight;
 
-  if (newYPosition.y < terrainHeight->minHeight) {
-    newYPosition.y = terrainHeight->minHeight;
+  if (newYPosition < terrainHeight->minHeight) {
+    newYPosition = terrainHeight->minHeight;
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     isOnGround = true;
-  } else if (newYPosition.y >= heightLimit) {
-    newYPosition.y = heightLimit;
+  } else if (newYPosition >= heightLimit) {
+    newYPosition = heightLimit;
     velocity = -velocity;
     isOnGround = false;
   }
 
   // Finally updates gravity after checks
-  mesh->getPosition()->y = newYPosition.y;
+  mesh->getPosition()->y = newYPosition;
 }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
-  const Vec4 upDir = GRAVITY * 0.4F;
+  const Vec4 upDir = GRAVITY;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
-  const Vec4 downDir = GRAVITY * -0.4F;
+  const Vec4 downDir = -GRAVITY;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
@@ -314,8 +320,12 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(
     for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
       Block* block = loadedChunks[chunkIndex]->blocks[i];
 
-      // Is above or under a block?
-      if (minPlayer.x <= block->maxCorner.x &&
+      if (
+          // Is collidable
+          block->type != Blocks::WATER_BLOCK &&
+
+          // is under or above block
+          minPlayer.x <= block->maxCorner.x &&
           maxPlayer.x >= block->minCorner.x &&
           minPlayer.z <= block->maxCorner.z &&
           maxPlayer.z >= block->minCorner.z) {
@@ -525,8 +535,13 @@ void Player::selectPreviousItem() {
 }
 
 void Player::jump() {
-  this->velocity += this->lift * this->speed;
-  this->isOnGround = false;
+  velocity += lift;
+  isOnGround = false;
+}
+
+void Player::swim() {
+  velocity += (lift * 0.5F);
+  isOnGround = false;
 }
 
 void Player::setRenderPip(PlayerRenderPip* pipToSet) {
@@ -605,7 +620,7 @@ void Player::loadPlayerTexture() {
       FileUtils::fromCwd("textures/entity/player/steve.png"));
 }
 
-void Player::updateWaterState(LevelMap* terrain) {
+void Player::updateStateInWater(LevelMap* terrain) {
   Vec4 min, max;
   BBox bbox = getHitBox();
   bbox.getMinMax(&min, &max);
