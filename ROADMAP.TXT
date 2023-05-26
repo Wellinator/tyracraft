@@ -98,7 +98,7 @@
     ✅ -> Block light system;
     ✅ -> pre-calculated ambient occlusion;
     🔲 -> Implement water phisycs:
-        🔲 -> Gravity:
+        ✅ -> Gravity:
         🔲 -> Waterl flood fill:
 
 * Bug fixes for pre-alpha release (v0.2.x):
@@ -110,6 +110,9 @@
     ✅ -> Fix block light remove:
     ✅ -> Fix light data when changes world save:
     ✅ -> Fix Day/Night cycle:
+    🔲 -> Water:
+        🔲 -> Update sun light when remove block under water;
+        🔲 -> Increase sunlight value at night;
     ✅ -> Update light in moded chunks:
         ✅ -> Increase light update speed (maybe two chunks per frame):
     ✅ -> Real PS2:
