@@ -192,12 +192,12 @@ void Chunck::loadMeshData(Block* t_block) {
 
     // TODO: move to a block builder
     if (t_block->type == Blocks::WATER_BLOCK) {
-      v0.y *= 0.9F;
-      v1.y *= 0.9F;
-      v2.y *= 0.9F;
-      v3.y *= 0.9F;
-      v4.y *= 0.9F;
-      v5.y *= 0.9F;
+      v0.y *= 0.75F;
+      v1.y *= 0.75F;
+      v2.y *= 0.75F;
+      v3.y *= 0.75F;
+      v4.y *= 0.75F;
+      v5.y *= 0.75F;
     }
 
     vertices.push_back(t_block->model * v0);
