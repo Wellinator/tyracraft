@@ -137,7 +137,11 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
   result.normalize();
   result *= (this->speed * sensibility.length() * deltaTime);
 
-  if (_isOnWater || _isUnderWater) result *= 0.6F;
+  if (_isOnWater) {
+    result *= GRAVITY_ON_WATER_FACTOR;
+  } else if (_isUnderWater) {
+    result *= GRAVITY_UNDER_WATER_FACTOR;
+  }
 
   return result + *mesh->getPosition();
 }
@@ -148,8 +152,10 @@ void Player::updateGravity(const float& deltaTime,
   // Accelerate the velocity: velocity += gravConst * deltaTime
   float acceleration = GRAVITY.y * deltaTime;
   velocity.y += acceleration;
-  if (_isOnWater || _isUnderWater) {
-    velocity.y *= 0.6F;
+  if (_isOnWater) {
+    velocity.y *= GRAVITY_ON_WATER_FACTOR;
+  } else if (_isUnderWater) {
+    velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
   }
 
   // Increase the position by velocity
@@ -186,14 +192,14 @@ void Player::updateGravity(const float& deltaTime,
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
-  const Vec4 upDir = GRAVITY * 1.7F;
+  const Vec4 upDir = GRAVITY * 3.0F;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
-  const Vec4 downDir = -GRAVITY  * 1.7F;
+  const Vec4 downDir = -GRAVITY * 3.0F;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
@@ -306,8 +312,7 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
   }
 
   // Apply new position;
-  mesh->getPosition()->x = nextPlayerPos.x;
-  mesh->getPosition()->z = nextPlayerPos.z;
+  mesh->getPosition()->set(nextPlayerPos);
   return true;
 }
 
@@ -577,7 +582,13 @@ void Player::jump() {
 }
 
 void Player::swim() {
-  velocity += (lift * 0.5F);
+  if (_isOnWater) {
+    velocity += (lift * 0.18F);
+    _isOnWater = false;
+  } else if (_isUnderWater) {
+    velocity += (lift * 0.15F);
+  }
+
   isOnGround = false;
 }
 
