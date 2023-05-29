@@ -105,6 +105,7 @@
     ✅ -> Player arm position and scale;
     ✅ -> No sun light on async loaded chunks;
     ✅ -> Fix block light after loading save:
+    ✅ -> Fix water block top height;
     ✅ -> Remove camera rotation at main memu:
     ✅ -> Fix height collision when jumping:
     ✅ -> Fix block light remove:
