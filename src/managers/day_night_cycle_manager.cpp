@@ -20,8 +20,7 @@ void DayNightCycleManager::update() {
 }
 
 const float DayNightCycleManager::getSunLightIntensity() {
-  float intensity = getLightScaleFromAngle();
-  return std::max(intensity, 0.2F);
+  return getLightScaleFromAngle();
 }
 
 const float DayNightCycleManager::getAmbientLightIntesity() {

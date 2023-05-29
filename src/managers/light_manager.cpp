@@ -70,7 +70,8 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                     FACE_SIDE faceSide, LevelMap* t_terrain,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
-  float intensity = 0.3F;
+  const float MIN_LIGHT_FACTOR = 0.25F;
+  // float intensity = 0.3F;
   u8 sunLightLevel;
   u8 lightLevel;
 
@@ -139,8 +140,8 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
    */
   // const float sunLightFactor = (intensity + (sunLightLevel /
   // MAX_LIGHT_VALUE)) / (intensity + 1.0F);
-  const float sunLightFactor =
-      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE;
+  const float sunLightFactor = std::max(
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
 
   const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
 
