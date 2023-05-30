@@ -96,6 +96,7 @@
     🔲 -> Popup messages system;
     ✅ -> Sun light system;
     ✅ -> Block light system;
+    ✅ -> Running;
     ✅ -> pre-calculated ambient occlusion;
     🔲 -> Implement water phisycs:
         ✅ -> Gravity:
