@@ -107,9 +107,9 @@ enum class Blocks {
 #define LOADING_SCREEN 4
 
 // World constants
-#define GRAVITY Vec4(0.0f, 7.5f, 0.0f)
-#define GRAVITY_ON_WATER_FACTOR 0.9F
-#define GRAVITY_UNDER_WATER_FACTOR 0.35F
+#define GRAVITY Vec4(0.0f, -340.0f, 0.0f)
+#define GRAVITY_ON_WATER_FACTOR 0.85F
+#define GRAVITY_UNDER_WATER_FACTOR 0.85F
 
 enum class GAME_MODE { SURVIVAL, CREATIVE };
 
