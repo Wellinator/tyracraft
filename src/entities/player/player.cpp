@@ -127,6 +127,8 @@ void Player::render() {
   //   t_renderer->renderer3D.utility.drawBBox(*currentBottomBlock->bbox,
   //                                           Color(0, 200, 0));
   // }
+
+  t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(200, 200, 0));
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
@@ -150,21 +152,21 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  float acceleration = GRAVITY.y * deltaTime;
-  velocity.y += acceleration;
-  if (_isOnWater) {
-    velocity.y *= GRAVITY_ON_WATER_FACTOR;
-  } else if (_isUnderWater) {
+  velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+
+  if (_isUnderWater) {
     velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
+  } else if (_isOnWater) {
+    velocity.y *= GRAVITY_ON_WATER_FACTOR;
   }
 
   // Increase the position by velocity
-  float newYPosition = mesh->getPosition()->y - velocity.y;
+  Vec4 newPosition = *mesh->getPosition() + (velocity * deltaTime);
 
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
-  if (newYPosition + hitBox->getHeight() > worldMaxHeight ||
-      newYPosition < worldMinHeight) {
+  if (newPosition.y + hitBox->getHeight() > worldMaxHeight ||
+      newPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
     mesh->getPosition()->set(spawnArea);
@@ -175,31 +177,31 @@ void Player::updateGravity(const float& deltaTime,
   const float playerHeight = std::abs(hitBox->getHeight());
   const float heightLimit = terrainHeight->maxHeight - playerHeight;
 
-  if (newYPosition < terrainHeight->minHeight) {
-    newYPosition = terrainHeight->minHeight;
+  if (newPosition.y < terrainHeight->minHeight) {
+    newPosition.y = terrainHeight->minHeight;
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     isOnGround = true;
-  } else if (newYPosition >= heightLimit) {
-    newYPosition = heightLimit;
+  } else if (newPosition.y >= heightLimit) {
+    newPosition.y = heightLimit;
     velocity = -velocity;
     isOnGround = false;
   }
 
   // Finally updates gravity after checks
-  mesh->getPosition()->y = newYPosition;
+  mesh->getPosition()->set(newPosition);
 }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
-  const Vec4 upDir = GRAVITY * 3.0F;
+  const Vec4 upDir = -GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
-  const Vec4 downDir = -GRAVITY * 3.0F;
+  const Vec4 downDir = GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
@@ -256,17 +258,15 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
 
       auto block = loadedChunks[chunkIndex]->blocks[i];
 
-      // Prevent colliding to water horizontally
-      const bool isWater = block->type == Blocks::WATER_BLOCK;
+      if (
+          // Prevent colliding to water horizontally
+          block->type == Blocks::WATER_BLOCK ||
 
-      // is vertically out of range?
-      const bool isOutOfRange =
-          playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
-          playerBB.getTopFace().axisPosition < block->minCorner.y ||
-          currentPlayerPos.distanceTo(*block->getPosition()) >
-              DUBLE_BLOCK_SIZE * 2;
-
-      if (isWater || isOutOfRange) {
+          // is vertically out of range?
+          (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
+           playerBB.getTopFace().axisPosition < block->minCorner.y ||
+           currentPlayerPos.distanceTo(*block->getPosition()) >
+               DUBLE_BLOCK_SIZE * 2)) {
         continue;
       };
 
@@ -582,12 +582,14 @@ void Player::jump() {
 }
 
 void Player::swim() {
-  if (_isOnWater) {
-    velocity += (lift * 0.18F);
+  if (_isUnderWater) {
+    velocity += (lift * 0.25F);
+  } else if (_isOnWater) {
+    velocity += (lift * 0.25F);
     _isOnWater = false;
-  } else if (_isUnderWater) {
-    velocity += (lift * 0.15F);
   }
+
+  if (velocity.y > lift.y) velocity.y = lift.y;
 
   isOnGround = false;
 }
@@ -675,7 +677,7 @@ void Player::updateStateInWater(LevelMap* terrain) {
   mid = ((max - min) / 2) + min;
 
   bottom.set(mid.x, min.y, mid.z);
-  top.set(mid.x, max.y, mid.z);
+  top.set(mid.x, max.y + 6.0F, mid.z);
 
   auto blockBottom =
       static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));
