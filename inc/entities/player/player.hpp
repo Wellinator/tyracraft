@@ -63,7 +63,7 @@ class Player {
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isFlying, isBreaking, isMoving;
+  bool isOnGround, isFlying, isBreaking, isMoving, isRunning;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
@@ -112,6 +112,7 @@ class Player {
   void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void shiftItemToInventory(const ItemId& itemToShift);
   void setItemToInventory(const ItemId& itemToShift);
+  void setRunning(bool _isRunning);
 
   TerrainHeightModel getTerrainHeightAtPosition(
       const std::vector<Chunck*>& loadedChunks);
@@ -130,7 +131,12 @@ class Player {
   const float L_JOYPAD_DEAD_ZONE = 0.35F;
 
   // Forces values
-  float speed = 100;
+  float acceleration = 140.0F;
+  float speed = 0;
+  float maxSpeed = 90.0F;
+
+  float runningAcceleration = 170.0F;
+  float runningMaxSpeed = 110.0F;
 
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);

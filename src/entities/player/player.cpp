@@ -105,6 +105,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
     }
   } else {
     unsetWalkingAnimation();
+    speed = 0;
   }
 
   if (!isFlying) updateGravity(deltaTime, terrainHeight);
@@ -128,21 +129,27 @@ void Player::render() {
   //                                           Color(0, 200, 0));
   // }
 
-  t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(200, 200, 0));
+  // t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(200, 200, 0));
 }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Vec4& camDir) {
-  Vec4 result =
-      Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
-           (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
-  result.normalize();
-  result *= (this->speed * sensibility.length() * deltaTime);
+  const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
+  const float _maxAcc = isRunning ? runningAcceleration : acceleration;
 
-  if (_isOnWater) {
-    result *= GRAVITY_ON_WATER_FACTOR;
-  } else if (_isUnderWater) {
-    result *= GRAVITY_UNDER_WATER_FACTOR;
+  if (speed < _maxSpeed) {
+    speed += _maxAcc * deltaTime;
+  }
+
+  Vec4 direction =
+      Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
+           (camDir.z * -sensibility.z) + (camDir.x * sensibility.x))
+          .getNormalized();
+
+  Vec4 result = direction * (speed * sensibility.length() * deltaTime);
+
+  if (_isUnderWater || _isOnWater) {
+    result *= IN_WATER_FRICTION;
   }
 
   return result + *mesh->getPosition();
@@ -545,6 +552,15 @@ void Player::toggleFlying() {
     this->isOnGround = false;
   } else {
     this->t_renderer->core.renderer3D.setFov(60.0F);
+  }
+}
+
+void Player::setRunning(bool _isRunning) {
+  if (isRunning != _isRunning) {
+    isRunning = _isRunning;
+    isRunning ? this->t_renderer->core.renderer3D.setFov(70.0F)
+              : this->t_renderer->core.renderer3D.setFov(60.0F);
+    TYRA_LOG("Is running -> ", isRunning);
   }
 }
 

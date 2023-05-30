@@ -84,6 +84,9 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
         stateGamePlay->world->chunckManager.getVisibleChunks());
 
+    // Set running state
+    stateGamePlay->player->setRunning((bool)pressed.Square);
+
     if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
     if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
 
