@@ -40,7 +40,7 @@ void Camera::update() {
 
 void Camera::setPositionByMesh(Mesh* t_mesh) {
   position.set(*t_mesh->getPosition() -
-               (unitCirclePosition.getNormalized() * BLOCK_SIZE));
+               (unitCirclePosition.getNormalized() * 4.5F));
   position.y += CAMERA_Y;
 }
 
