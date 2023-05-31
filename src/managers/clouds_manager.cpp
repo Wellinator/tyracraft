@@ -55,8 +55,10 @@ void CloudsManager::render() {
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
-  infoBag.textureMappingType = Tyra::TyraNearest;
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.fullClipChecks = true;
+  infoBag.blendingEnabled = false;
+  infoBag.antiAliasingEnabled = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
 
