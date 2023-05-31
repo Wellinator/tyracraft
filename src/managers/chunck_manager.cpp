@@ -1,5 +1,6 @@
 #include "managers/chunck_manager.hpp"
 #include "math/plane.hpp"
+#include <algorithm>
 
 using Tyra::M4x4;
 using Tyra::Plane;
@@ -100,10 +101,9 @@ std::vector<Chunck*>& ChunckManager::getVisibleChunks() {
 void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),
             [playerPosition](const Chunck* a, const Chunck* b) {
-              const float distanceA =
-                  (*a->center * DUBLE_BLOCK_SIZE).distanceTo(*playerPosition);
-              const float distanceB =
-                  (*b->center * DUBLE_BLOCK_SIZE).distanceTo(*playerPosition);
+              const Vec4 dest = *playerPosition / DUBLE_BLOCK_SIZE;
+              const float distanceA = (*a->center).distanceTo(dest);
+              const float distanceB = (*b->center).distanceTo(dest);
               return distanceA >= distanceB;
             });
 }

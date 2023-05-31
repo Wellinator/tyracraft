@@ -77,8 +77,10 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     StaPipInfoBag infoBag;
     infoBag.model = &rawMatrix;
-    infoBag.shadingType = Tyra::TyraShadingGouraud;
-    infoBag.textureMappingType = Tyra::TyraNearest;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+    infoBag.blendingEnabled = true;
+    infoBag.antiAliasingEnabled = false;
 
     // Apply multiple colors
     StaPipColorBag colorBag;

@@ -88,6 +88,8 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   cloudsManager.update();
   dayNightCycleManager.update();
 
+  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+
   // Update chunk light data every 250 ticks
   // TODO: refactor to event system
   if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0) {
@@ -106,10 +108,8 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 };
 
 void World::render() {
-  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-
-  chunckManager.renderer(t_renderer, &stapip, &blockManager);
   cloudsManager.render();
+  chunckManager.renderer(t_renderer, &stapip, &blockManager);
 
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
@@ -124,6 +124,7 @@ void World::buildInitialPosition() {
     initialChunck->clear();
     buildChunk(initialChunck);
     scheduleChunksNeighbors(initialChunck, lastPlayerPosition, true);
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 };
 
@@ -145,6 +146,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck = chunckManager.getChunckByPosition(currentPlayerPos);
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
@@ -293,7 +295,10 @@ void World::unloadScheduledChunks() {
     if (tempChuncksToUnLoad[i]->state != ChunkState::Clean) {
       tempChuncksToUnLoad[i]->clear();
       counter++;
-      if (counter >= limit) return;
+      if (counter >= limit) {
+        chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
+        return;
+      }
     }
   }
 
