@@ -36,6 +36,7 @@ class ChunckManager {
 
   std::vector<Chunck*>& getVisibleChunks();
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
+  std::vector<Chunck*> getNearByChunks();
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
@@ -56,12 +57,13 @@ class ChunckManager {
   std::queue<Chunck*> chuncksToUpdateLight;
   std::vector<Chunck*> chuncks;
   std::vector<Chunck*> visibleChunks;
+  std::vector<Chunck*> nearByChunks;
 
   LevelMap* map = nullptr;
   void generateChunks();
 
   void reloadLightDataAsync();
-  void clearLightDataAsync() {
+  void clearLightDataQueue() {
     while (!chuncksToUpdateLight.empty()) chuncksToUpdateLight.pop();
   };
 };

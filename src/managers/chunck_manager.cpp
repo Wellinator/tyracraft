@@ -32,11 +32,23 @@ void ChunckManager::update(const Plane* frustumPlanes,
                            const Vec4& currentPlayerPos) {
   visibleChunks.clear();
   visibleChunks.shrink_to_fit();
+  nearByChunks.clear();
+  nearByChunks.shrink_to_fit();
+
+  Chunck* currentChunk = getChunckByPosition(currentPlayerPos);
+
   for (u16 i = 0; i < chuncks.size(); i++) {
     chuncks[i]->update(frustumPlanes, currentPlayerPos);
     if (chuncks[i]->state == ChunkState::Loaded &&
-        chuncks[i]->isDrawDataLoaded())
+        chuncks[i]->isDrawDataLoaded()) {
       visibleChunks.push_back(chuncks[i]);
+
+      // Is near by player
+      auto distance = currentChunk->center->distanceTo(*chuncks[i]->center);
+      if (floor(distance / CHUNCK_SIZE) < 2) {
+        nearByChunks.push_back(chuncks[i]);
+      }
+    }
   }
   reloadLightDataAsync();
 }
@@ -98,6 +110,8 @@ std::vector<Chunck*>& ChunckManager::getVisibleChunks() {
   return visibleChunks;
 }
 
+std::vector<Chunck*> ChunckManager::getNearByChunks() { return nearByChunks; }
+
 void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),
             [playerPosition](const Chunck* a, const Chunck* b) {
@@ -117,17 +131,9 @@ void ChunckManager::enqueueChunksToReloadLight() {
 
 void ChunckManager::reloadLightDataAsync() {
   if (chuncksToUpdateLight.empty() == false) {
-    if (chuncksToUpdateLight.size() > 0) {
-      auto chunk = chuncksToUpdateLight.front();
-      chunk->reloadLightData(terrain, worldLightModel);
-      chuncksToUpdateLight.pop();
-    }
-
-    if (chuncksToUpdateLight.size() > 0) {
-      auto chunk = chuncksToUpdateLight.front();
-      chunk->reloadLightData(terrain, worldLightModel);
-      chuncksToUpdateLight.pop();
-    }
+    auto chunk = chuncksToUpdateLight.front();
+    chunk->reloadLightData(terrain, worldLightModel);
+    chuncksToUpdateLight.pop();
     return;
   }
 }
@@ -136,7 +142,7 @@ void ChunckManager::reloadLightData() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     visibleChunks[i]->reloadLightData(terrain, worldLightModel);
   }
-  clearLightDataAsync();
+  clearLightDataQueue();
 }
 
 // Needed to initiate light in all chunks. The visibleChunks will be available
@@ -145,5 +151,5 @@ void ChunckManager::reloadLightDataOfAllChunks() {
   for (size_t i = 0; i < chuncks.size(); i++) {
     chuncks[i]->reloadLightData(terrain, worldLightModel);
   }
-  clearLightDataAsync();
+  clearLightDataQueue();
 }
