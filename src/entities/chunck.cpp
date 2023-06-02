@@ -168,7 +168,6 @@ void Chunck::loadDrawData(LevelMap* terrain,
 void Chunck::reloadLightData(LevelMap* terrain,
                              WorldLightModel* t_worldLightModel) {
   verticesColors.clear();
-  verticesColors.shrink_to_fit();
 
   sunPosition.set(t_worldLightModel->sunPosition);
   sunLightIntensity = t_worldLightModel->sunLightIntensity;
@@ -440,112 +439,126 @@ bool Chunck::isBlockOpaque(u8 block_type) {
 std::array<u8, 8> Chunck::getFaceNeightbors(LevelMap* terrain,
                                             FACE_SIDE faceSide, Block* block) {
   auto pos = block->offset;
-  auto faceNeightbors = std::array<u8, 8>();
   auto result = std::array<u8, 8>();
 
   switch (faceSide) {
     case FACE_SIDE::TOP:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::BOTTOM:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
       break;
 
     case FACE_SIDE::LEFT:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::RIGHT:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
       break;
 
     case FACE_SIDE::BACK:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::FRONT:
-      faceNeightbors[0] = GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1);
-      faceNeightbors[1] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1);
-      faceNeightbors[2] = GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1);
-      faceNeightbors[3] =
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1);
-      faceNeightbors[4] = GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1);
-      faceNeightbors[5] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1);
-      faceNeightbors[6] = GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1);
-      faceNeightbors[7] =
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1);
+      result[0] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1));
+      result[1] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
+      result[2] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1));
+      result[3] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+      result[4] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1));
+      result[5] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
+      result[6] =
+          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1));
+      result[7] = isBlockOpaque(
+          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
       break;
 
     default:
       break;
   }
-
-  result[0] = isBlockOpaque(faceNeightbors[0]);
-  result[1] = isBlockOpaque(faceNeightbors[1]);
-  result[2] = isBlockOpaque(faceNeightbors[2]);
-  result[3] = isBlockOpaque(faceNeightbors[3]);
-  result[4] = isBlockOpaque(faceNeightbors[4]);
-  result[5] = isBlockOpaque(faceNeightbors[5]);
-  result[6] = isBlockOpaque(faceNeightbors[6]);
-  result[7] = isBlockOpaque(faceNeightbors[7]);
 
   return result;
 }
