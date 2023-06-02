@@ -18,6 +18,12 @@ uint8_t GetDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   return map->data[index];
 }
 
+// Gets the data value at the given coordinates in the map.
+uint8_t GetLightDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  return map->lightData[index];
+}
+
 // Gets the light value at the given coordinates in the map.
 uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
