@@ -71,63 +71,58 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
   const float MIN_LIGHT_FACTOR = 0.25F;
-  // float intensity = 0.3F;
+
+  u8 lightData;
   u8 sunLightLevel;
   u8 lightLevel;
 
   switch (faceSide) {
     case FACE_SIDE::TOP:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
-                             targetBlock->offset.y + 1, targetBlock->offset.z);
-      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
-                                        targetBlock->offset.y + 1,
-                                        targetBlock->offset.z);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
+                              targetBlock->offset.y + 1, targetBlock->offset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BOTTOM:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
-                             targetBlock->offset.y - 1, targetBlock->offset.z);
-      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
-                                        targetBlock->offset.y - 1,
-                                        targetBlock->offset.z);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
+                              targetBlock->offset.y - 1, targetBlock->offset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::LEFT:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x + 1,
-                             targetBlock->offset.y, targetBlock->offset.z);
-      lightLevel =
-          GetBlockLightFromMap(t_terrain, targetBlock->offset.x + 1,
-                               targetBlock->offset.y, targetBlock->offset.z);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x + 1,
+                              targetBlock->offset.y, targetBlock->offset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::RIGHT:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x - 1,
-                             targetBlock->offset.y, targetBlock->offset.z);
-      lightLevel =
-          GetBlockLightFromMap(t_terrain, targetBlock->offset.x - 1,
-                               targetBlock->offset.y, targetBlock->offset.z);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x - 1,
+                              targetBlock->offset.y, targetBlock->offset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BACK:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
-                             targetBlock->offset.y, targetBlock->offset.z + 1);
-      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
-                                        targetBlock->offset.y,
-                                        targetBlock->offset.z + 1);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
+                              targetBlock->offset.y, targetBlock->offset.z + 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::FRONT:
-      sunLightLevel =
-          GetSunLightFromMap(t_terrain, targetBlock->offset.x,
-                             targetBlock->offset.y, targetBlock->offset.z - 1);
-      lightLevel = GetBlockLightFromMap(t_terrain, targetBlock->offset.x,
-                                        targetBlock->offset.y,
-                                        targetBlock->offset.z - 1);
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
+                              targetBlock->offset.y, targetBlock->offset.z - 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
       break;
 
     default:
