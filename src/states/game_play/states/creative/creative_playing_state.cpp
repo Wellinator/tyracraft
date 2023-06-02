@@ -30,7 +30,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   stateGamePlay->player->update(
       deltaTime, playerMovementDirection,
       stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
-      stateGamePlay->world->chunckManager.getVisibleChunks(), &terrainHeight,
+      stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
       stateGamePlay->world->terrain);
 
   stateGamePlay->ui->update();
