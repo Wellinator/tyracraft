@@ -40,6 +40,11 @@ uint8_t GetBlockFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   return map->blocks[index];
 }
 
+// Gets the block ID at the given coordinates in the map.
+uint8_t GetBlockFromMapByIndex(LevelMap* map, uint32_t index) {
+  return map->blocks[index];
+}
+
 // Sets the block ID at the given coordinates in the map.
 void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                    uint8_t block) {
