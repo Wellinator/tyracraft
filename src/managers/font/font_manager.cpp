@@ -41,8 +41,8 @@ u8 char_widths[256] = {
     8, 12, 8, 12, 12, 8,
 
     // index 64 - 89 are number lower case letter from a to z;
-    12, 12, 12, 12, 10, 12, 12, 10, 10, 10, 10, 8, 12, 12, 12, 12, 10, 10, 12, 10,
-    12, 10, 12, 12, 12, 12,
+    12, 12, 12, 12, 10, 12, 12, 10, 10, 10, 10, 8, 12, 12, 12, 12, 10, 10, 12,
+    10, 12, 10, 12, 12, 12, 12,
     //
 
     10, 4, 10, 14, 4, 12, 0, 6, 12, 10, 12, 8, 8, 8, 16, 12, 6, 20, 0, 12, 0, 0,
@@ -77,7 +77,7 @@ void FontManager_printText(const std::string& text,
   padding *= options.scale;
 
   for (size_t i = 0; i < stringLenth; i++) {
-    const u8 charCode = FontManager_getCodeFromChar(text.at(i));
+    const u8 charCode = FontManager_getCodeFromChar(text[i]);
     const Sprite* fontCharAt = FontManager_getFontChatByCode(charCode);
 
     if (fontCharAt != nullptr) {
@@ -116,7 +116,7 @@ float FontManager_calcLinePadding(const std::string& text,
   else {
     const size_t stringLenth = text.size();
     for (size_t i = 0; i < stringLenth; i++) {
-      const u8 charCode = FontManager_getCodeFromChar(text.at(i));
+      const u8 charCode = FontManager_getCodeFromChar(text[i]);
       padding += (char_widths[charCode] + 2);
     }
   }

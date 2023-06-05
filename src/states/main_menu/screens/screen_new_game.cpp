@@ -32,8 +32,8 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->freeBySprite(overlay);
 
   for (size_t i = 0; i < texturePacks.size(); i++) {
-    textureRepo->freeBySprite(texturePacks.at(i)->icon);
-    delete texturePacks.at(i);
+    textureRepo->freeBySprite(texturePacks[i]->icon);
+    delete texturePacks[i];
   }
 }
 
@@ -657,23 +657,23 @@ void ScreenNewGame::getAvailableTexturePacks() {
 void ScreenNewGame::selectPreviousTexturePack() {
   u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
-    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+    if (texturePacks[i]->id == selectedTexturePack->id) idx = i;
 
   if (idx == 0)
-    selectedTexturePack = texturePacks.at(texturePacks.size() - 1);
+    selectedTexturePack = texturePacks[texturePacks.size() - 1];
   else
-    selectedTexturePack = texturePacks.at(idx - 1);
+    selectedTexturePack = texturePacks[idx - 1];
 }
 
 void ScreenNewGame::selectNextTexturePack() {
   u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
-    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+    if (texturePacks[i]->id == selectedTexturePack->id) idx = i;
 
   if (idx == texturePacks.size() - 1)
-    selectedTexturePack = texturePacks.at(0);
+    selectedTexturePack = texturePacks[0];
   else
-    selectedTexturePack = texturePacks.at(idx + 1);
+    selectedTexturePack = texturePacks[idx + 1];
 }
 
 void ScreenNewGame::renderWorldNameDialog() {
