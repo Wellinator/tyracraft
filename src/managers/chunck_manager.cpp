@@ -31,9 +31,7 @@ void ChunckManager::clearAllChunks() {
 void ChunckManager::update(const Plane* frustumPlanes,
                            const Vec4& currentPlayerPos) {
   visibleChunks.clear();
-  visibleChunks.shrink_to_fit();
   nearByChunks.clear();
-  nearByChunks.shrink_to_fit();
 
   Chunck* currentChunk = getChunckByPosition(currentPlayerPos);
 

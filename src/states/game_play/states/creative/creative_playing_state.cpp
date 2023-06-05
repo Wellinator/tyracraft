@@ -204,6 +204,28 @@ void CreativePlayingState::drawDegubInfo() {
   FontManager_printText(playerPosition,
                         FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
 
+  // Draw chunks info
+  std::string chunksToLoad =
+      std::string("Chunks to load: ")
+          .append(std::to_string(
+              static_cast<int>(stateGamePlay->world->getChunksToLoadCount())));
+  FontManager_printText(chunksToLoad,
+                        FontOptions(Vec2(5.0f, 85.0f), Color(255), 0.8F));
+
+  std::string chunksToUnload =
+      std::string("Chunks to unload: ")
+          .append(std::to_string(static_cast<int>(
+              stateGamePlay->world->getChunksToUnloadCount())));
+  FontManager_printText(chunksToUnload,
+                        FontOptions(Vec2(5.0f, 100.0f), Color(255), 0.8F));
+
+  std::string chunksToUpdateLight =
+      std::string("Chunks to update light: ")
+          .append(std::to_string(static_cast<int>(
+              stateGamePlay->world->getChuncksToUpdateLightCount())));
+  FontManager_printText(chunksToUpdateLight,
+                        FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
+
   // Draw version
   std::string version = std::string("Version: ").append(VERSION);
   FontManager_printText(version,

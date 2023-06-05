@@ -12,6 +12,8 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
+#include <queue>
+#include <deque>
 #include <algorithm>
 #include "managers/chunck_manager.hpp"
 #include "managers/clouds_manager.hpp"
@@ -77,7 +79,6 @@ class World {
   void loadSpawnArea();
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
-  const std::vector<Block*> getLoadedBlocks();
   void buildInitialPosition();
 
   // From terrain manager
@@ -112,21 +113,26 @@ class World {
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
 
+  size_t getChunksToLoadCount() { return tempChuncksToLoad.size(); };
+  size_t getChunksToUnloadCount() { return tempChuncksToUnLoad.size(); };
+  size_t getChuncksToUpdateLightCount() {
+    return chunckManager.getChuncksToUpdateLightCount();
+  };
+
  private:
   MinecraftPipeline mcPip;
   StaticPipeline stapip;
-  std::vector<Block*> loadedBlocks;
+
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
   Vec4 lastPlayerPosition;
-  u8 framesCounter = 0;
   NewGameOptions worldOptions = NewGameOptions();
 
   int maxLoadPerCall = 1;
   int maxUnloadPerCall = 2;
 
-  std::vector<Chunck*> tempChuncksToLoad;
-  std::vector<Chunck*> tempChuncksToUnLoad;
+  std::deque<Chunck*> tempChuncksToLoad;
+  std::deque<Chunck*> tempChuncksToUnLoad;
   std::vector<McpipBlock*> overlayData;
 
   WorldLightModel worldLightModel;
@@ -162,7 +168,7 @@ class World {
 
   u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
                           const Vec4* chunkMaxOffset);
-  unsigned int getIndexByOffset(int x, int y, int z);
+  u32 getIndexByOffset(int x, int y, int z);
 
   /**
    * @brief Update the visible block faces

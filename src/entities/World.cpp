@@ -36,6 +36,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   t_renderer = renderer;
   mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
+  overlayData.reserve(1);
 
   // Set soundManager ref
   this->t_soundManager = t_soundManager;
@@ -83,16 +84,14 @@ void World::setSavedSpawnArea(Vec4 pos) {
 
 void World::update(Player* t_player, const Vec4& camLookPos,
                    const Vec4& camPosition) {
-  framesCounter++;
-
   cloudsManager.update();
   dayNightCycleManager.update();
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 
   // Update chunk light data every 250 ticks
-  // TODO: refactor to event system
-  if ((static_cast<uint32_t>(g_ticksCounter) % 250) == 0) {
+  if ((static_cast<uint32_t>(g_ticksCounter) % 1000) == 0) {
+    // TODO: refactor to event system
     updateLightModel();
     updateSunlight();
     updateBlockLights();
@@ -101,10 +100,13 @@ void World::update(Player* t_player, const Vec4& camLookPos,
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition());
-  updateChunkByPlayerPosition(t_player);
-  updateTargetBlock(camLookPos, camPosition, chunckManager.getVisibleChunks());
 
-  framesCounter %= 60;
+  updateChunkByPlayerPosition(t_player);
+
+  unloadScheduledChunks();
+  loadScheduledChunks();
+
+  updateTargetBlock(camLookPos, camPosition, chunckManager.getNearByChunks());
 };
 
 void World::render() {
@@ -130,17 +132,6 @@ void World::buildInitialPosition() {
 
 void World::resetWorldData() { chunckManager.clearAllChunks(); }
 
-const std::vector<Block*> World::getLoadedBlocks() {
-  loadedBlocks.clear();
-  loadedBlocks.shrink_to_fit();
-  const auto& visibleChuncks = chunckManager.getVisibleChunks();
-  for (u16 i = 0; i < visibleChuncks.size(); i++) {
-    for (u16 j = 0; j < visibleChuncks[i]->blocks.size(); j++)
-      loadedBlocks.push_back(visibleChuncks[i]->blocks[j]);
-  }
-  return loadedBlocks;
-}
-
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
   if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
@@ -152,11 +143,6 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
       t_player->currentChunckId = currentChunck->id;
       scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
-  }
-
-  if (framesCounter % 2 == 0) {
-    unloadScheduledChunks();
-    loadScheduledChunks();
   }
 }
 
@@ -256,7 +242,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     } else {
       if (force_loading) {
         chuncks[i]->clear();
-        buildChunkAsync(chuncks[i], worldOptions.drawDistance);
+        buildChunk(chuncks[i]);
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
@@ -279,31 +265,28 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0) {
-    if (tempChuncksToLoad[0]->state != ChunkState::Loaded)
-      return buildChunkAsync(tempChuncksToLoad[0], worldOptions.drawDistance);
-    tempChuncksToLoad.erase(tempChuncksToLoad.begin());
+    Chunck* chunk = tempChuncksToLoad.front();
+    if (chunk->state == ChunkState::PreLoaded) {
+      chunk->loadDrawData(terrain, &worldLightModel);
+    } else if (chunk->state != ChunkState::Loaded) {
+      buildChunkAsync(chunk, worldOptions.drawDistance);
+    }
+    tempChuncksToLoad.pop_front();
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
-  };
+  }
+  Tyra::Threading::switchThread();
 }
 
 void World::unloadScheduledChunks() {
-  const size_t size = tempChuncksToUnLoad.size();
-  const u8 limit = 2;
-  u8 counter = 0;
-
-  for (size_t i = 0; i < size; i++) {
-    if (tempChuncksToUnLoad[i]->state != ChunkState::Clean) {
-      tempChuncksToUnLoad[i]->clear();
-      counter++;
-      if (counter >= limit) {
-        chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
-        return;
-      }
+  if (tempChuncksToUnLoad.size() > 0) {
+    Chunck* chunk = tempChuncksToUnLoad.front();
+    if (chunk->state != ChunkState::Clean) {
+      chunk->clear();
+      tempChuncksToUnLoad.pop_front();
     }
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
-
-  tempChuncksToUnLoad.clear();
-  tempChuncksToUnLoad.shrink_to_fit();
+  Tyra::Threading::switchThread();
 }
 
 void World::renderBlockDamageOverlay() {
@@ -316,7 +299,6 @@ void World::renderBlockDamageOverlay() {
       delete overlayData[i]->model;
     }
     overlayData.clear();
-    overlayData.shrink_to_fit();
   }
 
   M4x4 scale = M4x4();
@@ -351,7 +333,7 @@ void World::addChunkToLoadAsync(Chunck* t_chunck) {
     if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
 
   t_chunck->state = ChunkState::Loading;
-  tempChuncksToLoad.push_back(t_chunck);
+  tempChuncksToLoad.push_front(t_chunck);
 }
 
 void World::addChunkToUnloadAsync(Chunck* t_chunck) {
@@ -364,7 +346,7 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
     if (tempChuncksToLoad[i]->id == t_chunck->id)
       tempChuncksToLoad.erase(tempChuncksToLoad.begin() + i);
 
-  tempChuncksToUnLoad.push_back(t_chunck);
+  tempChuncksToUnLoad.push_front(t_chunck);
 }
 
 void World::updateLightModel() {
@@ -376,14 +358,13 @@ void World::updateLightModel() {
       dayNightCycleManager.getAmbientLightIntesity();
 }
 
-unsigned int World::getIndexByOffset(int x, int y, int z) {
+u32 World::getIndexByOffset(int x, int y, int z) {
   return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
 bool World::isAirAtPosition(const float& x, const float& y, const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
-    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
-    return blockType == (u8)Blocks::AIR_BLOCK;
+    return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
   }
   return false;
 }
@@ -391,9 +372,13 @@ bool World::isAirAtPosition(const float& x, const float& y, const float& z) {
 bool World::isBlockTransparentAtPosition(const float& x, const float& y,
                                          const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
-    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
-    return blockType <= (u8)Blocks::AIR_BLOCK ||
-           blockManager.isBlockTransparent(static_cast<Blocks>(blockType));
+    const Blocks blockType =
+        static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+    return (blockType == Blocks::VOID || blockType == Blocks::AIR_BLOCK ||
+            blockType == Blocks::GLASS_BLOCK ||
+            blockType == Blocks::WATER_BLOCK ||
+            blockType == Blocks::OAK_LEAVES_BLOCK ||
+            blockType == Blocks::BIRCH_LEAVES_BLOCK);
   } else {
     return false;
   }
@@ -732,56 +717,54 @@ void World::buildChunk(Chunck* t_chunck) {
   for (size_t x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
     for (size_t z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
       for (size_t y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
-        unsigned int blockIndex = getIndexByOffset(x, y, z);
-        u8 block_type = GetBlockFromMap(terrain, x, y, z);
+        u32 blockIndex = getIndexByOffset(x, y, z);
+        const Blocks block_type =
+            static_cast<Blocks>(terrain->blocks[blockIndex]);
 
-        if (block_type <= (u8)Blocks::AIR_BLOCK ||
-            !BoundCheckMap(terrain, x, y, z))
-          continue;
+        if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
+            block_type != Blocks::TOTAL_OF_BLOCKS) {
+          Vec4 tempBlockOffset = Vec4(x, y, z);
 
-        Vec4 tempBlockOffset = Vec4(x, y, z);
-        Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+          const int visibleFaces =
+              block_type == Blocks::WATER_BLOCK
+                  ? getWaterBlockVisibleFaces(&tempBlockOffset)
+                  : getBlockVisibleFaces(&tempBlockOffset);
 
-        const int visibleFaces =
-            block_type == (u8)Blocks::WATER_BLOCK
-                ? getWaterBlockVisibleFaces(&tempBlockOffset)
-                : getBlockVisibleFaces(&tempBlockOffset);
+          // Have any face visible?
+          if (visibleFaces > 0) {
+            BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
-        const bool isVisible = visibleFaces > 0;
+            if (blockInfo) {
+              Block* block = new Block(blockInfo);
+              block->index = blockIndex;
+              block->offset.set(tempBlockOffset);
+              block->chunkId = t_chunck->id;
 
-        // Are block's coordinates in world range?
-        if (isVisible) {
-          BlockInfo* blockInfo =
-              blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
+              block->visibleFaces = visibleFaces;
+              block->visibleFacesCount = Utils::countSetBits(visibleFaces);
 
-          if (blockInfo) {
-            Block* block = new Block(blockInfo);
-            block->index = blockIndex;
-            block->offset.set(tempBlockOffset);
-            block->chunkId = t_chunck->id;
-            block->visibleFaces = visibleFaces;
-            block->isAtChunkBorder = isBlockAtChunkBorder(
-                &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+              block->isAtChunkBorder = isBlockAtChunkBorder(
+                  &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-            block->setPosition(blockPosition);
-            block->scale.scale(BLOCK_SIZE);
-            block->updateModelMatrix();
+              block->setPosition(tempBlockOffset * DUBLE_BLOCK_SIZE);
+              block->scale.scale(BLOCK_SIZE);
+              block->updateModelMatrix();
 
-            // Calc min and max corners
-            {
-              BBox tempBBox = rawBlockBbox->getTransformed(block->model);
-              block->bbox = new BBox(tempBBox);
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+              // Calc min and max corners
+              {
+                BBox tempBBox = rawBlockBbox->getTransformed(block->model);
+                block->bbox = new BBox(tempBBox);
+                block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+              }
+
+              t_chunck->addBlock(block);
             }
-
-            t_chunck->addBlock(block);
           }
         }
       }
     }
   }
 
-  t_chunck->state = ChunkState::Loaded;
   t_chunck->loadDrawData(terrain, &worldLightModel);
 }
 
@@ -791,39 +774,40 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   uint16_t x = t_chunck->tempLoadingOffset->x;
   uint16_t y = t_chunck->tempLoadingOffset->y;
   uint16_t z = t_chunck->tempLoadingOffset->z;
+  auto limit = LOAD_CHUNK_BATCH;
 
-  while (batchCounter < LOAD_CHUNK_BATCH * loading_speed) {
+  while (batchCounter < limit) {
     if (x >= t_chunck->maxOffset->x) break;
     safeWhileBreak++;
 
-    unsigned int blockIndex = getIndexByOffset(x, y, z);
-    u8 block_type = GetBlockFromMap(terrain, x, y, z);
-    if (block_type > (u8)Blocks::AIR_BLOCK &&
-        block_type < (u8)Blocks::TOTAL_OF_BLOCKS) {
-      Vec4 tempBlockOffset = Vec4(x, y, z);
-      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+    u32 blockIndex = getIndexByOffset(x, y, z);
+    const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
 
-      const int visibleFaces = block_type == (u8)Blocks::WATER_BLOCK
+    if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
+        block_type != Blocks::TOTAL_OF_BLOCKS) {
+      Vec4 tempBlockOffset = Vec4(x, y, z);
+
+      const int visibleFaces = block_type == Blocks::WATER_BLOCK
                                    ? getWaterBlockVisibleFaces(&tempBlockOffset)
                                    : getBlockVisibleFaces(&tempBlockOffset);
 
-      const bool isVisible = visibleFaces > 0;
-
-      // Are block's coordinates in world range?
-      if (isVisible) {
-        BlockInfo* blockInfo =
-            blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
+      // Is any face vísible?
+      if (visibleFaces > 0) {
+        BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
         if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
           block->offset.set(tempBlockOffset);
           block->chunkId = t_chunck->id;
+
           block->visibleFaces = visibleFaces;
+          block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-          block->setPosition(blockPosition);
+          block->setPosition(tempBlockOffset * DUBLE_BLOCK_SIZE);
           block->scale.scale(BLOCK_SIZE);
           block->updateModelMatrix();
 
@@ -850,16 +834,18 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       x++;
     }
 
-    if (safeWhileBreak > CHUNCK_LENGTH) break;
+    if (safeWhileBreak > CHUNCK_LENGTH) {
+      TYRA_WARN("Safely breaking while loop");
+      break;
+    }
   }
 
-  if (batchCounter >= LOAD_CHUNK_BATCH * loading_speed) {
+  if (batchCounter >= limit) {
     t_chunck->tempLoadingOffset->set(x, y, z);
     return;
   }
 
-  t_chunck->loadDrawData(terrain, &worldLightModel);
-  t_chunck->state = ChunkState::Loaded;
+  t_chunck->state = ChunkState::PreLoaded;
 }
 
 void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
@@ -1515,9 +1501,9 @@ void CrossCraft_World_Init(const uint32_t& seed) {
                   .spawnY = 59,
                   .spawnZ = 128,
 
-                  .blocks = new uint8_t[blockCount],
-                  .lightData = new uint8_t[blockCount],
-                  .data = new uint8_t[blockCount]};
+                  .blocks = new u8[blockCount],
+                  .lightData = new u8[blockCount],
+                  .data = new u8[blockCount]};
 
   level.map = map;
 

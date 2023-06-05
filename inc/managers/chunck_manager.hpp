@@ -50,6 +50,8 @@ class ChunckManager {
   void reloadLightData();
   void reloadLightDataOfAllChunks();
 
+  size_t getChuncksToUpdateLightCount() { return chuncksToUpdateLight.size(); };
+
  private:
   WorldLightModel* worldLightModel;
   LevelMap* terrain;
