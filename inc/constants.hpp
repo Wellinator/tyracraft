@@ -38,7 +38,7 @@
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
 #define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 128
+#define LOAD_CHUNK_BATCH 32
 
 /**
  * Define blocks IDs
@@ -188,6 +188,7 @@ enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
 #define MAX_FRAME_MS 0.016667F  // Comes from 1 / 60;
 #define FIXED_FRAME_MS 0.016667F
+#define FIXED_30_FRAME_MS 0.0344F  // Comes from 1 / 29;
 
 #define MAX_ADPCM_CH 23
 
