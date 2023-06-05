@@ -269,7 +269,7 @@ void World::loadScheduledChunks() {
     if (chunk->state == ChunkState::PreLoaded) {
       chunk->loadDrawData(terrain, &worldLightModel);
     } else if (chunk->state != ChunkState::Loaded) {
-      buildChunkAsync(chunk, worldOptions.drawDistance);
+      return buildChunkAsync(chunk, worldOptions.drawDistance);
     }
     tempChuncksToLoad.pop_front();
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
