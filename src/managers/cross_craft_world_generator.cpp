@@ -135,8 +135,8 @@ void create_strata(LevelMap* map, const int16_t* heightmap) {
       int dirt_transition = heightmap[x + z * map->length];
       int stone_transition = dirt_transition + dirt_thickness;
 
-      for (int y = 0; y < 64; y++) {
-        int block_type = static_cast<uint8_t>(Blocks::AIR_BLOCK);
+      for (int y = 0; y < map->height; y++) {
+        u8 block_type = static_cast<uint8_t>(Blocks::AIR_BLOCK);
 
         if (y == 0) {
           block_type = static_cast<uint8_t>(Blocks::BEDROCK_BLOCK);
@@ -257,7 +257,8 @@ void create_caves(LevelMap* map) {
         radius = 1.2f + (radius * 3.5f + 1) * cave_radius;
         radius = radius * sinf(len * M_PI / cave_length);
 
-        fillOblateSpheroid(map, center_x, center_y, center_z, radius, 0);
+        fillOblateSpheroid(map, center_x, center_y, center_z, radius,
+                           static_cast<uint8_t>(Blocks::AIR_BLOCK));
       }
     }
   }
@@ -305,6 +306,9 @@ void create_ores(LevelMap* map) {
   create_vein(map, 0.9f, static_cast<uint8_t>(Blocks::COAL_ORE_BLOCK));
   create_vein(map, 0.7f, static_cast<uint8_t>(Blocks::IRON_ORE_BLOCK));
   create_vein(map, 0.5f, static_cast<uint8_t>(Blocks::GOLD_ORE_BLOCK));
+  create_vein(map, 0.1f, static_cast<uint8_t>(Blocks::DIAMOND_ORE_BLOCK));
+  create_vein(map, 0.25f, static_cast<uint8_t>(Blocks::EMERALD_ORE_BLOCK));
+  create_vein(map, 0.35f, static_cast<uint8_t>(Blocks::REDSTONE_ORE_BLOCK));
 }
 
 void flood_fill_water(LevelMap* map) {
@@ -366,7 +370,7 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
       bool gravelChance = (noise2(x, z) > 12);
 
       int y = heightmap[x + z * map->length];
-      if (y >= 63 || y <= 0) continue;
+      if (y >= map->height || y <= 0) continue;
 
       uint8_t blockAbove = GetBlockFromMap(map, x, y + 1, z);
 
