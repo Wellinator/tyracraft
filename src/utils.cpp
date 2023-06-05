@@ -243,3 +243,14 @@ bool Utils::AABBCollidesXZ(BBox* A, BBox* B) {
   return minA.x <= maxB.x && maxA.x >= minB.x && minA.z <= maxB.z &&
          maxA.z >= minB.z;
 }
+
+/* Function to get no of set bits in binary
+representation of positive integer n */
+u8 Utils::countSetBits(u32 n) {
+  u8 count = 0;
+  while (n) {
+    count += n & 1;
+    n >>= 1;
+  }
+  return count;
+}

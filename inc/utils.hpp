@@ -104,4 +104,8 @@ class Utils {
 
   static bool AABBCollides(BBox* A, BBox* B);
   static bool AABBCollidesXZ(BBox* A, BBox* B);
+
+  /* Function to get no of set bits in binary
+  representation of positive integer n */
+  static u8 countSetBits(u32 n);
 };
