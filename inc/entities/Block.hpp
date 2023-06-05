@@ -27,7 +27,7 @@ using Tyra::Vec4;
 class Block {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
-  int index;                        // Index at terrain;
+  u32 index;                        // Index at terrain;
   Vec4 offset;                      // Terrain offset;
   u32 chunkId = 0;
 
@@ -45,10 +45,11 @@ class Block {
   M4x4 translation, rotation, scale;
 
   M4x4 model;
-  Color color;
+
   BBox* bbox = nullptr;
 
   u32 visibleFaces = 0x000000;
+  u8 visibleFacesCount = 0;
   /**
    * Order: Top, Bottom, Left, Right, Front, Back
    * @param facesMap 12 length array pair of integers col, row
