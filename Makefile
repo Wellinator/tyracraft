@@ -15,7 +15,7 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CFLAGS      :=  -g -O3
+CFLAGS      := -O3
 # LINKFLAGS	:= --only-keep-debug
 LIB         := -ltyra
 LIBDIRS     := -L$(ENGINEDIR)/bin
