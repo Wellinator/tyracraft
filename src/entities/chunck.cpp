@@ -12,6 +12,8 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->maxOffset->set(maxOffset);
   this->center->set((maxOffset + minOffset) / 2);
 
+  blocks.reserve(CHUNCK_SIZE);
+
   // Used to fix the edge of the chunk. It must contain all blocks;
   // const Vec4 offsetFix = Vec4(1.0F);
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;  // + offsetFix;
@@ -32,11 +34,11 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
 };
 
 Chunck::~Chunck() {
-  this->clear();
-  delete this->minOffset;
-  delete this->maxOffset;
-  delete this->center;
-  delete this->bbox;
+  clear();
+  delete minOffset;
+  delete maxOffset;
+  delete center;
+  delete bbox;
 };
 
 void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
@@ -55,12 +57,6 @@ void Chunck::applyFOG(const Vec4& originPosition) {
   //       this->getVisibityByPosition(originPosition.distanceTo(vertices[i]));
   // verticesColorsWithFog[i].a = interp * 128;
   // }
-}
-
-void Chunck::highLightTargetBlock(Block* t_block, u8& isTarget) {
-  t_block->color.r = isTarget ? 160 : 116;
-  t_block->color.g = isTarget ? 160 : 116;
-  t_block->color.b = isTarget ? 160 : 116;
 }
 
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -126,14 +122,12 @@ void Chunck::clear() {
   this->state = ChunkState::Clean;
 }
 
-void Chunck::addBlock(Block* t_block) { this->blocks.push_back(t_block); }
-
-void Chunck::updateBlocks(const Vec4& playerPosition) {
-  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    this->highLightTargetBlock(this->blocks[blockIndex],
-                               this->blocks[blockIndex]->isTarget);
-  }
+void Chunck::addBlock(Block* t_block) {
+  blocks.push_back(t_block);
+  visibleFacesCount += t_block->visibleFacesCount;
 }
+
+void Chunck::updateBlocks(const Vec4& playerPosition) {}
 
 void Chunck::clearDrawData() {
   vertices.clear();
@@ -142,15 +136,18 @@ void Chunck::clearDrawData() {
   verticesColors.shrink_to_fit();
   uvMap.clear();
   uvMap.shrink_to_fit();
-  // verticesNormals.clear();
-  // verticesNormals.shrink_to_fit();
 
   _isDrawDataLoaded = false;
+  visibleFacesCount = 0;
 }
 
 void Chunck::loadDrawData(LevelMap* terrain,
                           WorldLightModel* t_worldLightModel) {
   sortBlockByTransparency();
+
+  vertices.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
+  verticesColors.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
+  uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
 
   sunPosition.set(t_worldLightModel->sunPosition);
   sunLightIntensity = t_worldLightModel->sunLightIntensity;
@@ -163,6 +160,7 @@ void Chunck::loadDrawData(LevelMap* terrain,
   }
 
   _isDrawDataLoaded = true;
+  state = ChunkState::Loaded;
 }
 
 void Chunck::reloadLightData(LevelMap* terrain,
@@ -296,7 +294,6 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
 
   if (t_block->isTopFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::TOP, t_block);
 
     //   Top face 100% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 1.0F);
@@ -304,13 +301,17 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
                                    sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::TOP, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 
   if (t_block->isBottomFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors =
-        getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, t_block);
 
     //   Top face 50% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.5F);
@@ -318,12 +319,18 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
                                    terrain, sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::BOTTOM, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 
   if (t_block->isLeftFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::LEFT, t_block);
 
     // X-side faces 60% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.6F);
@@ -331,12 +338,18 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
                                    terrain, sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::LEFT, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 
   if (t_block->isRightFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::RIGHT, t_block);
 
     // X-side faces 60% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.6F);
@@ -344,12 +357,18 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
                                    terrain, sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::RIGHT, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 
   if (t_block->isBackFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::BACK, t_block);
 
     // Z-side faces 80% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.8F);
@@ -357,12 +376,18 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
                                    terrain, sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::BACK, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 
   if (t_block->isFrontFaceVisible()) {
     Color faceColor = baseFaceColor;
-    auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::FRONT, t_block);
 
     // Z-side faces 80% of the base color
     LightManager::IntensifyColor(&baseFaceColor, 0.8F);
@@ -370,7 +395,14 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
                                    terrain, sunLightIntensity);
-    loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+
+    if (t_block->type == Blocks::WATER_BLOCK) {
+      loadLightFaceData(&faceColor);
+    } else {
+      auto faceNeightbors =
+          getFaceNeightbors(terrain, FACE_SIDE::FRONT, t_block);
+      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
+    }
   }
 }
 
@@ -399,6 +431,15 @@ void Chunck::loadLightFaceDataWithAO(Color* faceColor,
       faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
   verticesColors.push_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
+}
+
+void Chunck::loadLightFaceData(Color* faceColor) {
+  verticesColors.push_back(*faceColor);
+  verticesColors.push_back(*faceColor);
+  verticesColors.push_back(*faceColor);
+  verticesColors.push_back(*faceColor);
+  verticesColors.push_back(*faceColor);
+  verticesColors.push_back(*faceColor);
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {

@@ -35,7 +35,7 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-enum class ChunkState { Loaded, Loading, Clean };
+enum class ChunkState { PreLoaded, Loaded, Loading, Clean };
 
 class Chunck {
  public:
@@ -53,6 +53,8 @@ class Chunck {
   Vec4* center = new Vec4();
   BBox* bbox;
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+
+  int visibleFacesCount = 0;
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
@@ -83,7 +85,6 @@ class Chunck {
 
   float getVisibityByPosition(float d);
   void applyFOG(const Vec4& originPosition);
-  void highLightTargetBlock(Block* t_block, u8& isTarget);
   void updateBlocks(const Vec4& playerPosition);
   void filterSingleAndMultiBlocks();
   void sortBlockByTransparency();
@@ -114,6 +115,7 @@ class Chunck {
   void loadUVData(Block* t_block);
   void loadUVFaceData(const u8& X, const u8& Y);
   void loadLightData(LevelMap* terrain, Block* t_block);
+  void loadLightFaceData(Color* faceColor);
   void loadLightFaceDataWithAO(Color* faceColor,
                                std::array<u8, 8>& faceNeightbors);
 };
