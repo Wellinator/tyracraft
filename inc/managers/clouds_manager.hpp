@@ -27,14 +27,10 @@ class CloudsManager {
   void render();
 
  private:
-  std::vector<Vec4> vertices = {
+  const u8 DRAW_DATA_COUNT = 6;
+  Vec4* vertices = new Vec4[DRAW_DATA_COUNT]{
       Vec4(-1.0F, 1.0F, -1.0), Vec4(1.0F, 1.0F, 1.0),  Vec4(1.0F, 1.0F, -1.0),
       Vec4(-1.0F, 1.0F, -1.0), Vec4(-1.0F, 1.0F, 1.0), Vec4(1.0F, 1.0F, 1.0),
-  };
-
-  std::vector<Vec4> verticesNormals = {
-      Vec4(0, -1, 0), Vec4(0, -1, 0), Vec4(0, -1, 0),
-      Vec4(0, -1, 0), Vec4(0, -1, 0), Vec4(0, -1, 0),
   };
 
   std::vector<Vec4> uvMap;

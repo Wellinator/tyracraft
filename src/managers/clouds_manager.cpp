@@ -1,9 +1,15 @@
 #include "managers/clouds_manager.hpp"
 
-CloudsManager::CloudsManager() { calcUVMapping(); }
+CloudsManager::CloudsManager() {
+  uvMap.reserve(6);
+  calcUVMapping();
+}
 
 CloudsManager::~CloudsManager() {
   t_renderer->getTextureRepository().free(cloudsTex->id);
+  delete[] vertices;
+  uvMap.clear();
+  uvMap.shrink_to_fit();
 }
 
 void CloudsManager::init(Renderer* renderer) {
@@ -15,7 +21,6 @@ void CloudsManager::init(Renderer* renderer) {
 
 void CloudsManager::calcUVMapping() {
   uvMap.clear();
-  uvMap.shrink_to_fit();
 
   const float scale = 1.0F / 4.0F;
   const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
@@ -57,7 +62,7 @@ void CloudsManager::render() {
   infoBag.model = &rawMatrix;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.fullClipChecks = true;
-  infoBag.blendingEnabled = false;
+  infoBag.blendingEnabled = true;
   infoBag.antiAliasingEnabled = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
@@ -67,8 +72,8 @@ void CloudsManager::render() {
   colorBag.single = &baseColor;
 
   StaPipBag bag;
-  bag.count = vertices.size();
-  bag.vertices = vertices.data();
+  bag.count = DRAW_DATA_COUNT;
+  bag.vertices = vertices;
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
