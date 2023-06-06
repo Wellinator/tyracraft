@@ -293,10 +293,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   auto baseFaceColor = Color(120, 120, 120);
 
   if (t_block->isTopFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     //   Top face 100% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
@@ -311,10 +309,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   }
 
   if (t_block->isBottomFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     //   Top face 50% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
@@ -330,10 +326,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   }
 
   if (t_block->isLeftFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     // X-side faces 60% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
@@ -349,10 +343,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   }
 
   if (t_block->isRightFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     // X-side faces 60% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
@@ -368,10 +360,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   }
 
   if (t_block->isBackFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     // Z-side faces 80% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
@@ -387,10 +377,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   }
 
   if (t_block->isFrontFaceVisible()) {
-    Color faceColor = baseFaceColor;
-
     // Z-side faces 80% of the base color
-    LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
