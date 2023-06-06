@@ -83,6 +83,7 @@ class Chunck {
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
 
+
   float getVisibityByPosition(float d);
   void applyFOG(const Vec4& originPosition);
   void updateBlocks(const Vec4& playerPosition);
@@ -98,6 +99,7 @@ class Chunck {
 
   inline const bool hasDataToDraw() { return vertices.size() > 0; };
 
+  const Vec4* rawData;
   Vec4 sunPosition;
   float sunLightIntensity;
   float ambientLightIntesity;

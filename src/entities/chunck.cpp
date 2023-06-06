@@ -5,7 +5,8 @@
 #include <algorithm>
 #include "managers/light_manager.hpp"
 
-Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
+Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id)
+    : rawData(VertexBlockData::getVertexData()) {
   this->id = id;
   this->tempLoadingOffset->set(minOffset);
   this->minOffset->set(minOffset);
@@ -39,6 +40,8 @@ Chunck::~Chunck() {
   delete maxOffset;
   delete center;
   delete bbox;
+
+  delete[] rawData;
 };
 
 void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
@@ -177,7 +180,6 @@ void Chunck::reloadLightData(LevelMap* terrain,
 }
 
 void Chunck::loadMeshData(Block* t_block) {
-  const Vec4* rawData = VertexBlockData::getVertexData();
   int vert;
 
   if (t_block->isTopFaceVisible()) {
@@ -251,8 +253,6 @@ void Chunck::loadMeshData(Block* t_block) {
     vertices.push_back(t_block->model * rawData[vert++]);
     vertices.push_back(t_block->model * rawData[vert++]);
   }
-
-  delete[] rawData;
 }
 
 void Chunck::loadUVData(Block* t_block) {
