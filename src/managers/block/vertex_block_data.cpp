@@ -5,7 +5,7 @@ VertexBlockData::VertexBlockData() {}
 VertexBlockData::~VertexBlockData() {}
 
 const Vec4* VertexBlockData::getVertexData() {
-  std::array<Vec4, 8> cornerVetices = {
+  Vec4 cornerVetices[8] = {
       Vec4(1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, 1.0),
       Vec4(-1.0F, -1.0F, 1.0), Vec4(-1.0F, -1.0F, -1.0),
       Vec4(1.0F, 1.0F, -1.0),  Vec4(1.0F, 1.0F, 1.0),
