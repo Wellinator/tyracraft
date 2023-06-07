@@ -137,7 +137,6 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck = chunckManager.getChunckByPosition(currentPlayerPos);
-    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
@@ -268,13 +267,13 @@ void World::loadScheduledChunks() {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
       chunk->loadDrawData(terrain, &worldLightModel);
+      tempChuncksToLoad.pop_front();
+      return;
     } else if (chunk->state != ChunkState::Loaded) {
       return buildChunkAsync(chunk, worldOptions.drawDistance);
     }
-    tempChuncksToLoad.pop_front();
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
-  Tyra::Threading::switchThread();
 }
 
 void World::unloadScheduledChunks() {
@@ -283,10 +282,10 @@ void World::unloadScheduledChunks() {
     if (chunk->state != ChunkState::Clean) {
       chunk->clear();
       tempChuncksToUnLoad.pop_front();
+      return;
     }
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
-  Tyra::Threading::switchThread();
 }
 
 void World::renderBlockDamageOverlay() {
@@ -313,7 +312,7 @@ void World::renderBlockDamageOverlay() {
   overlay->model = new M4x4(translation * scale);
   overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
 
-  overlayData.push_back(overlay);
+  overlayData.emplace_back(overlay);
   t_renderer->renderer3D.usePipeline(&mcPip);
   mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
 }
@@ -324,7 +323,7 @@ void World::renderTargetBlockHitbox(Block* targetBlock) {
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
-  // Avoid being suplicated;
+  // Avoid being duplicated;
   for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
@@ -714,6 +713,8 @@ u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
 }
 
 void World::buildChunk(Chunck* t_chunck) {
+  t_chunck->preAllocateMemory();
+
   for (size_t x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
     for (size_t z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
       for (size_t y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
@@ -766,6 +767,7 @@ void World::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->loadDrawData(terrain, &worldLightModel);
+  t_chunck->freeUnusedMemory();
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
@@ -775,6 +777,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   uint16_t y = t_chunck->tempLoadingOffset->y;
   uint16_t z = t_chunck->tempLoadingOffset->z;
   auto limit = LOAD_CHUNK_BATCH;
+
+  if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
 
   while (batchCounter < limit) {
     if (x >= t_chunck->maxOffset->x) break;
@@ -846,6 +850,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   }
 
   t_chunck->state = ChunkState::PreLoaded;
+  t_chunck->freeUnusedMemory();
 }
 
 void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
