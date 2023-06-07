@@ -13,8 +13,6 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id)
   this->maxOffset->set(maxOffset);
   this->center->set((maxOffset + minOffset) / 2);
 
-  blocks.reserve(CHUNCK_SIZE);
-
   // Used to fix the edge of the chunk. It must contain all blocks;
   // const Vec4 offsetFix = Vec4(1.0F);
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;  // + offsetFix;
@@ -119,6 +117,7 @@ void Chunck::clear() {
 
   this->blocks.clear();
   this->blocks.shrink_to_fit();
+  _isPreAllocated = false;
 
   resetLoadingOffset();
 
@@ -126,7 +125,8 @@ void Chunck::clear() {
 }
 
 void Chunck::addBlock(Block* t_block) {
-  blocks.push_back(t_block);
+  blocks.emplace_back(t_block);
+  // blocks[blocksCount++] = t_block;
   visibleFacesCount += t_block->visibleFacesCount;
 }
 
@@ -142,6 +142,7 @@ void Chunck::clearDrawData() {
 
   _isDrawDataLoaded = false;
   visibleFacesCount = 0;
+  blocksCount = 0;
 }
 
 void Chunck::loadDrawData(LevelMap* terrain,
@@ -201,57 +202,57 @@ void Chunck::loadMeshData(Block* t_block) {
       v5.y *= 0.75F;
     }
 
-    vertices.push_back(t_block->model * v0);
-    vertices.push_back(t_block->model * v1);
-    vertices.push_back(t_block->model * v2);
-    vertices.push_back(t_block->model * v3);
-    vertices.push_back(t_block->model * v4);
-    vertices.push_back(t_block->model * v5);
+    vertices.emplace_back(t_block->model * v0);
+    vertices.emplace_back(t_block->model * v1);
+    vertices.emplace_back(t_block->model * v2);
+    vertices.emplace_back(t_block->model * v3);
+    vertices.emplace_back(t_block->model * v4);
+    vertices.emplace_back(t_block->model * v5);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
-    vertices.push_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
 }
 
@@ -280,13 +281,13 @@ void Chunck::loadUVFaceData(const u8& X, const u8& Y) {
   const float scale = 1.0F / 16.0F;
   const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
 
-  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
 
-  uvMap.push_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
 void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
@@ -400,34 +401,34 @@ void Chunck::loadLightFaceDataWithAO(Color* faceColor,
       LightManager::getCornersAOValues(faceNeightbors);
 
   // DEBUG Vertices Colors
-  // verticesColors.push_back(Color(255, 0, 0));
-  // verticesColors.push_back(Color(0, 255, 0));
-  // verticesColors.push_back(Color(0, 0, 255));
-  // verticesColors.push_back(Color(255, 255, 0));
-  // verticesColors.push_back(Color(0, 255, 255));
-  // verticesColors.push_back(Color(255, 0, 255));
+  // verticesColors.emplace_back(Color(255, 0, 0));
+  // verticesColors.emplace_back(Color(0, 255, 0));
+  // verticesColors.emplace_back(Color(0, 0, 255));
+  // verticesColors.emplace_back(Color(255, 255, 0));
+  // verticesColors.emplace_back(Color(0, 255, 255));
+  // verticesColors.emplace_back(Color(255, 0, 255));
 
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-  verticesColors.push_back(LightManager::IntensifyColor(
+  verticesColors.emplace_back(LightManager::IntensifyColor(
       faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
 }
 
 void Chunck::loadLightFaceData(Color* faceColor) {
-  verticesColors.push_back(*faceColor);
-  verticesColors.push_back(*faceColor);
-  verticesColors.push_back(*faceColor);
-  verticesColors.push_back(*faceColor);
-  verticesColors.push_back(*faceColor);
-  verticesColors.push_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
+  verticesColors.emplace_back(*faceColor);
 }
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
@@ -591,3 +592,12 @@ std::array<u8, 8> Chunck::getFaceNeightbors(LevelMap* terrain,
 
   return result;
 }
+
+void Chunck::preAllocateMemory() {
+  blocks.reserve(CHUNCK_LENGTH);
+  _isPreAllocated = true;
+}
+
+void Chunck::freeUnusedMemory() { blocks.shrink_to_fit(); }
+
+bool Chunck::isPreAllocated() { return _isPreAllocated; }

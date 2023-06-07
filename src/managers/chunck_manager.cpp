@@ -39,12 +39,12 @@ void ChunckManager::update(const Plane* frustumPlanes,
     chuncks[i]->update(frustumPlanes, currentPlayerPos);
     if (chuncks[i]->state == ChunkState::Loaded &&
         chuncks[i]->isDrawDataLoaded()) {
-      visibleChunks.push_back(chuncks[i]);
+      visibleChunks.emplace_back(chuncks[i]);
 
       // Is near by player
       auto distance = currentChunk->center->distanceTo(*chuncks[i]->center);
       if (floor(distance / CHUNCK_SIZE) < 2) {
-        nearByChunks.push_back(chuncks[i]);
+        nearByChunks.emplace_back(chuncks[i]);
       }
     }
   }
@@ -67,7 +67,7 @@ void ChunckManager::generateChunks() {
         Vec4 tempMin = Vec4(x, y, z);
         Vec4 tempMax = Vec4(x + CHUNCK_SIZE, y + CHUNCK_SIZE, z + CHUNCK_SIZE);
         Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
-        chuncks.push_back(tempChunck);
+        chuncks.emplace_back(tempChunck);
         tempId++;
       }
     }

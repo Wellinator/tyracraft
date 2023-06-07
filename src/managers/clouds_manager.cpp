@@ -25,13 +25,13 @@ void CloudsManager::calcUVMapping() {
   const float scale = 1.0F / 4.0F;
   const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
 
-  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
 
-  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
 };
 
 void CloudsManager::updateCloudsPosition() {

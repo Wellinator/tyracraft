@@ -55,6 +55,7 @@ class Chunck {
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
   int visibleFacesCount = 0;
+  u16 blocksCount = 0;
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
@@ -77,6 +78,10 @@ class Chunck {
   inline std::vector<Vec4> getVertexData() { return vertices; }
 
   inline std::vector<Color> getVertexColorData() { return verticesColors; }
+
+  void preAllocateMemory();
+  void freeUnusedMemory();
+  bool isPreAllocated();
 
  private:
   std::vector<Vec4> vertices;
@@ -120,4 +125,8 @@ class Chunck {
   void loadLightFaceData(Color* faceColor);
   void loadLightFaceDataWithAO(Color* faceColor,
                                std::array<u8, 8>& faceNeightbors);
+
+
+  bool _isPreAllocated = false;
+
 };
