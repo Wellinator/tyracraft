@@ -139,6 +139,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     Chunck* currentChunck = chunckManager.getChunckByPosition(currentPlayerPos);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
+      chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
       t_player->currentChunckId = currentChunck->id;
       scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
