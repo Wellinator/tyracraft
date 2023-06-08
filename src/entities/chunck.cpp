@@ -87,15 +87,12 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     bag.count = vertices.size();
     bag.vertices = vertices.data();
 
-    // bag.lighting = &lightBag;
-
     bag.color = &colorBag;
     bag.info = &infoBag;
     bag.texture = &textureBag;
 
     stapip->core.render(&bag);
 
-    // deallocDrawBags(&bag);
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
   }
 };
@@ -126,7 +123,6 @@ void Chunck::clear() {
 
 void Chunck::addBlock(Block* t_block) {
   blocks.emplace_back(t_block);
-  // blocks[blocksCount++] = t_block;
   visibleFacesCount += t_block->visibleFacesCount;
 }
 
