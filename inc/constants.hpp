@@ -66,6 +66,10 @@ enum class Blocks {
   REDSTONE_ORE_BLOCK,
   EMERALD_ORE_BLOCK,
 
+  // Flowers
+  POPPY_FLOWER,
+  DANDELION_FLOWER,
+
   // Wood Planks
   OAK_PLANKS_BLOCK,
   SPRUCE_PLANKS_BLOCK,
@@ -154,6 +158,10 @@ enum class ItemId {
   gold_ore_block,
   redstone_ore_block,
   emerald_ore_block,
+
+  // Flowers
+  poppy_flower,
+  dandelion_flower,
 
   pumpkin,
   // Light Emissors

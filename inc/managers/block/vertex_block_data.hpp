@@ -17,6 +17,12 @@ class VertexBlockData {
   static const Vec4* getVertexData();
 
   /**
+   * @brief Provides 12 vertices of raw crossed cube
+   * @returns new Vec4[8]
+   */
+  static const Vec4* getCrossedVertexData();
+
+  /**
    * @brief Provides 6 face normals of raw cube
    * @returns new Vec4[6]
    */
@@ -24,6 +30,9 @@ class VertexBlockData {
 
   static const u8 VETEX_COUNT = 36;
   static const u8 FACES_COUNT = 6;
+
+  static const u8 CROSSED_VETEX_COUNT = 12;
+  static const u8 CROSSED_FACES_COUNT = 2;
 
   inline const u8* getTopFaceIndexes() { return topFacesIndex; };
   inline const u8* getBottomFaceIndexes() { return bottomFaceIndex; };

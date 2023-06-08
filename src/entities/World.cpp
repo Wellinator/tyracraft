@@ -374,9 +374,7 @@ bool World::isBlockTransparentAtPosition(const float& x, const float& y,
   if (BoundCheckMap(terrain, x, y, z)) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
-    return (blockType == Blocks::VOID || blockType == Blocks::AIR_BLOCK ||
-            blockType == Blocks::GLASS_BLOCK ||
-            blockType == Blocks::WATER_BLOCK ||
+    return (blockType == Blocks::VOID || isTransparent(blockType) ||
             blockType == Blocks::OAK_LEAVES_BLOCK ||
             blockType == Blocks::BIRCH_LEAVES_BLOCK);
   } else {
@@ -713,6 +711,11 @@ u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
          blockOffset->z == chunkMaxOffset->z - 1;
 }
 
+u8 World::isCrossedBlock(Blocks block_type) {
+  return block_type == Blocks::POPPY_FLOWER ||
+         block_type == Blocks::DANDELION_FLOWER;
+}
+
 void World::buildChunk(Chunck* t_chunck) {
   t_chunck->preAllocateMemory();
 
@@ -742,8 +745,14 @@ void World::buildChunk(Chunck* t_chunck) {
               block->offset.set(tempBlockOffset);
               block->chunkId = t_chunck->id;
 
-              block->visibleFaces = visibleFaces;
-              block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+              block->isCrossed = isCrossedBlock(block_type);
+              if (block->isCrossed) {
+                block->visibleFaces = 0x111111;
+                block->visibleFacesCount = 2;
+              } else {
+                block->visibleFaces = visibleFaces;
+                block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+              }
 
               block->isAtChunkBorder = isBlockAtChunkBorder(
                   &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
@@ -809,6 +818,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->visibleFaces = visibleFaces;
           block->visibleFacesCount = Utils::countSetBits(visibleFaces);
 
+          block->isCrossed = isCrossedBlock(block_type);
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
@@ -1134,7 +1144,7 @@ void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
   auto map = CrossCraft_World_GetMapPtr();
   auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
 
-  if (b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK) {
+  if (isTransparent(b)) {
     if (GetSunLightFromMap(map, x, y, z) + 1 < nextLightValue) {
       addSunLight(x, y, z, nextLightValue);
     }
@@ -1347,8 +1357,7 @@ void propagateLightAddQueue() {
 void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue) {
   auto map = CrossCraft_World_GetMapPtr();
   auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
-  auto isTransparent = b == Blocks::AIR_BLOCK || b == Blocks::GLASS_BLOCK;
-  if (isTransparent) {
+  if (isTransparent(b)) {
     if (GetBlockLightFromMap(map, x, y, z) < nextLightValue) {
       addBlockLight(x, y, z, nextLightValue);
     }
@@ -1405,7 +1414,8 @@ void singleCheck(uint16_t x, uint16_t z) {
         newLightValue -= 2;
       else
         newLightValue = 0;
-    } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK) {
+    } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
+               b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER) {
       newLightValue = 0;
     }
 
@@ -1462,7 +1472,8 @@ void initSunLight(uint32_t tick) {
             lv -= 2;
           else
             lv = 0;
-        } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK) {
+        } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
+                   b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER) {
           lv = 0;
         }
 

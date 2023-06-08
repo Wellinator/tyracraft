@@ -6,7 +6,8 @@
 #include "managers/light_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id)
-    : rawData(VertexBlockData::getVertexData()) {
+    : rawData(VertexBlockData::getVertexData()),
+      crossBlockRawData(VertexBlockData::getCrossedVertexData()) {
   this->id = id;
   this->tempLoadingOffset->set(minOffset);
   this->minOffset->set(minOffset);
@@ -154,13 +155,27 @@ void Chunck::loadDrawData(LevelMap* terrain,
   ambientLightIntesity = t_worldLightModel->ambientLightIntensity;
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    loadMeshData(blocks[i]);
-    loadUVData(blocks[i]);
-    loadLightData(terrain, blocks[i]);
+    if (blocks[i]->isCrossed) {
+      loadCrossBlock(terrain, blocks[i]);
+    } else {
+      loadCuboidBlock(terrain, blocks[i]);
+    }
   }
 
   _isDrawDataLoaded = true;
   state = ChunkState::Loaded;
+}
+
+void Chunck::loadCuboidBlock(LevelMap* terrain, Block* t_block) {
+  loadMeshData(t_block);
+  loadUVData(t_block);
+  loadLightData(terrain, t_block);
+}
+
+void Chunck::loadCrossBlock(LevelMap* terrain, Block* t_block) {
+  loadCrossedMeshData(t_block);
+  loadCrossedUVData(t_block);
+  loadCroosedLightData(terrain, t_block);
 }
 
 void Chunck::reloadLightData(LevelMap* terrain,
@@ -172,7 +187,11 @@ void Chunck::reloadLightData(LevelMap* terrain,
   ambientLightIntesity = t_worldLightModel->ambientLightIntensity;
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    loadLightData(terrain, blocks[i]);
+    if (blocks[i]->isCrossed) {
+      loadCroosedLightData(terrain, blocks[i]);
+    } else {
+      loadLightData(terrain, blocks[i]);
+    }
   }
 }
 
@@ -189,7 +208,7 @@ void Chunck::loadMeshData(Block* t_block) {
     Vec4 v5 = rawData[vert++];
 
     // TODO: move to a block builder
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       v0.y *= 0.75F;
       v1.y *= 0.75F;
       v2.y *= 0.75F;
@@ -297,7 +316,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
                                    sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors = getFaceNeightbors(terrain, FACE_SIDE::TOP, t_block);
@@ -313,7 +332,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
                                    terrain, sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors =
@@ -330,7 +349,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
                                    terrain, sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors =
@@ -347,7 +366,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
                                    terrain, sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors =
@@ -364,7 +383,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
                                    terrain, sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors =
@@ -381,7 +400,7 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
                                    terrain, sunLightIntensity);
 
-    if (t_block->type == Blocks::WATER_BLOCK) {
+    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
     } else {
       auto faceNeightbors =
@@ -389,6 +408,48 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
       loadLightFaceDataWithAO(&faceColor, faceNeightbors);
     }
   }
+}
+
+void Chunck::loadCroosedLightData(LevelMap* terrain, Block* t_block) {
+  auto baseFaceColor = Color(120, 120, 120);
+  Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+
+  // Face 1
+  {
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
+                                   terrain, sunLightIntensity);
+    loadLightFaceData(&faceColor);
+  }
+
+  // Face 2
+  {
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
+                                   terrain, sunLightIntensity);
+    loadLightFaceData(&faceColor);
+  }
+}
+
+void Chunck::loadCrossedMeshData(Block* t_block) {
+  int vert = 0;
+
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+}
+
+void Chunck::loadCrossedUVData(Block* t_block) {
+  loadUVFaceData(t_block->topMapX(), t_block->topMapY());
+  loadUVFaceData(t_block->topMapX(), t_block->topMapY());
 }
 
 void Chunck::loadLightFaceDataWithAO(Color* faceColor,
@@ -452,6 +513,8 @@ void Chunck::sortBlockByTransparency() {
 bool Chunck::isBlockOpaque(u8 block_type) {
   return block_type != (u8)Blocks::AIR_BLOCK &&
          block_type != (u8)Blocks::GLASS_BLOCK &&
+         block_type != (u8)Blocks::POPPY_FLOWER &&
+         block_type != (u8)Blocks::DANDELION_FLOWER &&
          block_type != (u8)Blocks::WATER_BLOCK;
 }
 

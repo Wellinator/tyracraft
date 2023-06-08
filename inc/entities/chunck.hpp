@@ -88,7 +88,6 @@ class Chunck {
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
 
-
   float getVisibityByPosition(float d);
   void applyFOG(const Vec4& originPosition);
   void updateBlocks(const Vec4& playerPosition);
@@ -105,6 +104,7 @@ class Chunck {
   inline const bool hasDataToDraw() { return vertices.size() > 0; };
 
   const Vec4* rawData;
+  const Vec4* crossBlockRawData;
   Vec4 sunPosition;
   float sunLightIntensity;
   float ambientLightIntesity;
@@ -118,15 +118,21 @@ class Chunck {
   u8 getVertexAO(bool side1, bool corner, bool side2);
   float calcAOIntensity(u8 AOValue);
 
+  void loadCuboidBlock(LevelMap* terrain, Block* t_block);
+  void loadCrossBlock(LevelMap* terrain, Block* t_block);
+
   void loadMeshData(Block* t_block);
   void loadUVData(Block* t_block);
   void loadUVFaceData(const u8& X, const u8& Y);
   void loadLightData(LevelMap* terrain, Block* t_block);
+
+  void loadCrossedMeshData(Block* t_block);
+  void loadCrossedUVData(Block* t_block);
+  void loadCroosedLightData(LevelMap* terrain, Block* t_block);
+
   void loadLightFaceData(Color* faceColor);
   void loadLightFaceDataWithAO(Color* faceColor,
                                std::array<u8, 8>& faceNeightbors);
 
-
   bool _isPreAllocated = false;
-
 };

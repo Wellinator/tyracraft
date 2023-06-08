@@ -47,6 +47,10 @@ class ItemRepository {
   Item redstone_ore_block;
   Item emerald_ore_block;
 
+  // Flowers
+  Item poppy_flower;
+  Item dandelion_flower;
+
   // Wood Planks
   Item oak_planks;
   Item spruce_planks;

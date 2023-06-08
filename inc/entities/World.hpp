@@ -91,7 +91,7 @@ class World {
   void removeBlock(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player);
   inline const u8 validTargetBlock() {
-    return this->targetBlock != nullptr && this->targetBlock->isBreakable;
+    return targetBlock != nullptr && targetBlock->isBreakable;
   };
 
   void setSavedSpawnArea(Vec4 pos);
@@ -166,6 +166,7 @@ class World {
 
   uint32_t seed;
 
+  u8 isCrossedBlock(Blocks block_type);
   u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
                           const Vec4* chunkMaxOffset);
   u32 getIndexByOffset(int x, int y, int z);
@@ -273,7 +274,8 @@ void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 void propagateLightAddQueue();
 void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
 
-bool inline IsTransparent(Blocks block) {
-  return block == Blocks::AIR_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
-         block == Blocks::WATER_BLOCK || block == Blocks::GLASS_BLOCK;
+bool inline isTransparent(Blocks block) {
+  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
+         block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
+         block == Blocks::DANDELION_FLOWER;
 };

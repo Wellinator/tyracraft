@@ -9,7 +9,7 @@ using Tyra::McpipBlock;
 Block::Block(BlockInfo* blockInfo) {
   this->type = static_cast<Blocks>(blockInfo->blockId);
   this->isBreakable = blockInfo->_isBreakable;
-  this->isSolid = blockInfo->_isSolid;
+  this->isCollidable = blockInfo->_isCollidable;
   this->hasTransparency = blockInfo->_isTransparent;
   this->model.identity();
   this->scale.identity();

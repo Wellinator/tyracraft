@@ -39,6 +39,29 @@ const Vec4* VertexBlockData::getVertexData() {
   return result;
 }
 
+const Vec4* VertexBlockData::getCrossedVertexData() {
+  Vec4 cornerVetices[8] = {
+      Vec4(1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, 1.0),
+      Vec4(-1.0F, -1.0F, 1.0), Vec4(-1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),  Vec4(1.0F, 1.0F, 1.0),
+      Vec4(-1.0F, 1.0F, 1.0),  Vec4(-1.0F, 1.0F, -1.0),
+  };
+
+  u8 vertexFacesIndex[CROSSED_VETEX_COUNT] = {// Face 1
+                                              1, 7, 3, 1, 5, 7,
+
+                                              // Face 2
+                                              4, 6, 2, 4, 8, 6};
+
+  Vec4* result = new Vec4[CROSSED_VETEX_COUNT];
+
+  for (size_t i = 0; i < CROSSED_VETEX_COUNT; i++) {
+    result[i] = cornerVetices[vertexFacesIndex[i] - 1];
+  }
+
+  return result;
+}
+
 const Vec4* VertexBlockData::getVertexNormalData() {
   Vec4* normals = new Vec4[FACES_COUNT];
   normals[0] = Vec4(0, -1, 0);

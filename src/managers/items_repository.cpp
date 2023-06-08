@@ -12,6 +12,7 @@ ItemRepository::ItemRepository() {}
 
 ItemRepository::~ItemRepository() {
   this->t_renderer->getTextureRepository().freeBySprite(dirt.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(gravel.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(sand.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(stone.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(bricks.sprite);
@@ -25,6 +26,9 @@ ItemRepository::~ItemRepository() {
       redstone_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       emerald_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(poppy_flower.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      dandelion_flower.sprite);
 
   this->t_renderer->getTextureRepository().freeBySprite(glowstone.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(jack_o_lantern.sprite);
@@ -149,6 +153,21 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/emerald_ore_block.png"))
       ->addLink(emerald_ore_block.sprite.id);
+
+  // -------------- Flowers ------------------------
+  poppy_flower.id = ItemId::poppy_flower;
+  poppy_flower.blockId = Blocks::POPPY_FLOWER;
+  this->items.push_back(&poppy_flower);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/poppy_flower.png"))
+      ->addLink(poppy_flower.sprite.id);
+
+  dandelion_flower.id = ItemId::dandelion_flower;
+  dandelion_flower.blockId = Blocks::DANDELION_FLOWER;
+  this->items.push_back(&dandelion_flower);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/dandelion_flower.png"))
+      ->addLink(dandelion_flower.sprite.id);
 
   // -------------- Light Emissors ------------------------
   glowstone.id = ItemId::glowstone;

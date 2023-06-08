@@ -24,13 +24,15 @@ const u8 BlockTextureRepository::isBlockTransparent(const Blocks& blockType) {
   return false;
 }
 
+// TODO: refactore to loadBlocksInfo
 void BlockTextureRepository::loadTextures() {
   // Base Blocks
   models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}, false));
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,
                              {0, 0, 1, 7, 0, 1, 0, 1, 0, 1, 0, 1}, false));
   models.push_back(BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}, false));
-  models.push_back(BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, true));
+  models.push_back(
+      BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, true, false, false));
   models.push_back(
       BlockInfo(Blocks::BEDROCK_BLOCK, true, {0, 7}, false, false));
   models.push_back(BlockInfo(Blocks::SAND_BLOCK, true, {2, 7}, false));
@@ -50,9 +52,15 @@ void BlockTextureRepository::loadTextures() {
   models.push_back(BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {4, 8}, false));
   models.push_back(BlockInfo(Blocks::COAL_ORE_BLOCK, true, {5, 8}, false));
 
+  //  Flowers
+  models.push_back(
+      BlockInfo(Blocks::POPPY_FLOWER, true, {7, 10}, true, true, false));
+  models.push_back(
+      BlockInfo(Blocks::DANDELION_FLOWER, true, {8, 10}, true, true, false));
+
   // Wood Planks
   models.push_back(BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}, false));
-  models.push_back( 
+  models.push_back(
       BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true, {1, 11}, false));
   models.push_back(BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true, {3, 11}, false));
   models.push_back(

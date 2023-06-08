@@ -46,6 +46,12 @@ void BlockStepSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::COAL_ORE_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
+  //  Flowers
+  models.push_back(new SfxBlockModel(Blocks::POPPY_FLOWER,
+                                     SoundFxCategory::Step, SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
+                                     SoundFxCategory::Step, SoundFX::Grass1));
+
   // Stone bricks
   models.push_back(new SfxBlockModel(Blocks::STONE_BRICK_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));

@@ -267,7 +267,7 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
 
       if (
           // Prevent colliding to water horizontally
-          block->type == Blocks::WATER_BLOCK ||
+          !block->isCollidable ||
 
           // is vertically out of range?
           (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
@@ -339,7 +339,7 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(
 
       if (
           // Is collidable
-          block->type != Blocks::WATER_BLOCK &&
+          block->isCollidable &&
 
           // is under or above block
           minPlayer.x <= block->maxCorner.x &&

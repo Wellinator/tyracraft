@@ -408,7 +408,8 @@ void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
   int numPatches = map->width * map->length / 3000;
 
   for (int i = 0; i < numPatches; i++) {
-    // uint8_t flowerType = (rand() % 2 == 0) ? 37 : 38;
+    Blocks flowerType =
+        (rand() % 2 == 0) ? Blocks::DANDELION_FLOWER : Blocks::POPPY_FLOWER;
     uint16_t x = rand() % map->length;
     uint16_t z = rand() % map->width;
 
@@ -430,10 +431,7 @@ void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
           if (GetBlockFromMap(map, fx, fy, fz) ==
                   static_cast<uint8_t>(Blocks::AIR_BLOCK) &&
               blockBelow == static_cast<uint8_t>(Blocks::GRASS_BLOCK)) {
-            // SetBlockInMap(map, fx, fy, fz, flowerType);//TODO: add flower
-            // blocks
-            SetBlockInMap(map, fx, fy, fz,
-                          static_cast<uint8_t>(Blocks::AIR_BLOCK));
+            SetBlockInMap(map, fx, fy, fz, static_cast<uint8_t>(flowerType));
           }
         }
       }
