@@ -141,6 +141,7 @@ void Ui::loadlHud() {
   underWaterOverlay.mode = Tyra::MODE_STRETCH;
   underWaterOverlay.size.set(width, height);
   underWaterOverlay.position.set(0, 0);
+  underWaterOverlay.color.a = 64;
   this->t_renderer->core.texture.repository
       .add(FileUtils::fromCwd("textures/misc/underwater.png"))
       ->addLink(underWaterOverlay.id);
