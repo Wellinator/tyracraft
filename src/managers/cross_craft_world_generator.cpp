@@ -376,9 +376,7 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
 
       if (blockAbove == static_cast<uint8_t>(Blocks::WATER_BLOCK) &&
           gravelChance) {
-        SetBlockInMap(
-            map, x, y, z,
-            static_cast<uint8_t>(Blocks::STONE_BLOCK));  // TODO: Add Gravel
+        SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::GRAVEL_BLOCK));
       }
 
       if (blockAbove == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {

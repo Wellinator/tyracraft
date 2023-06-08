@@ -35,6 +35,7 @@ class ItemRepository {
   Item sand;
   Item stone;
   Item bricks;
+  Item gravel;
   Item glass;
   Item pumpkin;
 

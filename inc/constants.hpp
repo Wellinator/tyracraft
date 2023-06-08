@@ -56,6 +56,7 @@ enum class Blocks {
   SAND_BLOCK,
   GLASS_BLOCK,
   BRICKS_BLOCK,
+  GRAVEL_BLOCK,
 
   // Ores and Minerals
   GOLD_ORE_BLOCK,
@@ -124,6 +125,7 @@ enum class ItemId {
 
   // Blocks
   dirt,
+  gravel,
   sand,
   stone,
   bricks,

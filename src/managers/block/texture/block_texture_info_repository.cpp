@@ -28,7 +28,7 @@ void BlockTextureRepository::loadTextures() {
   // Base Blocks
   models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}, false));
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,
-                             {0, 0, 0, 5, 0, 1, 0, 1, 0, 1, 0, 1}, false));
+                             {0, 0, 1, 7, 0, 1, 0, 1, 0, 1, 0, 1}, false));
   models.push_back(BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}, false));
   models.push_back(BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, true));
   models.push_back(
@@ -36,6 +36,7 @@ void BlockTextureRepository::loadTextures() {
   models.push_back(BlockInfo(Blocks::SAND_BLOCK, true, {2, 7}, false));
   models.push_back(BlockInfo(Blocks::GLASS_BLOCK, true, {0, 9}, true));
   models.push_back(BlockInfo(Blocks::BRICKS_BLOCK, true, {4, 6}, false));
+  models.push_back(BlockInfo(Blocks::GRAVEL_BLOCK, true, {5, 6}, false));
 
   models.push_back(BlockInfo(Blocks::PUMPKIN_BLOCK, false,
                              {1, 13, 1, 13, 0, 13, 0, 13, 3, 13, 0, 13},

@@ -21,6 +21,8 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::DIRTY_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Gravel1));
+  models.push_back(new SfxBlockModel(Blocks::GRAVEL_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Gravel1));
   models.push_back(new SfxBlockModel(Blocks::SAND_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Sand1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Step,

@@ -86,6 +86,13 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/bricks.png"))
       ->addLink(bricks.sprite.id);
 
+  gravel.id = ItemId::gravel;
+  gravel.blockId = Blocks::GRAVEL_BLOCK;
+  this->items.push_back(&gravel);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/gravel.png"))
+      ->addLink(gravel.sprite.id);
+
   glass.id = ItemId::glass;
   glass.blockId = Blocks::GLASS_BLOCK;
   this->items.push_back(&glass);
