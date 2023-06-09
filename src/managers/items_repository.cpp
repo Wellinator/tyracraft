@@ -257,6 +257,63 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/chiseled_stone_bricks.png"))
       ->addLink(chiseled_stone_bricks.sprite.id);
 
+  // --------------------------Concretes-------------------------
+  yellow_concrete.id = ItemId::yellow_concrete;
+  yellow_concrete.blockId = Blocks::YELLOW_CONCRETE;
+  this->items.push_back(&yellow_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/yellow_concrete.png"))
+      ->addLink(yellow_concrete.sprite.id);
+
+  blue_concrete.id = ItemId::blue_concrete;
+  blue_concrete.blockId = Blocks::BLUE_CONCRETE;
+  this->items.push_back(&blue_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/blue_concrete.png"))
+      ->addLink(blue_concrete.sprite.id);
+
+  green_concrete.id = ItemId::green_concrete;
+  green_concrete.blockId = Blocks::GREEN_CONCRETE;
+  this->items.push_back(&green_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/green_concrete.png"))
+      ->addLink(green_concrete.sprite.id);
+
+  orange_concrete.id = ItemId::orange_concrete;
+  orange_concrete.blockId = Blocks::ORANGE_CONCRETE;
+  this->items.push_back(&orange_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/orange_concrete.png"))
+      ->addLink(orange_concrete.sprite.id);
+
+  purple_concrete.id = ItemId::purple_concrete;
+  purple_concrete.blockId = Blocks::PURPLE_CONCRETE;
+  this->items.push_back(&purple_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/purple_concrete.png"))
+      ->addLink(purple_concrete.sprite.id);
+
+  red_concrete.id = ItemId::red_concrete;
+  red_concrete.blockId = Blocks::RED_CONCRETE;
+  this->items.push_back(&red_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/red_concrete.png"))
+      ->addLink(red_concrete.sprite.id);
+
+  white_concrete.id = ItemId::white_concrete;
+  white_concrete.blockId = Blocks::WHITE_CONCRETE;
+  this->items.push_back(&white_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/white_concrete.png"))
+      ->addLink(white_concrete.sprite.id);
+
+  black_concrete.id = ItemId::black_concrete;
+  black_concrete.blockId = Blocks::BLACK_CONCRETE;
+  this->items.push_back(&black_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/black_concrete.png"))
+      ->addLink(black_concrete.sprite.id);
+
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;
   //   wooden_axe.blockId = Blocks::VOID;

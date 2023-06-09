@@ -84,6 +84,16 @@ void BlockTextureRepository::loadTextures() {
   models.push_back(
       BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {3, 6}, false));
 
+  // Concretes
+  models.push_back(BlockInfo(Blocks::YELLOW_CONCRETE, true, {6, 6}, false));
+  models.push_back(BlockInfo(Blocks::BLUE_CONCRETE, true, {7, 6}, false));
+  models.push_back(BlockInfo(Blocks::GREEN_CONCRETE, true, {8, 6}, false));
+  models.push_back(BlockInfo(Blocks::ORANGE_CONCRETE, true, {9, 6}, false));
+  models.push_back(BlockInfo(Blocks::PURPLE_CONCRETE, true, {10, 6}, false));
+  models.push_back(BlockInfo(Blocks::RED_CONCRETE, true, {11, 6}, false));
+  models.push_back(BlockInfo(Blocks::WHITE_CONCRETE, true, {12, 6}, false));
+  models.push_back(BlockInfo(Blocks::BLACK_CONCRETE, true, {13, 6}, false));
+
   // Woods
   models.push_back(BlockInfo(Blocks::OAK_LOG_BLOCK, false,
                              {1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}, false));

@@ -51,8 +51,8 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Grass1));
   models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
                                      SoundFxCategory::Step, SoundFX::Grass1));
-  models.push_back(new SfxBlockModel(Blocks::GRASS,
-                                     SoundFxCategory::Step, SoundFX::Grass1));
+  models.push_back(
+      new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Step, SoundFX::Grass1));
 
   // Stone bricks
   models.push_back(new SfxBlockModel(Blocks::STONE_BRICK_BLOCK,
@@ -64,6 +64,24 @@ void BlockStepSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::CHISELED_STONE_BRICKS_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::BRICKS_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+
+  //  Concretes
+  models.push_back(new SfxBlockModel(Blocks::YELLOW_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLUE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GREEN_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::ORANGE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PURPLE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::RED_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::WHITE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLACK_CONCRETE,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
   // Woods

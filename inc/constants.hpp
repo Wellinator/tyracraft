@@ -83,6 +83,16 @@ enum class Blocks {
   MOSSY_STONE_BRICKS_BLOCK,
   CHISELED_STONE_BRICKS_BLOCK,
 
+  // Concretes
+  YELLOW_CONCRETE,
+  BLUE_CONCRETE,
+  GREEN_CONCRETE,
+  ORANGE_CONCRETE,
+  PURPLE_CONCRETE,
+  RED_CONCRETE,
+  WHITE_CONCRETE,
+  BLACK_CONCRETE,
+
   // Light Emissors
   GLOWSTONE_BLOCK,
   JACK_O_LANTERN_BLOCK,
@@ -135,6 +145,7 @@ enum class ItemId {
   stone,
   bricks,
   glass,
+  pumpkin,
 
   // Wood Planks
   oak_planks,
@@ -164,7 +175,16 @@ enum class ItemId {
   poppy_flower,
   dandelion_flower,
 
-  pumpkin,
+  // Flowers
+  yellow_concrete,
+  blue_concrete,
+  green_concrete,
+  orange_concrete,
+  purple_concrete,
+  red_concrete,
+  white_concrete,
+  black_concrete,
+
   // Light Emissors
   glowstone,
   jack_o_lantern,

@@ -65,6 +65,16 @@ class ItemRepository {
   Item glowstone;
   Item jack_o_lantern;
 
+  // Concretes
+  Item yellow_concrete;
+  Item blue_concrete;
+  Item green_concrete;
+  Item orange_concrete;
+  Item purple_concrete;
+  Item red_concrete;
+  Item white_concrete;
+  Item black_concrete;
+
   // Stone Bricks
   Item stone_brick;
   Item cracked_stone_bricks;
