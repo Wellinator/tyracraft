@@ -90,14 +90,17 @@
 ############ TyraCraft 0.2.x Roadmap ############
 
 * Features for pre-alpha release (v0.2.x):
+    🔲 -> Add V-sync to menu options;
     🔲 -> Add particles system;
     🔲 -> Tool (Pickaxe) (WIP);
-    🔲 -> Add auto save feature;
+    ⚠️ -> Add auto save feature;
     🔲 -> Popup messages system;
+    🔲 -> Multi language support;
     ✅ -> Sun light system;
     ✅ -> Block light system;
     ✅ -> Running;
     ✅ -> pre-calculated ambient occlusion;
+    ✅ -> Basic vegetationS;
     🔲 -> Implement water phisycs:
         ✅ -> Gravity:
         🔲 -> Waterl flood fill:
@@ -112,9 +115,9 @@
     ✅ -> Fix block light remove:
     ✅ -> Fix light data when changes world save:
     ✅ -> Fix Day/Night cycle:
-    🔲 -> Water:
-        🔲 -> Update sun light when remove block under water;
-        🔲 -> Increase sunlight value at night;
+    ✅ -> Water:
+        ✅ -> Update sun light when remove block under water;
+        ✅ -> Increase sunlight value at night;
     ✅ -> Update light in moded chunks:
         ✅ -> Increase light update speed (maybe two chunks per frame):
     ✅ -> Real PS2:
