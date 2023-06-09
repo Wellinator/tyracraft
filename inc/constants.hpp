@@ -3,7 +3,7 @@
 #include <math/vec4.hpp>
 
 #ifndef VERSION
-#define VERSION "v0.29.56-pre-alpha"  // Software version
+#define VERSION "v0.33.57-pre-alpha"  // Software version
 #endif
 
 #define OVERWORLD_H_DISTANCE 128  // Total horizontal overworld distance;
