@@ -545,117 +545,85 @@ bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight) {
   return true;
 }
 
-void growTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+void growTree(LevelMap* map, int x, int y, int z, int treeHeight,
+              uint8_t logBlock, uint8_t leafesBlock) {
   int max = y + treeHeight;
   int m = max;
 
   for (; m >= y; m--) {
     if (m == max) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
+      SetBlockInMap(map, x, m, z, leafesBlock);
     } else if (m == max - 1) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 1, m, z - 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 1, m, z - 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 1, m, z + 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 1, m, z + 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 1, m, z - 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 1, m, z - 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 1, m, z + 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 1, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     } else if (m == max - 2 || m == max - 3) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 1, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x - 1, m, z + 1, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 2, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 2, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 2, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 2, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x - 2, m, z, leafesBlock);
+      SetBlockInMap(map, x - 2, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x + 2, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 2, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 2, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x + 2, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x + 2, m, z, leafesBlock);
+      SetBlockInMap(map, x + 2, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z - 2, leafesBlock);
+      SetBlockInMap(map, x, m, z - 2, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z - 2, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z + 2, leafesBlock);
+      SetBlockInMap(map, x, m, z + 2, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z + 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 2, m, z - 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 2, m, z - 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 2, m, z - 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 2, m, z - 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 2, m, z + 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 2, m, z + 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 2, m, z + 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 2, m, z + 2, leafesBlock);
 
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     } else {
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     }
   }
+}
+
+void growOakTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+  growTree(map, x, y, z, treeHeight,
+           static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK),
+           static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+}
+
+void growBirchTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+  growTree(map, x, y, z, treeHeight,
+           static_cast<uint8_t>(Blocks::BIRCH_LOG_BLOCK),
+           static_cast<uint8_t>(Blocks::BIRCH_LEAVES_BLOCK));
 }
 
 void create_trees(LevelMap* map, int16_t* heightmap, int off) {
@@ -664,6 +632,7 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
   for (int i = 0; i < numPatches; i++) {
     uint16_t x = rand() % map->length;
     uint16_t z = rand() % map->width;
+    const u8 isOakTree = rand() % 2 == 0;
 
     for (int j = 0; j < 10; j++) {
       uint16_t fx = x;
@@ -678,7 +647,11 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
           uint16_t th = rand() % 3 + 4;
 
           if (isSpaceForTree(map, fx, fy, fz, th)) {
-            growTree(map, fx, fy, fz, th);
+            if (isOakTree) {
+              growOakTree(map, fx, fy, fz, th);
+            } else {
+              growBirchTree(map, fx, fy, fz, th);
+            }
           }
         }
       }
