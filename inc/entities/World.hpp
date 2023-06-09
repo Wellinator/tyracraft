@@ -277,5 +277,5 @@ void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
 bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
          block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER;
+         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS;
 };

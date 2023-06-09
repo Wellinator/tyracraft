@@ -54,9 +54,11 @@ void BlockTextureRepository::loadTextures() {
 
   //  Flowers
   models.push_back(
-      BlockInfo(Blocks::POPPY_FLOWER, true, {7, 10}, true, true, false));
+      BlockInfo(Blocks::GRASS, true, {9, 10}, true, true, false, true));
   models.push_back(
-      BlockInfo(Blocks::DANDELION_FLOWER, true, {8, 10}, true, true, false));
+      BlockInfo(Blocks::POPPY_FLOWER, true, {7, 10}, true, true, false, true));
+  models.push_back(BlockInfo(Blocks::DANDELION_FLOWER, true, {8, 10}, true,
+                             true, false, true));
 
   // Wood Planks
   models.push_back(BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}, false));

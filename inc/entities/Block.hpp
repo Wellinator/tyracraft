@@ -38,6 +38,7 @@ class Block {
   u8 isBreakable = false;
   u8 isAtChunkBorder = false;
   u8 isCrossed = false;
+
   float damage = 0;
 
   Vec4 minCorner;

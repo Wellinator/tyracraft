@@ -20,12 +20,13 @@ class BlockInfo {
   BlockInfo(const Blocks& type, const u8& isSingle,
             const std::initializer_list<u8>& facesMap,
             const bool& isTransparent, const bool& isBreakable = true,
-            const bool& isCollidable = true) {
+            const bool& isCollidable = true, const bool& isCrossed = false) {
     blockId = (u8)type;
     _isSingle = isSingle;
     _isBreakable = isBreakable;
     _isTransparent = isTransparent;
     _isCollidable = isCollidable;
+    _isCrossed = isCrossed;
 
     u8 i = 0;
     for (auto uv : facesMap) {
@@ -38,9 +39,11 @@ class BlockInfo {
 
   std::array<u8, 12> _facesMap = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-  u8 _isSingle;
   u8 blockId;
-  bool _isBreakable;
-  bool _isCollidable;
-  bool _isTransparent;
+
+  u8 _isSingle;
+  u8 _isBreakable;
+  u8 _isCollidable;
+  u8 _isTransparent;
+  u8 _isCrossed;
 };

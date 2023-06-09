@@ -51,6 +51,8 @@ void BlockBrokenSfxRepository::loadModels() {
                                      SoundFX::Grass1));
   models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER, SoundFxCategory::Dig,
                                      SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Dig,
+                                     SoundFX::Grass1));
 
   // Stone bricks
   models.push_back(new SfxBlockModel(Blocks::STONE_BRICK_BLOCK,

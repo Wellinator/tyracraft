@@ -404,6 +404,39 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
   }
 }
 
+void create_grass(LevelMap* map, int16_t* heightmap, int off) {
+  int numPatches = map->width * map->length / 750;
+
+  for (int i = 0; i < numPatches; i++) {
+    uint16_t x = rand() % map->length;
+    uint16_t z = rand() % map->width;
+
+    for (int j = 0; j < 25; j++) {
+      uint16_t fx = x;
+      uint16_t fz = z;
+
+      for (int k = 0; k < 5; k++) {
+        fx += (rand() % 6) - (rand() % 6);
+        fz += (rand() % 6) - (rand() % 6);
+
+        if (BoundCheckMap(map, fx, 0, fz)) {
+          uint16_t fy = heightmap[fx + fz * map->length] + 1 + off;
+
+          if (!BoundCheckMap(map, fx, fy, fz)) continue;
+
+          uint8_t blockBelow = GetBlockFromMap(map, fx, fy - 1, fz);
+
+          if (GetBlockFromMap(map, fx, fy, fz) ==
+                  static_cast<uint8_t>(Blocks::AIR_BLOCK) &&
+              blockBelow == static_cast<uint8_t>(Blocks::GRASS_BLOCK)) {
+            SetBlockInMap(map, fx, fy, fz, static_cast<uint8_t>(Blocks::GRASS));
+          }
+        }
+      }
+    }
+  }
+}
+
 void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
   int numPatches = map->width * map->length / 3000;
 
@@ -654,6 +687,8 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
 }
 
 void create_plants(LevelMap* map, int16_t* heightmap, int off) {
+  TYRA_LOG("Creating grass...");
+  create_grass(map, heightmap, off);
   TYRA_LOG("Creating flowers...");
   create_flowers(map, heightmap, off);
   TYRA_LOG("Creating shrooms...");

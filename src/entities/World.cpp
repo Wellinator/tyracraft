@@ -713,7 +713,7 @@ u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
 
 u8 World::isCrossedBlock(Blocks block_type) {
   return block_type == Blocks::POPPY_FLOWER ||
-         block_type == Blocks::DANDELION_FLOWER;
+         block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
 }
 
 void World::buildChunk(Chunck* t_chunck) {
@@ -745,7 +745,6 @@ void World::buildChunk(Chunck* t_chunck) {
               block->offset.set(tempBlockOffset);
               block->chunkId = t_chunck->id;
 
-              block->isCrossed = isCrossedBlock(block_type);
               if (block->isCrossed) {
                 block->visibleFaces = 0x111111;
                 block->visibleFacesCount = 2;
@@ -818,7 +817,14 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->visibleFaces = visibleFaces;
           block->visibleFacesCount = Utils::countSetBits(visibleFaces);
 
-          block->isCrossed = isCrossedBlock(block_type);
+          if (block->isCrossed) {
+            block->visibleFaces = 0x111111;
+            block->visibleFacesCount = 2;
+          } else {
+            block->visibleFaces = visibleFaces;
+            block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+          }
+
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
@@ -1415,7 +1421,8 @@ void singleCheck(uint16_t x, uint16_t z) {
       else
         newLightValue = 0;
     } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
-               b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER) {
+               b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
+               b != Blocks::GRASS) {
       newLightValue = 0;
     }
 
@@ -1473,7 +1480,8 @@ void initSunLight(uint32_t tick) {
           else
             lv = 0;
         } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
-                   b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER) {
+                   b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
+                   b != Blocks::GRASS) {
           lv = 0;
         }
 

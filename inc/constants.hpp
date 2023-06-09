@@ -67,6 +67,7 @@ enum class Blocks {
   EMERALD_ORE_BLOCK,
 
   // Flowers
+  GRASS,
   POPPY_FLOWER,
   DANDELION_FLOWER,
 

@@ -515,6 +515,7 @@ bool Chunck::isBlockOpaque(u8 block_type) {
          block_type != (u8)Blocks::GLASS_BLOCK &&
          block_type != (u8)Blocks::POPPY_FLOWER &&
          block_type != (u8)Blocks::DANDELION_FLOWER &&
+         block_type != (u8)Blocks::GRASS &&
          block_type != (u8)Blocks::WATER_BLOCK;
 }
 
