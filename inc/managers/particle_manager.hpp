@@ -2,7 +2,6 @@
 
 #include "constants.hpp"
 #include "camera.hpp"
-#include "entities/particle.hpp"
 #include "entities/Block.hpp"
 #include <tyra>
 #include <math.h>
@@ -18,6 +17,23 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
+
+struct Particle {
+  PaticleType type;
+
+  u8 billboarded = true;
+  u8 expired = false;
+  u8 col;
+  u8 row;
+
+  M4x4 model, translation, rotation, scale;
+
+  float _elapsedTime = 0;
+  float _lifeTime;
+  Vec4 _velocity;
+  Vec4 _position;
+  Vec4 _direction;
+};
 
 class ParticlesManager {
  public:
@@ -46,9 +62,9 @@ class ParticlesManager {
       Vec4(-1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, -1.0),
       Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
 
-  std::vector<Particle> blocksParticles;
-  std::vector<Vec4> blocksParticlesUVMap;
-  std::vector<Vec4> blocksParticlesVertexData;
+  std::vector<Particle> particles;
+  std::vector<Vec4> particlesUVMap;
+  std::vector<Vec4> particlesVertexData;
 
   Color particleBaseColor = Color(120, 120, 120);
 

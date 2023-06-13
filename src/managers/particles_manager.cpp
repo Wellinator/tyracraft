@@ -6,12 +6,12 @@ ParticlesManager::ParticlesManager() {}
 ParticlesManager::~ParticlesManager() {
   delete[] rawData;
 
-  blocksParticles.clear();
-  blocksParticles.shrink_to_fit();
-  blocksParticlesUVMap.clear();
-  blocksParticlesUVMap.shrink_to_fit();
-  blocksParticlesVertexData.clear();
-  blocksParticlesVertexData.shrink_to_fit();
+  particles.clear();
+  particles.shrink_to_fit();
+  particlesUVMap.clear();
+  particlesUVMap.shrink_to_fit();
+  particlesVertexData.clear();
+  particlesVertexData.shrink_to_fit();
 }
 
 void ParticlesManager::init(Renderer* renderer, Texture* t_blocksTexture) {
@@ -29,10 +29,10 @@ void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
 
 void ParticlesManager::updateParticles(const float deltaTime,
                                        const Vec4* camPos) {
-  blocksParticlesVertexData.clear();
+  particlesVertexData.clear();
 
-  for (size_t i = 0; i < blocksParticles.size(); i++) {
-    if (blocksParticles[i].expired == true) {
+  for (size_t i = 0; i < particles.size(); i++) {
+    if (particles[i].expired == true) {
       particlesHasChanged = true;
       continue;
     }
@@ -40,76 +40,84 @@ void ParticlesManager::updateParticles(const float deltaTime,
     u16 relativeIndex = i * 6;
     if (relativeIndex > 0) relativeIndex -= 1;
 
-    blocksParticles[i]._elapsedTime += deltaTime;
-    if (blocksParticles[i]._elapsedTime > blocksParticles[i]._lifeTime) {
-      blocksParticles[i].expired = true;
+    particles[i]._elapsedTime += deltaTime;
+    if (particles[i]._elapsedTime > particles[i]._lifeTime) {
+      particles[i].expired = true;
 
-      blocksParticlesUVMap.erase(
-          blocksParticlesUVMap.begin() + relativeIndex,
-          blocksParticlesUVMap.begin() + relativeIndex + 6);
+      particlesUVMap.erase(particlesUVMap.begin() + relativeIndex,
+                           particlesUVMap.begin() + relativeIndex + 6);
     } else {
       // Update position
-      // Vec4 nextPosition =
-      //     blocksParticles[i]._direction * particleSpeed * deltaTime;
-      blocksParticles[i]._velocity +=
-          blocksParticles[i]._direction * particleSpeed * deltaTime;
+      particles[i]._velocity +=
+          particles[i]._direction * particleSpeed * deltaTime;
 
       // Reduce gravity to 85%, it was too huge for particles
-      blocksParticles[i]._velocity += GRAVITY * 0.9F * deltaTime;
-      blocksParticles[i]._position += blocksParticles[i]._velocity * deltaTime;
+      particles[i]._velocity += GRAVITY * 0.9F * deltaTime;
+      particles[i]._position += particles[i]._velocity * deltaTime;
 
-      // Apply billboard rotation
-      M4x4 result;
-      M4x4 temp;
-      M4x4::lookAt(&temp, blocksParticles[i]._position, *camPos);
-      matrix_inverse(result.data, temp.data);
+      /**
+       * Apply billboard rotation to particle of type equals to
+       * PaticleType::Block
+       */
+      if (particles[i].billboarded) {
+        M4x4 result;
+        M4x4 temp;
+        M4x4::lookAt(&temp, particles[i]._position, *camPos);
+        matrix_inverse(result.data, temp.data);
 
-      blocksParticles[i].model = result * blocksParticles[i].scale;
+        // Set particle model. M = R * S;
+        particles[i].model = result * particles[i].scale;
+      } else {
+        // Set particle position
+        particles[i].translation.identity();
+        reinterpret_cast<Vec4*>(&particles[i].translation.data[3 * 4])
+            ->set(particles[i]._position);
+
+        // Set particle model. M = T * R * S;
+        particles[i].model = particles[i].translation * particles[i].rotation *
+                             particles[i].scale;
+      }
 
       u16 count = 0;
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
-      blocksParticlesVertexData.emplace_back(blocksParticles[i].model *
-                                             rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
+      particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
     }
   }
 
-  blocksParticlesUVMap.shrink_to_fit();
-  blocksParticlesVertexData.shrink_to_fit();
+  particlesUVMap.shrink_to_fit();
+  particlesVertexData.shrink_to_fit();
 };
 
 void ParticlesManager::destroyExpiredParticles() {
-  blocksParticles.erase(
-      std::remove_if(blocksParticles.begin(), blocksParticles.end(),
-                     [](const Particle& p) { return p.expired; }),
-      blocksParticles.end());
+  particles.erase(std::remove_if(particles.begin(), particles.end(),
+                                 [](const Particle& p) { return p.expired; }),
+                  particles.end());
 
-  blocksParticles.shrink_to_fit();
-  blocksParticlesVertexData.shrink_to_fit();
+  particles.shrink_to_fit();
+  particlesVertexData.shrink_to_fit();
 
   particlesHasChanged = false;
 }
 
 void ParticlesManager::createBlockParticleBatch(Block* targetBlock,
                                                 const u16 size) {
-  blocksParticles.reserve(size);
-  blocksParticlesUVMap.reserve(size * DRAW_DATA_COUNT);
-  blocksParticlesVertexData.reserve(size * DRAW_DATA_COUNT);
+  particles.reserve(size);
+  particlesUVMap.reserve(size * DRAW_DATA_COUNT);
+  particlesVertexData.reserve(size * DRAW_DATA_COUNT);
 
   for (size_t i = 0; i < size; i++) createBlockParticle(targetBlock);
 }
 
 void ParticlesManager::createBlockParticle(Block* targetBlock) {
-  blocksParticles.emplace_back();
-  auto& particle = blocksParticles.back();
+  particles.emplace_back();
+  auto& particle = particles.back();
+
+  // Set type
+  particle.type = PaticleType::Block;
 
   particle._lifeTime = Tyra::Math::randomf(0.6F, 1.2F);
 
@@ -147,23 +155,23 @@ void ParticlesManager::createBlockParticle(Block* targetBlock) {
   auto yMax = Tyra::Math::randomf(targetBlock->frontMapY(),
                                   targetBlock->frontMapY() + 0.5F);
 
-  blocksParticlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
-  blocksParticlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
-  blocksParticlesUVMap.emplace_back(Vec4(xMax, yMax, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMax, yMax, 1.0F, 0.0F) * scaleVec);
 
-  blocksParticlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
-  blocksParticlesUVMap.emplace_back(Vec4(xMin, yMin, 1.0F, 0.0F) * scaleVec);
-  blocksParticlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMin, yMin, 1.0F, 0.0F) * scaleVec);
+  particlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
 };
 
 void ParticlesManager::destroyBlockParticles() {
-  blocksParticles.clear();
-  blocksParticlesUVMap.clear();
-  blocksParticlesVertexData.clear();
+  particles.clear();
+  particlesUVMap.clear();
+  particlesVertexData.clear();
 }
 
 void ParticlesManager::renderBlocksParticles() {
-  if (blocksParticlesVertexData.size() > 0) {
+  if (particlesVertexData.size() > 0) {
     t_renderer->renderer3D.usePipeline(stapip);
 
     M4x4 rawMatrix;
@@ -171,7 +179,7 @@ void ParticlesManager::renderBlocksParticles() {
 
     StaPipTextureBag textureBag;
     textureBag.texture = blocksTexture;
-    textureBag.coordinates = blocksParticlesUVMap.data();
+    textureBag.coordinates = particlesUVMap.data();
 
     StaPipInfoBag infoBag;
     infoBag.model = &rawMatrix;
@@ -181,8 +189,8 @@ void ParticlesManager::renderBlocksParticles() {
     colorBag.single = &particleBaseColor;
 
     StaPipBag bag;
-    bag.count = blocksParticlesVertexData.size();
-    bag.vertices = blocksParticlesVertexData.data();
+    bag.count = particlesVertexData.size();
+    bag.vertices = particlesVertexData.data();
     bag.color = &colorBag;
     bag.info = &infoBag;
     bag.texture = &textureBag;
@@ -194,5 +202,5 @@ void ParticlesManager::renderBlocksParticles() {
 void ParticlesManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
 
-  if (blocksParticles.size() > 0) renderBlocksParticles();
+  if (particles.size() > 0) renderBlocksParticles();
 };
