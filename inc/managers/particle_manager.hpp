@@ -38,6 +38,8 @@ class ParticlesManager {
   Vec4 camPos;
   const float particleSpeed = 65.0F;
 
+  u8 particlesHasChanged = false;
+
   const u8 DRAW_DATA_COUNT = 6;
   Vec4* rawData = new Vec4[DRAW_DATA_COUNT]{
       Vec4(1.0F, -1.0F, -1.0),  Vec4(-1.0F, 1.0F, -1.0),

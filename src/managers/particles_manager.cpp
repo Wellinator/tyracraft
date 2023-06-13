@@ -22,7 +22,9 @@ void ParticlesManager::init(Renderer* renderer, Texture* t_blocksTexture) {
 
 void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
   updateParticles(deltaTime, &t_camera->position);
-  destroyExpiredParticles();
+  if (particlesHasChanged) {
+    destroyExpiredParticles();
+  }
 };
 
 void ParticlesManager::updateParticles(const float deltaTime,
@@ -30,7 +32,10 @@ void ParticlesManager::updateParticles(const float deltaTime,
   blocksParticlesVertexData.clear();
 
   for (size_t i = 0; i < blocksParticles.size(); i++) {
-    if (blocksParticles[i].expired == true) continue;
+    if (blocksParticles[i].expired == true) {
+      particlesHasChanged = true;
+      continue;
+    }
 
     u16 relativeIndex = i * 6;
     if (relativeIndex > 0) relativeIndex -= 1;
@@ -89,6 +94,8 @@ void ParticlesManager::destroyExpiredParticles() {
 
   blocksParticles.shrink_to_fit();
   blocksParticlesVertexData.shrink_to_fit();
+
+  particlesHasChanged = false;
 }
 
 void ParticlesManager::createBlockParticleBatch(Block* targetBlock,
