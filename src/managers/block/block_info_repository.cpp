@@ -1,6 +1,6 @@
 #include "managers/block/block_info_repository.hpp"
 
-BlockInfoRepository::BlockInfoRepository() { loadTextures(); }
+BlockInfoRepository::BlockInfoRepository() { loadBlocksInfo(); }
 
 BlockInfoRepository::~BlockInfoRepository() {
   models.clear();
@@ -24,8 +24,7 @@ const u8 BlockInfoRepository::isBlockTransparent(const Blocks& blockType) {
   return false;
 }
 
-// TODO: refactore to loadBlocksInfo
-void BlockInfoRepository::loadTextures() {
+void BlockInfoRepository::loadBlocksInfo() {
   // Base Blocks
   models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}, false));
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,

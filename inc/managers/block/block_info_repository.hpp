@@ -23,7 +23,7 @@ class BlockInfoRepository {
    * (haky)
    *
    */
-  void loadTextures();
+  void loadBlocksInfo();
 
   std::vector<BlockInfo> models;
 };
