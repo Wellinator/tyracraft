@@ -118,19 +118,11 @@ void ParticlesManager::createBlockParticle(Block* targetBlock) {
            targetBlock->hitPosition.y + (Tyra::Math::randomf(-8.0F, 8.0F)),
            targetBlock->hitPosition.z + (Tyra::Math::randomf(-8.0F, 8.0F)));
 
-  // Set particle position
-  particle.translation.identity();
-  reinterpret_cast<Vec4*>(&particle.translation.data[3 * 4])
-      ->set(particle._position);
-
   // Set particle size
   particle.scale.identity();
   const auto _scale = Tyra::Math::randomf(0.5F, 1.0F);
   particle.scale.scaleX(_scale);
   particle.scale.scaleY(_scale);
-
-  // Set particle model. M = T * R * S;
-  particle.model = particle.translation * particle.rotation * particle.scale;
 
   particle._direction = particle._position - targetBlock->hitPosition;
   particle._direction.normalize();
@@ -155,14 +147,6 @@ void ParticlesManager::createBlockParticle(Block* targetBlock) {
   blocksParticlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
   blocksParticlesUVMap.emplace_back(Vec4(xMin, yMin, 1.0F, 0.0F) * scaleVec);
   blocksParticlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
-
-  auto vert = 0;
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
-  blocksParticlesVertexData.emplace_back(particle.model * rawData[vert++]);
 };
 
 void ParticlesManager::destroyBlockParticles() {

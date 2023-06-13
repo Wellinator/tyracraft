@@ -16,7 +16,7 @@ class Particle {
   u8 col;
   u8 row;
 
-  M4x4 model, translation, rotation, scale;
+  M4x4 model, rotation, scale;
 
   float _elapsedTime = 0;
   float _lifeTime;
