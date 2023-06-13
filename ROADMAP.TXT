@@ -122,3 +122,4 @@
         ✅ -> Increase light update speed (maybe two chunks per frame):
     ✅ -> Real PS2:
         ✅ -> Fix audio FX;
+    🔲 -> Destroy plant when the bottom block is destroyed;
