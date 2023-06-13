@@ -7,10 +7,10 @@
 
 using Tyra::MinecraftPipeline;
 
-class BlockTextureRepository {
+class BlockInfoRepository {
  public:
-  BlockTextureRepository();
-  ~BlockTextureRepository();
+  BlockInfoRepository();
+  ~BlockInfoRepository();
 
   BlockInfo* getTextureInfo(const Blocks& blockType);
 

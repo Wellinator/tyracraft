@@ -1,20 +1,20 @@
-#include "managers/block/texture/block_texture_info_repository.hpp"
+#include "managers/block/block_info_repository.hpp"
 
-BlockTextureRepository::BlockTextureRepository() { loadTextures(); }
+BlockInfoRepository::BlockInfoRepository() { loadTextures(); }
 
-BlockTextureRepository::~BlockTextureRepository() {
+BlockInfoRepository::~BlockInfoRepository() {
   models.clear();
   models.shrink_to_fit();
 }
 
-BlockInfo* BlockTextureRepository::getTextureInfo(const Blocks& blockType) {
+BlockInfo* BlockInfoRepository::getTextureInfo(const Blocks& blockType) {
   for (u8 i = 0; i < models.size(); i++)
     if (models[i].blockId == (u8)blockType) return &models[i];
 
   return nullptr;
 }
 
-const u8 BlockTextureRepository::isBlockTransparent(const Blocks& blockType) {
+const u8 BlockInfoRepository::isBlockTransparent(const Blocks& blockType) {
   const BlockInfo* textureInfo = getTextureInfo(blockType);
   if (textureInfo) return textureInfo->_isTransparent;
 
@@ -25,7 +25,7 @@ const u8 BlockTextureRepository::isBlockTransparent(const Blocks& blockType) {
 }
 
 // TODO: refactore to loadBlocksInfo
-void BlockTextureRepository::loadTextures() {
+void BlockInfoRepository::loadTextures() {
   // Base Blocks
   models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}, false));
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,

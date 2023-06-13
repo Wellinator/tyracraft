@@ -12,7 +12,7 @@ using Tyra::Vec4;
 BlockManager::BlockManager() {}
 
 BlockManager::~BlockManager() {
-  delete this->t_blockTextureRepository;
+  delete this->t_BlockInfoRepository;
 
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
 
@@ -34,7 +34,7 @@ BlockManager::~BlockManager() {
 void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
                         const std::string& texturePack) {
   this->t_renderer = t_renderer;
-  this->t_blockTextureRepository = new BlockTextureRepository();
+  this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
   this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
@@ -56,11 +56,11 @@ void BlockManager::registerBlockSoundsEffects() {
 }
 
 BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
-  return this->t_blockTextureRepository->getTextureInfo(blockType);
+  return this->t_BlockInfoRepository->getTextureInfo(blockType);
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
-  return this->t_blockTextureRepository->isBlockTransparent(blockType);
+  return this->t_BlockInfoRepository->isBlockTransparent(blockType);
 }
 
 void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {

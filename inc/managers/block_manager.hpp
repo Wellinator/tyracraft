@@ -15,7 +15,7 @@
 #include "managers/block/sound/block_dig_sfx_repository.hpp"
 #include "managers/block/sound/block_broken_sfx_repository.hpp"
 #include "managers/block/sound/block_step_sfx_repository.hpp"
-#include "managers/block/texture/block_texture_info_repository.hpp"
+#include "managers/block/block_info_repository.hpp"
 #include "models/block_info_model.hpp"
 #include <tyra>
 
@@ -52,7 +52,7 @@ class BlockManager {
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;
-  BlockTextureRepository* t_blockTextureRepository;
+  BlockInfoRepository* t_BlockInfoRepository;
 
   std::vector<McpipBlock*> damage_overlay;
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;
