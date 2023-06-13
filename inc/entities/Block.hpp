@@ -73,6 +73,7 @@ class Block {
 
   // Distance to hit point when isTarget is true;
   float distance = 0.0f;
+  Vec4 hitPosition;
 
   Block(BlockInfo* blockInfo);
   ~Block();

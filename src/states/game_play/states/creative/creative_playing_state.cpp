@@ -22,8 +22,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   handleInput(deltaTime);
 
   stateGamePlay->world->update(stateGamePlay->player,
-                               stateGamePlay->context->t_camera->lookPos,
-                               stateGamePlay->context->t_camera->position);
+                               stateGamePlay->context->t_camera, deltaTime);
 
   if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 

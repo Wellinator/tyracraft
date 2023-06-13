@@ -49,6 +49,8 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
   chunckManager.init(&worldLightModel, terrain);
   cloudsManager.init(t_renderer);
+  particlesManager.init(t_renderer, blockManager.getBlocksTexture());
+
   calcRawBlockBBox(&mcPip);
 };
 
@@ -82,9 +84,11 @@ void World::setSavedSpawnArea(Vec4 pos) {
   lastPlayerPosition.set(worldSpawnArea);
 }
 
-void World::update(Player* t_player, const Vec4& camLookPos,
-                   const Vec4& camPosition) {
+void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   cloudsManager.update();
+
+  particlesManager.update(deltaTime, t_camera);
+
   dayNightCycleManager.update();
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
@@ -106,12 +110,15 @@ void World::update(Player* t_player, const Vec4& camLookPos,
   unloadScheduledChunks();
   loadScheduledChunks();
 
-  updateTargetBlock(camLookPos, camPosition, chunckManager.getNearByChunks());
+  updateTargetBlock(t_camera->lookPos, t_camera->position,
+                    chunckManager.getNearByChunks());
 };
 
 void World::render() {
   cloudsManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
+
+  particlesManager.renderBlocksParticles();
 
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
@@ -628,6 +635,9 @@ void World::breakTargetBlock(const float& deltaTime) {
     breaking_time_pessed += deltaTime;
 
     if (breaking_time_pessed >= blockManager.getBlockBreakingTime()) {
+      // Generate amount of particles right begore block gets destroyed
+      particlesManager.createBlockParticleBatch(targetBlock, 24);
+
       // Remove block;
       removeBlock(targetBlock);
 
@@ -637,6 +647,14 @@ void World::breakTargetBlock(const float& deltaTime) {
       // Update damage overlay
       targetBlock->damage =
           breaking_time_pessed / blockManager.getBlockBreakingTime() * 100;
+
+      if (lastTimeCreatedParticle > 0.2) {
+        particlesManager.createBlockParticleBatch(targetBlock, 4);
+        lastTimeCreatedParticle = 0;
+      } else {
+        lastTimeCreatedParticle += deltaTime;
+      }
+
       if (lastTimePlayedBreakingSfx > 0.3F) {
         playBreakingBlockSound(targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
@@ -918,6 +936,7 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
     targetBlock = tempTargetBlock;
     targetBlock->isTarget = 1;
     targetBlock->distance = tempTargetDistance;
+    targetBlock->hitPosition.set(ray.at(tempTargetDistance));
   }
 }
 

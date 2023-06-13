@@ -17,6 +17,7 @@
 #include <algorithm>
 #include "managers/chunck_manager.hpp"
 #include "managers/clouds_manager.hpp"
+#include "managers/particle_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
@@ -66,12 +67,12 @@ class World {
   BlockManager blockManager;
   ChunckManager chunckManager;
   CloudsManager cloudsManager;
+  ParticlesManager particlesManager;
   DayNightCycleManager dayNightCycleManager;
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
-  void update(Player* t_player, const Vec4& camLookPos,
-              const Vec4& camPosition);
+  void update(Player* t_player, Camera* t_camera, const float deltaTime);
   void render();
   void generate();
   void generateLight();
@@ -154,6 +155,9 @@ class World {
   // From terrain manager
   Ray ray;
   ItemRepository* t_itemRepository;
+
+  // Paticles values
+  float lastTimeCreatedParticle = 0.0F;
 
   // Breaking control
   u8 _isBreakingBlock = false;

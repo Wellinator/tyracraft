@@ -203,6 +203,8 @@ enum class ItemId {
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
+enum class PaticleType { BlockDigParticle };
+
 #define HOT_INVENTORY_SIZE 9
 
 #define MIN_WORLD_POS                            \
