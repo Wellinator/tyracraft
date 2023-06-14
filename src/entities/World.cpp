@@ -523,6 +523,9 @@ void World::removeBlock(Block* blockToRemove) {
   SetBlockInMap(terrain, offsetToRemove.x, offsetToRemove.y, offsetToRemove.z,
                 (u8)Blocks::AIR_BLOCK);
 
+  // Generate amount of particles right begore block gets destroyed
+  particlesManager.createBlockParticleBatch(blockToRemove, 24);
+
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -534,6 +537,23 @@ void World::removeBlock(Block* blockToRemove) {
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   playDestroyBlockSound(blockToRemove->type);
+
+  // Remove up block if it's is vegetation
+  const Vec4 upBlockOffset =
+      Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
+
+  if (BoundCheckMap(terrain, upBlockOffset.x, upBlockOffset.y,
+                    upBlockOffset.z)) {
+    const Blocks b = static_cast<Blocks>(GetBlockFromMap(
+        terrain, upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+
+    if (isVegetation(b)) {
+      auto chunk =
+          chunckManager.getChunckByPosition(upBlockOffset * DUBLE_BLOCK_SIZE);
+      Block* upperBlock = chunk->getBlockByOffset(&upBlockOffset);
+      if (upperBlock) removeBlock(upperBlock);
+    }
+  }
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
@@ -635,9 +655,6 @@ void World::breakTargetBlock(const float& deltaTime) {
     breaking_time_pessed += deltaTime;
     const auto breakingTime = blockManager.getBlockBreakingTime(targetBlock);
     if (breaking_time_pessed >= breakingTime) {
-      // Generate amount of particles right begore block gets destroyed
-      particlesManager.createBlockParticleBatch(targetBlock, 24);
-
       // Remove block;
       removeBlock(targetBlock);
 
@@ -905,17 +922,17 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
-      auto block = chuncks[h]->blocks[i];
+      Block* block = chuncks[h]->blocks[i];
 
       u8 isBreakable = block->type != Blocks::WATER_BLOCK;
       float distanceFromCurrentBlockToPlayer =
           camPosition.distanceTo(*block->getPosition());
 
-      if (isBreakable && distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
-        // Reset block state
-        block->isTarget = 0;
-        block->distance = -1.0f;
+      // Reset block state
+      block->isTarget = false;
+      block->distance = -1.0f;
 
+      if (isBreakable && distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
         float intersectionPoint;
         if (ray.intersectBox(block->minCorner, block->maxCorner,
                              &intersectionPoint)) {
@@ -933,7 +950,7 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
   if (hitedABlock) {
     targetBlock = tempTargetBlock;
-    targetBlock->isTarget = 1;
+    targetBlock->isTarget = true;
     targetBlock->distance = tempTargetDistance;
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
   }

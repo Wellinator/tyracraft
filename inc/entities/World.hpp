@@ -278,6 +278,11 @@ void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
 void propagateLightAddQueue();
 void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
 
+bool inline isVegetation(Blocks block) {
+  return (u8)block >= (u8)Blocks::GRASS &&
+         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
+};
+
 bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
          block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
