@@ -139,6 +139,8 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 
   if (speed < _maxSpeed) {
     speed += _maxAcc * deltaTime;
+  } else {
+    speed = _maxSpeed;
   }
 
   Vec4 direction =

@@ -133,10 +133,10 @@ class Player {
   // Forces values
   float acceleration = 140.0F;
   float speed = 0;
-  float maxSpeed = 90.0F;
+  float maxSpeed = 60.0F;
 
   float runningAcceleration = 170.0F;
-  float runningMaxSpeed = 110.0F;
+  float runningMaxSpeed = 100.0F;
 
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
