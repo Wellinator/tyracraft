@@ -109,10 +109,6 @@ void ParticlesManager::destroyExpiredParticles() {
 }
 
 void ParticlesManager::createBlockParticleBatch(Block* block, const u16 size) {
-  TYRA_LOG("Creating particles with color:");
-  block->baseColor.print();
-  printf("visibleFacesCount: %i\n\n", block->visibleFacesCount);
-
   particles.reserve(size);
   particlesUVMap.reserve(size * DRAW_DATA_COUNT);
   particlesColors.reserve(size * DRAW_DATA_COUNT);
