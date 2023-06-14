@@ -848,9 +848,6 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->offset.set(tempBlockOffset);
           block->chunkId = t_chunck->id;
 
-          block->visibleFaces = visibleFaces;
-          block->visibleFacesCount = Utils::countSetBits(visibleFaces);
-
           if (block->isCrossed) {
             block->visibleFaces = 0x111111;
             block->visibleFacesCount = 2;

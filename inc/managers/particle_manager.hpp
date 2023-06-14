@@ -63,10 +63,9 @@ class ParticlesManager {
       Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
 
   std::vector<Particle> particles;
+  std::vector<Color> particlesColors;
   std::vector<Vec4> particlesUVMap;
   std::vector<Vec4> particlesVertexData;
-
-  Color particleBaseColor = Color(120, 120, 120);
 
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;

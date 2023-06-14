@@ -10,6 +10,8 @@ ParticlesManager::~ParticlesManager() {
   particles.shrink_to_fit();
   particlesUVMap.clear();
   particlesUVMap.shrink_to_fit();
+  particlesColors.clear();
+  particlesColors.shrink_to_fit();
   particlesVertexData.clear();
   particlesVertexData.shrink_to_fit();
 }
@@ -46,6 +48,8 @@ void ParticlesManager::updateParticles(const float deltaTime,
 
       particlesUVMap.erase(particlesUVMap.begin() + relativeIndex,
                            particlesUVMap.begin() + relativeIndex + 6);
+      particlesColors.erase(particlesColors.begin() + relativeIndex,
+                            particlesColors.begin() + relativeIndex + 6);
     } else {
       // Update position
       particles[i]._velocity +=
@@ -89,6 +93,7 @@ void ParticlesManager::updateParticles(const float deltaTime,
   }
 
   particlesUVMap.shrink_to_fit();
+  particlesColors.shrink_to_fit();
   particlesVertexData.shrink_to_fit();
 };
 
@@ -104,8 +109,13 @@ void ParticlesManager::destroyExpiredParticles() {
 }
 
 void ParticlesManager::createBlockParticleBatch(Block* block, const u16 size) {
+  TYRA_LOG("Creating particles with color:");
+  block->baseColor.print();
+  printf("visibleFacesCount: %i\n\n", block->visibleFacesCount);
+
   particles.reserve(size);
   particlesUVMap.reserve(size * DRAW_DATA_COUNT);
+  particlesColors.reserve(size * DRAW_DATA_COUNT);
   particlesVertexData.reserve(size * DRAW_DATA_COUNT);
 
   for (size_t i = 0; i < size; i++) createBlockParticle(block);
@@ -169,11 +179,21 @@ void ParticlesManager::createBlockParticle(Block* block) {
   particlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
   particlesUVMap.emplace_back(Vec4(xMin, yMin, 1.0F, 0.0F) * scaleVec);
   particlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
+
+  // Load particles color based in block color average
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
+  particlesColors.emplace_back(block->baseColor);
 };
 
 void ParticlesManager::destroyBlockParticles() {
   particles.clear();
   particlesUVMap.clear();
+  particlesColors.clear();
   particlesVertexData.clear();
 }
 
@@ -193,7 +213,7 @@ void ParticlesManager::renderBlocksParticles() {
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
     StaPipColorBag colorBag;
-    colorBag.single = &particleBaseColor;
+    colorBag.many = particlesColors.data();
 
     StaPipBag bag;
     bag.count = particlesVertexData.size();

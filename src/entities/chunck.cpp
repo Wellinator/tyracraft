@@ -307,6 +307,8 @@ void Chunck::loadUVFaceData(const u8& X, const u8& Y) {
 
 void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
   auto baseFaceColor = Color(120, 120, 120);
+  Vec4 blockColorAverage = Vec4(0.0F);
+  Vec4 tempColor;
 
   if (t_block->isTopFaceVisible()) {
     //   Top face 100% of the base color
@@ -315,6 +317,9 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
                                    sunLightIntensity);
+
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -331,6 +336,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
                                    terrain, sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -348,6 +355,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
                                    terrain, sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -365,6 +374,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
                                    terrain, sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -382,6 +393,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
                                    terrain, sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -399,6 +412,8 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
                                    terrain, sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
 
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
       loadLightFaceData(&faceColor);
@@ -408,25 +423,42 @@ void Chunck::loadLightData(LevelMap* terrain, Block* t_block) {
       loadLightFaceDataWithAO(&faceColor, faceNeightbors);
     }
   }
+
+  blockColorAverage /= t_block->visibleFacesCount;
+  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
+                         blockColorAverage.z);
 }
 
 void Chunck::loadCroosedLightData(LevelMap* terrain, Block* t_block) {
   auto baseFaceColor = Color(120, 120, 120);
-  Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+  Vec4 blockColorAverage = Vec4(0.0F);
+  Vec4 tempColor;
 
   // Face 1
   {
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   terrain, sunLightIntensity);
+    Color faceColor = baseFaceColor;
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
+                                   sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
+
     loadLightFaceData(&faceColor);
   }
 
   // Face 2
   {
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   terrain, sunLightIntensity);
+    Color faceColor = baseFaceColor;
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
+                                   sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
+
     loadLightFaceData(&faceColor);
   }
+
+  blockColorAverage /= t_block->visibleFacesCount;
+  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
+                         blockColorAverage.z);
 }
 
 void Chunck::loadCrossedMeshData(Block* t_block) {

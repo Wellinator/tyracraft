@@ -113,6 +113,8 @@ class Block {
 
   inline const float getHardness() { return hardness; }
 
+  Color baseColor;
+
  private:
   // Block props
 
