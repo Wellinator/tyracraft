@@ -91,11 +91,12 @@
 
 * Features for pre-alpha release (v0.2.x):
     🔲 -> Add V-sync to menu options;
-    🔲 -> Add particles system;
     🔲 -> Tool (Pickaxe) (WIP);
     ⚠️ -> Add auto save feature;
     🔲 -> Popup messages system;
     🔲 -> Multi language support;
+    ✅ -> Implement block hardness;
+    ✅ -> Add particles system;
     ✅ -> Sun light system;
     ✅ -> Block light system;
     ✅ -> Running;
@@ -123,3 +124,4 @@
     ✅ -> Real PS2:
         ✅ -> Fix audio FX;
     🔲 -> Destroy plant when the bottom block is destroyed;
+    🔲 -> Apply light intensity to particles;
