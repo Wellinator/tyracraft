@@ -133,14 +133,12 @@ void ParticlesManager::createBlockParticle(Block* block) {
              block->hitPosition.y + (Tyra::Math::randomf(-8.0F, 8.0F)),
              block->hitPosition.z + (Tyra::Math::randomf(-8.0F, 8.0F)));
     particle._direction = particle._position - block->hitPosition;
-    particle._position.print("Is target");
   } else {
     particle._position =
         Vec4(block->getPosition()->x + (Tyra::Math::randomf(-4.0F, 4.0F)),
              block->getPosition()->y + (Tyra::Math::randomf(-4.0F, 4.0F)),
              block->getPosition()->z + (Tyra::Math::randomf(-4.0F, 4.0F)));
     particle._direction = particle._position - *block->getPosition();
-    particle._position.print("Is not target");
   }
 
   particle._direction.normalize();
