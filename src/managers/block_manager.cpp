@@ -114,11 +114,39 @@ SfxBlockModel* BlockManager::getStepSoundByBlockType(const Blocks& blockType) {
   return nullptr;
 }
 
-float BlockManager::getBlockBreakingTime() {
-  // TODO: refactor -> receive block info and tool to calc breaking time;
-  // ref: https://minecraft.fandom.com/wiki/Breaking
-  return 0.5F;
+// ref: https://minecraft.fandom.com/wiki/Breaking
+float BlockManager::getBlockBreakingTime(Block* targetBlock) {
+  // TODO: apply in survival mode only
+  const auto baseSpeed = isBestTool(targetBlock->type) ? 1.5F : 5.0F;
+
+  const float baseBreakingTime = baseSpeed * targetBlock->getHardness();
+  return baseBreakingTime;
 }
+
+// TODO: implements canHarvestWithCurrentTool, it must receive the current
+// player tool
+// See: https://minecraft.fandom.com/wiki/Breaking#Blocks_by_hardness
+bool BlockManager::canHarvestWithCurrentTool(const Blocks blockType) {
+  return true;
+}
+
+bool BlockManager::isBestTool(const Blocks blockType) {
+  if ((blockType == Blocks::STONE_BLOCK || blockType == Blocks::BRICKS_BLOCK) ||
+      // Ores
+      ((u8)blockType >= (u8)Blocks::GOLD_ORE_BLOCK &&
+       (u8)blockType >= (u8)Blocks::EMERALD_ORE_BLOCK) ||
+      // Bricks
+      ((u8)blockType >= (u8)Blocks::STONE_BRICK_BLOCK &&
+       (u8)blockType >= (u8)Blocks::CHISELED_STONE_BRICKS_BLOCK) ||
+      // Concretes
+      ((u8)blockType >= (u8)Blocks::YELLOW_CONCRETE &&
+       (u8)blockType >= (u8)Blocks::BLACK_CONCRETE)) {
+    return false;
+  }
+
+  return true;
+}
+// TODO: implement best tool calculation
 
 u8 BlockManager::getBlockLightValue(Blocks blockType) {
   switch (blockType) {

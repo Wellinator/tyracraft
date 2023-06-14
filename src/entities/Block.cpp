@@ -12,6 +12,7 @@ Block::Block(BlockInfo* blockInfo) {
   this->isCollidable = blockInfo->_isCollidable;
   this->hasTransparency = blockInfo->_isTransparent;
   this->isCrossed = blockInfo->_isCrossed;
+  this->hardness = blockInfo->_hardness;
 
   this->model.identity();
   this->scale.identity();

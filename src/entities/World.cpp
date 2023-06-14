@@ -633,8 +633,8 @@ void World::breakTargetBlock(const float& deltaTime) {
 
   if (_isBreakingBlock) {
     breaking_time_pessed += deltaTime;
-
-    if (breaking_time_pessed >= blockManager.getBlockBreakingTime()) {
+    const auto breakingTime = blockManager.getBlockBreakingTime(targetBlock);
+    if (breaking_time_pessed >= breakingTime) {
       // Generate amount of particles right begore block gets destroyed
       particlesManager.createBlockParticleBatch(targetBlock, 24);
 
@@ -645,8 +645,7 @@ void World::breakTargetBlock(const float& deltaTime) {
       breaking_time_pessed = 0;
     } else {
       // Update damage overlay
-      targetBlock->damage =
-          breaking_time_pessed / blockManager.getBlockBreakingTime() * 100;
+      targetBlock->damage = breaking_time_pessed / breakingTime * 100;
 
       if (lastTimeCreatedParticle > 0.2) {
         particlesManager.createBlockParticleBatch(targetBlock, 4);

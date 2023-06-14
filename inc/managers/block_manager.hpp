@@ -9,6 +9,7 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/sfx_block_model.hpp"
+#include "entities/Block.hpp"
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "managers/block/sound/block_sfx_base_repository.hpp"
@@ -42,13 +43,16 @@ class BlockManager {
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
   McpipBlock* getDamageOverlay(const float& damage_percentage);
 
-  float getBlockBreakingTime();
+  float getBlockBreakingTime(Block* targetBlock);
   u8 getBlockLightValue(Blocks blockType);
 
  private:
   void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(const std::string& texturePack);
+
+  bool canHarvestWithCurrentTool(const Blocks blockType);
+  bool isBestTool(const Blocks blockType);
 
   Texture* blocksTexAtlas;
   Renderer* t_renderer;

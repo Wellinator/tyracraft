@@ -5,7 +5,7 @@
 #include <math/vec4.hpp>
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
-#include "managers/block_manager.hpp"
+#include "models/block_info_model.hpp"
 
 #define FRONT_VISIBLE 0x100000
 #define BACK_VISIBLE 0x010000
@@ -111,8 +111,12 @@ class Block {
     return reinterpret_cast<Vec4*>(&translation.data[3 * 4]);
   }
 
+  inline const float getHardness() { return hardness; }
+
  private:
   // Block props
+
+  float hardness = 0;
 
   // Terrain generation params
   // float continentalness = 0.0;
