@@ -8,10 +8,13 @@ ParticlesManager::~ParticlesManager() {
 
   particles.clear();
   particles.shrink_to_fit();
+
   particlesUVMap.clear();
   particlesUVMap.shrink_to_fit();
+
   particlesColors.clear();
   particlesColors.shrink_to_fit();
+
   particlesVertexData.clear();
   particlesVertexData.shrink_to_fit();
 }
@@ -91,10 +94,6 @@ void ParticlesManager::updateParticles(const float deltaTime,
       particlesVertexData.emplace_back(particles[i].model * rawData[count++]);
     }
   }
-
-  particlesUVMap.shrink_to_fit();
-  particlesColors.shrink_to_fit();
-  particlesVertexData.shrink_to_fit();
 };
 
 void ParticlesManager::destroyExpiredParticles() {
@@ -103,6 +102,8 @@ void ParticlesManager::destroyExpiredParticles() {
                   particles.end());
 
   particles.shrink_to_fit();
+  particlesColors.shrink_to_fit();
+  particlesUVMap.shrink_to_fit();
   particlesVertexData.shrink_to_fit();
 
   particlesHasChanged = false;
@@ -185,13 +186,6 @@ void ParticlesManager::createBlockParticle(Block* block) {
   particlesColors.emplace_back(block->baseColor);
   particlesColors.emplace_back(block->baseColor);
 };
-
-void ParticlesManager::destroyBlockParticles() {
-  particles.clear();
-  particlesUVMap.clear();
-  particlesColors.clear();
-  particlesVertexData.clear();
-}
 
 void ParticlesManager::renderBlocksParticles() {
   if (particlesVertexData.size() > 0) {

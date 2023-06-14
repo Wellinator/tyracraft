@@ -48,7 +48,6 @@ class ParticlesManager {
 
   void createBlockParticle(Block* block);
   void createBlockParticleBatch(Block* block, const u16 size);
-  void destroyBlockParticles();
 
  private:
   Vec4 camPos;
