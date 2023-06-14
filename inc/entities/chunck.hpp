@@ -83,6 +83,9 @@ class Chunck {
   void freeUnusedMemory();
   bool isPreAllocated();
 
+  Block* getBlockByPosition(const Vec4* pos);
+  Block* getBlockByOffset(const Vec4* offset);
+
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
