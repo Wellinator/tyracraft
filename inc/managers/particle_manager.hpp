@@ -46,8 +46,8 @@ class ParticlesManager {
   void render();
   void renderBlocksParticles();
 
-  void createBlockParticle(Block* targetBlock);
-  void createBlockParticleBatch(Block* targetBlock, const u16 size);
+  void createBlockParticle(Block* block);
+  void createBlockParticleBatch(Block* block, const u16 size);
   void destroyBlockParticles();
 
  private:

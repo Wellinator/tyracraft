@@ -103,16 +103,15 @@ void ParticlesManager::destroyExpiredParticles() {
   particlesHasChanged = false;
 }
 
-void ParticlesManager::createBlockParticleBatch(Block* targetBlock,
-                                                const u16 size) {
+void ParticlesManager::createBlockParticleBatch(Block* block, const u16 size) {
   particles.reserve(size);
   particlesUVMap.reserve(size * DRAW_DATA_COUNT);
   particlesVertexData.reserve(size * DRAW_DATA_COUNT);
 
-  for (size_t i = 0; i < size; i++) createBlockParticle(targetBlock);
+  for (size_t i = 0; i < size; i++) createBlockParticle(block);
 }
 
-void ParticlesManager::createBlockParticle(Block* targetBlock) {
+void ParticlesManager::createBlockParticle(Block* block) {
   particles.emplace_back();
   auto& particle = particles.back();
 
@@ -128,10 +127,23 @@ void ParticlesManager::createBlockParticle(Block* targetBlock) {
   // Initiate with a random value from 2 to 5 to lift it on spawn
   particle._velocity.y = Tyra::Math::randomf(10.0F, 15.0F);
 
-  particle._position =
-      Vec4(targetBlock->hitPosition.x + (Tyra::Math::randomf(-8.0F, 8.0F)),
-           targetBlock->hitPosition.y + (Tyra::Math::randomf(-8.0F, 8.0F)),
-           targetBlock->hitPosition.z + (Tyra::Math::randomf(-8.0F, 8.0F)));
+  if (block->isTarget) {
+    particle._position =
+        Vec4(block->hitPosition.x + (Tyra::Math::randomf(-8.0F, 8.0F)),
+             block->hitPosition.y + (Tyra::Math::randomf(-8.0F, 8.0F)),
+             block->hitPosition.z + (Tyra::Math::randomf(-8.0F, 8.0F)));
+    particle._direction = particle._position - block->hitPosition;
+    particle._position.print("Is target");
+  } else {
+    particle._position =
+        Vec4(block->getPosition()->x + (Tyra::Math::randomf(-4.0F, 4.0F)),
+             block->getPosition()->y + (Tyra::Math::randomf(-4.0F, 4.0F)),
+             block->getPosition()->z + (Tyra::Math::randomf(-4.0F, 4.0F)));
+    particle._direction = particle._position - *block->getPosition();
+    particle._position.print("Is not target");
+  }
+
+  particle._direction.normalize();
 
   // Set particle size
   particle.scale.identity();
@@ -139,21 +151,18 @@ void ParticlesManager::createBlockParticle(Block* targetBlock) {
   particle.scale.scaleX(_scale);
   particle.scale.scaleY(_scale);
 
-  particle._direction = particle._position - targetBlock->hitPosition;
-  particle._direction.normalize();
-
   const float UVSscale = 1.0F / 16.0F;
   const Vec4 scaleVec = Vec4(UVSscale, UVSscale, 1.0F, 0.0F);
 
   // Calc rand offset between row and col;
-  auto xMin = Tyra::Math::randomf(targetBlock->frontMapX(),
-                                  targetBlock->frontMapX() + 0.5F);
-  auto xMax = Tyra::Math::randomf(targetBlock->frontMapX(),
-                                  targetBlock->frontMapX() + 0.5F);
-  auto yMin = Tyra::Math::randomf(targetBlock->frontMapY(),
-                                  targetBlock->frontMapY() + 0.5F);
-  auto yMax = Tyra::Math::randomf(targetBlock->frontMapY(),
-                                  targetBlock->frontMapY() + 0.5F);
+  auto xMin =
+      Tyra::Math::randomf(block->frontMapX(), block->frontMapX() + 0.5F);
+  auto xMax =
+      Tyra::Math::randomf(block->frontMapX(), block->frontMapX() + 0.5F);
+  auto yMin =
+      Tyra::Math::randomf(block->frontMapY(), block->frontMapY() + 0.5F);
+  auto yMax =
+      Tyra::Math::randomf(block->frontMapY(), block->frontMapY() + 0.5F);
 
   particlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
   particlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);
