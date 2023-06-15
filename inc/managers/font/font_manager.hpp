@@ -33,6 +33,8 @@ extern u8 BASE_LINE_HEIGHT;
 void FontManager_init(Renderer* t_renderer);
 
 void FontManager_printText(const std::string& text, const FontOptions& options);
+void FontManager_printText(const std::string& text, const float& x,
+                           const float& y);
 void FontManager_printText(const char* text, const FontOptions& options);
 void FontManager_printText(const char* text, const float& x, const float& y);
 

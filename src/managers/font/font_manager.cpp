@@ -68,6 +68,11 @@ void FontManager_printText(const char* text, const float& x, const float& y) {
   FontManager_printText(std::string(text), FontOptions(Vec2(x, y)));
 }
 
+void FontManager_printText(const std::string& text, const float& x,
+                           const float& y) {
+  FontManager_printText(text, FontOptions(Vec2(x, y)));
+}
+
 void FontManager_printText(const std::string& text,
                            const FontOptions& options) {
   float cursorX = 0.0F;
