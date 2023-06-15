@@ -1,5 +1,5 @@
 #include "states/splash_screen/state_splash_screen.hpp"
-#include "states/main_menu/state_main_menu.hpp"
+#include "states/language_selection/language_selection_screen.hpp"
 
 StateSplashScreen::StateSplashScreen(Context* t_context)
     : GameState(t_context) {
@@ -89,5 +89,5 @@ u8 StateSplashScreen::hasFinished() {
 }
 
 void StateSplashScreen::nextState() {
-  this->context->setState(new StateMainMenu(this->context));
+  this->context->setState(new StateLanguageSelectionScreen(this->context));
 }
