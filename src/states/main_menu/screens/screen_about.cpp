@@ -90,24 +90,20 @@ void ScreenAbout::renderAboutText1() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText("Hey there!", fontOptions);
+  FontManager_printText(Label_Text1Part1, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("Wellinator here, I'm gald you came to this screen!",
-                        fontOptions);
+  FontManager_printText(Label_Text1Part2, fontOptions);
   fontOptions.position.y += 20;
   fontOptions.position.y += 20;
-  FontManager_printText("TyraCraft is an opensource project, powered by",
-                        fontOptions);
+  FontManager_printText(Label_Text1Part3, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("Tyra Engine, that aims to bring a voxel like game",
-                        fontOptions);
+  FontManager_printText(Label_Text1Part4, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("to the PlayStation 2 scene.", fontOptions);
+  FontManager_printText(Label_Text1Part5, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(
-      "We have put a lot of time and effort into this project!", fontOptions);
+  FontManager_printText(Label_Text1Part6, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("We hope you enjoy it!", fontOptions);
+  FontManager_printText(Label_Text1Part7, fontOptions);
 
   if (alpha == 0) hasShowedText1 = 1;
 }
@@ -124,11 +120,10 @@ void ScreenAbout::renderAboutText2() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText("Thank you to all who have contributed in TyraCraft",
-                        fontOptions);
+  FontManager_printText(Label_Text2Part1, fontOptions);
 
   fontOptions.position.y += 20;
-  FontManager_printText("You guys are awesome!", fontOptions);
+  FontManager_printText(Label_Text2Part2, fontOptions);
 
   fontOptions.color.r = 252;
   fontOptions.color.g = 219;
@@ -158,23 +153,22 @@ void ScreenAbout::renderAboutText3() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText("Special thanks to all YouTube subscribers",
-                        fontOptions);
+  FontManager_printText(Label_Text3Part1, fontOptions);
 
   fontOptions.position.y += 20;
-  FontManager_printText("and those from the Discord Server.", fontOptions);
+  FontManager_printText(Label_Text3Part2, fontOptions);
 
   fontOptions.color.r = 252;
   fontOptions.color.g = 219;
   fontOptions.color.b = 3;
 
   fontOptions.position.y += 40;
-  FontManager_printText("Join us on Discord!", fontOptions);
+  FontManager_printText(Label_Text3Part3, fontOptions);
   fontOptions.position.y += 20;
   FontManager_printText("https://discord.gg/E2hQAt4Dft", fontOptions);
 
   fontOptions.position.y += 40;
-  FontManager_printText("Follow us!", fontOptions);
+  FontManager_printText(Label_Text3Part4, fontOptions);
   fontOptions.position.y += 20;
   FontManager_printText("https://youtube.com/@TyraCraft", fontOptions);
 
