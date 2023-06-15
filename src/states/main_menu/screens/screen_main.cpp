@@ -31,36 +31,39 @@ void ScreenMain::render() {
   // New Game
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 60, 230 + 6));
+    fontOptions.position.set(Vec2(248, 230 + 6));
+    fontOptions.alignment = TextAlignment::Center;
     fontOptions.color.set(activeOption == ScreenMainOptions::PlayGame
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    FontManager_printText("Play Game", fontOptions);
+    FontManager_printText(Label_PlayGame, fontOptions);
   }
 
   // How To Play
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 72, 230 + 46));
+    fontOptions.position.set(Vec2(248, 230 + 46));
+    fontOptions.alignment = TextAlignment::Center;
     fontOptions.color.set(activeOption == ScreenMainOptions::HowToPlay
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText("How to Play", fontOptions);
+    FontManager_printText(Label_HowToPlay, fontOptions);
   }
 
   // About
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(256 - 42, 230 + 86));
+    fontOptions.position.set(Vec2(248, 230 + 86));
+    fontOptions.alignment = TextAlignment::Center;
     fontOptions.color.set(activeOption == ScreenMainOptions::About
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText("About", fontOptions);
+    FontManager_printText(Label_About, fontOptions);
   }
 
   t_renderer->renderer2D.render(&btnCross);
-  FontManager_printText("Select", 35, 407);
+  FontManager_printText(Label_Select, 35, 407);
 }
 
 void ScreenMain::init() {
