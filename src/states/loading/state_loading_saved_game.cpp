@@ -14,6 +14,7 @@ StateLoadingSavedGame::~StateLoadingSavedGame() { this->unload(); }
 
 void StateLoadingSavedGame::init() {
   this->setBgColorBlack();
+  progressLabel = Label_Loading;
 
   const RendererSettings& rendererSettings =
       this->context->t_engine->renderer.core.getSettings();
@@ -30,17 +31,6 @@ void StateLoadingSavedGame::init() {
   background->position.set(0, 0);
   this->context->t_engine->renderer.core.texture.repository.add(backgroundTex)
       ->addLink(background->id);
-
-  // State desc
-  std::string stateLoadingText =
-      FileUtils::fromCwd("textures/gui/loading/loading.png");
-  loadingStateText = new Sprite;
-  loadingStateText->mode = Tyra::MODE_STRETCH;
-  loadingStateText->size.set(256, 16);
-  loadingStateText->position.set(width / 2 - 128, BASE_HEIGHT);
-  this->context->t_engine->renderer.core.texture.repository
-      .add(stateLoadingText)
-      ->addLink(loadingStateText->id);
 
   // Loading slot
   std::string loadingSlotTex =
@@ -72,16 +62,22 @@ void StateLoadingSavedGame::update(const float& deltaTime) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   if (this->shouldCreatedEntities) {
+    progressLabel = Label_CreatingEntities;
     return this->createEntities();
   } else if (this->shouldInitItemRepository) {
+    progressLabel = Label_LoadingItemsRepo;
     return this->initItemRepository();
   } else if (this->shouldInitUI) {
+    progressLabel = Label_LoadingUI;
     return this->initUI();
   } else if (this->shouldInitWorld) {
+    progressLabel = Label_LoadingWorld;
     return this->initWorld();
   } else if (this->shouldLoadSavedData) {
+    progressLabel = Label_LoadingSave;
     return this->loadSavedData();
   } else if (this->shouldInitPlayer) {
+    progressLabel = Label_LoadingPlayer;
     return this->initPlayer();
   }
   this->_state = LoadingState::Complete;
@@ -91,7 +87,8 @@ void StateLoadingSavedGame::render() {
   this->context->t_engine->renderer.renderer2D.render(background);
   this->context->t_engine->renderer.renderer2D.render(loadingSlot);
   this->context->t_engine->renderer.renderer2D.render(loadingprogress);
-  this->context->t_engine->renderer.renderer2D.render(loadingStateText);
+
+  FontManager_printText(progressLabel, progressLabelOptions);
 }
 
 void StateLoadingSavedGame::unload() {
@@ -101,13 +98,10 @@ void StateLoadingSavedGame::unload() {
       *loadingSlot);
   this->context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingprogress);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *loadingStateText);
 
   delete background;
   delete loadingSlot;
   delete loadingprogress;
-  delete loadingStateText;
   delete worldOptions;
 }
 

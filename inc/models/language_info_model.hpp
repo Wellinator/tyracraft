@@ -12,5 +12,6 @@ class LanguageInfoModel {
   std::string title;
   std::string author;
   std::string revision;
+  std::string selectLabel;
   Sprite icon;
 };

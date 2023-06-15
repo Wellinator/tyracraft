@@ -83,7 +83,7 @@ void StateLanguageSelectionScreen::render() {
   }
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Select", 35, 407);
+  FontManager_printText(selectedLanguage->selectLabel, 35, 407);
 };
 
 void StateLanguageSelectionScreen::unloadTextures() {
@@ -128,6 +128,8 @@ void StateLanguageSelectionScreen::loadLanguagesAvailable() {
         model.title = data["info"]["title"].get<std::string>();
         model.author = data["info"]["author"].get<std::string>();
         model.revision = data["info"]["revision"].get<std::string>();
+        model.selectLabel =
+            data["language_selection_screen"]["select"].get<std::string>();
 
         model.icon.size.set(FlagIconWidth, FlagIconHeight);
         model.icon.position.set((WIDTH / 2) - FlagIconWidth / 2,
