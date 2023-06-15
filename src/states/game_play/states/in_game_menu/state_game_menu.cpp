@@ -166,8 +166,13 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   if (needSaveOverwriteConfirmation) {
     if (clicked.Cross) {
       this->playClickSound();
+      const auto oldDrawDistance = stateGamePlay->world->getDrawDistace();
+      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
+
       stateGamePlay->saveGame();
       needSaveOverwriteConfirmation = false;
+
+      stateGamePlay->world->setDrawDistace(oldDrawDistance);
     } else if (clicked.Triangle) {
       needSaveOverwriteConfirmation = false;
     }
@@ -175,6 +180,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   } else if (needSaveAndQuitConfirmation) {
     if (clicked.Cross) {
       playClickSound();
+      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
       stateGamePlay->saveGame();
       stateGamePlay->quitToTitle();
     } else if (clicked.Triangle) {
