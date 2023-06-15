@@ -3,6 +3,7 @@
 #include "models/new_game_model.hpp"
 #include "models/texture_pack_info_model.hpp"
 #include "managers/font/font_options.hpp"
+#include "managers/language_manager.hpp"
 #include <tamtypes.h>
 #include <tyra>
 #include <string>
@@ -102,6 +103,67 @@ class ScreenNewGame : public ScreenBase {
   u8 isEditingWorldName = false;
   u8 editingIndexWorldName = 0;
   u8 needToChangeWorldName = 0;
+
+  const std::string Label_Load =
+      g_language_repository["gui"]["load"].get<std::string>();
+  const std::string Label_Create =
+      g_language_repository["gui"]["create"].get<std::string>();
+  const std::string Label_Confirm =
+      g_language_repository["gui"]["confirm"].get<std::string>();
+  const std::string Label_Cancel =
+      g_language_repository["gui"]["cancel"].get<std::string>();
+  const std::string Label_Select =
+      g_language_repository["gui"]["select"].get<std::string>();
+  const std::string Label_Bksp =
+      g_language_repository["gui"]["bksp"].get<std::string>();
+  const std::string Label_Prev =
+      g_language_repository["gui"]["prev"].get<std::string>();
+  const std::string Label_Next =
+      g_language_repository["gui"]["next"].get<std::string>();
+  const std::string Label_Back =
+      g_language_repository["gui"]["back"].get<std::string>();
+  const std::string Label_Edit =
+      g_language_repository["gui"]["edit"].get<std::string>();
+  const std::string Label_Random =
+      g_language_repository["gui"]["random"].get<std::string>();
+
+  const std::string Label_By =
+      g_language_repository["common"]["by"].get<std::string>();
+  const std::string Label_Seed =
+      g_language_repository["common"]["seed"].get<std::string>();
+  const std::string Label_Ops =
+      g_language_repository["common"]["ops_exclamation"].get<std::string>();
+
+  const std::string Label_TexturePack =
+      g_language_repository["screen_new_game"]["texture_packs"]
+          .get<std::string>();
+  const std::string Label_CreateNewWorld =
+      g_language_repository["screen_new_game"]["create_new_world"]
+          .get<std::string>();
+  const std::string Label_WorldTypeOriginal =
+      g_language_repository["screen_new_game"]["world_type_original"]
+          .get<std::string>();
+  const std::string Label_WorldTypeFlat =
+      g_language_repository["screen_new_game"]["world_type_flat"]
+          .get<std::string>();
+  const std::string Label_WorldTypeIsland =
+      g_language_repository["screen_new_game"]["world_type_island"]
+          .get<std::string>();
+  const std::string Label_WorldTypeWoods =
+      g_language_repository["screen_new_game"]["world_type_woods"]
+          .get<std::string>();
+  const std::string Label_WorldTypeFloating =
+      g_language_repository["screen_new_game"]["world_type_floating"]
+          .get<std::string>();
+  const std::string Label_WorldNameErrorPart1 =
+      g_language_repository["screen_new_game"]["world_name_exists_error_part1"]
+          .get<std::string>();
+  const std::string Label_WorldNameErrorPart2 =
+      g_language_repository["screen_new_game"]["world_name_exists_error_part2"]
+          .get<std::string>();
+  const std::string Label_WorldNameErrorPart3 =
+      g_language_repository["screen_new_game"]["world_name_exists_error_part3"]
+          .get<std::string>();
 
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;
