@@ -126,3 +126,4 @@
     ✅ -> Destroy plant when the bottom block is destroyed;
     ✅ -> Apply light intensity to particles;
     🔲 -> Fix clouds color at night:
+    ✅ -> Fix game crash when trying to save with max draw distance;
