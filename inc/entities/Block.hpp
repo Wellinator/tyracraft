@@ -44,9 +44,7 @@ class Block {
   Vec4 minCorner;
   Vec4 maxCorner;
 
-  M4x4 translation, rotation, scale;
-
-  M4x4 model;
+  M4x4 model, translation, rotation, scale;
 
   BBox* bbox = nullptr;
 
