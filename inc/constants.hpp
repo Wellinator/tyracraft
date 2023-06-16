@@ -113,7 +113,7 @@ enum class Blocks {
 #define THIRD_PERSON_CAM 2
 
 #define MAX_RANGE_PICKER \
-  (DUBLE_BLOCK_SIZE * 8.0F)  // How far the player can pick a block
+  (DUBLE_BLOCK_SIZE * 6.0F)  // How far the player can pick a block
 
 // Game states
 #define MAIN_MENU 0
