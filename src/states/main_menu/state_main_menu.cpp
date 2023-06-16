@@ -90,8 +90,8 @@ void StateMainMenu::render() {
    * */
 
   // Title & Subtitle
-  this->context->t_engine->renderer.renderer2D.render(&title[0]);
-  this->context->t_engine->renderer.renderer2D.render(&title[1]);
+  this->context->t_engine->renderer.renderer2D.render(title[0]);
+  this->context->t_engine->renderer.renderer2D.render(title[1]);
 
   this->screen->render();
 }

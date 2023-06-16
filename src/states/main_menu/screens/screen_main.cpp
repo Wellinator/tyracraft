@@ -23,10 +23,10 @@ void ScreenMain::update() {
 }
 
 void ScreenMain::render() {
-  t_renderer->renderer2D.render(&raw_slot[0]);
-  t_renderer->renderer2D.render(&raw_slot[1]);
-  t_renderer->renderer2D.render(&raw_slot[2]);
-  t_renderer->renderer2D.render(&active_slot);
+  t_renderer->renderer2D.render(raw_slot[0]);
+  t_renderer->renderer2D.render(raw_slot[1]);
+  t_renderer->renderer2D.render(raw_slot[2]);
+  t_renderer->renderer2D.render(active_slot);
 
   // New Game
   {
@@ -62,7 +62,7 @@ void ScreenMain::render() {
     FontManager_printText(Label_About, fontOptions);
   }
 
-  t_renderer->renderer2D.render(&btnCross);
+  t_renderer->renderer2D.render(btnCross);
   FontManager_printText(Label_Select, 35, 407);
 }
 

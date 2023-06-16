@@ -44,7 +44,7 @@ void ScreenNewGame::update() {
 }
 
 void ScreenNewGame::render() {
-  this->t_renderer->renderer2D.render(&backgroundNewGame);
+  this->t_renderer->renderer2D.render(backgroundNewGame);
   this->t_renderer->renderer2D.render(tab2);
   this->t_renderer->renderer2D.render(btnL1);
   this->t_renderer->renderer2D.render(btnR1);
@@ -137,16 +137,16 @@ void ScreenNewGame::render() {
   FontManager_printText(Label_CreateNewWorld, 145, 332);
 
   if (isEditingSeed) {
-    this->t_renderer->renderer2D.render(&btnTriangle);
-    this->t_renderer->renderer2D.render(&btnCross);
+    this->t_renderer->renderer2D.render(btnTriangle);
+    this->t_renderer->renderer2D.render(btnCross);
 
     FontManager_printText(Label_Confirm, 35, 407);
     FontManager_printText(Label_Cancel, 160, 407);
   } else if (isEditingWorldName) {
-    this->t_renderer->renderer2D.render(&btnCross);
-    this->t_renderer->renderer2D.render(&btnTriangle);
-    this->t_renderer->renderer2D.render(&btnSquare);
-    this->t_renderer->renderer2D.render(&btnStart);
+    this->t_renderer->renderer2D.render(btnCross);
+    this->t_renderer->renderer2D.render(btnTriangle);
+    this->t_renderer->renderer2D.render(btnSquare);
+    this->t_renderer->renderer2D.render(btnStart);
 
     FontManager_printText(Label_Select, 35, 407);
     FontManager_printText(Label_Cancel, 160, 407);
@@ -154,21 +154,21 @@ void ScreenNewGame::render() {
     FontManager_printText(Label_Confirm, 405, 407);
   } else {
     if (activeOption == ScreenNewGameOptions::TexturePack) {
-      this->t_renderer->renderer2D.render(&btnDpadLeft);
-      this->t_renderer->renderer2D.render(&btnDpadRight);
-      this->t_renderer->renderer2D.render(&btnTriangleTexturePack);
+      this->t_renderer->renderer2D.render(btnDpadLeft);
+      this->t_renderer->renderer2D.render(btnDpadRight);
+      this->t_renderer->renderer2D.render(btnTriangleTexturePack);
 
       FontManager_printText(Label_Prev, 35, 407);
       FontManager_printText(Label_Next, 160, 407);
       FontManager_printText(Label_Back, 280, 407);
     } else {
-      this->t_renderer->renderer2D.render(&btnTriangle);
-      this->t_renderer->renderer2D.render(&btnCross);
+      this->t_renderer->renderer2D.render(btnTriangle);
+      this->t_renderer->renderer2D.render(btnCross);
 
       if (activeOption == ScreenNewGameOptions::Seed) {
         FontManager_printText(Label_Edit, 35, 407);
         FontManager_printText(Label_Random, 280, 407);
-        this->t_renderer->renderer2D.render(&btnCircle);
+        this->t_renderer->renderer2D.render(btnCircle);
       } else if (activeOption == ScreenNewGameOptions::WorldName) {
         FontManager_printText(Label_Edit, 35, 407);
       } else {
@@ -515,26 +515,26 @@ void ScreenNewGame::createNewWorld() {
 }
 
 void ScreenNewGame::renderSelectedOptions() {
-  isEditingWorldName ? t_renderer->renderer2D.render(&slotWorldNameInput)
-                     : t_renderer->renderer2D.render(&slotWorldName);
+  isEditingWorldName ? t_renderer->renderer2D.render(slotWorldNameInput)
+                     : t_renderer->renderer2D.render(slotWorldName);
 
-  isEditingSeed ? t_renderer->renderer2D.render(&slotSeedInput)
-                : t_renderer->renderer2D.render(&slotSeed);
+  isEditingSeed ? t_renderer->renderer2D.render(slotSeedInput)
+                : t_renderer->renderer2D.render(slotSeed);
 
-  t_renderer->renderer2D.render(&slotCreateNewWorld);
-  t_renderer->renderer2D.render(&slotWorldType);
+  t_renderer->renderer2D.render(slotCreateNewWorld);
+  t_renderer->renderer2D.render(slotWorldType);
 
   if (activeOption == ScreenNewGameOptions::TexturePack)
-    t_renderer->renderer2D.render(&slotTextureActive);
+    t_renderer->renderer2D.render(slotTextureActive);
   else if (activeOption == ScreenNewGameOptions::WorldName &&
            !isEditingWorldName)
-    t_renderer->renderer2D.render(&slotWorldNameActive);
+    t_renderer->renderer2D.render(slotWorldNameActive);
   else if (activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
-    t_renderer->renderer2D.render(&slotSeedActive);
+    t_renderer->renderer2D.render(slotSeedActive);
   else if (activeOption == ScreenNewGameOptions::WorldType)
-    t_renderer->renderer2D.render(&slotWorldTypeActive);
+    t_renderer->renderer2D.render(slotWorldTypeActive);
   else if (activeOption == ScreenNewGameOptions::CreateNewWorld)
-    t_renderer->renderer2D.render(&slotCreateNewWorldActive);
+    t_renderer->renderer2D.render(slotCreateNewWorldActive);
 }
 
 void ScreenNewGame::saveSeed() {
