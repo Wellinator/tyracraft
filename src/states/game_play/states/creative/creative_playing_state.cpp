@@ -86,8 +86,10 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);
 
-    if (clicked.L1) stateGamePlay->player->moveSelectorToTheLeft();
-    if (clicked.R1) stateGamePlay->player->moveSelectorToTheRight();
+    if (clicked.L1)
+      stateGamePlay->player->moveSelectorToTheLeft();
+    else if (clicked.R1)
+      stateGamePlay->player->moveSelectorToTheRight();
 
     if (pressed.L2) {
       if (stateGamePlay->world->validTargetBlock()) {
