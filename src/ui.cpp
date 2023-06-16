@@ -45,20 +45,20 @@ void Ui::init(Renderer* t_renderer, ItemRepository* itemRepository,
 void Ui::update() { this->updateHud(); }
 
 void Ui::renderInventory() {
-  this->t_renderer->renderer2D.render(&empty_slots);
+  this->t_renderer->renderer2D.render(empty_slots);
 
   // Draw itens from player inventory
   for (u8 i = 0; i < HOT_INVENTORY_SIZE; i++)
     if (playerInventory[i])
       this->t_renderer->renderer2D.render(playerInventory[i]);
 
-  this->t_renderer->renderer2D.render(&selected_slot);
+  this->t_renderer->renderer2D.render(selected_slot);
 }
 
-void Ui::renderCrosshair() { this->t_renderer->renderer2D.render(&crosshair); }
+void Ui::renderCrosshair() { this->t_renderer->renderer2D.render(crosshair); }
 
 void Ui::renderExperienceBar() {
-  this->t_renderer->renderer2D.render(&xp_bar_full);
+  this->t_renderer->renderer2D.render(xp_bar_full);
 }
 
 void Ui::renderUnderWaterOverlay() {
@@ -66,19 +66,19 @@ void Ui::renderUnderWaterOverlay() {
 }
 
 void Ui::renderArmorBar() {
-  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&armor[i]);
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(armor[i]);
 }
 
 void Ui::renderHealthBar() {
-  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&health[i]);
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(health[i]);
 }
 
 void Ui::renderHungerBar() {
-  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&hungry[i]);
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(hungry[i]);
 }
 
 void Ui::renderBreathBar() {
-  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(&breath[i]);
+  for (u8 i = 0; i < 10; i++) this->t_renderer->renderer2D.render(breath[i]);
 }
 
 void Ui::loadlHud() {
@@ -158,7 +158,7 @@ void Ui::loadlHud() {
       FileUtils::fromCwd("textures/gui/selector.png");
   selected_slot.mode = Tyra::MODE_STRETCH;
   selected_slot.size.set(41.0f, 46.0f);
-  selected_slot.position.set(BASE_X_POS, BASE_Y_POS + 35);
+  selected_slot.position.set(BASE_X_POS, BASE_Y_POS + 36);
   this->t_renderer->core.texture.repository.add(selectedSlotTexPath)
       ->addLink(selected_slot.id);
 }
@@ -175,7 +175,7 @@ void Ui::updateHud() {
 void Ui::updateSelectedSlot() {
   u8 slotIndex = t_player->getSelectedInventorySlot() - 1;
   selected_slot.position.set(BASE_X_POS + (COL_WIDTH * slotIndex) - slotIndex,
-                             BASE_Y_POS + 35);
+                             BASE_Y_POS + 36);
   t_player->selectedSlotHasChanged = 0;
 }
 
