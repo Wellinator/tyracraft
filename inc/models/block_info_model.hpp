@@ -11,7 +11,7 @@ class BlockInfo {
    * @param isSingle bool apply the same texture in all faces
    *
    * Order: Front, Bacck, Left, Right, Top, Bottom
-   * @param facesMap 12 length array pair of integers col, row
+   * @param facesMap 6 length array of integers index
    *
    * @param isBreakable bool can be broken
    * @param isCollidable bool is a collidable block
@@ -40,7 +40,7 @@ class BlockInfo {
 
   ~BlockInfo(){};
 
-  std::array<u8, 12> _facesMap = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<u8, 6> _facesMap = {0, 0, 0, 0, 0, 0};
 
   u8 blockId;
 

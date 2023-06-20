@@ -273,26 +273,28 @@ void Chunck::loadMeshData(Block* t_block) {
 
 void Chunck::loadUVData(Block* t_block) {
   if (t_block->isTopFaceVisible()) {
-    loadUVFaceData(t_block->topMapX(), t_block->topMapY());
+    loadUVFaceData(t_block->facesMapIndex[0]);
   }
   if (t_block->isBottomFaceVisible()) {
-    loadUVFaceData(t_block->bottomMapX(), t_block->bottomMapY());
+    loadUVFaceData(t_block->facesMapIndex[1]);
   }
   if (t_block->isLeftFaceVisible()) {
-    loadUVFaceData(t_block->leftMapX(), t_block->leftMapY());
+    loadUVFaceData(t_block->facesMapIndex[2]);
   }
   if (t_block->isRightFaceVisible()) {
-    loadUVFaceData(t_block->rightMapX(), t_block->rightMapY());
+    loadUVFaceData(t_block->facesMapIndex[3]);
   }
   if (t_block->isBackFaceVisible()) {
-    loadUVFaceData(t_block->backMapX(), t_block->backMapY());
+    loadUVFaceData(t_block->facesMapIndex[4]);
   }
   if (t_block->isFrontFaceVisible()) {
-    loadUVFaceData(t_block->frontMapX(), t_block->frontMapY());
+    loadUVFaceData(t_block->facesMapIndex[5]);
   }
 }
 
-void Chunck::loadUVFaceData(const u8& X, const u8& Y) {
+void Chunck::loadUVFaceData(const u8& index) {
+  const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
+  const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
   const float scale = 1.0F / 16.0F;
   const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
 
@@ -480,8 +482,8 @@ void Chunck::loadCrossedMeshData(Block* t_block) {
 }
 
 void Chunck::loadCrossedUVData(Block* t_block) {
-  loadUVFaceData(t_block->topMapX(), t_block->topMapY());
-  loadUVFaceData(t_block->topMapX(), t_block->topMapY());
+  loadUVFaceData(t_block->facesMapIndex[0]);
+  loadUVFaceData(t_block->facesMapIndex[0]);
 }
 
 void Chunck::loadLightFaceDataWithAO(Color* faceColor,

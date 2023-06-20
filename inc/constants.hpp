@@ -40,6 +40,10 @@
 #define UNLOAD_CHUNK_BATCH 256
 #define LOAD_CHUNK_BATCH 32
 
+// Texture atlas info
+#define MAX_TEX_COLS 16
+#define MAX_TEX_ROWS 16
+
 /**
  * Define blocks IDs
  **/

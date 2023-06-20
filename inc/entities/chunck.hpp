@@ -126,7 +126,7 @@ class Chunck {
 
   void loadMeshData(Block* t_block);
   void loadUVData(Block* t_block);
-  void loadUVFaceData(const u8& X, const u8& Y);
+  void loadUVFaceData(const u8& index);
   void loadLightData(LevelMap* terrain, Block* t_block);
 
   void loadCrossedMeshData(Block* t_block);

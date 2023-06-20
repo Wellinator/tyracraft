@@ -160,14 +160,14 @@ void ParticlesManager::createBlockParticle(Block* block) {
   const Vec4 scaleVec = Vec4(UVSscale, UVSscale, 1.0F, 0.0F);
 
   // Calc rand offset between row and col;
-  auto xMin =
-      Tyra::Math::randomf(block->frontMapX(), block->frontMapX() + 0.5F);
-  auto xMax =
-      Tyra::Math::randomf(block->frontMapX(), block->frontMapX() + 0.5F);
-  auto yMin =
-      Tyra::Math::randomf(block->frontMapY(), block->frontMapY() + 0.5F);
-  auto yMax =
-      Tyra::Math::randomf(block->frontMapY(), block->frontMapY() + 0.5F);
+  const u8 index = block->facesMapIndex[4];
+  const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
+  const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
+
+  auto xMin = Tyra::Math::randomf(X, X + 0.5F);
+  auto xMax = Tyra::Math::randomf(X, X + 0.5F);
+  auto yMin = Tyra::Math::randomf(Y, Y + 0.5F);
+  auto yMax = Tyra::Math::randomf(Y, Y + 0.5F);
 
   particlesUVMap.emplace_back(Vec4(xMin, yMax, 1.0F, 0.0F) * scaleVec);
   particlesUVMap.emplace_back(Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec);

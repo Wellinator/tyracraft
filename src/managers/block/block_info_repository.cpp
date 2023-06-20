@@ -26,99 +26,88 @@ const u8 BlockInfoRepository::isBlockTransparent(const Blocks& blockType) {
 
 void BlockInfoRepository::loadBlocksInfo() {
   // Base Blocks
-  models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {3, 7}, 1.5F, false));
+  models.push_back(BlockInfo(Blocks::STONE_BLOCK, true, {115}, 1.5F, false));
   models.push_back(BlockInfo(Blocks::GRASS_BLOCK, false,
-                             {0, 0, 1, 7, 0, 1, 0, 1, 0, 1, 0, 1}, 0.6F,
-                             false));
-  models.push_back(BlockInfo(Blocks::DIRTY_BLOCK, true, {1, 7}, 0.5F, false));
+                             {0, 113, 16, 16, 16, 16}, 0.6F, false));
+  models.push_back(BlockInfo(Blocks::DIRTY_BLOCK, true, {113}, 0.5F, false));
   models.push_back(
-      BlockInfo(Blocks::WATER_BLOCK, true, {4, 7}, 0, true, false, false));
+      BlockInfo(Blocks::WATER_BLOCK, true, {116}, 0, true, false, false));
   models.push_back(
-      BlockInfo(Blocks::BEDROCK_BLOCK, true, {0, 7}, -1.0F, false, false));
-  models.push_back(BlockInfo(Blocks::SAND_BLOCK, true, {2, 7}, 0.5F, false));
-  models.push_back(BlockInfo(Blocks::GLASS_BLOCK, true, {0, 9}, 0.3F, true));
-  models.push_back(BlockInfo(Blocks::BRICKS_BLOCK, true, {4, 6}, 2.0F, false));
-  models.push_back(BlockInfo(Blocks::GRAVEL_BLOCK, true, {5, 6}, 0.6F, false));
+      BlockInfo(Blocks::BEDROCK_BLOCK, true, {112}, -1.0F, false, false));
+  models.push_back(BlockInfo(Blocks::SAND_BLOCK, true, {114}, 0.5F, false));
+  models.push_back(BlockInfo(Blocks::GLASS_BLOCK, true, {144}, 0.3F, true));
+  models.push_back(BlockInfo(Blocks::BRICKS_BLOCK, true, {100}, 2.0F, false));
+  models.push_back(BlockInfo(Blocks::GRAVEL_BLOCK, true, {101}, 0.6F, false));
 
   models.push_back(BlockInfo(Blocks::PUMPKIN_BLOCK, false,
-                             {1, 13, 1, 13, 0, 13, 0, 13, 3, 13, 0, 13}, 1.0F,
-                             false));
+                             {209, 209, 208, 208, 211, 208}, 1.0F, false));
 
   // Ores and Minerals
+  models.push_back(BlockInfo(Blocks::GOLD_ORE_BLOCK, true, {128}, 3.0F, false));
   models.push_back(
-      BlockInfo(Blocks::GOLD_ORE_BLOCK, true, {0, 8}, 3.0F, false));
+      BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true, {129}, 3.0F, false));
+  models.push_back(BlockInfo(Blocks::IRON_ORE_BLOCK, true, {130}, 3.0F, false));
   models.push_back(
-      BlockInfo(Blocks::REDSTONE_ORE_BLOCK, true, {1, 8}, 3.0F, false));
+      BlockInfo(Blocks::EMERALD_ORE_BLOCK, true, {131}, 3.0F, false));
   models.push_back(
-      BlockInfo(Blocks::IRON_ORE_BLOCK, true, {2, 8}, 3.0F, false));
-  models.push_back(
-      BlockInfo(Blocks::EMERALD_ORE_BLOCK, true, {3, 8}, 3.0F, false));
-  models.push_back(
-      BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {4, 8}, 3.0F, false));
-  models.push_back(
-      BlockInfo(Blocks::COAL_ORE_BLOCK, true, {5, 8}, 3.0F, false));
+      BlockInfo(Blocks::DIAMOND_ORE_BLOCK, true, {132}, 3.0F, false));
+  models.push_back(BlockInfo(Blocks::COAL_ORE_BLOCK, true, {133}, 3.0F, false));
 
   //  Flowers
   models.push_back(
-      BlockInfo(Blocks::GRASS, true, {9, 10}, 0.0F, true, true, false, true));
-  models.push_back(BlockInfo(Blocks::POPPY_FLOWER, true, {7, 10}, 0.0F, true,
+      BlockInfo(Blocks::GRASS, true, {169}, 0.0F, true, true, false, true));
+  models.push_back(BlockInfo(Blocks::POPPY_FLOWER, true, {167}, 0.0F, true,
                              true, false, true));
-  models.push_back(BlockInfo(Blocks::DANDELION_FLOWER, true, {8, 10}, 0.0F,
-                             true, true, false, true));
+  models.push_back(BlockInfo(Blocks::DANDELION_FLOWER, true, {168}, 0.0F, true,
+                             true, false, true));
 
   // Wood Planks
   models.push_back(
-      BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {0, 11}, 2.0F, false));
+      BlockInfo(Blocks::OAK_PLANKS_BLOCK, true, {176}, 2.0F, false));
   models.push_back(
-      BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true, {1, 11}, 2.0F, false));
+      BlockInfo(Blocks::SPRUCE_PLANKS_BLOCK, true, {177}, 2.0F, false));
   models.push_back(
-      BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true, {3, 11}, 2.0F, false));
+      BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true, {178}, 2.0F, false));
   models.push_back(
-      BlockInfo(Blocks::ACACIA_PLANKS_BLOCK, true, {2, 11}, 2.0F, false));
+      BlockInfo(Blocks::BIRCH_PLANKS_BLOCK, true, {179}, 2.0F, false));
 
   // Light Emissor
-  models.push_back(BlockInfo(Blocks::GLOWSTONE_BLOCK, true, {4, 13}, 0.3F,
-                             false, true, true));
+  models.push_back(
+      BlockInfo(Blocks::GLOWSTONE_BLOCK, true, {212}, 0.3F, false, true, true));
   models.push_back(BlockInfo(Blocks::JACK_O_LANTERN_BLOCK, false,
-                             {1, 13, 1, 13, 0, 13, 0, 13, 2, 13, 0, 13}, 1.0F,
-                             false));
+                             {209, 209, 208, 208, 210, 208}, 1.0F, false));
 
   // Stone bricks
   models.push_back(
-      BlockInfo(Blocks::STONE_BRICK_BLOCK, true, {1, 6}, 1.5F, false));
+      BlockInfo(Blocks::CRACKED_STONE_BRICKS_BLOCK, true, {96}, 1.5F, false));
   models.push_back(
-      BlockInfo(Blocks::CRACKED_STONE_BRICKS_BLOCK, true, {0, 6}, 1.5F, false));
+      BlockInfo(Blocks::STONE_BRICK_BLOCK, true, {97}, 1.5F, false));
   models.push_back(
-      BlockInfo(Blocks::MOSSY_STONE_BRICKS_BLOCK, true, {2, 6}, 1.5F, false));
-  models.push_back(BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {3, 6},
-                             1.5F, false));
+      BlockInfo(Blocks::MOSSY_STONE_BRICKS_BLOCK, true, {98}, 1.5F, false));
+  models.push_back(
+      BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {99}, 1.5F, false));
 
   // Concretes
   models.push_back(
-      BlockInfo(Blocks::YELLOW_CONCRETE, true, {6, 6}, 1.8F, false));
-  models.push_back(BlockInfo(Blocks::BLUE_CONCRETE, true, {7, 6}, 1.8F, false));
+      BlockInfo(Blocks::YELLOW_CONCRETE, true, {102}, 1.8F, false));
+  models.push_back(BlockInfo(Blocks::BLUE_CONCRETE, true, {103}, 1.8F, false));
+  models.push_back(BlockInfo(Blocks::GREEN_CONCRETE, true, {104}, 1.8F, false));
   models.push_back(
-      BlockInfo(Blocks::GREEN_CONCRETE, true, {8, 6}, 1.8F, false));
+      BlockInfo(Blocks::ORANGE_CONCRETE, true, {105}, 1.8F, false));
   models.push_back(
-      BlockInfo(Blocks::ORANGE_CONCRETE, true, {9, 6}, 1.8F, false));
-  models.push_back(
-      BlockInfo(Blocks::PURPLE_CONCRETE, true, {10, 6}, 1.8F, false));
-  models.push_back(BlockInfo(Blocks::RED_CONCRETE, true, {11, 6}, 1.8F, false));
-  models.push_back(
-      BlockInfo(Blocks::WHITE_CONCRETE, true, {12, 6}, 1.8F, false));
-  models.push_back(
-      BlockInfo(Blocks::BLACK_CONCRETE, true, {13, 6}, 1.8F, false));
+      BlockInfo(Blocks::PURPLE_CONCRETE, true, {106}, 1.8F, false));
+  models.push_back(BlockInfo(Blocks::RED_CONCRETE, true, {107}, 1.8F, false));
+  models.push_back(BlockInfo(Blocks::WHITE_CONCRETE, true, {108}, 1.8F, false));
+  models.push_back(BlockInfo(Blocks::BLACK_CONCRETE, true, {109}, 1.8F, false));
 
   // Logs
   models.push_back(BlockInfo(Blocks::OAK_LOG_BLOCK, false,
-                             {1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}, 2.0F,
-                             false));
+                             {1, 1, 17, 17, 17, 17}, 2.0F, false));
   models.push_back(BlockInfo(Blocks::BIRCH_LOG_BLOCK, false,
-                             {6, 0, 6, 0, 6, 1, 6, 1, 6, 1, 6, 1}, 2.0F,
-                             false));
+                             {6, 6, 0, 22, 22, 22, 22}, 2.0F, false));
   // Leaves
   models.push_back(
-      BlockInfo(Blocks::OAK_LEAVES_BLOCK, true, {3, 10}, 0.2F, true));
+      BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true, {162}, 0.2F, true));
   models.push_back(
-      BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true, {2, 10}, 0.2F, true));
+      BlockInfo(Blocks::OAK_LEAVES_BLOCK, true, {163}, 0.2F, true));
 }
