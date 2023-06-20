@@ -96,11 +96,7 @@ Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
   return nullptr;
 };
 
-Chunck* ChunckManager::getChunckById(const u16& id) {
-  for (u16 i = 0; i < chuncks.size(); i++)
-    if (chuncks[i]->id == id) return chuncks[i];
-  return nullptr;
-};
+Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id - 1]; };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
 
