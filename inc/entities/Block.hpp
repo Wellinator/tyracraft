@@ -44,7 +44,7 @@ class Block {
   Vec4 minCorner;
   Vec4 maxCorner;
 
-  M4x4 model, translation, rotation, scale;
+  Vec4 position, rotation, scale;
 
   BBox* bbox = nullptr;
 
@@ -65,8 +65,6 @@ class Block {
   ~Block();
 
   void updateModelMatrix();
-
-  void setPosition(const Vec4& v);
 
   inline const bool isFrontFaceVisible() {
     return (visibleFaces & FRONT_VISIBLE) == FRONT_VISIBLE;
@@ -91,11 +89,6 @@ class Block {
   inline const bool isBottomFaceVisible() {
     return (visibleFaces & BOTTOM_VISIBLE) == BOTTOM_VISIBLE;
   };
-
-  /** Get position from translation matrix */
-  inline Vec4* getPosition() {
-    return reinterpret_cast<Vec4*>(&translation.data[3 * 4]);
-  }
 
   inline const float getHardness() { return hardness; }
 

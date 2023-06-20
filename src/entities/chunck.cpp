@@ -217,57 +217,57 @@ void Chunck::loadMeshData(Block* t_block) {
       v5.y *= 0.75F;
     }
 
-    vertices.emplace_back(t_block->model * v0);
-    vertices.emplace_back(t_block->model * v1);
-    vertices.emplace_back(t_block->model * v2);
-    vertices.emplace_back(t_block->model * v3);
-    vertices.emplace_back(t_block->model * v4);
-    vertices.emplace_back(t_block->model * v5);
+    vertices.emplace_back(t_block->scale * v0 + t_block->position);
+    vertices.emplace_back(t_block->scale * v1 + t_block->position);
+    vertices.emplace_back(t_block->scale * v2 + t_block->position);
+    vertices.emplace_back(t_block->scale * v3 + t_block->position);
+    vertices.emplace_back(t_block->scale * v4 + t_block->position);
+    vertices.emplace_back(t_block->scale * v5 + t_block->position);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
   }
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
   }
 }
 
@@ -466,19 +466,31 @@ void Chunck::loadCroosedLightData(LevelMap* terrain, Block* t_block) {
 void Chunck::loadCrossedMeshData(Block* t_block) {
   int vert = 0;
 
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
 
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
-  vertices.emplace_back(t_block->model * crossBlockRawData[vert++]);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
+  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+                        t_block->position);
 }
 
 void Chunck::loadCrossedUVData(Block* t_block) {
@@ -698,8 +710,8 @@ bool Chunck::isPreAllocated() { return _isPreAllocated; }
 
 Block* Chunck::getBlockByPosition(const Vec4* pos) {
   for (size_t i = 0; i < blocks.size(); i++) {
-    const auto bPos = blocks[i]->getPosition();
-    if (bPos->x == pos->x && bPos->y == pos->y && bPos->z == pos->z)
+    const auto bPos = blocks[i]->position;
+    if (bPos.x == pos->x && bPos.y == pos->y && bPos.z == pos->z)
       return blocks[i];
   }
   return nullptr;

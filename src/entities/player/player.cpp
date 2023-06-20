@@ -274,7 +274,7 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
           // is vertically out of range?
           (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
            playerBB.getTopFace().axisPosition < block->minCorner.y ||
-           currentPlayerPos.distanceTo(*block->getPosition()) >
+           currentPlayerPos.distanceTo(block->position) >
                DUBLE_BLOCK_SIZE * 2)) {
         continue;
       };

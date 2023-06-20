@@ -14,11 +14,6 @@ Block::Block(BlockInfo* blockInfo) {
   this->isCrossed = blockInfo->_isCrossed;
   this->hardness = blockInfo->_hardness;
 
-  this->model.identity();
-  this->scale.identity();
-  this->translation.identity();
-  this->rotation.identity();
-
   for (size_t i = 0; i < 6; i++) {
     facesMapIndex[i] = blockInfo->_isSingle ? blockInfo->_facesMap[0]
                                             : blockInfo->_facesMap[i];
@@ -28,11 +23,4 @@ Block::Block(BlockInfo* blockInfo) {
 Block::~Block() {
   if (bbox) delete bbox;
   bbox = NULL;
-}
-
-void Block::updateModelMatrix() { model = translation * rotation * scale; }
-
-void Block::setPosition(const Vec4& v) {
-  TYRA_ASSERT(v.w == 1.0F, "Vec4 must be homogeneous");
-  reinterpret_cast<Vec4*>(&translation.data[3 * 4])->set(v);
 }

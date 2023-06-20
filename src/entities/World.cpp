@@ -315,7 +315,7 @@ void World::renderBlockDamageOverlay() {
   scale.scale(BLOCK_SIZE + 0.015f);
 
   translation.identity();
-  translation.translate(*targetBlock->getPosition());
+  translation.translate(targetBlock->position);
 
   overlay->model = new M4x4(translation * scale);
   overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
@@ -326,8 +326,8 @@ void World::renderBlockDamageOverlay() {
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {
-  t_renderer->renderer3D.utility.drawBox(*targetBlock->getPosition(),
-                                         BLOCK_SIZE, Color(0, 0, 0));
+  t_renderer->renderer3D.utility.drawBox(targetBlock->position, BLOCK_SIZE,
+                                         Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
@@ -790,13 +790,19 @@ void World::buildChunk(Chunck* t_chunck) {
               block->isAtChunkBorder = isBlockAtChunkBorder(
                   &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-              block->setPosition(tempBlockOffset * DUBLE_BLOCK_SIZE);
-              block->scale.scale(BLOCK_SIZE);
-              block->updateModelMatrix();
+              block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
+              block->scale.set(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 
               // Calc min and max corners
               {
-                BBox tempBBox = rawBlockBbox->getTransformed(block->model);
+                M4x4 model;
+
+                model.identity();
+                model.rotate(block->rotation);
+                model.scale(block->scale);
+                model.translate(block->position);
+
+                BBox tempBBox = rawBlockBbox->getTransformed(model);
                 block->bbox = new BBox(tempBBox);
                 block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
               }
@@ -859,13 +865,19 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-          block->setPosition(tempBlockOffset * DUBLE_BLOCK_SIZE);
-          block->scale.scale(BLOCK_SIZE);
-          block->updateModelMatrix();
+          block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
+          block->scale.set(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 
           // Calc min and max corners
           {
-            BBox tempBBox = rawBlockBbox->getTransformed(block->model);
+            M4x4 model;
+
+            model.identity();
+            model.rotate(block->rotation);
+            model.scale(block->scale);
+            model.translate(block->position);
+
+            BBox tempBBox = rawBlockBbox->getTransformed(model);
             block->bbox = new BBox(tempBBox);
             block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
           }
@@ -923,7 +935,7 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
       u8 isBreakable = block->type != Blocks::WATER_BLOCK;
       float distanceFromCurrentBlockToPlayer =
-          camPosition.distanceTo(*block->getPosition());
+          camPosition.distanceTo(block->position);
 
       // Reset block state
       block->isTarget = false;
