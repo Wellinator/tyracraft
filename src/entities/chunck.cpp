@@ -217,57 +217,57 @@ void Chunck::loadMeshData(Block* t_block) {
       v5.y *= 0.75F;
     }
 
-    vertices.emplace_back(t_block->scale * v0 + t_block->position);
-    vertices.emplace_back(t_block->scale * v1 + t_block->position);
-    vertices.emplace_back(t_block->scale * v2 + t_block->position);
-    vertices.emplace_back(t_block->scale * v3 + t_block->position);
-    vertices.emplace_back(t_block->scale * v4 + t_block->position);
-    vertices.emplace_back(t_block->scale * v5 + t_block->position);
+    vertices.emplace_back(v0 * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(v1 * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(v2 * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(v3 * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(v4 * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(v5 * BLOCK_SIZE + t_block->position);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
   }
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
-    vertices.emplace_back(t_block->scale * rawData[vert++] + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
   }
 }
 
@@ -466,30 +466,30 @@ void Chunck::loadCroosedLightData(LevelMap* terrain, Block* t_block) {
 void Chunck::loadCrossedMeshData(Block* t_block) {
   int vert = 0;
 
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
 
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
-  vertices.emplace_back(t_block->scale * crossBlockRawData[vert++] +
+  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                         t_block->position);
 }
 

@@ -791,15 +791,13 @@ void World::buildChunk(Chunck* t_chunck) {
                   &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
-              block->scale.set(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 
               // Calc min and max corners
               {
                 M4x4 model;
 
                 model.identity();
-                model.rotate(block->rotation);
-                model.scale(block->scale);
+                model.scale(BLOCK_SIZE);
                 model.translate(block->position);
 
                 BBox tempBBox = rawBlockBbox->getTransformed(model);
@@ -866,15 +864,13 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
-          block->scale.set(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 
           // Calc min and max corners
           {
             M4x4 model;
 
             model.identity();
-            model.rotate(block->rotation);
-            model.scale(block->scale);
+            model.scale(BLOCK_SIZE);
             model.translate(block->position);
 
             BBox tempBBox = rawBlockBbox->getTransformed(model);

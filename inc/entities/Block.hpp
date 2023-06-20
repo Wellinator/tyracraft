@@ -44,7 +44,7 @@ class Block {
   Vec4 minCorner;
   Vec4 maxCorner;
 
-  Vec4 position, rotation, scale;
+  Vec4 position, rotation;
 
   BBox* bbox = nullptr;
 
@@ -63,8 +63,6 @@ class Block {
 
   Block(BlockInfo* blockInfo);
   ~Block();
-
-  void updateModelMatrix();
 
   inline const bool isFrontFaceVisible() {
     return (visibleFaces & FRONT_VISIBLE) == FRONT_VISIBLE;
