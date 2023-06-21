@@ -1,5 +1,5 @@
 #include "states/splash_screen/state_splash_screen.hpp"
-#include "states/language_selection/language_selection_screen.hpp"
+#include "states/language_selection/language_loader_screen.hpp"
 
 StateSplashScreen::StateSplashScreen(Context* t_context)
     : GameState(t_context) {
@@ -14,7 +14,8 @@ void StateSplashScreen::init() {
   const float width = 512;
   const float height = 512;
 
-  std::string tyracraftSplash = FileUtils::fromCwd("textures/gui/splash/tyracraft.png");
+  std::string tyracraftSplash =
+      FileUtils::fromCwd("textures/gui/splash/tyracraft.png");
   std::string tyraSplash = FileUtils::fromCwd("textures/gui/splash/tyra.png");
 
   tyracraft = new Sprite;
@@ -89,5 +90,5 @@ u8 StateSplashScreen::hasFinished() {
 }
 
 void StateSplashScreen::nextState() {
-  this->context->setState(new StateLanguageSelectionScreen(this->context));
+  this->context->setState(new StateLanguageLoaderScreen(this->context));
 }

@@ -29,6 +29,7 @@ class TyraCraftGame : public Tyra::Game {
 
   void checkNeededDirectories();
   void checkSavesDir();
+  void loadSavedSettings();
 };
 
 }  // namespace TyraCraft

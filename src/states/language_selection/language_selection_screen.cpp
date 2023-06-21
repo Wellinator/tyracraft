@@ -3,12 +3,13 @@
 #include <managers/font/font_options.hpp>
 #include <managers/font/font_manager.hpp>
 #include <managers/language_manager.hpp>
+#include <managers/settings_manager.hpp>
 #include <string>
 #include <tyra>
 
-StateLanguageSelectionScreen::StateLanguageSelectionScreen(Context* t_context)
-    : GameState(t_context) {
-  t_renderer = &t_context->t_engine->renderer;
+StateLanguageSelectionScreen::StateLanguageSelectionScreen(Context* context)
+    : GameState(context) {
+  t_renderer = &context->t_engine->renderer;
   init();
 };
 
@@ -100,7 +101,7 @@ void StateLanguageSelectionScreen::unloadTextures() {
 }
 
 void StateLanguageSelectionScreen::nextState() {
-  context->setState(new StateMainMenu(context));
+  this->context->setState(new StateMainMenu(this->context));
 }
 
 void StateLanguageSelectionScreen::loadLanguagesAvailable() {
@@ -125,6 +126,7 @@ void StateLanguageSelectionScreen::loadLanguagesAvailable() {
 
         model.id = tempId++;
         model.path = std::string(languageInfoPath);
+        model.code = dir.name;
         model.title = data["info"]["title"].get<std::string>();
         model.author = data["info"]["author"].get<std::string>();
         model.revision = data["info"]["revision"].get<std::string>();
@@ -155,6 +157,10 @@ void StateLanguageSelectionScreen::selectLanguage() {
   if (langInfo.is_open()) {
     json language = json::parse(langInfo);
     LanguageManager_SetLanguage(language);
+
+    g_settings.language = selectedLanguage->code;
+    SettingsManager::Save();
+
     langInfo.close();
     return nextState();
   }

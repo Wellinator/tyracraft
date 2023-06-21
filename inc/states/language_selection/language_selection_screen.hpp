@@ -45,6 +45,7 @@ class StateLanguageSelectionScreen : public GameState {
   void unloadTextures();
   void nextState();
   void loadLanguagesAvailable();
+  void loadSavedLanguage();
   void selectLanguage();
   void selectPreviousLanguage();
   void selectNextLanguage();
