@@ -90,7 +90,10 @@
 ############ TyraCraft 0.2.x Roadmap ############
 
 * Features for pre-alpha release (v0.2.x):
-    🔲 -> Add V-sync to menu options;
+    🔲 -> Create a global settings service;
+        🔲 -> Add V-sync to options;
+        🔲 -> Add L & R Sticks deatzone values;
+        🔲 -> Add change language option;
     🔲 -> Tool (Pickaxe) (WIP);
     ⛔ -> Add auto save feature;
     🔲 -> Popup messages system;
@@ -125,5 +128,5 @@
         ✅ -> Fix audio FX;
     ✅ -> Destroy plant when the bottom block is destroyed;
     ✅ -> Apply light intensity to particles;
-    🔲 -> Fix clouds color at night:
+    ✅ -> Fix clouds color at night:
     ✅ -> Fix game crash when trying to save with max draw distance;
