@@ -48,7 +48,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   terrain = CrossCraft_World_GetMapPtr();
   blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
   chunckManager.init(&worldLightModel, terrain);
-  cloudsManager.init(t_renderer);
+  cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture());
 
   calcRawBlockBBox(&mcPip);

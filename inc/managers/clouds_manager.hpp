@@ -3,6 +3,7 @@
 #include "constants.hpp"
 #include <tyra>
 #include <math.h>
+#include "models/world_light_model.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -22,11 +23,16 @@ class CloudsManager {
   CloudsManager();
   ~CloudsManager();
 
-  void init(Renderer* renderer);
+  void init(Renderer* renderer, WorldLightModel* t_worldLightModel);
   void update();
   void render();
 
  private:
+  WorldLightModel* worldLightModel;
+
+  Color baseColor = Color(128.0F, 128.0F, 128.0F, 96.0F);
+  Color tempColor;
+
   const u8 DRAW_DATA_COUNT = 6;
   Vec4* vertices = new Vec4[DRAW_DATA_COUNT]{
       Vec4(-1.0F, 1.0F, -1.0), Vec4(1.0F, 1.0F, 1.0),  Vec4(1.0F, 1.0F, -1.0),

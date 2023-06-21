@@ -7,12 +7,12 @@ using Tyra::M4x4;
 using Tyra::McpipBlock;
 
 Block::Block(BlockInfo* blockInfo) {
-  this->type = static_cast<Blocks>(blockInfo->blockId);
-  this->isBreakable = blockInfo->_isBreakable;
-  this->isCollidable = blockInfo->_isCollidable;
-  this->hasTransparency = blockInfo->_isTransparent;
-  this->isCrossed = blockInfo->_isCrossed;
-  this->hardness = blockInfo->_hardness;
+  type = static_cast<Blocks>(blockInfo->blockId);
+  isBreakable = blockInfo->_isBreakable;
+  isCollidable = blockInfo->_isCollidable;
+  hasTransparency = blockInfo->_isTransparent;
+  isCrossed = blockInfo->_isCrossed;
+  hardness = blockInfo->_hardness;
 
   for (size_t i = 0; i < 6; i++) {
     facesMapIndex[i] = blockInfo->_isSingle ? blockInfo->_facesMap[0]

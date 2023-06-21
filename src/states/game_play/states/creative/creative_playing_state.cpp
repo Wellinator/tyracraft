@@ -44,9 +44,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 }
 
 void CreativePlayingState::render() {
-  stateGamePlay->player->render();
-
   stateGamePlay->world->render();
+
+  stateGamePlay->player->render();
 
   renderCreativeUi();
 

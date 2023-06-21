@@ -1,4 +1,5 @@
 #include "managers/clouds_manager.hpp"
+#include "managers/light_manager.hpp"
 
 CloudsManager::CloudsManager() {
   uvMap.reserve(6);
@@ -12,8 +13,10 @@ CloudsManager::~CloudsManager() {
   uvMap.shrink_to_fit();
 }
 
-void CloudsManager::init(Renderer* renderer) {
+void CloudsManager::init(Renderer* renderer,
+                         WorldLightModel* t_worldLightModel) {
   t_renderer = renderer;
+  worldLightModel = t_worldLightModel;
   stapip.setRenderer(&renderer->core);
   cloudsTex = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("/textures/environment/clouds.png"));
@@ -42,7 +45,11 @@ void CloudsManager::updateCloudsPosition() {
   calcUVMapping();
 }
 
-void CloudsManager::update() { updateCloudsPosition(); };
+void CloudsManager::update() {
+  tempColor = LightManager::IntensifyColor(&baseColor,
+                                           worldLightModel->sunLightIntensity);
+  updateCloudsPosition();
+};
 
 void CloudsManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
@@ -68,8 +75,7 @@ void CloudsManager::render() {
       PipelineInfoBagFrustumCulling_Precise;
 
   StaPipColorBag colorBag;
-  Color baseColor = Color(128.0F, 128.0F, 128.0F);
-  colorBag.single = &baseColor;
+  colorBag.single = &tempColor;
 
   StaPipBag bag;
   bag.count = DRAW_DATA_COUNT;
