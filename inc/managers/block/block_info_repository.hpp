@@ -20,7 +20,7 @@ class BlockInfoRepository {
   /**
    * @brief Load blocks textures
    * @warning Should load textures in @enum Blocks order to load info faster
-   * (haky)
+   * (hacky)
    *
    */
   void loadBlocksInfo();

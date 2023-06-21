@@ -17,6 +17,7 @@ class BlockInfo {
    * @param isCollidable bool is a collidable block
    *
    */
+
   BlockInfo(const Blocks& type, const u8& isSingle,
             const std::initializer_list<u8>& facesMap, const float hardness,
             const bool& isTransparent, const bool& isBreakable = true,
@@ -37,6 +38,7 @@ class BlockInfo {
       i++;
     }
   };
+  BlockInfo(){};
 
   ~BlockInfo(){};
 
