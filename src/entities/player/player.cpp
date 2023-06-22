@@ -80,7 +80,8 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
                     const std::vector<Chunck*>& loadedChunks,
                     TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
   updateStateInWater(t_terrain);
-  isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
+  isMoving = movementDir.length() > 0;
+
   if (isMoving) {
     Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
 

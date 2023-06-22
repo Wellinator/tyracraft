@@ -1,5 +1,6 @@
 #include "tyracraft_game.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/settings_manager.hpp"
 #include "utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,10 +17,11 @@ TyraCraftGame::TyraCraftGame(Engine* t_engine)
 TyraCraftGame::~TyraCraftGame() {}
 
 void TyraCraftGame::init() {
+  loadSavedSettings();
   checkNeededDirectories();
 
-  engine->renderer.core.setFrameLimit(false);
-  
+  engine->renderer.core.setFrameLimit(g_settings.vsync);
+
   FontManager_init(&engine->renderer);
   stateManager = new StateManager(engine, &camera);
 }
@@ -30,6 +32,10 @@ void TyraCraftGame::loop() {
                            FIXED_30_FRAME_MS);
   stateManager->update(dt);
   engine->renderer.endFrame();
+}
+
+void TyraCraftGame::loadSavedSettings() {
+  if (SettingsManager::CheckIfSettingsExist()) SettingsManager::Load();
 }
 
 void TyraCraftGame::checkNeededDirectories() { checkSavesDir(); }
