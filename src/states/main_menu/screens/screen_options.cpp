@@ -244,29 +244,29 @@ void ScreenOptions::handleInput() {
     if (activeOption == OptionsScreenOptions::VSyncOnOff) {
       tempSettings.vsync = !tempSettings.vsync;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneH) {
-      tempSettings.l_stick_H -= 0.1F;
+      tempSettings.l_stick_H -= 0.05F;
       if (tempSettings.l_stick_H < 0) tempSettings.l_stick_H = 0;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneV) {
-      tempSettings.l_stick_V -= 0.1F;
+      tempSettings.l_stick_V -= 0.05F;
       if (tempSettings.l_stick_V < 0) tempSettings.l_stick_V = 0;
     } else if (activeOption == OptionsScreenOptions::RStickDeadZoneH) {
-      tempSettings.r_stick_H -= 0.1F;
+      tempSettings.r_stick_H -= 0.05F;
       if (tempSettings.r_stick_H < 0) tempSettings.r_stick_H = 0;
     } else if (activeOption == OptionsScreenOptions::RStickDeadZoneV) {
-      tempSettings.r_stick_V -= 0.1F;
+      tempSettings.r_stick_V -= 0.05F;
       if (tempSettings.r_stick_V < 0) tempSettings.r_stick_V = 0;
     }
   } else if (context->context->t_engine->pad.getClicked().DpadRight) {
     if (activeOption == OptionsScreenOptions::VSyncOnOff) {
       tempSettings.vsync = !tempSettings.vsync;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneH) {
-      tempSettings.l_stick_H += 0.1F;
+      tempSettings.l_stick_H += 0.05F;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneV) {
-      tempSettings.l_stick_V += 0.1F;
+      tempSettings.l_stick_V += 0.05F;
     } else if (activeOption == OptionsScreenOptions::RStickDeadZoneH) {
-      tempSettings.r_stick_H += 0.1F;
+      tempSettings.r_stick_H += 0.05F;
     } else if (activeOption == OptionsScreenOptions::RStickDeadZoneV) {
-      tempSettings.r_stick_V += 0.1F;
+      tempSettings.r_stick_V += 0.05F;
     }
   }
 }
