@@ -90,10 +90,10 @@
 ############ TyraCraft 0.2.x Roadmap ############
 
 * Features for pre-alpha release (v0.2.x):
-    🔲 -> Create a global settings service;
-        🔲 -> Add V-sync to options;
-        🔲 -> Add L & R Sticks deatzone values;
-        🔲 -> Add change language option;
+    ✅ -> Create a global settings service;
+        ✅ -> Add V-sync to options;
+        ✅ -> Add L & R Sticks deatzone values;
+        ✅ -> Add change language option;
     🔲 -> Tool (Pickaxe) (WIP);
     ⛔ -> Add auto save feature;
     🔲 -> Popup messages system;
