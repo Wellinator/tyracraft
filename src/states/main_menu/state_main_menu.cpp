@@ -1,6 +1,7 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "states/loading/state_loading_game.hpp"
 #include "states/loading/state_loading_saved_game.hpp"
+#include "states/language_selection/language_selection_screen.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
@@ -162,4 +163,9 @@ void StateMainMenu::loadMenuSong() {
 void StateMainMenu::setScreen(ScreenBase* screen) {
   if (this->screen) delete this->screen;
   this->screen = screen;
+}
+
+void StateMainMenu::goToLanguageSelectioScreen() {
+  if (this->screen) delete this->screen;
+  context->setState(new StateLanguageSelectionScreen(context));
 }

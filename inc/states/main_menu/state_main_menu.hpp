@@ -53,6 +53,7 @@ class StateMainMenu : public GameState {
   void loadGame(const NewGameOptions& options);
   void loadSavedGame(const std::string save_file_full_path);
   void playClickSound();
+  void goToLanguageSelectioScreen();
 
   StaticMesh* menuSkybox;
 
@@ -75,4 +76,5 @@ class StateMainMenu : public GameState {
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
+  
 };
