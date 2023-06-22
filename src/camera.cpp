@@ -9,6 +9,7 @@
 */
 #include "camera.hpp"
 #include "math/math.hpp"
+#include "managers/settings_manager.hpp"
 
 using Tyra::CameraInfo3D;
 using Tyra::Math;
@@ -46,10 +47,13 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
 
 void Camera::setLookDirectionByPad(Pad* t_pad) {
   const auto& rightJoy = t_pad->getRightJoyPad();
-  Vec4 sensibility = Vec4((rightJoy.h - 128.0F) / 128.0F, 0.0F,
-                          (rightJoy.v - 128.0F) / 128.0F);
 
-  if (rightJoy.isMoved && sensibility.length() >= R_JOYPAD_DEAD_ZONE) {
+  const auto _h = (rightJoy.h - 128.0F) / 128.0F;
+  const auto _v = (rightJoy.v - 128.0F) / 128.0F;
+  Vec4 sensibility = Vec4(std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F, 0.0F,
+                          std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F);
+
+  if (sensibility.length() > 0) {
     yaw += camSpeed * sensibility.x;
     pitch += camSpeed * (-sensibility.z);
 
