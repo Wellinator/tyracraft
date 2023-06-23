@@ -150,9 +150,9 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
       if (t_cam->getCamType() == CamType::FirstPerson) {
         t_cam->setThirdPerson();
       } else if (t_cam->getCamType() == CamType::ThirdPerson) {
-        t_cam->setThirdPersonInverted();
-      } 
-      
+        t_cam->setFirstPerson();
+      }
+
       // TODO: Implements inverted third person cam
       // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
       //   t_cam->setFirstPerson();

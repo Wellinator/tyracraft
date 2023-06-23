@@ -86,7 +86,7 @@ void Camera::calculatePitch(Pad* t_pad) {
   const auto _v = (rightJoy.v - 128.0F) / 128.0F;
   const auto tempPitch = std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F;
 
-  pitch += camSpeed * -tempPitch;
+  pitch += camSpeedV * -tempPitch;
 
   if (pitch > 89.0F) pitch = 89.0F;
   if (pitch < -89.0F) pitch = -89.0F;
@@ -97,7 +97,7 @@ void Camera::calculateYaw(Pad* t_pad) {
   const auto _h = (rightJoy.h - 128.0F) / 128.0F;
   const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
 
-  yaw += tempYaw;
+  yaw += camSpeedH * tempYaw;
 }
 
 float Camera::calculateHorizontalDistance() {

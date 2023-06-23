@@ -39,7 +39,8 @@ class Camera {
   Vec4 position, lookPos, unitCirclePosition;
 
   // TODO: add cam spped to menu options
-  float camSpeed = 4.0F;
+  float camSpeedH = 0.9F;
+  float camSpeedV = 0.3F;
   float pitch, yaw;
 
   void update();
