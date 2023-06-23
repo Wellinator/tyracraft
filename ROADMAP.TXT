@@ -105,6 +105,10 @@
     ✅ -> Running;
     ✅ -> pre-calculated ambient occlusion;
     ✅ -> Basic vegetationS;
+    🔲 -> Third Person Cam:
+        ✅ -> Implements Third Person render;
+        🔲 -> Fix inverted Y (pitch) direction;
+        🔲 -> Fix cam position in first person mode;
     🔲 -> Implement water phisycs:
         ✅ -> Gravity:
         🔲 -> Waterl flood fill:
