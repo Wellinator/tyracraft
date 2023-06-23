@@ -23,8 +23,8 @@
 #include "models/terrain_height_model.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player/player_render_pip.hpp"
-#include "entities/player/player_first_person_render_pip.hpp"
-#include "entities/player/player_third_person_render_pip.hpp"
+#include "entities/player/player_render_arm_pip.hpp"
+#include "entities/player/player_render_body_pip.hpp"
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
 #include <tyra>
@@ -59,8 +59,8 @@ class Player {
               TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
-  void toogleCameraMode();
-  u8 isFirstPerson = true;
+  void setRenderArmPip();
+  void setRenderBodyPip();
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };

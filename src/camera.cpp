@@ -30,7 +30,7 @@ Camera::~Camera() {}
 // ----
 
 void Camera::update() {
-  if (isFirstPerson) {
+  if (camera_type == CamType::FirstPerson) {
     unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
                            Math::cos(Utils::degreesToRadian(pitch));
     unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
@@ -47,7 +47,7 @@ void Camera::update() {
 }
 
 void Camera::setPositionByMesh(Mesh* t_mesh) {
-  if (isFirstPerson) {
+  if (camera_type == CamType::FirstPerson) {
     position.set(*t_mesh->getPosition() -
                  (unitCirclePosition.getNormalized() * 4.5F));
     position.y += CAMERA_Y;
@@ -73,9 +73,13 @@ void Camera::reset() {
   update();
 }
 
-void Camera::setFirstPerson() { isFirstPerson = true; }
+void Camera::setFirstPerson() { camera_type = CamType::FirstPerson; }
 
-void Camera::setThirdPerson() { isFirstPerson = false; }
+void Camera::setThirdPerson() { camera_type = CamType::ThirdPerson; }
+
+void Camera::setThirdPersonInverted() {
+  camera_type = CamType::ThirdPersonInverted;
+}
 
 void Camera::calculatePitch(Pad* t_pad) {
   const auto& rightJoy = t_pad->getRightJoyPad();
@@ -93,7 +97,7 @@ void Camera::calculateYaw(Pad* t_pad) {
   const auto _h = (rightJoy.h - 128.0F) / 128.0F;
   const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
 
-  yaw += camSpeed * tempYaw * 0.5F;
+  yaw += tempYaw;
 }
 
 float Camera::calculateHorizontalDistance() {

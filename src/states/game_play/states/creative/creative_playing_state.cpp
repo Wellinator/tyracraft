@@ -145,12 +145,23 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     }
 
     if (clicked.R3) {
-      stateGamePlay->player->toogleCameraMode();
+      Camera* t_cam = stateGamePlay->context->t_camera;
 
-      if (stateGamePlay->player->isFirstPerson) {
-        stateGamePlay->context->t_camera->setFirstPerson();
+      if (t_cam->getCamType() == CamType::FirstPerson) {
+        t_cam->setThirdPerson();
+      } else if (t_cam->getCamType() == CamType::ThirdPerson) {
+        t_cam->setThirdPersonInverted();
+      } 
+      
+      // TODO: Implements inverted third person cam
+      // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
+      //   t_cam->setFirstPerson();
+      // }
+
+      if (t_cam->getCamType() == CamType::FirstPerson) {
+        stateGamePlay->player->setRenderArmPip();
       } else {
-        stateGamePlay->context->t_camera->setThirdPerson();
+        stateGamePlay->player->setRenderBodyPip();
       }
     }
   }
@@ -187,7 +198,9 @@ void CreativePlayingState::renderCreativeUi() {
   if (stateGamePlay->player->isUnderWater())
     stateGamePlay->ui->renderUnderWaterOverlay();
 
-  stateGamePlay->ui->renderCrosshair();
+  if (stateGamePlay->context->t_camera->getCamType() == CamType::FirstPerson)
+    stateGamePlay->ui->renderCrosshair();
+
   stateGamePlay->ui->renderInventory();
 }
 

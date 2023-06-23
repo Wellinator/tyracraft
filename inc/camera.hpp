@@ -28,7 +28,7 @@ using Tyra::CameraInfo3D;
 using Tyra::Pad;
 using Tyra::RendererSettings;
 
-enum class CamType { FirstPerson, ThirdPerson };
+enum class CamType { FirstPerson, ThirdPerson, ThirdPersonInverted };
 
 /** 3D camera which follow by 3D object. Can be rotated via pad */
 class Camera {
@@ -49,6 +49,7 @@ class Camera {
 
   void setFirstPerson();
   void setThirdPerson();
+  void setThirdPersonInverted();
 
   CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &lookPos); }
 
@@ -56,12 +57,10 @@ class Camera {
   inline float getCamY() { return CAMERA_Y; };
 
  private:
-  // TODO: Implements third person cam
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
 
   float distanceFromPlayer = 80.0F;
-  u8 isFirstPerson = true;
 
   void calculatePitch(Pad* t_pad);
   void calculateYaw(Pad* t_pad);

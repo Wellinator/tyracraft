@@ -41,7 +41,7 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   }
 
   // Set render pip
-  this->setRenderPip(new PlayerFirstPersonRenderPip(this));
+  this->setRenderPip(new PlayerRenderArmPip(this));
 }
 
 Player::~Player() {
@@ -81,10 +81,11 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   updateStateInWater(t_terrain);
   isMoving = movementDir.length() > 0;
 
-  if (!isFirstPerson) {
+  if (t_camera->getCamType() != CamType::FirstPerson) {
     mesh->rotation.identity();
-    mesh->rotation.rotateY(Tyra::Math::atan2(t_camera->unitCirclePosition.x,
-                                             t_camera->unitCirclePosition.z));
+    float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
+                                    t_camera->unitCirclePosition.z);
+    mesh->rotation.rotateY(theta);
   }
 
   if (isMoving) {
@@ -727,12 +728,6 @@ bool Player::isOnWater() { return _isOnWater; }
 
 bool Player::isUnderWater() { return _isUnderWater; }
 
-void Player::toogleCameraMode() {
-  if (isFirstPerson) {
-    setRenderPip(new PlayerThirdPersonRenderPip(this));
-    isFirstPerson = false;
-  } else {
-    setRenderPip(new PlayerFirstPersonRenderPip(this));
-    isFirstPerson = true;
-  }
-}
+void Player::setRenderArmPip() { setRenderPip(new PlayerRenderArmPip(this)); }
+
+void Player::setRenderBodyPip() { setRenderPip(new PlayerRenderBodyPip(this)); }
