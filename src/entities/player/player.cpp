@@ -76,14 +76,20 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    const Vec4& camDir,
-                    const std::vector<Chunck*>& loadedChunks,
+                    Camera* t_camera, const std::vector<Chunck*>& loadedChunks,
                     TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
   updateStateInWater(t_terrain);
   isMoving = movementDir.length() > 0;
 
+  if (!isFirstPerson) {
+    mesh->rotation.identity();
+    mesh->rotation.rotateY(Tyra::Math::atan2(t_camera->unitCirclePosition.x,
+                                             t_camera->unitCirclePosition.z));
+  }
+
   if (isMoving) {
-    Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    Vec4 nextPlayerPos = getNextPosition(
+        deltaTime, movementDir, t_camera->unitCirclePosition.getNormalized());
 
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =

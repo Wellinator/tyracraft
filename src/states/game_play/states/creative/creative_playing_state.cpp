@@ -28,8 +28,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 
   stateGamePlay->player->update(
-      deltaTime, playerMovementDirection,
-      stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
+      deltaTime, playerMovementDirection, stateGamePlay->context->t_camera,
       stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
       stateGamePlay->world->terrain);
 

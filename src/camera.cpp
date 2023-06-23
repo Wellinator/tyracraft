@@ -107,8 +107,7 @@ float Camera::calculateVerticalDistance() {
 void Camera::calculateCameraPosition(Mesh* t_mesh,
                                      const float horizontalDistance,
                                      const float verticalDistance) {
-  const float meshRotY = t_mesh->rotation.data[3 * 1];
-  const float theta = meshRotY + yaw;
+  const float theta = yaw;
   const float offsetX =
       horizontalDistance * Tyra::Math::cos(Tyra::Math::ANG2RAD * theta);
   const float offsetZ =

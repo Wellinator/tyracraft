@@ -54,8 +54,8 @@ class Player {
          BlockManager* t_blockManager);
   ~Player();
 
-  void update(const float& deltaTime, const Vec4& movementDir,
-              const Vec4& camDir, const std::vector<Chunck*>& loadedChunks,
+  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
+              const std::vector<Chunck*>& loadedChunks,
               TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
