@@ -144,6 +144,16 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
       }
       elapsedTimeInSec = 0.0F;
     }
+
+    if (clicked.R3) {
+      stateGamePlay->player->toogleCameraMode();
+
+      if (stateGamePlay->player->isFirstPerson) {
+        stateGamePlay->context->t_camera->setFirstPerson();
+      } else {
+        stateGamePlay->context->t_camera->setThirdPerson();
+      }
+    }
   }
 }
 

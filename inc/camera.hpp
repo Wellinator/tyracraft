@@ -47,6 +47,9 @@ class Camera {
   void setPositionByMesh(Mesh* t_mesh);
   void setLookDirectionByPad(Pad* t_pad);
 
+  void setFirstPerson();
+  void setThirdPerson();
+
   CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &lookPos); }
 
   inline const CamType getCamType() const { return camera_type; }
@@ -56,5 +59,14 @@ class Camera {
   // TODO: Implements third person cam
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
-  const float R_JOYPAD_DEAD_ZONE = 0.35F;
+
+  float distanceFromPlayer = 80.0F;
+  u8 isFirstPerson = true;
+
+  void calculatePitch(Pad* t_pad);
+  void calculateYaw(Pad* t_pad);
+  float calculateHorizontalDistance();
+  float calculateVerticalDistance();
+  void calculateCameraPosition(Mesh* t_mesh, const float horizontalDistance,
+                               const float verticalDistance);
 };

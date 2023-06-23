@@ -413,7 +413,8 @@ void Player::loadMesh() {
   this->mesh = std::make_unique<DynamicMesh>(data.get());
 
   this->mesh->rotation.identity();
-  this->mesh->rotation.rotateY(-3.14F);
+  // this->mesh->rotation.rotateY(-3.14F);
+  this->mesh->rotation.rotateY(Tyra::Math::ANG2RAD * -90);
   this->mesh->scale.identity();
 
   auto& materials = this->mesh.get()->materials;
@@ -719,3 +720,13 @@ void Player::updateStateInWater(LevelMap* terrain) {
 bool Player::isOnWater() { return _isOnWater; }
 
 bool Player::isUnderWater() { return _isUnderWater; }
+
+void Player::toogleCameraMode() {
+  if (isFirstPerson) {
+    setRenderPip(new PlayerThirdPersonRenderPip(this));
+    isFirstPerson = false;
+  } else {
+    setRenderPip(new PlayerFirstPersonRenderPip(this));
+    isFirstPerson = true;
+  }
+}

@@ -30,40 +30,91 @@ Camera::~Camera() {}
 // ----
 
 void Camera::update() {
-  unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
-                         Math::cos(Utils::degreesToRadian(pitch));
-  unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
-  unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
-                         Math::cos(Utils::degreesToRadian(pitch));
-
+  if (isFirstPerson) {
+    unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
+                           Math::cos(Utils::degreesToRadian(pitch));
+    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
+    unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
+                           Math::cos(Utils::degreesToRadian(pitch));
+  } else {
+    unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
+                           Math::cos(Utils::degreesToRadian(pitch));
+    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(-pitch));
+    unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
+                           Math::cos(Utils::degreesToRadian(pitch));
+  }
   lookPos.set(unitCirclePosition + position);
 }
 
 void Camera::setPositionByMesh(Mesh* t_mesh) {
-  position.set(*t_mesh->getPosition() -
-               (unitCirclePosition.getNormalized() * 4.5F));
-  position.y += CAMERA_Y;
+  if (isFirstPerson) {
+    position.set(*t_mesh->getPosition() -
+                 (unitCirclePosition.getNormalized() * 4.5F));
+    position.y += CAMERA_Y;
+  } else {
+    // position.set(
+    //     *t_mesh->getPosition() -
+    //     (unitCirclePosition.getNormalized() * 4.5F - distanceFromPlayer));
+    // position.y += CAMERA_Y + 10.0F;
+    const float hDistance = calculateHorizontalDistance();
+    const float vDistance = calculateVerticalDistance();
+    calculateCameraPosition(t_mesh, hDistance, vDistance);
+  }
 }
 
 void Camera::setLookDirectionByPad(Pad* t_pad) {
-  const auto& rightJoy = t_pad->getRightJoyPad();
-
-  const auto _h = (rightJoy.h - 128.0F) / 128.0F;
-  const auto _v = (rightJoy.v - 128.0F) / 128.0F;
-  Vec4 sensibility = Vec4(std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F, 0.0F,
-                          std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F);
-
-  if (sensibility.length() > 0) {
-    yaw += camSpeed * sensibility.x;
-    pitch += camSpeed * (-sensibility.z);
-
-    if (pitch > 89.0F) pitch = 89.0F;
-    if (pitch < -89.0F) pitch = -89.0F;
-  }
+  calculatePitch(t_pad);
+  calculateYaw(t_pad);
 }
 
 void Camera::reset() {
   yaw = 0;
   pitch = 0;
   update();
+}
+
+void Camera::setFirstPerson() { isFirstPerson = true; }
+
+void Camera::setThirdPerson() { isFirstPerson = false; }
+
+void Camera::calculatePitch(Pad* t_pad) {
+  const auto& rightJoy = t_pad->getRightJoyPad();
+  const auto _v = (rightJoy.v - 128.0F) / 128.0F;
+  const auto tempPitch = std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F;
+
+  pitch += camSpeed * -tempPitch;
+
+  if (pitch > 89.0F) pitch = 89.0F;
+  if (pitch < -89.0F) pitch = -89.0F;
+}
+
+void Camera::calculateYaw(Pad* t_pad) {
+  const auto& rightJoy = t_pad->getRightJoyPad();
+  const auto _h = (rightJoy.h - 128.0F) / 128.0F;
+  const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
+
+  yaw += camSpeed * tempYaw * 0.5F;
+}
+
+float Camera::calculateHorizontalDistance() {
+  return distanceFromPlayer * Tyra::Math::cos(Tyra::Math::ANG2RAD * pitch);
+}
+
+float Camera::calculateVerticalDistance() {
+  return distanceFromPlayer * Tyra::Math::sin(Tyra::Math::ANG2RAD * pitch);
+}
+
+void Camera::calculateCameraPosition(Mesh* t_mesh,
+                                     const float horizontalDistance,
+                                     const float verticalDistance) {
+  const float meshRotY = t_mesh->rotation.data[3 * 1];
+  const float theta = meshRotY + yaw;
+  const float offsetX =
+      horizontalDistance * Tyra::Math::cos(Tyra::Math::ANG2RAD * theta);
+  const float offsetZ =
+      horizontalDistance * Tyra::Math::sin(Tyra::Math::ANG2RAD * theta);
+
+  const Vec4 playerPos = *t_mesh->getPosition();
+  position.set(playerPos.x - offsetX, playerPos.y + CAMERA_Y + verticalDistance,
+               playerPos.z - offsetZ);
 }

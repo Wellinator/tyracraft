@@ -59,7 +59,8 @@ class Player {
               TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
-  void setRenderPip(PlayerRenderPip* pipToSet);
+  void toogleCameraMode();
+  u8 isFirstPerson = true;
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
@@ -128,6 +129,8 @@ class Player {
                        const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
+
+  void setRenderPip(PlayerRenderPip* pipToSet);
 
   // Forces values
   float acceleration = 140.0F;
