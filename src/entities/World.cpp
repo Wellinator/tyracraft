@@ -962,7 +962,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
         if (revRay.intersectBox(block->minCorner, block->maxCorner,
                                 &intersectionPoint)) {
           if (intersectionPoint < t_camera->hitDistance) {
-            t_camera->hitDistance = intersectionPoint;
+            t_camera->hitDistance = intersectionPoint * 0.95F;
           }
         }
       }
