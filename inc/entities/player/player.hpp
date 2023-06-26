@@ -23,8 +23,8 @@
 #include "models/terrain_height_model.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player/player_render_pip.hpp"
-#include "entities/player/player_first_person_render_pip.hpp"
-#include "entities/player/player_third_person_render_pip.hpp"
+#include "entities/player/player_render_arm_pip.hpp"
+#include "entities/player/player_render_body_pip.hpp"
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
 #include <tyra>
@@ -54,12 +54,13 @@ class Player {
          BlockManager* t_blockManager);
   ~Player();
 
-  void update(const float& deltaTime, const Vec4& movementDir,
-              const Vec4& camDir, const std::vector<Chunck*>& loadedChunks,
+  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
+              const std::vector<Chunck*>& loadedChunks,
               TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
-  void setRenderPip(PlayerRenderPip* pipToSet);
+  void setRenderArmPip();
+  void setRenderBodyPip();
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
@@ -129,6 +130,8 @@ class Player {
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
 
+  void setRenderPip(PlayerRenderPip* pipToSet);
+
   // Forces values
   float acceleration = 140.0F;
   float speed = 0;
@@ -170,7 +173,7 @@ class Player {
   void playSplashSfx();
   u8 isSubmerged = false;
 
-  void animate();
+  void animate(CamType camType);
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 

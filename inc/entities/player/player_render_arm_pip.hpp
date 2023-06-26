@@ -6,11 +6,10 @@
 
 using Tyra::Renderer;
 
-// TODO: fix player rotation
-class PlayerThirdPersonRenderPip : public PlayerRenderPip {
+class PlayerRenderArmPip : public PlayerRenderPip {
  public:
-  PlayerThirdPersonRenderPip(Player* t_player);
-  ~PlayerThirdPersonRenderPip();
+  PlayerRenderArmPip(Player* t_player);
+  ~PlayerRenderArmPip();
 
   void render(Renderer* t_render);
 };

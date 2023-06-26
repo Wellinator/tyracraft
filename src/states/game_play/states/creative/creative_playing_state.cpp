@@ -28,8 +28,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 
   stateGamePlay->player->update(
-      deltaTime, playerMovementDirection,
-      stateGamePlay->context->t_camera->unitCirclePosition.getNormalized(),
+      deltaTime, playerMovementDirection, stateGamePlay->context->t_camera,
       stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
       stateGamePlay->world->terrain);
 
@@ -144,6 +143,27 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
       }
       elapsedTimeInSec = 0.0F;
     }
+
+    if (clicked.R3) {
+      Camera* t_cam = stateGamePlay->context->t_camera;
+
+      if (t_cam->getCamType() == CamType::FirstPerson) {
+        t_cam->setThirdPerson();
+      } else if (t_cam->getCamType() == CamType::ThirdPerson) {
+        t_cam->setFirstPerson();
+      }
+
+      // TODO: Implements inverted third person cam
+      // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
+      //   t_cam->setFirstPerson();
+      // }
+
+      if (t_cam->getCamType() == CamType::FirstPerson) {
+        stateGamePlay->player->setRenderArmPip();
+      } else {
+        stateGamePlay->player->setRenderBodyPip();
+      }
+    }
   }
 }
 
@@ -178,7 +198,9 @@ void CreativePlayingState::renderCreativeUi() {
   if (stateGamePlay->player->isUnderWater())
     stateGamePlay->ui->renderUnderWaterOverlay();
 
-  stateGamePlay->ui->renderCrosshair();
+  if (stateGamePlay->context->t_camera->getCamType() == CamType::FirstPerson)
+    stateGamePlay->ui->renderCrosshair();
+
   stateGamePlay->ui->renderInventory();
 }
 

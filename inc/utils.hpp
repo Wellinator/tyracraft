@@ -108,4 +108,8 @@ class Utils {
   /* Function to get no of set bits in binary
   representation of positive integer n */
   static u8 countSetBits(u32 n);
+
+  static float reverseAngle(const float angleInRad) {
+    return std::fmod(angleInRad + Tyra::Math::PI, 2 * Tyra::Math::PI);
+  };
 };
