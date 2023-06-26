@@ -81,13 +81,6 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   updateStateInWater(t_terrain);
   isMoving = movementDir.length() > 0;
 
-  if (t_camera->getCamType() != CamType::FirstPerson) {
-    mesh->rotation.identity();
-    float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
-                                    t_camera->unitCirclePosition.z);
-    mesh->rotation.rotateY(theta);
-  }
-
   if (isMoving) {
     Vec4 nextPlayerPos = getNextPosition(
         deltaTime, movementDir, t_camera->unitCirclePosition.getNormalized());
@@ -116,9 +109,16 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
     speed = 0;
   }
 
+  if (t_camera->getCamType() != CamType::FirstPerson) {
+    mesh.get()->rotation.identity();
+    float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
+                                    t_camera->unitCirclePosition.z);
+    mesh->rotation.rotateY(theta);
+  }
+
   if (!isFlying) updateGravity(deltaTime, terrainHeight);
 
-  animate();
+  animate(t_camera->getCamType());
 
   // this->handledItem->mesh->translation.identity();
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
@@ -421,7 +421,7 @@ void Player::loadMesh() {
 
   this->mesh->rotation.identity();
   // this->mesh->rotation.rotateY(-3.14F);
-  this->mesh->rotation.rotateY(Tyra::Math::ANG2RAD * -90);
+  // this->mesh->rotation.rotateY(Tyra::Math::ANG2RAD * -90);
   this->mesh->scale.identity();
 
   auto& materials = this->mesh.get()->materials;
@@ -672,10 +672,12 @@ void Player::unsetWalkingAnimation() {
   mesh->animation.setSequence(standStillSequence);
 }
 
-void Player::animate() {
-  // TODO: check cam type before animate
-  this->mesh->update();
-  if (isHandFree()) this->armMesh->update();
+void Player::animate(CamType camType) {
+  if (camType == CamType::FirstPerson && isHandFree()) {
+    this->armMesh->update();
+  } else {
+    this->mesh->update();
+  }
 }
 
 void Player::shiftItemToInventory(const ItemId& itemToShift) {

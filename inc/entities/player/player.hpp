@@ -173,7 +173,7 @@ class Player {
   void playSplashSfx();
   u8 isSubmerged = false;
 
-  void animate();
+  void animate(CamType camType);
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
