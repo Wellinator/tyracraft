@@ -42,6 +42,7 @@ class Camera {
   float camSpeedH = 0.9F;
   float camSpeedV = 0.3F;
   float pitch, yaw;
+  float hitDistance;
 
   void update();
   void reset();
@@ -56,6 +57,8 @@ class Camera {
 
   inline const CamType getCamType() const { return camera_type; }
   inline float getCamY() { return CAMERA_Y; };
+
+  inline const float getDistanceFromPlayer() { return distanceFromPlayer; }
 
  private:
   CamType camera_type = CamType::FirstPerson;

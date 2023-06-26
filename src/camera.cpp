@@ -52,10 +52,6 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
                  (unitCirclePosition.getNormalized() * 4.5F));
     position.y += CAMERA_Y;
   } else {
-    // position.set(
-    //     *t_mesh->getPosition() -
-    //     (unitCirclePosition.getNormalized() * 4.5F - distanceFromPlayer));
-    // position.y += CAMERA_Y + 10.0F;
     const float hDistance = calculateHorizontalDistance();
     const float vDistance = calculateVerticalDistance();
     calculateCameraPosition(t_mesh, hDistance, vDistance);
@@ -101,11 +97,17 @@ void Camera::calculateYaw(Pad* t_pad) {
 }
 
 float Camera::calculateHorizontalDistance() {
-  return distanceFromPlayer * Tyra::Math::cos(Tyra::Math::ANG2RAD * pitch);
+  const float maxDist = camera_type == CamType::FirstPerson
+                            ? distanceFromPlayer
+                            : std::min(distanceFromPlayer, hitDistance);
+  return maxDist * Tyra::Math::cos(Tyra::Math::ANG2RAD * pitch);
 }
 
 float Camera::calculateVerticalDistance() {
-  return distanceFromPlayer * Tyra::Math::sin(Tyra::Math::ANG2RAD * pitch);
+  const float maxDist = camera_type == CamType::FirstPerson
+                            ? distanceFromPlayer
+                            : std::min(distanceFromPlayer, hitDistance);
+  return maxDist * Tyra::Math::sin(Tyra::Math::ANG2RAD * pitch);
 }
 
 void Camera::calculateCameraPosition(Mesh* t_mesh,

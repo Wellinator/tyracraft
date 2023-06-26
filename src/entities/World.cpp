@@ -110,8 +110,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   unloadScheduledChunks();
   loadScheduledChunks();
 
-  updateTargetBlock(t_camera->lookPos, t_camera->position,
-                    chunckManager.getNearByChunks());
+  updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
 };
 
 void World::render() {
@@ -909,8 +908,10 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   t_chunck->freeUnusedMemory();
 }
 
-void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
+void World::updateTargetBlock(Camera* t_camera, Player* t_player,
                               const std::vector<Chunck*>& chuncks) {
+  const Vec4 baseOrigin =
+      *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
   u8 hitedABlock = 0;
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
@@ -920,10 +921,15 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
   targetBlock = nullptr;
 
   // Prepate the raycast
-  Vec4 rayDir = camLookPos - camPosition;
-  rayDir.normalize();
-  ray.origin.set(camPosition);
-  ray.direction.set(rayDir);
+  ray.origin.set(baseOrigin);
+  ray.direction.set(t_camera->unitCirclePosition.getNormalized());
+
+  // Reverse ray for third person camera position
+  Ray revRay;
+  revRay.direction = (-t_camera->unitCirclePosition).getNormalized();
+  revRay.origin = baseOrigin;
+
+  t_camera->hitDistance = t_camera->getDistanceFromPlayer();
 
   for (u16 h = 0; h < chuncks.size(); h++) {
     for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
@@ -931,7 +937,7 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
       u8 isBreakable = block->type != Blocks::WATER_BLOCK;
       float distanceFromCurrentBlockToPlayer =
-          camPosition.distanceTo(block->position);
+          baseOrigin.distanceTo(block->position);
 
       // Reset block state
       block->isTarget = false;
@@ -947,6 +953,16 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
             tempTargetBlock = block;
             tempTargetDistance = intersectionPoint;
             tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+          }
+        }
+      }
+
+      if (block->isCollidable) {
+        float intersectionPoint;
+        if (revRay.intersectBox(block->minCorner, block->maxCorner,
+                                &intersectionPoint)) {
+          if (intersectionPoint < t_camera->hitDistance) {
+            t_camera->hitDistance = intersectionPoint;
           }
         }
       }

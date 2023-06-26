@@ -87,7 +87,7 @@ class World {
 
   Block* targetBlock = nullptr;
 
-  void updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
+  void updateTargetBlock(Camera* t_camera, Player* t_player,
                          const std::vector<Chunck*>& chuncks);
   void removeBlock(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player);
