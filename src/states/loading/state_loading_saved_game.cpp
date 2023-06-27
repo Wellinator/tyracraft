@@ -158,6 +158,7 @@ void StateLoadingSavedGame::initPlayer() {
       this->stateGamePlay->world->getGlobalSpawnArea());
   this->stateGamePlay->player->spawnArea.set(
       this->stateGamePlay->world->getLocalSpawnArea());
+  this->stateGamePlay->context->t_camera->setFirstPerson();
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
   TYRA_LOG("initPlayer");
