@@ -120,7 +120,7 @@ void BlockInfoRepository::loadBlocksInfo() {
   models[(u8)Blocks::OAK_LOG_BLOCK] = (BlockInfo(
       Blocks::OAK_LOG_BLOCK, false, {1, 1, 17, 17, 17, 17}, 2.0F, false));
   models[(u8)Blocks::BIRCH_LOG_BLOCK] = (BlockInfo(
-      Blocks::BIRCH_LOG_BLOCK, false, {6, 6, 0, 22, 22, 22, 22}, 2.0F, false));
+      Blocks::BIRCH_LOG_BLOCK, false, {6, 6, 22, 22, 22, 22}, 2.0F, false));
   // Leaves
   models[(u8)Blocks::BIRCH_LEAVES_BLOCK] =
       (BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true, {162}, 0.2F, true));
