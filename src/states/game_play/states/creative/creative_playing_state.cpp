@@ -44,14 +44,13 @@ void CreativePlayingState::update(const float& deltaTime) {
 }
 
 void CreativePlayingState::render() {
-  stateGamePlay->world->render();
-
+  stateGamePlay->world->cloudsManager.render();
   stateGamePlay->player->render();
-
+  stateGamePlay->world->render();
+  stateGamePlay->world->particlesManager.renderBlocksParticles();
   renderCreativeUi();
-
+  
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
-
   if (debugMode) drawDegubInfo();
 }
 

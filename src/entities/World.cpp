@@ -114,11 +114,8 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 };
 
 void World::render() {
-  cloudsManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
-
-  particlesManager.renderBlocksParticles();
-
+  
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
     if (isBreakingBLock() && targetBlock->damage > 0)
