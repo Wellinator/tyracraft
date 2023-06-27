@@ -64,3 +64,7 @@ bool SettingsManager::CheckIfSettingsExist() {
   struct stat buffer;
   return (stat(FileUtils::fromCwd(g_settings_path).c_str(), &buffer) == 0);
 }
+
+void SettingsManager::ApplyChanges(Engine* t_engine) {
+  t_engine->renderer.setFrameLimit(g_settings.vsync);
+}

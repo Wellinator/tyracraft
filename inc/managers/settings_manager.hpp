@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 using Tyra::FileUtils;
+using Tyra::Engine;
 
 struct settings_file {
   bool vsync = false;
@@ -40,4 +41,5 @@ class SettingsManager {
   static void Save();
   static settings_file Load();
   static bool CheckIfSettingsExist();
+  static void ApplyChanges(Engine* t_engine);
 };

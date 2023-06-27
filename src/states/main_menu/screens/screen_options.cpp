@@ -233,6 +233,7 @@ void ScreenOptions::handleInput() {
   } else if (context->context->t_engine->pad.getClicked().Cross) {
     context->playClickSound();
     SettingsManager::Save(tempSettings);
+    SettingsManager::ApplyChanges(context->context->t_engine);
 
     if (activeOption == OptionsScreenOptions::ChangeLanguage) {
       context->goToLanguageSelectioScreen();
