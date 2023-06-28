@@ -64,9 +64,9 @@ settings_file SettingsManager::Load() {
   g_settings.r_stick_V = _settings["DeadZoneOffset"]["r_stick_V"].as<float>();
   g_settings.invert_cam_y = _settings["Camera"]["invert_cam_y"].as<bool>();
   g_settings.cam_h_sensitivity =
-      _settings["Camera"]["cam_h_sensitivity"].as<float>();
+      _settings["Camera"]["cam_h_sensitivity"].as<int>();
   g_settings.cam_v_sensitivity =
-      _settings["Camera"]["cam_v_sensitivity"].as<float>();
+      _settings["Camera"]["cam_v_sensitivity"].as<int>();
 
   return g_settings;
 };

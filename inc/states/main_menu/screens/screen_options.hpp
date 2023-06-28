@@ -11,6 +11,9 @@ using Tyra::Sprite;
 
 enum class OptionsScreenOptions {
   VSyncOnOff,
+  ReverseCamY,
+  CamSensitivityH,
+  CamSensitivityV,
   ChangeLanguage,
   LStickDeadZoneH,
   LStickDeadZoneV,
@@ -33,7 +36,7 @@ class ScreenOptions : public ScreenBase {
 
   // Slots
   Texture* raw_slot_texture;
-  Sprite raw_slot[6];
+  Sprite raw_slot[9];
   Sprite active_slot;
 
   Sprite background;
@@ -45,11 +48,22 @@ class ScreenOptions : public ScreenBase {
   OptionsScreenOptions activeOption = OptionsScreenOptions::VSyncOnOff;
 
   const float SLOT_WIDTH = 250;
-  const float SLOT_HIGHT_OFFSET = 100;
+  const float SLOT_HIGHT_OFFSET = 30;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
 
   const std::string Label_UseVsync =
       g_language_repository["options_menu"]["use_vsync"].get<std::string>();
+  const std::string Label_ReverseCameraY =
+      g_language_repository["options_menu"]["reverse_camera_y"]
+          .get<std::string>();
+  const std::string Label_CamSensitivityH =
+      g_language_repository["options_menu"]["sensitivity_camera"]
+          .get<std::string>() +
+      " " + std::string(" H: ");
+  const std::string Label_CamSensitivityV =
+      g_language_repository["options_menu"]["sensitivity_camera"]
+          .get<std::string>() +
+      " " + std::string(" V: ");
   const std::string Label_Language =
       g_language_repository["options_menu"]["language"].get<std::string>();
 
@@ -70,7 +84,8 @@ class ScreenOptions : public ScreenBase {
       Label_DeadZone + std::string(" V: ");
 
   const std::string Label_Save =
-      g_language_repository["state_game_menu"]["save_and_quit"].get<std::string>();
+      g_language_repository["state_game_menu"]["save_and_quit"]
+          .get<std::string>();
   const std::string Label_Back =
       g_language_repository["gui"]["back"].get<std::string>();
   const std::string Label_On =

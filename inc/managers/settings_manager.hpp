@@ -29,8 +29,8 @@ struct settings_file {
 
   // Camera options
   bool invert_cam_y = false;
-  float cam_h_sensitivity = 115.0F;
-  float cam_v_sensitivity = 95.0F;
+  u16 cam_h_sensitivity = 115;
+  u16 cam_v_sensitivity = 95;
 };
 
 /**

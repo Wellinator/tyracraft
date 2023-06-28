@@ -28,11 +28,15 @@ void ScreenOptions::render() {
   t_renderer->renderer2D.render(raw_slot[3]);
   t_renderer->renderer2D.render(raw_slot[4]);
   t_renderer->renderer2D.render(raw_slot[5]);
+  t_renderer->renderer2D.render(raw_slot[6]);
+  t_renderer->renderer2D.render(raw_slot[7]);
+  t_renderer->renderer2D.render(raw_slot[8]);
 
   t_renderer->renderer2D.render(active_slot);
 
   auto baseX = 248;
-  auto baseY = 106;
+  auto baseY = SLOT_HIGHT_OFFSET + 6;
+  ;
 
   // Vsync
   {
@@ -47,6 +51,47 @@ void ScreenOptions::render() {
     std::string _state = tempSettings.vsync ? Label_On : Label_Off;
     FontManager_printText(Label_UseVsync + std::string(": ") + _state,
                           fontOptions);
+  }
+
+  // Camera
+  {
+    baseY += 40;
+    FontOptions fontOptions;
+    fontOptions.scale = 0.8F;
+    fontOptions.position.set(Vec2(baseX, baseY));
+    fontOptions.alignment = TextAlignment::Center;
+    fontOptions.color.set(activeOption == OptionsScreenOptions::ReverseCamY
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+    std::string _state = tempSettings.invert_cam_y ? Label_On : Label_Off;
+    FontManager_printText(Label_ReverseCameraY + std::string(": ") + _state,
+                          fontOptions);
+  }
+  {
+    baseY += 40;
+    FontOptions fontOptions;
+    fontOptions.scale = 0.8F;
+    fontOptions.position.set(Vec2(baseX, baseY));
+    fontOptions.alignment = TextAlignment::Center;
+    fontOptions.color.set(activeOption == OptionsScreenOptions::CamSensitivityH
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+
+    std::string _state = std::to_string(tempSettings.cam_h_sensitivity);
+    FontManager_printText(Label_CamSensitivityH + _state, fontOptions);
+  }
+  {
+    baseY += 40;
+    FontOptions fontOptions;
+    fontOptions.scale = 0.8F;
+    fontOptions.position.set(Vec2(baseX, baseY));
+    fontOptions.alignment = TextAlignment::Center;
+    fontOptions.color.set(activeOption == OptionsScreenOptions::CamSensitivityV
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+
+    std::string _state = std::to_string(tempSettings.cam_v_sensitivity);
+    FontManager_printText(Label_CamSensitivityV + _state, fontOptions);
   }
 
   // Language
@@ -146,7 +191,7 @@ void ScreenOptions::init() {
 
   // Load slots
   auto baseX = halfWidth - SLOT_WIDTH / 2;
-  auto baseY = 100;
+  auto baseY = SLOT_HIGHT_OFFSET;
 
   raw_slot[0].mode = Tyra::MODE_STRETCH;
   raw_slot[0].size.set(SLOT_WIDTH, 35);
@@ -177,6 +222,21 @@ void ScreenOptions::init() {
   raw_slot[5].size.set(SLOT_WIDTH, 35);
   raw_slot[5].position.set(baseX, baseY);
 
+  baseY += 40;
+  raw_slot[6].mode = Tyra::MODE_STRETCH;
+  raw_slot[6].size.set(SLOT_WIDTH, 35);
+  raw_slot[6].position.set(baseX, baseY);
+
+  baseY += 40;
+  raw_slot[7].mode = Tyra::MODE_STRETCH;
+  raw_slot[7].size.set(SLOT_WIDTH, 35);
+  raw_slot[7].position.set(baseX, baseY);
+
+  baseY += 40;
+  raw_slot[8].mode = Tyra::MODE_STRETCH;
+  raw_slot[8].size.set(SLOT_WIDTH, 35);
+  raw_slot[8].position.set(baseX, baseY);
+
   raw_slot_texture =
       textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
 
@@ -186,6 +246,9 @@ void ScreenOptions::init() {
   raw_slot_texture->addLink(raw_slot[3].id);
   raw_slot_texture->addLink(raw_slot[4].id);
   raw_slot_texture->addLink(raw_slot[5].id);
+  raw_slot_texture->addLink(raw_slot[6].id);
+  raw_slot_texture->addLink(raw_slot[7].id);
+  raw_slot_texture->addLink(raw_slot[8].id);
 
   active_slot.mode = Tyra::MODE_STRETCH;
   active_slot.size.set(SLOT_WIDTH, 35);
@@ -244,6 +307,16 @@ void ScreenOptions::handleInput() {
   } else if (context->context->t_engine->pad.getClicked().DpadLeft) {
     if (activeOption == OptionsScreenOptions::VSyncOnOff) {
       tempSettings.vsync = !tempSettings.vsync;
+    } else if (activeOption == OptionsScreenOptions::ReverseCamY) {
+      tempSettings.invert_cam_y = !tempSettings.vsync;
+    } else if (activeOption == OptionsScreenOptions::CamSensitivityH) {
+      tempSettings.cam_h_sensitivity -= 1;
+      if (tempSettings.cam_h_sensitivity <= 0)
+        tempSettings.cam_h_sensitivity = 1;
+    } else if (activeOption == OptionsScreenOptions::CamSensitivityV) {
+      tempSettings.cam_v_sensitivity -= 1;
+      if (tempSettings.cam_v_sensitivity <= 0)
+        tempSettings.cam_v_sensitivity = 1;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneH) {
       tempSettings.l_stick_H -= 0.05F;
       if (tempSettings.l_stick_H < 0) tempSettings.l_stick_H = 0;
@@ -260,6 +333,12 @@ void ScreenOptions::handleInput() {
   } else if (context->context->t_engine->pad.getClicked().DpadRight) {
     if (activeOption == OptionsScreenOptions::VSyncOnOff) {
       tempSettings.vsync = !tempSettings.vsync;
+    } else if (activeOption == OptionsScreenOptions::ReverseCamY) {
+      tempSettings.invert_cam_y = !tempSettings.invert_cam_y;
+    } else if (activeOption == OptionsScreenOptions::CamSensitivityH) {
+      tempSettings.cam_h_sensitivity += 1;
+    } else if (activeOption == OptionsScreenOptions::CamSensitivityV) {
+      tempSettings.cam_v_sensitivity += 1;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneH) {
       tempSettings.l_stick_H += 0.05F;
     } else if (activeOption == OptionsScreenOptions::LStickDeadZoneV) {
