@@ -571,7 +571,6 @@ void Player::setRunning(bool _isRunning) {
     isRunning = _isRunning;
     isRunning ? this->t_renderer->core.renderer3D.setFov(70.0F)
               : this->t_renderer->core.renderer3D.setFov(60.0F);
-    TYRA_LOG("Is running -> ", isRunning);
   }
 }
 
@@ -653,7 +652,7 @@ void Player::unsetArmBreakingAnimation() {
 void Player::setWalkingAnimation() {
   if (isWalkingAnimationSet) return;
 
-  this->mesh->animation.speed = baseAnimationSpeed;
+  this->mesh->animation.speed = baseAnimationSpeed * speed / 10;
   this->mesh->animation.setSequence(walkSequence);
 
   if (isHandFree()) {
