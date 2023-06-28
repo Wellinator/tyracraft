@@ -110,8 +110,8 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
       speed -= acceleration * deltaTime;
     } else if (speed < 0) {
       speed = 0;
-      unsetWalkingAnimation();
     }
+    unsetWalkingAnimation();
   }
 
   updateFovBySpeed();
@@ -567,11 +567,8 @@ void Player::playSplashSfx() {
 }
 
 void Player::toggleFlying() {
-  this->isFlying = !this->isFlying;
-  if (this->isFlying) {
-    this->isOnGround = false;
-  } else {
-  }
+  isFlying = !isFlying;
+  if (isFlying) isOnGround = false;
 }
 
 void Player::setRunning(bool _isRunning) {
@@ -656,17 +653,15 @@ void Player::unsetArmBreakingAnimation() {
 }
 
 void Player::setWalkingAnimation() {
-  if (isWalkingAnimationSet) return;
+  const float _speed = (speed / runningMaxSpeed) * 4;
+  this->mesh->animation.speed = baseAnimationSpeed * _speed;
+  this->armMesh->animation.speed = baseAnimationSpeed * _speed;
 
-  this->mesh->animation.speed = baseAnimationSpeed * speed / 10;
-  this->mesh->animation.setSequence(walkSequence);
-
-  if (isHandFree()) {
-    this->armMesh->animation.speed = baseAnimationSpeed * 3;
+  if (!isWalkingAnimationSet) {
+    this->mesh->animation.setSequence(walkSequence);
     this->armMesh->animation.setSequence(armWalkingSequence);
+    isWalkingAnimationSet = true;
   }
-
-  isWalkingAnimationSet = true;
 }
 
 void Player::unsetWalkingAnimation() {
@@ -749,8 +744,8 @@ void Player::updateFovBySpeed() {
     _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
                                      _maxSpeed, _speed);
   } else {
-    _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
-                                     _maxSpeed, _speed);
+    _fovByLerp =
+        Utils::reRangeScale(_minFov, _maxFov, _minSpeed, _maxSpeed, _speed);
   }
   t_renderer->core.renderer3D.setFov(_fovByLerp);
 }
