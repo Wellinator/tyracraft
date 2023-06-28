@@ -193,4 +193,10 @@ class Player {
   u8 _isOnWater;
   u8 _isUnderWater;
   void updateStateInWater(LevelMap* terrain);
+
+  const float _minFov = 60.0F;
+  const float _maxFov = _minFov + 10.0F;
+  const float _minFovFlaying = 70.0F;
+  const float _maxFovFlaying = _minFovFlaying + 10.0F;
+  void updateFovBySpeed();
 };

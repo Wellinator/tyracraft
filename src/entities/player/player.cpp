@@ -105,9 +105,16 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
       }
     }
   } else {
-    unsetWalkingAnimation();
-    speed = 0;
+    // Deaccelerate player speed
+    if (speed > 0) {
+      speed -= acceleration * deltaTime;
+    } else if (speed < 0) {
+      speed = 0;
+      unsetWalkingAnimation();
+    }
   }
+
+  updateFovBySpeed();
 
   if (t_camera->getCamType() != CamType::FirstPerson) {
     mesh.get()->rotation.identity();
@@ -145,10 +152,13 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
   const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
   const float _maxAcc = isRunning ? runningAcceleration : acceleration;
 
+  // Accelerate speed until mach max
   if (speed < _maxSpeed) {
     speed += _maxAcc * deltaTime;
-  } else {
-    speed = _maxSpeed;
+  } else if (speed > _maxSpeed) {
+    // Deaccelerate speed to new max
+    speed -= _maxAcc * deltaTime;
+    if (speed < _maxSpeed) speed = _maxSpeed;
   }
 
   Vec4 direction =
@@ -559,18 +569,14 @@ void Player::playSplashSfx() {
 void Player::toggleFlying() {
   this->isFlying = !this->isFlying;
   if (this->isFlying) {
-    this->t_renderer->core.renderer3D.setFov(70.0F);
     this->isOnGround = false;
   } else {
-    this->t_renderer->core.renderer3D.setFov(60.0F);
   }
 }
 
 void Player::setRunning(bool _isRunning) {
   if (isRunning != _isRunning) {
     isRunning = _isRunning;
-    isRunning ? this->t_renderer->core.renderer3D.setFov(70.0F)
-              : this->t_renderer->core.renderer3D.setFov(60.0F);
   }
 }
 
@@ -732,3 +738,19 @@ bool Player::isUnderWater() { return _isUnderWater; }
 void Player::setRenderArmPip() { setRenderPip(new PlayerRenderArmPip(this)); }
 
 void Player::setRenderBodyPip() { setRenderPip(new PlayerRenderBodyPip(this)); }
+
+void Player::updateFovBySpeed() {
+  const float _speed = speed < maxSpeed ? maxSpeed : speed;
+  const float _minSpeed = maxSpeed;
+  const float _maxSpeed = runningMaxSpeed;
+  float _fovByLerp;
+
+  if (isFlying) {
+    _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
+                                     _maxSpeed, _speed);
+  } else {
+    _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
+                                     _maxSpeed, _speed);
+  }
+  t_renderer->core.renderer3D.setFov(_fovByLerp);
+}
