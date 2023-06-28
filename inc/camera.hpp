@@ -38,16 +38,13 @@ class Camera {
 
   Vec4 position, lookPos, unitCirclePosition;
 
-  // TODO: add cam spped to menu options
-  float camSpeedH = 0.95F;
-  float camSpeedV = 0.75F;
   float pitch, yaw;
   float hitDistance;
 
   void update();
   void reset();
   void setPositionByMesh(Mesh* t_mesh);
-  void setLookDirectionByPad(Pad* t_pad);
+  void setLookDirectionByPad(Pad* t_pad, const float deltatime);
 
   void setFirstPerson();
   void setThirdPerson();
@@ -66,8 +63,8 @@ class Camera {
 
   float distanceFromPlayer = 80.0F;
 
-  void calculatePitch(Pad* t_pad);
-  void calculateYaw(Pad* t_pad);
+  void calculatePitch(Pad* t_pad, const float deltatime);
+  void calculateYaw(Pad* t_pad, const float deltatime);
   float calculateHorizontalDistance();
   float calculateVerticalDistance();
   void calculateCameraPosition(Mesh* t_mesh, const float horizontalDistance,

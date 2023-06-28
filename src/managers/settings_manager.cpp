@@ -24,6 +24,9 @@ void SettingsManager::Save(settings_file settings) {
   _settings["DeadZoneOffset"]["l_stick_V"] = settings.l_stick_V;
   _settings["DeadZoneOffset"]["r_stick_H"] = settings.r_stick_H;
   _settings["DeadZoneOffset"]["r_stick_V"] = settings.r_stick_V;
+  _settings["Camera"]["invert_cam_y"] = settings.invert_cam_y;
+  _settings["Camera"]["cam_h_sensitivity"] = settings.cam_h_sensitivity;
+  _settings["Camera"]["cam_v_sensitivity"] = settings.cam_v_sensitivity;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -39,6 +42,9 @@ void SettingsManager::Save() {
   _settings["DeadZoneOffset"]["l_stick_V"] = g_settings.l_stick_V;
   _settings["DeadZoneOffset"]["r_stick_H"] = g_settings.r_stick_H;
   _settings["DeadZoneOffset"]["r_stick_V"] = g_settings.r_stick_V;
+  _settings["Camera"]["invert_cam_y"] = g_settings.invert_cam_y;
+  _settings["Camera"]["cam_h_sensitivity"] = g_settings.cam_h_sensitivity;
+  _settings["Camera"]["cam_v_sensitivity"] = g_settings.cam_v_sensitivity;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -56,6 +62,11 @@ settings_file SettingsManager::Load() {
   g_settings.l_stick_V = _settings["DeadZoneOffset"]["l_stick_V"].as<float>();
   g_settings.r_stick_H = _settings["DeadZoneOffset"]["r_stick_H"].as<float>();
   g_settings.r_stick_V = _settings["DeadZoneOffset"]["r_stick_V"].as<float>();
+  g_settings.invert_cam_y = _settings["Camera"]["invert_cam_y"].as<bool>();
+  g_settings.cam_h_sensitivity =
+      _settings["Camera"]["cam_h_sensitivity"].as<float>();
+  g_settings.cam_v_sensitivity =
+      _settings["Camera"]["cam_v_sensitivity"].as<float>();
 
   return g_settings;
 };

@@ -30,19 +30,23 @@ Camera::~Camera() {}
 // ----
 
 void Camera::update() {
-  if (camera_type == CamType::FirstPerson) {
-    unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
-                           Math::cos(Utils::degreesToRadian(pitch));
-    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
-    unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
-                           Math::cos(Utils::degreesToRadian(pitch));
-  } else {
-    unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
-                           Math::cos(Utils::degreesToRadian(pitch));
+  unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
+  unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
+
+  if (g_settings.invert_cam_y) {
     unitCirclePosition.y = Math::sin(Utils::degreesToRadian(-pitch));
-    unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
-                           Math::cos(Utils::degreesToRadian(pitch));
+  } else {
+    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
   }
+
+  // if (camera_type == CamType::FirstPerson) {
+  //   unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
+  // } else {
+  //   unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
+  // }
+
   lookPos.set(unitCirclePosition + position);
 }
 
@@ -54,13 +58,18 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
   } else {
     const float hDistance = calculateHorizontalDistance();
     const float vDistance = calculateVerticalDistance();
-    calculateCameraPosition(t_mesh, hDistance, vDistance);
+
+    if (g_settings.invert_cam_y) {
+      calculateCameraPosition(t_mesh, hDistance, vDistance);
+    } else {
+      calculateCameraPosition(t_mesh, hDistance, -vDistance);
+    }
   }
 }
 
-void Camera::setLookDirectionByPad(Pad* t_pad) {
-  calculatePitch(t_pad);
-  calculateYaw(t_pad);
+void Camera::setLookDirectionByPad(Pad* t_pad, const float deltatime) {
+  calculatePitch(t_pad, deltatime);
+  calculateYaw(t_pad, deltatime);
 }
 
 void Camera::reset() {
@@ -77,23 +86,23 @@ void Camera::setThirdPersonInverted() {
   camera_type = CamType::ThirdPersonInverted;
 }
 
-void Camera::calculatePitch(Pad* t_pad) {
+void Camera::calculatePitch(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const auto _v = (rightJoy.v - 128.0F) / 128.0F;
   const auto tempPitch = std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F;
 
-  pitch += camSpeedV * -tempPitch;
+  pitch += g_settings.cam_v_sensitivity * deltatime * -tempPitch;
 
   if (pitch > 89.0F) pitch = 89.0F;
   if (pitch < -89.0F) pitch = -89.0F;
 }
 
-void Camera::calculateYaw(Pad* t_pad) {
+void Camera::calculateYaw(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const auto _h = (rightJoy.h - 128.0F) / 128.0F;
   const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
 
-  yaw += camSpeedH * tempYaw;
+  yaw += g_settings.cam_h_sensitivity * deltatime * tempYaw;
 }
 
 float Camera::calculateHorizontalDistance() {

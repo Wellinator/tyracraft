@@ -11,16 +11,26 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
-using Tyra::FileUtils;
 using Tyra::Engine;
+using Tyra::FileUtils;
 
 struct settings_file {
+  // VSync control
   bool vsync = false;
+
+  // Language options
   std::string language = "en_US";
+
+  // Sticks deadzones
   float l_stick_H = 0.0F;
   float l_stick_V = 0.0F;
   float r_stick_H = 0.0F;
   float r_stick_V = 0.0F;
+
+  // Camera options
+  bool invert_cam_y = false;
+  float cam_h_sensitivity = 115.0F;
+  float cam_v_sensitivity = 95.0F;
 };
 
 /**

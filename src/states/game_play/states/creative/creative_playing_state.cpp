@@ -37,7 +37,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   stateGamePlay->context->t_camera->setPositionByMesh(
       stateGamePlay->player->mesh.get());
   stateGamePlay->context->t_camera->setLookDirectionByPad(
-      &stateGamePlay->context->t_engine->pad);
+      &stateGamePlay->context->t_engine->pad, deltaTime);
   stateGamePlay->context->t_camera->update();
 
   if (!isSongPlaying()) playNewRandomSong();
