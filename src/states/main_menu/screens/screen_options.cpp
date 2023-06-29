@@ -10,6 +10,7 @@ ScreenOptions::ScreenOptions(StateMainMenu* t_context) : ScreenBase(t_context) {
 ScreenOptions::~ScreenOptions() {
   t_renderer->getTextureRepository().free(raw_slot_texture->id);
   t_renderer->getTextureRepository().freeBySprite(active_slot);
+  t_renderer->getTextureRepository().freeBySprite(background);
   t_renderer->getTextureRepository().freeBySprite(btnTriangle);
   t_renderer->getTextureRepository().freeBySprite(btnCross);
 }
