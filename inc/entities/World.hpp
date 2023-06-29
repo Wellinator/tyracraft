@@ -204,7 +204,44 @@ class World {
   void initWorldLightModel();
 };
 
-static Level level;
+bool inline isVegetation(Blocks block) {
+  return (u8)block >= (u8)Blocks::GRASS &&
+         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
+};
+
+bool inline isTransparent(Blocks block) {
+  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
+         block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
+         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS;
+};
+
+
+///////////////////////////////////
+// Based in Seed of Andromeda    //
+///////////////////////////////////
+void initSunLight(uint32_t tick);
+void addSunLight(uint16_t x, uint16_t y, uint16_t z);
+void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void updateSunlight();
+void propagateSunLightAddBFSQueue();
+void propagateSunlightRemovalQueue();
+void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                          u8 nextLightValue);
+void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
+
+void initBlockLight(BlockManager* blockManager);
+void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void updateBlockLights();
+
+void removeLight(uint16_t x, uint16_t y, uint16_t z);
+void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
+void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+void propagateLightRemovalQueue();
+void propagateLightAddQueue();
 
 // FROM CrossCraft
 void CrossCraft_World_Init(const uint32_t& seed);
@@ -218,73 +255,7 @@ void CrossCraft_World_Deinit();
 LevelMap* CrossCraft_World_GetMapPtr();
 
 /**
- * @brief Spawn the player into the world
- */
-void CrossCraft_World_Spawn();
-
-/**
- * @brief Tries to load a world
- * @returns If the world was loaded
- */
-// bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
-
-/**
  * @brief Generates the world
  * @TODO Offer a callback for world percentage
  */
 void CrossCraft_World_GenerateMap(WorldType worldType);
-
-void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
-                               uint16_t light, uint32_t* updateIDs);
-void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z,
-                                  uint16_t light, uint32_t* updateIDs);
-
-void updateSpread(uint32_t* updateIDs);
-void updateSpread();
-void checkAddID();
-void updateID(uint16_t x, uint16_t z, uint32_t* updateIDs);
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-               uint32_t* updateIDs);
-void singleCheck(uint16_t x, uint16_t z);
-void updateRemove();
-void updateRemove(uint32_t* updateIDs);
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel);
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-                     uint32_t* updateIDs);
-
-void updateSunlight();
-void propagateSunLightAddBFSQueue();
-void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
-                          u8 nextLightValue);
-
-void initSunLight(uint32_t tick);
-void initBlockLight(BlockManager* blockManager);
-void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
-
-void addSunLight(uint16_t x, uint16_t y, uint16_t z);
-void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-
-void propagateSunlightRemovalQueue();
-void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-
-void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void removeLight(uint16_t x, uint16_t y, uint16_t z);
-void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void updateBlockLights();
-void propagateLightRemovalQueue();
-void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void propagateLightAddQueue();
-void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
-
-bool inline isVegetation(Blocks block) {
-  return (u8)block >= (u8)Blocks::GRASS &&
-         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
-};
-
-bool inline isTransparent(Blocks block) {
-  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
-         block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS;
-};

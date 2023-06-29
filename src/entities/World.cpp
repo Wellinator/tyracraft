@@ -13,6 +13,8 @@
 using Tyra::Color;
 using Tyra::M4x4;
 
+static Level level;
+
 World::World(const NewGameOptions& options) {
   seed = options.seed;
 
@@ -115,7 +117,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
 void World::render() {
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
-  
+
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
     if (isBreakingBLock() && targetBlock->damage > 0)
@@ -1009,141 +1011,6 @@ std::queue<LightNode> lightRemovalBfsQueue;
 std::queue<LightNode> sunlightBfsQueue;
 std::queue<LightNode> sunlightRemovalBfsQueue;
 
-auto encodeID(uint16_t x, uint16_t z) -> uint32_t {
-  uint16_t nx = x / 16;
-  uint16_t ny = z / 16;
-  uint32_t id = nx << 16 | (ny & 0xFFFF);
-  return id;
-}
-
-void checkAddID(uint32_t* updateIDs, uint32_t id) {
-  // Check that the ID is not already existing
-  for (int i = 0; i < 10; i++) {
-    if (id == updateIDs[i]) return;
-  }
-
-  // Find a slot to insert.
-  for (int i = 0; i < 10; i++) {
-    if (updateIDs[i] == 0xFFFFFFFF) {
-      updateIDs[i] = id;
-      return;
-    }
-  }
-}
-
-void updateID(uint16_t x, uint16_t z, uint32_t* updateIDs) {
-  checkAddID(updateIDs, encodeID(x, z));
-}
-
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-               uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  updateID(x, z, updateIDs);
-
-  auto blk = GetBlockFromMap(map, x, y, z);
-
-  if ((blk == (u8)Blocks::AIR_BLOCK || blk == (u8)Blocks::GLASS_BLOCK ||
-       blk == (u8)Blocks::OAK_LEAVES_BLOCK
-       //  Liquids range
-       //  || (blk >= 8 && blk <= 11)
-       || (blk == (u8)Blocks::WATER_BLOCK)
-       // Vegetation range
-       //  || (blk >= 37 && blk <= 40)
-       ) &&
-      GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
-    if (blk == (u8)Blocks::OAK_LEAVES_BLOCK
-
-        //  Liquids range
-        //  || (blk >= 8 && blk <= 11)
-
-        || (blk == (u8)Blocks::WATER_BLOCK)
-
-        // Vegetation range
-        //  || (blk >= 37 && blk <= 40)
-
-    ) {
-      if (lightLevel >= 3)
-        lightLevel -= 2;
-      else
-        lightLevel = 1;
-    }
-    SetBlockLightInMap(map, x, y, z, lightLevel - 1);
-    lightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-                     uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  auto neighborLevel = GetBlockLightFromMap(map, x, y, z);
-
-  updateID(x, z, updateIDs);
-
-  if (neighborLevel != 0 && neighborLevel < lightLevel) {
-    SetBlockLightInMap(map, x, y, z, 0);
-    lightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
-  } else if (neighborLevel >= lightLevel) {
-    lightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  auto neighborLevel = GetSunLightFromMap(map, x, y, z);
-
-  if (neighborLevel != 0 && neighborLevel < lightLevel) {
-    SetSunLightInMap(map, x, y, z, neighborLevel);
-    sunlightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
-  } else if (neighborLevel >= lightLevel) {
-    sunlightBfsQueue.emplace(x, y, z, lightLevel);
-  }
-}
-
-void updateRemove(uint32_t* updateIDs) {
-  while (!lightRemovalBfsQueue.empty()) {
-    auto node = lightRemovalBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel = node.val;
-    lightRemovalBfsQueue.pop();
-
-    propagateRemove(nx + 1, ny, nz, lightLevel, updateIDs);
-    propagateRemove(nx - 1, ny, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny + 1, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny - 1, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny, nz + 1, lightLevel, updateIDs);
-    propagateRemove(nx, ny, nz - 1, lightLevel, updateIDs);
-  }
-}
-
-void updateSpread(uint32_t* updateIDs) {
-  while (!lightBfsQueue.empty()) {
-    auto node = lightBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel =
-        GetBlockLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
-    lightBfsQueue.pop();
-
-    propagate(nx + 1, ny, nz, lightLevel, updateIDs);
-    propagate(nx - 1, ny, nz, lightLevel, updateIDs);
-    propagate(nx, ny + 1, nz, lightLevel, updateIDs);
-    propagate(nx, ny - 1, nz, lightLevel, updateIDs);
-    propagate(nx, ny, nz + 1, lightLevel, updateIDs);
-    propagate(nx, ny, nz - 1, lightLevel, updateIDs);
-  }
-}
-
 void updateSunlight() {
   if (sunlightRemovalBfsQueue.empty() == false) {
     propagateSunlightRemovalQueue();
@@ -1423,74 +1290,6 @@ void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue) {
   }
 }
 
-void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
-                               uint16_t light, uint32_t* updateIDs) {
-  SetBlockLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, light);
-  updateID(x, z, updateIDs);
-  lightBfsQueue.emplace(x, y, z, light);
-
-  updateSpread(updateIDs);
-}
-
-void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z,
-                                  uint16_t light, uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-
-  auto val = GetLightFromMap(map, x, y, z);
-  lightRemovalBfsQueue.emplace(x, y, z, val);
-
-  SetBlockLightInMap(map, x, y, z, light);
-  updateID(x, z, updateIDs);
-
-  updateRemove(updateIDs);
-  updateSpread(updateIDs);
-}
-
-void singleCheck(uint16_t x, uint16_t z) {
-  auto map = CrossCraft_World_GetMapPtr();
-  const auto ticks = static_cast<uint32_t>(g_ticksCounter);
-  auto newLightValue = 4;
-
-  if (ticks >= 0 && ticks <= 12000) {
-    newLightValue = 15;
-  }
-
-  for (int y = map->height - 1; y >= 0; y--) {
-    auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
-
-    //  Liquids range
-    //  || (blk >= 8 && blk <= 11)
-    // Vegetation range
-    //  || (blk >= 37 && blk <= 40)
-    // TODO: refactor to getLightFilterByBlock function
-    if (b == Blocks::OAK_LEAVES_BLOCK) {
-      if (newLightValue >= 1)
-        newLightValue -= 1;
-      else
-        newLightValue = 0;
-    } else if (b == Blocks::WATER_BLOCK) {
-      if (newLightValue >= 2)
-        newLightValue -= 2;
-      else
-        newLightValue = 0;
-    } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
-               b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
-               b != Blocks::GRASS) {
-      newLightValue = 0;
-    }
-
-    auto currentLightValue = GetSunLightFromMap(map, x, y, z);
-
-    if (newLightValue < currentLightValue) {
-      removeSunLight(x, y, z, newLightValue);
-    } else {
-      addSunLight(x, y, z, currentLightValue);
-    }
-
-    // if (currentLightValue < newLightVa
-  }
-}
-
 void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
   removeSunLight(x + 1, y, z);
   removeSunLight(x - 1, y, z);
@@ -1627,10 +1426,5 @@ void CrossCraft_World_GenerateMap(WorldType worldType) {
       break;
   }
 }
-
-/**
- * @brief Spawn the player into the world
- */
-void CrossCraft_World_Spawn() {}
 
 LevelMap* CrossCraft_World_GetMapPtr() { return &level.map; }
