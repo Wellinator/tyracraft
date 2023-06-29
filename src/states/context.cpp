@@ -14,6 +14,13 @@ Context::~Context() {
 void Context::update(const float& deltaTime) {
   state->update(deltaTime);
   state->render();
+
+  // Debug stuff - memory inspection
+  // std::string freeRam =
+  //     std::string("Free RAM: ")
+  //         .append(std::to_string(t_engine->info.getAvailableRAM()))
+  //         .append(" MB");
+  // TYRA_LOG(freeRam.c_str());
 }
 
 void Context::setState(GameState* newState) {
