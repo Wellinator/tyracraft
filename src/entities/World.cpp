@@ -272,7 +272,7 @@ void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0) {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
-      chunk->loadDrawData(terrain, &worldLightModel);
+      chunk->loadDrawData();
       tempChuncksToLoad.pop_front();
       return;
     } else if (chunk->state != ChunkState::Loaded) {
@@ -811,7 +811,7 @@ void World::buildChunk(Chunck* t_chunck) {
     }
   }
 
-  t_chunck->loadDrawData(terrain, &worldLightModel);
+  t_chunck->loadDrawData();
   t_chunck->freeUnusedMemory();
 }
 

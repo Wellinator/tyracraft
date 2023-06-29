@@ -52,32 +52,32 @@ class Chunck {
   Vec4* maxOffset = new Vec4();
   Vec4* center = new Vec4();
   BBox* bbox;
-  CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
 
   int visibleFacesCount = 0;
   u16 blocksCount = 0;
+
+  LevelMap* terrain;
+  WorldLightModel* t_worldLightModel;
+  void init(LevelMap* terrain, WorldLightModel* t_worldLightModel);
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
   void clear();
-  void updateFrustumCheck(const Plane* frustumPlanes);
 
-  void loadDrawData(LevelMap* terrain, WorldLightModel* t_worldLightModel);
-  void reloadLightData(LevelMap* terrain, WorldLightModel* t_worldLightModel);
+  void loadDrawData();
+  void reloadLightData();
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
+  CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+  void updateFrustumCheck(const Plane* frustumPlanes);
   inline const u8 isVisible() {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   }
 
   // Block controllers
   void addBlock(Block* t_block);
-
-  inline std::vector<Vec4> getVertexData() { return vertices; }
-
-  inline std::vector<Color> getVertexColorData() { return verticesColors; }
 
   void preAllocateMemory();
   void freeUnusedMemory();
@@ -91,47 +91,34 @@ class Chunck {
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
 
-  float getVisibityByPosition(float d);
-  void applyFOG(const Vec4& originPosition);
-  void updateBlocks(const Vec4& playerPosition);
-  void filterSingleAndMultiBlocks();
   void sortBlockByTransparency();
 
   inline void resetLoadingOffset() {
     this->tempLoadingOffset->set(*minOffset);
   };
 
-  void deallocDrawBags(StaPipBag* bag);
-  StaPipBag* getDrawData();
-
-  inline const bool hasDataToDraw() { return vertices.size() > 0; };
-
   const Vec4* rawData;
   const Vec4* crossBlockRawData;
-  Vec4 sunPosition;
-  float sunLightIntensity;
-  float ambientLightIntesity;
 
   u8 _isDrawDataLoaded = false;
 
   bool isBlockOpaque(u8 block_type);
-  std::array<u8, 8> getFaceNeightbors(LevelMap* terrain, FACE_SIDE faceSide,
-                                      Block* block);
+  std::array<u8, 8> getFaceNeightbors(FACE_SIDE faceSide, Block* block);
   std::array<u8, 4> getCornersAOValues(std::array<u8, 8> blocksNeightbors);
   u8 getVertexAO(bool side1, bool corner, bool side2);
   float calcAOIntensity(u8 AOValue);
 
-  void loadCuboidBlock(LevelMap* terrain, Block* t_block);
-  void loadCrossBlock(LevelMap* terrain, Block* t_block);
+  void loadCuboidBlock(Block* t_block);
+  void loadCrossBlock(Block* t_block);
 
   void loadMeshData(Block* t_block);
   void loadUVData(Block* t_block);
   void loadUVFaceData(const u8& index);
-  void loadLightData(LevelMap* terrain, Block* t_block);
+  void loadLightData(Block* t_block);
 
   void loadCrossedMeshData(Block* t_block);
   void loadCrossedUVData(Block* t_block);
-  void loadCroosedLightData(LevelMap* terrain, Block* t_block);
+  void loadCroosedLightData(Block* t_block);
 
   void loadLightFaceData(Color* faceColor);
   void loadLightFaceDataWithAO(Color* faceColor,

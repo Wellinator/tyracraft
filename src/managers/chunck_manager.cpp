@@ -67,7 +67,9 @@ void ChunckManager::generateChunks() {
         Vec4 tempMin = Vec4(x, y, z);
         Vec4 tempMax = Vec4(x + CHUNCK_SIZE, y + CHUNCK_SIZE, z + CHUNCK_SIZE);
         Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
+        tempChunck->init(terrain, worldLightModel);
         chuncks.emplace_back(tempChunck);
+
         tempId++;
       }
     }
@@ -126,7 +128,7 @@ void ChunckManager::enqueueChunksToReloadLight() {
 void ChunckManager::reloadLightDataAsync() {
   if (chuncksToUpdateLight.empty() == false) {
     auto chunk = chuncksToUpdateLight.front();
-    chunk->reloadLightData(terrain, worldLightModel);
+    chunk->reloadLightData();
     chuncksToUpdateLight.pop();
     return;
   }
@@ -134,7 +136,7 @@ void ChunckManager::reloadLightDataAsync() {
 
 void ChunckManager::reloadLightData() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
-    visibleChunks[i]->reloadLightData(terrain, worldLightModel);
+    visibleChunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
@@ -143,7 +145,7 @@ void ChunckManager::reloadLightData() {
 // after the first update...
 void ChunckManager::reloadLightDataOfAllChunks() {
   for (size_t i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->reloadLightData(terrain, worldLightModel);
+    chuncks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
