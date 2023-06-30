@@ -44,14 +44,15 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   this->t_soundManager = t_soundManager;
 
   // Init light stuff
-  dayNightCycleManager.init();
+  dayNightCycleManager.init(t_renderer);
   initWorldLightModel();
 
   terrain = CrossCraft_World_GetMapPtr();
   blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
   chunckManager.init(&worldLightModel, terrain);
   cloudsManager.init(t_renderer, &worldLightModel);
-  particlesManager.init(t_renderer, blockManager.getBlocksTexture());
+  particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
+                        worldOptions.texturePack);
 
   calcRawBlockBBox(&mcPip);
 };
@@ -91,7 +92,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
   particlesManager.update(deltaTime, t_camera);
 
-  dayNightCycleManager.update();
+  dayNightCycleManager.update(&t_camera->position);
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 

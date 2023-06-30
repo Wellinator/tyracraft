@@ -7,6 +7,7 @@
 #include <math.h>
 
 using Tyra::Color;
+using Tyra::FileUtils;
 using Tyra::M4x4;
 using Tyra::Renderer;
 using Tyra::Renderer3D;
@@ -40,7 +41,8 @@ class ParticlesManager {
   ParticlesManager();
   ~ParticlesManager();
 
-  void init(Renderer* renderer, Texture* t_blocksTexture);
+  void init(Renderer* renderer, Texture* t_blocksTexture,
+            const std::string& texturePack);
   void update(const float deltaTime, Camera* t_camera);
 
   void render();
@@ -48,6 +50,8 @@ class ParticlesManager {
 
   void createBlockParticle(Block* block);
   void createBlockParticleBatch(Block* block, const u16 size);
+
+  Texture* getParticlesTexture();
 
  private:
   Vec4 camPos;
@@ -70,7 +74,10 @@ class ParticlesManager {
   Renderer* t_renderer = nullptr;
 
   Texture* blocksTexture = nullptr;
+  Texture* particlesTexture = nullptr;
 
   void updateParticles(const float deltaTime, const Vec4* camPos);
   void destroyExpiredParticles();
+
+  void loadParticlesTexture(const std::string& texturePack);
 };

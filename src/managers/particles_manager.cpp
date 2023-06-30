@@ -1,9 +1,12 @@
 #include "managers/particle_manager.hpp"
 #include "math3d.h"
+#include "utils.hpp"
 
 ParticlesManager::ParticlesManager() {}
 
 ParticlesManager::~ParticlesManager() {
+  t_renderer->getTextureRepository().free(particlesTexture->id);
+
   delete[] rawData;
 
   particles.clear();
@@ -19,11 +22,23 @@ ParticlesManager::~ParticlesManager() {
   particlesVertexData.shrink_to_fit();
 }
 
-void ParticlesManager::init(Renderer* renderer, Texture* t_blocksTexture) {
+void ParticlesManager::init(Renderer* renderer, Texture* t_blocksTexture,
+                            const std::string& texturePack) {
   t_renderer = renderer;
   blocksTexture = t_blocksTexture;
   stapip.setRenderer(&renderer->core);
+  loadParticlesTexture(texturePack);
 }
+
+void ParticlesManager::loadParticlesTexture(const std::string& texturePack) {
+  const std::string path =
+      "textures/texture_packs/" + texturePack + "/particle/particles.png";
+
+  particlesTexture =
+      t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
+}
+
+Texture* ParticlesManager::getParticlesTexture() { return particlesTexture; }
 
 void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
   updateParticles(deltaTime, &t_camera->position);
@@ -181,7 +196,7 @@ void ParticlesManager::createBlockParticle(Block* block) {
   particlesColors.emplace_back(block->baseColor);
   particlesColors.emplace_back(block->baseColor);
   particlesColors.emplace_back(block->baseColor);
-  particlesColors.emplace_back(block->baseColor);
+
   particlesColors.emplace_back(block->baseColor);
   particlesColors.emplace_back(block->baseColor);
   particlesColors.emplace_back(block->baseColor);
