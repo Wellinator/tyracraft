@@ -103,12 +103,20 @@ void DayNightCycleManager::update(const Vec4* camPos) {
   updateMoonDrawData(camPos);
 }
 
+/**
+ * Based in https://minecraft.fandom.com/wiki/Daylight_cycle
+ * Sun and Moon appears and disappears in the horizon
+ */
 void DayNightCycleManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
-  if (isDay())
+
+  if (g_ticksCounter > 22300 || g_ticksCounter < 13702) {
     renderSun();
-  else
+  }
+
+  if (g_ticksCounter >= 11834 || g_ticksCounter < 167) {
     renderMoon();
+  }
 }
 
 void DayNightCycleManager::renderSun() {
@@ -165,12 +173,6 @@ const float DayNightCycleManager::getSunLightIntensity() {
   return getLightScaleFromAngle();
 }
 
-const float DayNightCycleManager::getAmbientLightIntesity() {
-  float intensity = getLightScaleFromAngle();
-  intensity *= isDay() ? dayAmbientLightIntesity : nightAmbientLightIntesity;
-  return baseAmbientLightIntensity + intensity;
-}
-
 void DayNightCycleManager::updateCurrentAngle() {
   currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360;
 }
@@ -198,11 +200,11 @@ void DayNightCycleManager::updateEntitiesPosition(const Vec4* camPos) {
 
 const Color DayNightCycleManager::getSkyColor() {
   Color result;
-  float interpolation = getLightScaleFromAngle();
+  const auto isDay = g_ticksCounter > DAY_INIT && g_ticksCounter < NIGHT_INIT;
+  float interpolation = _intensity;
 
-  isDay()
-      ? result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation)
-      : result.lerp(AFTERNOON_MORNING_COLOR, NIGHT_MID_COLOR, interpolation);
+  isDay ? result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation)
+        : result.lerp(NIGHT_MID_COLOR, AFTERNOON_MORNING_COLOR, interpolation);
 
   return result;
 }

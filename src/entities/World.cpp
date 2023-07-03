@@ -360,8 +360,6 @@ void World::updateLightModel() {
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.sunLightIntensity =
       dayNightCycleManager.getSunLightIntensity();
-  worldLightModel.ambientLightIntensity =
-      dayNightCycleManager.getAmbientLightIntesity();
 }
 
 u32 World::getIndexByOffset(int x, int y, int z) {
@@ -993,8 +991,6 @@ void World::initWorldLightModel() {
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.sunLightIntensity =
       dayNightCycleManager.getSunLightIntensity();
-  worldLightModel.ambientLightIntensity =
-      dayNightCycleManager.getAmbientLightIntesity();
 }
 
 // From CrossCraft

@@ -10,5 +10,4 @@ class WorldLightModel {
   Vec4 sunPosition;
   Vec4 moonPosition;
   float sunLightIntensity;
-  float ambientLightIntensity;
 };

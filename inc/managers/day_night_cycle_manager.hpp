@@ -7,7 +7,7 @@
 #include "managers/tick_manager.hpp"
 
 #define DAY_MID_COLOR Color(120, 169, 255)
-#define AFTERNOON_MORNING_COLOR Color(60, 85, 128)
+#define AFTERNOON_MORNING_COLOR Color(45, 64, 97)
 #define NIGHT_MID_COLOR Color(10, 10, 25)
 
 using Tyra::Color;
@@ -40,10 +40,6 @@ class DayNightCycleManager {
   const Color getSkyColor();
 
   const float getSunLightIntensity();
-  const float getAmbientLightIntesity();
-  inline const u8 isDay() {
-    return (g_ticksCounter > DAY_SUNRISE || g_ticksCounter < DAY_SUNSET);
-  };
 
  private:
   Renderer* t_renderer;
