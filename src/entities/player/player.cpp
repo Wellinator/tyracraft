@@ -430,9 +430,8 @@ void Player::loadMesh() {
   this->mesh = std::make_unique<DynamicMesh>(data.get());
 
   this->mesh->rotation.identity();
-  // this->mesh->rotation.rotateY(-3.14F);
-  // this->mesh->rotation.rotateY(Tyra::Math::ANG2RAD * -90);
   this->mesh->scale.identity();
+  this->mesh->scale.scaleX(0.85F);
 
   auto& materials = this->mesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
