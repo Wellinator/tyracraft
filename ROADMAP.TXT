@@ -104,7 +104,8 @@
     ✅ -> Block light system;
     ✅ -> Running;
     ✅ -> pre-calculated ambient occlusion;
-    ✅ -> Basic vegetationS;
+    ✅ -> Basic vegetation;
+    ✅ -> Sun and Moon;
     ✅ -> Third Person Cam:
         ✅ -> Implements Third Person render;
         ✅ -> Fix inverted Y (pitch) direction;
@@ -112,7 +113,7 @@
         ✅ -> Added basic camera collision;
     🔲 -> Implement water phisycs:
         ✅ -> Gravity:
-        🔲 -> Waterl flood fill:
+        🔲 -> Water flood fill:
 
 * Bug fixes for pre-alpha release (v0.2.x):
     ✅ -> Player arm position and scale;
