@@ -36,10 +36,10 @@ void DayNightCycleManager::loadTextures() {
 
 void DayNightCycleManager::loadDrawData() {
   sunScale.identity();
-  sunScale.scale(160.0F);
+  sunScale.scale(260.0F);
 
   moonScale.identity();
-  moonScale.scale(130.0F);
+  moonScale.scale(230.0F);
 
   sunUVMap[0] = (Vec4(xMin, yMax, 1.0F, 0.0F));
   sunUVMap[1] = (Vec4(xMax, yMin, 1.0F, 0.0F));
@@ -129,6 +129,7 @@ void DayNightCycleManager::renderSun() {
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
+  infoBag.blendingEnabled = true;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   StaPipColorBag colorBag;
@@ -154,6 +155,7 @@ void DayNightCycleManager::renderMoon() {
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
+  infoBag.blendingEnabled = true;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   StaPipColorBag colorBag;
