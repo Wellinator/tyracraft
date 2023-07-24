@@ -766,9 +766,13 @@ void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
       for (int x = 0; x < map->length; x++) {
         uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
+        // init all blocks as air
+        SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::AIR_BLOCK));
+
         densityMap[index] = (noise3d(x, y, z) + 1.0f) / 2.0f;
 
-        if (densityMap[index] > 0.67f) {
+        const auto trashHold = 0.67f;
+        if (densityMap[index] > trashHold) {
           SetBlockInMap(map, x, y, z,
                         static_cast<uint8_t>(Blocks::STONE_BLOCK));
         }
@@ -801,11 +805,10 @@ void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
       }
     }
   }
+
   create_strata2(map, heightMap, heightMap2);
   create_surface(map, heightMap);
-
   create_ores(map);
-
   create_plants(map, heightMap, 1);
 
   SetBlockInMap(map, map->spawnX, map->spawnY, map->spawnZ,
