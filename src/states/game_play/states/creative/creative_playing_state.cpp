@@ -56,7 +56,7 @@ void CreativePlayingState::render() {
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
-  // FIX: camera moving while in inventory
+  // FIXME: camera moving while in inventory
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
   if (clicked.Select) debugMode = !debugMode;
