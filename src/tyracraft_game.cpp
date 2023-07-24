@@ -28,8 +28,7 @@ void TyraCraftGame::init() {
 
 void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
-  const auto dt = std::min(1 / static_cast<float>(engine->info.getFps()),
-                           FIXED_30_FRAME_MS);
+  const auto dt = 1 / static_cast<float>(engine->info.getFps());
   stateManager->update(dt);
   engine->renderer.endFrame();
 }
