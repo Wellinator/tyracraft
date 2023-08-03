@@ -162,7 +162,7 @@ void create_strata2(LevelMap* map, const int16_t* heightmap,
     for (uint16_t z = 0; z < map->width; z++) {
       float dirt_thickness = octave_noise(8, x, z, 0) / 24.0f - 4.0f;
       int dirt_transition = heightmap[x + z * map->length];
-      if (dirt_transition >= 63 || dirt_transition <= 0) continue;
+      if (dirt_transition >= map->height || dirt_transition <= 0) continue;
 
       int stone_transition = dirt_transition + dirt_thickness;
 
@@ -771,7 +771,7 @@ void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
 
         densityMap[index] = (noise3d(x, y, z) + 1.0f) / 2.0f;
 
-        const auto trashHold = 0.67f;
+        const auto trashHold = 0.65f;
         if (densityMap[index] > trashHold) {
           SetBlockInMap(map, x, y, z,
                         static_cast<uint8_t>(Blocks::STONE_BLOCK));
