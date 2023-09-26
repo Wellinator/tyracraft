@@ -642,6 +642,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
 
 void World::stopBreakTargetBlock() {
   _isBreakingBlock = false;
+  breaking_time_pessed = 0;
   if (targetBlock) targetBlock->damage = 0;
 }
 
@@ -950,6 +951,13 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
   Block* tempTargetBlock = nullptr;
+  uint32_t _lastTargetBlockId = 0;
+
+  if (targetBlock) {
+    _lastTargetBlockId =
+        (targetBlock->offset.y * terrain->length * terrain->width) +
+        (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
+  }
 
   // Reset the current target block;
   targetBlock = nullptr;
@@ -1008,6 +1016,11 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
     targetBlock->isTarget = true;
     targetBlock->distance = tempTargetDistance;
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
+
+    const uint32_t _hitedBlockId =
+        (targetBlock->offset.y * terrain->length * terrain->width) +
+        (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
+    if (_hitedBlockId != _lastTargetBlockId) breaking_time_pessed = 0;
   }
 }
 
