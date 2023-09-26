@@ -138,6 +138,8 @@ enum class GAME_MODE { SURVIVAL, CREATIVE };
 #define MAX_AO_VALUE 3
 #define AO_BASE_COLOR Color()
 
+
+
 enum class ItemId {
   // None
   empty,
@@ -238,3 +240,6 @@ typedef enum {
 } WorldType;
 
 #define SAVE_FILE_EXTENSION "tcw"
+
+// Blocks params
+#define BREAKING_TIME_IN_CREATIVE_MODE 0.150F

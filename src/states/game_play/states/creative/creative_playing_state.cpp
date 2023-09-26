@@ -98,7 +98,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (pressed.L2) {
       if (stateGamePlay->world->validTargetBlock()) {
-        stateGamePlay->world->breakTargetBlock(deltaTime);
+        stateGamePlay->world->breakTargetBlockInCreativeMode(deltaTime);
         stateGamePlay->player->setArmBreakingAnimation();
       }
     } else if (stateGamePlay->world->isBreakingBLock()) {

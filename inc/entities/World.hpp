@@ -103,6 +103,7 @@ class World {
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
+  void breakTargetBlockInCreativeMode(const float& deltaTime);
   void stopBreakTargetBlock();
 
   LevelMap* terrain;
@@ -214,7 +215,6 @@ bool inline isTransparent(Blocks block) {
          block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
          block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS;
 };
-
 
 ///////////////////////////////////
 // Based in Seed of Andromeda    //

@@ -681,6 +681,42 @@ void World::breakTargetBlock(const float& deltaTime) {
   }
 }
 
+void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
+  if (targetBlock == nullptr) return;
+
+  if (_isBreakingBlock) {
+    breaking_time_pessed += deltaTime;
+    const auto breakingTime = BREAKING_TIME_IN_CREATIVE_MODE;
+    if (breaking_time_pessed >= breakingTime) {
+      // Remove block;
+      removeBlock(targetBlock);
+
+      // Target block has changed, reseting the pressed time;
+      breaking_time_pessed = 0;
+    } else {
+      // Update damage overlay
+      targetBlock->damage = breaking_time_pessed / breakingTime * 100;
+
+      if (lastTimeCreatedParticle > 0.2) {
+        particlesManager.createBlockParticleBatch(targetBlock, 4);
+        lastTimeCreatedParticle = 0;
+      } else {
+        lastTimeCreatedParticle += deltaTime;
+      }
+
+      if (lastTimePlayedBreakingSfx > 0.3F) {
+        playBreakingBlockSound(targetBlock->type);
+        lastTimePlayedBreakingSfx = 0;
+      } else {
+        lastTimePlayedBreakingSfx += deltaTime;
+      }
+    }
+  } else {
+    breaking_time_pessed = 0;
+    _isBreakingBlock = true;
+  }
+}
+
 void World::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
