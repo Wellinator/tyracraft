@@ -24,6 +24,13 @@ using Tyra::McpipBlock;
 using Tyra::Vec4;
 
 /** Block 3D object class  */
+
+/**
+ *  TODO: compress Block data;
+ *  boolean variable to u32 with bitshifting
+ *  Vec4 to u32 compression
+ */
+
 class Block {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
