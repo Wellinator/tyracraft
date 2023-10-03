@@ -50,8 +50,7 @@ class Block {
 
   Vec4 minCorner;
   Vec4 maxCorner;
-
-  Vec4 position, rotation;
+  Vec4 position;
 
   BBox* bbox = nullptr;
 
