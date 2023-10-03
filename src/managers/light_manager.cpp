@@ -76,51 +76,52 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
   u8 sunLightLevel;
   u8 lightLevel;
 
+  Vec4 targetBlockOffset;
+  GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
+
   switch (faceSide) {
     case FACE_SIDE::TOP:
       lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
-                              targetBlock->offset.y + 1, targetBlock->offset.z);
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y + 1, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BOTTOM:
       lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
-                              targetBlock->offset.y - 1, targetBlock->offset.z);
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y - 1, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::LEFT:
-      lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x + 1,
-                              targetBlock->offset.y, targetBlock->offset.z);
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x + 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::RIGHT:
-      lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x - 1,
-                              targetBlock->offset.y, targetBlock->offset.z);
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x - 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BACK:
       lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
-                              targetBlock->offset.y, targetBlock->offset.z + 1);
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z + 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::FRONT:
       lightData =
-          GetLightDataFromMap(t_terrain, targetBlock->offset.x,
-                              targetBlock->offset.y, targetBlock->offset.z - 1);
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z - 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;

@@ -516,9 +516,10 @@ const Vec4 World::calcSpawOffset(int bias) {
 }
 
 void World::removeBlock(Block* blockToRemove) {
-  const Vec4 offsetToRemove = blockToRemove->offset;
-  SetBlockInMap(terrain, offsetToRemove.x, offsetToRemove.y, offsetToRemove.z,
-                (u8)Blocks::AIR_BLOCK);
+  Vec4 offsetToRemove;
+  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+
+  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
 
   // Generate amount of particles right begore block gets destroyed
   particlesManager.createBlockParticleBatch(blockToRemove, 24);
@@ -555,7 +556,9 @@ void World::removeBlock(Block* blockToRemove) {
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
   Vec4 targetPos = ray.at(targetBlock->distance);
-  Vec4 blockOffset = Vec4(targetBlock->offset);
+
+  Vec4 blockOffset;
+  GetXYZFromPos(&targetBlock->index, &blockOffset);
 
   // Front
   if (std::round(targetPos.z) ==
@@ -810,7 +813,8 @@ void World::buildChunk(Chunck* t_chunck) {
             if (blockInfo) {
               Block* block = new Block(blockInfo);
               block->index = blockIndex;
-              block->offset.set(tempBlockOffset);
+              block->offset = GetPosFromXYZ(
+                  tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
               block->chunkId = t_chunck->id;
 
               if (block->isCrossed) {
@@ -883,7 +887,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
         if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
-          block->offset.set(tempBlockOffset);
+          block->offset = GetPosFromXYZ(tempBlockOffset.x, tempBlockOffset.y,
+                                        tempBlockOffset.z);
           block->chunkId = t_chunck->id;
 
           if (block->isCrossed) {
@@ -954,9 +959,9 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
   uint32_t _lastTargetBlockId = 0;
 
   if (targetBlock) {
-    _lastTargetBlockId =
-        (targetBlock->offset.y * terrain->length * terrain->width) +
-        (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
+    _lastTargetBlockId = targetBlock->index;
+    // (targetBlock->offset.y * terrain->length * terrain->width) +
+    // (targetBlock->offset.z * terrain->width) + ;
   }
 
   // Reset the current target block;
@@ -1017,9 +1022,9 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
     targetBlock->distance = tempTargetDistance;
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
 
-    const uint32_t _hitedBlockId =
-        (targetBlock->offset.y * terrain->length * terrain->width) +
-        (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
+    const uint32_t _hitedBlockId = targetBlock->index;
+    // (targetBlock->offset.y * terrain->length * terrain->width) +
+    // (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
     if (_hitedBlockId != _lastTargetBlockId) breaking_time_pessed = 0;
   }
 }

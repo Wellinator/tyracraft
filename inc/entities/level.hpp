@@ -31,6 +31,7 @@ typedef struct {
 uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
 
 void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y, uint32_t* z);
+void GetXYZFromPos(u32* pos, Vec4* t_Offset);
 
 uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos);
 
@@ -44,6 +45,8 @@ uint8_t GetBlockFromMapByIndex(LevelMap* map, uint32_t index);
 
 void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                    uint8_t block);
+void SetBlockInMapByIndex(LevelMap* map, uint32_t index, uint8_t block);
+
 void SetBlockLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                         uint16_t light);
 void SetSunLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,

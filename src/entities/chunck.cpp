@@ -539,7 +539,9 @@ bool Chunck::isBlockOpaque(u8 block_type) {
  *
  */
 std::array<u8, 8> Chunck::getFaceNeightbors(FACE_SIDE faceSide, Block* block) {
-  auto pos = block->offset;
+  Vec4 pos;
+  GetXYZFromPos(&block->offset, &pos);
+
   auto result = std::array<u8, 8>();
 
   switch (faceSide) {
@@ -684,8 +686,11 @@ Block* Chunck::getBlockByPosition(const Vec4* pos) {
 
 Block* Chunck::getBlockByOffset(const Vec4* offset) {
   for (size_t i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->offset.x == offset->x && blocks[i]->offset.y == offset->y &&
-        blocks[i]->offset.z == offset->z)
+    Vec4 _tempBlockOffset;
+    GetXYZFromPos(&blocks[i]->offset, &_tempBlockOffset);
+
+    if (_tempBlockOffset.x == offset->x && _tempBlockOffset.y == offset->y &&
+        _tempBlockOffset.z == offset->z)
       return blocks[i];
   }
   return nullptr;

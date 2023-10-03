@@ -35,7 +35,7 @@ class Block {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
   u32 index;                        // Index at terrain;
-  Vec4 offset;                      // Terrain offset;
+  u32 offset;                       // Terrain offset;
   u32 chunkId = 0;
 
   // Block state
