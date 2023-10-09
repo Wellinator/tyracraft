@@ -47,7 +47,7 @@ void Chunck::init(LevelMap* terrain, WorldLightModel* t_worldLightModel) {
 }
 
 void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
-  this->updateFrustumCheck(frustumPlanes);
+  updateFrustumCheck(frustumPlanes);
   // if (!isVisible() && isDrawDataLoaded()) {
   //   clearDrawData();
   // } else if (isVisible() && !isDrawDataLoaded()) {
@@ -60,6 +60,9 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
+    const u8 isPlayerNear =
+        distanceFromPlayerInChunks > -1 && distanceFromPlayerInChunks < 3;
+
     M4x4 rawMatrix;
     rawMatrix.identity();
 
@@ -69,10 +72,18 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     StaPipInfoBag infoBag;
     infoBag.model = &rawMatrix;
+
+    infoBag.textureMappingType =
+        isPlayerNear ? Tyra::PipelineTextureMappingType::TyraNearest
+                     : Tyra::PipelineTextureMappingType::TyraLinear;
+
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.blendingEnabled = true;
     infoBag.antiAliasingEnabled = false;
+    infoBag.fullClipChecks = false;
+
+    infoBag.frustumCulling =
+        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
     // Apply multiple colors
     StaPipColorBag colorBag;
@@ -81,7 +92,6 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     StaPipBag bag;
     bag.count = vertices.size();
     bag.vertices = vertices.data();
-
     bag.color = &colorBag;
     bag.info = &infoBag;
     bag.texture = &textureBag;

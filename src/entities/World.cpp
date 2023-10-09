@@ -236,15 +236,18 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
                                     u8 force_loading) {
   const auto& chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    float distance =
+    const auto distance =
         floor(t_chunck->center->distanceTo(*chuncks[i]->center) / CHUNCK_SIZE) +
         1;
 
     if (distance > worldOptions.drawDistance) {
-      if (force_loading)
+      if (force_loading) {
         chuncks[i]->clear();
-      else if (chuncks[i]->state != ChunkState::Clean)
+      } else if (chuncks[i]->state != ChunkState::Clean) {
         addChunkToUnloadAsync(chuncks[i]);
+      }
+
+      chuncks[i]->distanceFromPlayerInChunks = -1;
     } else {
       if (force_loading) {
         chuncks[i]->clear();
@@ -252,6 +255,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
+      chuncks[i]->distanceFromPlayerInChunks = distance;
     }
   }
 
@@ -558,7 +562,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
   Vec4 targetPos = ray.at(targetBlock->distance);
 
   Vec4 blockOffset;
-  GetXYZFromPos(&targetBlock->index, &blockOffset);
+  GetXYZFromPos(&targetBlock->offset, &blockOffset);
 
   // Front
   if (std::round(targetPos.z) ==

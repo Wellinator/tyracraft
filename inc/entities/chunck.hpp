@@ -71,6 +71,7 @@ class Chunck {
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+  s8 distanceFromPlayerInChunks = -1;
   void updateFrustumCheck(const Plane* frustumPlanes);
   inline const u8 isVisible() {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
