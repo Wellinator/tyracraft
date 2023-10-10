@@ -12,9 +12,7 @@ TickManager::TickManager() {}
 
 TickManager::~TickManager() {}
 
-void TickManager::update(const float& deltaTime) {
-  updateTicks(deltaTime);
-}
+void TickManager::update(const float& deltaTime) { updateTicks(deltaTime); }
 
 void TickManager::updateTicks(const float& deltaTime) {
   elapsedRealTime += deltaTime;
@@ -24,4 +22,8 @@ void TickManager::updateTicks(const float& deltaTime) {
     ticksDayCounter++;
     g_ticksCounter -= DAY_DURATION_IN_TICKS;
   }
+}
+
+u8 isTicksCounterAt(const uint32_t ticks) {
+  return (static_cast<uint32_t>(g_ticksCounter) % ticks) == 0;
 }

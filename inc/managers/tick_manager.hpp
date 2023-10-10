@@ -22,6 +22,7 @@
 extern double elapsedRealTime;
 extern float g_ticksCounter;
 extern u16 ticksDayCounter;
+extern u8 isTicksCounterAt(const uint32_t ticks);
 
 class TickManager {
  public:
