@@ -83,8 +83,8 @@ class Utils {
   static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
                                               const BBox& AABB);
   static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
-                                              const Vec4& mins,
-                                              const Vec4& maxs);
+                                              const Vec4* mins,
+                                              const Vec4* maxs);
 
   static float fastPow(float a, float b);
 

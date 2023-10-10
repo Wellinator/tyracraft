@@ -34,9 +34,9 @@ class ChunckManager {
 
   std::vector<Chunck*>& getChuncks() { return chuncks; };
 
-  std::vector<Chunck*>& getVisibleChunks();
+  std::vector<Chunck*>* getVisibleChunks();
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
-  std::vector<Chunck*> getNearByChunks();
+  std::vector<Chunck*>* getNearByChunks();
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
   void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);

@@ -16,6 +16,8 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id)
 
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;
   const Vec4 tempMax = maxOffset * DUBLE_BLOCK_SIZE;
+  scaledMinOffset.set(tempMin);
+  scaledMaxOffset.set(tempMax);
 
   u32 count = 8;
   Vec4 _vertices[count] = {
@@ -46,13 +48,8 @@ void Chunck::init(LevelMap* terrain, WorldLightModel* t_worldLightModel) {
   this->t_worldLightModel = t_worldLightModel;
 }
 
-void Chunck::update(const Plane* frustumPlanes, const Vec4& currentPlayerPos) {
+void Chunck::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
-  // if (!isVisible() && isDrawDataLoaded()) {
-  //   clearDrawData();
-  // } else if (isVisible() && !isDrawDataLoaded()) {
-  //   loadDrawData();
-  // }
 }
 
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -522,8 +519,7 @@ void Chunck::loadLightFaceData(Color* faceColor) {
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
   this->frustumCheck = Utils::FrustumAABBIntersect(
-      frustumPlanes, *this->minOffset * DUBLE_BLOCK_SIZE,
-      *this->maxOffset * DUBLE_BLOCK_SIZE);
+      frustumPlanes, &scaledMinOffset, &scaledMaxOffset);
 }
 
 void Chunck::sortBlockByTransparency() {

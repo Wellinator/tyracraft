@@ -32,7 +32,7 @@ void CreativePlayingState::update(const float& deltaTime) {
       stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
       stateGamePlay->world->terrain);
 
-  stateGamePlay->ui->update();
+  if (isTicksCounterAt(10)) stateGamePlay->ui->update();
 
   stateGamePlay->context->t_camera->setPositionByMesh(
       stateGamePlay->player->mesh.get());
@@ -40,7 +40,7 @@ void CreativePlayingState::update(const float& deltaTime) {
       &stateGamePlay->context->t_engine->pad, deltaTime);
   stateGamePlay->context->t_camera->update();
 
-  if (!isSongPlaying()) playNewRandomSong();
+  if (isTicksCounterAt(200) && !isSongPlaying()) playNewRandomSong();
 }
 
 void CreativePlayingState::render() {
@@ -146,19 +146,20 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (clicked.R3) {
       Camera* t_cam = stateGamePlay->context->t_camera;
+      const auto camType = t_cam->getCamType();
 
-      if (t_cam->getCamType() == CamType::FirstPerson) {
+      if (camType == CamType::FirstPerson) {
         t_cam->setThirdPerson();
-      } else if (t_cam->getCamType() == CamType::ThirdPerson) {
+      } else if (camType == CamType::ThirdPerson) {
         t_cam->setFirstPerson();
       }
 
       // TODO: Implements inverted third person cam
-      // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
+      // else if (camType == CamType::ThirdPersonInverted) {
       //   t_cam->setFirstPerson();
       // }
 
-      if (t_cam->getCamType() == CamType::FirstPerson) {
+      if (camType == CamType::FirstPerson) {
         stateGamePlay->player->setRenderArmPip();
       } else {
         stateGamePlay->player->setRenderBodyPip();

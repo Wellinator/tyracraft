@@ -1,4 +1,5 @@
 #include "managers/chunck_manager.hpp"
+#include "managers/tick_manager.hpp"
 #include "math/plane.hpp"
 #include <algorithm>
 
@@ -33,21 +34,25 @@ void ChunckManager::update(const Plane* frustumPlanes,
   visibleChunks.clear();
   nearByChunks.clear();
 
-  Chunck* currentChunk = getChunckByPosition(currentPlayerPos);
-
+  // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->update(frustumPlanes, currentPlayerPos);
-    if (chuncks[i]->state == ChunkState::Loaded &&
-        chuncks[i]->isDrawDataLoaded()) {
-      visibleChunks.emplace_back(chuncks[i]);
+    //  Update just nearby chunks
+    // if (isTicksCounterAt(5)) chuncks[i]->update(frustumPlanes);
 
-      // Is near by player
-      auto distance = currentChunk->center->distanceTo(*chuncks[i]->center);
-      if (floor(distance / CHUNCK_SIZE) < 2) {
+    if (chuncks[i]->distanceFromPlayerInChunks > -1) {
+      if (chuncks[i]->distanceFromPlayerInChunks <= 2) {
         nearByChunks.emplace_back(chuncks[i]);
+      }
+
+      chuncks[i]->update(frustumPlanes);
+
+      if (chuncks[i]->state == ChunkState::Loaded &&
+          chuncks[i]->isDrawDataLoaded()) {
+        visibleChunks.emplace_back(chuncks[i]);
       }
     }
   }
+
   reloadLightDataAsync();
 }
 
@@ -102,11 +107,11 @@ Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id - 1]; };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
 
-std::vector<Chunck*>& ChunckManager::getVisibleChunks() {
-  return visibleChunks;
+std::vector<Chunck*>* ChunckManager::getVisibleChunks() {
+  return &visibleChunks;
 }
 
-std::vector<Chunck*> ChunckManager::getNearByChunks() { return nearByChunks; }
+std::vector<Chunck*>* ChunckManager::getNearByChunks() { return &nearByChunks; }
 
 void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),

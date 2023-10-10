@@ -55,7 +55,7 @@ class Player {
   ~Player();
 
   void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
-              const std::vector<Chunck*>& loadedChunks,
+              std::vector<Chunck*>* loadedChunks,
               TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
@@ -116,7 +116,7 @@ class Player {
   void setRunning(bool _isRunning);
 
   TerrainHeightModel getTerrainHeightAtPosition(
-      const std::vector<Chunck*>& loadedChunks);
+      const std::vector<Chunck*>* loadedChunks);
 
   bool isOnWater();
   bool isUnderWater();
@@ -154,9 +154,8 @@ class Player {
   void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(const std::vector<Chunck*>& loadedChunks,
-                    const float& deltaTime, const Vec4& nextPlayerPos,
-                    u8 isColliding = 0);
+  u8 updatePosition(std::vector<Chunck*>* loadedChunks, const float& deltaTime,
+                    const Vec4& nextPlayerPos, u8 isColliding = 0);
 
   // Inventory
 

@@ -50,6 +50,8 @@ class Chunck {
   Vec4* tempLoadingOffset = new Vec4();
   Vec4* minOffset = new Vec4();
   Vec4* maxOffset = new Vec4();
+  Vec4 scaledMinOffset = Vec4();
+  Vec4 scaledMaxOffset = Vec4();
   Vec4* center = new Vec4();
   BBox* bbox;
 
@@ -62,7 +64,7 @@ class Chunck {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
+  void update(const Plane* frustumPlanes);
   void clear();
 
   void loadDrawData();

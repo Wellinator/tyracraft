@@ -1,4 +1,5 @@
 #include "managers/particle_manager.hpp"
+#include "managers/tick_manager.hpp"
 #include "math3d.h"
 #include "utils.hpp"
 
@@ -42,7 +43,7 @@ Texture* ParticlesManager::getParticlesTexture() { return particlesTexture; }
 
 void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
   updateParticles(deltaTime, &t_camera->position);
-  if (particlesHasChanged) {
+  if (isTicksCounterAt(15) && particlesHasChanged) {
     destroyExpiredParticles();
   }
 };

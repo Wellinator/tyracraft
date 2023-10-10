@@ -88,16 +88,16 @@ void World::setSavedSpawnArea(Vec4 pos) {
 }
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
-  cloudsManager.update();
+  // Update cloudsManager every 150 ticks
+  if (isTicksCounterAt(150)) {
+    cloudsManager.update();
+    dayNightCycleManager.update(&t_camera->position);
+  }
 
   particlesManager.update(deltaTime, t_camera);
 
-  dayNightCycleManager.update(&t_camera->position);
-
-  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-
-  // Update chunk light data every 250 ticks
-  if ((static_cast<uint32_t>(g_ticksCounter) % 1000) == 0) {
+  // Update chunk light data every 1000 ticks
+  if (isTicksCounterAt(1000)) {
     // TODO: refactor to event system
     updateLightModel();
     updateSunlight();
@@ -105,15 +105,25 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
     chunckManager.enqueueChunksToReloadLight();
   }
 
+  // Update chunckManager every 3 ticks
+  // if (isTicksCounterAt(5)) {
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition());
+  // }
 
-  updateChunkByPlayerPosition(t_player);
+  // Update scheduled data every 4 ticks
+  if (isTicksCounterAt(6)) {
+    updateChunkByPlayerPosition(t_player);
+  }
 
   unloadScheduledChunks();
   loadScheduledChunks();
 
-  updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
+  // Update chunk light data every 200 ticks
+  if (isTicksCounterAt(5)) {
+    t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+    updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
+  }
 };
 
 void World::render() {
@@ -953,7 +963,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 }
 
 void World::updateTargetBlock(Camera* t_camera, Player* t_player,
-                              const std::vector<Chunck*>& chuncks) {
+                              std::vector<Chunck*>* chuncks) {
   const Vec4 baseOrigin =
       *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
   u8 hitedABlock = 0;
@@ -982,9 +992,9 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
 
   t_camera->hitDistance = t_camera->getDistanceFromPlayer();
 
-  for (u16 h = 0; h < chuncks.size(); h++) {
-    for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
-      Block* block = chuncks[h]->blocks[i];
+  for (u16 h = 0; h < chuncks->size(); h++) {
+    for (u16 i = 0; i < (*chuncks)[h]->blocks.size(); i++) {
+      Block* block = (*chuncks)[h]->blocks[i];
 
       u8 isBreakable = block->type != Blocks::WATER_BLOCK;
       float distanceFromCurrentBlockToPlayer =

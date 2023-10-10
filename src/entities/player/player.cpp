@@ -1,5 +1,6 @@
 #include "entities/player/player.hpp"
 #include "entities/level.hpp"
+#include "managers/tick_manager.hpp"
 
 using Tyra::Renderer3D;
 
@@ -76,9 +77,11 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    Camera* t_camera, const std::vector<Chunck*>& loadedChunks,
+                    Camera* t_camera, std::vector<Chunck*>* loadedChunks,
                     TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
-  updateStateInWater(t_terrain);
+  // Update updateStateInWater every 5 ticks
+  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
+
   isMoving = movementDir.length() > 0;
 
   if (isMoving) {
@@ -259,7 +262,7 @@ void Player::fly(const float& deltaTime,
   }
 }
 
-u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
+u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
@@ -279,11 +282,11 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
   const float maxCollidableDistance =
       currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
-    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
+    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
       // Broad phase
 
-      auto block = loadedChunks[chunkIndex]->blocks[i];
+      auto block = (*loadedChunks)[chunkIndex]->blocks[i];
 
       if (
           // Prevent colliding to water horizontally
@@ -344,7 +347,7 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
 }
 
 TerrainHeightModel Player::getTerrainHeightAtPosition(
-    const std::vector<Chunck*>& loadedChunks) {
+    const std::vector<Chunck*>* loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
@@ -353,9 +356,9 @@ TerrainHeightModel Player::getTerrainHeightAtPosition(
   currentBottomBlock = nullptr;
   currentUpperBlock = nullptr;
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
-    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
-      Block* block = loadedChunks[chunkIndex]->blocks[i];
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
+    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
+      Block* block = (*loadedChunks)[chunkIndex]->blocks[i];
 
       if (
           // Is collidable
