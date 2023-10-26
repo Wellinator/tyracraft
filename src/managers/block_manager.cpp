@@ -15,6 +15,9 @@ BlockManager::~BlockManager() {
   delete this->t_BlockInfoRepository;
 
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
+  this->t_renderer->getTextureRepository().free(this->blocksTexAtlasLowRes->id);
+
+  
 
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
@@ -36,6 +39,7 @@ void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
   this->t_renderer = t_renderer;
   this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
+  this->loadBlocksTexturesLowRes(texturePack);
   this->registerBlockSoundsEffects();
   this->registerDamageOverlayBlocks(mcPip);
 }
@@ -46,6 +50,15 @@ void BlockManager::loadBlocksTextures(const std::string& texturePack) {
       pathPrefix + texturePack + "/block/texture_atlas.png";
 
   blocksTexAtlas =
+      t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
+}
+
+void BlockManager::loadBlocksTexturesLowRes(const std::string& texturePack) {
+  const std::string pathPrefix = "textures/texture_packs/";
+  const std::string path =
+      pathPrefix + texturePack + "/block/texture_atlas_lower_res.png";
+
+  blocksTexAtlasLowRes =
       t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
 }
 

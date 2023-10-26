@@ -41,6 +41,9 @@ class BlockManager {
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
+  inline Texture* getBlocksTextureLowRes() {
+    return this->blocksTexAtlasLowRes;
+  };
   McpipBlock* getDamageOverlay(const float& damage_percentage);
 
   float getBlockBreakingTime(Block* targetBlock);
@@ -50,11 +53,13 @@ class BlockManager {
   void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(const std::string& texturePack);
+  void loadBlocksTexturesLowRes(const std::string& texturePack);
 
   bool canHarvestWithCurrentTool(const Blocks blockType);
   bool isBestTool(const Blocks blockType);
 
   Texture* blocksTexAtlas;
+  Texture* blocksTexAtlasLowRes;
   Renderer* t_renderer;
   BlockInfoRepository* t_BlockInfoRepository;
 

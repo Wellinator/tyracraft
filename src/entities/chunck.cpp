@@ -57,22 +57,23 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
-    const u8 isPlayerNear =
-        distanceFromPlayerInChunks > -1 && distanceFromPlayerInChunks < 3;
+    const u8 isPlayerNear = distanceFromPlayerInChunks <= 3;
 
     M4x4 rawMatrix;
     rawMatrix.identity();
 
     StaPipTextureBag textureBag;
-    textureBag.texture = t_blockManager->getBlocksTexture();
+
+    textureBag.texture = isPlayerNear
+                             ? t_blockManager->getBlocksTexture()
+                             : t_blockManager->getBlocksTextureLowRes();
+
     textureBag.coordinates = uvMap.data();
 
     StaPipInfoBag infoBag;
     infoBag.model = &rawMatrix;
 
-    infoBag.textureMappingType =
-        isPlayerNear ? Tyra::PipelineTextureMappingType::TyraNearest
-                     : Tyra::PipelineTextureMappingType::TyraLinear;
+    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
     infoBag.blendingEnabled = true;
@@ -178,34 +179,36 @@ void Chunck::reloadLightData() {
   }
 }
 
+// TODO: move to a block builder
 void Chunck::loadMeshData(Block* t_block) {
   int vert;
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
-    Vec4 v0 = rawData[vert++];
-    Vec4 v1 = rawData[vert++];
-    Vec4 v2 = rawData[vert++];
-    Vec4 v3 = rawData[vert++];
-    Vec4 v4 = rawData[vert++];
-    Vec4 v5 = rawData[vert++];
 
-    // TODO: move to a block builder
     if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      v0.y *= 0.75F;
-      v1.y *= 0.75F;
-      v2.y *= 0.75F;
-      v3.y *= 0.75F;
-      v4.y *= 0.75F;
-      v5.y *= 0.75F;
-    }
+      Vec4 scaleVec = Vec4(1.0F, 0.75F, 1.0F);
 
-    vertices.emplace_back(v0 * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(v1 * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(v2 * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(v3 * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(v4 * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(v5 * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
+                            t_block->position);
+    } else {
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    }
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
