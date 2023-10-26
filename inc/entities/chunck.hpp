@@ -73,11 +73,13 @@ class Chunck {
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
-  s8 distanceFromPlayerInChunks = -1;
   void updateFrustumCheck(const Plane* frustumPlanes);
   inline const u8 isVisible() {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   }
+
+  s8 getDistanceFromPlayerInChunks();
+  void setDistanceFromPlayerInChunks(const s8 distante);
 
   // Block controllers
   void addBlock(Block* t_block);
@@ -93,6 +95,11 @@ class Chunck {
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
+
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
 
   void sortBlockByTransparency();
 
@@ -127,5 +134,6 @@ class Chunck {
   void loadLightFaceDataWithAO(Color* faceColor,
                                std::array<u8, 8>& faceNeightbors);
 
+  s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
 };

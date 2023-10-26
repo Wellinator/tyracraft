@@ -57,45 +57,15 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
   if (isDrawDataLoaded()) {
     t_renderer->renderer3D.usePipeline(stapip);
 
-    const u8 isPlayerNear = distanceFromPlayerInChunks <= 3;
-
-    M4x4 rawMatrix;
-    rawMatrix.identity();
-
-    StaPipTextureBag textureBag;
-
+    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
     textureBag.texture = isPlayerNear
                              ? t_blockManager->getBlocksTexture()
                              : t_blockManager->getBlocksTextureLowRes();
 
-    textureBag.coordinates = uvMap.data();
-
-    StaPipInfoBag infoBag;
+    M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
 
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = true;
-    infoBag.antiAliasingEnabled = false;
-    infoBag.fullClipChecks = false;
-
-    infoBag.frustumCulling =
-        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
-    // Apply multiple colors
-    StaPipColorBag colorBag;
-    colorBag.many = verticesColors.data();
-
-    StaPipBag bag;
-    bag.count = vertices.size();
-    bag.vertices = vertices.data();
-    bag.color = &colorBag;
-    bag.info = &infoBag;
-    bag.texture = &textureBag;
-
     stapip->core.render(&bag);
-
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
   }
 };
@@ -152,6 +122,25 @@ void Chunck::loadDrawData() {
     }
   }
 
+  // Pre-load packet data
+  textureBag.coordinates = uvMap.data();
+
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  colorBag.many = verticesColors.data();
+
+  bag.count = vertices.size();
+  bag.vertices = vertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
   _isDrawDataLoaded = true;
   state = ChunkState::Loaded;
 }
@@ -170,6 +159,7 @@ void Chunck::loadCrossBlock(Block* t_block) {
 
 void Chunck::reloadLightData() {
   verticesColors.clear();
+
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->isCrossed) {
       loadCroosedLightData(blocks[i]);
@@ -177,6 +167,8 @@ void Chunck::reloadLightData() {
       loadLightData(blocks[i]);
     }
   }
+
+  colorBag.many = verticesColors.data();
 }
 
 // TODO: move to a block builder
@@ -704,3 +696,11 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
   }
   return nullptr;
 }
+
+s8 Chunck::getDistanceFromPlayerInChunks() {
+  return this->_distanceFromPlayerInChunks;
+}
+
+void Chunck::setDistanceFromPlayerInChunks(const s8 distante) {
+  this->_distanceFromPlayerInChunks = distante;
+};

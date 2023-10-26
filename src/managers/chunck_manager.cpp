@@ -36,10 +36,10 @@ void ChunckManager::update(const Plane* frustumPlanes,
 
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->distanceFromPlayerInChunks > -1) {
+    if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
       chuncks[i]->update(frustumPlanes);
 
-      if (chuncks[i]->distanceFromPlayerInChunks <= 2) {
+      if (chuncks[i]->getDistanceFromPlayerInChunks() <= 2) {
         nearByChunks.emplace_back(chuncks[i]);
       }
 

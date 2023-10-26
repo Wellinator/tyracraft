@@ -254,7 +254,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
         addChunkToUnloadAsync(chuncks[i]);
       }
 
-      chuncks[i]->distanceFromPlayerInChunks = -1;
+      chuncks[i]->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
         chuncks[i]->clear();
@@ -262,7 +262,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
-      chuncks[i]->distanceFromPlayerInChunks = distance;
+      chuncks[i]->setDistanceFromPlayerInChunks(distance);
     }
   }
 
