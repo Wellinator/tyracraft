@@ -31,6 +31,17 @@
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
+#define OVERWORLD_H_DISTANCE_IN_CHUNKS \
+  (OVERWORLD_H_DISTANCE /              \
+   CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
+#define OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD \
+  (OVERWORLD_H_DISTANCE_IN_CHUNKS *         \
+   OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Total horizontal overworld distance in
+                                    // chunks squared;
+#define OVERWORLD_V_DISTANCE_IN_CHUNKS \
+  (OVERWORLD_V_DISTANCE /              \
+   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+
 // Defines how many chunks will be loaded from player position
 #define MIN_DRAW_DISTANCE 2
 #define MAX_DRAW_DISTANCE 4
@@ -137,8 +148,6 @@ enum class GAME_MODE { SURVIVAL, CREATIVE };
 // TODO: Move to liht manager
 #define MAX_AO_VALUE 3
 #define AO_BASE_COLOR Color()
-
-
 
 enum class ItemId {
   // None

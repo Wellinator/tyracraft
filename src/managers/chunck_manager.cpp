@@ -36,15 +36,12 @@ void ChunckManager::update(const Plane* frustumPlanes,
 
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
-    //  Update just nearby chunks
-    // if (isTicksCounterAt(5)) chuncks[i]->update(frustumPlanes);
-
     if (chuncks[i]->distanceFromPlayerInChunks > -1) {
+      chuncks[i]->update(frustumPlanes);
+
       if (chuncks[i]->distanceFromPlayerInChunks <= 2) {
         nearByChunks.emplace_back(chuncks[i]);
       }
-
-      chuncks[i]->update(frustumPlanes);
 
       if (chuncks[i]->state == ChunkState::Loaded &&
           chuncks[i]->isDrawDataLoaded()) {
@@ -53,7 +50,10 @@ void ChunckManager::update(const Plane* frustumPlanes,
     }
   }
 
-  reloadLightDataAsync();
+  if (isTicksCounterAt(10) || isTimeToUpdateLight) {
+    isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
+    if (isTimeToUpdateLight) reloadLightDataAsync();
+  }
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -131,12 +131,10 @@ void ChunckManager::enqueueChunksToReloadLight() {
 }
 
 void ChunckManager::reloadLightDataAsync() {
-  if (chuncksToUpdateLight.empty() == false) {
-    auto chunk = chuncksToUpdateLight.front();
-    chunk->reloadLightData();
-    chuncksToUpdateLight.pop();
-    return;
-  }
+  auto chunk = chuncksToUpdateLight.front();
+  chunk->reloadLightData();
+  chuncksToUpdateLight.pop();
+  return;
 }
 
 void ChunckManager::reloadLightData() {
@@ -153,4 +151,9 @@ void ChunckManager::reloadLightDataOfAllChunks() {
     chuncks[i]->reloadLightData();
   }
   clearLightDataQueue();
+}
+
+u32 ChunckManager::getIndexByOffset(u16 x, u16 y, u16 z) {
+  return (y * OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD) +
+         (z * OVERWORLD_H_DISTANCE_IN_CHUNKS) + x;
 }

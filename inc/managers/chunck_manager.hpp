@@ -68,4 +68,7 @@ class ChunckManager {
   void clearLightDataQueue() {
     while (!chuncksToUpdateLight.empty()) chuncksToUpdateLight.pop();
   };
+
+  u32 getIndexByOffset(u16 x, u16 y, u16 z);
+  u8 isTimeToUpdateLight = 0;
 };

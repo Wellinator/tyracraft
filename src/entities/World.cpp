@@ -105,14 +105,11 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
     chunckManager.enqueueChunksToReloadLight();
   }
 
-  // Update chunckManager every 3 ticks
-  // if (isTicksCounterAt(5)) {
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition());
-  // }
 
   // Update scheduled data every 4 ticks
-  if (isTicksCounterAt(6)) {
+  if (isTicksCounterAt(5)) {
     updateChunkByPlayerPosition(t_player);
   }
 
@@ -120,7 +117,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   loadScheduledChunks();
 
   // Update chunk light data every 200 ticks
-  if (isTicksCounterAt(5)) {
+  if (isTicksCounterAt(6)) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
     updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
   }
@@ -311,31 +308,32 @@ void World::unloadScheduledChunks() {
 
 void World::renderBlockDamageOverlay() {
   McpipBlock* overlay = blockManager.getDamageOverlay(targetBlock->damage);
-
-  if (overlayData.size() > 0) {
-    // Clear last overlay;
-    for (u8 i = 0; i < overlayData.size(); i++) {
-      delete overlayData[i]->color;
-      delete overlayData[i]->model;
+  if (overlay) {
+    if (overlayData.size() > 0) {
+      // Clear last overlay;
+      for (u8 i = 0; i < overlayData.size(); i++) {
+        delete overlayData[i]->color;
+        delete overlayData[i]->model;
+      }
+      overlayData.clear();
     }
-    overlayData.clear();
+
+    M4x4 scale = M4x4();
+    M4x4 translation = M4x4();
+
+    scale.identity();
+    scale.scale(BLOCK_SIZE + 0.015f);
+
+    translation.identity();
+    translation.translate(targetBlock->position);
+
+    overlay->model = new M4x4(translation * scale);
+    overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
+
+    overlayData.emplace_back(overlay);
+    t_renderer->renderer3D.usePipeline(&mcPip);
+    mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
   }
-
-  M4x4 scale = M4x4();
-  M4x4 translation = M4x4();
-
-  scale.identity();
-  scale.scale(BLOCK_SIZE + 0.015f);
-
-  translation.identity();
-  translation.translate(targetBlock->position);
-
-  overlay->model = new M4x4(translation * scale);
-  overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
-
-  overlayData.emplace_back(overlay);
-  t_renderer->renderer3D.usePipeline(&mcPip);
-  mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {

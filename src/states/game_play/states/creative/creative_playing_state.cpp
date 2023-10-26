@@ -32,7 +32,7 @@ void CreativePlayingState::update(const float& deltaTime) {
       stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
       stateGamePlay->world->terrain);
 
-  if (isTicksCounterAt(10)) stateGamePlay->ui->update();
+  if (isTicksCounterAt(5)) stateGamePlay->ui->update();
 
   stateGamePlay->context->t_camera->setPositionByMesh(
       stateGamePlay->player->mesh.get());
