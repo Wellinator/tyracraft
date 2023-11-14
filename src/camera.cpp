@@ -103,6 +103,12 @@ void Camera::calculateYaw(Pad* t_pad, const float deltatime) {
   const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
 
   yaw += g_settings.cam_h_sensitivity * deltatime * tempYaw;
+
+  if (yaw < 0.0f) {
+    yaw = 360.0F - yaw;
+  } else if (yaw > 360.0f) {
+    yaw = yaw - 360.0F;
+  }
 }
 
 float Camera::calculateHorizontalDistance() {

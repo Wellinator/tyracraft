@@ -19,13 +19,43 @@ void GetXYZFromPos(u32* pos, Vec4* t_Offset) {
   t_Offset->z = (*pos >> 14) % OVERWORLD_H_DISTANCE;
 }
 
-// Gets the data value at the given coordinates in the map.
-uint8_t GetDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
+// Gets the metadata value at the given coordinates in the map.
+uint8_t GetMetaDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
-  return map->data[index];
+  return map->metaData[index];
 }
 
-// Gets the data value at the given coordinates in the map.
+// Sets the metadata value at the given coordinates in the map.
+uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                         uint8_t data) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  return map->metaData[index] = data;
+}
+
+// Gets the metadata value at the given coordinates in the map.
+uint8_t SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                uint16_t z, BlockOrientation orientation) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+  // value = (value & ~mask) | (newvalue & mask);
+  const uint8_t newvalue =
+      static_cast<uint8_t>(orientation) & BLOCK_ORIENTATION_MASK;
+
+  const u8 _setedValue =
+      (map->metaData[index] & ~BLOCK_ORIENTATION_MASK) | newvalue;
+  printf("Setted: %i", _setedValue);
+  return map->metaData[index] = _setedValue;
+}
+
+// Gets the metadata value at the given coordinates in the map.
+BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                           uint16_t y, uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  const uint8_t response = map->metaData[index] & BLOCK_ORIENTATION_MASK;
+  return static_cast<BlockOrientation>(response);
+}
+
+// Gets the light data value at the given coordinates in the map.
 uint8_t GetLightDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
   return map->lightData[index];

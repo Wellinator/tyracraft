@@ -566,7 +566,8 @@ void World::removeBlock(Block* blockToRemove) {
   }
 }
 
-void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
+void World::putBlock(const Blocks& blockToPlace, Player* t_player,
+                     const float cameraYaw) {
   Vec4 targetPos = ray.at(targetBlock->distance);
 
   Vec4 blockOffset;
@@ -630,8 +631,26 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
         GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
 
     if (blockTypeAtTargetPosition == Blocks::AIR_BLOCK) {
+      // Calc block orientation
+      BlockOrientation orientation;
+
+      if (cameraYaw > 315 || cameraYaw < 45) {
+        orientation = BlockOrientation::North;
+      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+        orientation = BlockOrientation::South;
+      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+        orientation = BlockOrientation::East;
+      } else {
+        orientation = BlockOrientation::West;
+      }
+
+      printf("Yaw: %f\n", cameraYaw);
+      printf("Set orientation: %i\n", (u8)orientation);
+
       SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                     static_cast<u8>(blockToPlace));
+      SetOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                              blockOffset.z, orientation);
 
       removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
@@ -844,13 +863,36 @@ void World::buildChunk(Chunck* t_chunck) {
 
               // Calc min and max corners
               {
-                M4x4 model;
+                const auto orientation =
+                    GetOrientationDataFromMap(terrain, x, y, z);
 
-                model.identity();
-                model.scale(BLOCK_SIZE);
-                model.translate(block->position);
+                block->model.identity();
 
-                BBox tempBBox = rawBlockBbox->getTransformed(model);
+                if (orientation != BlockOrientation::East) {
+                  switch (orientation) {
+                    case BlockOrientation::North:
+                      block->model.rotateY(_90DEGINRAD);
+                      break;
+                    case BlockOrientation::South:
+                      block->model.rotateY(_270DEGINRAD);
+                      break;
+                    case BlockOrientation::West:
+                      block->model.rotateY(_180DEGINRAD);
+                      break;
+                    case BlockOrientation::East:
+                    default:
+                      break;
+                  }
+
+                  block->model.scale(BLOCK_SIZE);
+                  block->model.translate(block->position);
+
+                } else {
+                  block->model.scale(BLOCK_SIZE);
+                  block->model.translate(block->position);
+                }
+
+                BBox tempBBox = rawBlockBbox->getTransformed(block->model);
                 block->bbox = new BBox(tempBBox);
                 block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
               }
@@ -918,13 +960,36 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           // Calc min and max corners
           {
-            M4x4 model;
+            const auto orientation =
+                GetOrientationDataFromMap(terrain, x, y, z);
 
-            model.identity();
-            model.scale(BLOCK_SIZE);
-            model.translate(block->position);
+            block->model.identity();
 
-            BBox tempBBox = rawBlockBbox->getTransformed(model);
+            if (orientation != BlockOrientation::East) {
+              switch (orientation) {
+                case BlockOrientation::North:
+                  block->model.rotateY(_90DEGINRAD);
+                  break;
+                case BlockOrientation::South:
+                  block->model.rotateY(_270DEGINRAD);
+                  break;
+                case BlockOrientation::West:
+                  block->model.rotateY(_180DEGINRAD);
+                  break;
+                case BlockOrientation::East:
+                default:
+                  break;
+              }
+
+              block->model.scale(BLOCK_SIZE);
+              block->model.translate(block->position);
+
+            } else {
+              block->model.scale(BLOCK_SIZE);
+              block->model.translate(block->position);
+            }
+
+            BBox tempBBox = rawBlockBbox->getTransformed(block->model);
             block->bbox = new BBox(tempBBox);
             block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
           }
@@ -1443,7 +1508,7 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
                   .blocks = new u8[blockCount],
                   .lightData = new u8[blockCount],
-                  .data = new u8[blockCount]};
+                  .metaData = new u8[blockCount]};
 
   level.map = map;
 
@@ -1452,7 +1517,7 @@ void CrossCraft_World_Init(const uint32_t& seed) {
   for (size_t i = 0; i < blockCount; i++) {
     level.map.blocks[i] = 0;
     level.map.lightData[i] = 0;
-    level.map.data[i] = 0;
+    level.map.metaData[i] = 0;
   }
 
   TYRA_LOG("Generated base level template");
@@ -1461,7 +1526,7 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 void CrossCraft_World_Deinit() {
   TYRA_LOG("Destroying the world");
   if (level.map.blocks) delete[] level.map.blocks;
-  if (level.map.data) delete[] level.map.data;
+  if (level.map.metaData) delete[] level.map.metaData;
   if (level.map.lightData) delete[] level.map.lightData;
   TYRA_LOG("World freed");
 }

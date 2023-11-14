@@ -10,7 +10,7 @@ class BlockInfo {
    * @param type Blocks enum block type
    * @param isSingle bool apply the same texture in all faces
    *
-   * Order: Front, Bacck, Left, Right, Top, Bottom
+   * Order: Top, Bottom, Left, Right, Back, Front
    * @param facesMap 6 length array of integers index
    *
    * @param isBreakable bool can be broken

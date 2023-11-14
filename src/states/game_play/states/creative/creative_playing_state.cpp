@@ -114,7 +114,8 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         const Blocks blockid =
             stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
         if (blockid != Blocks::AIR_BLOCK)
-          stateGamePlay->world->putBlock(blockid, stateGamePlay->player);
+          stateGamePlay->world->putBlock(blockid, stateGamePlay->player,
+                                         stateGamePlay->context->t_camera->yaw);
       }
     }
 

@@ -194,58 +194,58 @@ void Chunck::loadMeshData(Block* t_block) {
       vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
                             t_block->position);
     } else {
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-      vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
+      vertices.emplace_back(t_block->model * rawData[vert++]);
     }
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
-    vertices.emplace_back(rawData[vert++] * BLOCK_SIZE + t_block->position);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
+    vertices.emplace_back(t_block->model * rawData[vert++]);
   }
 }
 

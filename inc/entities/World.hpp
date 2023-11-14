@@ -90,7 +90,8 @@ class World {
   void updateTargetBlock(Camera* t_camera, Player* t_player,
                          std::vector<Chunck*>* chuncks);
   void removeBlock(Block* blockToRemove);
-  void putBlock(const Blocks& blockType, Player* t_player);
+  void putBlock(const Blocks& blockType, Player* t_player,
+                const float cameraYaw);
   inline const u8 validTargetBlock() {
     return targetBlock != nullptr && targetBlock->isBreakable;
   };

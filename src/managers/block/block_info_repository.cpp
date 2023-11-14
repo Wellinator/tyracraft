@@ -45,8 +45,9 @@ void BlockInfoRepository::loadBlocksInfo() {
   models[(u8)Blocks::GRAVEL_BLOCK] =
       (BlockInfo(Blocks::GRAVEL_BLOCK, true, {101}, 0.6F, false));
 
+  // Face oriented blocks
   models[(u8)Blocks::PUMPKIN_BLOCK] =
-      (BlockInfo(Blocks::PUMPKIN_BLOCK, false, {209, 209, 208, 208, 211, 208},
+      (BlockInfo(Blocks::PUMPKIN_BLOCK, false, {209, 209, 208, 208, 208, 211},
                  1.0F, false));
 
   // Ores and Minerals
@@ -86,7 +87,7 @@ void BlockInfoRepository::loadBlocksInfo() {
       Blocks::GLOWSTONE_BLOCK, true, {212}, 0.3F, false, true, true));
   models[(u8)Blocks::JACK_O_LANTERN_BLOCK] =
       (BlockInfo(Blocks::JACK_O_LANTERN_BLOCK, false,
-                 {209, 209, 208, 208, 210, 208}, 1.0F, false));
+                 {209, 209, 208, 208, 208, 210}, 1.0F, false));
 
   // Stone bricks
   models[(u8)Blocks::CRACKED_STONE_BRICKS_BLOCK] =

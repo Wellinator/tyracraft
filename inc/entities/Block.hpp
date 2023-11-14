@@ -48,6 +48,7 @@ class Block {
 
   float damage = 0;
 
+  M4x4 model;
   Vec4 minCorner;
   Vec4 maxCorner;
   Vec4 position;
@@ -58,8 +59,8 @@ class Block {
   u8 visibleFacesCount = 0;
 
   /**
-   * Order: Top, Bottom, Left, Right, Front, Back
-   * @param facesMapIndex 6 length array pair of integers col, row
+   * Order: Top, Bottom, Left, Right, Back, Front
+   * @param facesMapIndex 6 length array of texture index
    */
   std::array<u8, 6> facesMapIndex = {0, 0, 0, 0, 0, 0};
 
