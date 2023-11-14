@@ -429,27 +429,49 @@ bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
 }
 
 int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
+  const BlockOrientation orientation = GetOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+
   int result = 0x000000;
 
-  // Front
-  if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+  switch (orientation) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
+      if (isLeftFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      break;
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::East:
+    default:
+      if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
 
-  // Back
-  if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      break;
+  }
 
-  // Right
-  if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-
-  // Left
-  if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
-  // Top
   if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
-
-  // Bottom
   if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
 
-  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
   return result;
 }
 
@@ -643,9 +665,6 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
       } else {
         orientation = BlockOrientation::West;
       }
-
-      printf("Yaw: %f\n", cameraYaw);
-      printf("Set orientation: %i\n", (u8)orientation);
 
       SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                     static_cast<u8>(blockToPlace));
@@ -887,14 +906,25 @@ void World::buildChunk(Chunck* t_chunck) {
                   block->model.scale(BLOCK_SIZE);
                   block->model.translate(block->position);
 
+                  // Don't rotate the block bbox
+                  M4x4 modelWithoutRotaion;
+                  modelWithoutRotaion.identity();
+                  modelWithoutRotaion.scale(BLOCK_SIZE);
+                  modelWithoutRotaion.translate(block->position);
+
+                  BBox tempBBox =
+                      rawBlockBbox->getTransformed(modelWithoutRotaion);
+                  block->bbox = new BBox(tempBBox);
+                  block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
                 } else {
                   block->model.scale(BLOCK_SIZE);
                   block->model.translate(block->position);
-                }
 
-                BBox tempBBox = rawBlockBbox->getTransformed(block->model);
-                block->bbox = new BBox(tempBBox);
-                block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+                  BBox tempBBox = rawBlockBbox->getTransformed(block->model);
+                  block->bbox = new BBox(tempBBox);
+                  block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+                }
               }
 
               t_chunck->addBlock(block);
