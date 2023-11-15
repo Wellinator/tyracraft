@@ -112,6 +112,7 @@ enum class Blocks {
   GLOWSTONE_BLOCK,
   JACK_O_LANTERN_BLOCK,
   PUMPKIN_BLOCK,
+  LAVA_BLOCK,
 
   // Woods
   OAK_LOG_BLOCK,

@@ -355,10 +355,8 @@ void flood_fill_lava(LevelMap* map) {
 
     if (y <= 0) continue;
 
-    if (GetBlockFromMap(map, x, y, z) ==
-        static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
-      SetBlockInMap(map, x, y, z,
-                    static_cast<uint8_t>(Blocks::AIR_BLOCK));  // TODO: add lava
+    if (GetBlockFromMap(map, x, y, z) == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
+      SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::LAVA_BLOCK));
     }
   }
 }

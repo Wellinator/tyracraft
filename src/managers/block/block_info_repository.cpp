@@ -88,6 +88,8 @@ void BlockInfoRepository::loadBlocksInfo() {
   models[(u8)Blocks::JACK_O_LANTERN_BLOCK] =
       (BlockInfo(Blocks::JACK_O_LANTERN_BLOCK, false,
                  {209, 209, 208, 208, 208, 210}, 1.0F, false));
+  models[(u8)Blocks::LAVA_BLOCK] =
+      (BlockInfo(Blocks::LAVA_BLOCK, true, {80}, 0, true, false, false));
 
   // Stone bricks
   models[(u8)Blocks::CRACKED_STONE_BRICKS_BLOCK] =
