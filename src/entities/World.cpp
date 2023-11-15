@@ -105,6 +105,10 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
     chunckManager.enqueueChunksToReloadLight();
   }
 
+  if (isTicksCounterAt(5)) {
+    updateLiquid();
+  }
+
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition());
 
@@ -561,9 +565,12 @@ void World::removeBlock(Block* blockToRemove) {
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
-
   updateSunlight();
   updateBlockLights();
+
+  // Update liquid at position
+  checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  updateLiquid();
 
   chunckManager.reloadLightData();
 
@@ -1154,20 +1161,177 @@ void World::initWorldLightModel() {
       dayNightCycleManager.getSunLightIntensity();
 }
 
+void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
+  if (BoundCheckMap(terrain, x - 1, y, z)) {
+    auto nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+    if (nl == Blocks::WATER_BLOCK) {
+      addLiquid(x - 1, y, z, (u8)LiquidLevel::Percent100);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x + 1, y, z)) {
+    auto nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+    if (nr == Blocks::WATER_BLOCK) {
+      addLiquid(x + 1, y, z, (u8)LiquidLevel::Percent100);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x, y, z + 1)) {
+    auto nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+    if (nf == Blocks::WATER_BLOCK) {
+      addLiquid(x, y, z + 1, (u8)LiquidLevel::Percent100);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x, y, z - 1)) {
+    auto nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+    if (nb == Blocks::WATER_BLOCK) {
+      addLiquid(x, y, z - 1, (u8)LiquidLevel::Percent100);
+    }
+  }
+}
+
+void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel) {
+  if (liquidLevel > (u8)LiquidLevel::Percent12) {
+    liquidBfsQueue.emplace(x, y, z, liquidLevel);
+
+    SetLiquidDataToMap(terrain, x, y, z, liquidLevel);
+    SetBlockInMap(terrain, x, y, z, (u8)Blocks::WATER_BLOCK);
+  }
+}
+
+void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z) {
+  u8 liquidLevel = GetLiquidDataFromMap(terrain, x, y, z);
+  removeLiquid(x, y, z, liquidLevel);
+}
+
+void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel) {
+  liquidRemovalBfsQueue.emplace(x, y, z, liquidLevel);
+  SetLiquidDataToMap(terrain, x, y, z, (u8)LiquidLevel::Percent12);
+  SetBlockInMap(terrain, x, y, z, (u8)Blocks::WATER_BLOCK);
+}
+
+void World::updateLiquid() {
+  // if (liquidRemovalBfsQueue.empty() == false) {
+  propagateLiquidRemovalQueue();
+  // }
+
+  // if (liquidBfsQueue.empty() == false) {
+  propagateLiquidAddQueue();
+  // }
+}
+
+void World::propagateLiquidRemovalQueue() {
+  // u8 limitCounter = 0;
+  while (liquidRemovalBfsQueue.empty() == false) {
+    // get the liquid value
+    Node liquidNode = liquidRemovalBfsQueue.front();
+
+    // get the index
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+    uint8_t liquidValue = liquidNode.val;
+
+    liquidRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
+      floodFillLiquidRemove(nx + 1, ny, nz, liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
+      floodFillLiquidRemove(nx, ny, nz + 1, liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
+      floodFillLiquidRemove(nx - 1, ny, nz, liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+      floodFillLiquidRemove(nx, ny - 1, nz, liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+      floodFillLiquidRemove(nx, ny, nz - 1, liquidValue);
+    }
+
+    // limitCounter++;
+    // if (limitCounter >= LIQUID_PROPAGATION_PER_TICKS)
+    //   hasMachedLimitRemove = true;
+  }
+}
+
+void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z,
+                                  u8 liquidLevel) {
+  u8 neighborLevel = (u8)GetLiquidDataFromMap(terrain, x, y, z);
+
+  if (neighborLevel != LiquidLevel::Percent12 && neighborLevel < liquidLevel) {
+    removeLiquid(x, y, z);
+  } else if (neighborLevel >= liquidLevel) {
+    addLiquid(x, y, z, neighborLevel);
+  }
+}
+
+void World::propagateLiquidAddQueue() {
+  if (liquidBfsQueue.empty() == false) {
+    auto liquidNode = liquidBfsQueue.front();
+
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+    uint8_t liquidValue = liquidNode.val;
+
+    liquidBfsQueue.pop();
+
+    // TODO: implement liquid volumes
+    // s16 nextLiquidValue = liquidValue - 1;
+    // if (nextLiquidValue <= 0) {
+    //   continue;
+    // }
+    s16 nextLiquidValue = LiquidLevel::Percent100;
+
+    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
+      floodFillLiquidAdd(nx + 1, ny, nz, nextLiquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
+      floodFillLiquidAdd(nx, ny, nz + 1, nextLiquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
+      floodFillLiquidAdd(nx - 1, ny, nz, nextLiquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+      floodFillLiquidAdd(nx, ny - 1, nz, nextLiquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+      floodFillLiquidAdd(nx, ny, nz - 1, nextLiquidValue);
+    }
+
+    // if (limitCounter >= LIQUID_PROPAGATION_PER_TICKS) hasMachedLimitAdd =
+    // true;
+  }
+}
+
+void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z,
+                               u8 nextLiquidValue) {
+  auto b = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+  if (b == Blocks::AIR_BLOCK) {
+    if (GetLiquidDataFromMap(terrain, x, y, z) < nextLiquidValue) {
+      addLiquid(x, y, z, nextLiquidValue);
+    }
+  }
+}
+
 // From CrossCraft
-struct LightNode {
-  uint16_t x, y, z;
-  LightNode(uint16_t lx, uint16_t ly, uint16_t lz, uint16_t l)
-      : x(lx), y(ly), z(lz), val(l) {}
-  uint16_t val;
-};
+std::queue<Node> lightBfsQueue;
+std::queue<Node> lightRemovalBfsQueue;
 
-std::queue<LightNode> lightBfsQueue;
-std::queue<LightNode> lightRemovalBfsQueue;
-
-// std::stack<LightNode> sunlightBfsQueue;
-std::queue<LightNode> sunlightBfsQueue;
-std::queue<LightNode> sunlightRemovalBfsQueue;
+// std::stack<Node> sunlightBfsQueue;
+std::queue<Node> sunlightBfsQueue;
+std::queue<Node> sunlightRemovalBfsQueue;
 
 void updateSunlight() {
   if (sunlightRemovalBfsQueue.empty() == false) {
@@ -1251,7 +1415,7 @@ void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
 void propagateSunlightRemovalQueue() {
   while (!sunlightRemovalBfsQueue.empty()) {
     // get the light value
-    LightNode lightNode = sunlightRemovalBfsQueue.front();
+    Node lightNode = sunlightRemovalBfsQueue.front();
     auto map = CrossCraft_World_GetMapPtr();
 
     // get the index
@@ -1346,7 +1510,7 @@ void updateBlockLights() {
 void propagateLightRemovalQueue() {
   while (lightRemovalBfsQueue.empty() == false) {
     // get the light value
-    LightNode lightNode = lightRemovalBfsQueue.front();
+    Node lightNode = lightRemovalBfsQueue.front();
     auto map = CrossCraft_World_GetMapPtr();
 
     // get the index

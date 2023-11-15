@@ -216,6 +216,29 @@ enum class ItemId {
   diamond_axe,
 };
 
+#define LIQUID_PROPAGATION_PER_TICKS 5
+
+#define BLOCK_LIQUID_METADATA_MASK 0b00011100
+/**
+ * https://minecraft.fandom.com/wiki/Water
+ * 1	block	  1
+ * 2	blocks	0.75-1
+ * 3	blocks	0.625-0.75
+ * 4	blocks	0.5-0.625
+ * 5	blocks	0.375-0.5
+ * 6	blocks	0.25-0.375
+ * 7	blocks	0.125-0.25
+ */
+typedef enum {
+  Percent12,
+  Percent25,
+  Percent37,
+  Percent50,
+  Percent62,
+  Percent75,
+  Percent100,
+} LiquidLevel;
+
 typedef enum {
   East = 0,
   North = 1,

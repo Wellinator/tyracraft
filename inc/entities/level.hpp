@@ -38,6 +38,14 @@ uint8_t SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
                                 uint16_t z, BlockOrientation orientation);
 BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
                                            uint16_t y, uint16_t z);
+
+                                           
+uint8_t SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                           u8 liquidLevel);
+u8 GetLiquidDataFromMap(LevelMap* map, uint16_t x, uint16_t y,
+                                 uint16_t z);
+
+
 uint8_t GetLightDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetBlockLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);

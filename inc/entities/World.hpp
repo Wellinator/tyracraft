@@ -57,6 +57,13 @@ using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
+struct Node {
+  uint16_t x, y, z;
+  Node(uint16_t lx, uint16_t ly, uint16_t lz, uint16_t l)
+      : x(lx), y(ly), z(lz), val(l) {}
+  uint16_t val;
+};
+
 class World {
  public:
   World(const NewGameOptions& options);
@@ -204,6 +211,25 @@ class World {
   void playBreakingBlockSound(const Blocks& blockType);
 
   void initWorldLightModel();
+
+  // Should be true after propagate 5 blocks;
+  u8 hasMachedLimitAdd = false;
+  u8 hasMachedLimitRemove = false;
+
+  std::queue<Node> liquidBfsQueue;
+  std::queue<Node> liquidRemovalBfsQueue;
+
+  void updateLiquid();
+  void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);
+  void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel);
+  void removeLiquid(uint16_t x, uint16_t y, uint16_t z);
+  void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z,
+                          u8 nextLiquidValue);
+  void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z,
+                             u8 liquidLevel);
+  void propagateLiquidRemovalQueue();
+  void propagateLiquidAddQueue();
 };
 
 bool inline isVegetation(Blocks block) {
