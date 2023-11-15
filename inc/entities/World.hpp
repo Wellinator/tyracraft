@@ -83,6 +83,7 @@ class World {
   void render();
   void generate();
   void generateLight();
+  void propagateLiquids();
   void generateSpawnArea();
   void loadSpawnArea();
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
@@ -219,6 +220,7 @@ class World {
   std::queue<Node> liquidBfsQueue;
   std::queue<Node> liquidRemovalBfsQueue;
 
+  void initLiquidExpansion();
   void updateLiquid();
   void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);
   void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel);

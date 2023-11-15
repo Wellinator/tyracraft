@@ -71,6 +71,12 @@ void World::generateLight() {
   chunckManager.reloadLightDataOfAllChunks();
 }
 
+void World::propagateLiquids() {
+  initLiquidExpansion();
+
+  while (liquidBfsQueue.empty() == false) propagateLiquidAddQueue();
+}
+
 void World::loadSpawnArea() { buildInitialPosition(); }
 
 void World::generateSpawnArea() {
@@ -1096,7 +1102,8 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
     for (u16 i = 0; i < (*chuncks)[h]->blocks.size(); i++) {
       Block* block = (*chuncks)[h]->blocks[i];
 
-      u8 isBreakable = block->type != Blocks::WATER_BLOCK;
+      u8 isBreakable = block->type != Blocks::WATER_BLOCK &&
+                       block->type != Blocks::LAVA_BLOCK;
       float distanceFromCurrentBlockToPlayer =
           baseOrigin.distanceTo(block->position);
 
@@ -1176,6 +1183,13 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     }
   }
 
+  if (BoundCheckMap(terrain, x, y - 1, z)) {
+    auto nr = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+    if (nr == Blocks::WATER_BLOCK) {
+      addLiquid(x, y - 1, z, (u8)LiquidLevel::Percent100);
+    }
+  }
+
   if (BoundCheckMap(terrain, x, y, z + 1)) {
     auto nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
     if (nf == Blocks::WATER_BLOCK) {
@@ -1211,20 +1225,70 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel) {
   SetBlockInMap(terrain, x, y, z, (u8)Blocks::WATER_BLOCK);
 }
 
-void World::updateLiquid() {
-  // if (liquidRemovalBfsQueue.empty() == false) {
-  propagateLiquidRemovalQueue();
-  // }
+void World::initLiquidExpansion() {
+  TYRA_LOG("Initiating water propagation...");
+  auto map = CrossCraft_World_GetMapPtr();
 
-  // if (liquidBfsQueue.empty() == false) {
+  for (int x = 0; x < map->length; x++) {
+    for (int z = 0; z < map->width; z++) {
+      for (int y = map->height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+
+        if (b == Blocks::AIR_BLOCK) {
+          auto liquidValue = LiquidLevel::Percent100;
+
+          if (BoundCheckMap(terrain, x - 1, y, z)) {
+            auto nl =
+                static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+            if (nl == Blocks::WATER_BLOCK) {
+              addLiquid(x - 1, y, z, (u8)LiquidLevel::Percent100);
+            }
+          }
+
+          if (BoundCheckMap(terrain, x + 1, y, z)) {
+            auto nr =
+                static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+            if (nr == Blocks::WATER_BLOCK) {
+              addLiquid(x + 1, y, z, (u8)LiquidLevel::Percent100);
+            }
+          }
+
+          if (BoundCheckMap(terrain, x, y - 1, z)) {
+            auto nr =
+                static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+            if (nr == Blocks::WATER_BLOCK) {
+              addLiquid(x, y - 1, z, (u8)LiquidLevel::Percent100);
+            }
+          }
+
+          if (BoundCheckMap(terrain, x, y, z + 1)) {
+            auto nf =
+                static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+            if (nf == Blocks::WATER_BLOCK) {
+              addLiquid(x, y, z + 1, (u8)LiquidLevel::Percent100);
+            }
+          }
+
+          if (BoundCheckMap(terrain, x, y, z - 1)) {
+            auto nb =
+                static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+            if (nb == Blocks::WATER_BLOCK) {
+              addLiquid(x, y, z - 1, (u8)LiquidLevel::Percent100);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void World::updateLiquid() {
+  propagateLiquidRemovalQueue();
   propagateLiquidAddQueue();
-  // }
 }
 
 void World::propagateLiquidRemovalQueue() {
-  // u8 limitCounter = 0;
-  while (liquidRemovalBfsQueue.empty() == false) {
-    // get the liquid value
+  if (liquidRemovalBfsQueue.empty() == false) {
     Node liquidNode = liquidRemovalBfsQueue.front();
 
     // get the index
@@ -1254,10 +1318,6 @@ void World::propagateLiquidRemovalQueue() {
     if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
       floodFillLiquidRemove(nx, ny, nz - 1, liquidValue);
     }
-
-    // limitCounter++;
-    // if (limitCounter >= LIQUID_PROPAGATION_PER_TICKS)
-    //   hasMachedLimitRemove = true;
   }
 }
 
