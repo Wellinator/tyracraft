@@ -169,6 +169,9 @@ u8 BlockManager::getBlockLightValue(Blocks blockType) {
     case Blocks::JACK_O_LANTERN_BLOCK:
       return 15;
 
+    case Blocks::LAVA_BLOCK:
+      return 15;
+
     default:
       return 0;
   }
