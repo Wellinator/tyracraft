@@ -217,7 +217,8 @@ enum class ItemId {
   diamond_axe,
 };
 
-#define LIQUID_PROPAGATION_PER_TICKS 5
+#define WATER_PROPAGATION_PER_TICKS 5
+#define LAVA_PROPAGATION_PER_TICKS 30
 
 #define BLOCK_LIQUID_METADATA_MASK 0b00011100
 /**
@@ -231,6 +232,7 @@ enum class ItemId {
  * 7	blocks	0.125-0.25
  */
 typedef enum {
+  Percent0,
   Percent12,
   Percent25,
   Percent37,

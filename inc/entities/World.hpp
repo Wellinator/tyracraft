@@ -217,21 +217,26 @@ class World {
   u8 hasMachedLimitAdd = false;
   u8 hasMachedLimitRemove = false;
 
-  std::queue<Node> liquidBfsQueue;
-  std::queue<Node> liquidRemovalBfsQueue;
+  std::queue<Node> waterBfsQueue;
+  std::queue<Node> waterRemovalBfsQueue;
+  std::queue<Node> lavaBfsQueue;
+  std::queue<Node> lavaRemovalBfsQueue;
 
   void initLiquidExpansion();
-  void updateLiquid();
   void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);
-  void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 liquidLevel);
-  void removeLiquid(uint16_t x, uint16_t y, uint16_t z);
-  void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-  void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z,
-                          u8 nextLiquidValue);
-  void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z,
-                             u8 liquidLevel);
-  void propagateLiquidRemovalQueue();
-  void propagateLiquidAddQueue();
+  void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
+  void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type);
+  void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
+
+  void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 nextLevel);
+  void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
+
+  void updateLiquidWater();
+  void propagateWaterRemovalQueue();
+  void propagateWaterAddQueue();
+  void updateLiquidLava();
+  void propagateLavaRemovalQueue();
+  void propagateLavaAddQueue();
 };
 
 bool inline isVegetation(Blocks block) {
