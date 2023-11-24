@@ -1221,10 +1221,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     Blocks nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
     u8 level = GetLiquidDataFromMap(terrain, x - 1, y, z);
 
-    if (nl == Blocks::WATER_BLOCK) {
-      addLiquid(x - 1, y, z, (u8)Blocks::WATER_BLOCK, level);
-    } else if (nl == Blocks::LAVA_BLOCK) {
-      addLiquid(x - 1, y, z, (u8)Blocks::LAVA_BLOCK, level);
+    if (nl == Blocks::WATER_BLOCK || nl == Blocks::LAVA_BLOCK) {
+      addLiquid(x - 1, y, z, (u8)nl, level);
     }
   }
 
@@ -1232,10 +1230,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     Blocks nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
     u8 level = GetLiquidDataFromMap(terrain, x + 1, y, z);
 
-    if (nr == Blocks::WATER_BLOCK) {
-      addLiquid(x + 1, y, z, (u8)Blocks::WATER_BLOCK, level);
-    } else if (nr == Blocks::LAVA_BLOCK) {
-      addLiquid(x + 1, y, z, (u8)Blocks::LAVA_BLOCK, level);
+    if (nr == Blocks::WATER_BLOCK || nr == Blocks::LAVA_BLOCK) {
+      addLiquid(x + 1, y, z, (u8)nr, level);
     }
   }
 
@@ -1243,10 +1239,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     Blocks nd = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
     u8 level = GetLiquidDataFromMap(terrain, x, y - 1, z);
 
-    if (nd == Blocks::WATER_BLOCK) {
-      addLiquid(x, y - 1, z, (u8)Blocks::WATER_BLOCK, level);
-    } else if (nd == Blocks::LAVA_BLOCK) {
-      addLiquid(x, y - 1, z, (u8)Blocks::LAVA_BLOCK, level);
+    if (nd == Blocks::WATER_BLOCK || nd == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y - 1, z, (u8)nd, level);
     }
   }
 
@@ -1254,10 +1248,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     Blocks nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
     u8 level = GetLiquidDataFromMap(terrain, x, y, z + 1);
 
-    if (nf == Blocks::WATER_BLOCK) {
-      addLiquid(x, y, z + 1, (u8)Blocks::WATER_BLOCK, level);
-    } else if (nf == Blocks::LAVA_BLOCK) {
-      addLiquid(x, y, z + 1, (u8)Blocks::LAVA_BLOCK, level);
+    if (nf == Blocks::WATER_BLOCK || nf == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y, z + 1, (u8)nf, level);
     }
   }
 
@@ -1265,10 +1257,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
     Blocks nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
     u8 level = GetLiquidDataFromMap(terrain, x, y, z - 1);
 
-    if (nb == Blocks::WATER_BLOCK) {
-      addLiquid(x, y, z - 1, (u8)Blocks::WATER_BLOCK, level);
-    } else if (nb == Blocks::LAVA_BLOCK) {
-      addLiquid(x, y, z - 1, (u8)Blocks::LAVA_BLOCK, level);
+    if (nb == Blocks::WATER_BLOCK || nb == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y, z - 1, (u8)nb, level);
     }
   }
 }
@@ -1557,23 +1547,28 @@ void World::propagateLavaAddQueue() {
 
     u8 type = (u8)Blocks::LAVA_BLOCK;
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
       floodFillLiquidAdd(nx, ny - 1, nz, type, nextLevel);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
       floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel);
     }
   }
