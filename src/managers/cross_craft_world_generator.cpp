@@ -352,7 +352,7 @@ void flood_fill_water(LevelMap* map) {
 
 void flood_fill_lava(LevelMap* map) {
   // Add underground lava sources
-  int numLavaSources = map->length * map->width * map->height / 20000;
+  int numLavaSources = map->length * map->width * map->height / 10000;
   for (int i = 0; i < numLavaSources; i++) {
     // Choose random x and z coordinates
     int x = rand() % map->length;
