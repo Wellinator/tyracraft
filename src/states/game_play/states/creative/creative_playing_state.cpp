@@ -218,8 +218,8 @@ void CreativePlayingState::drawDegubInfo() {
   FontManager_printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
-  std::string ticks = std::string("Ticks: ").append(
-      std::to_string(static_cast<int>(g_ticksCounter)));
+  std::string ticks =
+      std::string("Ticks: ").append(std::to_string(g_ticksCounter));
   FontManager_printText(ticks,
                         FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
   // Draw Player Position

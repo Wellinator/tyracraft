@@ -5,7 +5,8 @@
  *
  */
 double elapsedRealTime = 0;
-float g_ticksCounter = DAY_MID;
+uint32_t g_ticksCounter = DAY_MID;
+float g_ticksFraftion = 0;
 u16 ticksDayCounter = 0;
 
 TickManager::TickManager() {}
@@ -16,7 +17,13 @@ void TickManager::update(const float& deltaTime) { updateTicks(deltaTime); }
 
 void TickManager::updateTicks(const float& deltaTime) {
   elapsedRealTime += deltaTime;
-  g_ticksCounter += deltaTime * REAL_TIME_TO_TICK;
+
+  if (g_ticksFraftion > TICKS_IN_SECONDS) {
+    g_ticksCounter++;
+    g_ticksFraftion -= TICKS_IN_SECONDS;
+  } else {
+    g_ticksFraftion += deltaTime;
+  }
 
   if (g_ticksCounter >= DAY_DURATION_IN_TICKS) {
     ticksDayCounter++;
@@ -25,5 +32,5 @@ void TickManager::updateTicks(const float& deltaTime) {
 }
 
 u8 isTicksCounterAt(const uint32_t ticks) {
-  return (static_cast<uint32_t>(g_ticksCounter) % ticks) == 0;
+  return (g_ticksCounter % ticks) == 0;
 }

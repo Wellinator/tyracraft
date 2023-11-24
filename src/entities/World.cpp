@@ -65,7 +65,7 @@ void World::generateLight() {
   dayNightCycleManager.update();
   updateLightModel();
 
-  initSunLight(static_cast<uint32_t>(g_ticksCounter));
+  initSunLight(g_ticksCounter);
   initBlockLight(&blockManager);
 
   updateSunlight();
