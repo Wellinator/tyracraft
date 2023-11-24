@@ -211,6 +211,7 @@ class World {
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);
   void playBreakingBlockSound(const Blocks& blockType);
+  void playFlowingWaterSound();
 
   void initWorldLightModel();
 
@@ -218,6 +219,10 @@ class World {
   u8 hasMachedLimitAdd = false;
   u8 hasMachedLimitRemove = false;
 
+  // Liquids
+  uint16_t waterSoundDuration = 4000;
+  float waterSoundTimeCounter = 0.0F;
+  float lastTimePlayedWaterSound = 0.0F;
   std::queue<Node> waterBfsQueue;
   std::queue<Node> waterRemovalBfsQueue;
   std::queue<Node> lavaBfsQueue;
@@ -229,9 +234,11 @@ class World {
   void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
-  void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 nextLevel);
-  void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
-  void updateLiquidWater();
+  void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                          u8 nextLevel);
+  void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                             u8 level);
+  void updateLiquidWater(const float deltaTime);
   void propagateWaterRemovalQueue();
   void propagateWaterAddQueue();
   void updateLiquidLava();

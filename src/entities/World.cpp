@@ -114,7 +114,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
-    updateLiquidWater();
+    updateLiquidWater(deltaTime);
   }
 
   if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
@@ -867,6 +867,21 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
   }
 }
 
+void World::playFlowingWaterSound() {
+  SfxBlockModel waterSfxModel = SfxBlockModel(
+      Blocks::WATER_BLOCK, SoundFxCategory::Liquid, SoundFX::Water);
+
+  const int ch = t_soundManager->getAvailableChannel();
+  SfxLibrarySound* sound = t_soundManager->getSound(&waterSfxModel);
+
+  const u8 pitch = Tyra::Math::randomi(50, 150);
+  const u8 volume = Tyra::Math::randomi(75, 100);
+
+  sound->_sound->pitch = pitch;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
 u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
                                const Vec4* chunkMinOffset,
                                const Vec4* chunkMaxOffset) {
@@ -1342,9 +1357,19 @@ void World::initLiquidExpansion() {
   }
 }
 
-void World::updateLiquidWater() {
+void World::updateLiquidWater(const float deltaTime) {
   propagateWaterRemovalQueue();
   propagateWaterAddQueue();
+
+  // TODO: check if is near flowing water
+  // if (lastTimePlayedWaterSound > waterSoundTimeCounter) {
+  //   playFlowingWaterSound();
+  //   const uint16_t delayToPlayNextTime = Tyra::Math::randomi(1, 15) * 1000;
+  //   waterSoundTimeCounter = waterSoundDuration + delayToPlayNextTime;
+  //   lastTimePlayedWaterSound = 0;
+  // } else {
+  //   lastTimePlayedWaterSound += deltaTime;
+  // }
 }
 
 void World::updateLiquidLava() {
