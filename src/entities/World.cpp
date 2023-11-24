@@ -1372,6 +1372,7 @@ void World::updateLiquidWater(const float deltaTime) {
   // }
 }
 
+// FIX: lava spread only 3 blocks in overworld
 void World::updateLiquidLava() {
   propagateLavaRemovalQueue();
   propagateLavaAddQueue();

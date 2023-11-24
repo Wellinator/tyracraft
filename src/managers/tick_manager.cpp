@@ -5,7 +5,7 @@
  *
  */
 double elapsedRealTime = 0;
-uint32_t g_ticksCounter = DAY_MID;
+int g_ticksCounter = DAY_MID;
 float g_ticksFraftion = 0;
 u16 ticksDayCounter = 0;
 
@@ -25,7 +25,7 @@ void TickManager::updateTicks(const float& deltaTime) {
     g_ticksFraftion += deltaTime;
   }
 
-  if (g_ticksCounter >= DAY_DURATION_IN_TICKS) {
+  if (g_ticksCounter > DAY_DURATION_IN_TICKS) {
     ticksDayCounter++;
     g_ticksCounter -= DAY_DURATION_IN_TICKS;
   }

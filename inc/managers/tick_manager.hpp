@@ -21,7 +21,7 @@
  *
  */
 extern double elapsedRealTime;
-extern uint32_t g_ticksCounter;
+extern int g_ticksCounter;
 extern u16 ticksDayCounter;
 extern u8 isTicksCounterAt(const uint32_t ticks);
 

@@ -161,7 +161,9 @@ class World {
   void renderTargetBlockHitbox(Block* targetBlock);
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
-  inline void setIntialTime() { g_ticksCounter = worldOptions.initialTime; };
+  inline void setIntialTime() {
+    g_ticksCounter = static_cast<int>(worldOptions.initialTime);
+  };
 
   // From terrain manager
   Ray ray;

@@ -122,7 +122,7 @@ class SaveManager {
 
       TYRA_LOG("Loading tick state...");
       // These are global scope variables;
-      g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<uint32_t>();
+      g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<int>();
       elapsedRealTime = savedData["tickState"]["elapsedRealTime"].get<double>();
       ticksDayCounter =
           savedData["tickState"]["ticksDayCounter"].get<uint16_t>();
