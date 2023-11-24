@@ -60,9 +60,7 @@ uint8_t SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                            u8 liquidLevel) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
-  const uint8_t newvalue =
-      static_cast<uint8_t>(liquidLevel << 2) & BLOCK_LIQUID_METADATA_MASK;
-
+  const uint8_t newvalue = liquidLevel << 2 & BLOCK_LIQUID_METADATA_MASK;
   const u8 _setedValue =
       (map->metaData[index] & ~BLOCK_LIQUID_METADATA_MASK) | newvalue;
   // printf("Setted: %i", _setedValue >> 2);

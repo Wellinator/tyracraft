@@ -319,9 +319,13 @@ void flood_fill_water(LevelMap* map) {
 
       for (; y >= 0; y--) {
         if (GetBlockFromMap(map, x, y, z) ==
-            static_cast<uint8_t>(Blocks::AIR_BLOCK))
+            static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
           SetBlockInMap(map, x, y, z,
                         static_cast<uint8_t>(Blocks::WATER_BLOCK));
+          SetLiquidDataToMap(map, x, y, z,
+                             static_cast<uint8_t>(LiquidLevel::Percent100));
+        }
+
         else
           break;
       }
@@ -340,6 +344,8 @@ void flood_fill_water(LevelMap* map) {
     if (GetBlockFromMap(map, x, y, z) ==
         static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
       SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::WATER_BLOCK));
+      SetLiquidDataToMap(map, x, y, z,
+                         static_cast<uint8_t>(LiquidLevel::Percent100));
     }
   }
 }
@@ -355,7 +361,8 @@ void flood_fill_lava(LevelMap* map) {
 
     if (y <= 0) continue;
 
-    if (GetBlockFromMap(map, x, y, z) == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
+    if (GetBlockFromMap(map, x, y, z) ==
+        static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
       SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::LAVA_BLOCK));
     }
   }

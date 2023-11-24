@@ -133,7 +133,7 @@ void StateLoadingGame::initWorld() {
                                    this->context->t_soundManager);
   this->stateGamePlay->world->generate();
   this->stateGamePlay->world->generateLight();
-  this->stateGamePlay->world->propagateLiquids();
+  // this->stateGamePlay->world->propagateLiquids();
   this->stateGamePlay->world->generateSpawnArea();
   this->stateGamePlay->world->loadSpawnArea();
 

@@ -29,6 +29,8 @@ World::World(const NewGameOptions& options) {
 
 World::~World() {
   delete rawBlockBbox;
+  affectedChunksIdByLiquidPropagation.clear();
+
   CrossCraft_World_Deinit();
 }
 
@@ -72,8 +74,8 @@ void World::generateLight() {
 }
 
 void World::propagateLiquids() {
+  TYRA_LOG("Propagating liquids...");
   initLiquidExpansion();
-
   while (waterBfsQueue.empty() == false) propagateWaterAddQueue();
 }
 
@@ -113,9 +115,14 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
     updateLiquidWater();
-  } else if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
+  }
+
+  if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
     updateLiquidLava();
   }
+
+  if (affectedChunksIdByLiquidPropagation.size() > 0)
+    updateChunksAffectedByLiquidPropagation();
 
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        *t_player->getPosition());
@@ -566,6 +573,8 @@ void World::removeBlock(Block* blockToRemove) {
   GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
 
   SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
+                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
 
   // Generate amount of particles right begore block gets destroyed
   particlesManager.createBlockParticleBatch(blockToRemove, 24);
@@ -575,11 +584,10 @@ void World::removeBlock(Block* blockToRemove) {
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   updateSunlight();
   updateBlockLights();
+  chunckManager.reloadLightData();
 
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
-
-  chunckManager.reloadLightData();
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   playDestroyBlockSound(blockToRemove->type);
@@ -663,10 +671,20 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
           newBlockPosMin.y < maxPlayerCorner.y)
         return;  // Return on collision
     }
+
     const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
         GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
 
-    if (blockTypeAtTargetPosition == Blocks::AIR_BLOCK) {
+    const Blocks oldTypeBlock = blockTypeAtTargetPosition;
+
+    const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
+                          blockTypeAtTargetPosition == Blocks::LAVA_BLOCK ||
+                          blockTypeAtTargetPosition == Blocks::AIR_BLOCK ||
+                          blockTypeAtTargetPosition == Blocks::GRASS;
+
+    if (canReplace) {
+      TYRA_LOG("putBlock");
+
       // Calc block orientation
       BlockOrientation orientation;
 
@@ -685,7 +703,6 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
       SetOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
                               blockOffset.z, orientation);
 
-      removeSunLight(blockOffset.x, blockOffset.y, blockOffset.z);
       checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
 
       const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
@@ -699,6 +716,21 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
       updateBlockLights();
 
       chunckManager.reloadLightData();
+
+      const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
+                                 blockToPlace == Blocks::LAVA_BLOCK;
+      const u8 itWasLiquidAtPosition = oldTypeBlock == Blocks::WATER_BLOCK ||
+                                       oldTypeBlock == Blocks::LAVA_BLOCK;
+
+      if (isPlacingLiquid) {
+        TYRA_LOG("putBlock -> setLiquidDataToMap");
+        SetLiquidDataToMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                           (u8)LiquidLevel::Percent100);
+      } else if (itWasLiquidAtPosition) {
+        TYRA_LOG("putBlock -> removeLiquid");
+        removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
+                     (u8)oldTypeBlock);
+      }
     }
 
     playPutBlockSound(blockToPlace);
@@ -1170,76 +1202,60 @@ void World::initWorldLightModel() {
 }
 
 void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
-  u8 hasChangedWater = false;
-  u8 hasChangedLava = false;
-
   if (BoundCheckMap(terrain, x - 1, y, z)) {
-    auto nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+    Blocks nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+    u8 level = GetLiquidDataFromMap(terrain, x - 1, y, z);
+
     if (nl == Blocks::WATER_BLOCK) {
-      hasChangedWater = true;
-      addLiquid(x - 1, y, z, (u8)Blocks::WATER_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x - 1, y, z, (u8)Blocks::WATER_BLOCK, level);
     } else if (nl == Blocks::LAVA_BLOCK) {
-      hasChangedLava = true;
-      addLiquid(x - 1, y, z, (u8)Blocks::LAVA_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x - 1, y, z, (u8)Blocks::LAVA_BLOCK, level);
     }
   }
 
   if (BoundCheckMap(terrain, x + 1, y, z)) {
-    auto nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+    Blocks nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+    u8 level = GetLiquidDataFromMap(terrain, x + 1, y, z);
+
     if (nr == Blocks::WATER_BLOCK) {
-      hasChangedWater = true;
-      addLiquid(x + 1, y, z, (u8)Blocks::WATER_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x + 1, y, z, (u8)Blocks::WATER_BLOCK, level);
     } else if (nr == Blocks::LAVA_BLOCK) {
-      hasChangedLava = true;
-      addLiquid(x + 1, y, z, (u8)Blocks::LAVA_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x + 1, y, z, (u8)Blocks::LAVA_BLOCK, level);
     }
   }
 
   if (BoundCheckMap(terrain, x, y - 1, z)) {
-    auto nd = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+    Blocks nd = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+    u8 level = GetLiquidDataFromMap(terrain, x, y - 1, z);
+
     if (nd == Blocks::WATER_BLOCK) {
-      hasChangedWater = true;
-      addLiquid(x, y - 1, z, (u8)Blocks::WATER_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y - 1, z, (u8)Blocks::WATER_BLOCK, level);
     } else if (nd == Blocks::LAVA_BLOCK) {
-      hasChangedLava = true;
-      addLiquid(x, y - 1, z, (u8)Blocks::LAVA_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y - 1, z, (u8)Blocks::LAVA_BLOCK, level);
     }
   }
 
   if (BoundCheckMap(terrain, x, y, z + 1)) {
-    auto nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+    Blocks nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+    u8 level = GetLiquidDataFromMap(terrain, x, y, z + 1);
+
     if (nf == Blocks::WATER_BLOCK) {
-      hasChangedWater = true;
-      addLiquid(x, y, z + 1, (u8)Blocks::WATER_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y, z + 1, (u8)Blocks::WATER_BLOCK, level);
     } else if (nf == Blocks::LAVA_BLOCK) {
-      hasChangedLava = true;
-      addLiquid(x, y, z + 1, (u8)Blocks::LAVA_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y, z + 1, (u8)Blocks::LAVA_BLOCK, level);
     }
   }
 
   if (BoundCheckMap(terrain, x, y, z - 1)) {
-    auto nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+    Blocks nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+    u8 level = GetLiquidDataFromMap(terrain, x, y, z - 1);
+
     if (nb == Blocks::WATER_BLOCK) {
-      hasChangedWater = true;
-      addLiquid(x, y, z - 1, (u8)Blocks::WATER_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y, z - 1, (u8)Blocks::WATER_BLOCK, level);
     } else if (nb == Blocks::LAVA_BLOCK) {
-      hasChangedLava = true;
-      addLiquid(x, y, z - 1, (u8)Blocks::LAVA_BLOCK,
-                (u8)LiquidLevel::Percent100);
+      addLiquid(x, y, z - 1, (u8)Blocks::LAVA_BLOCK, level);
     }
   }
-
-  if (hasChangedWater) updateLiquidWater();
-  if (hasChangedLava) updateLiquidLava();
 }
 
 void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
@@ -1250,30 +1266,39 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
       lavaBfsQueue.emplace(x, y, z, level);
     }
 
-    SetLiquidDataToMap(terrain, x, y, z, level);
     SetBlockInMap(terrain, x, y, z, type);
+    SetLiquidDataToMap(terrain, x, y, z, level);
+
+    Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+    if (moddedChunk) {
+      affectedChunksIdByLiquidPropagation.insert(moddedChunk);
+    }
   }
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
   u8 liquidLevel = GetLiquidDataFromMap(terrain, x, y, z);
-  removeLiquid(x, y, z, liquidLevel, type);
+  removeLiquid(x, y, z, type, liquidLevel);
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
                          u8 level) {
-  if (type == (u8)Blocks::WATER_BLOCK) {
-    waterRemovalBfsQueue.emplace(x, y, z, level);
-  } else if (type == (u8)Blocks::LAVA_BLOCK) {
-    lavaRemovalBfsQueue.emplace(x, y, z, level);
+  if (level > (u8)LiquidLevel::Percent0) {
+    if (type == (u8)Blocks::WATER_BLOCK) {
+      waterRemovalBfsQueue.emplace(x, y, z, level);
+    } else if (type == (u8)Blocks::LAVA_BLOCK) {
+      lavaRemovalBfsQueue.emplace(x, y, z, level);
+    }
+
+    SetLiquidDataToMap(terrain, x, y, z, level);
+  } else {
+    SetBlockInMap(terrain, x, y, z, (u8)Blocks::AIR_BLOCK);
+    SetLiquidDataToMap(terrain, x, y, z, (u8)LiquidLevel::Percent0);
   }
 
-  SetLiquidDataToMap(terrain, x, y, z, level);
-
-  if (level == (u8)LiquidLevel::Percent0) {
-    SetBlockInMap(terrain, x, y, z, (u8)Blocks::AIR_BLOCK);
-  } else {
-    SetBlockInMap(terrain, x, y, z, type);
+  Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+  if (moddedChunk) {
+    affectedChunksIdByLiquidPropagation.insert(moddedChunk);
   }
 }
 
@@ -1290,44 +1315,26 @@ void World::initLiquidExpansion() {
           auto liquidValue = LiquidLevel::Percent100;
           auto type = (u8)Blocks::WATER_BLOCK;
 
-          if (BoundCheckMap(terrain, x - 1, y, z)) {
-            auto nl =
-                static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
-            if (nl == Blocks::WATER_BLOCK) {
-              addLiquid(x - 1, y, z, type, liquidValue);
-            }
-          }
-
-          if (BoundCheckMap(terrain, x + 1, y, z)) {
-            auto nr =
-                static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
-            if (nr == Blocks::WATER_BLOCK) {
-              addLiquid(x + 1, y, z, type, liquidValue);
-            }
-          }
-
-          if (BoundCheckMap(terrain, x, y - 1, z)) {
-            auto nr =
-                static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
-            if (nr == Blocks::WATER_BLOCK) {
-              addLiquid(x, y - 1, z, type, liquidValue);
-            }
-          }
-
-          if (BoundCheckMap(terrain, x, y, z + 1)) {
-            auto nf =
-                static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
-            if (nf == Blocks::WATER_BLOCK) {
-              addLiquid(x, y, z + 1, type, liquidValue);
-            }
-          }
-
-          if (BoundCheckMap(terrain, x, y, z - 1)) {
-            auto nb =
-                static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
-            if (nb == Blocks::WATER_BLOCK) {
-              addLiquid(x, y, z - 1, type, liquidValue);
-            }
+          if (BoundCheckMap(terrain, x - 1, y, z) &&
+              GetBlockFromMap(terrain, x - 1, y, z) ==
+                  (u8)Blocks::WATER_BLOCK) {
+            addLiquid(x - 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x + 1, y, z) &&
+                     GetBlockFromMap(terrain, x + 1, y, z) ==
+                         (u8)Blocks::WATER_BLOCK) {
+            addLiquid(x + 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y - 1, z) &&
+                     GetBlockFromMap(terrain, x, y - 1, z) ==
+                         (u8)Blocks::WATER_BLOCK) {
+            addLiquid(x, y - 1, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z + 1) &&
+                     GetBlockFromMap(terrain, x, y, z + 1) ==
+                         (u8)Blocks::WATER_BLOCK) {
+            addLiquid(x, y, z + 1, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z - 1) &&
+                     GetBlockFromMap(terrain, x, y, z - 1) ==
+                         (u8)Blocks::WATER_BLOCK) {
+            addLiquid(x, y, z - 1, type, liquidValue);
           }
         }
       }
@@ -1353,33 +1360,42 @@ void World::propagateWaterRemovalQueue() {
     uint16_t nx = liquidNode.x;
     uint16_t ny = liquidNode.y;
     uint16_t nz = liquidNode.z;
-    uint8_t liquidValue = liquidNode.val;
+    uint8_t liquidValue = liquidNode.val - 1;
 
     waterRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
       floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
       floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
       floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
       floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
       floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
                             liquidValue);
+    }
+
+    if (liquidValue > (u8)LiquidLevel::Percent0) {
+      waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
     }
   }
 }
@@ -1392,45 +1408,64 @@ void World::propagateLavaRemovalQueue() {
     uint16_t nx = liquidNode.x;
     uint16_t ny = liquidNode.y;
     uint16_t nz = liquidNode.z;
-    uint8_t liquidValue = liquidNode.val;
+    uint8_t liquidValue = liquidNode.val - 1;
 
     lavaRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
       floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
       floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
       floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
       floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK,
                             liquidValue);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
       floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK,
                             liquidValue);
+    }
+
+    if (liquidValue > (u8)LiquidLevel::Percent0) {
+      lavaRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
     }
   }
 }
 
 void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
                                   u8 level) {
-  u8 neighborLevel = (u8)GetLiquidDataFromMap(terrain, x, y, z);
+  u8 neighborLevel = GetLiquidDataFromMap(terrain, x, y, z);
 
-  if (neighborLevel != LiquidLevel::Percent0 && neighborLevel < level) {
-    removeLiquid(x, y, z, type);
-  } else if (neighborLevel >= level) {
+  if (neighborLevel <= level + 1) {
+    removeLiquid(x, y, z, type, level);
+  } else if (neighborLevel > level) {
     addLiquid(x, y, z, type, neighborLevel);
+  }
+}
+
+void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                               u8 nextLevel) {
+  auto b = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+  const u8 canPropagate = b == Blocks::AIR_BLOCK;
+
+  if (canPropagate && GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
+    addLiquid(x, y, z, type, nextLevel);
   }
 }
 
@@ -1444,31 +1479,36 @@ void World::propagateWaterAddQueue() {
 
     waterBfsQueue.pop();
 
-    // TODO: implement liquid volumes
     s16 nextLevel = liquidNode.val - 1;
     if (nextLevel <= (u8)LiquidLevel::Percent0) {
       return;
     }
+
     // s16 nextLevel = LiquidLevel::Percent100;
-    u8 type = (u8)Blocks::WATER_BLOCK;
+    u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
       floodFillLiquidAdd(nx, ny - 1, nz, type, nextLevel);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1)) {
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
       floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel);
     }
   }
@@ -1484,13 +1524,16 @@ void World::propagateLavaAddQueue() {
 
     lavaBfsQueue.pop();
 
-    // TODO: implement liquid volumes
     s16 nextLevel = liquidNode.val - 1;
     if (nextLevel <= (u8)LiquidLevel::Percent0) {
       return;
     }
-    // s16 nextLevel = LiquidLevel::Percent100;
+
     u8 type = (u8)Blocks::LAVA_BLOCK;
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
+    }
 
     if (BoundCheckMap(terrain, nx + 1, ny, nz)) {
       floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
@@ -1498,10 +1541,6 @@ void World::propagateLavaAddQueue() {
 
     if (BoundCheckMap(terrain, nx, ny, nz + 1)) {
       floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
-    }
-
-    if (BoundCheckMap(terrain, nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
     }
 
     if (BoundCheckMap(terrain, nx, ny - 1, nz)) {
@@ -1514,14 +1553,16 @@ void World::propagateLavaAddQueue() {
   }
 }
 
-void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
-                               u8 nextLevel) {
-  auto b = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
-  if (b == Blocks::AIR_BLOCK) {
-    if (GetLiquidDataFromMap(terrain, x, y, z) < nextLevel) {
-      addLiquid(x, y, z, type, nextLevel);
+void World::updateChunksAffectedByLiquidPropagation() {
+  for (auto chunckPtr : affectedChunksIdByLiquidPropagation) {
+    Chunck* moddedChunk = chunckPtr;
+    if (moddedChunk) {
+      moddedChunk->clear();
+      buildChunk(moddedChunk);
     }
   }
+
+  affectedChunksIdByLiquidPropagation.clear();
 }
 
 // From CrossCraft

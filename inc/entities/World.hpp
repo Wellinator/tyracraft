@@ -12,6 +12,7 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
+#include <unordered_set>
 #include <queue>
 #include <deque>
 #include <algorithm>
@@ -221,22 +222,22 @@ class World {
   std::queue<Node> waterRemovalBfsQueue;
   std::queue<Node> lavaBfsQueue;
   std::queue<Node> lavaRemovalBfsQueue;
+  std::unordered_set<Chunck*> affectedChunksIdByLiquidPropagation;
 
   void initLiquidExpansion();
   void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);
   void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
-
   void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 nextLevel);
   void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
-
   void updateLiquidWater();
   void propagateWaterRemovalQueue();
   void propagateWaterAddQueue();
   void updateLiquidLava();
   void propagateLavaRemovalQueue();
   void propagateLavaAddQueue();
+  void updateChunksAffectedByLiquidPropagation();
 };
 
 bool inline isVegetation(Blocks block) {

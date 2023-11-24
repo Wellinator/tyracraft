@@ -64,7 +64,7 @@ void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void ChunckManager::generateChunks() {
-  u16 tempId = 1;
+  u16 tempId = 0;
 
   for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNCK_SIZE) {
     for (size_t z = 0; z < OVERWORLD_MAX_DISTANCE; z += CHUNCK_SIZE) {
@@ -92,7 +92,7 @@ Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
 
 Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
   for (size_t i = 0; i < chuncks.size(); i++)
-    if (chuncks[i]->isVisible() && offset.x >= chuncks[i]->minOffset->x &&
+    if (offset.x >= chuncks[i]->minOffset->x &&
         offset.x < chuncks[i]->maxOffset->x &&
         offset.y >= chuncks[i]->minOffset->y &&
         offset.y < chuncks[i]->maxOffset->y &&
@@ -103,7 +103,7 @@ Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
   return nullptr;
 };
 
-Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id - 1]; };
+Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id]; };
 
 u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
 
