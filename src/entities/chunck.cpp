@@ -4,7 +4,7 @@
 #include <iterator>
 #include <algorithm>
 #include "managers/light_manager.hpp"
-#include "managers/mesh_builder.hpp"
+#include "managers/mesh/mesh_builder.hpp"
 #include "managers/block/vertex_block_data.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
@@ -114,7 +114,7 @@ void Chunck::loadDrawData() {
 
   for (size_t i = 0; i < blocks.size(); i++) {
     MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
-                                  t_worldLightModel, t_terrain);
+                          t_worldLightModel, t_terrain);
   }
 
   // Pre-load packet data
@@ -144,13 +144,8 @@ void Chunck::reloadLightData() {
   verticesColors.clear();
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->isCrossed) {
-      MeshBuilder_loadCroosedLightData(blocks[i], &verticesColors,
-                                       t_worldLightModel, t_terrain);
-    } else {
-      MeshBuilder_loadLightData(blocks[i], &verticesColors, t_worldLightModel,
-                                t_terrain);
-    }
+    MeshBuilder_BuildLightData(blocks[i], &verticesColors, t_worldLightModel,
+                               t_terrain);
   }
 
   colorBag.many = verticesColors.data();
