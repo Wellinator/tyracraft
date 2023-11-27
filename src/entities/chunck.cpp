@@ -4,10 +4,10 @@
 #include <iterator>
 #include <algorithm>
 #include "managers/light_manager.hpp"
+#include "managers/mesh_builder.hpp"
+#include "managers/block/vertex_block_data.hpp"
 
-Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id)
-    : rawData(VertexBlockData::getVertexData()),
-      crossBlockRawData(VertexBlockData::getCrossedVertexData()) {
+Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
   this->tempLoadingOffset->set(minOffset);
   this->minOffset->set(minOffset);
@@ -39,12 +39,10 @@ Chunck::~Chunck() {
   delete maxOffset;
   delete center;
   delete bbox;
-
-  delete[] rawData;
 };
 
-void Chunck::init(LevelMap* terrain, WorldLightModel* t_worldLightModel) {
-  this->terrain = terrain;
+void Chunck::init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel) {
+  this->t_terrain = t_terrain;
   this->t_worldLightModel = t_worldLightModel;
 }
 
@@ -115,11 +113,8 @@ void Chunck::loadDrawData() {
   uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->isCrossed) {
-      loadCrossBlock(blocks[i]);
-    } else {
-      loadCuboidBlock(blocks[i]);
-    }
+    MeshBuilder_GenerateBlockMesh(blocks[i], &vertices, &verticesColors, &uvMap,
+                                  t_worldLightModel, t_terrain);
   }
 
   // Pre-load packet data
@@ -145,26 +140,16 @@ void Chunck::loadDrawData() {
   state = ChunkState::Loaded;
 }
 
-void Chunck::loadCuboidBlock(Block* t_block) {
-  loadMeshData(t_block);
-  loadUVData(t_block);
-  loadLightData(t_block);
-}
-
-void Chunck::loadCrossBlock(Block* t_block) {
-  loadCrossedMeshData(t_block);
-  loadCrossedUVData(t_block);
-  loadCroosedLightData(t_block);
-}
-
 void Chunck::reloadLightData() {
   verticesColors.clear();
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->isCrossed) {
-      loadCroosedLightData(blocks[i]);
+      MeshBuilder_loadCroosedLightData(blocks[i], &verticesColors,
+                                       t_worldLightModel, t_terrain);
     } else {
-      loadLightData(blocks[i]);
+      MeshBuilder_loadLightData(blocks[i], &verticesColors, t_worldLightModel,
+                                t_terrain);
     }
   }
 
@@ -172,345 +157,6 @@ void Chunck::reloadLightData() {
 }
 
 // TODO: move to a block builder
-void Chunck::loadMeshData(Block* t_block) {
-  int vert;
-
-  if (t_block->isTopFaceVisible()) {
-    vert = 0;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      Vec4 scaleVec = Vec4(1.0F, 0.75F, 1.0F);
-
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-      vertices.emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                            t_block->position);
-    } else {
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-      vertices.emplace_back(t_block->model * rawData[vert++]);
-    }
-  }
-  if (t_block->isBottomFaceVisible()) {
-    vert = 6;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isLeftFaceVisible()) {
-    vert = 12;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isRightFaceVisible()) {
-    vert = 18;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isBackFaceVisible()) {
-    vert = 24;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isFrontFaceVisible()) {
-    vert = 30;
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-    vertices.emplace_back(t_block->model * rawData[vert++]);
-  }
-}
-
-void Chunck::loadUVData(Block* t_block) {
-  if (t_block->isTopFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[0]);
-  }
-  if (t_block->isBottomFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[1]);
-  }
-  if (t_block->isLeftFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[2]);
-  }
-  if (t_block->isRightFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[3]);
-  }
-  if (t_block->isBackFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[4]);
-  }
-  if (t_block->isFrontFaceVisible()) {
-    loadUVFaceData(t_block->facesMapIndex[5]);
-  }
-}
-
-void Chunck::loadUVFaceData(const u8& index) {
-  const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
-  const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
-  const float scale = 1.0F / 16.0F;
-  const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-
-  uvMap.emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-  uvMap.emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-}
-
-void Chunck::loadLightData(Block* t_block) {
-  auto baseFaceColor = Color(120, 120, 120);
-  Vec4 blockColorAverage = Vec4(0.0F);
-  Vec4 tempColor;
-
-  if (t_block->isTopFaceVisible()) {
-    //   Top face 100% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
-                                   t_worldLightModel->sunLightIntensity);
-
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::TOP, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  if (t_block->isBottomFaceVisible()) {
-    //   Top face 50% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::BOTTOM, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  if (t_block->isLeftFaceVisible()) {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::LEFT, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  if (t_block->isRightFaceVisible()) {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::RIGHT, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  if (t_block->isBackFaceVisible()) {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
-                                   terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::BACK, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  if (t_block->isFrontFaceVisible()) {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-      loadLightFaceData(&faceColor);
-    } else {
-      auto faceNeightbors = getFaceNeightbors(FACE_SIDE::FRONT, t_block);
-      loadLightFaceDataWithAO(&faceColor, faceNeightbors);
-    }
-  }
-
-  blockColorAverage /= t_block->visibleFacesCount;
-  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-                         blockColorAverage.z);
-}
-
-void Chunck::loadCroosedLightData(Block* t_block) {
-  auto baseFaceColor = Color(120, 120, 120);
-  Vec4 blockColorAverage = Vec4(0.0F);
-  Vec4 tempColor;
-
-  // Face 1
-  {
-    Color faceColor = baseFaceColor;
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    loadLightFaceData(&faceColor);
-  }
-
-  // Face 2
-  {
-    Color faceColor = baseFaceColor;
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, terrain,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    loadLightFaceData(&faceColor);
-  }
-
-  blockColorAverage /= t_block->visibleFacesCount;
-  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-                         blockColorAverage.z);
-}
-
-void Chunck::loadCrossedMeshData(Block* t_block) {
-  int vert = 0;
-
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-  vertices.emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
-                        t_block->position);
-}
-
-void Chunck::loadCrossedUVData(Block* t_block) {
-  loadUVFaceData(t_block->facesMapIndex[0]);
-  loadUVFaceData(t_block->facesMapIndex[0]);
-}
-
-void Chunck::loadLightFaceDataWithAO(Color* faceColor,
-                                     std::array<u8, 8>& faceNeightbors) {
-  std::array<u8, 4> AOCornersValues =
-      LightManager::getCornersAOValues(faceNeightbors);
-
-  // DEBUG Vertices Colors
-  // verticesColors.emplace_back(Color(255, 0, 0));
-  // verticesColors.emplace_back(Color(0, 255, 0));
-  // verticesColors.emplace_back(Color(0, 0, 255));
-  // verticesColors.emplace_back(Color(255, 255, 0));
-  // verticesColors.emplace_back(Color(0, 255, 255));
-  // verticesColors.emplace_back(Color(255, 0, 255));
-
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[1])));
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[0])));
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[2])));
-  verticesColors.emplace_back(LightManager::IntensifyColor(
-      faceColor, LightManager::calcAOIntensity(AOCornersValues[3])));
-}
-
-void Chunck::loadLightFaceData(Color* faceColor) {
-  verticesColors.emplace_back(*faceColor);
-  verticesColors.emplace_back(*faceColor);
-  verticesColors.emplace_back(*faceColor);
-  verticesColors.emplace_back(*faceColor);
-  verticesColors.emplace_back(*faceColor);
-  verticesColors.emplace_back(*faceColor);
-}
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
   this->frustumCheck = Utils::FrustumAABBIntersect(
@@ -521,150 +167,6 @@ void Chunck::sortBlockByTransparency() {
   std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {
     return (u8)a->hasTransparency < (u8)b->hasTransparency;
   });
-}
-
-bool Chunck::isBlockOpaque(u8 block_type) {
-  return block_type != (u8)Blocks::AIR_BLOCK &&
-         block_type != (u8)Blocks::GLASS_BLOCK &&
-         block_type != (u8)Blocks::POPPY_FLOWER &&
-         block_type != (u8)Blocks::DANDELION_FLOWER &&
-         block_type != (u8)Blocks::GRASS &&
-         block_type != (u8)Blocks::WATER_BLOCK;
-}
-
-/**
- * Result order:
- * 7  0  1
- * 6     2
- * 5  4  3
- *
- */
-std::array<u8, 8> Chunck::getFaceNeightbors(FACE_SIDE faceSide, Block* block) {
-  Vec4 pos;
-  GetXYZFromPos(&block->offset, &pos);
-
-  auto result = std::array<u8, 8>();
-
-  switch (faceSide) {
-    case FACE_SIDE::TOP:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
-      break;
-
-    case FACE_SIDE::BOTTOM:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
-      break;
-
-    case FACE_SIDE::LEFT:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
-      break;
-
-    case FACE_SIDE::RIGHT:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
-      break;
-
-    case FACE_SIDE::BACK:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z + 1));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z + 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z + 1));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z + 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z + 1));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z + 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z + 1));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z + 1));
-      break;
-
-    case FACE_SIDE::FRONT:
-      result[0] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y + 1, pos.z - 1));
-      result[1] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y + 1, pos.z - 1));
-      result[2] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x - 1, pos.y, pos.z - 1));
-      result[3] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x - 1, pos.y - 1, pos.z - 1));
-      result[4] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x, pos.y - 1, pos.z - 1));
-      result[5] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y - 1, pos.z - 1));
-      result[6] =
-          isBlockOpaque(GetBlockFromMap(terrain, pos.x + 1, pos.y, pos.z - 1));
-      result[7] = isBlockOpaque(
-          GetBlockFromMap(terrain, pos.x + 1, pos.y + 1, pos.z - 1));
-      break;
-
-    default:
-      break;
-  }
-
-  return result;
 }
 
 void Chunck::preAllocateMemory() {

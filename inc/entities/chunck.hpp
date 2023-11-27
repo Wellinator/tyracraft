@@ -11,7 +11,6 @@
 #include "utils.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "renderer/3d/bbox/bbox.hpp"
-#include "managers/block/vertex_block_data.hpp"
 #include <math/m4x4.hpp>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
@@ -58,9 +57,9 @@ class Chunck {
   int visibleFacesCount = 0;
   u16 blocksCount = 0;
 
-  LevelMap* terrain;
+  LevelMap* t_terrain;
   WorldLightModel* t_worldLightModel;
-  void init(LevelMap* terrain, WorldLightModel* t_worldLightModel);
+  void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
@@ -107,8 +106,6 @@ class Chunck {
     this->tempLoadingOffset->set(*minOffset);
   };
 
-  const Vec4* rawData;
-  const Vec4* crossBlockRawData;
 
   u8 _isDrawDataLoaded = false;
 
