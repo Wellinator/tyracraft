@@ -78,7 +78,7 @@ void World::propagateLiquids() {
   initLiquidExpansion();
 
   while (waterBfsQueue.empty() == false) propagateWaterAddQueue();
-  while (lavaBfsQueue.empty() == false) propagateWaterAddQueue();
+  while (lavaBfsQueue.empty() == false) propagateLavaAddQueue();
 }
 
 void World::loadSpawnArea() { buildInitialPosition(); }
