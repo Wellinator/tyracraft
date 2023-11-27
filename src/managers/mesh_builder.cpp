@@ -2,7 +2,7 @@
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
 
-void MeshBuilder_GenerateBlockMesh(Block* t_block,
+void MeshBuilder_BuildMesh(Block* t_block,
                                    std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,

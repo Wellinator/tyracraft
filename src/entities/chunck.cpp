@@ -113,7 +113,7 @@ void Chunck::loadDrawData() {
   uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    MeshBuilder_GenerateBlockMesh(blocks[i], &vertices, &verticesColors, &uvMap,
+    MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                                   t_worldLightModel, t_terrain);
   }
 
