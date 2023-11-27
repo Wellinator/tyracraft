@@ -352,19 +352,26 @@ void flood_fill_water(LevelMap* map) {
 
 void flood_fill_lava(LevelMap* map) {
   // Add underground lava sources
-  int numLavaSources = map->length * map->width * map->height / 10000;
+  int numLavaSources = map->length * map->width * map->height / 5000;
   for (int i = 0; i < numLavaSources; i++) {
     // Choose random x and z coordinates
+    int maxSurfaceOffset = 5;
     int x = rand() % map->length;
-    int y = rand() % map->height - waterLevel;
+    int y = rand() % map->height - waterLevel + maxSurfaceOffset;
     int z = rand() % map->width;
 
     if (y <= 0) continue;
 
+    uint8_t underBlk = GetBlockFromMap(map, x, y - 1, z);
+    if (underBlk == static_cast<uint8_t>(Blocks::AIR_BLOCK) ||
+        underBlk == static_cast<uint8_t>(Blocks::WATER_BLOCK))
+      continue;
+
     if (GetBlockFromMap(map, x, y, z) ==
         static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
       SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::LAVA_BLOCK));
-      SetLiquidDataToMap(map, x, y, z,static_cast<uint8_t>(LiquidLevel::Percent100));
+      SetLiquidDataToMap(map, x, y, z,
+                         static_cast<uint8_t>(LiquidLevel::Percent100));
     }
   }
 }
