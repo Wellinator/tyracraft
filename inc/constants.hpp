@@ -249,8 +249,9 @@ typedef enum {
   South = 3,
 } BlockOrientation;
 
-// Two bit for orientation
+// Two bits for orientation
 #define BLOCK_ORIENTATION_MASK 0b00000011
+
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
 #define _180DEGINRAD Tyra::Math::ANG2RAD * 180
 #define _270DEGINRAD Tyra::Math::ANG2RAD * 270
