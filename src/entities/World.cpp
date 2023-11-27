@@ -76,7 +76,9 @@ void World::generateLight() {
 void World::propagateLiquids() {
   TYRA_LOG("Propagating liquids...");
   initLiquidExpansion();
+
   while (waterBfsQueue.empty() == false) propagateWaterAddQueue();
+  while (lavaBfsQueue.empty() == false) propagateWaterAddQueue();
 }
 
 void World::loadSpawnArea() { buildInitialPosition(); }
@@ -1318,28 +1320,32 @@ void World::initLiquidExpansion() {
 
         if (b == Blocks::AIR_BLOCK) {
           auto liquidValue = LiquidLevel::Percent100;
-          auto type = (u8)Blocks::WATER_BLOCK;
 
-          if (BoundCheckMap(terrain, x - 1, y, z) &&
-              GetBlockFromMap(terrain, x - 1, y, z) ==
-                  (u8)Blocks::WATER_BLOCK) {
-            addLiquid(x - 1, y, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x + 1, y, z) &&
-                     GetBlockFromMap(terrain, x + 1, y, z) ==
-                         (u8)Blocks::WATER_BLOCK) {
-            addLiquid(x + 1, y, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y - 1, z) &&
-                     GetBlockFromMap(terrain, x, y - 1, z) ==
-                         (u8)Blocks::WATER_BLOCK) {
-            addLiquid(x, y - 1, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y, z + 1) &&
-                     GetBlockFromMap(terrain, x, y, z + 1) ==
-                         (u8)Blocks::WATER_BLOCK) {
-            addLiquid(x, y, z + 1, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y, z - 1) &&
-                     GetBlockFromMap(terrain, x, y, z - 1) ==
-                         (u8)Blocks::WATER_BLOCK) {
-            addLiquid(x, y, z - 1, type, liquidValue);
+          if (BoundCheckMap(terrain, x - 1, y, z)) {
+            auto type = GetBlockFromMap(terrain, x - 1, y, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x - 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x + 1, y, z)) {
+            auto type = GetBlockFromMap(terrain, x + 1, y, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x + 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y - 1, z)) {
+            auto type = GetBlockFromMap(terrain, x, y - 1, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y - 1, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z - 1)) {
+            auto type = GetBlockFromMap(terrain, x, y, z - 1);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y, z - 1, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z + 1)) {
+            auto type = GetBlockFromMap(terrain, x, y, z + 1);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y, z + 1, type, liquidValue);
           }
         }
       }
@@ -1505,7 +1511,9 @@ void World::propagateWaterAddQueue() {
 
     if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
         GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny - 1, nz, type, nextLevel);
+      // If down block is air, keep propagating until hit a surface;
+      floodFillLiquidAdd(nx, ny - 1, nz, type, liquidNode.val);
+      return;
     }
 
     if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
@@ -1549,7 +1557,9 @@ void World::propagateLavaAddQueue() {
 
     if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
         GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny - 1, nz, type, nextLevel);
+      // If down block is air, keep propagating until hit a surface;
+      floodFillLiquidAdd(nx, ny - 1, nz, type, liquidNode.val);
+      return;
     }
 
     if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
