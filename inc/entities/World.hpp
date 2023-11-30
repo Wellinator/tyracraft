@@ -234,10 +234,12 @@ class World {
   void initLiquidExpansion();
   void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);
   void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
+  void addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
+                 u8 orientation);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type);
   void removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level);
   void floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
-                          u8 nextLevel);
+                          u8 nextLevel, u8 orientation);
   void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
                              u8 level);
   void updateLiquidWater(const float deltaTime);

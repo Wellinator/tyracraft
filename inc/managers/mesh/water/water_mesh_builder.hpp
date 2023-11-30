@@ -28,21 +28,60 @@ void WaterMeshBuilder_GenerateMesh(Block* t_block,
                                    WorldLightModel* t_worldLightModel,
                                    LevelMap* t_terrain);
 
-void WaterMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices);
+void WaterMeshBuilder_loadMeshData(Block* t_block,
+                                   std::vector<Vec4>* t_vertices,
+                                   LevelMap* t_terrain);
+
+/**
+ * https://minecraft.fandom.com/wiki/Water
+ * 1	block	  1
+ * 2	blocks	0.75-1
+ * 3	blocks	0.625-0.75
+ * 4	blocks	0.5-0.625
+ * 5	blocks	0.375-0.5
+ * 6	blocks	0.25-0.375
+ * 7	blocks	0.125-0.25
+ */
+void WaterMeshBuilder_loadMeshData100(Block* t_block,
+                                      std::vector<Vec4>* t_vertices,
+                                      const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData75(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData62(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData50(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData37(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData25(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshData12(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation);
+void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
+                                          std::vector<Vec4>* t_vertices,
+                                          Vec4 from, Vec4 to, const BlockOrientation orientation);
+
 void WaterMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
-void WaterMeshBuilder_loadUVFaceData(const u8& index, std::vector<Vec4>* t_uv_map);
+void WaterMeshBuilder_loadUVFaceData(const u8& index,
+                                     std::vector<Vec4>* t_uv_map);
 void WaterMeshBuilder_loadLightData(Block* t_block,
-                               std::vector<Color>* t_vertices_colors,
-                               WorldLightModel* t_worldLightModel,
-                               LevelMap* t_terrain);
+                                    std::vector<Color>* t_vertices_colors,
+                                    WorldLightModel* t_worldLightModel,
+                                    LevelMap* t_terrain);
 
 void WaterMeshBuilder_loadLightFaceData(Color* faceColor,
-                                   std::vector<Color>* t_vertices_colors);
-void WaterMeshBuilder_loadLightFaceDataWithAO(Color* faceColor,
-                                         std::array<u8, 8>& faceNeightbors,
-                                         std::vector<Color>* t_vertices_colors);
+                                        std::vector<Color>* t_vertices_colors);
+void WaterMeshBuilder_loadLightFaceDataWithAO(
+    Color* faceColor, std::array<u8, 8>& faceNeightbors,
+    std::vector<Color>* t_vertices_colors);
 
 bool WaterMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> WaterMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
-                                                Block* block,
-                                                LevelMap* t_terrain);
+                                                     Block* block,
+                                                     LevelMap* t_terrain);

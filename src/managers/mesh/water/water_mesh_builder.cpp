@@ -8,37 +8,167 @@ void WaterMeshBuilder_GenerateMesh(Block* t_block,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    LevelMap* t_terrain) {
-  WaterMeshBuilder_loadMeshData(t_block, t_vertices);
+  WaterMeshBuilder_loadMeshData(t_block, t_vertices, t_terrain);
   WaterMeshBuilder_loadUVData(t_block, t_uv_map);
   WaterMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
                                  t_terrain);
 }
 
 void WaterMeshBuilder_loadMeshData(Block* t_block,
-                                   std::vector<Vec4>* t_vertices) {
-  int vert;
+                                   std::vector<Vec4>* t_vertices,
+                                   LevelMap* t_terrain) {
+  Vec4 pos;
+  GetXYZFromPos(&t_block->offset, &pos);
+  const LiquidLevel level = static_cast<LiquidLevel>(
+      GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
+  const BlockOrientation orientation =
+      GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+
+  switch (level) {
+    case LiquidLevel::Percent100:
+      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent75:
+      WaterMeshBuilder_loadMeshData75(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent62:
+      WaterMeshBuilder_loadMeshData62(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent50:
+      WaterMeshBuilder_loadMeshData50(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent37:
+      WaterMeshBuilder_loadMeshData37(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent25:
+      WaterMeshBuilder_loadMeshData25(t_block, t_vertices, orientation);
+      break;
+    case LiquidLevel::Percent12:
+      WaterMeshBuilder_loadMeshData12(t_block, t_vertices, orientation);
+      break;
+
+    default:
+      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      break;
+  }
+}
+
+void WaterMeshBuilder_loadMeshData100(Block* t_block,
+                                      std::vector<Vec4>* t_vertices,
+                                      const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = from;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData75(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData62(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.625F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData50(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F * 0.625F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData37(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.375F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData25(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F * 0.375F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.25F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+void WaterMeshBuilder_loadMeshData12(Block* t_block,
+                                     std::vector<Vec4>* t_vertices,
+                                     const BlockOrientation orientation) {
+  const Vec4 from = Vec4(1.0F, 0.75F * 0.25F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, 0.75F * 0.125F, 1.0F) * BLOCK_SIZE;
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
+                                       orientation);
+}
+
+// FIXME: check block rotation by water flow
+void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
+                                          std::vector<Vec4>* t_vertices,
+                                          Vec4 from, Vec4 to,
+                                          const BlockOrientation orientation) {
+  uint8_t vert;
   const Vec4* rawData = VertexBlockData::getVertexData();
+  M4x4 modelFrom;
+  M4x4 modelTo;
+
+  modelFrom.identity();
+  modelTo.identity();
+
+  // Means no orientation
+  if (orientation == BlockOrientation::East) {
+    modelFrom.scale(from);
+    modelFrom.translate(t_block->position);
+
+    modelTo.scale(to);
+    modelTo.translate(t_block->position);
+  } else {
+    switch (orientation) {
+      case BlockOrientation::North:
+        modelFrom.rotateY(_90DEGINRAD);
+        modelTo.rotateY(_90DEGINRAD);
+        break;
+      case BlockOrientation::South:
+        modelFrom.rotateY(_270DEGINRAD);
+        modelTo.rotateY(_270DEGINRAD);
+        break;
+      case BlockOrientation::West:
+        modelFrom.rotateY(_180DEGINRAD);
+        modelTo.rotateY(_180DEGINRAD);
+        break;
+      default:
+        break;
+    }
+
+    modelFrom.scale(from);
+    modelFrom.translate(t_block->position);
+
+    modelTo.scale(to);
+    modelTo.translate(t_block->position);
+  }
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
-
-    // TODO: build by volume level
-    // if (t_block->type == Blocks::WATER_BLOCK || t_block->isCrossed) {
-    Vec4 scaleVec = Vec4(1.0F, 0.75F, 1.0F);
-
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    t_vertices->emplace_back(rawData[vert++] * scaleVec * BLOCK_SIZE +
-                             t_block->position);
-    // }
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
@@ -52,38 +182,42 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(modelTo * rawData[vert++]);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
+
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(modelFrom * rawData[vert++]);
   }
 
   delete rawData;

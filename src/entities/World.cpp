@@ -685,8 +685,6 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
                           blockTypeAtTargetPosition == Blocks::GRASS;
 
     if (canReplace) {
-      TYRA_LOG("putBlock");
-
       // Calc block orientation
       BlockOrientation orientation;
 
@@ -725,11 +723,9 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
                                        oldTypeBlock == Blocks::LAVA_BLOCK;
 
       if (isPlacingLiquid) {
-        TYRA_LOG("putBlock -> setLiquidDataToMap");
         SetLiquidDataToMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                            (u8)LiquidLevel::Percent100);
       } else if (itWasLiquidAtPosition) {
-        TYRA_LOG("putBlock -> removeLiquid");
         removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
                      (u8)oldTypeBlock);
       }
@@ -1265,7 +1261,8 @@ void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
   }
 }
 
-void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
+void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
+                      u8 orientation) {
   if (level > (u8)LiquidLevel::Percent0) {
     if (type == (u8)Blocks::WATER_BLOCK) {
       waterBfsQueue.emplace(x, y, z, level);
@@ -1275,12 +1272,19 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
 
     SetBlockInMap(terrain, x, y, z, type);
     SetLiquidDataToMap(terrain, x, y, z, level);
+    
+    SetOrientationDataToMap(terrain, x, y, z,
+                            static_cast<BlockOrientation>(orientation));
 
     Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
     if (moddedChunk) {
       affectedChunksIdByLiquidPropagation.insert(moddedChunk);
     }
   }
+}
+
+void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
+  addLiquid(x, y, z, type, level, BlockOrientation::East);
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
@@ -1482,12 +1486,12 @@ void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
 }
 
 void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
-                               u8 nextLevel) {
+                               u8 nextLevel, u8 orientation) {
   auto b = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
   const u8 canPropagate = b == Blocks::AIR_BLOCK;
 
   if (canPropagate && GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
-    addLiquid(x, y, z, type, nextLevel);
+    addLiquid(x, y, z, type, nextLevel, orientation);
   }
 }
 
@@ -1512,28 +1516,33 @@ void World::propagateWaterAddQueue() {
     if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
         GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
       // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, liquidNode.val);
+      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                         (u8)BlockOrientation::East);
       return;
     }
 
     if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
         GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::North);
     }
 
     if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
         GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                         (u8)BlockOrientation::East);
     }
 
     if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
         GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::South);
     }
 
     if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
         GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel);
+      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                         (u8)BlockOrientation::West);
     }
   }
 }
@@ -1558,28 +1567,33 @@ void World::propagateLavaAddQueue() {
     if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
         GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
       // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, liquidNode.val);
+      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                         (u8)BlockOrientation::East);
       return;
     }
 
     if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
         GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel);
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::West);
     }
 
     if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
         GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel);
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                         (u8)BlockOrientation::North);
     }
 
     if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
         GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel);
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::East);
     }
 
     if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
         GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel);
+      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                         (u8)BlockOrientation::South);
     }
   }
 }
@@ -1991,8 +2005,8 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 void CrossCraft_World_Deinit() {
   TYRA_LOG("Destroying the world");
   if (level.map.blocks) delete[] level.map.blocks;
-  if (level.map.metaData) delete[] level.map.metaData;
   if (level.map.lightData) delete[] level.map.lightData;
+  if (level.map.metaData) delete[] level.map.metaData;
   TYRA_LOG("World freed");
 }
 
