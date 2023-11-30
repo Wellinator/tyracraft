@@ -116,7 +116,6 @@ void WaterMeshBuilder_loadMeshData12(Block* t_block,
                                        orientation);
 }
 
-// FIXME: check block rotation by water flow
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
                                           Vec4 from, Vec4 to,
