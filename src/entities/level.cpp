@@ -32,9 +32,9 @@ uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
   return map->metaData[index] = data;
 }
 
-// Gets the metadata value at the given coordinates in the map.
-uint8_t SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                uint16_t z, BlockOrientation orientation) {
+// Set the metadata value at the given coordinates in the map.
+void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                uint16_t z, const BlockOrientation orientation) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
   // value = (value & ~mask) | (newvalue & mask);
@@ -44,7 +44,7 @@ uint8_t SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
   const u8 _setedValue =
       (map->metaData[index] & ~BLOCK_ORIENTATION_MASK) | newvalue;
 
-  return map->metaData[index] = _setedValue;
+  map->metaData[index] = _setedValue;
 }
 
 // Gets the metadata value at the given coordinates in the map.
@@ -55,16 +55,16 @@ BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
   return static_cast<BlockOrientation>(response);
 }
 
-// Gets the liquid metadata value at the given coordinates in the map.
-uint8_t SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                           u8 liquidLevel) {
+// Set the liquid metadata value at the given coordinates in the map.
+void SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                           const u8 liquidLevel) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
   const uint8_t newvalue = liquidLevel << 2 & BLOCK_LIQUID_METADATA_MASK;
   const u8 _setedValue =
       (map->metaData[index] & ~BLOCK_LIQUID_METADATA_MASK) | newvalue;
   // printf("Setted: %i", _setedValue >> 2);
-  return map->metaData[index] = _setedValue;
+  map->metaData[index] = _setedValue;
 }
 
 // Gets the liquid metadata value at the given coordinates in the map.

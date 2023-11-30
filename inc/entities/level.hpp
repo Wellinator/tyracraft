@@ -34,14 +34,14 @@ uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos);
 uint8_t GetMetaDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                          uint8_t data);
-uint8_t SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                uint16_t z, BlockOrientation orientation);
+void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                uint16_t z, const BlockOrientation orientation);
 BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
                                            uint16_t y, uint16_t z);
 
                                            
-uint8_t SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                           u8 liquidLevel);
+void SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                           const u8 liquidLevel);
 u8 GetLiquidDataFromMap(LevelMap* map, uint16_t x, uint16_t y,
                                  uint16_t z);
 
