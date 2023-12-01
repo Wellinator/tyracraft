@@ -355,7 +355,7 @@ void flood_fill_lava(LevelMap* map) {
   int numLavaSources = map->length * map->width * map->height / 5000;
   for (int i = 0; i < numLavaSources; i++) {
     // Choose random x and z coordinates
-    int maxSurfaceOffset = 5;
+    int maxSurfaceOffset = 10;
     int x = rand() % map->length;
     int y = rand() % map->height - waterLevel + maxSurfaceOffset;
     int z = rand() % map->width;
