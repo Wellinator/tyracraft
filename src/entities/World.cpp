@@ -496,33 +496,73 @@ int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
 }
 
 int World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
+  const auto x = t_blockOffset->x;
+  const auto y = t_blockOffset->y;
+  const auto z = t_blockOffset->z;
+
+  const BlockOrientation orientation = GetOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+
   int result = 0x000000;
 
-  // Front
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z - 1))
-    result = result | FRONT_VISIBLE;
+  switch (orientation) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
 
-  // Back
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y, t_blockOffset->z + 1))
-    result = result | BACK_VISIBLE;
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | LEFT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | RIGHT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | FRONT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | BACK_VISIBLE;
+      break;
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
 
-  // Right
-  if (isAirAtPosition(t_blockOffset->x - 1, t_blockOffset->y, t_blockOffset->z))
-    result = result | RIGHT_VISIBLE;
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | RIGHT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | LEFT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | BACK_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | FRONT_VISIBLE;
+      break;
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
 
-  // Left
-  if (isAirAtPosition(t_blockOffset->x + 1, t_blockOffset->y, t_blockOffset->z))
-    result = result | LEFT_VISIBLE;
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | BACK_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | FRONT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | LEFT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | RIGHT_VISIBLE;
+      break;
+    case BlockOrientation::East:
+    default:
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | FRONT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | BACK_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | RIGHT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | LEFT_VISIBLE;
+      break;
+  }
 
   // Top
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y + 1, t_blockOffset->z))
-    result = result | TOP_VISIBLE;
-
+  if (isAirAtPosition(x, y + 1, z)) result = result | TOP_VISIBLE;
   // Bottom
-  if (isAirAtPosition(t_blockOffset->x, t_blockOffset->y - 1, t_blockOffset->z))
-    result = result | BOTTOM_VISIBLE;
+  if (isAirAtPosition(x, y - 1, z)) result = result | BOTTOM_VISIBLE;
 
-  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
   return result;
 }
 
@@ -913,7 +953,8 @@ void World::buildChunk(Chunck* t_chunck) {
           Vec4 tempBlockOffset = Vec4(x, y, z);
 
           const int visibleFaces =
-              block_type == Blocks::WATER_BLOCK
+              block_type == Blocks::WATER_BLOCK ||
+                      block_type == Blocks::LAVA_BLOCK
                   ? getLiquidBlockVisibleFaces(&tempBlockOffset)
                   : getBlockVisibleFaces(&tempBlockOffset);
 
@@ -1022,7 +1063,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
 
       const int visibleFaces =
-          block_type == Blocks::WATER_BLOCK
+          block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK
               ? getLiquidBlockVisibleFaces(&tempBlockOffset)
               : getBlockVisibleFaces(&tempBlockOffset);
 
