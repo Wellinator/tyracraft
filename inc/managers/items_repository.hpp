@@ -75,6 +75,9 @@ class ItemRepository {
   Item white_concrete;
   Item black_concrete;
 
+  Item water_bucket;
+  Item lava_bucket;
+
   // Stone Bricks
   Item stone_brick;
   Item cracked_stone_bricks;

@@ -47,6 +47,18 @@ ItemRepository::~ItemRepository() {
       mossy_stone_bricks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       chiseled_stone_bricks.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(yellow_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(blue_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(green_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(orange_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(purple_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(red_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(white_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(black_concrete.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(water_bucket.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(lava_bucket.sprite);
   //   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
@@ -313,6 +325,20 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/black_concrete.png"))
       ->addLink(black_concrete.sprite.id);
+
+  water_bucket.id = ItemId::water_bucket;
+  water_bucket.blockId = Blocks::WATER_BLOCK;
+  this->items.push_back(&water_bucket);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/water_bucket.png"))
+      ->addLink(water_bucket.sprite.id);
+
+  lava_bucket.id = ItemId::lava_bucket;
+  lava_bucket.blockId = Blocks::LAVA_BLOCK;
+  this->items.push_back(&lava_bucket);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/lava_bucket.png"))
+      ->addLink(lava_bucket.sprite.id);
 
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;
