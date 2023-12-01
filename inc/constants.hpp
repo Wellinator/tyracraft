@@ -205,6 +205,10 @@ enum class ItemId {
   glowstone,
   jack_o_lantern,
 
+  // Buckets
+  water_bucket,
+  lava_bucket,
+
   // TODO: move total_of_items to the end of enum this is temp!
   // Helper
   total_of_items,
