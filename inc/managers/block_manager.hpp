@@ -36,6 +36,7 @@ class BlockManager {
 
   BlockInfo* getBlockInfoByType(const Blocks& blockType);
   const u8 isBlockTransparent(const Blocks& blockType);
+  const u8 isBlockOriented(const Blocks& blockType);
 
   SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);

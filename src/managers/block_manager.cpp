@@ -17,8 +17,6 @@ BlockManager::~BlockManager() {
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlasLowRes->id);
 
-  
-
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
     this->blockSfxRepositories[i] = nullptr;
@@ -74,6 +72,11 @@ BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
   return this->t_BlockInfoRepository->isBlockTransparent(blockType);
+}
+
+const u8 BlockManager::isBlockOriented(const Blocks& blockType) {
+  return blockType == Blocks::JACK_O_LANTERN_BLOCK ||
+         blockType == Blocks::PUMPKIN_BLOCK;
 }
 
 void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {
