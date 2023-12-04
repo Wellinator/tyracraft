@@ -249,6 +249,7 @@ class World {
   void propagateLavaRemovalQueue();
   void propagateLavaAddQueue();
   void updateChunksAffectedByLiquidPropagation();
+  u8 canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z);
 };
 
 bool inline isVegetation(Blocks block) {

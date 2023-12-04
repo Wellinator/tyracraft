@@ -1539,10 +1539,7 @@ void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
 
 void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
                                u8 nextLevel, u8 orientation) {
-  auto b = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
-  const u8 canPropagate = b == Blocks::AIR_BLOCK;
-
-  if (canPropagate && GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
+  if (GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
     addLiquid(x, y, z, type, nextLevel, orientation);
   }
 }
@@ -1564,34 +1561,29 @@ void World::propagateWaterAddQueue() {
 
     u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny - 1, nz)) {
       // If down block is air, keep propagating until hit a surface;
       floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
                          (u8)BlockOrientation::East);
       return;
     }
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx + 1, ny, nz)) {
       floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
                          (u8)BlockOrientation::North);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny, nz + 1)) {
       floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
                          (u8)BlockOrientation::East);
     }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx - 1, ny, nz)) {
       floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
                          (u8)BlockOrientation::South);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny, nz - 1)) {
       floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
                          (u8)BlockOrientation::West);
     }
@@ -1621,34 +1613,29 @@ void World::propagateLavaAddQueue() {
 
     u8 type = (u8)Blocks::LAVA_BLOCK;
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny - 1, nz)) {
       // If down block is air, keep propagating until hit a surface;
       floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
                          (u8)BlockOrientation::East);
       return;
     }
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx + 1, ny, nz)) {
       floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
                          (u8)BlockOrientation::North);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny, nz + 1)) {
       floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
                          (u8)BlockOrientation::East);
     }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx - 1, ny, nz)) {
       floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
                          (u8)BlockOrientation::South);
     }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::AIR_BLOCK) {
+    if (canPropagateLiquid(nx, ny, nz - 1)) {
       floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
                          (u8)BlockOrientation::West);
     }
@@ -1665,6 +1652,14 @@ void World::updateChunksAffectedByLiquidPropagation() {
   }
 
   affectedChunksIdByLiquidPropagation.clear();
+}
+
+u8 World::canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z) {
+  if (!BoundCheckMap(terrain, x, y, z)) return false;
+  const u8 type = GetBlockFromMap(terrain, x, y, z);
+  return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
+         type == (u8)Blocks::POPPY_FLOWER ||
+         type == (u8)Blocks::DANDELION_FLOWER;
 }
 
 // From CrossCraft
