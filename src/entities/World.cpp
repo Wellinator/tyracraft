@@ -1313,6 +1313,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
     } else if (type == (u8)Blocks::LAVA_BLOCK) {
       lavaBfsQueue.emplace(x, y, z, level);
       addBlockLight(x, y, z, 15);
+      updateBlockLights();
     }
 
     SetBlockInMap(terrain, x, y, z, type);
@@ -1344,6 +1345,7 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
     } else if (type == (u8)Blocks::LAVA_BLOCK) {
       lavaRemovalBfsQueue.emplace(x, y, z, level);
       removeLight(x, y, z);
+      updateBlockLights();
     }
 
     SetLiquidDataToMap(terrain, x, y, z, level);
