@@ -38,21 +38,25 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
  * 4	blocks	0.25-0.5
  */
 void LavaMeshBuilder_loadMeshData100(Block* t_block,
-                                      std::vector<Vec4>* t_vertices,
-                                      const BlockOrientation orientation);
+                                     std::vector<Vec4>* t_vertices,
+                                     float topHeight,
+                                     const BlockOrientation orientation);
 void LavaMeshBuilder_loadMeshData75(Block* t_block,
-                                     std::vector<Vec4>* t_vertices,
-                                     const BlockOrientation orientation);
+                                    std::vector<Vec4>* t_vertices,
+                                    float topHeight,
+                                    const BlockOrientation orientation);
 void LavaMeshBuilder_loadMeshData50(Block* t_block,
-                                     std::vector<Vec4>* t_vertices,
-                                     const BlockOrientation orientation);
+                                    std::vector<Vec4>* t_vertices,
+                                    float topHeight,
+                                    const BlockOrientation orientation);
 void LavaMeshBuilder_loadMeshData25(Block* t_block,
-                                     std::vector<Vec4>* t_vertices,
-                                     const BlockOrientation orientation);
+                                    std::vector<Vec4>* t_vertices,
+                                    float topHeight,
+                                    const BlockOrientation orientation);
 void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
-                                          std::vector<Vec4>* t_vertices,
-                                          Vec4 from, Vec4 to,
-                                          const BlockOrientation orientation);
+                                         std::vector<Vec4>* t_vertices,
+                                         Vec4 from, Vec4 to,
+                                         const BlockOrientation orientation);
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void LavaMeshBuilder_loadUVFaceData(const u8& index,

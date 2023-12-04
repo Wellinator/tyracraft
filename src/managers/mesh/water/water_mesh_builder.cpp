@@ -23,40 +23,54 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
       GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
   const BlockOrientation orientation =
       GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+  const u8 isUpperBlockWater =
+      BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&
+      GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z) ==
+          (u8)Blocks::WATER_BLOCK;
+  float topHeight = isUpperBlockWater ? 1.00F : 0.75F;
 
   switch (level) {
     case LiquidLevel::Percent100:
-      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
+                                       orientation);
       break;
     case LiquidLevel::Percent75:
-      WaterMeshBuilder_loadMeshData75(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData75(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent62:
-      WaterMeshBuilder_loadMeshData62(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData62(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent50:
-      WaterMeshBuilder_loadMeshData50(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData50(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent37:
-      WaterMeshBuilder_loadMeshData37(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData37(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent25:
-      WaterMeshBuilder_loadMeshData25(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData25(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent12:
-      WaterMeshBuilder_loadMeshData12(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData12(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
 
     default:
-      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
+                                       orientation);
       break;
   }
 }
 
 void WaterMeshBuilder_loadMeshData100(Block* t_block,
                                       std::vector<Vec4>* t_vertices,
+                                      float topHeight,
                                       const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
   const Vec4 to = from;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
@@ -64,54 +78,60 @@ void WaterMeshBuilder_loadMeshData100(Block* t_block,
 
 void WaterMeshBuilder_loadMeshData75(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }
 
 void WaterMeshBuilder_loadMeshData62(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.625F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.625F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }
 
 void WaterMeshBuilder_loadMeshData50(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.625F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.625F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }
 
 void WaterMeshBuilder_loadMeshData37(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.375F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.375F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }
 
 void WaterMeshBuilder_loadMeshData25(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.375F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.25F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.375F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.25F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }
 
 void WaterMeshBuilder_loadMeshData12(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.25F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.125F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.25F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.125F, 1.0F) * BLOCK_SIZE;
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                        orientation);
 }

@@ -44,28 +44,36 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
  */
 void WaterMeshBuilder_loadMeshData100(Block* t_block,
                                       std::vector<Vec4>* t_vertices,
+                                      float topHeight,
                                       const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData75(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData62(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData50(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData37(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData25(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshData12(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation);
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
-                                          Vec4 from, Vec4 to, const BlockOrientation orientation);
+                                          Vec4 from, Vec4 to,
+                                          const BlockOrientation orientation);
 
 void WaterMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void WaterMeshBuilder_loadUVFaceData(const u8& index,

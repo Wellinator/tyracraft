@@ -21,31 +21,42 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
       GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
   const BlockOrientation orientation =
       GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+  const u8 isUpperBlockLava =
+      BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&
+      GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z) ==
+          (u8)Blocks::LAVA_BLOCK;
+  float topHeight = isUpperBlockLava ? 1.00F : 0.75F;
 
   switch (level) {
     case LiquidLevel::Percent100:
-      LavaMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      LavaMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
     case LiquidLevel::Percent75:
-      LavaMeshBuilder_loadMeshData75(t_block, t_vertices, orientation);
+      LavaMeshBuilder_loadMeshData75(t_block, t_vertices, topHeight,
+                                     orientation);
       break;
     case LiquidLevel::Percent50:
-      LavaMeshBuilder_loadMeshData50(t_block, t_vertices, orientation);
+      LavaMeshBuilder_loadMeshData50(t_block, t_vertices, topHeight,
+                                     orientation);
       break;
     case LiquidLevel::Percent25:
-      LavaMeshBuilder_loadMeshData25(t_block, t_vertices, orientation);
+      LavaMeshBuilder_loadMeshData25(t_block, t_vertices, topHeight,
+                                     orientation);
       break;
 
     default:
-      LavaMeshBuilder_loadMeshData100(t_block, t_vertices, orientation);
+      LavaMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
+                                      orientation);
       break;
   }
 }
 
 void LavaMeshBuilder_loadMeshData100(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
+                                     float topHeight,
                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
   const Vec4 to = from;
   LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                       orientation);
@@ -53,27 +64,30 @@ void LavaMeshBuilder_loadMeshData100(Block* t_block,
 
 void LavaMeshBuilder_loadMeshData75(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
+                                    float topHeight,
                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
   LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                       orientation);
 }
 
 void LavaMeshBuilder_loadMeshData50(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
+                                    float topHeight,
                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.75F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
   LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                       orientation);
 }
 
 void LavaMeshBuilder_loadMeshData25(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
+                                    float topHeight,
                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, 0.75F * 0.50F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, 0.75F * 0.25F, 1.0F) * BLOCK_SIZE;
+  const Vec4 from = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
+  const Vec4 to = Vec4(1.0F, topHeight * 0.25F, 1.0F) * BLOCK_SIZE;
   LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
                                       orientation);
 }
