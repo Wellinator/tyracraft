@@ -1,6 +1,8 @@
 #include "managers/mesh/water/water_mesh_builder.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "models/liquid_quad_map_model.hpp"
+#include "managers/liquid_helper.hpp"
 
 void WaterMeshBuilder_GenerateMesh(Block* t_block,
                                    std::vector<Vec4>* t_vertices,
@@ -21,173 +23,171 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
   GetXYZFromPos(&t_block->offset, &pos);
   const LiquidLevel level = static_cast<LiquidLevel>(
       GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
+
   const BlockOrientation orientation =
       GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+
   const u8 isUpperBlockWater =
       BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&
       GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z) ==
           (u8)Blocks::WATER_BLOCK;
-  float topHeight = isUpperBlockWater ? 1.00F : 0.75F;
+  // float topHeight = isUpperBlockWater ? 1.00F : 0.75F;
+  float topHeight = 1.00F;
 
-  switch (level) {
-    case LiquidLevel::Percent100:
-      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
-                                       orientation);
-      break;
-    case LiquidLevel::Percent75:
-      WaterMeshBuilder_loadMeshData75(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
-    case LiquidLevel::Percent62:
-      WaterMeshBuilder_loadMeshData62(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
-    case LiquidLevel::Percent50:
-      WaterMeshBuilder_loadMeshData50(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
-    case LiquidLevel::Percent37:
-      WaterMeshBuilder_loadMeshData37(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
-    case LiquidLevel::Percent25:
-      WaterMeshBuilder_loadMeshData25(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
-    case LiquidLevel::Percent12:
-      WaterMeshBuilder_loadMeshData12(t_block, t_vertices, topHeight,
-                                      orientation);
-      break;
+  const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
+      t_terrain, orientation, &pos, (u8)Blocks::WATER_BLOCK);
 
-    default:
-      WaterMeshBuilder_loadMeshData100(t_block, t_vertices, topHeight,
-                                       orientation);
-      break;
-  }
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       quadMap);
 }
 
 void WaterMeshBuilder_loadMeshData100(Block* t_block,
                                       std::vector<Vec4>* t_vertices,
                                       float topHeight,
-                                      const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = from;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                      const BlockOrientation orientation,
+                                      const LiquidQuadMapModel quadMap) {
+  const float from = 1.0F;
+  const float to = 1.0F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = to * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = to * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = from * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = from * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData75(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 1.0F;
+  const float to = 0.75F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData62(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight * 0.75F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.625F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 0.75F;
+  const float to = 0.625F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData50(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight * 0.625F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 0.625F;
+  const float to = 0.50F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData37(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight * 0.50F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.375F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 0.50F;
+  const float to = 0.375F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData25(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight * 0.375F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.25F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 0.375F;
+  const float to = 0.25F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshData12(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation) {
-  const Vec4 from = Vec4(1.0F, topHeight * 0.25F, 1.0F) * BLOCK_SIZE;
-  const Vec4 to = Vec4(1.0F, topHeight * 0.125F, 1.0F) * BLOCK_SIZE;
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, from, to,
-                                       orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap) {
+  const float from = 0.25F;
+  const float to = 0.125F;
+
+  LiquidQuadMapModel faceQuadMap;
+  faceQuadMap.NW = quadMap.NW * topHeight * BLOCK_SIZE;
+  faceQuadMap.NE = quadMap.NE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SE = quadMap.SE * topHeight * BLOCK_SIZE;
+  faceQuadMap.SW = quadMap.SW * topHeight * BLOCK_SIZE;
+
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
+                                       faceQuadMap);
 }
 
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
-                                          Vec4 from, Vec4 to,
-                                          const BlockOrientation orientation) {
-  uint8_t vert;
+                                          const BlockOrientation orientation,
+                                          const LiquidQuadMapModel quadMap) {
+  u8 vert = 0;
   const Vec4* rawData = VertexBlockData::getVertexData();
-  M4x4 modelFrom;
-  M4x4 modelTo;
 
-  modelFrom.identity();
-  modelTo.identity();
-
-  // Means no orientation
-  if (orientation == BlockOrientation::East) {
-    modelFrom.scale(from);
-    modelFrom.translate(t_block->position);
-
-    modelTo.scale(to);
-    modelTo.translate(t_block->position);
-  } else {
-    switch (orientation) {
-      case BlockOrientation::North:
-        modelFrom.rotateY(_90DEGINRAD);
-        modelTo.rotateY(_90DEGINRAD);
-        break;
-      case BlockOrientation::South:
-        modelFrom.rotateY(_270DEGINRAD);
-        modelTo.rotateY(_270DEGINRAD);
-        break;
-      case BlockOrientation::West:
-        modelFrom.rotateY(_180DEGINRAD);
-        modelTo.rotateY(_180DEGINRAD);
-        break;
-      default:
-        break;
-    }
-
-    modelFrom.scale(from);
-    modelFrom.translate(t_block->position);
-
-    modelTo.scale(to);
-    modelTo.translate(t_block->position);
-  }
+  Vec4 modelNW = Vec4(0.0F, quadMap.NW, 0.0F);
+  Vec4 modelNE = Vec4(0.0F, quadMap.NE, 0.0F);
+  Vec4 modelSE = Vec4(0.0F, quadMap.SE, 0.0F);
+  Vec4 modelSW = Vec4(0.0F, quadMap.SW, 0.0F);
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
   }
   if (t_block->isBottomFaceVisible()) {
     vert = 6;
@@ -201,42 +201,42 @@ void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
   if (t_block->isLeftFaceVisible()) {
     vert = 12;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
 
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
   }
   if (t_block->isRightFaceVisible()) {
     vert = 18;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
 
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
   }
   if (t_block->isBackFaceVisible()) {
     vert = 24;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
 
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
-    t_vertices->emplace_back(modelTo * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
   }
   if (t_block->isFrontFaceVisible()) {
     vert = 30;
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
 
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
-    t_vertices->emplace_back(modelFrom * rawData[vert++]);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
   }
 
   delete rawData;

@@ -17,6 +17,12 @@ class VertexBlockData {
   static const Vec4* getVertexData();
 
   /**
+   * @brief Provides 36 vertices of raw cube with 0 at the bottom
+   * @returns new Vec4[36]
+   */
+  static const Vec4* getLiquidVertexData();
+
+  /**
    * @brief Provides 12 vertices of raw crossed cube
    * @returns new Vec4[8]
    */

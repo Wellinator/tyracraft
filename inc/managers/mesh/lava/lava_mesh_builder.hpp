@@ -6,7 +6,9 @@
 #include <math.h>
 #include <vector>
 #include "models/world_light_model.hpp"
+#include "models/liquid_quad_map_model.hpp"
 #include "entities/level.hpp"
+#include "managers/liquid_helper.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -40,23 +42,28 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 void LavaMeshBuilder_loadMeshData100(Block* t_block,
                                      std::vector<Vec4>* t_vertices,
                                      float topHeight,
-                                     const BlockOrientation orientation);
+                                     const BlockOrientation orientation,
+                                     const LiquidQuadMapModel quadMap);
 void LavaMeshBuilder_loadMeshData75(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
                                     float topHeight,
-                                    const BlockOrientation orientation);
+                                    const BlockOrientation orientation,
+                                    const LiquidQuadMapModel quadMap);
 void LavaMeshBuilder_loadMeshData50(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
                                     float topHeight,
-                                    const BlockOrientation orientation);
+                                    const BlockOrientation orientation,
+                                    const LiquidQuadMapModel quadMap);
 void LavaMeshBuilder_loadMeshData25(Block* t_block,
                                     std::vector<Vec4>* t_vertices,
                                     float topHeight,
-                                    const BlockOrientation orientation);
+                                    const BlockOrientation orientation,
+                                    const LiquidQuadMapModel quadMap);
+
 void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                          std::vector<Vec4>* t_vertices,
-                                         Vec4 from, Vec4 to,
-                                         const BlockOrientation orientation);
+                                         const BlockOrientation orientation,
+                                         const LiquidQuadMapModel quadMap);
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void LavaMeshBuilder_loadUVFaceData(const u8& index,
