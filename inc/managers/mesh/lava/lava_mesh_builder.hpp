@@ -39,27 +39,6 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
  * 3	blocks	0.5-0.75
  * 4	blocks	0.25-0.5
  */
-void LavaMeshBuilder_loadMeshData100(Block* t_block,
-                                     std::vector<Vec4>* t_vertices,
-                                     float topHeight,
-                                     const BlockOrientation orientation,
-                                     const LiquidQuadMapModel quadMap);
-void LavaMeshBuilder_loadMeshData75(Block* t_block,
-                                    std::vector<Vec4>* t_vertices,
-                                    float topHeight,
-                                    const BlockOrientation orientation,
-                                    const LiquidQuadMapModel quadMap);
-void LavaMeshBuilder_loadMeshData50(Block* t_block,
-                                    std::vector<Vec4>* t_vertices,
-                                    float topHeight,
-                                    const BlockOrientation orientation,
-                                    const LiquidQuadMapModel quadMap);
-void LavaMeshBuilder_loadMeshData25(Block* t_block,
-                                    std::vector<Vec4>* t_vertices,
-                                    float topHeight,
-                                    const BlockOrientation orientation,
-                                    const LiquidQuadMapModel quadMap);
-
 void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                          std::vector<Vec4>* t_vertices,
                                          const BlockOrientation orientation,

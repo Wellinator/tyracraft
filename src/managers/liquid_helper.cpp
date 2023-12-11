@@ -238,18 +238,6 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
       break;
   }
 
-  // if (liquid_type == (u8)Blocks::WATER_BLOCK) {
-  //   result.NW = LiquidHelper_getWaterHeightByVolume(NW);
-  //   result.NE = LiquidHelper_getWaterHeightByVolume(NE);
-  //   result.SE = LiquidHelper_getWaterHeightByVolume(SE);
-  //   result.SW = LiquidHelper_getWaterHeightByVolume(SW);
-  // } else {
-  //   result.NW = LiquidHelper_getLavaHeightByVolume(NW);
-  //   result.NE = LiquidHelper_getLavaHeightByVolume(NE);
-  //   result.SE = LiquidHelper_getLavaHeightByVolume(SE);
-  //   result.SW = LiquidHelper_getLavaHeightByVolume(SW);
-  // }
-
   return result;
 }
 
