@@ -1555,16 +1555,16 @@ void World::propagateWaterAddQueue() {
     waterBfsQueue.pop();
 
     s16 nextLevel = liquidNode.val - 1;
-    if (nextLevel <= (u8)LiquidLevel::Percent0) {
-      return;
-    }
-
     u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
     if (canPropagateLiquid(nx, ny - 1, nz)) {
       // If down block is air, keep propagating until hit a surface;
       floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
                          (u8)BlockOrientation::East);
+      return;
+    }
+
+    if (nextLevel <= (u8)LiquidLevel::Percent0) {
       return;
     }
 
@@ -1607,8 +1607,8 @@ void World::propagateLavaAddQueue() {
       nextLevel = (u8)LiquidLevel::Percent50;
     } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
       nextLevel = (u8)LiquidLevel::Percent25;
-    } else {
-      return;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent25) {
+      nextLevel = (u8)LiquidLevel::Percent0;
     }
 
     u8 type = (u8)Blocks::LAVA_BLOCK;
@@ -1619,6 +1619,8 @@ void World::propagateLavaAddQueue() {
                          (u8)BlockOrientation::East);
       return;
     }
+
+    if (nextLevel <= 0) return;
 
     if (canPropagateLiquid(nx + 1, ny, nz)) {
       floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
