@@ -1003,7 +1003,6 @@ void World::buildChunk(Chunck* t_chunck) {
                     case BlockOrientation::West:
                       block->model.rotateY(_180DEGINRAD);
                       break;
-                    case BlockOrientation::East:
                     default:
                       break;
                   }
@@ -1102,6 +1101,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
             block->model.identity();
 
+            BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
+
             if (orientation != BlockOrientation::East) {
               switch (orientation) {
                 case BlockOrientation::North:
@@ -1113,7 +1114,6 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
                 case BlockOrientation::West:
                   block->model.rotateY(_180DEGINRAD);
                   break;
-                case BlockOrientation::East:
                 default:
                   break;
               }
@@ -1121,18 +1121,31 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
               block->model.scale(BLOCK_SIZE);
               block->model.translate(block->position);
 
+              // Don't rotate the block bbox
+              M4x4 modelWithoutRotaion;
+              modelWithoutRotaion.identity();
+              modelWithoutRotaion.scale(BLOCK_SIZE);
+              modelWithoutRotaion.translate(block->position);
+
+              BBox tempBBox = rawBBox->getTransformed(modelWithoutRotaion);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
             } else {
               block->model.scale(BLOCK_SIZE);
               block->model.translate(block->position);
+
+              BBox tempBBox = rawBBox->getTransformed(block->model);
+              block->bbox = new BBox(tempBBox);
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
             }
 
-            BBox tempBBox = rawBlockBbox->getTransformed(block->model);
-            block->bbox = new BBox(tempBBox);
-            block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+            delete rawBBox;
           }
 
           t_chunck->addBlock(block);
         }
+
         batchCounter++;
       }
     }
