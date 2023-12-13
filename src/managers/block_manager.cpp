@@ -168,12 +168,12 @@ u8 BlockManager::getBlockLightValue(Blocks blockType) {
   switch (blockType) {
     case Blocks::GLOWSTONE_BLOCK:
       return 15;
-
     case Blocks::JACK_O_LANTERN_BLOCK:
       return 15;
-
     case Blocks::LAVA_BLOCK:
       return 15;
+    case Blocks::TORCH:
+      return 14;
 
     default:
       return 0;

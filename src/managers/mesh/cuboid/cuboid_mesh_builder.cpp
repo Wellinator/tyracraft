@@ -367,13 +367,17 @@ std::array<u8, 8> CuboidMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
   return result;
 }
 
+// TODO: refactore to global method
 bool CuboidMeshBuilder_isBlockOpaque(u8 block_type) {
-  return block_type != (u8)Blocks::AIR_BLOCK &&
+  return block_type != (u8)Blocks::VOID &&
+         block_type != (u8)Blocks::AIR_BLOCK &&
          block_type != (u8)Blocks::GLASS_BLOCK &&
          block_type != (u8)Blocks::POPPY_FLOWER &&
          block_type != (u8)Blocks::DANDELION_FLOWER &&
          block_type != (u8)Blocks::GRASS &&
-         block_type != (u8)Blocks::WATER_BLOCK;
+         block_type != (u8)Blocks::WATER_BLOCK &&
+         block_type != (u8)Blocks::LAVA_BLOCK &&
+         block_type != (u8)Blocks::TORCH;
 }
 
 void CuboidMeshBuilder_loadLightFaceDataWithAO(

@@ -147,3 +147,35 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
   // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
   // printf("SunlightIntensity: %f\n", sunlightIntensity);
 }
+
+void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                                    LevelMap* t_terrain,
+                                    const float sunlightIntensity) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  const float MIN_LIGHT_FACTOR = 0.25F;
+
+  Vec4 targetBlockOffset;
+  GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
+
+  u8 lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                     targetBlockOffset.y, targetBlockOffset.z);
+  u8 sunLightLevel = ((lightData >> 4) & 0xF);
+  u8 lightLevel = lightData & 0x0F;
+
+  /**
+   *  I've built this formula:
+   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
+   */
+  // const float sunLightFactor = (intensity + (sunLightLevel /
+  // MAX_LIGHT_VALUE)) / (intensity + 1.0F);
+  const float sunLightFactor = std::max(
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
+
+  const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+  *baseColor = LightManager::IntensifyColor(
+      baseColor, std::max(sunLightFactor, lightLevelFactor));
+
+  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
+  // printf("SunlightIntensity: %f\n", sunlightIntensity);
+}

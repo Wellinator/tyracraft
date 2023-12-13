@@ -2,6 +2,7 @@
 #include "entities/World.hpp"
 #include "renderer/models/color.hpp"
 #include "math/m4x4.hpp"
+#include "managers/block/vertex_block_data.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -358,8 +359,7 @@ void World::renderBlockDamageOverlay() {
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {
-  t_renderer->renderer3D.utility.drawBox(targetBlock->position, BLOCK_SIZE,
-                                         Color(0, 0, 0));
+  t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
@@ -642,7 +642,7 @@ void World::removeBlock(Block* blockToRemove) {
     const Blocks b = static_cast<Blocks>(GetBlockFromMap(
         terrain, upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
 
-    if (isVegetation(b)) {
+    if (isVegetation(b) || b == Blocks::TORCH) {
       auto chunk =
           chunckManager.getChunckByPosition(upBlockOffset * DUBLE_BLOCK_SIZE);
       Block* upperBlock = chunk->getBlockByOffset(&upBlockOffset);
@@ -989,6 +989,9 @@ void World::buildChunk(Chunck* t_chunck) {
 
                 block->model.identity();
 
+                BBox* rawBBox =
+                    VertexBlockData::getRawBBoxByBlockType(block_type);
+
                 if (orientation != BlockOrientation::East) {
                   switch (orientation) {
                     case BlockOrientation::North:
@@ -1014,8 +1017,7 @@ void World::buildChunk(Chunck* t_chunck) {
                   modelWithoutRotaion.scale(BLOCK_SIZE);
                   modelWithoutRotaion.translate(block->position);
 
-                  BBox tempBBox =
-                      rawBlockBbox->getTransformed(modelWithoutRotaion);
+                  BBox tempBBox = rawBBox->getTransformed(modelWithoutRotaion);
                   block->bbox = new BBox(tempBBox);
                   block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
@@ -1023,10 +1025,12 @@ void World::buildChunk(Chunck* t_chunck) {
                   block->model.scale(BLOCK_SIZE);
                   block->model.translate(block->position);
 
-                  BBox tempBBox = rawBlockBbox->getTransformed(block->model);
+                  BBox tempBBox = rawBBox->getTransformed(block->model);
                   block->bbox = new BBox(tempBBox);
                   block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
                 }
+
+                delete rawBBox;
               }
 
               t_chunck->addBlock(block);

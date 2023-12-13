@@ -120,6 +120,9 @@ enum class Blocks {
   BIRCH_LOG_BLOCK,
   BIRCH_LEAVES_BLOCK,
 
+  // Items
+  TORCH,
+
   // Helper index
   TOTAL_OF_BLOCKS
 };
@@ -205,9 +208,10 @@ enum class ItemId {
   glowstone,
   jack_o_lantern,
 
-  // Buckets
+  // Items
   water_bucket,
   lava_bucket,
+  torch,
 
   // TODO: move total_of_items to the end of enum this is temp!
   // Helper
@@ -296,3 +300,5 @@ typedef enum {
 
 // Blocks params
 #define BREAKING_TIME_IN_CREATIVE_MODE 0.150F
+
+#define TORCH_UV_COUNTER 20

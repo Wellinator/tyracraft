@@ -27,6 +27,9 @@ class LightManager {
   static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                FACE_SIDE faceSide, LevelMap* t_terrain,
                                const float sunlightIntensity);
+  static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                               LevelMap* t_terrain,
+                               const float sunlightIntensity);
 
  private:
   LevelMap* terrain = nullptr;

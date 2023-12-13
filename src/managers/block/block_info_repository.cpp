@@ -129,4 +129,8 @@ void BlockInfoRepository::loadBlocksInfo() {
       (BlockInfo(Blocks::BIRCH_LEAVES_BLOCK, true, {162}, 0.2F, true));
   models[(u8)Blocks::OAK_LEAVES_BLOCK] =
       (BlockInfo(Blocks::OAK_LEAVES_BLOCK, true, {163}, 0.2F, true));
+
+  // Items
+  models[(u8)Blocks::TORCH] =
+      (BlockInfo(Blocks::TORCH, true, {1}, 0.2F, true, true, false, false));
 }

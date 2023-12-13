@@ -59,6 +59,8 @@ ItemRepository::~ItemRepository() {
 
   this->t_renderer->getTextureRepository().freeBySprite(water_bucket.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(lava_bucket.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(torch.sprite);
+
   //   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
@@ -339,6 +341,13 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/lava_bucket.png"))
       ->addLink(lava_bucket.sprite.id);
+
+  torch.id = ItemId::torch;
+  torch.blockId = Blocks::TORCH;
+  this->items.push_back(&torch);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/torch.png"))
+      ->addLink(torch.sprite.id);
 
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;

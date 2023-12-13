@@ -75,6 +75,8 @@ class ItemRepository {
   Item white_concrete;
   Item black_concrete;
 
+  //Item
+  Item torch;
   Item water_bucket;
   Item lava_bucket;
 
@@ -83,6 +85,7 @@ class ItemRepository {
   Item cracked_stone_bricks;
   Item mossy_stone_bricks;
   Item chiseled_stone_bricks;
+
 
   // Toolds
   // Item wooden_axe;

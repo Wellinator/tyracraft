@@ -260,7 +260,8 @@ bool inline isVegetation(Blocks block) {
 bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
          block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS;
+         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS ||
+         block == Blocks::TORCH;
 };
 
 ///////////////////////////////////
