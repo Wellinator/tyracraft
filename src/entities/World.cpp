@@ -141,8 +141,9 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   // Update chunk light data every 200 ticks
   if (isTicksCounterAt(6)) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-    updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
   }
+
+  updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
 };
 
 void World::render() {
@@ -150,8 +151,10 @@ void World::render() {
 
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
-    if (isBreakingBLock() && targetBlock->damage > 0)
+    if (isBreakingBLock() && targetBlock->damage > 0 &&
+        targetBlock->getHardness() > 0.05F) {
       renderBlockDamageOverlay();
+    }
   }
 };
 
@@ -938,6 +941,7 @@ u8 World::isCrossedBlock(Blocks block_type) {
          block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
 }
 
+// TODO: move to chunk builder
 void World::buildChunk(Chunck* t_chunck) {
   t_chunck->preAllocateMemory();
 

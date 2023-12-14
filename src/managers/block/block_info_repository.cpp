@@ -132,5 +132,5 @@ void BlockInfoRepository::loadBlocksInfo() {
 
   // Items
   models[(u8)Blocks::TORCH] =
-      (BlockInfo(Blocks::TORCH, true, {1}, 0.2F, true, true, false, false));
+      (BlockInfo(Blocks::TORCH, true, {1}, 0.001F, true, true, false, false));
 }
