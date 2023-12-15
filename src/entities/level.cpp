@@ -33,8 +33,58 @@ uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
 }
 
 // Set the metadata value at the given coordinates in the map.
-void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                uint16_t z, const BlockOrientation orientation) {
+void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
+                             const BlockOrientation orientation) {
+  const auto blockType = GetBlockFromMap(map, x, y, z);
+
+  switch (blockType) {
+    case (u8)Blocks::WATER_BLOCK:
+    case (u8)Blocks::LAVA_BLOCK:
+      SetLiquidOrientationDataToMap(map, x, y, z, orientation);
+      break;
+    case (u8)Blocks::TORCH:
+      SetTorchOrientationDataToMap(map, x, y, z, orientation);
+      break;
+
+    default:
+      SetBlockOrientationDataToMap(map, x, y, z, orientation);
+      break;
+  }
+}
+
+void SetLiquidOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                   uint16_t z,
+                                   const BlockOrientation orientation) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+  // value = (value & ~mask) | (newvalue & mask);
+  const uint8_t newvalue =
+      static_cast<uint8_t>(orientation) & LIQUID_ORIENTATION_MASK;
+
+  const u8 _setedValue =
+      (map->metaData[index] & ~LIQUID_ORIENTATION_MASK) | newvalue;
+
+  map->metaData[index] = _setedValue;
+}
+
+void SetTorchOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                  uint16_t z,
+                                  const BlockOrientation orientation) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+  // value = (value & ~mask) | (newvalue & mask);
+  const uint8_t newvalue =
+      static_cast<uint8_t>(orientation) & TORCH_ORIENTATION_MASK;
+
+  const u8 _setedValue =
+      (map->metaData[index] & ~TORCH_ORIENTATION_MASK) | newvalue;
+
+  map->metaData[index] = _setedValue;
+}
+
+void SetBlockOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                  uint16_t z,
+                                  const BlockOrientation orientation) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
   // value = (value & ~mask) | (newvalue & mask);
@@ -50,6 +100,39 @@ void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
 // Gets the metadata value at the given coordinates in the map.
 BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
                                            uint16_t y, uint16_t z) {
+  const auto blockType = GetBlockFromMap(map, x, y, z);
+
+  switch (blockType) {
+    case (u8)Blocks::WATER_BLOCK:
+    case (u8)Blocks::LAVA_BLOCK:
+      return GetLiquidOrientationDataFromMap(map, x, y, z);
+      break;
+    case (u8)Blocks::TORCH:
+      return GetTorchOrientationDataFromMap(map, x, y, z);
+      break;
+
+    default:
+      return GetBlockOrientationDataFromMap(map, x, y, z);
+      break;
+  }
+}
+
+BlockOrientation GetLiquidOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                                 uint16_t y, uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  const uint8_t response = map->metaData[index] & LIQUID_ORIENTATION_MASK;
+  return static_cast<BlockOrientation>(response);
+}
+
+BlockOrientation GetTorchOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                                uint16_t y, uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  const uint8_t response = map->metaData[index] & TORCH_ORIENTATION_MASK;
+  return static_cast<BlockOrientation>(response);
+}
+
+BlockOrientation GetBlockOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                                uint16_t y, uint16_t z) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
   const uint8_t response = map->metaData[index] & BLOCK_ORIENTATION_MASK;
   return static_cast<BlockOrientation>(response);
@@ -57,7 +140,7 @@ BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
 
 // Set the liquid metadata value at the given coordinates in the map.
 void SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                           const u8 liquidLevel) {
+                        const u8 liquidLevel) {
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
   const uint8_t newvalue = liquidLevel << 2 & BLOCK_LIQUID_METADATA_MASK;

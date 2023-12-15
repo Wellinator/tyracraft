@@ -25,7 +25,7 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
       GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
 
   const BlockOrientation orientation =
-      GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
 
   const u8 isUpperBlockWater =
       BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&

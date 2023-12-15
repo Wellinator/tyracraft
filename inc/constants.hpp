@@ -250,14 +250,30 @@ typedef enum {
   Percent100,
 } LiquidLevel;
 
-typedef enum {
+enum class BlockOrientation {
   East = 0,
   North = 1,
   West = 2,
   South = 3,
-} BlockOrientation;
+  Top = 4,
+};
+
+enum class PlacementDirection {
+  Top = 0,
+  Bottom = 1,
+  Left = 2,
+  Right = 3,
+  Front = 4,
+  Back = 5,
+};
 
 // Two bits for orientation
+#define LIQUID_ORIENTATION_MASK 0b00000011
+
+// Three bits for orientation for torch
+#define TORCH_ORIENTATION_MASK 0b00000111
+
+// Three bits for orientation for torch
 #define BLOCK_ORIENTATION_MASK 0b00000011
 
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90

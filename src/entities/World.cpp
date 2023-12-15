@@ -3,6 +3,7 @@
 #include "renderer/models/color.hpp"
 #include "math/m4x4.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "managers/model_builder.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -658,128 +659,211 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
                      const float cameraYaw) {
   Vec4 targetPos = ray.at(targetBlock->distance);
 
+  PlacementDirection placementDirection = PlacementDirection::Top;
+
   Vec4 blockOffset;
   GetXYZFromPos(&targetBlock->offset, &blockOffset);
 
+  // TODO: move to function
   // Front
   if (std::round(targetPos.z) ==
-      targetBlock->bbox->getFrontFace().axisPosition) {
+      std::round(targetBlock->bbox->getFrontFace().axisPosition)) {
+    placementDirection = PlacementDirection::Front;
     blockOffset.z++;
     // Back
   } else if (std::round(targetPos.z) ==
-             targetBlock->bbox->getBackFace().axisPosition) {
+             std::round(targetBlock->bbox->getBackFace().axisPosition)) {
+    placementDirection = PlacementDirection::Back;
     blockOffset.z--;
     // Right
   } else if (std::round(targetPos.x) ==
-             targetBlock->bbox->getRightFace().axisPosition) {
+             std::round(targetBlock->bbox->getRightFace().axisPosition)) {
+    placementDirection = PlacementDirection::Right;
     blockOffset.x++;
     // Left
   } else if (std::round(targetPos.x) ==
-             targetBlock->bbox->getLeftFace().axisPosition) {
+             std::round(targetBlock->bbox->getLeftFace().axisPosition)) {
+    placementDirection = PlacementDirection::Left;
     blockOffset.x--;
     // Up
   } else if (std::round(targetPos.y) ==
-             targetBlock->bbox->getTopFace().axisPosition) {
+             std::round(targetBlock->bbox->getTopFace().axisPosition)) {
+    placementDirection = PlacementDirection::Top;
     blockOffset.y++;
     // Down
   } else if (std::round(targetPos.y) ==
-             targetBlock->bbox->getBottomFace().axisPosition) {
+             std::round(targetBlock->bbox->getBottomFace().axisPosition)) {
+    placementDirection = PlacementDirection::Bottom;
     blockOffset.y--;
   }
 
-  // Is a valid index?
-  if (BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z)) {
-    Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
-    {
-      // Prevent to put a block at the player position;
-      M4x4 tempModel = M4x4();
-      tempModel.identity();
-      tempModel.scale(BLOCK_SIZE);
-      tempModel.translate(newBlockPos);
+  // Placing block at invalid position
+  if (!BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z))
+    return;
 
-      BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
-      Vec4 newBlockPosMin;
-      Vec4 newBlockPosMax;
-      tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+  switch (blockToPlace) {
+    case Blocks::TORCH:
+      putTorchBlock(placementDirection, cameraYaw, blockOffset);
+      break;
 
-      Vec4 minPlayerCorner;
-      Vec4 maxPlayerCorner;
-      t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
-
-      // Will Collide to player?
-      if (newBlockPosMax.x > minPlayerCorner.x &&
-          newBlockPosMin.x < maxPlayerCorner.x &&
-          newBlockPosMax.z > minPlayerCorner.z &&
-          newBlockPosMin.z < maxPlayerCorner.z &&
-          newBlockPosMax.y > minPlayerCorner.y &&
-          newBlockPosMin.y < maxPlayerCorner.y)
-        return;  // Return on collision
-    }
-
-    const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
-        GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
-
-    const Blocks oldTypeBlock = blockTypeAtTargetPosition;
-
-    const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
-                          blockTypeAtTargetPosition == Blocks::LAVA_BLOCK ||
-                          blockTypeAtTargetPosition == Blocks::AIR_BLOCK ||
-                          blockTypeAtTargetPosition == Blocks::GRASS;
-
-    if (canReplace) {
-      // Calc block orientation
-      BlockOrientation orientation;
-
-      if (blockManager.isBlockOriented(blockToPlace)) {
-        if (cameraYaw > 315 || cameraYaw < 45) {
-          orientation = BlockOrientation::North;
-        } else if (cameraYaw >= 135 && cameraYaw <= 225) {
-          orientation = BlockOrientation::South;
-        } else if (cameraYaw >= 45 && cameraYaw <= 135) {
-          orientation = BlockOrientation::East;
-        } else {
-          orientation = BlockOrientation::West;
-        }
-      } else {
-        orientation = BlockOrientation::East;
-      }
-
-      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                    static_cast<u8>(blockToPlace));
-      SetOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                              blockOffset.z, orientation);
-      checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
-
-      const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
-      if (lightValue > 0) {
-        addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
-      } else {
-        removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
-      }
-
-      updateSunlight();
-      updateBlockLights();
-
-      chunckManager.reloadLightData();
-
-      const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
-                                 blockToPlace == Blocks::LAVA_BLOCK;
-      const u8 itWasLiquidAtPosition = oldTypeBlock == Blocks::WATER_BLOCK ||
-                                       oldTypeBlock == Blocks::LAVA_BLOCK;
-
-      if (isPlacingLiquid) {
-        addLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)blockToPlace,
-                  (u8)LiquidLevel::Percent100, (u8)orientation);
-      } else if (itWasLiquidAtPosition) {
-        removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
-                     (u8)oldTypeBlock);
-      }
-    }
-
-    playPutBlockSound(blockToPlace);
+    default:
+      putDefaultBlock(blockToPlace, t_player, cameraYaw, blockOffset);
+      break;
   }
 
+  playPutBlockSound(blockToPlace);
   updateNeighBorsChunksByModdedPosition(blockOffset);
+}
+
+void World::putTorchBlock(const PlacementDirection placementDirection,
+                          const float cameraYaw, Vec4 blockOffset) {
+  const Blocks blockTypeAtNewPosition = static_cast<Blocks>(
+      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+
+  const u8 canReplace = blockTypeAtNewPosition == Blocks::AIR_BLOCK;
+
+  if (targetBlock->type == Blocks::TORCH &&
+      placementDirection == PlacementDirection::Top) {
+    return;
+  }
+
+  if (canReplace) {
+    // Calc block orientation
+    BlockOrientation orientation;
+
+    if (targetBlock->type == Blocks::TORCH) {
+      orientation = BlockOrientation::Top;
+    } else {
+      // Torch orientation must be reverse of placement direction
+      switch (placementDirection) {
+        case PlacementDirection::Top:
+          orientation = BlockOrientation::Top;
+          break;
+        case PlacementDirection::Left:
+          orientation = BlockOrientation::East;
+          break;
+        case PlacementDirection::Right:
+          orientation = BlockOrientation::West;
+          break;
+        case PlacementDirection::Front:
+          orientation = BlockOrientation::North;
+          break;
+        case PlacementDirection::Back:
+          orientation = BlockOrientation::South;
+          break;
+
+        case PlacementDirection::Bottom:
+        default:
+          return;
+      }
+    }
+
+    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                  static_cast<u8>(Blocks::TORCH));
+    SetTorchOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                 blockOffset.z, orientation);
+    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+
+    const auto lightValue = blockManager.getBlockLightValue(Blocks::TORCH);
+    addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+
+    updateSunlight();
+    updateBlockLights();
+
+    chunckManager.reloadLightData();
+  }
+}
+
+void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
+                            const float cameraYaw, Vec4 blockOffset) {
+  Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
+
+  // Prevent to put a block at the player position;
+  M4x4 tempModel = M4x4();
+  tempModel.identity();
+  tempModel.scale(BLOCK_SIZE);
+  tempModel.translate(newBlockPos);
+
+  BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
+  Vec4 newBlockPosMin;
+  Vec4 newBlockPosMax;
+  tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+
+  Vec4 minPlayerCorner;
+  Vec4 maxPlayerCorner;
+  t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+  // Will Collide to player?
+  if (newBlockPosMax.x > minPlayerCorner.x &&
+      newBlockPosMin.x < maxPlayerCorner.x &&
+      newBlockPosMax.z > minPlayerCorner.z &&
+      newBlockPosMin.z < maxPlayerCorner.z &&
+      newBlockPosMax.y > minPlayerCorner.y &&
+      newBlockPosMin.y < maxPlayerCorner.y) {
+    return;  // Return on collision
+  }
+
+  const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
+      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+  const Blocks oldTypeBlock = blockTypeAtTargetPosition;
+
+  const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::LAVA_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::AIR_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::TORCH ||
+                        blockTypeAtTargetPosition == Blocks::POPPY_FLOWER ||
+                        blockTypeAtTargetPosition == Blocks::DANDELION_FLOWER ||
+                        blockTypeAtTargetPosition == Blocks::GRASS;
+
+  if (canReplace) {
+    // Calc block orientation
+    BlockOrientation orientation;
+
+    if (blockManager.isBlockOriented(blockToPlace)) {
+      if (cameraYaw > 315 || cameraYaw < 45) {
+        orientation = BlockOrientation::North;
+      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+        orientation = BlockOrientation::South;
+      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+        orientation = BlockOrientation::East;
+      } else {
+        orientation = BlockOrientation::West;
+      }
+    } else {
+      orientation = BlockOrientation::East;
+    }
+
+    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                  static_cast<u8>(blockToPlace));
+    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                 blockOffset.z, orientation);
+    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+
+    const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
+    if (lightValue > 0) {
+      addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+    } else {
+      removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
+    }
+
+    updateSunlight();
+    updateBlockLights();
+
+    chunckManager.reloadLightData();
+
+    const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
+                               blockToPlace == Blocks::LAVA_BLOCK;
+    const u8 itWasLiquidAtPosition = oldTypeBlock == Blocks::WATER_BLOCK ||
+                                     oldTypeBlock == Blocks::LAVA_BLOCK;
+
+    if (isPlacingLiquid) {
+      addLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)blockToPlace,
+                (u8)LiquidLevel::Percent100, (u8)orientation);
+    } else if (itWasLiquidAtPosition) {
+      removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
+                   (u8)oldTypeBlock);
+    }
+  }
 }
 
 void World::stopBreakTargetBlock() {
@@ -986,55 +1070,16 @@ void World::buildChunk(Chunck* t_chunck) {
 
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-              // Calc min and max corners
-              {
-                const auto orientation =
-                    GetOrientationDataFromMap(terrain, x, y, z);
+              ModelBuilder_BuildModel(block, terrain);
+              BBox* rawBBox =
+                  VertexBlockData::getRawBBoxByBlockType(block_type);
+              BBox tempBBox = rawBBox->getTransformed(block->model);
 
-                block->model.identity();
+              block->bbox =
+                  new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
-                BBox* rawBBox =
-                    VertexBlockData::getRawBBoxByBlockType(block_type);
-
-                if (orientation != BlockOrientation::East) {
-                  switch (orientation) {
-                    case BlockOrientation::North:
-                      block->model.rotateY(_90DEGINRAD);
-                      break;
-                    case BlockOrientation::South:
-                      block->model.rotateY(_270DEGINRAD);
-                      break;
-                    case BlockOrientation::West:
-                      block->model.rotateY(_180DEGINRAD);
-                      break;
-                    default:
-                      break;
-                  }
-
-                  block->model.scale(BLOCK_SIZE);
-                  block->model.translate(block->position);
-
-                  // Don't rotate the block bbox
-                  M4x4 modelWithoutRotaion;
-                  modelWithoutRotaion.identity();
-                  modelWithoutRotaion.scale(BLOCK_SIZE);
-                  modelWithoutRotaion.translate(block->position);
-
-                  BBox tempBBox = rawBBox->getTransformed(modelWithoutRotaion);
-                  block->bbox = new BBox(tempBBox);
-                  block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-                } else {
-                  block->model.scale(BLOCK_SIZE);
-                  block->model.translate(block->position);
-
-                  BBox tempBBox = rawBBox->getTransformed(block->model);
-                  block->bbox = new BBox(tempBBox);
-                  block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-                }
-
-                delete rawBBox;
-              }
+              delete rawBBox;
 
               t_chunck->addBlock(block);
             }
@@ -1098,56 +1143,16 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-          // Calc min and max corners
-          {
-            const auto orientation =
-                GetOrientationDataFromMap(terrain, x, y, z);
+          ModelBuilder_BuildModel(block, terrain);
+          BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
+          BBox tempBBox = rawBBox->getTransformed(block->model);
 
-            block->model.identity();
-
-            BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
-
-            if (orientation != BlockOrientation::East) {
-              switch (orientation) {
-                case BlockOrientation::North:
-                  block->model.rotateY(_90DEGINRAD);
-                  break;
-                case BlockOrientation::South:
-                  block->model.rotateY(_270DEGINRAD);
-                  break;
-                case BlockOrientation::West:
-                  block->model.rotateY(_180DEGINRAD);
-                  break;
-                default:
-                  break;
-              }
-
-              block->model.scale(BLOCK_SIZE);
-              block->model.translate(block->position);
-
-              // Don't rotate the block bbox
-              M4x4 modelWithoutRotaion;
-              modelWithoutRotaion.identity();
-              modelWithoutRotaion.scale(BLOCK_SIZE);
-              modelWithoutRotaion.translate(block->position);
-
-              BBox tempBBox = rawBBox->getTransformed(modelWithoutRotaion);
-              block->bbox = new BBox(tempBBox);
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-            } else {
-              block->model.scale(BLOCK_SIZE);
-              block->model.translate(block->position);
-
-              BBox tempBBox = rawBBox->getTransformed(block->model);
-              block->bbox = new BBox(tempBBox);
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-            }
-
-            delete rawBBox;
-          }
+          block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
           t_chunck->addBlock(block);
+
+          delete rawBBox;
         }
 
         batchCounter++;
@@ -1339,8 +1344,8 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 
     SetBlockInMap(terrain, x, y, z, type);
     SetLiquidDataToMap(terrain, x, y, z, level);
-    SetOrientationDataToMap(terrain, x, y, z,
-                            static_cast<BlockOrientation>(orientation));
+    SetLiquidOrientationDataToMap(terrain, x, y, z,
+                                  static_cast<BlockOrientation>(orientation));
 
     Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
     if (moddedChunk) {
@@ -1350,7 +1355,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 }
 
 void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
-  addLiquid(x, y, z, type, level, BlockOrientation::East);
+  addLiquid(x, y, z, type, level, (u8)BlockOrientation::East);
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {

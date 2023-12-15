@@ -8,23 +8,25 @@ void TorchMeshBuilder_GenerateMesh(Block* t_block,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    LevelMap* t_terrain) {
-  TorchMeshBuilder_loadMeshData(t_block, t_vertices);
+  Vec4 pos;
+  GetXYZFromPos(&t_block->offset, &pos);
+
+  const BlockOrientation orientation =
+      GetTorchOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+
+  TorchMeshBuilder_loadMeshData(t_block, t_vertices, orientation);
   TorchMeshBuilder_loadUVData(t_uv_map);
   TorchMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
                                  t_terrain);
 }
 
 void TorchMeshBuilder_loadMeshData(Block* t_block,
-                                   std::vector<Vec4>* t_vertices) {
+                                   std::vector<Vec4>* t_vertices,
+                                   const BlockOrientation orientation) {
   const Vec4* vertexData = VertexBlockData::getTorchVertexData();
 
-  M4x4 model;
-  model.identity();
-  model.scale(BLOCK_SIZE);
-  model.translate(t_block->position);
-
   for (size_t i = 0; i < VertexBlockData::VETEX_COUNT; i++) {
-    t_vertices->emplace_back(model * vertexData[i]);
+    t_vertices->emplace_back(t_block->model * vertexData[i]);
   }
 
   delete vertexData;
