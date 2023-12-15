@@ -21,8 +21,6 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
                                    LevelMap* t_terrain) {
   Vec4 pos;
   GetXYZFromPos(&t_block->offset, &pos);
-  const LiquidLevel level = static_cast<LiquidLevel>(
-      GetLiquidDataFromMap(t_terrain, pos.x, pos.y, pos.z));
 
   const BlockOrientation orientation =
       GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
@@ -31,27 +29,28 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
       BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&
       GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z) ==
           (u8)Blocks::WATER_BLOCK;
-  // float topHeight = isUpperBlockWater ? 1.00F : 0.75F;
-  float topHeight = 1.00F;
+
+  float topHeight = isUpperBlockWater ? 0.00F : 0.05F * DUBLE_BLOCK_SIZE;
 
   const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
       t_terrain, orientation, &pos, (u8)Blocks::WATER_BLOCK);
 
   WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
-                                       quadMap);
+                                       quadMap, topHeight);
 }
 
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
                                           const BlockOrientation orientation,
-                                          const LiquidQuadMapModel quadMap) {
+                                          const LiquidQuadMapModel quadMap,
+                                          float topHeight) {
   u8 vert = 0;
   const Vec4* rawData = VertexBlockData::getVertexData();
 
-  Vec4 modelNW = Vec4(0.0F, quadMap.NW, 0.0F);
-  Vec4 modelNE = Vec4(0.0F, quadMap.NE, 0.0F);
-  Vec4 modelSE = Vec4(0.0F, quadMap.SE, 0.0F);
-  Vec4 modelSW = Vec4(0.0F, quadMap.SW, 0.0F);
+  Vec4 modelNW = Vec4(0.0F, quadMap.NW + topHeight, 0.0F);
+  Vec4 modelNE = Vec4(0.0F, quadMap.NE + topHeight, 0.0F);
+  Vec4 modelSE = Vec4(0.0F, quadMap.SE + topHeight, 0.0F);
+  Vec4 modelSW = Vec4(0.0F, quadMap.SW + topHeight, 0.0F);
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
