@@ -1,3 +1,4 @@
+#include "constants.hpp"
 #include "entities/player/player_render_arm_pip.hpp"
 #include "managers/block/vertex_block_data.hpp"
 #include "models/block_info_model.hpp"
@@ -28,45 +29,7 @@ void PlayerRenderArmPip::render(Renderer* t_render) {
     case ItemId::lava_bucket:
       break;
 
-    // case ItemId::torch:
-    //   TorchMeshBuilder_GenerateMesh(t_item, t_vertices, t_vertices_colors,
-    //                                 t_uv_map, t_worldLightModel);
-    //   break;
-
-    // // Cuboid
-    // case ItemId::acacia_planks:
-    // case ItemId::birch_log:
-    // case ItemId::dirt:
-    // case ItemId::gravel:
-    // case ItemId::sand:
-    // case ItemId::stone:
-    // case ItemId::bricks:
-    // case ItemId::glass:
-    // case ItemId::pumpkin:
-    // case ItemId::oak_planks:
-    // case ItemId::spruce_planks:
-    // case ItemId::birch_planks:
-    // case ItemId::oak_log:
-    // case ItemId::stone_brick:
-    // case ItemId::cracked_stone_bricks:
-    // case ItemId::mossy_stone_bricks:
-    // case ItemId::chiseled_stone_bricks:
-    // case ItemId::coal_ore_block:
-    // case ItemId::diamond_ore_block:
-    // case ItemId::iron_ore_block:
-    // case ItemId::gold_ore_block:
-    // case ItemId::redstone_ore_block:
-    // case ItemId::emerald_ore_block:
-    // case ItemId::yellow_concrete:
-    // case ItemId::blue_concrete:
-    // case ItemId::green_concrete:
-    // case ItemId::orange_concrete:
-    // case ItemId::purple_concrete:
-    // case ItemId::red_concrete:
-    // case ItemId::white_concrete:
-    // case ItemId::black_concrete:
-    // case ItemId::glowstone:
-    // case ItemId::jack_o_lantern:
+    // Items with draw data
     default:
       renderItem(t_render);
       break;
@@ -100,10 +63,17 @@ void PlayerRenderArmPip::loadItemDrawData() {
     rawMatrix.identity();
     block.model.identity();
 
-    rawMatrix.scale(BLOCK_SIZE / 3.5F);
-    rawMatrix.rotateY(Tyra::Math::ANG2RAD * -25);
-    rawMatrix.rotateX(Tyra::Math::ANG2RAD * 10);
-    rawMatrix.translate(Vec4(4.5F, -5.0F, -10.0F));
+    if (activeItemType == ItemId::torch) {
+      rawMatrix.scale(BLOCK_SIZE / 2.5F);
+      rawMatrix.rotateY(Tyra::Math::ANG2RAD * -50);
+      rawMatrix.rotateX(Tyra::Math::ANG2RAD * -16);
+      rawMatrix.translate(Vec4(5.7F, -4.6F, -10.0F));
+    } else {
+      rawMatrix.scale(BLOCK_SIZE / 3.7F);
+      rawMatrix.rotateY(Tyra::Math::ANG2RAD * -25);
+      rawMatrix.rotateX(Tyra::Math::ANG2RAD * 10);
+      rawMatrix.translate(Vec4(4.5F, -5.0F, -10.0F)); 
+    }
 
     HandledItemMeshBuilder_BuildMesh(t_item, &block, &vertices, &verticesColors,
                                      &uvMap, t_player->t_worldLightModel);
