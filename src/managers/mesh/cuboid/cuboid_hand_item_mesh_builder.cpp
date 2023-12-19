@@ -126,8 +126,8 @@ void CuboidHandItemMeshBuilder_loadLightData(
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
-  const float MAX_LIGHT_VALUE = 15.0F;
-  const float MIN_LIGHT_FACTOR = 0.25F;
+  // const float MAX_LIGHT_VALUE = 15.0F;
+  // const float MIN_LIGHT_FACTOR = 0.25F;
 
   {
     //   Top face 100% of the base color
