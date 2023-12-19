@@ -106,30 +106,7 @@ class Chunck {
     this->tempLoadingOffset->set(*minOffset);
   };
 
-
   u8 _isDrawDataLoaded = false;
-
-  bool isBlockOpaque(u8 block_type);
-  std::array<u8, 8> getFaceNeightbors(FACE_SIDE faceSide, Block* block);
-  std::array<u8, 4> getCornersAOValues(std::array<u8, 8> blocksNeightbors);
-  u8 getVertexAO(bool side1, bool corner, bool side2);
-  float calcAOIntensity(u8 AOValue);
-
-  void loadCuboidBlock(Block* t_block);
-  void loadCrossBlock(Block* t_block);
-
-  void loadMeshData(Block* t_block);
-  void loadUVData(Block* t_block);
-  void loadUVFaceData(const u8& index);
-  void loadLightData(Block* t_block);
-
-  void loadCrossedMeshData(Block* t_block);
-  void loadCrossedUVData(Block* t_block);
-  void loadCroosedLightData(Block* t_block);
-
-  void loadLightFaceData(Color* faceColor);
-  void loadLightFaceDataWithAO(Color* faceColor,
-                               std::array<u8, 8>& faceNeightbors);
 
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
