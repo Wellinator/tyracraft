@@ -100,10 +100,14 @@ void StateLoadingGame::unload() {
 
 void StateLoadingGame::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
+  this->stateGamePlay->itemRepository = new ItemRepository();
+
   this->stateGamePlay->player = new Player(
       &this->context->t_engine->renderer, this->context->t_soundManager,
-      &this->stateGamePlay->world->blockManager);
-  this->stateGamePlay->itemRepository = new ItemRepository();
+      &this->stateGamePlay->world->blockManager,
+      this->stateGamePlay->itemRepository,
+      this->stateGamePlay->world->getWorldLightModel());
+
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
   this->shouldCreatedEntities = 0;

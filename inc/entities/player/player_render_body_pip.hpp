@@ -13,4 +13,6 @@ class PlayerRenderBodyPip : public PlayerRenderPip {
   ~PlayerRenderBodyPip();
 
   void render(Renderer* t_render);
+  void loadItemDrawData();
+  void unloadItemDrawData();
 };

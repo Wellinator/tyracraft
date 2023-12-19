@@ -361,7 +361,7 @@ void ItemRepository::loadItems(const std::string& texturePack) {
 Item* ItemRepository::getItemById(ItemId& itemId) {
   for (size_t i = 0; i < items.size(); i++)
     if (items[i]->id == itemId) return items[i];
-  return NULL;
+  return nullptr;
 }
 
 u8 ItemRepository::linkTextureByItemType(const ItemId& itemType,

@@ -194,7 +194,7 @@ enum class ItemId {
   poppy_flower,
   dandelion_flower,
 
-  // Flowers
+  // Concretes
   yellow_concrete,
   blue_concrete,
   green_concrete,

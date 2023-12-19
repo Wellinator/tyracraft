@@ -13,6 +13,8 @@ class PlayerRenderPip {
   virtual ~PlayerRenderPip(){};
 
   virtual void render(Renderer* t_render) = 0;
+  virtual void loadItemDrawData() = 0;
+  virtual void unloadItemDrawData() = 0;
 
   Player* t_player = nullptr;
 };

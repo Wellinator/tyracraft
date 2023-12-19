@@ -17,6 +17,7 @@
 #include "managers/items_repository.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
+#include "managers/items_repository.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
@@ -27,6 +28,7 @@
 #include "entities/player/player_render_body_pip.hpp"
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
+#include "models/world_light_model.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -51,7 +53,7 @@ using Tyra::Vec4;
 class Player {
  public:
   Player(Renderer* t_renderer, SoundManager* t_soundManager,
-         BlockManager* t_blockManager);
+         BlockManager* t_blockManager, ItemRepository* t_itemRepository, WorldLightModel* t_worldLightModel);
   ~Player();
 
   void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
@@ -121,8 +123,11 @@ class Player {
   bool isOnWater();
   bool isUnderWater();
 
- private:
   BlockManager* t_blockManager;
+  ItemRepository* t_itemRepository;
+  WorldLightModel* t_worldLightModel;
+
+ private:
   SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,

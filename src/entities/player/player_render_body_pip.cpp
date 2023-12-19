@@ -10,3 +10,7 @@ void PlayerRenderBodyPip::render(Renderer* t_render) {
   this->t_player->dynpip.render(this->t_player->mesh.get(),
                                 &this->t_player->modelDynpipOptions);
 }
+
+void PlayerRenderBodyPip::loadItemDrawData(){};
+
+void PlayerRenderBodyPip::unloadItemDrawData(){};

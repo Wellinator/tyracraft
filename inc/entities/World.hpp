@@ -137,6 +137,8 @@ class World {
     return chunckManager.getChuncksToUpdateLightCount();
   };
 
+  WorldLightModel* getWorldLightModel() { return &worldLightModel; };
+
  private:
   MinecraftPipeline mcPip;
   StaticPipeline stapip;

@@ -9,10 +9,13 @@ using Tyra::Renderer3D;
 // ----
 
 Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
-               BlockManager* t_blockManager) {
+               BlockManager* t_blockManager, ItemRepository* t_itemRepository,
+               WorldLightModel* t_worldLightModel) {
   this->t_renderer = t_renderer;
-  this->t_blockManager = t_blockManager;
   this->t_soundManager = t_soundManager;
+  this->t_blockManager = t_blockManager;
+  this->t_itemRepository = t_itemRepository;
+  this->t_worldLightModel = t_worldLightModel;
 
   loadPlayerTexture();
   loadMesh();
@@ -591,6 +594,13 @@ void Player::selectNextItem() {
 
   inventory[selectedInventoryIndex] = nextItem;
   this->inventoryHasChanged = true;
+
+  if (nextItem == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::selectPreviousItem() {
@@ -605,6 +615,13 @@ void Player::selectPreviousItem() {
 
   inventory[selectedInventoryIndex] = previousItem;
   this->inventoryHasChanged = true;
+
+  if (previousItem == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::jump() {
