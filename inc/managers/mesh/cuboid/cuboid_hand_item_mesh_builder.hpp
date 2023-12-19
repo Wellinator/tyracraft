@@ -12,14 +12,6 @@
 using Tyra::Color;
 using Tyra::FileUtils;
 using Tyra::M4x4;
-using Tyra::Renderer;
-using Tyra::Renderer3D;
-using Tyra::StaPipBag;
-using Tyra::StaPipColorBag;
-using Tyra::StaPipInfoBag;
-using Tyra::StaPipTextureBag;
-using Tyra::StaticPipeline;
-using Tyra::Texture;
 using Tyra::Vec4;
 
 void CuboidHandItemMeshBuilder_GenerateMesh(
