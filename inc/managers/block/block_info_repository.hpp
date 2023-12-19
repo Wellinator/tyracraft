@@ -12,7 +12,7 @@ class BlockInfoRepository {
   BlockInfoRepository();
   ~BlockInfoRepository();
 
-  BlockInfo* getTextureInfo(const Blocks& blockType);
+  BlockInfo* getBlockInfo(const Blocks& blockType);
 
   const u8 isBlockTransparent(const Blocks& blockType);
 

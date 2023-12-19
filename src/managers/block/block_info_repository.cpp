@@ -7,13 +7,13 @@ BlockInfoRepository::~BlockInfoRepository() {
   models.shrink_to_fit();
 }
 
-BlockInfo* BlockInfoRepository::getTextureInfo(const Blocks& blockType) {
+BlockInfo* BlockInfoRepository::getBlockInfo(const Blocks& blockType) {
   return (u8)blockType < (u8)Blocks::TOTAL_OF_BLOCKS ? &models[(u8)blockType]
                                                      : nullptr;
 }
 
 const u8 BlockInfoRepository::isBlockTransparent(const Blocks& blockType) {
-  const BlockInfo* textureInfo = getTextureInfo(blockType);
+  const BlockInfo* textureInfo = getBlockInfo(blockType);
   if (textureInfo) return textureInfo->_isTransparent;
 
   TYRA_WARN("isBlockTransparent: Block texture info not found. BlockType -> ",

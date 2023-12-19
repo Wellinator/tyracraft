@@ -67,7 +67,7 @@ void BlockManager::registerBlockSoundsEffects() {
 }
 
 BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
-  return this->t_BlockInfoRepository->getTextureInfo(blockType);
+  return this->t_BlockInfoRepository->getBlockInfo(blockType);
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
