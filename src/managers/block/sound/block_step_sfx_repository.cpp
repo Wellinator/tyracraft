@@ -21,12 +21,16 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::DIRTY_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Gravel1));
+  models.push_back(new SfxBlockModel(Blocks::GRAVEL_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Gravel1));
   models.push_back(new SfxBlockModel(Blocks::SAND_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Sand1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PUMPKIN_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
 
   // Ores and Minerals
   models.push_back(new SfxBlockModel(Blocks::GOLD_ORE_BLOCK,
@@ -42,6 +46,14 @@ void BlockStepSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::COAL_ORE_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
+  //  Flowers
+  models.push_back(new SfxBlockModel(Blocks::POPPY_FLOWER,
+                                     SoundFxCategory::Step, SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
+                                     SoundFxCategory::Step, SoundFX::Grass1));
+  models.push_back(
+      new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Step, SoundFX::Grass1));
+
   // Stone bricks
   models.push_back(new SfxBlockModel(Blocks::STONE_BRICK_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
@@ -52,6 +64,24 @@ void BlockStepSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::CHISELED_STONE_BRICKS_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::BRICKS_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+
+  //  Concretes
+  models.push_back(new SfxBlockModel(Blocks::YELLOW_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLUE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GREEN_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::ORANGE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PURPLE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::RED_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::WHITE_CONCRETE,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLACK_CONCRETE,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
   // Woods
@@ -73,4 +103,10 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::BIRCH_PLANKS_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Wood1));
+
+  // Light blocks
+  models.push_back(new SfxBlockModel(Blocks::JACK_O_LANTERN_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GLOWSTONE_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
 }

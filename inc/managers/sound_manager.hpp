@@ -4,6 +4,7 @@
 #include "tyra"
 #include "constants.hpp"
 #include "entities/sfx_library.hpp"
+#include "models/sfx_block_model.hpp"
 
 using Tyra::AdpcmResult;
 using Tyra::Audio;
@@ -26,6 +27,12 @@ class SoundManager {
     return this->soundLibrary->getSound(idCategory, idSound);
   }
 
+  SfxLibrarySound* getSound(SfxBlockModel* blockSfxModel) {
+    return this->soundLibrary->getSound(blockSfxModel->category,
+                                        blockSfxModel->sound);
+  }
+
+  void playSfx(SfxLibrarySound* t_sound, const s8& t_ch);
   void playSfx(const SoundFxCategory& idCategory, const SoundFX& idSound);
   void playSfx(const SoundFxCategory& idCategory, const SoundFX& idSound,
                const s8& t_ch);

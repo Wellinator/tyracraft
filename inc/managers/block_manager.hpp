@@ -9,12 +9,14 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/sfx_block_model.hpp"
+#include "entities/Block.hpp"
 #include "entities/sfx_library_category.hpp"
 #include "entities/sfx_library_sound.hpp"
 #include "managers/block/sound/block_sfx_base_repository.hpp"
 #include "managers/block/sound/block_dig_sfx_repository.hpp"
+#include "managers/block/sound/block_broken_sfx_repository.hpp"
 #include "managers/block/sound/block_step_sfx_repository.hpp"
-#include "managers/block/texture/block_texture_info_repository.hpp"
+#include "managers/block/block_info_repository.hpp"
 #include "models/block_info_model.hpp"
 #include <tyra>
 
@@ -34,21 +36,33 @@ class BlockManager {
 
   BlockInfo* getBlockInfoByType(const Blocks& blockType);
   const u8 isBlockTransparent(const Blocks& blockType);
+  const u8 isBlockOriented(const Blocks& blockType);
 
+  SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
-  float getBlockBreakingTime();
+  inline Texture* getBlocksTextureLowRes() {
+    return this->blocksTexAtlasLowRes;
+  };
   McpipBlock* getDamageOverlay(const float& damage_percentage);
+
+  float getBlockBreakingTime(Block* targetBlock);
+  u8 getBlockLightValue(Blocks blockType);
 
  private:
   void registerBlockSoundsEffects();
   void registerDamageOverlayBlocks(MinecraftPipeline* mcPip);
   void loadBlocksTextures(const std::string& texturePack);
+  void loadBlocksTexturesLowRes(const std::string& texturePack);
+
+  bool canHarvestWithCurrentTool(const Blocks blockType);
+  bool isBestTool(const Blocks blockType);
 
   Texture* blocksTexAtlas;
+  Texture* blocksTexAtlasLowRes;
   Renderer* t_renderer;
-  BlockTextureRepository* t_blockTextureRepository;
+  BlockInfoRepository* t_BlockInfoRepository;
 
   std::vector<McpipBlock*> damage_overlay;
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;

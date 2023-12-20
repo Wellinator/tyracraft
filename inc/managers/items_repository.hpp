@@ -35,7 +35,9 @@ class ItemRepository {
   Item sand;
   Item stone;
   Item bricks;
+  Item gravel;
   Item glass;
+  Item pumpkin;
 
   // Ores and Minerals blocks
   Item coal_ore_block;
@@ -44,6 +46,10 @@ class ItemRepository {
   Item gold_ore_block;
   Item redstone_ore_block;
   Item emerald_ore_block;
+
+  // Flowers
+  Item poppy_flower;
+  Item dandelion_flower;
 
   // Wood Planks
   Item oak_planks;
@@ -55,11 +61,31 @@ class ItemRepository {
   Item oak_log;
   Item birch_log;
 
+  // Light Emissor
+  Item glowstone;
+  Item jack_o_lantern;
+
+  // Concretes
+  Item yellow_concrete;
+  Item blue_concrete;
+  Item green_concrete;
+  Item orange_concrete;
+  Item purple_concrete;
+  Item red_concrete;
+  Item white_concrete;
+  Item black_concrete;
+
+  //Item
+  Item torch;
+  Item water_bucket;
+  Item lava_bucket;
+
   // Stone Bricks
   Item stone_brick;
   Item cracked_stone_bricks;
   Item mossy_stone_bricks;
   Item chiseled_stone_bricks;
+
 
   // Toolds
   // Item wooden_axe;

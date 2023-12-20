@@ -1,6 +1,7 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "states/loading/state_loading_game.hpp"
 #include "states/loading/state_loading_saved_game.hpp"
+#include "states/language_selection/language_selection_screen.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
@@ -36,6 +37,7 @@ void StateMainMenu::init() {
       this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
 
   this->loadSkybox(&this->context->t_engine->renderer);
+  this->context->t_camera->reset();
 
   // Load title
   // Title
@@ -64,8 +66,11 @@ void StateMainMenu::update(const float& deltaTime) {
 
   // Update skybox and camera;
   {
-    this->context->t_camera->update(this->context->t_engine->pad,
-                                    *this->menuSkybox);
+    // this->context->t_camera->update(this->context->t_engine->pad,
+    //                                 *this->menuSkybox);
+    this->context->t_camera->setPositionByMesh(menuSkybox);
+    this->context->t_camera->update();
+
     this->menuSkybox->rotation.rotateY(0.0001F);
   }
 
@@ -86,8 +91,8 @@ void StateMainMenu::render() {
    * */
 
   // Title & Subtitle
-  this->context->t_engine->renderer.renderer2D.render(&title[0]);
-  this->context->t_engine->renderer.renderer2D.render(&title[1]);
+  this->context->t_engine->renderer.renderer2D.render(title[0]);
+  this->context->t_engine->renderer.renderer2D.render(title[1]);
 
   this->screen->render();
 }
@@ -140,7 +145,7 @@ void StateMainMenu::loadSavedGame(const std::string save_file_full_path) {
 void StateMainMenu::playClickSound() {
   this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
   this->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                         SoundFX::Click, MENU_SFX_CH);
+                                         SoundFX::WoodClick, MENU_SFX_CH);
   Tyra::Threading::switchThread();
 }
 
@@ -150,7 +155,7 @@ void StateMainMenu::loadMenuSong() {
   if (randSong.size() > 0) {
     this->context->t_engine->audio.song.load(randSong.c_str());
     this->context->t_engine->audio.song.inLoop = true;
-    this->context->t_engine->audio.song.setVolume(80);
+    this->context->t_engine->audio.song.setVolume(65);
     this->context->t_engine->audio.song.play();
   }
 }
@@ -158,4 +163,9 @@ void StateMainMenu::loadMenuSong() {
 void StateMainMenu::setScreen(ScreenBase* screen) {
   if (this->screen) delete this->screen;
   this->screen = screen;
+}
+
+void StateMainMenu::goToLanguageSelectioScreen() {
+  if (this->screen) delete this->screen;
+  context->setState(new StateLanguageSelectionScreen(context));
 }

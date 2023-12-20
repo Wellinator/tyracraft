@@ -21,12 +21,16 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFxCategory::Dig, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::DIRTY_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Gravel1));
+  models.push_back(new SfxBlockModel(Blocks::GRAVEL_BLOCK, SoundFxCategory::Dig,
+                                     SoundFX::Gravel1));
   models.push_back(new SfxBlockModel(Blocks::SAND_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Sand1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PUMPKIN_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
 
   // Ores and Minerals
   models.push_back(new SfxBlockModel(Blocks::GOLD_ORE_BLOCK,
@@ -42,6 +46,14 @@ void BlockDigSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::COAL_ORE_BLOCK,
                                      SoundFxCategory::Dig, SoundFX::Stone1));
 
+  //  Flowers
+  models.push_back(new SfxBlockModel(Blocks::POPPY_FLOWER, SoundFxCategory::Dig,
+                                     SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
+                                     SoundFxCategory::Dig, SoundFX::Grass1));
+  models.push_back(
+      new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Dig, SoundFX::Grass1));
+
   // Stone bricks
   models.push_back(new SfxBlockModel(Blocks::STONE_BRICK_BLOCK,
                                      SoundFxCategory::Dig, SoundFX::Stone1));
@@ -53,6 +65,24 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFxCategory::Dig, SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::BRICKS_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
+
+  //  Concretes
+  models.push_back(new SfxBlockModel(Blocks::YELLOW_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLUE_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GREEN_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::ORANGE_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::PURPLE_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::RED_CONCRETE, SoundFxCategory::Dig,
+                                     SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::WHITE_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::BLACK_CONCRETE,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
 
   // Woods
   models.push_back(new SfxBlockModel(Blocks::OAK_LOG_BLOCK,
@@ -73,4 +103,9 @@ void BlockDigSfxRepository::loadModels() {
                                      SoundFxCategory::Dig, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::BIRCH_PLANKS_BLOCK,
                                      SoundFxCategory::Dig, SoundFX::Wood1));
+
+  models.push_back(new SfxBlockModel(Blocks::JACK_O_LANTERN_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::GLOWSTONE_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
 }

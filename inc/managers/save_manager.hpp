@@ -75,6 +75,9 @@ class SaveManager {
     std::ofstream saveFile(fullPath);
     saveFile << compressed_data;
     saveFile.close();
+
+    tempBlocksBuffer.clear();
+    tempBlocksBuffer.shrink_to_fit();
   };
 
   static void LoadSavedGame(StateGamePlay* state, const char* fullPath) {
@@ -119,7 +122,7 @@ class SaveManager {
 
       TYRA_LOG("Loading tick state...");
       // These are global scope variables;
-      g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<float>();
+      g_ticksCounter = savedData["tickState"]["g_ticksCounter"].get<int>();
       elapsedRealTime = savedData["tickState"]["elapsedRealTime"].get<double>();
       ticksDayCounter =
           savedData["tickState"]["ticksDayCounter"].get<uint16_t>();
@@ -133,6 +136,8 @@ class SaveManager {
       t_map->spawnY = savedData["worldLevel"]["map"]["spawnY"].get<uint16_t>();
       t_map->spawnZ = savedData["worldLevel"]["map"]["spawnZ"].get<uint16_t>();
 
+      state->world->setSavedSpawnArea(*state->player->getPosition());
+
       TYRA_LOG("Loading blocks data...");
       const char* tempBLocksBuffer =
           savedData["worldLevel"]["map"]["blocks"].get<std::string>().c_str();
@@ -142,8 +147,8 @@ class SaveManager {
         t_map->blocks[i] = number;
       }
 
-      TYRA_LOG("Reloading world data...");
-      state->world->reloadWorldArea(*state->player->getPosition());
+      // TYRA_LOG("Reloading world data...");
+      // state->world->reloadWorldArea(*state->player->getPosition());
     } else {
       TYRA_ERROR("Save file not found at: ", fullPath);
     }

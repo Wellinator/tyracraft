@@ -12,7 +12,9 @@
 #include "renderer/3d/bbox/bbox.hpp"
 #include <math/m4x4.hpp>
 #include <vector>
+#include <queue>
 #include "models/world_light_model.hpp"
+#include "entities/level.hpp"
 
 using Tyra::BBox;
 using Tyra::M4x4;
@@ -32,20 +34,41 @@ class ChunckManager {
 
   std::vector<Chunck*>& getChuncks() { return chuncks; };
 
-  std::vector<Chunck*>& getVisibleChunks();
+  std::vector<Chunck*>* getVisibleChunks();
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
+  std::vector<Chunck*>* getNearByChunks();
 
-  void init();
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos,
-              WorldLightModel* worldLightModel);
+  void init(WorldLightModel* worldLightModel, LevelMap* terrain);
+  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
   u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void clearAllChunks();
+  void sortChunkByPlayerPosition(Vec4* playerPosition);
+
+  void enqueueChunksToReloadLight();
+  void reloadLightData();
+  void reloadLightDataOfAllChunks();
+
+  size_t getChuncksToUpdateLightCount() { return chuncksToUpdateLight.size(); };
 
  private:
+  WorldLightModel* worldLightModel;
+  LevelMap* terrain;
+
+  std::queue<Chunck*> chuncksToUpdateLight;
   std::vector<Chunck*> chuncks;
   std::vector<Chunck*> visibleChunks;
+  std::vector<Chunck*> nearByChunks;
 
+  LevelMap* map = nullptr;
   void generateChunks();
+
+  void reloadLightDataAsync();
+  void clearLightDataQueue() {
+    while (!chuncksToUpdateLight.empty()) chuncksToUpdateLight.pop();
+  };
+
+  u32 getIndexByOffset(u16 x, u16 y, u16 z);
+  u8 isTimeToUpdateLight = 0;
 };

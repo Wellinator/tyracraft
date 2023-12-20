@@ -7,12 +7,12 @@
 
 using Tyra::MinecraftPipeline;
 
-class BlockTextureRepository {
+class BlockInfoRepository {
  public:
-  BlockTextureRepository();
-  ~BlockTextureRepository();
+  BlockInfoRepository();
+  ~BlockInfoRepository();
 
-  BlockInfo* getTextureInfo(const Blocks& blockType);
+  BlockInfo* getBlockInfo(const Blocks& blockType);
 
   const u8 isBlockTransparent(const Blocks& blockType);
 
@@ -20,10 +20,10 @@ class BlockTextureRepository {
   /**
    * @brief Load blocks textures
    * @warning Should load textures in @enum Blocks order to load info faster
-   * (haky)
+   * (hacky)
    *
    */
-  void loadTextures();
+  void loadBlocksInfo();
 
   std::vector<BlockInfo> models;
 };

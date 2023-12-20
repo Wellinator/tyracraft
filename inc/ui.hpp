@@ -30,6 +30,7 @@ class Ui {
   void renderHungerBar();
   void renderBreathBar();
   void renderInventoryMenu();
+  void renderUnderWaterOverlay();
 
   void loadInventory();
   void unloadInventory();
@@ -47,6 +48,7 @@ class Ui {
   Sprite empty_slots;
   Sprite selected_slot;
   Sprite xp_bar_full;
+  Sprite underWaterOverlay;
   Sprite health[10];
   Sprite hungry[10];
   Sprite armor[10];
@@ -62,7 +64,7 @@ class Ui {
 
   float BASE_X_POS;
   float BASE_Y_POS;
-  const float HUD_HEIGHT = 67.0F;
+  const float HUD_HEIGHT = 64.0F;
   const float HUD_WIDTH = 496.0F;
   const float COL_WIDTH = HUD_WIDTH / 12.4F;
 

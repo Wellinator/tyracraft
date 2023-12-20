@@ -1,4 +1,6 @@
 #include "entities/player/player.hpp"
+#include "entities/level.hpp"
+#include "managers/tick_manager.hpp"
 
 using Tyra::Renderer3D;
 
@@ -7,10 +9,13 @@ using Tyra::Renderer3D;
 // ----
 
 Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
-               BlockManager* t_blockManager) {
+               BlockManager* t_blockManager, ItemRepository* t_itemRepository,
+               WorldLightModel* t_worldLightModel) {
   this->t_renderer = t_renderer;
-  this->t_blockManager = t_blockManager;
   this->t_soundManager = t_soundManager;
+  this->t_blockManager = t_blockManager;
+  this->t_itemRepository = t_itemRepository;
+  this->t_worldLightModel = t_worldLightModel;
 
   loadPlayerTexture();
   loadMesh();
@@ -40,11 +45,13 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   }
 
   // Set render pip
-  this->setRenderPip(new PlayerFirstPersonRenderPip(this));
+  this->setRenderPip(new PlayerRenderArmPip(this));
 }
 
 Player::~Player() {
-  currentBlock = nullptr;
+  currentBottomBlock = nullptr;
+  currentUpperBlock = nullptr;
+
   delete hitBox;
   delete handledItem;
   delete this->renderPip;
@@ -73,112 +80,161 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    const Vec4& camDir,
-                    const std::vector<Chunck*>& loadedChunks,
-                    TerrainHeightModel* terrainHeight) {
-  isMoving = movementDir.length() >= L_JOYPAD_DEAD_ZONE;
+                    Camera* t_camera, std::vector<Chunck*>* loadedChunks,
+                    TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
+  // Update updateStateInWater every 5 ticks
+  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
+
+  isMoving = movementDir.length() > 0;
+
   if (isMoving) {
-    // Vec4 min, max;
-    // auto tempPositionMatrix = M4x4();
-    // tempPositionMatrix.identity();
-    Vec4 nextPlayerPos = getNextPosition(deltaTime, movementDir, camDir);
+    Vec4 nextPlayerPos = getNextPosition(
+        deltaTime, movementDir, t_camera->unitCirclePosition.getNormalized());
 
-    // tempPositionMatrix.translate(nextPlayerPos);
-    // const auto tempPlayerBbox =
-    // getHitBox().getTransformed(tempPositionMatrix);
-    // tempPlayerBbox.getMinMax(&min, &max);
-
-    // if (min.x < MAX_WORLD_POS.x && max.x > MIN_WORLD_POS.x &&
-    //     min.y < MAX_WORLD_POS.y && max.y > MIN_WORLD_POS.y &&
-    //     min.z < MAX_WORLD_POS.z && max.z > MIN_WORLD_POS.z) {
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
-          this->updatePosition(loadedChunks, deltaTime, nextPlayerPos);
+          updatePosition(loadedChunks, deltaTime, nextPlayerPos);
 
-      if (hasChangedPosition && this->isOnGround && this->currentBlock) {
-        if (lastTimePlayedWalkSfx > 0.3F) {
-          this->playWalkSfx(this->currentBlock->type);
+      if (hasChangedPosition) {
+        if (lastTimePlayedWalkSfx > 0.35) {
+          if (isOnWater() || isUnderWater()) {
+            playSwimSfx();
+          } else if (isOnGround && currentBottomBlock) {
+            playWalkSfx(currentBottomBlock->type);
+          }
+
           setWalkingAnimation();
-          lastTimePlayedWalkSfx = 0;
+          lastTimePlayedWalkSfx = 0.0F;
         } else {
           lastTimePlayedWalkSfx += deltaTime;
         }
       }
     }
   } else {
+    // Deaccelerate player speed
+    if (speed > 0) {
+      speed -= acceleration * deltaTime;
+    } else if (speed < 0) {
+      speed = 0;
+    }
     unsetWalkingAnimation();
+  }
+
+  updateFovBySpeed();
+
+  if (t_camera->getCamType() != CamType::FirstPerson) {
+    mesh.get()->rotation.identity();
+    float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
+                                    t_camera->unitCirclePosition.z);
+    mesh->rotation.rotateY(theta);
   }
 
   if (!isFlying) updateGravity(deltaTime, terrainHeight);
 
-  animate();
+  animate(t_camera->getCamType());
 
   // this->handledItem->mesh->translation.identity();
   // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
-void Player::render() { renderPip->render(t_renderer); }
+void Player::render() {
+  renderPip->render(t_renderer);
+
+  // // Debug content
+  // if (currentUpperBlock) {
+  //   t_renderer->renderer3D.utility.drawBBox(*currentUpperBlock->bbox,
+  //                                           Color(200, 0, 0));
+  // }
+  // if (currentBottomBlock) {
+  //   t_renderer->renderer3D.utility.drawBBox(*currentBottomBlock->bbox,
+  //                                           Color(0, 200, 0));
+  // }
+
+  // t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(200, 200, 0));
+}
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Vec4& camDir) {
-  Vec4 result =
+  const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
+  const float _maxAcc = isRunning ? runningAcceleration : acceleration;
+
+  // Accelerate speed until mach max
+  if (speed < _maxSpeed) {
+    speed += _maxAcc * deltaTime;
+  } else if (speed > _maxSpeed) {
+    // Deaccelerate speed to new max
+    speed -= _maxAcc * deltaTime;
+    if (speed < _maxSpeed) speed = _maxSpeed;
+  }
+
+  Vec4 direction =
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
-           (camDir.z * -sensibility.z) + (camDir.x * sensibility.x));
-  result.normalize();
-  result *= (this->speed * sensibility.length() * deltaTime);
+           (camDir.z * -sensibility.z) + (camDir.x * sensibility.x))
+          .getNormalized();
+
+  Vec4 result = direction * (speed * sensibility.length() * deltaTime);
+
+  if (_isUnderWater || _isOnWater) {
+    result *= IN_WATER_FRICTION;
+  }
+
   return result + *mesh->getPosition();
 }
 
 /** Update player position by gravity and update index of current block */
 void Player::updateGravity(const float& deltaTime,
                            TerrainHeightModel* terrainHeight) {
-  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
-  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
-
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  Vec4 acceleration = GRAVITY * deltaTime;
-  this->velocity += acceleration;
+  velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+
+  if (_isUnderWater) {
+    velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
+  } else if (_isOnWater) {
+    velocity.y *= GRAVITY_ON_WATER_FACTOR;
+  }
 
   // Increase the position by velocity
-  Vec4 newYPosition = *mesh->getPosition() - (this->velocity * deltaTime);
+  Vec4 newPosition = *mesh->getPosition() + (velocity * deltaTime);
 
-  if (newYPosition.y + hitBox->getHeight() > worldMaxHeight ||
-      newYPosition.y < worldMinHeight) {
+  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
+  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
+  if (newPosition.y + hitBox->getHeight() > worldMaxHeight ||
+      newPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
-    this->mesh->getPosition()->set(this->spawnArea);
-    this->velocity = Vec4(0.0f, 0.0f, 0.0f);
+    mesh->getPosition()->set(spawnArea);
+    velocity = Vec4(0.0f, 0.0f, 0.0f);
     return;
   }
 
-  const float heightLimit =
-      terrainHeight->maxHeight - this->hitBox->getHeight();
+  const float playerHeight = std::abs(hitBox->getHeight());
+  const float heightLimit = terrainHeight->maxHeight - playerHeight;
 
-  if (newYPosition.y < terrainHeight->minHeight) {
-    newYPosition.y = terrainHeight->minHeight;
-    this->velocity = Vec4(0.0f, 0.0f, 0.0f);
-    this->isOnGround = true;
-  } else if (newYPosition.y > heightLimit) {
-    newYPosition.y = heightLimit;
-    this->velocity = -this->velocity;
-    this->isOnGround = false;
+  if (newPosition.y < terrainHeight->minHeight) {
+    newPosition.y = terrainHeight->minHeight;
+    velocity = Vec4(0.0f, 0.0f, 0.0f);
+    isOnGround = true;
+  } else if (newPosition.y >= heightLimit) {
+    newPosition.y = heightLimit;
+    velocity = -velocity;
+    isOnGround = false;
   }
 
   // Finally updates gravity after checks
-  mesh->getPosition()->set(newYPosition);
+  mesh->getPosition()->set(newPosition);
 }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime,
                    const TerrainHeightModel& terrainHeight) {
-  const Vec4 upDir = GRAVITY * -10.0F * deltaTime;
+  const Vec4 upDir = -GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime,
                      const TerrainHeightModel& terrainHeight) {
-  const Vec4 downDir = GRAVITY * 10.0F * deltaTime;
+  const Vec4 downDir = GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
@@ -186,27 +242,30 @@ void Player::flyDown(const float& deltaTime,
 void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
-  Vec4 newYPosition = *mesh->getPosition() - (direction * deltaTime);
+  Vec4 newYPosition = *mesh->getPosition() + (direction * deltaTime);
+  const float playerHeight = std::abs(hitBox->getHeight());
 
   // Is player inside world bbox?
-  if (newYPosition.y + hitBox->getHeight() >=
-          OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE ||
-      newYPosition.y < OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE) {
+  if (newYPosition.y + playerHeight >=
+          (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
+      newYPosition.y < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
     return;
-  }
+  } else {
+    if (newYPosition.y < terrainHeight.minHeight) {
+      newYPosition.y = terrainHeight.minHeight;
+      this->isOnGround = true;
+      this->isFlying = false;
+    }
 
-  if (newYPosition.y < terrainHeight.minHeight) {
-    newYPosition.y = terrainHeight.minHeight;
-    this->isOnGround = true;
-  } else if (newYPosition.y >
-             terrainHeight.maxHeight + this->hitBox->getHeight()) {
-    newYPosition.y = terrainHeight.maxHeight + this->hitBox->getHeight();
-  }
+    if (newYPosition.y + playerHeight > terrainHeight.maxHeight) {
+      newYPosition.y = terrainHeight.maxHeight - playerHeight - 1.0F;
+    }
 
-  mesh->getPosition()->set(newYPosition);
+    mesh->getPosition()->set(newYPosition);
+  }
 }
 
-u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
+u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
                           const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
@@ -226,26 +285,29 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
   const float maxCollidableDistance =
       currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
-    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
+    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
       // Broad phase
-      // is vertically out of range?
-      if (playerBB.getBottomFace().axisPosition >=
-              loadedChunks[chunkIndex]->blocks[i]->maxCorner.y ||
-          playerBB.getTopFace().axisPosition <
-              loadedChunks[chunkIndex]->blocks[i]->minCorner.y ||
-          currentPlayerPos.distanceTo(
-              *loadedChunks[chunkIndex]->blocks[i]->getPosition()) >
-              DUBLE_BLOCK_SIZE * 2) {
+
+      auto block = (*loadedChunks)[chunkIndex]->blocks[i];
+
+      if (
+          // Prevent colliding to water horizontally
+          !block->isCollidable ||
+
+          // is vertically out of range?
+          (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
+           playerBB.getTopFace().axisPosition < block->minCorner.y ||
+           currentPlayerPos.distanceTo(block->position) >
+               DUBLE_BLOCK_SIZE * 2)) {
         continue;
       };
 
       Vec4 tempInflatedMin;
       Vec4 tempInflatedMax;
-      Utils::GetMinkowskiSum(playerMin, playerMax,
-                             loadedChunks[chunkIndex]->blocks[i]->minCorner,
-                             loadedChunks[chunkIndex]->blocks[i]->maxCorner,
-                             &tempInflatedMin, &tempInflatedMax);
+      Utils::GetMinkowskiSum(playerMin, playerMax, block->minCorner,
+                             block->maxCorner, &tempInflatedMin,
+                             &tempInflatedMax);
 
       if (ray.intersectBox(tempInflatedMin, tempInflatedMax,
                            &tempHitDistance)) {
@@ -283,40 +345,45 @@ u8 Player::updatePosition(const std::vector<Chunck*>& loadedChunks,
   }
 
   // Apply new position;
-  mesh->getPosition()->x = nextPlayerPos.x;
-  mesh->getPosition()->z = nextPlayerPos.z;
+  mesh->getPosition()->set(nextPlayerPos);
   return true;
 }
 
 TerrainHeightModel Player::getTerrainHeightAtPosition(
-    const std::vector<Chunck*>& loadedChunks) {
+    const std::vector<Chunck*>* loadedChunks) {
   TerrainHeightModel model;
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
 
-  this->currentBlock = nullptr;
+  currentBottomBlock = nullptr;
+  currentUpperBlock = nullptr;
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks.size(); chunkIndex++) {
-    for (size_t i = 0; i < loadedChunks[chunkIndex]->blocks.size(); i++) {
-      // Is on block?
-      if (minPlayer.x < loadedChunks[chunkIndex]->blocks[i]->maxCorner.x &&
-          maxPlayer.x > loadedChunks[chunkIndex]->blocks[i]->minCorner.x &&
-          minPlayer.z < loadedChunks[chunkIndex]->blocks[i]->maxCorner.z &&
-          maxPlayer.z > loadedChunks[chunkIndex]->blocks[i]->minCorner.z) {
-        const float underBlockHeight =
-            loadedChunks[chunkIndex]->blocks[i]->maxCorner.y;
+  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
+    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
+      Block* block = (*loadedChunks)[chunkIndex]->blocks[i];
+
+      if (
+          // Is collidable
+          block->isCollidable &&
+
+          // is under or above block
+          minPlayer.x <= block->maxCorner.x &&
+          maxPlayer.x >= block->minCorner.x &&
+          minPlayer.z <= block->maxCorner.z &&
+          maxPlayer.z >= block->minCorner.z) {
+        const float underBlockHeight = block->maxCorner.y;
         if (minPlayer.y >= underBlockHeight &&
             underBlockHeight > model.minHeight) {
           model.minHeight = underBlockHeight;
-          this->currentBlock = loadedChunks[chunkIndex]->blocks[i];
+          currentBottomBlock = block;
         }
 
-        const float overBlockHeight =
-            loadedChunks[chunkIndex]->blocks[i]->minCorner.y;
-        if (maxPlayer.y <= overBlockHeight &&
+        const float overBlockHeight = block->minCorner.y;
+        if (maxPlayer.y < overBlockHeight &&
             overBlockHeight < model.maxHeight) {
           model.maxHeight = overBlockHeight;
+          currentUpperBlock = block;
         }
       }
     }
@@ -369,8 +436,8 @@ void Player::loadMesh() {
   this->mesh = std::make_unique<DynamicMesh>(data.get());
 
   this->mesh->rotation.identity();
-  this->mesh->rotation.rotateY(-3.14F);
   this->mesh->scale.identity();
+  this->mesh->scale.scaleX(0.85F);
 
   auto& materials = this->mesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
@@ -394,16 +461,17 @@ void Player::loadArmMesh() {
   this->armMesh = std::make_unique<DynamicMesh>(data.get());
 
   this->armMesh->scale.identity();
-  this->armMesh->scale.scaleX(0.7F);
-  this->armMesh->scale.scaleZ(1.1F);
+  this->armMesh->scale.scaleX(0.85F);
+  this->armMesh->scale.scaleZ(1.15F);
 
   this->armMesh->translation.identity();
-  this->armMesh->translation.translateZ(-13.5F);
-  this->armMesh->translation.translateY(-8.0F);
-  this->armMesh->translation.translateX(5.0F);
+  this->armMesh->translation.translateZ(-13.0F);
+  this->armMesh->translation.translateY(-8.5F);
+  this->armMesh->translation.translateX(3.5F);
 
   this->armMesh->rotation.identity();
   this->armMesh->rotation.rotateY(-3.24);
+  this->armMesh->rotation.rotateX(0.35);
 
   auto& materials = this->armMesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
@@ -461,21 +529,56 @@ void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
-    const int ch = this->t_soundManager->getAvailableChannel();
-    this->t_soundManager->setSfxVolume(75, ch);
-    this->t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                                  ch);
-    Tyra::Threading::switchThread();
+    const int ch = t_soundManager->getAvailableChannel();
+    SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+    auto config = SfxConfig::getStepSoundConfig(blockType);
+    sound->_sound->pitch = config->_pitch;
+    t_soundManager->setSfxVolume(config->_volume, ch);
+    t_soundManager->playSfx(sound, ch);
+    delete config;
   }
 }
 
+// Pitch values from
+// https://minecraft.fandom.com/wiki/Water#cite_note-bugMC-177092-7
+void Player::playSwimSfx() {
+  const int ch = t_soundManager->getAvailableChannel();
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Swim1), static_cast<u8>(SoundFX::Swim4)));
+
+  const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 30;
+
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+  sound->_sound->pitch = randPich;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
+void Player::playSplashSfx() {
+  const int ch = t_soundManager->getAvailableChannel();
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Splash), static_cast<u8>(SoundFX::Splash2)));
+
+  const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 60;
+
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+  sound->_sound->pitch = randPich;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
 void Player::toggleFlying() {
-  this->isFlying = !this->isFlying;
-  if (this->isFlying) {
-    this->t_renderer->core.renderer3D.setFov(70.0F);
-    this->isOnGround = false;
-  } else {
-    this->t_renderer->core.renderer3D.setFov(60.0F);
+  isFlying = !isFlying;
+  if (isFlying) isOnGround = false;
+}
+
+void Player::setRunning(bool _isRunning) {
+  if (isRunning != _isRunning) {
+    isRunning = _isRunning;
   }
 }
 
@@ -491,6 +594,13 @@ void Player::selectNextItem() {
 
   inventory[selectedInventoryIndex] = nextItem;
   this->inventoryHasChanged = true;
+
+  if (nextItem == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::selectPreviousItem() {
@@ -498,18 +608,38 @@ void Player::selectPreviousItem() {
   ItemId previousItem;
 
   if ((currentItemId - 1) < 0) {
-    previousItem = ItemId::emerald_ore_block;
+    previousItem = static_cast<ItemId>((u8)ItemId::total_of_items - 1);
   } else {
     previousItem = static_cast<ItemId>(currentItemId - 1);
   }
 
   inventory[selectedInventoryIndex] = previousItem;
   this->inventoryHasChanged = true;
+
+  if (previousItem == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::jump() {
-  this->velocity += this->lift * this->speed;
-  this->isOnGround = false;
+  velocity += lift;
+  isOnGround = false;
+}
+
+void Player::swim() {
+  if (_isUnderWater) {
+    velocity += (lift * 0.25F);
+  } else if (_isOnWater) {
+    velocity += (lift * 0.25F);
+    _isOnWater = false;
+  }
+
+  if (velocity.y > lift.y) velocity.y = lift.y;
+
+  isOnGround = false;
 }
 
 void Player::setRenderPip(PlayerRenderPip* pipToSet) {
@@ -542,17 +672,15 @@ void Player::unsetArmBreakingAnimation() {
 }
 
 void Player::setWalkingAnimation() {
-  if (isWalkingAnimationSet) return;
+  const float _speed = (speed / runningMaxSpeed) * 4;
+  this->mesh->animation.speed = baseAnimationSpeed * _speed;
+  this->armMesh->animation.speed = baseAnimationSpeed * _speed;
 
-  this->mesh->animation.speed = baseAnimationSpeed;
-  this->mesh->animation.setSequence(walkSequence);
-
-  if (isHandFree()) {
-    this->armMesh->animation.speed = baseAnimationSpeed * 3;
+  if (!isWalkingAnimationSet) {
+    this->mesh->animation.setSequence(walkSequence);
     this->armMesh->animation.setSequence(armWalkingSequence);
+    isWalkingAnimationSet = true;
   }
-
-  isWalkingAnimationSet = true;
 }
 
 void Player::unsetWalkingAnimation() {
@@ -563,10 +691,12 @@ void Player::unsetWalkingAnimation() {
   mesh->animation.setSequence(standStillSequence);
 }
 
-void Player::animate() {
-  // TODO: check cam type before animate
-  this->mesh->update();
-  if (isHandFree()) this->armMesh->update();
+void Player::animate(CamType camType) {
+  if (camType == CamType::FirstPerson && isHandFree()) {
+    this->armMesh->update();
+  } else {
+    this->mesh->update();
+  }
 }
 
 void Player::shiftItemToInventory(const ItemId& itemToShift) {
@@ -586,4 +716,55 @@ void Player::setItemToInventory(const ItemId& itemToShift) {
 void Player::loadPlayerTexture() {
   playerTexture = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/entity/player/steve.png"));
+}
+
+void Player::updateStateInWater(LevelMap* terrain) {
+  Vec4 min, mid, max, top, bottom;
+  BBox bbox = getHitBox();
+  bbox.getMinMax(&min, &max);
+  mid = ((max - min) / 2) + min;
+
+  bottom.set(mid.x, min.y, mid.z);
+  top.set(mid.x, max.y + 6.0F, mid.z);
+
+  auto blockBottom =
+      static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));
+  auto blockTop = static_cast<Blocks>(getBlockByWorldPosition(terrain, &top));
+
+  _isOnWater = blockBottom == Blocks::WATER_BLOCK;
+  _isUnderWater = blockTop == Blocks::WATER_BLOCK;
+
+  if (!isSubmerged && _isUnderWater) {
+    isSubmerged = true;
+    playSplashSfx();
+  } else if (isSubmerged && !_isUnderWater) {
+    isSubmerged = false;
+    playSplashSfx();
+  }
+
+  // printf("isOnWater: %i | isUnderWater: %i\n", _isOnWater, _isUnderWater);
+}
+
+bool Player::isOnWater() { return _isOnWater; }
+
+bool Player::isUnderWater() { return _isUnderWater; }
+
+void Player::setRenderArmPip() { setRenderPip(new PlayerRenderArmPip(this)); }
+
+void Player::setRenderBodyPip() { setRenderPip(new PlayerRenderBodyPip(this)); }
+
+void Player::updateFovBySpeed() {
+  const float _speed = speed < maxSpeed ? maxSpeed : speed;
+  const float _minSpeed = maxSpeed;
+  const float _maxSpeed = runningMaxSpeed;
+  float _fovByLerp;
+
+  if (isFlying) {
+    _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
+                                     _maxSpeed, _speed);
+  } else {
+    _fovByLerp =
+        Utils::reRangeScale(_minFov, _maxFov, _minSpeed, _maxSpeed, _speed);
+  }
+  t_renderer->core.renderer3D.setFov(_fovByLerp);
 }

@@ -135,8 +135,8 @@ void create_strata(LevelMap* map, const int16_t* heightmap) {
       int dirt_transition = heightmap[x + z * map->length];
       int stone_transition = dirt_transition + dirt_thickness;
 
-      for (int y = 0; y < 64; y++) {
-        int block_type = static_cast<uint8_t>(Blocks::AIR_BLOCK);
+      for (int y = 0; y < map->height; y++) {
+        u8 block_type = static_cast<uint8_t>(Blocks::AIR_BLOCK);
 
         if (y == 0) {
           block_type = static_cast<uint8_t>(Blocks::BEDROCK_BLOCK);
@@ -162,7 +162,7 @@ void create_strata2(LevelMap* map, const int16_t* heightmap,
     for (uint16_t z = 0; z < map->width; z++) {
       float dirt_thickness = octave_noise(8, x, z, 0) / 24.0f - 4.0f;
       int dirt_transition = heightmap[x + z * map->length];
-      if (dirt_transition >= 63 || dirt_transition <= 0) continue;
+      if (dirt_transition >= map->height || dirt_transition <= 0) continue;
 
       int stone_transition = dirt_transition + dirt_thickness;
 
@@ -257,7 +257,8 @@ void create_caves(LevelMap* map) {
         radius = 1.2f + (radius * 3.5f + 1) * cave_radius;
         radius = radius * sinf(len * M_PI / cave_length);
 
-        fillOblateSpheroid(map, center_x, center_y, center_z, radius, 0);
+        fillOblateSpheroid(map, center_x, center_y, center_z, radius,
+                           static_cast<uint8_t>(Blocks::AIR_BLOCK));
       }
     }
   }
@@ -305,6 +306,9 @@ void create_ores(LevelMap* map) {
   create_vein(map, 0.9f, static_cast<uint8_t>(Blocks::COAL_ORE_BLOCK));
   create_vein(map, 0.7f, static_cast<uint8_t>(Blocks::IRON_ORE_BLOCK));
   create_vein(map, 0.5f, static_cast<uint8_t>(Blocks::GOLD_ORE_BLOCK));
+  create_vein(map, 0.1f, static_cast<uint8_t>(Blocks::DIAMOND_ORE_BLOCK));
+  create_vein(map, 0.25f, static_cast<uint8_t>(Blocks::EMERALD_ORE_BLOCK));
+  create_vein(map, 0.35f, static_cast<uint8_t>(Blocks::REDSTONE_ORE_BLOCK));
 }
 
 void flood_fill_water(LevelMap* map) {
@@ -315,9 +319,13 @@ void flood_fill_water(LevelMap* map) {
 
       for (; y >= 0; y--) {
         if (GetBlockFromMap(map, x, y, z) ==
-            static_cast<uint8_t>(Blocks::AIR_BLOCK))
+            static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
           SetBlockInMap(map, x, y, z,
                         static_cast<uint8_t>(Blocks::WATER_BLOCK));
+          SetLiquidDataToMap(map, x, y, z,
+                             static_cast<uint8_t>(LiquidLevel::Percent100));
+        }
+
         else
           break;
       }
@@ -336,25 +344,34 @@ void flood_fill_water(LevelMap* map) {
     if (GetBlockFromMap(map, x, y, z) ==
         static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
       SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::WATER_BLOCK));
+      SetLiquidDataToMap(map, x, y, z,
+                         static_cast<uint8_t>(LiquidLevel::Percent100));
     }
   }
 }
 
 void flood_fill_lava(LevelMap* map) {
   // Add underground lava sources
-  int numLavaSources = map->length * map->width * map->height / 20000;
+  int numLavaSources = map->length * map->width * map->height / 5000;
   for (int i = 0; i < numLavaSources; i++) {
     // Choose random x and z coordinates
+    int maxSurfaceOffset = 10;
     int x = rand() % map->length;
-    int y = rand() % map->height - waterLevel;
+    int y = rand() % map->height - waterLevel + maxSurfaceOffset;
     int z = rand() % map->width;
 
     if (y <= 0) continue;
 
+    uint8_t underBlk = GetBlockFromMap(map, x, y - 1, z);
+    if (underBlk == static_cast<uint8_t>(Blocks::AIR_BLOCK) ||
+        underBlk == static_cast<uint8_t>(Blocks::WATER_BLOCK))
+      continue;
+
     if (GetBlockFromMap(map, x, y, z) ==
         static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
-      SetBlockInMap(map, x, y, z,
-                    static_cast<uint8_t>(Blocks::AIR_BLOCK));  // TODO: add lava
+      SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::LAVA_BLOCK));
+      SetLiquidDataToMap(map, x, y, z,
+                         static_cast<uint8_t>(LiquidLevel::Percent100));
     }
   }
 }
@@ -366,15 +383,13 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
       bool gravelChance = (noise2(x, z) > 12);
 
       int y = heightmap[x + z * map->length];
-      if (y >= 63 || y <= 0) continue;
+      if (y >= map->height || y <= 0) continue;
 
       uint8_t blockAbove = GetBlockFromMap(map, x, y + 1, z);
 
       if (blockAbove == static_cast<uint8_t>(Blocks::WATER_BLOCK) &&
           gravelChance) {
-        SetBlockInMap(
-            map, x, y, z,
-            static_cast<uint8_t>(Blocks::STONE_BLOCK));  // TODO: Add Gravel
+        SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::GRAVEL_BLOCK));
       }
 
       if (blockAbove == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
@@ -402,11 +417,45 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
   }
 }
 
+void create_grass(LevelMap* map, int16_t* heightmap, int off) {
+  int numPatches = map->width * map->length / 750;
+
+  for (int i = 0; i < numPatches; i++) {
+    uint16_t x = rand() % map->length;
+    uint16_t z = rand() % map->width;
+
+    for (int j = 0; j < 25; j++) {
+      uint16_t fx = x;
+      uint16_t fz = z;
+
+      for (int k = 0; k < 5; k++) {
+        fx += (rand() % 6) - (rand() % 6);
+        fz += (rand() % 6) - (rand() % 6);
+
+        if (BoundCheckMap(map, fx, 0, fz)) {
+          uint16_t fy = heightmap[fx + fz * map->length] + 1 + off;
+
+          if (!BoundCheckMap(map, fx, fy, fz)) continue;
+
+          uint8_t blockBelow = GetBlockFromMap(map, fx, fy - 1, fz);
+
+          if (GetBlockFromMap(map, fx, fy, fz) ==
+                  static_cast<uint8_t>(Blocks::AIR_BLOCK) &&
+              blockBelow == static_cast<uint8_t>(Blocks::GRASS_BLOCK)) {
+            SetBlockInMap(map, fx, fy, fz, static_cast<uint8_t>(Blocks::GRASS));
+          }
+        }
+      }
+    }
+  }
+}
+
 void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
   int numPatches = map->width * map->length / 3000;
 
   for (int i = 0; i < numPatches; i++) {
-    // uint8_t flowerType = (rand() % 2 == 0) ? 37 : 38;
+    Blocks flowerType =
+        (rand() % 2 == 0) ? Blocks::DANDELION_FLOWER : Blocks::POPPY_FLOWER;
     uint16_t x = rand() % map->length;
     uint16_t z = rand() % map->width;
 
@@ -428,10 +477,7 @@ void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
           if (GetBlockFromMap(map, fx, fy, fz) ==
                   static_cast<uint8_t>(Blocks::AIR_BLOCK) &&
               blockBelow == static_cast<uint8_t>(Blocks::GRASS_BLOCK)) {
-            // SetBlockInMap(map, fx, fy, fz, flowerType);//TODO: add flower
-            // blocks
-            SetBlockInMap(map, fx, fy, fz,
-                          static_cast<uint8_t>(Blocks::AIR_BLOCK));
+            SetBlockInMap(map, fx, fy, fz, static_cast<uint8_t>(flowerType));
           }
         }
       }
@@ -512,117 +558,85 @@ bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight) {
   return true;
 }
 
-void growTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+void growTree(LevelMap* map, int x, int y, int z, int treeHeight,
+              uint8_t logBlock, uint8_t leafesBlock) {
   int max = y + treeHeight;
   int m = max;
 
   for (; m >= y; m--) {
     if (m == max) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
+      SetBlockInMap(map, x, m, z, leafesBlock);
     } else if (m == max - 1) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 1, m, z - 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 1, m, z - 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 1, m, z + 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 1, m, z + 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 1, m, z - 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 1, m, z - 1, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 1, m, z + 1,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 1, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     } else if (m == max - 2 || m == max - 3) {
-      SetBlockInMap(map, x - 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z, leafesBlock);
+      SetBlockInMap(map, x, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 1, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x - 1, m, z + 1, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 2, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 2, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x - 2, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 2, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x - 2, m, z, leafesBlock);
+      SetBlockInMap(map, x - 2, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x + 2, m, z - 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 2, m, z,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 2, m, z + 1,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x + 2, m, z - 1, leafesBlock);
+      SetBlockInMap(map, x + 2, m, z, leafesBlock);
+      SetBlockInMap(map, x + 2, m, z + 1, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z - 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z - 2, leafesBlock);
+      SetBlockInMap(map, x, m, z - 2, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z - 2, leafesBlock);
 
-      SetBlockInMap(map, x - 1, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
-      SetBlockInMap(map, x + 1, m, z + 2,
-                    static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      SetBlockInMap(map, x - 1, m, z + 2, leafesBlock);
+      SetBlockInMap(map, x, m, z + 2, leafesBlock);
+      SetBlockInMap(map, x + 1, m, z + 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 2, m, z - 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 2, m, z - 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 2, m, z - 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 2, m, z - 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x - 2, m, z + 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x - 2, m, z + 2, leafesBlock);
 
-      if (rand() % 2 == 0)
-        SetBlockInMap(map, x + 2, m, z + 2,
-                      static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+      if (rand() % 2 == 0) SetBlockInMap(map, x + 2, m, z + 2, leafesBlock);
 
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     } else {
-      SetBlockInMap(map, x, m, z, static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK));
+      SetBlockInMap(map, x, m, z, logBlock);
     }
   }
+}
+
+void growOakTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+  growTree(map, x, y, z, treeHeight,
+           static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK),
+           static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK));
+}
+
+void growBirchTree(LevelMap* map, int x, int y, int z, int treeHeight) {
+  growTree(map, x, y, z, treeHeight,
+           static_cast<uint8_t>(Blocks::BIRCH_LOG_BLOCK),
+           static_cast<uint8_t>(Blocks::BIRCH_LEAVES_BLOCK));
 }
 
 void create_trees(LevelMap* map, int16_t* heightmap, int off) {
@@ -631,6 +645,7 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
   for (int i = 0; i < numPatches; i++) {
     uint16_t x = rand() % map->length;
     uint16_t z = rand() % map->width;
+    const u8 isOakTree = rand() % 2 == 0;
 
     for (int j = 0; j < 10; j++) {
       uint16_t fx = x;
@@ -645,7 +660,11 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
           uint16_t th = rand() % 3 + 4;
 
           if (isSpaceForTree(map, fx, fy, fz, th)) {
-            growTree(map, fx, fy, fz, th);
+            if (isOakTree) {
+              growOakTree(map, fx, fy, fz, th);
+            } else {
+              growBirchTree(map, fx, fy, fz, th);
+            }
           }
         }
       }
@@ -654,6 +673,8 @@ void create_trees(LevelMap* map, int16_t* heightmap, int off) {
 }
 
 void create_plants(LevelMap* map, int16_t* heightmap, int off) {
+  TYRA_LOG("Creating grass...");
+  create_grass(map, heightmap, off);
   TYRA_LOG("Creating flowers...");
   create_flowers(map, heightmap, off);
   TYRA_LOG("Creating shrooms...");
@@ -758,9 +779,13 @@ void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
       for (int x = 0; x < map->length; x++) {
         uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
 
+        // init all blocks as air
+        SetBlockInMap(map, x, y, z, static_cast<uint8_t>(Blocks::AIR_BLOCK));
+
         densityMap[index] = (noise3d(x, y, z) + 1.0f) / 2.0f;
 
-        if (densityMap[index] > 0.67f) {
+        const auto trashHold = 0.65f;
+        if (densityMap[index] > trashHold) {
           SetBlockInMap(map, x, y, z,
                         static_cast<uint8_t>(Blocks::STONE_BLOCK));
         }
@@ -793,11 +818,10 @@ void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
       }
     }
   }
+
   create_strata2(map, heightMap, heightMap2);
   create_surface(map, heightMap);
-
   create_ores(map);
-
   create_plants(map, heightMap, 1);
 
   SetBlockInMap(map, map->spawnX, map->spawnY, map->spawnZ,

@@ -126,9 +126,9 @@ void ScreenLoadGame::render() {
 
   // Color infoColor = Color(70, 70, 70);
   FontManager_printText(
-      "Load", FontOptions(Vec2(140, 128), Color(250, 250, 250), 0.9F));
+      Label_Load, FontOptions(Vec2(140, 128), Color(250, 250, 250), 0.9F));
   FontManager_printText(
-      "Create", FontOptions(Vec2(220, 128), Color(180, 180, 180), 0.9F));
+      Label_Create, FontOptions(Vec2(220, 128), Color(180, 180, 180), 0.9F));
 
   FontManager_printText("USB", 130.0F, 160.0F);
   FontManager_printText("MC", 210.0F, 160.0F);
@@ -177,13 +177,13 @@ void ScreenLoadGame::render() {
   }
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText("Back", 140, 407);
+  FontManager_printText(Label_Back, 140, 407);
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Load", 35, 407);
+  FontManager_printText(Label_Load, 35, 407);
   t_renderer->renderer2D.render(btnDpadUp);
-  FontManager_printText("Next", 225, 407);
+  FontManager_printText(Label_Next, 225, 407);
   t_renderer->renderer2D.render(btnDpadDown);
-  FontManager_printText("Prev", 320, 407);
+  FontManager_printText(Label_Prev, 320, 407);
 
   // t_renderer->renderer2D.render(btnSelect);
   // FontManager_printText("Origin", 425, 407);

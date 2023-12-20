@@ -1,7 +1,9 @@
 #pragma once
 #include <tamtypes.h>
+#include "constants.hpp"
 #include "tyra"
 
+using Tyra::BBox;
 using Tyra::Vec4;
 
 class VertexBlockData {
@@ -10,11 +12,28 @@ class VertexBlockData {
 
   ~VertexBlockData();
 
+  static BBox* getRawBBoxByBlockType(const Blocks type);
+
   /**
    * @brief Provides 36 vertices of raw cube
    * @returns new Vec4[36]
    */
   static const Vec4* getVertexData();
+  static BBox* getCuboidRawBBox();
+
+  /**
+   * @brief Provides 36 vertices of raw torch
+   * @returns new Vec4[36]
+   */
+  static const Vec4* getTorchVertexData();
+  static const Vec4* getTorchUVData();
+  static BBox* getTorchRawBBox();
+
+  /**
+   * @brief Provides 12 vertices of raw crossed cube
+   * @returns new Vec4[8]
+   */
+  static const Vec4* getCrossedVertexData();
 
   /**
    * @brief Provides 6 face normals of raw cube
@@ -24,6 +43,9 @@ class VertexBlockData {
 
   static const u8 VETEX_COUNT = 36;
   static const u8 FACES_COUNT = 6;
+
+  static const u8 CROSSED_VETEX_COUNT = 12;
+  static const u8 CROSSED_FACES_COUNT = 2;
 
   inline const u8* getTopFaceIndexes() { return topFacesIndex; };
   inline const u8* getBottomFaceIndexes() { return bottomFaceIndex; };

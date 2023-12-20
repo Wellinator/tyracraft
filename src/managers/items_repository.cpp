@@ -12,6 +12,7 @@ ItemRepository::ItemRepository() {}
 
 ItemRepository::~ItemRepository() {
   this->t_renderer->getTextureRepository().freeBySprite(dirt.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(gravel.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(sand.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(stone.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(bricks.sprite);
@@ -25,6 +26,14 @@ ItemRepository::~ItemRepository() {
       redstone_ore_block.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       emerald_ore_block.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(poppy_flower.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(
+      dandelion_flower.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(glowstone.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(jack_o_lantern.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(pumpkin.sprite);
+
   this->t_renderer->getTextureRepository().freeBySprite(oak_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(spruce_planks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(birch_planks.sprite);
@@ -38,6 +47,20 @@ ItemRepository::~ItemRepository() {
       mossy_stone_bricks.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(
       chiseled_stone_bricks.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(yellow_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(blue_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(green_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(orange_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(purple_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(red_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(white_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(black_concrete.sprite);
+
+  this->t_renderer->getTextureRepository().freeBySprite(water_bucket.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(lava_bucket.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(torch.sprite);
+
   //   this->t_renderer->getTextureRepository().freeBySprite(wooden_axe.sprite);
 }
 
@@ -81,12 +104,26 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/bricks.png"))
       ->addLink(bricks.sprite.id);
 
+  gravel.id = ItemId::gravel;
+  gravel.blockId = Blocks::GRAVEL_BLOCK;
+  this->items.push_back(&gravel);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/gravel.png"))
+      ->addLink(gravel.sprite.id);
+
   glass.id = ItemId::glass;
   glass.blockId = Blocks::GLASS_BLOCK;
   this->items.push_back(&glass);
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/glass.png"))
       ->addLink(glass.sprite.id);
+
+  pumpkin.id = ItemId::pumpkin;
+  pumpkin.blockId = Blocks::PUMPKIN_BLOCK;
+  this->items.push_back(&pumpkin);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/pumpkin.png"))
+      ->addLink(pumpkin.sprite.id);
 
   //------------------------------Ores and Minerals blocks----------------------
   coal_ore_block.id = ItemId::coal_ore_block;
@@ -130,6 +167,36 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/emerald_ore_block.png"))
       ->addLink(emerald_ore_block.sprite.id);
+
+  // -------------- Flowers ------------------------
+  poppy_flower.id = ItemId::poppy_flower;
+  poppy_flower.blockId = Blocks::POPPY_FLOWER;
+  this->items.push_back(&poppy_flower);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/poppy_flower.png"))
+      ->addLink(poppy_flower.sprite.id);
+
+  dandelion_flower.id = ItemId::dandelion_flower;
+  dandelion_flower.blockId = Blocks::DANDELION_FLOWER;
+  this->items.push_back(&dandelion_flower);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/dandelion_flower.png"))
+      ->addLink(dandelion_flower.sprite.id);
+
+  // -------------- Light Emissors ------------------------
+  glowstone.id = ItemId::glowstone;
+  glowstone.blockId = Blocks::GLOWSTONE_BLOCK;
+  this->items.push_back(&glowstone);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/glowstone.png"))
+      ->addLink(glowstone.sprite.id);
+
+  jack_o_lantern.id = ItemId::jack_o_lantern;
+  jack_o_lantern.blockId = Blocks::JACK_O_LANTERN_BLOCK;
+  this->items.push_back(&jack_o_lantern);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/jack_o_lantern.png"))
+      ->addLink(jack_o_lantern.sprite.id);
 
   // -------------- Wood Planks ------------------------
   oak_planks.id = ItemId::oak_planks;
@@ -204,6 +271,84 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/chiseled_stone_bricks.png"))
       ->addLink(chiseled_stone_bricks.sprite.id);
 
+  // --------------------------Concretes-------------------------
+  yellow_concrete.id = ItemId::yellow_concrete;
+  yellow_concrete.blockId = Blocks::YELLOW_CONCRETE;
+  this->items.push_back(&yellow_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/yellow_concrete.png"))
+      ->addLink(yellow_concrete.sprite.id);
+
+  blue_concrete.id = ItemId::blue_concrete;
+  blue_concrete.blockId = Blocks::BLUE_CONCRETE;
+  this->items.push_back(&blue_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/blue_concrete.png"))
+      ->addLink(blue_concrete.sprite.id);
+
+  green_concrete.id = ItemId::green_concrete;
+  green_concrete.blockId = Blocks::GREEN_CONCRETE;
+  this->items.push_back(&green_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/green_concrete.png"))
+      ->addLink(green_concrete.sprite.id);
+
+  orange_concrete.id = ItemId::orange_concrete;
+  orange_concrete.blockId = Blocks::ORANGE_CONCRETE;
+  this->items.push_back(&orange_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/orange_concrete.png"))
+      ->addLink(orange_concrete.sprite.id);
+
+  purple_concrete.id = ItemId::purple_concrete;
+  purple_concrete.blockId = Blocks::PURPLE_CONCRETE;
+  this->items.push_back(&purple_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/purple_concrete.png"))
+      ->addLink(purple_concrete.sprite.id);
+
+  red_concrete.id = ItemId::red_concrete;
+  red_concrete.blockId = Blocks::RED_CONCRETE;
+  this->items.push_back(&red_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/red_concrete.png"))
+      ->addLink(red_concrete.sprite.id);
+
+  white_concrete.id = ItemId::white_concrete;
+  white_concrete.blockId = Blocks::WHITE_CONCRETE;
+  this->items.push_back(&white_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/white_concrete.png"))
+      ->addLink(white_concrete.sprite.id);
+
+  black_concrete.id = ItemId::black_concrete;
+  black_concrete.blockId = Blocks::BLACK_CONCRETE;
+  this->items.push_back(&black_concrete);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/black_concrete.png"))
+      ->addLink(black_concrete.sprite.id);
+
+  water_bucket.id = ItemId::water_bucket;
+  water_bucket.blockId = Blocks::WATER_BLOCK;
+  this->items.push_back(&water_bucket);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/water_bucket.png"))
+      ->addLink(water_bucket.sprite.id);
+
+  lava_bucket.id = ItemId::lava_bucket;
+  lava_bucket.blockId = Blocks::LAVA_BLOCK;
+  this->items.push_back(&lava_bucket);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/lava_bucket.png"))
+      ->addLink(lava_bucket.sprite.id);
+
+  torch.id = ItemId::torch;
+  torch.blockId = Blocks::TORCH;
+  this->items.push_back(&torch);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/torch.png"))
+      ->addLink(torch.sprite.id);
+
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;
   //   wooden_axe.blockId = Blocks::VOID;
@@ -216,7 +361,7 @@ void ItemRepository::loadItems(const std::string& texturePack) {
 Item* ItemRepository::getItemById(ItemId& itemId) {
   for (size_t i = 0; i < items.size(); i++)
     if (items[i]->id == itemId) return items[i];
-  return NULL;
+  return nullptr;
 }
 
 u8 ItemRepository::linkTextureByItemType(const ItemId& itemType,

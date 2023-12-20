@@ -12,6 +12,7 @@ StateLoadingGame::~StateLoadingGame() { this->unload(); }
 
 void StateLoadingGame::init() {
   this->setBgColorBlack();
+  progressLabel = Label_Loading;
 
   const RendererSettings& rendererSettings =
       this->context->t_engine->renderer.core.getSettings();
@@ -28,17 +29,6 @@ void StateLoadingGame::init() {
   background->position.set(0, 0);
   this->context->t_engine->renderer.core.texture.repository.add(backgroundTex)
       ->addLink(background->id);
-
-  // State desc
-  std::string stateLoadingText =
-      FileUtils::fromCwd("textures/gui/loading/loading.png");
-  loadingStateText = new Sprite;
-  loadingStateText->mode = Tyra::MODE_STRETCH;
-  loadingStateText->size.set(256, 16);
-  loadingStateText->position.set(width / 2 - 128, BASE_HEIGHT);
-  this->context->t_engine->renderer.core.texture.repository
-      .add(stateLoadingText)
-      ->addLink(loadingStateText->id);
 
   // Loading slot
   std::string loadingSlotTex =
@@ -69,14 +59,19 @@ void StateLoadingGame::update(const float& deltaTime) {
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   if (this->shouldCreatedEntities) {
+    progressLabel = Label_CreatingEntities;
     return this->createEntities();
   } else if (this->shouldInitItemRepository) {
+    progressLabel = Label_LoadingItemsRepo;
     return this->initItemRepository();
   } else if (this->shouldInitUI) {
+    progressLabel = Label_LoadingUI;
     return this->initUI();
   } else if (this->shouldInitWorld) {
+    progressLabel = Label_LoadingWorld;
     return this->initWorld();
   } else if (this->shouldInitPlayer) {
+    progressLabel = Label_LoadingPlayer;
     return this->initPlayer();
   }
   this->_state = LoadingState::Complete;
@@ -86,7 +81,8 @@ void StateLoadingGame::render() {
   this->context->t_engine->renderer.renderer2D.render(background);
   this->context->t_engine->renderer.renderer2D.render(loadingSlot);
   this->context->t_engine->renderer.renderer2D.render(loadingprogress);
-  this->context->t_engine->renderer.renderer2D.render(loadingStateText);
+
+  FontManager_printText(progressLabel, progressLabelOptions);
 }
 
 void StateLoadingGame::unload() {
@@ -96,21 +92,22 @@ void StateLoadingGame::unload() {
       *loadingSlot);
   this->context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingprogress);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *loadingStateText);
 
   delete background;
   delete loadingSlot;
   delete loadingprogress;
-  delete loadingStateText;
 }
 
 void StateLoadingGame::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
+  this->stateGamePlay->itemRepository = new ItemRepository();
+
   this->stateGamePlay->player = new Player(
       &this->context->t_engine->renderer, this->context->t_soundManager,
-      &this->stateGamePlay->world->blockManager);
-  this->stateGamePlay->itemRepository = new ItemRepository();
+      &this->stateGamePlay->world->blockManager,
+      this->stateGamePlay->itemRepository,
+      this->stateGamePlay->world->getWorldLightModel());
+
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
   this->shouldCreatedEntities = 0;
@@ -138,6 +135,12 @@ void StateLoadingGame::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository,
                                    this->context->t_soundManager);
+  this->stateGamePlay->world->generate();
+  this->stateGamePlay->world->generateLight();
+  this->stateGamePlay->world->propagateLiquids();
+  this->stateGamePlay->world->generateSpawnArea();
+  this->stateGamePlay->world->loadSpawnArea();
+
   setPercent(90.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");
@@ -148,6 +151,7 @@ void StateLoadingGame::initPlayer() {
       this->stateGamePlay->world->getGlobalSpawnArea());
   this->stateGamePlay->player->spawnArea.set(
       this->stateGamePlay->world->getLocalSpawnArea());
+  this->stateGamePlay->context->t_camera->setFirstPerson();
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
   TYRA_LOG("initPlayer");

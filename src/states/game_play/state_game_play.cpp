@@ -66,13 +66,14 @@ PlayingStateBase* StateGamePlay::getPreviousState() {
 void StateGamePlay::handleInput() {
   const PadButtons& clicked = this->context->t_engine->pad.getClicked();
 
-  if (isAtWelcomeState) {
-    if (clicked.Cross || clicked.Start) hideWelcome();
-  } else if (clicked.Start) {
+  if (!isAtWelcomeState && clicked.Start) {
     if (this->paused)
       this->unpauseGame();
     else
       this->pauseGame();
+
+  } else if (isAtWelcomeState && (clicked.Cross || clicked.Start)) {
+    hideWelcome();
   }
 }
 

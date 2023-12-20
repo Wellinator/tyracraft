@@ -3,6 +3,7 @@
 #include "models/new_game_model.hpp"
 #include "models/save_info_model.hpp"
 #include "managers/font/font_options.hpp"
+#include "managers/language_manager.hpp"
 #include <tamtypes.h>
 #include <tyra>
 #include <string>
@@ -67,6 +68,17 @@ class ScreenLoadGame : public ScreenBase {
 
   std::vector<SaveInfoModel*> savedGamesList;
   SaveInfoModel* selectedSavedGame = nullptr;
+
+  const std::string Label_Load =
+      g_language_repository["gui"]["load"].get<std::string>();
+  const std::string Label_Create =
+      g_language_repository["gui"]["create"].get<std::string>();
+  const std::string Label_Prev =
+      g_language_repository["gui"]["prev"].get<std::string>();
+  const std::string Label_Next =
+      g_language_repository["gui"]["next"].get<std::string>();
+  const std::string Label_Back =
+      g_language_repository["gui"]["back"].get<std::string>();
 
   void handleInput();
   void handleOptionsSelection();

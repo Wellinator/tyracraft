@@ -2,6 +2,7 @@
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/language_manager.hpp"
 #include "constants.hpp"
 #include "entities/World.hpp"
 #include <string>
@@ -30,6 +31,14 @@ class StateWelcome : public PlayingStateBase {
 
   Sprite overlay;
   Sprite btnCross;
+
+  const std::string Label_WelcomeText1Part1 = g_language_repository["state_welcome"]["welcome_text_part1"].get<std::string>();
+  const std::string Label_WelcomeText1Part2 = g_language_repository["state_welcome"]["welcome_text_part2"].get<std::string>();
+  const std::string Label_WelcomeText1Part3 = g_language_repository["state_welcome"]["welcome_text_part3"].get<std::string>();
+  const std::string Label_WelcomeText1Part4 = g_language_repository["state_welcome"]["welcome_text_part4"].get<std::string>();
+  const std::string Label_WelcomeText1Part5 = g_language_repository["state_welcome"]["welcome_text_part5"].get<std::string>();
+  const std::string Label_WelcomeText1Part6 = g_language_repository["state_welcome"]["welcome_text_part6"].get<std::string>();
+  const std::string Label_WelcomeText1Part7 = g_language_repository["state_welcome"]["welcome_text_part7"].get<std::string>();
 
   void unloadTextures();
 };

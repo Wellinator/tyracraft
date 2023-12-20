@@ -23,19 +23,34 @@ std::string AllValidChars =
 Renderer* g_t_renderer = nullptr;
 std::array<Sprite*, 256> printable_ascii_chars_sprites;
 u8 char_widths[256] = {
-    8,  6,  9,  6,  6,  6,  6,  6,  6,  96, 0,  6,  14, 0,  6,  6,  6,  6,  6,
-    6,  6,  6,  6,  6,  6,  6,  6,  6,  0,  0,  0,  0,  4,  4,  8,  12, 12, 12,
-    12, 4,  10, 10, 10, 12, 4,  12, 4,  12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 4,  4,  10, 12, 10, 12, 14, 12, 12, 12, 12, 12, 12, 12, 12, 8,  12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 8,  12, 8,  12,
-    12, 6,  12, 12, 12, 12, 12, 10, 12, 12, 8,  12, 10, 6,  12, 12, 12, 12, 12,
-    12, 12, 8,  12, 12, 12, 12, 12, 12, 10, 4,  10, 14, 4,  12, 0,  6,  12, 10,
-    12, 8,  8,  8,  16, 12, 6,  20, 0,  12, 0,  0,  6,  6,  10, 10, 6,  6,  12,
-    12, 16, 12, 6,  20, 0,  12, 12, 3,  4,  10, 12, 12, 12, 4,  12, 10, 16, 8,
-    10, 10, 4,  16, 12, 8,  12, 8,  8,  6,  12, 12, 4,  8,  8,  8,  10, 18, 18,
-    18, 12, 12, 12, 12, 12, 12, 12, 20, 12, 12, 12, 12, 12, 8,  8,  8,  8,  14,
-    12, 12, 12, 12, 12, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 20, 12, 12, 12, 12, 12, 4,  6,  6,  6,  12, 12, 12, 12, 12, 12, 12,
+    8, 6, 9, 6, 6, 6, 6, 6, 6, 96, 0, 6, 14, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 0, 0, 0, 0, 4, 4, 8, 12, 12, 12, 12, 4, 10, 10, 10, 12, 4, 12, 4,
+    12,
+
+    // index 47 - 56 are number from 0 to 9;
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    //
+
+    4, 4, 10, 12, 10, 12, 14,
+
+    // index 64 - 89 are number upper case letter from A to Z;
+    12, 12, 12, 12, 12, 12, 12, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12,
+    //
+
+    8, 12, 8, 12, 12, 8,
+
+    // index 64 - 89 are number lower case letter from a to z;
+    12, 12, 12, 12, 10, 12, 12, 10, 10, 10, 10, 8, 12, 12, 12, 12, 10, 10, 12,
+    10, 12, 10, 12, 12, 12, 12,
+    //
+
+    10, 4, 10, 14, 4, 12, 0, 6, 12, 10, 12, 8, 8, 8, 16, 12, 6, 20, 0, 12, 0, 0,
+    6, 6, 10, 10, 6, 6, 12, 12, 16, 12, 6, 20, 0, 12, 12, 3, 4, 10, 12, 12, 12,
+    4, 12, 10, 16, 8, 10, 10, 4, 16, 12, 8, 12, 8, 8, 6, 12, 12, 4, 8, 8, 8, 10,
+    18, 18, 18, 12, 12, 12, 12, 12, 12, 12, 20, 12, 12, 12, 12, 12, 8, 8, 8, 8,
+    14, 12, 12, 12, 12, 12, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 20, 12, 12, 12, 12, 12, 4, 6, 6, 6, 12, 12, 12, 12, 12, 12, 12,
     12, 12, 12, 12, 12, 12, 12, 12, 12};
 
 void FontManager_init(Renderer* t_renderer) {
@@ -53,6 +68,11 @@ void FontManager_printText(const char* text, const float& x, const float& y) {
   FontManager_printText(std::string(text), FontOptions(Vec2(x, y)));
 }
 
+void FontManager_printText(const std::string& text, const float& x,
+                           const float& y) {
+  FontManager_printText(text, FontOptions(Vec2(x, y)));
+}
+
 void FontManager_printText(const std::string& text,
                            const FontOptions& options) {
   float cursorX = 0.0F;
@@ -62,7 +82,7 @@ void FontManager_printText(const std::string& text,
   padding *= options.scale;
 
   for (size_t i = 0; i < stringLenth; i++) {
-    const u8 charCode = FontManager_getCodeFromChar(text.at(i));
+    const u8 charCode = FontManager_getCodeFromChar(text[i]);
     const Sprite* fontCharAt = FontManager_getFontChatByCode(charCode);
 
     if (fontCharAt != nullptr) {
@@ -101,7 +121,7 @@ float FontManager_calcLinePadding(const std::string& text,
   else {
     const size_t stringLenth = text.size();
     for (size_t i = 0; i < stringLenth; i++) {
-      const u8 charCode = FontManager_getCodeFromChar(text.at(i));
+      const u8 charCode = FontManager_getCodeFromChar(text[i]);
       padding += (char_widths[charCode] + 2);
     }
   }

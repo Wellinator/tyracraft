@@ -32,8 +32,8 @@ ScreenNewGame::~ScreenNewGame() {
   textureRepo->freeBySprite(overlay);
 
   for (size_t i = 0; i < texturePacks.size(); i++) {
-    textureRepo->freeBySprite(texturePacks.at(i)->icon);
-    delete texturePacks.at(i);
+    textureRepo->freeBySprite(texturePacks[i]->icon);
+    delete texturePacks[i];
   }
 }
 
@@ -44,7 +44,7 @@ void ScreenNewGame::update() {
 }
 
 void ScreenNewGame::render() {
-  this->t_renderer->renderer2D.render(&backgroundNewGame);
+  this->t_renderer->renderer2D.render(backgroundNewGame);
   this->t_renderer->renderer2D.render(tab2);
   this->t_renderer->renderer2D.render(btnL1);
   this->t_renderer->renderer2D.render(btnR1);
@@ -52,19 +52,19 @@ void ScreenNewGame::render() {
   this->renderSelectedOptions();
 
   FontManager_printText(
-      "Load", FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
+      Label_Load, FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
   FontManager_printText(
-      "Create", FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
+      Label_Create, FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
 
   Color infoColor = Color(70, 70, 70);
-  FontManager_printText("Texture Packs: ",
-                        FontOptions(Vec2(190, 157), infoColor, 0.8F));
-  FontManager_printText("By: ", FontOptions(Vec2(190, 187), infoColor, 0.8F));
+  FontManager_printText(Label_TexturePack,
+                        FontOptions(Vec2(185, 157), infoColor, 0.8F));
+  FontManager_printText(Label_By, FontOptions(Vec2(185, 187), infoColor, 0.8F));
 
   if (selectedTexturePack) {
     this->t_renderer->renderer2D.render(selectedTexturePack->icon);
     FontManager_printText(selectedTexturePack->title.c_str(),
-                          FontOptions(Vec2(190, 172), infoColor, 0.8F));
+                          FontOptions(Vec2(185, 172), infoColor, 0.8F));
     FontManager_printText(selectedTexturePack->author.c_str(),
                           FontOptions(Vec2(230, 187), infoColor, 0.8F));
   }
@@ -102,71 +102,79 @@ void ScreenNewGame::render() {
     FontOptions options;
     options.position = Vec2(242, 258);
     options.alignment = TextAlignment::Center;
-    FontManager_printText("Seed: " + inputSeed, options);
+    FontManager_printText(Label_Seed + inputSeed, options);
   }
+
+  FontOptions worldTypeOptions;
+  worldTypeOptions.alignment = TextAlignment::Center;
 
   switch (this->model.type) {
     case WorldType::WORLD_TYPE_ORIGINAL:
-      FontManager_printText("World Type: Original", 130, 295);
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeOriginal, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_FLAT:
-      FontManager_printText("World Type: Flat", 150, 295);
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeFlat, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_ISLAND:
-      FontManager_printText("World Type: Island", 135, 295);
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeIsland, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_WOODS:
-      FontManager_printText("World Type: Woods", 140, 295);
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeWoods, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_FLOATING:
-      FontManager_printText("World Type: Floating", 130, 295);
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeFloating, worldTypeOptions);
       break;
 
     default:
       break;
   }
 
-  FontManager_printText("Create New World", 145, 332);
+  FontManager_printText(Label_CreateNewWorld, 145, 332);
 
   if (isEditingSeed) {
-    this->t_renderer->renderer2D.render(&btnTriangle);
-    this->t_renderer->renderer2D.render(&btnCross);
+    this->t_renderer->renderer2D.render(btnTriangle);
+    this->t_renderer->renderer2D.render(btnCross);
 
-    FontManager_printText("Confirm", 35, 407);
-    FontManager_printText("Cancel", 160, 407);
+    FontManager_printText(Label_Confirm, 35, 407);
+    FontManager_printText(Label_Cancel, 160, 407);
   } else if (isEditingWorldName) {
-    this->t_renderer->renderer2D.render(&btnCross);
-    this->t_renderer->renderer2D.render(&btnTriangle);
-    this->t_renderer->renderer2D.render(&btnSquare);
-    this->t_renderer->renderer2D.render(&btnStart);
+    this->t_renderer->renderer2D.render(btnCross);
+    this->t_renderer->renderer2D.render(btnTriangle);
+    this->t_renderer->renderer2D.render(btnSquare);
+    this->t_renderer->renderer2D.render(btnStart);
 
-    FontManager_printText("Select", 35, 407);
-    FontManager_printText("Cancel", 160, 407);
-    FontManager_printText("Bksp", 285, 407);
-    FontManager_printText("Confirm", 405, 407);
+    FontManager_printText(Label_Select, 35, 407);
+    FontManager_printText(Label_Cancel, 160, 407);
+    FontManager_printText(Label_Bksp, 285, 407);
+    FontManager_printText(Label_Confirm, 405, 407);
   } else {
     if (activeOption == ScreenNewGameOptions::TexturePack) {
-      this->t_renderer->renderer2D.render(&btnDpadLeft);
-      this->t_renderer->renderer2D.render(&btnDpadRight);
-      this->t_renderer->renderer2D.render(&btnTriangleTexturePack);
+      this->t_renderer->renderer2D.render(btnDpadLeft);
+      this->t_renderer->renderer2D.render(btnDpadRight);
+      this->t_renderer->renderer2D.render(btnTriangleTexturePack);
 
-      FontManager_printText("Prev", 35, 407);
-      FontManager_printText("Next", 160, 407);
-      FontManager_printText("Back", 280, 407);
+      FontManager_printText(Label_Prev, 35, 407);
+      FontManager_printText(Label_Next, 160, 407);
+      FontManager_printText(Label_Back, 280, 407);
     } else {
-      this->t_renderer->renderer2D.render(&btnTriangle);
-      this->t_renderer->renderer2D.render(&btnCross);
+      this->t_renderer->renderer2D.render(btnTriangle);
+      this->t_renderer->renderer2D.render(btnCross);
 
       if (activeOption == ScreenNewGameOptions::Seed) {
-        FontManager_printText("Edit", 35, 407);
-        FontManager_printText("Random", 280, 407);
-        this->t_renderer->renderer2D.render(&btnCircle);
+        FontManager_printText(Label_Edit, 35, 407);
+        FontManager_printText(Label_Random, 280, 407);
+        this->t_renderer->renderer2D.render(btnCircle);
       } else if (activeOption == ScreenNewGameOptions::WorldName) {
-        FontManager_printText("Edit", 35, 407);
+        FontManager_printText(Label_Edit, 35, 407);
       } else {
-        FontManager_printText("Select", 35, 407);
+        FontManager_printText(Label_Select, 35, 407);
       }
-      FontManager_printText("Back", 160, 407);
+      FontManager_printText(Label_Back, 160, 407);
     }
   }
 
@@ -507,26 +515,26 @@ void ScreenNewGame::createNewWorld() {
 }
 
 void ScreenNewGame::renderSelectedOptions() {
-  isEditingWorldName ? t_renderer->renderer2D.render(&slotWorldNameInput)
-                     : t_renderer->renderer2D.render(&slotWorldName);
+  isEditingWorldName ? t_renderer->renderer2D.render(slotWorldNameInput)
+                     : t_renderer->renderer2D.render(slotWorldName);
 
-  isEditingSeed ? t_renderer->renderer2D.render(&slotSeedInput)
-                : t_renderer->renderer2D.render(&slotSeed);
+  isEditingSeed ? t_renderer->renderer2D.render(slotSeedInput)
+                : t_renderer->renderer2D.render(slotSeed);
 
-  t_renderer->renderer2D.render(&slotCreateNewWorld);
-  t_renderer->renderer2D.render(&slotWorldType);
+  t_renderer->renderer2D.render(slotCreateNewWorld);
+  t_renderer->renderer2D.render(slotWorldType);
 
   if (activeOption == ScreenNewGameOptions::TexturePack)
-    t_renderer->renderer2D.render(&slotTextureActive);
+    t_renderer->renderer2D.render(slotTextureActive);
   else if (activeOption == ScreenNewGameOptions::WorldName &&
            !isEditingWorldName)
-    t_renderer->renderer2D.render(&slotWorldNameActive);
+    t_renderer->renderer2D.render(slotWorldNameActive);
   else if (activeOption == ScreenNewGameOptions::Seed && !isEditingSeed)
-    t_renderer->renderer2D.render(&slotSeedActive);
+    t_renderer->renderer2D.render(slotSeedActive);
   else if (activeOption == ScreenNewGameOptions::WorldType)
-    t_renderer->renderer2D.render(&slotWorldTypeActive);
+    t_renderer->renderer2D.render(slotWorldTypeActive);
   else if (activeOption == ScreenNewGameOptions::CreateNewWorld)
-    t_renderer->renderer2D.render(&slotCreateNewWorldActive);
+    t_renderer->renderer2D.render(slotCreateNewWorldActive);
 }
 
 void ScreenNewGame::saveSeed() {
@@ -657,23 +665,23 @@ void ScreenNewGame::getAvailableTexturePacks() {
 void ScreenNewGame::selectPreviousTexturePack() {
   u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
-    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+    if (texturePacks[i]->id == selectedTexturePack->id) idx = i;
 
   if (idx == 0)
-    selectedTexturePack = texturePacks.at(texturePacks.size() - 1);
+    selectedTexturePack = texturePacks[texturePacks.size() - 1];
   else
-    selectedTexturePack = texturePacks.at(idx - 1);
+    selectedTexturePack = texturePacks[idx - 1];
 }
 
 void ScreenNewGame::selectNextTexturePack() {
   u16 idx = 0;
   for (size_t i = 0; i < texturePacks.size(); i++)
-    if (texturePacks.at(i)->id == selectedTexturePack->id) idx = i;
+    if (texturePacks[i]->id == selectedTexturePack->id) idx = i;
 
   if (idx == texturePacks.size() - 1)
-    selectedTexturePack = texturePacks.at(0);
+    selectedTexturePack = texturePacks[0];
   else
-    selectedTexturePack = texturePacks.at(idx + 1);
+    selectedTexturePack = texturePacks[idx + 1];
 }
 
 void ScreenNewGame::renderWorldNameDialog() {
@@ -684,18 +692,18 @@ void ScreenNewGame::renderWorldNameDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText("Ops!", titleOptions);
+  FontManager_printText(Label_Ops, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText("A world with the same", dialogueOptions);
+  FontManager_printText(Label_WorldNameErrorPart1, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(" name already exists", dialogueOptions);
+  FontManager_printText(Label_WorldNameErrorPart2, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText("Please change it", dialogueOptions);
+  FontManager_printText(Label_WorldNameErrorPart3, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Confirm", 40, 407);
+  FontManager_printText(Label_Confirm, 40, 407);
 }

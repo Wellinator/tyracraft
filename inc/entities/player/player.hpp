@@ -17,14 +17,18 @@
 #include "managers/items_repository.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
+#include "managers/items_repository.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player/player_render_pip.hpp"
-#include "entities/player/player_first_person_render_pip.hpp"
-#include "entities/player/player_third_person_render_pip.hpp"
+#include "entities/player/player_render_arm_pip.hpp"
+#include "entities/player/player_render_body_pip.hpp"
+#include "entities/sfx_config.hpp"
+#include "models/sfx_config_model.hpp"
+#include "models/world_light_model.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -49,19 +53,20 @@ using Tyra::Vec4;
 class Player {
  public:
   Player(Renderer* t_renderer, SoundManager* t_soundManager,
-         BlockManager* t_blockManager);
+         BlockManager* t_blockManager, ItemRepository* t_itemRepository, WorldLightModel* t_worldLightModel);
   ~Player();
 
-  void update(const float& deltaTime, const Vec4& movementDir,
-              const Vec4& camDir, const std::vector<Chunck*>& loadedChunks,
-              TerrainHeightModel* terrainHeight);
+  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
+              std::vector<Chunck*>* loadedChunks,
+              TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
   void render();
 
-  void setRenderPip(PlayerRenderPip* pipToSet);
+  void setRenderArmPip();
+  void setRenderBodyPip();
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isFlying, isBreaking, isMoving;
+  bool isOnGround, isFlying, isBreaking, isMoving, isRunning;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
@@ -76,7 +81,8 @@ class Player {
 
   // Phisycs variables
   Ray ray;
-  Block* currentBlock = nullptr;
+  Block* currentBottomBlock = nullptr;
+  Block* currentUpperBlock = nullptr;
 
   // Inventory
   u8 inventoryHasChanged = 1;
@@ -104,29 +110,43 @@ class Player {
   void selectNextItem();
   void selectPreviousItem();
   void jump();
+  void swim();
   void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
   void shiftItemToInventory(const ItemId& itemToShift);
   void setItemToInventory(const ItemId& itemToShift);
+  void setRunning(bool _isRunning);
 
   TerrainHeightModel getTerrainHeightAtPosition(
-      const std::vector<Chunck*>& loadedChunks);
+      const std::vector<Chunck*>* loadedChunks);
+
+  bool isOnWater();
+  bool isUnderWater();
+
+  BlockManager* t_blockManager;
+  ItemRepository* t_itemRepository;
+  WorldLightModel* t_worldLightModel;
 
  private:
-  BlockManager* t_blockManager;
   SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,
                        const Vec4& camDir);
   bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
-  const float L_JOYPAD_DEAD_ZONE = 0.20F;
+
+  void setRenderPip(PlayerRenderPip* pipToSet);
 
   // Forces values
-  float speed = 100;
+  float acceleration = 140.0F;
+  float speed = 0;
+  float maxSpeed = 60.0F;
+
+  float runningAcceleration = 170.0F;
+  float runningMaxSpeed = 100.0F;
 
   // Phisycs values
-  Vec4 lift = Vec4(0.0f, -2.2F, 0.0f);
+  Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
   Vec4 velocity = Vec4(0.0f);
   BBox* hitBox;
   Texture* playerTexture;
@@ -139,9 +159,8 @@ class Player {
   void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(const std::vector<Chunck*>& loadedChunks,
-                    const float& deltaTime, const Vec4& nextPlayerPos,
-                    u8 isColliding = 0);
+  u8 updatePosition(std::vector<Chunck*>* loadedChunks, const float& deltaTime,
+                    const Vec4& nextPlayerPos, u8 isColliding = 0);
 
   // Inventory
 
@@ -154,8 +173,11 @@ class Player {
 
   float lastTimePlayedWalkSfx = 0.0F;
   void playWalkSfx(const Blocks& blockType);
+  void playSwimSfx();
+  void playSplashSfx();
+  u8 isSubmerged = false;
 
-  void animate();
+  void animate(CamType camType);
 
   Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
@@ -171,4 +193,14 @@ class Player {
   std::vector<u32> armWalkingSequence = {0, 1, 2, 3,  4,  5, 6,
                                          7, 8, 9, 10, 11, 12};
   std::vector<u32> armHitingSequence = {13, 14, 15, 16, 17, 18, 19, 20};
+
+  u8 _isOnWater;
+  u8 _isUnderWater;
+  void updateStateInWater(LevelMap* terrain);
+
+  const float _minFov = 60.0F;
+  const float _maxFov = _minFov + 10.0F;
+  const float _minFovFlaying = 70.0F;
+  const float _maxFovFlaying = _minFovFlaying + 10.0F;
+  void updateFovBySpeed();
 };

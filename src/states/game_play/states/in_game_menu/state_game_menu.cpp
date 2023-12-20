@@ -107,10 +107,12 @@ void StateGameMenu::render() {
   t_renderer->renderer2D.render(overlay);
 
   FontOptions drawDistanceLabel;
-  drawDistanceLabel.position.set(165, 180);
+  drawDistanceLabel.position.set(248, 180);
+  drawDistanceLabel.alignment = TextAlignment::Center;
+
   if (activeOption == GameMenuOptions::DrawDistance)
     drawDistanceLabel.color.set(128, 128, 0);
-  FontManager_printText("Draw Distance", drawDistanceLabel);
+  FontManager_printText(Label_DrawDistance, drawDistanceLabel);
   t_renderer->renderer2D.render(horizontalScrollArea);
   t_renderer->renderer2D.render(horizontalScrollHandler);
 
@@ -120,28 +122,28 @@ void StateGameMenu::render() {
   if (activeOption != GameMenuOptions::DrawDistance)
     t_renderer->renderer2D.render(active_slot);
 
-  FontManager_printText("Game Menu", halfWidth - 64, halfHeight - 200);
+  FontManager_printText(Label_GameMenu, halfWidth - 64, halfHeight - 200);
 
   FontOptions saveGameLabel;
   saveGameLabel.position.set(246, 240 + 3);
   saveGameLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::SaveGame)
     saveGameLabel.color.set(128, 128, 0);
-  FontManager_printText("Save Game", saveGameLabel);
+  FontManager_printText(Label_SaveGame, saveGameLabel);
 
   FontOptions backToGameLabel;
   backToGameLabel.position.set(246, 240 + 43);
   backToGameLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::SaveAndQuit)
     backToGameLabel.color.set(128, 128, 0);
-  FontManager_printText("Save and Quit", backToGameLabel);
+  FontManager_printText(Label_SaveAndQuit, backToGameLabel);
 
   FontOptions quitToTitleLabel;
   quitToTitleLabel.position.set(246, 240 + 83);
   quitToTitleLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::QuitWithoutSave)
     quitToTitleLabel.color.set(128, 128, 0);
-  FontManager_printText("Quit Without Save", quitToTitleLabel);
+  FontManager_printText(Label_QuitWithoutSave, quitToTitleLabel);
 
   if (needSaveOverwriteConfirmation) {
     renderSaveOverwritingDialog();
@@ -151,9 +153,9 @@ void StateGameMenu::render() {
     renderQuitWithoutSavingDialog();
   } else {
     t_renderer->renderer2D.render(btnCross);
-    FontManager_printText("Select", 40, 407);
+    FontManager_printText(Label_Select, 40, 407);
     t_renderer->renderer2D.render(btnStart);
-    FontManager_printText("Back to game", 205, 407);
+    FontManager_printText(Label_BackToGame, 205, 407);
   }
 }
 
@@ -164,8 +166,13 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   if (needSaveOverwriteConfirmation) {
     if (clicked.Cross) {
       this->playClickSound();
+      const auto oldDrawDistance = stateGamePlay->world->getDrawDistace();
+      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
+
       stateGamePlay->saveGame();
       needSaveOverwriteConfirmation = false;
+
+      stateGamePlay->world->setDrawDistace(oldDrawDistance);
     } else if (clicked.Triangle) {
       needSaveOverwriteConfirmation = false;
     }
@@ -173,6 +180,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   } else if (needSaveAndQuitConfirmation) {
     if (clicked.Cross) {
       playClickSound();
+      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
       stateGamePlay->saveGame();
       stateGamePlay->quitToTitle();
     } else if (clicked.Triangle) {
@@ -263,7 +271,7 @@ void StateGameMenu::playClickSound() {
       this->stateGamePlay->context->t_soundManager->getAvailableChannel();
   this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
   this->stateGamePlay->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                        SoundFX::Click, ch);
+                                                        SoundFX::WoodClick, ch);
 }
 
 void StateGameMenu::hightLightActiveOption() {
@@ -318,21 +326,21 @@ void StateGameMenu::renderSaveOverwritingDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText("Overwrite Save Game?", titleOptions);
+  FontManager_printText(Label_OverwriteGameAsk, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 190);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText("A local save will be overwritten.", dialogueOptions);
+  FontManager_printText(Label_LocalSaveWillBeOverWriten, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText("Do you want to continue?", dialogueOptions);
+  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Overwrite", 40, 407);
+  FontManager_printText(Label_Overwtire, 40, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText("Cancel", 205, 407);
+  FontManager_printText(Label_Cancel, 205, 407);
 }
 
 void StateGameMenu::renderSaveAndQuitDialog() {
@@ -343,24 +351,24 @@ void StateGameMenu::renderSaveAndQuitDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText("Save and Quit?", titleOptions);
+  FontManager_printText(Label_SaveAndQuit + "?", titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText("Any previous save", dialogueOptions);
+  FontManager_printText(Label_PreviousSaveErrorMessagePart1, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(" will be overwritten", dialogueOptions);
+  FontManager_printText(Label_PreviousSaveErrorMessagePart2, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText("Do you want to continue?", dialogueOptions);
+  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Save and quit", 40, 407);
+  FontManager_printText(Label_SaveAndQuit, 40, 407);
 
   btnTriangle.position.x = 225;
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText("Cancel", 245, 407);
+  FontManager_printText(Label_Cancel, 245, 407);
   btnTriangle.position.x = 185;
 }
 
@@ -372,19 +380,19 @@ void StateGameMenu::renderQuitWithoutSavingDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText("Are you sure?", titleOptions);
+  FontManager_printText(Label_AreYouSure, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 190);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText("All unsaved progress will be lost", dialogueOptions);
+  FontManager_printText(Label_AllUnsavedProgressWillBeLost, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText("Do you want to continue?", dialogueOptions);
+  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Quit", 40, 407);
+  FontManager_printText(Label_Quit, 40, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText("Cancel", 205, 407);
+  FontManager_printText(Label_Cancel, 205, 407);
 }

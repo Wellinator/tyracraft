@@ -86,3 +86,54 @@
 * Bug fixes for pre-alpha release (v0.1.5):
     🔲 -> Real PS2:
         ⚠️ -> Fix audio FX;
+
+############ TyraCraft 0.2.x Roadmap ############
+
+* Features for pre-alpha release (v0.2.x):
+    ✅ -> Create a global settings service;
+        ✅ -> Add V-sync to options;
+        ✅ -> Add L & R Sticks deatzone values;
+        ✅ -> Add change language option;
+    🔲 -> Tool (Pickaxe) (WIP);
+    ⛔ -> Add auto save feature;
+    🔲 -> Popup messages system;
+    ✅ -> Multi language support;
+    ✅ -> Implement block hardness;
+    ✅ -> Add particles system;
+    ✅ -> Sun light system;
+    ✅ -> Block light system;
+    ✅ -> Running;
+    ✅ -> pre-calculated ambient occlusion;
+    ✅ -> Basic vegetation;
+    ✅ -> Sun and Moon;
+    ✅ -> Third Person Cam:
+        ✅ -> Implements Third Person render;
+        ✅ -> Fix inverted Y (pitch) direction;
+        ✅ -> Fix cam position in first person mode;
+        ✅ -> Added basic camera collision;
+    🔲 -> Implement water phisycs:
+        ✅ -> Gravity:
+        🔲 -> Water flood fill:
+
+* Bug fixes for pre-alpha release (v0.2.x):
+    ✅ -> Player arm position and scale;
+    ✅ -> No sun light on async loaded chunks;
+    ✅ -> Fix block light after loading save:
+    ✅ -> Fix water block top height;
+    ✅ -> Remove camera rotation at main memu:
+    ✅ -> Fix height collision when jumping:
+    ✅ -> Fix block light remove:
+    ✅ -> Fix light data when changes world save:
+    ✅ -> Fix Day/Night cycle:
+    ✅ -> Water:
+        ✅ -> Update sun light when remove block under water;
+        ✅ -> Increase sunlight value at night;
+    ✅ -> Update light in moded chunks:
+        ✅ -> Increase light update speed (maybe two chunks per frame):
+    ✅ -> Real PS2:
+        ✅ -> Fix audio FX;
+    ✅ -> Destroy plant when the bottom block is destroyed;
+    ✅ -> Apply light intensity to particles;
+    ✅ -> Fix clouds color at night:
+    ✅ -> Fix game crash when trying to save with max draw distance;
+    🔲 -> Fix player mesh illuminaton at night;

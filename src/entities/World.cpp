@@ -2,80 +2,160 @@
 #include "entities/World.hpp"
 #include "renderer/models/color.hpp"
 #include "math/m4x4.hpp"
+#include "managers/block/vertex_block_data.hpp"
+#include "managers/model_builder.hpp"
 #include <tyra>
 
 // From CrossCraft
 #include <stdio.h>
 #include "entities/World.hpp"
 #include <queue>
+#include <stack>
 
 using Tyra::Color;
 using Tyra::M4x4;
+
+static Level level;
 
 World::World(const NewGameOptions& options) {
   seed = options.seed;
 
   printf("\n\n|-----------SEED---------|");
-  printf("\n|           %ld         |\n", seed);
+  printf("\n|           %li         |\n", seed);
   printf("|------------------------|\n\n");
 
   worldOptions = options;
+  setIntialTime();
   CrossCraft_World_Init(seed);
 }
 
 World::~World() {
   delete rawBlockBbox;
+  affectedChunksIdByLiquidPropagation.clear();
+
   CrossCraft_World_Deinit();
 }
 
 void World::init(Renderer* renderer, ItemRepository* itemRepository,
                  SoundManager* t_soundManager) {
+  // Set renders
   t_renderer = renderer;
   mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
-  blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
-  chunckManager.init();
-  cloudsManager.init(t_renderer);
-  calcRawBlockBBox(&mcPip);
+  overlayData.reserve(1);
+
+  // Set soundManager ref
+  this->t_soundManager = t_soundManager;
+
+  // Init light stuff
+  dayNightCycleManager.init(t_renderer);
+  initWorldLightModel();
 
   terrain = CrossCraft_World_GetMapPtr();
-  CrossCraft_World_Create_Map();
-  CrossCraft_World_GenerateMap(worldOptions.type);
+  blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
+  chunckManager.init(&worldLightModel, terrain);
+  cloudsManager.init(t_renderer, &worldLightModel);
+  particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
+                        worldOptions.texturePack);
 
-  // Define global and local spawn area
-  worldSpawnArea.set(defineSpawnArea());
-  spawnArea.set(worldSpawnArea);
-  lastPlayerPosition.set(worldSpawnArea);
-  buildInitialPosition();
-  setIntialTime();
+  calcRawBlockBBox(&mcPip);
 };
 
-void World::update(Player* t_player, const Vec4& camLookPos,
-                   const Vec4& camPosition) {
-  framesCounter++;
+void World::generate() { CrossCraft_World_GenerateMap(worldOptions.type); }
 
-  cloudsManager.update();
+void World::generateLight() {
   dayNightCycleManager.update();
   updateLightModel();
 
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       *t_player->getPosition(), &worldLightModel);
-  updateChunkByPlayerPosition(t_player);
-  updateTargetBlock(camLookPos, camPosition, chunckManager.getVisibleChunks());
+  initSunLight(g_ticksCounter);
+  initBlockLight(&blockManager);
 
-  framesCounter %= 60;
+  updateSunlight();
+  updateBlockLights();
+  chunckManager.reloadLightDataOfAllChunks();
+}
+
+void World::propagateLiquids() {
+  TYRA_LOG("Propagating liquids...");
+  initLiquidExpansion();
+
+  while (waterBfsQueue.empty() == false) propagateWaterAddQueue();
+  while (lavaBfsQueue.empty() == false) propagateLavaAddQueue();
+}
+
+void World::loadSpawnArea() { buildInitialPosition(); }
+
+void World::generateSpawnArea() {
+  // Define global spawn area
+  worldSpawnArea.set(defineSpawnArea());
+  spawnArea.set(worldSpawnArea);
+  lastPlayerPosition.set(worldSpawnArea);
+}
+
+void World::setSavedSpawnArea(Vec4 pos) {
+  // Define global from saved spawn area
+  worldSpawnArea.set(pos);
+  spawnArea.set(worldSpawnArea);
+  lastPlayerPosition.set(worldSpawnArea);
+}
+
+void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
+  // Update cloudsManager every 150 ticks
+  if (isTicksCounterAt(150)) {
+    cloudsManager.update();
+    dayNightCycleManager.update(&t_camera->position);
+  }
+
+  particlesManager.update(deltaTime, t_camera);
+
+  // Update chunk light data every 1000 ticks
+  if (isTicksCounterAt(1000)) {
+    // TODO: refactor to event system
+    updateLightModel();
+    updateSunlight();
+    updateBlockLights();
+    chunckManager.enqueueChunksToReloadLight();
+  }
+
+  if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
+    updateLiquidWater(deltaTime);
+  }
+
+  if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
+    updateLiquidLava();
+  }
+
+  if (affectedChunksIdByLiquidPropagation.size() > 0)
+    updateChunksAffectedByLiquidPropagation();
+
+  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
+                       *t_player->getPosition());
+
+  // Update scheduled data every 4 ticks
+  if (isTicksCounterAt(5)) {
+    updateChunkByPlayerPosition(t_player);
+  }
+
+  unloadScheduledChunks();
+  loadScheduledChunks();
+
+  // Update chunk light data every 200 ticks
+  if (isTicksCounterAt(6)) {
+    t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+  }
+
+  updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
 };
 
 void World::render() {
-  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
-  cloudsManager.render();
 
   if (targetBlock) {
     renderTargetBlockHitbox(targetBlock);
-    if (isBreakingBLock() && targetBlock->damage > 0)
+    if (isBreakingBLock() && targetBlock->damage > 0 &&
+        targetBlock->getHardness() > 0.05F) {
       renderBlockDamageOverlay();
+    }
   }
 };
 
@@ -85,21 +165,11 @@ void World::buildInitialPosition() {
     initialChunck->clear();
     buildChunk(initialChunck);
     scheduleChunksNeighbors(initialChunck, lastPlayerPosition, true);
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 };
 
 void World::resetWorldData() { chunckManager.clearAllChunks(); }
-
-const std::vector<Block*> World::getLoadedBlocks() {
-  loadedBlocks.clear();
-  loadedBlocks.shrink_to_fit();
-  const auto& visibleChuncks = chunckManager.getVisibleChunks();
-  for (u16 i = 0; i < visibleChuncks.size(); i++) {
-    for (u16 j = 0; j < visibleChuncks[i]->blocks.size(); j++)
-      loadedBlocks.push_back(visibleChuncks[i]->blocks[j]);
-  }
-  return loadedBlocks;
-}
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
@@ -108,14 +178,10 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
     Chunck* currentChunck = chunckManager.getChunckByPosition(currentPlayerPos);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
+      chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
       t_player->currentChunckId = currentChunck->id;
       scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
-  }
-
-  if (framesCounter % 2 == 0) {
-    unloadScheduledChunks();
-    loadScheduledChunks();
   }
 }
 
@@ -203,22 +269,26 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
                                     u8 force_loading) {
   const auto& chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
-    float distance =
+    const auto distance =
         floor(t_chunck->center->distanceTo(*chuncks[i]->center) / CHUNCK_SIZE) +
         1;
 
     if (distance > worldOptions.drawDistance) {
-      if (force_loading)
+      if (force_loading) {
         chuncks[i]->clear();
-      else if (chuncks[i]->state != ChunkState::Clean)
+      } else if (chuncks[i]->state != ChunkState::Clean) {
         addChunkToUnloadAsync(chuncks[i]);
+      }
+
+      chuncks[i]->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
         chuncks[i]->clear();
-        buildChunkAsync(chuncks[i], worldOptions.drawDistance);
+        buildChunk(chuncks[i]);
       } else if (chuncks[i]->state != ChunkState::Loaded) {
         addChunkToLoadAsync(chuncks[i]);
       }
+      chuncks[i]->setDistanceFromPlayerInChunks(distance);
     }
   }
 
@@ -238,66 +308,66 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0) {
-    if (tempChuncksToLoad[0]->state != ChunkState::Loaded)
-      return buildChunkAsync(tempChuncksToLoad[0], worldOptions.drawDistance);
-    tempChuncksToLoad.erase(tempChuncksToLoad.begin());
-  };
+    Chunck* chunk = tempChuncksToLoad.front();
+    if (chunk->state == ChunkState::PreLoaded) {
+      chunk->loadDrawData();
+      tempChuncksToLoad.pop_front();
+      return;
+    } else if (chunk->state != ChunkState::Loaded) {
+      return buildChunkAsync(chunk, worldOptions.drawDistance);
+    }
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
+  }
 }
 
 void World::unloadScheduledChunks() {
-  const size_t size = tempChuncksToUnLoad.size();
-  const u8 limit = 2;
-  u8 counter = 0;
-
-  for (size_t i = 0; i < size; i++) {
-    if (tempChuncksToUnLoad[i]->state != ChunkState::Clean) {
-      tempChuncksToUnLoad[i]->clear();
-      counter++;
-      if (counter >= limit) return;
+  if (tempChuncksToUnLoad.size() > 0) {
+    Chunck* chunk = tempChuncksToUnLoad.front();
+    if (chunk->state != ChunkState::Clean) {
+      chunk->clear();
+      tempChuncksToUnLoad.pop_front();
+      return;
     }
+    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
-
-  tempChuncksToUnLoad.clear();
-  tempChuncksToUnLoad.shrink_to_fit();
 }
 
 void World::renderBlockDamageOverlay() {
   McpipBlock* overlay = blockManager.getDamageOverlay(targetBlock->damage);
-
-  if (overlayData.size() > 0) {
-    // Clear last overlay;
-    for (u8 i = 0; i < overlayData.size(); i++) {
-      delete overlayData[i]->color;
-      delete overlayData[i]->model;
+  if (overlay) {
+    if (overlayData.size() > 0) {
+      // Clear last overlay;
+      for (u8 i = 0; i < overlayData.size(); i++) {
+        delete overlayData[i]->color;
+        delete overlayData[i]->model;
+      }
+      overlayData.clear();
     }
-    overlayData.clear();
-    overlayData.shrink_to_fit();
+
+    M4x4 scale = M4x4();
+    M4x4 translation = M4x4();
+
+    scale.identity();
+    scale.scale(BLOCK_SIZE + 0.015f);
+
+    translation.identity();
+    translation.translate(targetBlock->position);
+
+    overlay->model = new M4x4(translation * scale);
+    overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
+
+    overlayData.emplace_back(overlay);
+    t_renderer->renderer3D.usePipeline(&mcPip);
+    mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
   }
-
-  M4x4 scale = M4x4();
-  M4x4 translation = M4x4();
-
-  scale.identity();
-  scale.scale(BLOCK_SIZE + 0.015f);
-
-  translation.identity();
-  translation.translate(*targetBlock->getPosition());
-
-  overlay->model = new M4x4(translation * scale);
-  overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
-
-  overlayData.push_back(overlay);
-  t_renderer->renderer3D.usePipeline(&mcPip);
-  mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
 }
 
 void World::renderTargetBlockHitbox(Block* targetBlock) {
-  t_renderer->renderer3D.utility.drawBox(*targetBlock->getPosition(),
-                                         BLOCK_SIZE, Color(0, 0, 0));
+  t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
-  // Avoid being suplicated;
+  // Avoid being duplicated;
   for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
     if (tempChuncksToLoad[i]->id == t_chunck->id) return;
 
@@ -306,7 +376,7 @@ void World::addChunkToLoadAsync(Chunck* t_chunck) {
     if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
 
   t_chunck->state = ChunkState::Loading;
-  tempChuncksToLoad.push_back(t_chunck);
+  tempChuncksToLoad.push_front(t_chunck);
 }
 
 void World::addChunkToUnloadAsync(Chunck* t_chunck) {
@@ -319,28 +389,34 @@ void World::addChunkToUnloadAsync(Chunck* t_chunck) {
     if (tempChuncksToLoad[i]->id == t_chunck->id)
       tempChuncksToLoad.erase(tempChuncksToLoad.begin() + i);
 
-  tempChuncksToUnLoad.push_back(t_chunck);
+  tempChuncksToUnLoad.push_front(t_chunck);
 }
 
 void World::updateLightModel() {
-  worldLightModel.lightsPositions = lightsPositions.data();
-  worldLightModel.lightIntensity = dayNightCycleManager.getLightIntensity();
   worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
-  worldLightModel.ambientLightIntensity =
-      dayNightCycleManager.getAmbientLightIntesity();
+  worldLightModel.sunLightIntensity =
+      dayNightCycleManager.getSunLightIntensity();
 }
 
-unsigned int World::getIndexByOffset(int x, int y, int z) {
+u32 World::getIndexByOffset(int x, int y, int z) {
   return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
+}
+
+bool World::isAirAtPosition(const float& x, const float& y, const float& z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
+  }
+  return false;
 }
 
 bool World::isBlockTransparentAtPosition(const float& x, const float& y,
                                          const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
-    const u8 blockType = GetBlockFromMap(terrain, x, y, z);
-    return blockType <= (u8)Blocks::AIR_BLOCK ||
-           blockManager.isBlockTransparent(static_cast<Blocks>(blockType));
+    const Blocks blockType =
+        static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+    return (blockType == Blocks::VOID || isTransparent(blockType) ||
+            blockType == Blocks::LAVA_BLOCK);
   } else {
     return false;
   }
@@ -357,47 +433,140 @@ bool World::isBottomFaceVisible(const Vec4* t_blockOffset) {
 }
 
 bool World::isFrontFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z - 1);
 }
 
-bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z + 1);
 }
 
+bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
+                                      t_blockOffset->z);
+}
+
+bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
+                                      t_blockOffset->z);
+}
+
 int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
+  const BlockOrientation orientation = GetOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+
   int result = 0x000000;
 
-  // Front
-  if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+  switch (orientation) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
+      if (isLeftFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      break;
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::East:
+    default:
+      if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
 
-  // Back
-  if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      break;
+  }
 
-  // Right
-  if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-
-  // Left
-  if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
-  // Top
   if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
-
-  // Bottom
   if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
 
-  // printf("Result for index %i -> 0x%X\n", blockIndex, result);
+  return result;
+}
+
+int World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
+  const auto x = t_blockOffset->x;
+  const auto y = t_blockOffset->y;
+  const auto z = t_blockOffset->z;
+
+  const BlockOrientation orientation = GetOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+
+  int result = 0x000000;
+
+  switch (orientation) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
+
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | LEFT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | RIGHT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | FRONT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | BACK_VISIBLE;
+      break;
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
+
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | RIGHT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | LEFT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | BACK_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | FRONT_VISIBLE;
+      break;
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
+
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | BACK_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | FRONT_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | LEFT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | RIGHT_VISIBLE;
+      break;
+    case BlockOrientation::East:
+    default:
+      // Front
+      if (isAirAtPosition(x, y, z - 1)) result = result | FRONT_VISIBLE;
+      // Back
+      if (isAirAtPosition(x, y, z + 1)) result = result | BACK_VISIBLE;
+      // Right
+      if (isAirAtPosition(x - 1, y, z)) result = result | RIGHT_VISIBLE;
+      // Left
+      if (isAirAtPosition(x + 1, y, z)) result = result | LEFT_VISIBLE;
+      break;
+  }
+
+  // Top
+  if (isAirAtPosition(x, y + 1, z)) result = result | TOP_VISIBLE;
+  // Bottom
+  if (isAirAtPosition(x, y - 1, z)) result = result | BOTTOM_VISIBLE;
+
   return result;
 }
 
@@ -445,85 +614,261 @@ const Vec4 World::calcSpawOffset(int bias) {
 }
 
 void World::removeBlock(Block* blockToRemove) {
-  SetBlockInMap(terrain, blockToRemove->offset.x, blockToRemove->offset.y,
-                blockToRemove->offset.z, (u8)Blocks::AIR_BLOCK);
-  updateNeighBorsChunksByModdedPosition(blockToRemove->offset);
-  // playDestroyBlockSound(blockToRemove->type);
+  Vec4 offsetToRemove;
+  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+
+  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
+                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
+
+  // Generate amount of particles right begore block gets destroyed
+  particlesManager.createBlockParticleBatch(blockToRemove, 24);
+
+  // Update sunlight and block light at position
+  removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  updateSunlight();
+  updateBlockLights();
+  chunckManager.reloadLightData();
+
+  // Update liquid at position
+  checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+
+  updateNeighBorsChunksByModdedPosition(offsetToRemove);
+  playDestroyBlockSound(blockToRemove->type);
+
+  // Remove up block if it's is vegetation
+  const Vec4 upBlockOffset =
+      Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
+
+  if (BoundCheckMap(terrain, upBlockOffset.x, upBlockOffset.y,
+                    upBlockOffset.z)) {
+    const Blocks b = static_cast<Blocks>(GetBlockFromMap(
+        terrain, upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+
+    if (isVegetation(b) || b == Blocks::TORCH) {
+      auto chunk =
+          chunckManager.getChunckByPosition(upBlockOffset * DUBLE_BLOCK_SIZE);
+      Block* upperBlock = chunk->getBlockByOffset(&upBlockOffset);
+      if (upperBlock) removeBlock(upperBlock);
+    }
+  }
 }
 
-void World::putBlock(const Blocks& blockToPlace, Player* t_player) {
+void World::putBlock(const Blocks& blockToPlace, Player* t_player,
+                     const float cameraYaw) {
   Vec4 targetPos = ray.at(targetBlock->distance);
-  Vec4 blockOffset = Vec4(targetBlock->offset);
 
+  PlacementDirection placementDirection = PlacementDirection::Top;
+
+  Vec4 blockOffset;
+  GetXYZFromPos(&targetBlock->offset, &blockOffset);
+
+  // TODO: move to function
   // Front
   if (std::round(targetPos.z) ==
-      targetBlock->bbox->getFrontFace().axisPosition) {
+      std::round(targetBlock->bbox->getFrontFace().axisPosition)) {
+    placementDirection = PlacementDirection::Front;
     blockOffset.z++;
     // Back
   } else if (std::round(targetPos.z) ==
-             targetBlock->bbox->getBackFace().axisPosition) {
+             std::round(targetBlock->bbox->getBackFace().axisPosition)) {
+    placementDirection = PlacementDirection::Back;
     blockOffset.z--;
     // Right
   } else if (std::round(targetPos.x) ==
-             targetBlock->bbox->getRightFace().axisPosition) {
+             std::round(targetBlock->bbox->getRightFace().axisPosition)) {
+    placementDirection = PlacementDirection::Right;
     blockOffset.x++;
     // Left
   } else if (std::round(targetPos.x) ==
-             targetBlock->bbox->getLeftFace().axisPosition) {
+             std::round(targetBlock->bbox->getLeftFace().axisPosition)) {
+    placementDirection = PlacementDirection::Left;
     blockOffset.x--;
     // Up
   } else if (std::round(targetPos.y) ==
-             targetBlock->bbox->getTopFace().axisPosition) {
+             std::round(targetBlock->bbox->getTopFace().axisPosition)) {
+    placementDirection = PlacementDirection::Top;
     blockOffset.y++;
     // Down
   } else if (std::round(targetPos.y) ==
-             targetBlock->bbox->getBottomFace().axisPosition) {
+             std::round(targetBlock->bbox->getBottomFace().axisPosition)) {
+    placementDirection = PlacementDirection::Bottom;
     blockOffset.y--;
   }
 
-  // Is a valid index?
-  if (BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z)) {
-    Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
-    {
-      // Prevent to put a block at the player position;
-      M4x4 tempModel = M4x4();
-      tempModel.identity();
-      tempModel.scale(BLOCK_SIZE);
-      tempModel.translate(newBlockPos);
+  // Placing block at invalid position
+  if (!BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z))
+    return;
 
-      BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
-      Vec4 newBlockPosMin;
-      Vec4 newBlockPosMax;
-      tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+  switch (blockToPlace) {
+    case Blocks::TORCH:
+      putTorchBlock(placementDirection, cameraYaw, blockOffset);
+      break;
 
-      Vec4 minPlayerCorner;
-      Vec4 maxPlayerCorner;
-      t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
-
-      // Will Collide to player?
-      if (newBlockPosMax.x > minPlayerCorner.x &&
-          newBlockPosMin.x < maxPlayerCorner.x &&
-          newBlockPosMax.z > minPlayerCorner.z &&
-          newBlockPosMin.z < maxPlayerCorner.z &&
-          newBlockPosMax.y > minPlayerCorner.y &&
-          newBlockPosMin.y < maxPlayerCorner.y)
-        return;  // Return on collision
-    }
-    const uint8_t blockType =
-        GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z);
-    if (blockType == (u8)Blocks::AIR_BLOCK) {
-      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                    (u8)blockToPlace);
-    }
-
-    // playPutBlockSound(blockToPlace);
+    default:
+      putDefaultBlock(blockToPlace, t_player, cameraYaw, blockOffset);
+      break;
   }
 
+  playPutBlockSound(blockToPlace);
   updateNeighBorsChunksByModdedPosition(blockOffset);
+}
+
+void World::putTorchBlock(const PlacementDirection placementDirection,
+                          const float cameraYaw, Vec4 blockOffset) {
+  const Blocks blockTypeAtNewPosition = static_cast<Blocks>(
+      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+
+  const u8 canReplace = blockTypeAtNewPosition == Blocks::AIR_BLOCK;
+
+  if (targetBlock->type == Blocks::TORCH &&
+      placementDirection == PlacementDirection::Top) {
+    return;
+  }
+
+  if (canReplace) {
+    // Calc block orientation
+    BlockOrientation orientation;
+
+    if (targetBlock->type == Blocks::TORCH) {
+      orientation = BlockOrientation::Top;
+    } else {
+      // Torch orientation must be reverse of placement direction
+      switch (placementDirection) {
+        case PlacementDirection::Top:
+          orientation = BlockOrientation::Top;
+          break;
+        case PlacementDirection::Left:
+          orientation = BlockOrientation::East;
+          break;
+        case PlacementDirection::Right:
+          orientation = BlockOrientation::West;
+          break;
+        case PlacementDirection::Front:
+          orientation = BlockOrientation::North;
+          break;
+        case PlacementDirection::Back:
+          orientation = BlockOrientation::South;
+          break;
+
+        case PlacementDirection::Bottom:
+        default:
+          return;
+      }
+    }
+
+    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                  static_cast<u8>(Blocks::TORCH));
+    SetTorchOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                 blockOffset.z, orientation);
+    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+
+    const auto lightValue = blockManager.getBlockLightValue(Blocks::TORCH);
+    addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+
+    updateSunlight();
+    updateBlockLights();
+
+    chunckManager.reloadLightData();
+  }
+}
+
+void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
+                            const float cameraYaw, Vec4 blockOffset) {
+  Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
+
+  // Prevent to put a block at the player position;
+  M4x4 tempModel = M4x4();
+  tempModel.identity();
+  tempModel.scale(BLOCK_SIZE);
+  tempModel.translate(newBlockPos);
+
+  BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
+  Vec4 newBlockPosMin;
+  Vec4 newBlockPosMax;
+  tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+
+  Vec4 minPlayerCorner;
+  Vec4 maxPlayerCorner;
+  t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+  // Will Collide to player?
+  if (newBlockPosMax.x > minPlayerCorner.x &&
+      newBlockPosMin.x < maxPlayerCorner.x &&
+      newBlockPosMax.z > minPlayerCorner.z &&
+      newBlockPosMin.z < maxPlayerCorner.z &&
+      newBlockPosMax.y > minPlayerCorner.y &&
+      newBlockPosMin.y < maxPlayerCorner.y) {
+    return;  // Return on collision
+  }
+
+  const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
+      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+  const Blocks oldTypeBlock = blockTypeAtTargetPosition;
+
+  const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::LAVA_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::AIR_BLOCK ||
+                        blockTypeAtTargetPosition == Blocks::TORCH ||
+                        blockTypeAtTargetPosition == Blocks::POPPY_FLOWER ||
+                        blockTypeAtTargetPosition == Blocks::DANDELION_FLOWER ||
+                        blockTypeAtTargetPosition == Blocks::GRASS;
+
+  if (canReplace) {
+    // Calc block orientation
+    BlockOrientation orientation;
+
+    if (blockManager.isBlockOriented(blockToPlace)) {
+      if (cameraYaw > 315 || cameraYaw < 45) {
+        orientation = BlockOrientation::North;
+      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+        orientation = BlockOrientation::South;
+      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+        orientation = BlockOrientation::East;
+      } else {
+        orientation = BlockOrientation::West;
+      }
+    } else {
+      orientation = BlockOrientation::East;
+    }
+
+    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                  static_cast<u8>(blockToPlace));
+    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                 blockOffset.z, orientation);
+    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+
+    const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
+    if (lightValue > 0) {
+      addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+    } else {
+      removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
+    }
+
+    updateSunlight();
+    updateBlockLights();
+
+    chunckManager.reloadLightData();
+
+    const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
+                               blockToPlace == Blocks::LAVA_BLOCK;
+    const u8 itWasLiquidAtPosition = oldTypeBlock == Blocks::WATER_BLOCK ||
+                                     oldTypeBlock == Blocks::LAVA_BLOCK;
+
+    if (isPlacingLiquid) {
+      addLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)blockToPlace,
+                (u8)LiquidLevel::Percent100, (u8)orientation);
+    } else if (itWasLiquidAtPosition) {
+      removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
+                   (u8)oldTypeBlock);
+    }
+  }
 }
 
 void World::stopBreakTargetBlock() {
   _isBreakingBlock = false;
+  breaking_time_pessed = 0;
   if (targetBlock) targetBlock->damage = 0;
 }
 
@@ -532,8 +877,8 @@ void World::breakTargetBlock(const float& deltaTime) {
 
   if (_isBreakingBlock) {
     breaking_time_pessed += deltaTime;
-
-    if (breaking_time_pessed >= blockManager.getBlockBreakingTime()) {
+    const auto breakingTime = blockManager.getBlockBreakingTime(targetBlock);
+    if (breaking_time_pessed >= breakingTime) {
       // Remove block;
       removeBlock(targetBlock);
 
@@ -541,10 +886,53 @@ void World::breakTargetBlock(const float& deltaTime) {
       breaking_time_pessed = 0;
     } else {
       // Update damage overlay
-      targetBlock->damage =
-          breaking_time_pessed / blockManager.getBlockBreakingTime() * 100;
+      targetBlock->damage = breaking_time_pessed / breakingTime * 100;
+
+      if (lastTimeCreatedParticle > 0.2) {
+        particlesManager.createBlockParticleBatch(targetBlock, 4);
+        lastTimeCreatedParticle = 0;
+      } else {
+        lastTimeCreatedParticle += deltaTime;
+      }
+
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        // playBreakingBlockSound(targetBlock->type);
+        playBreakingBlockSound(targetBlock->type);
+        lastTimePlayedBreakingSfx = 0;
+      } else {
+        lastTimePlayedBreakingSfx += deltaTime;
+      }
+    }
+  } else {
+    breaking_time_pessed = 0;
+    _isBreakingBlock = true;
+  }
+}
+
+void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
+  if (targetBlock == nullptr) return;
+
+  if (_isBreakingBlock) {
+    breaking_time_pessed += deltaTime;
+    const auto breakingTime = BREAKING_TIME_IN_CREATIVE_MODE;
+    if (breaking_time_pessed >= breakingTime) {
+      // Remove block;
+      removeBlock(targetBlock);
+
+      // Target block has changed, reseting the pressed time;
+      breaking_time_pessed = 0;
+    } else {
+      // Update damage overlay
+      targetBlock->damage = breaking_time_pessed / breakingTime * 100;
+
+      if (lastTimeCreatedParticle > 0.2) {
+        particlesManager.createBlockParticleBatch(targetBlock, 4);
+        lastTimeCreatedParticle = 0;
+      } else {
+        lastTimeCreatedParticle += deltaTime;
+      }
+
+      if (lastTimePlayedBreakingSfx > 0.3F) {
+        playBreakingBlockSound(targetBlock->type);
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;
@@ -560,26 +948,32 @@ void World::playPutBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getPlaceSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
+      delete config;
     }
-    Tyra::Threading::switchThread();
   }
 }
 
 void World::playDestroyBlockSound(const Blocks& blockType) {
   if (blockType != Blocks::AIR_BLOCK) {
     SfxBlockModel* blockSfxModel =
-        blockManager.getDigSoundByBlockType(blockType);
+        blockManager.getBrokenSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBrokenSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
+      delete config;
     }
-    Tyra::Threading::switchThread();
   }
 }
 
@@ -588,13 +982,31 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
 
-    if (blockSfxModel != nullptr) {
+    if (blockSfxModel) {
       const int ch = t_soundManager->getAvailableChannel();
-      t_soundManager->playSfx(blockSfxModel->category, blockSfxModel->sound,
-                              ch);
+      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      auto config = SfxConfig::getBreakingSoundConfig(blockType);
+      sound->_sound->pitch = config->_pitch;
+      t_soundManager->setSfxVolume(config->_volume, ch);
+      t_soundManager->playSfx(sound, ch);
+      delete config;
     }
-    Tyra::Threading::switchThread();
   }
+}
+
+void World::playFlowingWaterSound() {
+  SfxBlockModel waterSfxModel = SfxBlockModel(
+      Blocks::WATER_BLOCK, SoundFxCategory::Liquid, SoundFX::Water);
+
+  const int ch = t_soundManager->getAvailableChannel();
+  SfxLibrarySound* sound = t_soundManager->getSound(&waterSfxModel);
+
+  const u8 pitch = Tyra::Math::randomi(50, 150);
+  const u8 volume = Tyra::Math::randomi(75, 100);
+
+  sound->_sound->pitch = pitch;
+  t_soundManager->setSfxVolume(volume, ch);
+  t_soundManager->playSfx(sound, ch);
 }
 
 u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
@@ -608,56 +1020,77 @@ u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
          blockOffset->z == chunkMaxOffset->z - 1;
 }
 
+u8 World::isCrossedBlock(Blocks block_type) {
+  return block_type == Blocks::POPPY_FLOWER ||
+         block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
+}
+
+// TODO: move to chunk builder
 void World::buildChunk(Chunck* t_chunck) {
+  t_chunck->preAllocateMemory();
+
   for (size_t x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
     for (size_t z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
       for (size_t y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
-        unsigned int blockIndex = getIndexByOffset(x, y, z);
-        u8 block_type = GetBlockFromMap(terrain, x, y, z);
+        u32 blockIndex = getIndexByOffset(x, y, z);
+        const Blocks block_type =
+            static_cast<Blocks>(terrain->blocks[blockIndex]);
 
-        if (block_type <= (u8)Blocks::AIR_BLOCK ||
-            !BoundCheckMap(terrain, x, y, z))
-          continue;
+        if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
+            block_type != Blocks::TOTAL_OF_BLOCKS) {
+          Vec4 tempBlockOffset = Vec4(x, y, z);
 
-        Vec4 tempBlockOffset = Vec4(x, y, z);
-        Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
+          const int visibleFaces =
+              block_type == Blocks::WATER_BLOCK ||
+                      block_type == Blocks::LAVA_BLOCK
+                  ? getLiquidBlockVisibleFaces(&tempBlockOffset)
+                  : getBlockVisibleFaces(&tempBlockOffset);
 
-        const int visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-        const bool isVisible = visibleFaces > 0;
+          // Have any face visible?
+          if (visibleFaces > 0) {
+            BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
-        // Are block's coordinates in world range?
-        if (isVisible) {
-          BlockInfo* blockInfo =
-              blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
-          if (blockInfo) {
-            Block* block = new Block(blockInfo);
-            block->index = blockIndex;
-            block->offset.set(tempBlockOffset);
-            block->chunkId = t_chunck->id;
-            block->visibleFaces = visibleFaces;
-            block->isAtChunkBorder = isBlockAtChunkBorder(
-                &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+            if (blockInfo) {
+              Block* block = new Block(blockInfo);
+              block->index = blockIndex;
+              block->offset = GetPosFromXYZ(
+                  tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
+              block->chunkId = t_chunck->id;
 
-            block->setPosition(blockPosition);
-            block->scale.scale(BLOCK_SIZE);
-            block->updateModelMatrix();
+              if (block->isCrossed) {
+                block->visibleFaces = 0x111111;
+                block->visibleFacesCount = 2;
+              } else {
+                block->visibleFaces = visibleFaces;
+                block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+              }
 
-            // Calc min and max corners
-            {
-              BBox tempBBox = rawBlockBbox->getTransformed(block->model);
-              block->bbox = new BBox(tempBBox);
+              block->isAtChunkBorder = isBlockAtChunkBorder(
+                  &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+
+              block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
+
+              ModelBuilder_BuildModel(block, terrain);
+              BBox* rawBBox =
+                  VertexBlockData::getRawBBoxByBlockType(block_type);
+              BBox tempBBox = rawBBox->getTransformed(block->model);
+
+              block->bbox =
+                  new BBox(tempBBox.vertices, tempBBox.getVertexCount());
               block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-            }
 
-            t_chunck->addBlock(block);
+              delete rawBBox;
+
+              t_chunck->addBlock(block);
+            }
           }
         }
       }
     }
   }
 
-  t_chunck->state = ChunkState::Loaded;
   t_chunck->loadDrawData();
+  t_chunck->freeUnusedMemory();
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
@@ -666,48 +1099,62 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   uint16_t x = t_chunck->tempLoadingOffset->x;
   uint16_t y = t_chunck->tempLoadingOffset->y;
   uint16_t z = t_chunck->tempLoadingOffset->z;
+  auto limit = LOAD_CHUNK_BATCH;
 
-  while (batchCounter < LOAD_CHUNK_BATCH * loading_speed) {
+  if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
+
+  while (batchCounter < limit) {
     if (x >= t_chunck->maxOffset->x) break;
     safeWhileBreak++;
 
-    unsigned int blockIndex = getIndexByOffset(x, y, z);
-    u8 block_type = GetBlockFromMap(terrain, x, y, z);
-    if (block_type > (u8)Blocks::AIR_BLOCK &&
-        block_type < (u8)Blocks::TOTAL_OF_BLOCKS) {
+    u32 blockIndex = getIndexByOffset(x, y, z);
+    const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
+
+    if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
+        block_type != Blocks::TOTAL_OF_BLOCKS) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
-      Vec4 blockPosition = (tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-      const int visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-      const bool isVisible = visibleFaces > 0;
+      const int visibleFaces =
+          block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK
+              ? getLiquidBlockVisibleFaces(&tempBlockOffset)
+              : getBlockVisibleFaces(&tempBlockOffset);
 
-      // Are block's coordinates in world range?
-      if (isVisible && BoundCheckMap(terrain, x, y, z)) {
-        BlockInfo* blockInfo =
-            blockManager.getBlockInfoByType(static_cast<Blocks>(block_type));
+      // Is any face vísible?
+      if (visibleFaces > 0) {
+        BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
         if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
-          block->offset.set(tempBlockOffset);
+          block->offset = GetPosFromXYZ(tempBlockOffset.x, tempBlockOffset.y,
+                                        tempBlockOffset.z);
           block->chunkId = t_chunck->id;
-          block->visibleFaces = visibleFaces;
+
+          if (block->isCrossed) {
+            block->visibleFaces = 0x111111;
+            block->visibleFacesCount = 2;
+          } else {
+            block->visibleFaces = visibleFaces;
+            block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+          }
+
           block->isAtChunkBorder = isBlockAtChunkBorder(
               &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
 
-          block->setPosition(blockPosition);
-          block->scale.scale(BLOCK_SIZE);
-          block->updateModelMatrix();
+          block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-          // Calc min and max corners
-          {
-            BBox tempBBox = rawBlockBbox->getTransformed(block->model);
-            block->bbox = new BBox(tempBBox);
-            block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-          }
+          ModelBuilder_BuildModel(block, terrain);
+          BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
+          BBox tempBBox = rawBBox->getTransformed(block->model);
+
+          block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
           t_chunck->addBlock(block);
+
+          delete rawBBox;
         }
+
         batchCounter++;
       }
     }
@@ -722,54 +1169,84 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       x++;
     }
 
-    if (safeWhileBreak > CHUNCK_LENGTH) break;
+    if (safeWhileBreak > CHUNCK_LENGTH) {
+      TYRA_WARN("Safely breaking while loop");
+      break;
+    }
   }
 
-  if (batchCounter >= LOAD_CHUNK_BATCH * loading_speed) {
+  if (batchCounter >= limit) {
     t_chunck->tempLoadingOffset->set(x, y, z);
     return;
   }
 
-  t_chunck->state = ChunkState::Loaded;
-  t_chunck->loadDrawData();
+  t_chunck->state = ChunkState::PreLoaded;
+  t_chunck->freeUnusedMemory();
 }
 
-void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
-                              const std::vector<Chunck*>& chuncks) {
+void World::updateTargetBlock(Camera* t_camera, Player* t_player,
+                              std::vector<Chunck*>* chuncks) {
+  const Vec4 baseOrigin =
+      *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
   u8 hitedABlock = 0;
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
   Block* tempTargetBlock = nullptr;
+  uint32_t _lastTargetBlockId = 0;
+
+  if (targetBlock) {
+    _lastTargetBlockId = targetBlock->index;
+    // (targetBlock->offset.y * terrain->length * terrain->width) +
+    // (targetBlock->offset.z * terrain->width) + ;
+  }
 
   // Reset the current target block;
   targetBlock = nullptr;
 
   // Prepate the raycast
-  Vec4 rayDir = camLookPos - camPosition;
-  rayDir.normalize();
-  ray.origin.set(camPosition);
-  ray.direction.set(rayDir);
+  ray.origin.set(baseOrigin);
+  ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
-  for (u16 h = 0; h < chuncks.size(); h++) {
-    for (u16 i = 0; i < chuncks[h]->blocks.size(); i++) {
+  // Reverse ray for third person camera position
+  Ray revRay;
+  revRay.direction = (-t_camera->unitCirclePosition).getNormalized();
+  revRay.origin = baseOrigin;
+
+  t_camera->hitDistance = t_camera->getDistanceFromPlayer();
+
+  for (u16 h = 0; h < chuncks->size(); h++) {
+    for (u16 i = 0; i < (*chuncks)[h]->blocks.size(); i++) {
+      Block* block = (*chuncks)[h]->blocks[i];
+
+      u8 isBreakable = block->type != Blocks::WATER_BLOCK &&
+                       block->type != Blocks::LAVA_BLOCK;
       float distanceFromCurrentBlockToPlayer =
-          camPosition.distanceTo(*chuncks[h]->blocks[i]->getPosition());
+          baseOrigin.distanceTo(block->position);
 
-      if (distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
-        // Reset block state
-        chuncks[h]->blocks[i]->isTarget = 0;
-        chuncks[h]->blocks[i]->distance = -1.0f;
+      // Reset block state
+      block->isTarget = false;
+      block->distance = -1.0f;
 
+      if (isBreakable && distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
         float intersectionPoint;
-        if (ray.intersectBox(chuncks[h]->blocks[i]->minCorner,
-                             chuncks[h]->blocks[i]->maxCorner,
+        if (ray.intersectBox(block->minCorner, block->maxCorner,
                              &intersectionPoint)) {
           hitedABlock = 1;
           if (tempTargetDistance == -1.0f ||
               (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-            tempTargetBlock = chuncks[h]->blocks[i];
+            tempTargetBlock = block;
             tempTargetDistance = intersectionPoint;
             tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+          }
+        }
+      }
+
+      if (block->isCollidable) {
+        float intersectionPoint;
+        if (revRay.intersectBox(block->minCorner, block->maxCorner,
+                                &intersectionPoint)) {
+          if (intersectionPoint < t_camera->hitDistance) {
+            t_camera->hitDistance = intersectionPoint * 0.95F;
           }
         }
       }
@@ -778,8 +1255,14 @@ void World::updateTargetBlock(const Vec4& camLookPos, const Vec4& camPosition,
 
   if (hitedABlock) {
     targetBlock = tempTargetBlock;
-    targetBlock->isTarget = 1;
+    targetBlock->isTarget = true;
     targetBlock->distance = tempTargetDistance;
+    targetBlock->hitPosition.set(ray.at(tempTargetDistance));
+
+    const uint32_t _hitedBlockId = targetBlock->index;
+    // (targetBlock->offset.y * terrain->length * terrain->width) +
+    // (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
+    if (_hitedBlockId != _lastTargetBlockId) breaking_time_pessed = 0;
   }
 }
 
@@ -794,317 +1277,777 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
   }
 }
 
-// From CrossCraft
-struct LightNode {
-  uint16_t x, y, z;
-  LightNode(uint16_t lx, uint16_t ly, uint16_t lz, uint16_t l)
-      : x(lx), y(ly), z(lz), val(l) {}
-  uint16_t val;
-};
-
-std::queue<LightNode> lightBfsQueue;
-std::queue<LightNode> lightRemovalBfsQueue;
-
-std::queue<LightNode> sunlightBfsQueue;
-std::queue<LightNode> sunlightRemovalBfsQueue;
-
-auto encodeID(uint16_t x, uint16_t z) -> uint32_t {
-  uint16_t nx = x / 16;
-  uint16_t ny = z / 16;
-  uint32_t id = nx << 16 | (ny & 0xFFFF);
-  return id;
+void World::initWorldLightModel() {
+  worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
+  worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
+  worldLightModel.sunLightIntensity =
+      dayNightCycleManager.getSunLightIntensity();
 }
 
-void checkAddID(uint32_t* updateIDs, uint32_t id) {
-  // Check that the ID is not already existing
-  for (int i = 0; i < 10; i++) {
-    if (id == updateIDs[i]) return;
+void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
+  if (BoundCheckMap(terrain, x - 1, y, z)) {
+    Blocks nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+    u8 level = GetLiquidDataFromMap(terrain, x - 1, y, z);
+
+    if (nl == Blocks::WATER_BLOCK || nl == Blocks::LAVA_BLOCK) {
+      addLiquid(x - 1, y, z, (u8)nl, level);
+    }
   }
 
-  // Find a slot to insert.
-  for (int i = 0; i < 10; i++) {
-    if (updateIDs[i] == 0xFFFFFFFF) {
-      updateIDs[i] = id;
-      return;
+  if (BoundCheckMap(terrain, x + 1, y, z)) {
+    Blocks nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+    u8 level = GetLiquidDataFromMap(terrain, x + 1, y, z);
+
+    if (nr == Blocks::WATER_BLOCK || nr == Blocks::LAVA_BLOCK) {
+      addLiquid(x + 1, y, z, (u8)nr, level);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x, y - 1, z)) {
+    Blocks nd = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+    u8 level = GetLiquidDataFromMap(terrain, x, y - 1, z);
+
+    if (nd == Blocks::WATER_BLOCK || nd == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y - 1, z, (u8)nd, level);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x, y, z + 1)) {
+    Blocks nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+    u8 level = GetLiquidDataFromMap(terrain, x, y, z + 1);
+
+    if (nf == Blocks::WATER_BLOCK || nf == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y, z + 1, (u8)nf, level);
+    }
+  }
+
+  if (BoundCheckMap(terrain, x, y, z - 1)) {
+    Blocks nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+    u8 level = GetLiquidDataFromMap(terrain, x, y, z - 1);
+
+    if (nb == Blocks::WATER_BLOCK || nb == Blocks::LAVA_BLOCK) {
+      addLiquid(x, y, z - 1, (u8)nb, level);
     }
   }
 }
 
-void updateID(uint16_t x, uint16_t z, uint32_t* updateIDs) {
-  checkAddID(updateIDs, encodeID(x, z));
-}
-
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-               uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  updateID(x, z, updateIDs);
-
-  auto blk = GetBlockFromMap(map, x, y, z);
-
-  if ((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) ||
-       (blk >= 37 && blk <= 40)) &&
-      GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
-    if (blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) {
-      lightLevel -= 2;
-    }
-    SetLightInMap(map, x, y, z, lightLevel - 1);
-    lightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  if (GetBlockFromMap(map, x, y, z) == 0 &&
-      GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
-    SetLightInMap(map, x, y, z, lightLevel - 1);
-    sunlightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel,
-                     uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  auto neighborLevel = GetLightFromMap(map, x, y, z);
-
-  updateID(x, z, updateIDs);
-
-  if (neighborLevel != 0 && neighborLevel < lightLevel) {
-    SetLightInMap(map, x, y, z, 0);
-    lightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
-  } else if (neighborLevel >= lightLevel) {
-    lightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  if (!BoundCheckMap(map, x, y, z)) return;
-
-  auto neighborLevel = GetLightFromMap(map, x, y, z);
-
-  if (neighborLevel != 0 && neighborLevel < lightLevel) {
-    SetLightInMap(map, x, y, z, 0);
-    sunlightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
-  } else if (neighborLevel >= lightLevel) {
-    sunlightBfsQueue.emplace(x, y, z, 0);
-  }
-}
-
-void updateRemove(uint32_t* updateIDs) {
-  while (!lightRemovalBfsQueue.empty()) {
-    auto node = lightRemovalBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel = node.val;
-    lightRemovalBfsQueue.pop();
-
-    propagateRemove(nx + 1, ny, nz, lightLevel, updateIDs);
-    propagateRemove(nx - 1, ny, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny + 1, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny - 1, nz, lightLevel, updateIDs);
-    propagateRemove(nx, ny, nz + 1, lightLevel, updateIDs);
-    propagateRemove(nx, ny, nz - 1, lightLevel, updateIDs);
-  }
-}
-
-void updateRemove() {
-  while (!lightRemovalBfsQueue.empty()) {
-    auto node = lightRemovalBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel = node.val;
-    lightRemovalBfsQueue.pop();
-
-    propagateRemove(nx + 1, ny, nz, lightLevel);
-    propagateRemove(nx - 1, ny, nz, lightLevel);
-    propagateRemove(nx, ny + 1, nz, lightLevel);
-    propagateRemove(nx, ny - 1, nz, lightLevel);
-    propagateRemove(nx, ny, nz + 1, lightLevel);
-    propagateRemove(nx, ny, nz - 1, lightLevel);
-  }
-}
-
-void updateSpread(uint32_t* updateIDs) {
-  while (!lightBfsQueue.empty()) {
-    auto node = lightBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel =
-        GetLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
-    lightBfsQueue.pop();
-
-    propagate(nx + 1, ny, nz, lightLevel, updateIDs);
-    propagate(nx - 1, ny, nz, lightLevel, updateIDs);
-    propagate(nx, ny + 1, nz, lightLevel, updateIDs);
-    propagate(nx, ny - 1, nz, lightLevel, updateIDs);
-    propagate(nx, ny, nz + 1, lightLevel, updateIDs);
-    propagate(nx, ny, nz - 1, lightLevel, updateIDs);
-  }
-}
-
-void updateSpread() {
-  while (!lightBfsQueue.empty()) {
-    auto node = lightBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    uint8_t lightLevel =
-        GetLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
-    lightBfsQueue.pop();
-
-    propagate(nx + 1, ny, nz, lightLevel);
-    propagate(nx - 1, ny, nz, lightLevel);
-    propagate(nx, ny + 1, nz, lightLevel);
-    propagate(nx, ny - 1, nz, lightLevel);
-    propagate(nx, ny, nz + 1, lightLevel);
-    propagate(nx, ny, nz - 1, lightLevel);
-  }
-}
-
-void updateSunlight() {
-  while (!sunlightBfsQueue.empty()) {
-    auto node = sunlightBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    int8_t lightLevel = node.val - 1;
-    sunlightBfsQueue.pop();
-    if (lightLevel <= 0) continue;
-
-    propagate(nx + 1, ny, nz, lightLevel);
-    propagate(nx - 1, ny, nz, lightLevel);
-    propagate(nx, ny + 1, nz, lightLevel);
-    propagate(nx, ny - 1, nz, lightLevel);
-    propagate(nx, ny, nz + 1, lightLevel);
-    propagate(nx, ny, nz - 1, lightLevel);
-  }
-}
-
-void updateSunlightRemove() {
-  while (!sunlightRemovalBfsQueue.empty()) {
-    auto node = sunlightRemovalBfsQueue.front();
-
-    uint16_t nx = node.x;
-    uint16_t ny = node.y;
-    uint16_t nz = node.z;
-    int8_t lightLevel = node.val;
-    sunlightRemovalBfsQueue.pop();
-    if (lightLevel <= 0) continue;
-
-    propagateRemove(nx + 1, ny, nz, lightLevel);
-    propagateRemove(nx - 1, ny, nz, lightLevel);
-    propagateRemove(nx, ny + 1, nz, lightLevel);
-    propagateRemove(nx, ny - 1, nz, lightLevel);
-    propagateRemove(nx, ny, nz + 1, lightLevel);
-    propagateRemove(nx, ny, nz - 1, lightLevel);
-  }
-}
-
-void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z,
-                               uint16_t light, uint32_t* updateIDs) {
-  SetLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, light);
-  updateID(x, z, updateIDs);
-  lightBfsQueue.emplace(x, y, z, light);
-
-  updateSpread(updateIDs);
-}
-
-void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z,
-                                  uint16_t light, uint32_t* updateIDs) {
-  auto map = CrossCraft_World_GetMapPtr();
-
-  auto val = GetLightFromMap(map, x, y, z);
-  lightRemovalBfsQueue.emplace(x, y, z, val);
-
-  SetLightInMap(map, x, y, z, light);
-  updateID(x, z, updateIDs);
-
-  updateRemove(updateIDs);
-  updateSpread(updateIDs);
-}
-
-void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
-  auto map = CrossCraft_World_GetMapPtr();
-
-  if (y == 0) return;
-
-  auto lv = 15;
-  for (int y2 = map->height - 1; y2 >= 0; y2--) {
-    auto blk = GetBlockFromMap(map, x, y2, z);
-
-    if (blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
-      lv -= 2;
-    } else if (blk != 0 && blk != 20) {
-      lv = 0;
+void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
+                      u8 orientation) {
+  if (level > (u8)LiquidLevel::Percent0) {
+    if (type == (u8)Blocks::WATER_BLOCK) {
+      waterBfsQueue.emplace(x, y, z, level);
+    } else if (type == (u8)Blocks::LAVA_BLOCK) {
+      lavaBfsQueue.emplace(x, y, z, level);
+      addBlockLight(x, y, z, 15);
+      updateBlockLights();
     }
 
-    auto lv2 = GetLightFromMap(map, x, y2, z);
+    SetBlockInMap(terrain, x, y, z, type);
+    SetLiquidDataToMap(terrain, x, y, z, level);
+    SetLiquidOrientationDataToMap(terrain, x, y, z,
+                                  static_cast<BlockOrientation>(orientation));
 
-    if (lv2 < lv) {
-      SetLightInMap(map, x, y2, z, lv);
-      sunlightRemovalBfsQueue.emplace(x, y2, z, 0);
-    } else {
-      SetLightInMap(map, x, y2, z, lv);
-      sunlightBfsQueue.emplace(x, y2, z, lv);
+    Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+    if (moddedChunk) {
+      affectedChunksIdByLiquidPropagation.insert(moddedChunk);
     }
   }
 }
 
-bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  singleCheck(x, y, z);
-  singleCheck(x + 1, y, z);
-  singleCheck(x - 1, y, z);
-  singleCheck(x, y, z + 1);
-  singleCheck(x, y, z - 1);
-
-  updateSunlightRemove();
-  updateSunlight();
-
-  return true;
+void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
+  addLiquid(x, y, z, type, level, (u8)BlockOrientation::East);
 }
 
-void CrossCraft_World_PropagateSunLight(uint32_t tick) {
+void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
+  u8 liquidLevel = GetLiquidDataFromMap(terrain, x, y, z);
+  removeLiquid(x, y, z, type, liquidLevel);
+}
+
+void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                         u8 level) {
+  if (level > (u8)LiquidLevel::Percent0) {
+    if (type == (u8)Blocks::WATER_BLOCK) {
+      waterRemovalBfsQueue.emplace(x, y, z, level);
+    } else if (type == (u8)Blocks::LAVA_BLOCK) {
+      lavaRemovalBfsQueue.emplace(x, y, z, level);
+      removeLight(x, y, z);
+      updateBlockLights();
+    }
+
+    SetLiquidDataToMap(terrain, x, y, z, level);
+  } else {
+    SetBlockInMap(terrain, x, y, z, (u8)Blocks::AIR_BLOCK);
+    SetLiquidDataToMap(terrain, x, y, z, (u8)LiquidLevel::Percent0);
+  }
+
+  Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+  if (moddedChunk) {
+    affectedChunksIdByLiquidPropagation.insert(moddedChunk);
+  }
+}
+
+void World::initLiquidExpansion() {
+  TYRA_LOG("Initiating water propagation...");
   auto map = CrossCraft_World_GetMapPtr();
 
   for (int x = 0; x < map->length; x++) {
     for (int z = 0; z < map->width; z++) {
-      auto lv = 4;
-      if (tick >= 0 && tick <= 12000) {
+      for (int y = map->height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+
+        if (b == Blocks::AIR_BLOCK) {
+          auto liquidValue = LiquidLevel::Percent100;
+
+          if (BoundCheckMap(terrain, x - 1, y, z)) {
+            auto type = GetBlockFromMap(terrain, x - 1, y, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x - 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x + 1, y, z)) {
+            auto type = GetBlockFromMap(terrain, x + 1, y, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x + 1, y, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y - 1, z)) {
+            auto type = GetBlockFromMap(terrain, x, y - 1, z);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y - 1, z, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z - 1)) {
+            auto type = GetBlockFromMap(terrain, x, y, z - 1);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y, z - 1, type, liquidValue);
+          } else if (BoundCheckMap(terrain, x, y, z + 1)) {
+            auto type = GetBlockFromMap(terrain, x, y, z + 1);
+            if (type == (u8)Blocks::WATER_BLOCK ||
+                type == (u8)Blocks::LAVA_BLOCK)
+              addLiquid(x, y, z + 1, type, liquidValue);
+          }
+        }
+      }
+    }
+  }
+}
+
+void World::updateLiquidWater(const float deltaTime) {
+  propagateWaterRemovalQueue();
+  propagateWaterAddQueue();
+
+  // TODO: check if is near flowing water
+  // if (lastTimePlayedWaterSound > waterSoundTimeCounter) {
+  //   playFlowingWaterSound();
+  //   const uint16_t delayToPlayNextTime = Tyra::Math::randomi(1, 15) * 1000;
+  //   waterSoundTimeCounter = waterSoundDuration + delayToPlayNextTime;
+  //   lastTimePlayedWaterSound = 0;
+  // } else {
+  //   lastTimePlayedWaterSound += deltaTime;
+  // }
+}
+
+// FIX: lava spread only 3 blocks in overworld
+void World::updateLiquidLava() {
+  propagateLavaRemovalQueue();
+  propagateLavaAddQueue();
+}
+
+void World::propagateWaterRemovalQueue() {
+  if (waterRemovalBfsQueue.empty() == false) {
+    Node liquidNode = waterRemovalBfsQueue.front();
+
+    // get the index
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+    uint8_t liquidValue = liquidNode.val - 1;
+
+    waterRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                            liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
+      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
+                            liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                            liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
+      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
+                            liquidValue);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
+      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
+                            liquidValue);
+    }
+
+    if (liquidValue > (u8)LiquidLevel::Percent0) {
+      waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
+    }
+  }
+}
+
+void World::propagateLavaRemovalQueue() {
+  if (lavaRemovalBfsQueue.empty() == false) {
+    Node liquidNode = lavaRemovalBfsQueue.front();
+
+    // get the index
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+
+    s8 nextLevel = (u8)LiquidLevel::Percent0;
+    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
+      nextLevel = (u8)LiquidLevel::Percent75;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
+      nextLevel = (u8)LiquidLevel::Percent50;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
+      nextLevel = (u8)LiquidLevel::Percent25;
+    } else {
+      return;
+    }
+
+    lavaRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
+      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
+      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
+    }
+
+    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
+      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
+    }
+
+    if (nextLevel > (u8)LiquidLevel::Percent0) {
+      lavaRemovalBfsQueue.emplace(nx, ny, nz, nextLevel);
+    }
+  }
+}
+
+void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                                  u8 level) {
+  u8 neighborLevel = GetLiquidDataFromMap(terrain, x, y, z);
+
+  if (neighborLevel <= level + 1) {
+    removeLiquid(x, y, z, type, level);
+  } else if (neighborLevel > level) {
+    addLiquid(x, y, z, type, neighborLevel);
+  }
+}
+
+void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
+                               u8 nextLevel, u8 orientation) {
+  if (GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
+    addLiquid(x, y, z, type, nextLevel, orientation);
+  }
+}
+
+void World::propagateWaterAddQueue() {
+  if (waterBfsQueue.empty() == false) {
+    auto liquidNode = waterBfsQueue.front();
+
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+
+    waterBfsQueue.pop();
+
+    s16 nextLevel = liquidNode.val - 1;
+    u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
+
+    if (canPropagateLiquid(nx, ny - 1, nz)) {
+      // If down block is air, keep propagating until hit a surface;
+      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                         (u8)BlockOrientation::East);
+      return;
+    }
+
+    if (nextLevel <= (u8)LiquidLevel::Percent0) {
+      return;
+    }
+
+    if (canPropagateLiquid(nx + 1, ny, nz)) {
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::North);
+    }
+
+    if (canPropagateLiquid(nx, ny, nz + 1)) {
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                         (u8)BlockOrientation::East);
+    }
+
+    if (canPropagateLiquid(nx - 1, ny, nz)) {
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::South);
+    }
+
+    if (canPropagateLiquid(nx, ny, nz - 1)) {
+      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                         (u8)BlockOrientation::West);
+    }
+  }
+}
+
+void World::propagateLavaAddQueue() {
+  if (lavaBfsQueue.empty() == false) {
+    auto liquidNode = lavaBfsQueue.front();
+
+    uint16_t nx = liquidNode.x;
+    uint16_t ny = liquidNode.y;
+    uint16_t nz = liquidNode.z;
+
+    lavaBfsQueue.pop();
+
+    s8 nextLevel = (u8)LiquidLevel::Percent0;
+    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
+      nextLevel = (u8)LiquidLevel::Percent75;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
+      nextLevel = (u8)LiquidLevel::Percent50;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
+      nextLevel = (u8)LiquidLevel::Percent25;
+    } else if (liquidNode.val == (u8)LiquidLevel::Percent25) {
+      nextLevel = (u8)LiquidLevel::Percent0;
+    }
+
+    u8 type = (u8)Blocks::LAVA_BLOCK;
+
+    if (canPropagateLiquid(nx, ny - 1, nz)) {
+      // If down block is air, keep propagating until hit a surface;
+      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                         (u8)BlockOrientation::East);
+      return;
+    }
+
+    if (nextLevel <= 0) return;
+
+    if (canPropagateLiquid(nx + 1, ny, nz)) {
+      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::North);
+    }
+
+    if (canPropagateLiquid(nx, ny, nz + 1)) {
+      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                         (u8)BlockOrientation::East);
+    }
+
+    if (canPropagateLiquid(nx - 1, ny, nz)) {
+      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                         (u8)BlockOrientation::South);
+    }
+
+    if (canPropagateLiquid(nx, ny, nz - 1)) {
+      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                         (u8)BlockOrientation::West);
+    }
+  }
+}
+
+void World::updateChunksAffectedByLiquidPropagation() {
+  for (auto chunckPtr : affectedChunksIdByLiquidPropagation) {
+    Chunck* moddedChunk = chunckPtr;
+    if (moddedChunk) {
+      moddedChunk->clear();
+      buildChunk(moddedChunk);
+    }
+  }
+
+  affectedChunksIdByLiquidPropagation.clear();
+}
+
+u8 World::canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z) {
+  if (!BoundCheckMap(terrain, x, y, z)) return false;
+  const u8 type = GetBlockFromMap(terrain, x, y, z);
+  return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
+         type == (u8)Blocks::POPPY_FLOWER ||
+         type == (u8)Blocks::DANDELION_FLOWER;
+}
+
+// From CrossCraft
+std::queue<Node> lightBfsQueue;
+std::queue<Node> lightRemovalBfsQueue;
+
+// std::stack<Node> sunlightBfsQueue;
+std::queue<Node> sunlightBfsQueue;
+std::queue<Node> sunlightRemovalBfsQueue;
+
+void updateSunlight() {
+  if (sunlightRemovalBfsQueue.empty() == false) {
+    propagateSunlightRemovalQueue();
+  }
+
+  if (sunlightBfsQueue.empty() == false) {
+    propagateSunLightAddBFSQueue();
+  }
+}
+
+void propagateSunLightAddBFSQueue() {
+  while (!sunlightBfsQueue.empty()) {
+    auto lightNode = sunlightBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    sunlightBfsQueue.pop();
+
+    int nextLightValue = lightValue - 1;
+
+    if (nextLightValue < 0) {
+      continue;
+    }
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillSunlightAdd(nx, ny + 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillSunlightAdd(nx, ny, nz + 1, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillSunlightAdd(nx - 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillSunlightAdd(nx, ny - 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillSunlightAdd(nx, ny, nz - 1, nextLightValue);
+    }
+  }
+}
+
+void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                          u8 nextLightValue) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+
+  if (isTransparent(b)) {
+    if (GetSunLightFromMap(map, x, y, z) + 1 < nextLightValue) {
+      addSunLight(x, y, z, nextLightValue);
+    }
+  }
+}
+
+void addSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+  addSunLight(x, y, z, lightLevel);
+}
+
+void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel >= 0) {
+    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, lightLevel);
+    sunlightBfsQueue.emplace(x, y, z, lightLevel);
+  }
+}
+
+void propagateSunlightRemovalQueue() {
+  while (!sunlightRemovalBfsQueue.empty()) {
+    // get the light value
+    Node lightNode = sunlightRemovalBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    // get the index
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    sunlightRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillSunlightRemove(nx + 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillSunlightRemove(nx, ny + 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillSunlightRemove(nx, ny, nz + 1, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillSunlightRemove(nx - 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillSunlightRemove(nx, ny - 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillSunlightRemove(nx, ny, nz - 1, lightValue);
+    }
+  }
+}
+
+void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
+                             u8 lightLevel) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto neighborLevel = GetSunLightFromMap(map, x, y, z);
+
+  if (neighborLevel != 0 && neighborLevel < lightLevel) {
+    removeSunLight(x, y, z);
+  } else if (neighborLevel >= lightLevel) {
+    addSunLight(x, y, z, neighborLevel);
+  }
+}
+
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+  removeSunLight(x, y, z, lightLevel);
+}
+
+void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    sunlightRemovalBfsQueue.emplace(x, y, z, lightLevel);
+    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, 0);
+  }
+}
+
+void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  if (lightLevel > 0) {
+    auto map = CrossCraft_World_GetMapPtr();
+    lightBfsQueue.emplace(x, y, z, lightLevel);
+    SetBlockLightInMap(map, x, y, z, lightLevel);
+  }
+}
+
+void removeLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto map = CrossCraft_World_GetMapPtr();
+  u8 lightLevel = GetBlockLightFromMap(map, x, y, z);
+  removeLight(x, y, z, lightLevel);
+}
+
+void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  auto map = CrossCraft_World_GetMapPtr();
+  lightRemovalBfsQueue.emplace(x, y, z, lightLevel);
+  SetBlockLightInMap(map, x, y, z, 0);
+}
+
+void updateBlockLights() {
+  if (lightRemovalBfsQueue.empty() == false) {
+    propagateLightRemovalQueue();
+  }
+
+  if (lightBfsQueue.empty() == false) {
+    propagateLightAddQueue();
+  }
+}
+
+void propagateLightRemovalQueue() {
+  while (lightRemovalBfsQueue.empty() == false) {
+    // get the light value
+    Node lightNode = lightRemovalBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    // get the index
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightRemovalBfsQueue.pop();
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillLightRemove(nx + 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillLightRemove(nx, ny + 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillLightRemove(nx, ny, nz + 1, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillLightRemove(nx - 1, ny, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillLightRemove(nx, ny - 1, nz, lightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillLightRemove(nx, ny, nz - 1, lightValue);
+    }
+  }
+}
+
+void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto neighborLevel = GetBlockLightFromMap(map, x, y, z);
+
+  if (neighborLevel != 0 && neighborLevel < lightLevel) {
+    removeLight(x, y, z);
+  } else if (neighborLevel >= lightLevel) {
+    addBlockLight(x, y, z, neighborLevel);
+  }
+}
+
+void propagateLightAddQueue() {
+  while (!lightBfsQueue.empty()) {
+    auto lightNode = lightBfsQueue.front();
+    auto map = CrossCraft_World_GetMapPtr();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightBfsQueue.pop();
+
+    s16 nextLightValue = lightValue - 1;
+
+    if (nextLightValue <= 0) {
+      continue;
+    }
+
+    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+      floodFillLightAdd(nx + 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+      floodFillLightAdd(nx, ny + 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+      floodFillLightAdd(nx, ny, nz + 1, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+      floodFillLightAdd(nx - 1, ny, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+      floodFillLightAdd(nx, ny - 1, nz, nextLightValue);
+    }
+
+    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+      floodFillLightAdd(nx, ny, nz - 1, nextLightValue);
+    }
+  }
+}
+
+void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue) {
+  auto map = CrossCraft_World_GetMapPtr();
+  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+  if (isTransparent(b)) {
+    if (GetBlockLightFromMap(map, x, y, z) < nextLightValue) {
+      addBlockLight(x, y, z, nextLightValue);
+    }
+  }
+}
+
+void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
+  removeSunLight(x + 1, y, z);
+  removeSunLight(x - 1, y, z);
+  removeSunLight(x, y + 1, z);
+  removeSunLight(x, y - 1, z);
+  removeSunLight(x, y, z + 1);
+  removeSunLight(x, y, z - 1);
+  removeSunLight(x, y, z);
+
+  return;
+}
+
+void initSunLight(uint32_t tick) {
+  TYRA_LOG("Initiating SunLight...");
+  auto map = CrossCraft_World_GetMapPtr();
+
+  for (int x = 0; x < map->length; x++) {
+    for (int z = 0; z < map->width; z++) {
+      u8 lv = 4;
+      auto isDay = tick >= 0 && tick <= 12000;
+      if (isDay) {
         lv = 15;
       }
 
       for (int y = map->height - 1; y >= 0; y--) {
-        auto blk = GetBlockFromMap(map, x, y, z);
-
-        if (blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
-          lv -= 2;
-        } else if (blk != 0 && blk != 20) {
-          break;
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+        // TODO: refactor to getLightFilterByBlock function
+        // Vegetation
+        // (b >= 37 && b <= 40)
+        // Liquids
+        // || (b >= 8 && b <= 11)
+        if (b == Blocks::OAK_LEAVES_BLOCK) {
+          if (lv >= 1)
+            lv -= 1;
+          else
+            lv = 0;
+        } else if (b == Blocks::WATER_BLOCK) {
+          if (lv >= 2)
+            lv -= 2;
+          else
+            lv = 0;
+        } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
+                   b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
+                   b != Blocks::GRASS) {
+          lv = 0;
         }
 
-        if (lv < 0) break;
-
-        SetLightInMap(map, x, y, z, lv);
+        SetSunLightInMap(map, x, y, z, lv);
         sunlightBfsQueue.emplace(x, y, z, lv);
+        // printf("X: %d, Y: %d, Z: %d | b: %d | lv: %d \n", x, y, z, (u8)b,
+        // lv);
       }
     }
   }
+}
 
-  updateSunlight();
+void initBlockLight(BlockManager* blockManager) {
+  TYRA_LOG("Initiating block Lights...");
+  auto map = CrossCraft_World_GetMapPtr();
+
+  for (int x = 0; x < map->length; x++) {
+    for (int z = 0; z < map->width; z++) {
+      for (int y = map->height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+        auto lightValue = blockManager->getBlockLightValue(b);
+        if (lightValue > 0) {
+          addBlockLight(x, y, z, lightValue);
+        }
+      }
+    }
+  }
 }
 
 void CrossCraft_World_Init(const uint32_t& seed) {
@@ -1113,17 +2056,28 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
-  LevelMap map = {.width = 256,
-                  .length = 256,
-                  .height = 64,
+  uint32_t blockCount = OVERWORLD_SIZE;
+  LevelMap map = {.width = OVERWORLD_H_DISTANCE,
+                  .length = OVERWORLD_H_DISTANCE,
+                  .height = OVERWORLD_V_DISTANCE,
 
                   .spawnX = 128,
                   .spawnY = 59,
                   .spawnZ = 128,
 
-                  .blocks = NULL,
-                  .data = NULL};
+                  .blocks = new u8[blockCount],
+                  .lightData = new u8[blockCount],
+                  .metaData = new u8[blockCount]};
+
   level.map = map;
+
+  // For some reason I need to clear the array garbage
+  // I was initialized with new key word, very weird!
+  for (size_t i = 0; i < blockCount; i++) {
+    level.map.blocks[i] = 0;
+    level.map.lightData[i] = 0;
+    level.map.metaData[i] = 0;
+  }
 
   TYRA_LOG("Generated base level template");
 }
@@ -1131,18 +2085,9 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 void CrossCraft_World_Deinit() {
   TYRA_LOG("Destroying the world");
   if (level.map.blocks) delete[] level.map.blocks;
-  // if (level.map.data) delete[] level.map.data;
+  if (level.map.lightData) delete[] level.map.lightData;
+  if (level.map.metaData) delete[] level.map.metaData;
   TYRA_LOG("World freed");
-}
-
-void CrossCraft_World_Create_Map() {
-  level.map.length = OVERWORLD_H_DISTANCE;
-  level.map.width = OVERWORLD_H_DISTANCE;
-  level.map.height = OVERWORLD_V_DISTANCE;
-
-  uint32_t blockCount = level.map.length * level.map.height * level.map.width;
-  level.map.blocks = new uint8_t[blockCount];
-  // level.map.data = new uint8_t[blockCount];
 }
 
 /**
@@ -1168,10 +2113,5 @@ void CrossCraft_World_GenerateMap(WorldType worldType) {
       break;
   }
 }
-
-/**
- * @brief Spawn the player into the world
- */
-void CrossCraft_World_Spawn() {}
 
 LevelMap* CrossCraft_World_GetMapPtr() { return &level.map; }

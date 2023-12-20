@@ -24,6 +24,7 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using Tyra::BBox;
+using Tyra::Color;
 using Tyra::CoreBBoxFrustum;
 using Tyra::Mesh;
 using Tyra::Plane;
@@ -82,8 +83,8 @@ class Utils {
   static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
                                               const BBox& AABB);
   static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
-                                              const Vec4& mins,
-                                              const Vec4& maxs);
+                                              const Vec4* mins,
+                                              const Vec4* maxs);
 
   static float fastPow(float a, float b);
 
@@ -100,4 +101,15 @@ class Utils {
   static std::vector<UtilDirectory> listDir(const char* dir);
 
   static std::string trim(std::string& str);
+
+  static bool AABBCollides(BBox* A, BBox* B);
+  static bool AABBCollidesXZ(BBox* A, BBox* B);
+
+  /* Function to get no of set bits in binary
+  representation of positive integer n */
+  static u8 countSetBits(u32 n);
+
+  static float reverseAngle(const float angleInRad) {
+    return std::fmod(angleInRad + Tyra::Math::PI, 2 * Tyra::Math::PI);
+  };
 };

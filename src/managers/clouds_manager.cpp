@@ -1,13 +1,22 @@
 #include "managers/clouds_manager.hpp"
+#include "managers/light_manager.hpp"
 
-CloudsManager::CloudsManager() { calcUVMapping(); }
+CloudsManager::CloudsManager() {
+  uvMap.reserve(6);
+  calcUVMapping();
+}
 
 CloudsManager::~CloudsManager() {
   t_renderer->getTextureRepository().free(cloudsTex->id);
+  delete[] vertices;
+  uvMap.clear();
+  uvMap.shrink_to_fit();
 }
 
-void CloudsManager::init(Renderer* renderer) {
+void CloudsManager::init(Renderer* renderer,
+                         WorldLightModel* t_worldLightModel) {
   t_renderer = renderer;
+  worldLightModel = t_worldLightModel;
   stapip.setRenderer(&renderer->core);
   cloudsTex = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("/textures/environment/clouds.png"));
@@ -15,18 +24,17 @@ void CloudsManager::init(Renderer* renderer) {
 
 void CloudsManager::calcUVMapping() {
   uvMap.clear();
-  uvMap.shrink_to_fit();
 
   const float scale = 1.0F / 4.0F;
   const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
 
-  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
 
-  uvMap.push_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.push_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
 };
 
 void CloudsManager::updateCloudsPosition() {
@@ -37,7 +45,11 @@ void CloudsManager::updateCloudsPosition() {
   calcUVMapping();
 }
 
-void CloudsManager::update() { updateCloudsPosition(); };
+void CloudsManager::update() {
+  tempColor = LightManager::IntensifyColor(&baseColor,
+                                           worldLightModel->sunLightIntensity);
+  updateCloudsPosition();
+};
 
 void CloudsManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
@@ -55,18 +67,19 @@ void CloudsManager::render() {
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
-  infoBag.textureMappingType = Tyra::TyraNearest;
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.fullClipChecks = true;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
 
   StaPipColorBag colorBag;
-  Color baseColor = Color(128.0F, 128.0F, 128.0F);
-  colorBag.single = &baseColor;
+  colorBag.single = &tempColor;
 
   StaPipBag bag;
-  bag.count = vertices.size();
-  bag.vertices = vertices.data();
+  bag.count = DRAW_DATA_COUNT;
+  bag.vertices = vertices;
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;

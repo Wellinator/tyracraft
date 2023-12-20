@@ -42,6 +42,7 @@ class StateLoadingSavedGame : public GameState {
  private:
   u8 shouldCreatedEntities = 1;
   u8 shouldInitWorld = 1;
+  u8 shouldLoadSavedData = 1;
   u8 shouldInitItemRepository = 1;
   u8 shouldInitUI = 1;
   u8 shouldInitPlayer = 1;
@@ -49,7 +50,7 @@ class StateLoadingSavedGame : public GameState {
   Sprite* background;
   Sprite* loadingSlot;
   Sprite* loadingprogress;
-  Sprite* loadingStateText;
+
   LoadingState _state = LoadingState::Loading;
   float _percent = 1.0F;
   float BASE_HEIGHT;
@@ -58,6 +59,30 @@ class StateLoadingSavedGame : public GameState {
   NewGameOptions* worldOptions;
   const std::string saveFileFullPath;
 
+  std::string progressLabel = "";
+  FontOptions progressLabelOptions =
+      FontOptions(Vec2(120.0F, 448.0F - 125.F), Color(200, 200, 200), 0.75F);
+
+  const std::string Label_Loading =
+      g_language_repository["loading_screen"]["loading"].get<std::string>();
+  const std::string Label_CreatingEntities =
+      g_language_repository["loading_screen"]["creating_entities"]
+          .get<std::string>();
+  const std::string Label_LoadingItemsRepo =
+      g_language_repository["loading_screen"]["loading_items_repository"]
+          .get<std::string>();
+  const std::string Label_LoadingUI =
+      g_language_repository["loading_screen"]["loading_ui"].get<std::string>();
+  const std::string Label_LoadingWorld =
+      g_language_repository["loading_screen"]["loading_world"]
+          .get<std::string>();
+  const std::string Label_LoadingPlayer =
+      g_language_repository["loading_screen"]["loading_player"]
+          .get<std::string>();
+  const std::string Label_LoadingSave =
+      g_language_repository["loading_screen"]["loading_save"]
+          .get<std::string>();
+
   void setPercent(float completed);
   void setBgColorBlack();
 
@@ -65,6 +90,7 @@ class StateLoadingSavedGame : public GameState {
   void initItemRepository();
   void initUI();
   void initWorld();
+  void loadSavedData();
   void initPlayer();
 
   void nextState();
