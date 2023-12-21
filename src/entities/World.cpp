@@ -1231,17 +1231,17 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
   targetBlock = nullptr;
 
   // Prepate the raycast
-  const Vec4 segmentStart = baseOrigin;
-  const Vec4 segmentEnd = t_camera->unitCirclePosition.getNormalized();
-
   ray.origin.set(baseOrigin);
   ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
   std::vector<index_t> ni;
-  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+  g_AABBTree.intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
 
   for (u16 b = 0; b < ni.size(); b++) {
     Block* block = (Block*)g_AABBTree.user_data(ni[b]);
+
+    // Debug stuff; Render the bboxes
+    // t_renderer->renderer3D.utility.drawBBox(*block->bbox, Color(128, 0, 0));
 
     float distanceFromCurrentBlockToPlayer =
         baseOrigin.distanceTo(block->position);
