@@ -153,6 +153,7 @@ bool intersectLine(const Vec4 p1, const Vec4 p2, const bvh::aabb_t& aabb) {
   return true;
 }
 
+// TODO: update intersction point result to Entity data
 // line segment aabb intersection test
 bool raycast(const Vec4 origin, const Vec4 direction, const bvh::aabb_t& aabb) {
   Ray ray = Ray(origin, direction);
