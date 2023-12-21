@@ -10,6 +10,10 @@
 #include "camera.hpp"
 #include "math/math.hpp"
 #include "managers/settings_manager.hpp"
+#include "managers/collision_manager.hpp"
+
+// TODO: move to Entity class
+#include "entities/Block.hpp"
 
 using Tyra::CameraInfo3D;
 using Tyra::Math;
@@ -41,21 +45,42 @@ void Camera::update() {
     unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
   }
 
-  // if (camera_type == CamType::FirstPerson) {
-  //   unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
-  // } else {
-  //   unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
-  // }
+  unitCirclePosition.normalize();
 
   lookPos.set(unitCirclePosition + position);
 }
 
+// TODO: refactore method signature to receive the position directly
 void Camera::setPositionByMesh(Mesh* t_mesh) {
   if (camera_type == CamType::FirstPerson) {
     position.set(*t_mesh->getPosition() -
                  (unitCirclePosition.getNormalized() * 4.5F));
     position.y += CAMERA_Y;
   } else {
+    hitDistance = distanceFromPlayer;
+
+    const Vec4 segmentStart =
+        *t_mesh->getPosition() + Vec4(0.0f, getCamY(), 0.0f);
+    const Vec4 segmentEnd = -unitCirclePosition * distanceFromPlayer;
+
+    revRay.origin.set(segmentStart);
+    revRay.direction.set(-unitCirclePosition);
+
+    std::vector<index_t> ni;
+    g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+
+    for (u16 i = 0; i < ni.size(); i++) {
+      // TODO: move to Entity class
+      Block* block = (Block*)g_AABBTree.user_data(ni[i]);
+
+      float intersectionPoint;
+      if (revRay.intersectBox(block->minCorner, block->maxCorner,
+                              &intersectionPoint) &&
+          intersectionPoint < hitDistance) {
+        hitDistance = intersectionPoint * 0.95F;
+      }
+    }
+
     const float hDistance = calculateHorizontalDistance();
     const float vDistance = calculateVerticalDistance();
 

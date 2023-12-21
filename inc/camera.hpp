@@ -26,6 +26,7 @@
 
 using Tyra::CameraInfo3D;
 using Tyra::Pad;
+using Tyra::Ray;
 using Tyra::RendererSettings;
 
 enum class CamType { FirstPerson, ThirdPerson, ThirdPersonInverted };
@@ -55,13 +56,13 @@ class Camera {
   inline const CamType getCamType() const { return camera_type; }
   inline float getCamY() { return CAMERA_Y; };
 
-  inline const float getDistanceFromPlayer() { return distanceFromPlayer; }
+  const float distanceFromPlayer = 80.0F;
 
  private:
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
 
-  float distanceFromPlayer = 80.0F;
+  Ray revRay;
 
   void calculatePitch(Pad* t_pad, const float deltatime);
   void calculateYaw(Pad* t_pad, const float deltatime);

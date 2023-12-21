@@ -6,6 +6,7 @@
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "managers/collision_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -71,13 +72,15 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 void Chunck::clear() {
   clearDrawData();
 
-  for (u16 blockIndex = 0; blockIndex < this->blocks.size(); blockIndex++) {
-    delete this->blocks[blockIndex];
-    this->blocks[blockIndex] = NULL;
+  for (u16 i = 0; i < blocks.size(); i++) {
+    if (blocks[i]->isCollidable) g_AABBTree.remove(blocks[i]->treeIndex);
+
+    delete blocks[i];
+    blocks[i] = NULL;
   }
 
-  this->blocks.clear();
-  this->blocks.shrink_to_fit();
+  blocks.clear();
+  blocks.shrink_to_fit();
   _isPreAllocated = false;
 
   resetLoadingOffset();

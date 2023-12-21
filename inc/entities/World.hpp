@@ -40,6 +40,7 @@
 #include "models/sfx_block_model.hpp"
 #include "debug/debug.hpp"
 #include <limits>
+#include <stdint-gcc.h>
 
 // FROM CrossCraft
 #include <stdint.h>

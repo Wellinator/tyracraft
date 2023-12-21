@@ -4,6 +4,7 @@
 #include "math/m4x4.hpp"
 #include "managers/block/vertex_block_data.hpp"
 #include "managers/model_builder.hpp"
+#include "managers/collision_manager.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -12,6 +13,9 @@
 #include <queue>
 #include <stack>
 
+using bvh::aabb_t;
+using bvh::bvh_t;
+using bvh::node_t;
 using Tyra::Color;
 using Tyra::M4x4;
 
@@ -33,6 +37,7 @@ World::~World() {
   delete rawBlockBbox;
   affectedChunksIdByLiquidPropagation.clear();
 
+  CollisionManager_unloadTree();
   CrossCraft_World_Deinit();
 }
 
@@ -1079,6 +1084,18 @@ void World::buildChunk(Chunck* t_chunck) {
                   new BBox(tempBBox.vertices, tempBBox.getVertexCount());
               block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
+              // Add data to AABBTree
+              if (block->isCollidable) {
+                bvh::aabb_t blockAABB = bvh::aabb_t();
+                blockAABB.minx = block->minCorner.x;
+                blockAABB.miny = block->minCorner.y;
+                blockAABB.minz = block->minCorner.z;
+                blockAABB.maxx = block->maxCorner.x;
+                blockAABB.maxy = block->maxCorner.y;
+                blockAABB.maxz = block->maxCorner.z;
+                block->treeIndex = g_AABBTree.insert(blockAABB, block);
+              }
+
               delete rawBBox;
 
               t_chunck->addBlock(block);
@@ -1150,9 +1167,21 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
           block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
-          t_chunck->addBlock(block);
+          // Add data to AABBTree
+          if (block->isCollidable) {
+            bvh::aabb_t blockAABB = bvh::aabb_t();
+            blockAABB.minx = block->minCorner.x;
+            blockAABB.miny = block->minCorner.y;
+            blockAABB.minz = block->minCorner.z;
+            blockAABB.maxx = block->maxCorner.x;
+            blockAABB.maxy = block->maxCorner.y;
+            blockAABB.maxz = block->maxCorner.z;
+            block->treeIndex = g_AABBTree.insert(blockAABB, block);
+          }
 
           delete rawBBox;
+
+          t_chunck->addBlock(block);
         }
 
         batchCounter++;
@@ -1188,7 +1217,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
                               std::vector<Chunck*>* chuncks) {
   const Vec4 baseOrigin =
       *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
-  u8 hitedABlock = 0;
+  bool hitedABlock = false;
   float tempTargetDistance = -1.0f;
   float tempPlayerDistance = -1.0f;
   Block* tempTargetBlock = nullptr;
@@ -1196,59 +1225,40 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
 
   if (targetBlock) {
     _lastTargetBlockId = targetBlock->index;
-    // (targetBlock->offset.y * terrain->length * terrain->width) +
-    // (targetBlock->offset.z * terrain->width) + ;
   }
 
   // Reset the current target block;
   targetBlock = nullptr;
 
   // Prepate the raycast
+  const Vec4 segmentStart = baseOrigin;
+  const Vec4 segmentEnd = t_camera->unitCirclePosition.getNormalized();
+
   ray.origin.set(baseOrigin);
   ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
-  // Reverse ray for third person camera position
-  Ray revRay;
-  revRay.direction = (-t_camera->unitCirclePosition).getNormalized();
-  revRay.origin = baseOrigin;
+  std::vector<index_t> ni;
+  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
 
-  t_camera->hitDistance = t_camera->getDistanceFromPlayer();
+  for (u16 b = 0; b < ni.size(); b++) {
+    Block* block = (Block*)g_AABBTree.user_data(ni[b]);
 
-  for (u16 h = 0; h < chuncks->size(); h++) {
-    for (u16 i = 0; i < (*chuncks)[h]->blocks.size(); i++) {
-      Block* block = (*chuncks)[h]->blocks[i];
+    float distanceFromCurrentBlockToPlayer =
+        baseOrigin.distanceTo(block->position);
 
-      u8 isBreakable = block->type != Blocks::WATER_BLOCK &&
-                       block->type != Blocks::LAVA_BLOCK;
-      float distanceFromCurrentBlockToPlayer =
-          baseOrigin.distanceTo(block->position);
+    // Reset block state
+    block->isTarget = false;
+    block->distance = -1.0f;
 
-      // Reset block state
-      block->isTarget = false;
-      block->distance = -1.0f;
-
-      if (isBreakable && distanceFromCurrentBlockToPlayer <= MAX_RANGE_PICKER) {
-        float intersectionPoint;
-        if (ray.intersectBox(block->minCorner, block->maxCorner,
-                             &intersectionPoint)) {
-          hitedABlock = 1;
-          if (tempTargetDistance == -1.0f ||
-              (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-            tempTargetBlock = block;
-            tempTargetDistance = intersectionPoint;
-            tempPlayerDistance = distanceFromCurrentBlockToPlayer;
-          }
-        }
-      }
-
-      if (block->isCollidable) {
-        float intersectionPoint;
-        if (revRay.intersectBox(block->minCorner, block->maxCorner,
-                                &intersectionPoint)) {
-          if (intersectionPoint < t_camera->hitDistance) {
-            t_camera->hitDistance = intersectionPoint * 0.95F;
-          }
-        }
+    float intersectionPoint;
+    if (ray.intersectBox(block->minCorner, block->maxCorner,
+                         &intersectionPoint)) {
+      hitedABlock = true;
+      if (tempTargetDistance == -1.0f ||
+          (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
+        tempTargetBlock = block;
+        tempTargetDistance = intersectionPoint;
+        tempPlayerDistance = distanceFromCurrentBlockToPlayer;
       }
     }
   }
@@ -1260,8 +1270,6 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player,
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
 
     const uint32_t _hitedBlockId = targetBlock->index;
-    // (targetBlock->offset.y * terrain->length * terrain->width) +
-    // (targetBlock->offset.z * terrain->width) + targetBlock->offset.x;
     if (_hitedBlockId != _lastTargetBlockId) breaking_time_pessed = 0;
   }
 }

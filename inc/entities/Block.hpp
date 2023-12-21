@@ -6,6 +6,7 @@
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/block_info_model.hpp"
+#include <3libs/bvh/bvh.h>
 
 #define FRONT_VISIBLE 0x100000
 #define BACK_VISIBLE 0x010000
@@ -22,6 +23,7 @@ using Tyra::Color;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::Vec4;
+using bvh::index_t;
 
 /** Block 3D object class  */
 
@@ -34,6 +36,7 @@ using Tyra::Vec4;
 class Block {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
+  index_t treeIndex;                // Index at aabb tree;
   u32 index;                        // Index at terrain;
   u32 offset;                       // Terrain offset;
   u16 chunkId;
