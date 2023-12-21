@@ -6,6 +6,10 @@
 #include <cstdint>
 #include <math.h>
 #include <cmath>
+#include <tyra>
+
+using Tyra::Ray;
+using Tyra::Vec4;
 
 namespace bvh {
 
@@ -15,16 +19,19 @@ static const index_t invalid_index = -1;
 
 struct aabb_t {
   // lower bound
-  float minx, miny;
+  float minx, miny, minz;
   // upper bound
-  float maxx, maxy;
+  float maxx, maxy, maxz;
 
   bool raycast(float x0, float y0, float x1, float y1) const;
+  bool raycast(const Vec4 origin, const Vec4 direction) const;
+  bool intersectLine(const Vec4 p1, const Vec4 p2) const;
 
   float area() const {
     const float dx = maxx - minx;
     const float dy = maxy - miny;
-    return dx * dy;
+    const float dz = maxz - minz;
+    return dx * dy * dz;
   }
 
   // return true if two aabbs overlap
@@ -33,6 +40,8 @@ struct aabb_t {
     if (a.minx > b.maxx) return false;
     if (a.maxy < b.miny) return false;
     if (a.miny > b.maxy) return false;
+    if (a.maxz < b.minz) return false;
+    if (a.minz > b.maxz) return false;
     return true;
   }
 
@@ -40,18 +49,20 @@ struct aabb_t {
   static aabb_t find_union(const aabb_t& a, const aabb_t& b) {
     return aabb_t{
         std::min<float>(a.minx, b.minx), std::min<float>(a.miny, b.miny),
-        std::max<float>(a.maxx, b.maxx), std::max<float>(a.maxy, b.maxy)};
+        std::min<float>(a.minz, b.minz), std::max<float>(a.maxx, b.maxx),
+        std::max<float>(a.maxy, b.maxy), std::max<float>(a.maxz, b.maxz)};
   }
 
   // grow the aabb evenly by an amount
   static aabb_t grow(const aabb_t& a, float amount) {
-    return aabb_t{a.minx - amount, a.miny - amount, a.maxx + amount,
-                  a.maxy + amount};
+    return aabb_t{a.minx - amount, a.miny - amount, a.minz - amount,
+                  a.maxx + amount, a.maxy + amount, a.maxz + amount};
   }
 
   // evaluate if this aabb contains another
   bool contains(const aabb_t& a) const {
-    return a.minx >= minx && a.miny >= miny && a.maxx <= maxx && a.maxy <= maxy;
+    return a.minx >= minx && a.miny >= miny && a.minz >= minz &&
+           a.maxx <= maxx && a.maxy <= maxy && a.maxz <= maxz;
   }
 };
 
@@ -125,8 +136,16 @@ struct bvh_t {
   // find all overlaps with a given node
   void find_overlaps(index_t node, std::vector<index_t>& overlaps);
 
-  // find all overlaps with a line segment
+  // find all overlaps with a line segment in 2D
   void raycast(float x0, float y0, float x1, float y1,
+               std::vector<index_t>& overlaps);
+
+  // find all overlaps with a line segment in 3D
+  void intersectLine(const Vec4 p1, const Vec4 p2,
+                     std::vector<index_t>& overlaps);
+
+  // find all overlaps with a ray
+  void raycast(const Vec4 origin, const Vec4 direction,
                std::vector<index_t>& overlaps);
 
   // return a quality metric for this tree

@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <3libs/bvh/bvh.h>
 
-
 // enable to validate the tree after every operation
 #define VALIDATE 0
 
@@ -9,7 +8,6 @@ namespace {
 // fixed size binary heap implementation
 template <typename type_t, size_t c_size>
 struct bin_heap_t {
-
   // index of the root node
   // to simplify the implementation, heap_ is base 1 (index 0 unused).
   static const size_t c_root = 1;
@@ -39,24 +37,16 @@ struct bin_heap_t {
   }
 
   // return true if the heap is empty
-  bool empty() const {
-    return index_ <= 1;
-  }
+  bool empty() const { return index_ <= 1; }
 
   // return true if the heap is full
-  bool full() const {
-    return index_ > c_size;
-  }
+  bool full() const { return index_ > c_size; }
 
   // number of nodes currently in the heap
-  size_t size() const {
-    return index_ - 1;
-  }
+  size_t size() const { return index_ - 1; }
 
   // wipe the heap back to its empty state
-  void clear() {
-    index_ = c_root;
-  }
+  void clear() { index_ = c_root; }
 
   // test that we have a valid binary heap
   void validate() const {
@@ -71,19 +61,15 @@ struct bin_heap_t {
     index_ -= num;
   }
 
-protected:
+ protected:
   std::array<type_t, c_size + 1> heap_;
   size_t index_;
 
   // check an index points to a valid node
-  bool valid(size_t i) const {
-    return i < index_;
-  }
+  bool valid(size_t i) const { return i < index_; }
 
   // compare two nodes
-  static bool inline compare(const type_t &a, const type_t &b) {
-    return a < b;
-  }
+  static bool inline compare(const type_t& a, const type_t& b) { return a < b; }
 
   // bubble an item down to its correct place in the tree
   inline void bubble_down(size_t i) {
@@ -94,10 +80,9 @@ protected:
       const size_t y = child(i, 1);
       // select best child
       const bool select = valid(y) && compare(heap_[y], heap_[x]);
-      type_t &best = select ? heap_[y] : heap_[x];
+      type_t& best = select ? heap_[y] : heap_[x];
       // quit if children are not better
-      if (!compare(best, heap_[i]))
-        break;
+      if (!compare(best, heap_[i])) break;
       // swap current and child
       std::swap(best, heap_[i]);
       // repeat from child node
@@ -111,17 +96,14 @@ protected:
     while (i > c_root) {
       const size_t j = parent(i);
       // if node is better then parent
-      if (!compare(heap_[i], heap_[j]))
-        break;
+      if (!compare(heap_[i], heap_[j])) break;
       std::swap(heap_[i], heap_[j]);
       i = j;
     }
   }
 
   // given an index, return the parent index
-  static constexpr inline size_t parent(size_t index) {
-    return index / 2;
-  }
+  static constexpr inline size_t parent(size_t index) { return index / 2; }
 
   // given an index, return one of the two child nodes (branch 0/1)
   static constexpr inline size_t child(size_t index, uint32_t branch) {
@@ -130,8 +112,8 @@ protected:
   }
 };
 
-// line segment aabb intersection test
-bool raycast(float ax, float ay, float bx, float by, const bvh::aabb_t &aabb) {
+// 2D line segment aabb intersection test
+bool raycast(float ax, float ay, float bx, float by, const bvh::aabb_t& aabb) {
   static const float EPSILON = 0.0001f;
   const float dx = (bx - ax) * .5f;
   const float dy = (by - ay) * .5f;
@@ -141,12 +123,47 @@ bool raycast(float ax, float ay, float bx, float by, const bvh::aabb_t &aabb) {
   const float cy = ay + dy - (aabb.miny + aabb.maxy) * .5f;
   const float adx = fabsf(dx);
   const float ady = fabsf(dy);
+
   if (fabsf(cx) > (ex + adx)) return false;
   if (fabsf(cy) > (ey + ady)) return false;
   return (fabsf(dx * cy - dy * cx) <= (ex * ady + ey * adx + EPSILON));
 }
 
-}  // namespace {}
+// 3D line segment aabb intersection test
+bool intersectLine(const Vec4 p1, const Vec4 p2, const bvh::aabb_t& aabb) {
+  static const float EPSILON = 0.0001f;
+  const Vec4 min = Vec4(aabb.minx, aabb.miny, aabb.minz);
+  const Vec4 max = Vec4(aabb.maxx, aabb.maxy, aabb.maxz);
+  const Vec4 d = (p2 - p1) * 0.5f;
+  const Vec4 e = (max - min) * 0.5f;
+  const Vec4 c = p1 + d - (min + max) * 0.5f;
+  const Vec4 ad = Vec4(fabsf(d.x), fabsf(d.y), fabsf(d.z));
+
+  // Returns same vector with all components positive
+  if (fabsf(c.x) > e.x + ad.x) return false;
+  if (fabsf(c.y) > e.y + ad.y) return false;
+  if (fabsf(c.z) > e.z + ad.z) return false;
+
+  if (fabsf(d.y * c.z - d.z * c.y) > e.y * ad.z + e.z * ad.y + EPSILON)
+    return false;
+  if (fabsf(d.z * c.x - d.x * c.z) > e.z * ad.x + e.x * ad.z + EPSILON)
+    return false;
+  if (fabsf(d.x * c.y - d.y * c.x) > e.x * ad.y + e.y * ad.x + EPSILON)
+    return false;
+  return true;
+}
+
+// line segment aabb intersection test
+bool raycast(const Vec4 origin, const Vec4 direction, const bvh::aabb_t& aabb) {
+  Ray ray = Ray(origin, direction);
+
+  const Vec4 min = Vec4(aabb.minx, aabb.miny, aabb.minz);
+  const Vec4 max = Vec4(aabb.maxx, aabb.maxy, aabb.maxz);
+
+  return ray.intersectBox(min, max);
+}
+
+}  // namespace
 
 namespace bvh {
 
@@ -154,11 +171,15 @@ bool aabb_t::raycast(float x0, float y0, float x1, float y1) const {
   return ::raycast(x0, y0, x1, y1, *this);
 }
 
-bvh_t::bvh_t()
-  : growth(16.f)
-  , _free_list(invalid_index)
-  , _root(invalid_index)
-{
+bool aabb_t::raycast(const Vec4 origin, const Vec4 direction) const {
+  return ::raycast(origin, direction, *this);
+}
+
+bool aabb_t::intersectLine(const Vec4 p1, const Vec4 p2) const {
+  return ::intersectLine(p1, p2, *this);
+}
+
+bvh_t::bvh_t() : growth(16.f), _free_list(invalid_index), _root(invalid_index) {
   clear();
 }
 
@@ -167,23 +188,21 @@ void bvh_t::clear() {
   _root = invalid_index;
 }
 
-bool bvh_t::_is_leaf(index_t index) const {
-  return get(index).is_leaf();
-}
+bool bvh_t::_is_leaf(index_t index) const { return get(index).is_leaf(); }
 
 // return a quality metric for this subtree
 float bvh_t::_quality(index_t n) const {
   if (n == invalid_index) {
     return 0.f;
   }
-  const node_t &node = _get(n);
+  const node_t& node = _get(n);
   if (node.is_leaf()) {
     return 0.f;
   }
-  // cost metric is the sum of the surface area of all interior nodes (non root or leaf)
-  return ((n == _root) ? 0.f : node.aabb.area()) +
-    _quality(node.child[0]) +
-    _quality(node.child[1]);
+  // cost metric is the sum of the surface area of all interior nodes (non root
+  // or leaf)
+  return ((n == _root) ? 0.f : node.aabb.area()) + _quality(node.child[0]) +
+         _quality(node.child[1]);
 }
 
 index_t bvh_t::_insert_into_leaf(index_t leaf, index_t node) {
@@ -203,14 +222,14 @@ index_t bvh_t::_insert_into_leaf(index_t leaf, index_t node) {
   return inter;
 }
 
-index_t bvh_t::insert(const aabb_t &aabb, void *user_data) {
+index_t bvh_t::insert(const aabb_t& aabb, void* user_data) {
   // create the new node
   index_t index = _new_node();
   assert(index != invalid_index);
-  auto &node = _get(index);
+  auto& node = _get(index);
   // grow the aabb by a factor
   node.aabb = aabb_t::grow(aabb, growth);
-  // 
+  //
   node.user_data = user_data;
   node.parent = invalid_index;
   // mark that this is a leaf
@@ -237,28 +256,25 @@ index_t bvh_t::insert(const aabb_t &aabb, void *user_data) {
 void bvh_t::_recalc_aabbs(index_t i) {
   // walk from leaf to root recalculating aabbs
   while (i != invalid_index) {
-    node_t &y = _get(i);
+    node_t& y = _get(i);
     y.aabb = aabb_t::find_union(_get(y.child[0]).aabb, _get(y.child[1]).aabb);
     _optimize(y);
     i = y.parent;
   }
 }
 
-index_t bvh_t::_find_best_sibling(const aabb_t &aabb) const {
-
+index_t bvh_t::_find_best_sibling(const aabb_t& aabb) const {
   struct search_t {
     index_t index;
     float cost;
 
-    bool operator < (const search_t &rhs) const {
-      return cost < rhs.cost;
-    }
+    bool operator<(const search_t& rhs) const { return cost < rhs.cost; }
   };
   // XXX: warning, fixed size here
   bin_heap_t<search_t, 1024> pqueue;
 
   if (_root != invalid_index) {
-    pqueue.push(search_t{ _root, 0.f });
+    pqueue.push(search_t{_root, 0.f});
   }
 
   float best_cost = INFINITY;
@@ -267,7 +283,7 @@ index_t bvh_t::_find_best_sibling(const aabb_t &aabb) const {
   while (!pqueue.empty()) {
     // pop one node (lowest cost so far)
     const search_t s = pqueue.pop();
-    const node_t &n = _get(s.index);
+    const node_t& n = _get(s.index);
     // find the cost for inserting into this node
     const aabb_t uni = aabb_t::find_union(aabb, n.aabb);
     const float growth = uni.area() - n.aabb.area();
@@ -280,12 +296,11 @@ index_t bvh_t::_find_best_sibling(const aabb_t &aabb) const {
     if (n.is_leaf()) {
       best_cost = cost;
       best_index = s.index;
-    }
-    else {
+    } else {
       assert(n.child[0] != invalid_index);
       assert(n.child[1] != invalid_index);
-      pqueue.push(search_t{ n.child[0], cost });
-      pqueue.push(search_t{ n.child[1], cost });
+      pqueue.push(search_t{n.child[0], cost});
+      pqueue.push(search_t{n.child[1], cost});
     }
   }
   // return the best leaf we cound find
@@ -293,23 +308,22 @@ index_t bvh_t::_find_best_sibling(const aabb_t &aabb) const {
 }
 
 void bvh_t::_insert(index_t node) {
-
   // note: this insert phase assumes that there are at least two nodes already
   //       in the tree and thus _root is a non leaf node.
 
   // find the best sibling for node
-  const aabb_t &aabb = _get(node).aabb;
+  const aabb_t& aabb = _get(node).aabb;
   index_t sibi = _find_best_sibling(aabb);
   assert(sibi != invalid_index);
   // once the best leaf has been found we come to the insertion phase
-  const node_t &sib = _get(sibi);
+  const node_t& sib = _get(sibi);
   assert(sib.is_leaf());
   const index_t parent = sib.parent;
   const index_t inter = _insert_into_leaf(sibi, node);
   _get(inter).parent = parent;
   // fix up parent child relationship
   if (parent != invalid_index) {
-    node_t &p = _get(parent);
+    node_t& p = _get(parent);
     p.replace_child(sibi, inter);
   }
   // recalculate aabb and optimize on the way up
@@ -319,7 +333,7 @@ void bvh_t::_insert(index_t node) {
 void bvh_t::remove(index_t index) {
   assert(index != invalid_index);
   assert(_is_leaf(index));
-  auto &node = _get(index);
+  auto& node = _get(index);
   _unlink(index);
   node.child[0] = _free_list;
   node.child[1] = invalid_index;
@@ -329,10 +343,10 @@ void bvh_t::remove(index_t index) {
 #endif
 }
 
-void bvh_t::move(index_t index, const aabb_t &aabb) {
+void bvh_t::move(index_t index, const aabb_t& aabb) {
   assert(index != invalid_index);
   assert(_is_leaf(index));
-  auto &node = _get(index);
+  auto& node = _get(index);
   // check fat aabb against slim new aabb for hysteresis on our updates
   if (node.aabb.contains(aabb)) {
     // this is okay and we can early exit
@@ -380,7 +394,7 @@ index_t bvh_t::_new_node() {
 void bvh_t::_unlink(index_t index) {
   // assume we only ever unlink a leaf
   assert(_is_leaf(index));
-  auto &node = _get(index);
+  auto& node = _get(index);
 
   // special case root node
   if (index == _root) {
@@ -390,10 +404,9 @@ void bvh_t::_unlink(index_t index) {
     return;
   }
 
-  auto &p0 = _get(node.parent);
+  auto& p0 = _get(node.parent);
 
   if (p0.parent == invalid_index) {
-
     // case 2 (p0 is root)
     //       P0
     //  node     ?
@@ -409,7 +422,7 @@ void bvh_t::_unlink(index_t index) {
     return;
   }
 
-  auto &p1 = _get(p0.parent);
+  auto& p1 = _get(p0.parent);
 
   // case 3 (p0 is not root)
   //              p1
@@ -445,7 +458,7 @@ void bvh_t::_unlink(index_t index) {
 
 void bvh_t::_touched_aabb(index_t i) {
   while (i != invalid_index) {
-    node_t &node = _get(i);
+    node_t& node = _get(i);
     assert(!node.is_leaf());
     assert(node.child[0] != invalid_index);
     assert(node.child[1] != invalid_index);
@@ -456,7 +469,7 @@ void bvh_t::_touched_aabb(index_t i) {
 
 void bvh_t::_free_node(index_t index) {
   assert(index != invalid_index);
-  auto &node = _get(index);
+  auto& node = _get(index);
   node.child[0] = _free_list;
   _free_list = index;
 }
@@ -466,24 +479,22 @@ void bvh_t::_validate(index_t index) {
     return;
   }
 
-  auto &node = _get(index);
+  auto& node = _get(index);
 
   if (index == _root) {
     assert(_get(index).parent == invalid_index);
   }
   // check parents children
   if (node.parent != invalid_index) {
-    auto &parent = _get(node.parent);
+    auto& parent = _get(node.parent);
     assert(parent.child[0] != parent.child[1]);
-    assert(parent.child[0] == index ||
-           parent.child[1] == index);
+    assert(parent.child[0] == index || parent.child[1] == index);
   }
   if (_is_leaf(index)) {
     // leaves should have no children
     assert(node.child[0] == invalid_index);
     assert(node.child[1] == invalid_index);
-  }
-  else {
+  } else {
     // interior nodes should have two children
     assert(node.child[0] != invalid_index);
     assert(node.child[1] != invalid_index);
@@ -501,8 +512,7 @@ void bvh_t::_validate(index_t index) {
   }
 }
 
-void bvh_t::_optimize(node_t &node) {
-
+void bvh_t::_optimize(node_t& node) {
 #if VALIDATE
   const float before = quality();
 #endif
@@ -520,15 +530,14 @@ void bvh_t::_optimize(node_t &node) {
   // same as above but with c0 and c1 roles swapped
 
   for (int i = 0; i < 2; ++i) {
-
     // gen 1
     const auto c0i = node.child[0];
     const auto c1i = node.child[1];
     if (c0i == invalid_index || c1i == invalid_index) {
       return;
     }
-    auto &c0 = _get(c0i);
-    auto &c1 = _get(c1i);
+    auto& c0 = _get(c0i);
+    auto& c1 = _get(c1i);
 
     // gen 2
     const auto x0i = c0.child[0];
@@ -538,8 +547,8 @@ void bvh_t::_optimize(node_t &node) {
       std::swap(node.child[0], node.child[1]);
       continue;
     }
-    auto &x0 = _get(x0i);
-    auto &x1 = _get(x1i);
+    auto& x0 = _get(x0i);
+    auto& x1 = _get(x1i);
 
     // note: this heuristic only looks at minimizing the area of c0
     //       which is all that is affected by these rotations
@@ -562,7 +571,7 @@ void bvh_t::_optimize(node_t &node) {
         //
         c1.parent = c0i;
         x0.parent = c0.parent;
-        std::swap(c0.child[0], node.child[1]); // x0 and c1
+        std::swap(c0.child[0], node.child[1]);  // x0 and c1
         c0.aabb = a1;
         assert(c0.aabb.contains(c1.aabb));
         assert(c0.aabb.contains(x1.aabb));
@@ -576,7 +585,7 @@ void bvh_t::_optimize(node_t &node) {
         //
         c1.parent = c0i;
         x1.parent = c0.parent;
-        std::swap(c0.child[1], node.child[1]); // x1 and c1
+        std::swap(c0.child[1], node.child[1]);  // x1 and c1
         c0.aabb = a2;
         assert(c0.aabb.contains(x0.aabb));
         assert(c0.aabb.contains(c1.aabb));
@@ -592,7 +601,7 @@ void bvh_t::_optimize(node_t &node) {
 #endif
 }
 
-void bvh_t::find_overlaps(const aabb_t &bb, std::vector<index_t> &overlaps) {
+void bvh_t::find_overlaps(const aabb_t& bb, std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -602,14 +611,13 @@ void bvh_t::find_overlaps(const aabb_t &bb, std::vector<index_t> &overlaps) {
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t &n = _get(ni);
+    const node_t& n = _get(ni);
 
     // if these aabbs overlap
     if (aabb_t::overlaps(bb, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
-      }
-      else {
+      } else {
         assert(n.child[0] != invalid_index);
         assert(n.child[1] != invalid_index);
         stack.back() = n.child[0];
@@ -622,13 +630,13 @@ void bvh_t::find_overlaps(const aabb_t &bb, std::vector<index_t> &overlaps) {
   }
 }
 
-void bvh_t::find_overlaps(index_t node, std::vector<index_t> &overlaps) {
-  const node_t &n = _get(node);
+void bvh_t::find_overlaps(index_t node, std::vector<index_t>& overlaps) {
+  const node_t& n = _get(node);
   find_overlaps(n.aabb, overlaps);
 }
 
 void bvh_t::raycast(float x0, float y0, float x1, float y1,
-                    std::vector<index_t> &overlaps) {
+                    std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -638,13 +646,12 @@ void bvh_t::raycast(float x0, float y0, float x1, float y1,
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t &n = _get(ni);
+    const node_t& n = _get(ni);
     // if the ray and aabb overlap
     if (::raycast(x0, y0, x1, y1, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
-      }
-      else {
+      } else {
         assert(n.child[0] != invalid_index);
         assert(n.child[1] != invalid_index);
         stack.back() = n.child[0];
@@ -657,4 +664,62 @@ void bvh_t::raycast(float x0, float y0, float x1, float y1,
   }
 }
 
-} // namespace bvh
+void bvh_t::raycast(const Vec4 origin, const Vec4 direction,
+                    std::vector<index_t>& overlaps) {
+  std::vector<index_t> stack;
+  stack.reserve(128);
+  if (_root != invalid_index) {
+    stack.push_back(_root);
+  }
+  while (!stack.empty()) {
+    // pop one node
+    const index_t ni = stack.back();
+    assert(ni != invalid_index);
+    const node_t& n = _get(ni);
+    // if the ray and aabb overlap
+    if (::raycast(origin, direction, n.aabb)) {
+      if (n.is_leaf()) {
+        overlaps.push_back(ni);
+      } else {
+        assert(n.child[0] != invalid_index);
+        assert(n.child[1] != invalid_index);
+        stack.back() = n.child[0];
+        stack.push_back(n.child[1]);
+        continue;
+      }
+    }
+    // pop node
+    stack.resize(stack.size() - 1);
+  }
+}
+
+void bvh_t::intersectLine(const Vec4 p1, const Vec4 p2,
+                          std::vector<index_t>& overlaps) {
+  std::vector<index_t> stack;
+  stack.reserve(128);
+  if (_root != invalid_index) {
+    stack.push_back(_root);
+  }
+  while (!stack.empty()) {
+    // pop one node
+    const index_t ni = stack.back();
+    assert(ni != invalid_index);
+    const node_t& n = _get(ni);
+    // if the ray and aabb overlap
+    if (::intersectLine(p1, p2, n.aabb)) {
+      if (n.is_leaf()) {
+        overlaps.push_back(ni);
+      } else {
+        assert(n.child[0] != invalid_index);
+        assert(n.child[1] != invalid_index);
+        stack.back() = n.child[0];
+        stack.push_back(n.child[1]);
+        continue;
+      }
+    }
+    // pop node
+    stack.resize(stack.size() - 1);
+  }
+}
+
+}  // namespace bvh
