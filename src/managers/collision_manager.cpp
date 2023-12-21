@@ -1,5 +1,9 @@
 #include "managers/collision_manager.hpp"
 
-CollisionManager::CollisionManager() {}
+/**
+ * @brief Definition of global AABBTree
+ *
+ */
+bvh_t g_AABBTree = bvh_t();
 
-CollisionManager::~CollisionManager() {}
+void CollisionManager_unloadTree() { g_AABBTree.clear(); };
