@@ -99,7 +99,7 @@ struct bvh_t {
   void clear();
 
   // create a new node in the tree
-  index_t insert(const aabb_t& aabb, void* user_data);
+  index_t insert(aabb_t aabb, void* user_data);
 
   // remove a node from the tree
   void remove(index_t index);

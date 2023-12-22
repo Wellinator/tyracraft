@@ -223,7 +223,7 @@ index_t bvh_t::_insert_into_leaf(index_t leaf, index_t node) {
   return inter;
 }
 
-index_t bvh_t::insert(const aabb_t& aabb, void* user_data) {
+index_t bvh_t::insert(aabb_t aabb, void* user_data) {
   // create the new node
   index_t index = _new_node();
   assert(index != invalid_index);
