@@ -626,9 +626,6 @@ void World::removeBlock(Block* blockToRemove) {
   SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
                      offsetToRemove.z, (u8)LiquidLevel::Percent0);
 
-  // Generate amount of particles right begore block gets destroyed
-  particlesManager.createBlockParticleBatch(blockToRemove, 24);
-
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -641,6 +638,9 @@ void World::removeBlock(Block* blockToRemove) {
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   playDestroyBlockSound(blockToRemove->type);
+
+  // Generate amount of particles right begore block gets destroyed
+  particlesManager.createBlockParticleBatch(blockToRemove, 24);
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
