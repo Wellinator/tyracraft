@@ -32,16 +32,11 @@ void ChunckManager::clearAllChunks() {
 void ChunckManager::update(const Plane* frustumPlanes,
                            const Vec4& currentPlayerPos) {
   visibleChunks.clear();
-  nearByChunks.clear();
 
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
     if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
       chuncks[i]->update(frustumPlanes);
-
-      if (chuncks[i]->getDistanceFromPlayerInChunks() <= 2) {
-        nearByChunks.emplace_back(chuncks[i]);
-      }
 
       if (chuncks[i]->state == ChunkState::Loaded &&
           chuncks[i]->isDrawDataLoaded()) {
@@ -110,8 +105,6 @@ u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
 std::vector<Chunck*>* ChunckManager::getVisibleChunks() {
   return &visibleChunks;
 }
-
-std::vector<Chunck*>* ChunckManager::getNearByChunks() { return &nearByChunks; }
 
 void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),
