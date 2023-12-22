@@ -138,7 +138,11 @@ void StateLoadingGame::initWorld() {
   this->stateGamePlay->world->generate();
   this->stateGamePlay->world->generateLight();
   this->stateGamePlay->world->propagateLiquids();
+
+  TYRA_LOG("Generating spawn area...");
   this->stateGamePlay->world->generateSpawnArea();
+
+  TYRA_LOG("Loading spawn area...");
   this->stateGamePlay->world->loadSpawnArea();
 
   setPercent(90.0F);
@@ -147,14 +151,22 @@ void StateLoadingGame::initWorld() {
 }
 
 void StateLoadingGame::initPlayer() {
+  TYRA_LOG("Initiating player...");
+
+  TYRA_LOG("Setting player position...");
   this->stateGamePlay->player->mesh->getPosition()->set(
       this->stateGamePlay->world->getGlobalSpawnArea());
+
+  TYRA_LOG("Setting player spawn area...");
   this->stateGamePlay->player->spawnArea.set(
       this->stateGamePlay->world->getLocalSpawnArea());
   this->stateGamePlay->context->t_camera->setFirstPerson();
+
   setPercent(100.0F);
+
   this->shouldInitPlayer = 0;
-  TYRA_LOG("initPlayer");
+
+  TYRA_LOG("Player initiated!");
 }
 
 void StateLoadingGame::nextState() {
