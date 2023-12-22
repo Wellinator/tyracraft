@@ -149,7 +149,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
   }
 
-  updateTargetBlock(t_camera, t_player, chunckManager.getNearByChunks());
+  updateTargetBlock(t_camera, t_player);
 };
 
 void World::render() {
@@ -1213,8 +1213,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   t_chunck->freeUnusedMemory();
 }
 
-void World::updateTargetBlock(Camera* t_camera, Player* t_player,
-                              std::vector<Chunck*>* chuncks) {
+void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
   const Vec4 baseOrigin =
       *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
   bool hitedABlock = false;
