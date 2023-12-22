@@ -267,6 +267,18 @@ enum class PlacementDirection {
   Back = 5,
 };
 
+// Entities types based on https://minecraft.fandom.com/wiki/Entity
+enum class EntityType {
+  Block,
+  Falling_Block,
+  Player,
+  Mob,
+  Item,
+  Experience_Orb,
+  Arrow,
+  Painting
+};
+
 // Two bits for orientation
 #define LIQUID_ORIENTATION_MASK 0b00000011
 

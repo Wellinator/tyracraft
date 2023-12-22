@@ -1,5 +1,7 @@
 
 #include "entities/World.hpp"
+#include "entities/entity.hpp"
+#include "3libs/bvh/bvh.h"
 #include "renderer/models/color.hpp"
 #include "math/m4x4.hpp"
 #include "managers/block/vertex_block_data.hpp"
@@ -15,6 +17,7 @@
 
 using bvh::aabb_t;
 using bvh::bvh_t;
+using bvh::index_t;
 using bvh::node_t;
 using Tyra::Color;
 using Tyra::M4x4;
@@ -165,6 +168,7 @@ void World::render() {
 };
 
 void World::buildInitialPosition() {
+  TYRA_LOG("building initial position...");
   Chunck* initialChunck = chunckManager.getChunckByPosition(worldSpawnArea);
   if (initialChunck != nullptr) {
     initialChunck->clear();
@@ -1093,7 +1097,7 @@ void World::buildChunk(Chunck* t_chunck) {
                 blockAABB.maxx = block->maxCorner.x;
                 blockAABB.maxy = block->maxCorner.y;
                 blockAABB.maxz = block->maxCorner.z;
-                block->treeIndex = g_AABBTree.insert(blockAABB, block);
+                block->tree_index = g_AABBTree.insert(blockAABB, block);
               }
 
               delete rawBBox;
@@ -1176,7 +1180,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
             blockAABB.maxx = block->maxCorner.x;
             blockAABB.maxy = block->maxCorner.y;
             blockAABB.maxz = block->maxCorner.z;
-            block->treeIndex = g_AABBTree.insert(blockAABB, block);
+            block->tree_index = g_AABBTree.insert(blockAABB, block);
           }
 
           delete rawBBox;
@@ -1237,27 +1241,27 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
   g_AABBTree.intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
 
   for (u16 b = 0; b < ni.size(); b++) {
-    Block* block = (Block*)g_AABBTree.user_data(ni[b]);
+    Entity* entity = (Entity*)g_AABBTree.user_data(ni[b]);
+    if (entity->entity_type == EntityType::Block) {
+      Block* block = (Block*)entity;
 
-    // Debug stuff; Render the bboxes
-    // t_renderer->renderer3D.utility.drawBBox(*block->bbox, Color(128, 0, 0));
+      float distanceFromCurrentBlockToPlayer =
+          baseOrigin.distanceTo(entity->position);
 
-    float distanceFromCurrentBlockToPlayer =
-        baseOrigin.distanceTo(block->position);
+      // Reset block state
+      block->isTarget = false;
+      block->distance = -1.0f;
 
-    // Reset block state
-    block->isTarget = false;
-    block->distance = -1.0f;
-
-    float intersectionPoint;
-    if (ray.intersectBox(block->minCorner, block->maxCorner,
-                         &intersectionPoint)) {
-      hitedABlock = true;
-      if (tempTargetDistance == -1.0f ||
-          (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-        tempTargetBlock = block;
-        tempTargetDistance = intersectionPoint;
-        tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+      float intersectionPoint;
+      if (ray.intersectBox(entity->minCorner, entity->maxCorner,
+                           &intersectionPoint)) {
+        hitedABlock = true;
+        if (tempTargetDistance == -1.0f ||
+            (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
+          tempTargetBlock = block;
+          tempTargetDistance = intersectionPoint;
+          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+        }
       }
     }
   }

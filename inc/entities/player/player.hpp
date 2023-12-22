@@ -13,6 +13,7 @@
 #include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/item.hpp"
+#include "entities/entity.hpp"
 #include <tamtypes.h>
 #include "managers/items_repository.hpp"
 #include "managers/block_manager.hpp"
@@ -50,7 +51,7 @@ using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Player 3D object class  */
-class Player {
+class Player : public Entity {
  public:
   Player(Renderer* t_renderer, SoundManager* t_soundManager,
          BlockManager* t_blockManager, ItemRepository* t_itemRepository,
@@ -81,8 +82,8 @@ class Player {
 
   // Phisycs variables
   Ray ray;
-  Block* currentBottomBlock = nullptr;
-  Block* currentUpperBlock = nullptr;
+  Entity* underEntity = nullptr;
+  Entity* overEntity = nullptr;
 
   // Inventory
   u8 inventoryHasChanged = 1;
@@ -90,8 +91,9 @@ class Player {
   ItemId getSelectedInventoryItemType();
   u8 getSelectedInventorySlot();
   inline ItemId* getInventoryData() { return inventory; };
+
   inline BBox getHitBox() const {
-    return hitBox->getTransformed(mesh->translation);
+    return bbox->getTransformed(mesh->translation);
   };
 
   DynPipOptions modelDynpipOptions;
@@ -147,14 +149,12 @@ class Player {
 
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
-  Vec4 velocity = Vec4(0.0f);
-  BBox* hitBox;
   Texture* playerTexture;
 
   void loadPlayerTexture();
   void loadMesh();
   void loadArmMesh();
-  void calcStaticBBox();
+  void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   Vec4 getNextVrticalPosition(const float& deltaTime);
   void updateGravity(const Vec4 nextVerticalPosition);

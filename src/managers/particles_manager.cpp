@@ -7,6 +7,7 @@
 using bvh::aabb_t;
 using bvh::bvh_t;
 using bvh::node_t;
+using bvh::index_t;
 
 ParticlesManager::ParticlesManager() {}
 
@@ -103,11 +104,11 @@ void ParticlesManager::updateParticles(const float deltaTime,
         Ray ray = Ray(particles[i]._position, particles[i]._direction);
 
         for (u16 i = 0; i < ni.size(); i++) {
-          Block* block = (Block*)g_AABBTree.user_data(ni[i]);
+          Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
           float hitDistance;
 
           // Narrow Phase
-          if (ray.intersectBox(block->minCorner, block->maxCorner,
+          if (ray.intersectBox(entity->minCorner, entity->maxCorner,
                                &hitDistance) &&
               hitDistance < maxCollidableDistance) {
             if (closestHitDistance == -1.0F ||
@@ -121,11 +122,7 @@ void ParticlesManager::updateParticles(const float deltaTime,
 
         if (willCollide) {
           particles[i]._position.set(finalHitPosition);
-
-          // reverse XYZ direction
           particles[i]._direction = -particles[i]._direction;
-          // Vec4(-particles[i]._direction.x, particles[i]._direction.y,
-          //      -particles[i]._direction.z);
         } else {
           particles[i]._position = nextPosition;
         }

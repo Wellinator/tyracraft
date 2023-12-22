@@ -2,9 +2,11 @@
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
+#include "3libs/bvh/bvh.h"
 
 using bvh::aabb_t;
 using bvh::bvh_t;
+using bvh::index_t;
 using bvh::node_t;
 using Tyra::Renderer3D;
 
@@ -14,7 +16,8 @@ using Tyra::Renderer3D;
 
 Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
                BlockManager* t_blockManager, ItemRepository* t_itemRepository,
-               WorldLightModel* t_worldLightModel) {
+               WorldLightModel* t_worldLightModel)
+    : Entity(EntityType::Player) {
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
   this->t_blockManager = t_blockManager;
@@ -24,7 +27,7 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   loadPlayerTexture();
   loadMesh();
   loadArmMesh();
-  calcStaticBBox();
+  loadStaticBBox();
 
   isWalkingAnimationSet = false;
   isBreakingAnimationSet = false;
@@ -53,12 +56,15 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
 }
 
 Player::~Player() {
-  currentBottomBlock = nullptr;
-  currentUpperBlock = nullptr;
+  underEntity = nullptr;
+  overEntity = nullptr;
 
-  delete hitBox;
+  g_AABBTree.remove(tree_index);
+
+  delete bbox;
   delete handledItem;
   delete this->renderPip;
+
   t_renderer->getTextureRepository().free(playerTexture);
   walkSequence.clear();
   walkSequence.shrink_to_fit();
@@ -101,8 +107,9 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
         if (lastTimePlayedWalkSfx > 0.35) {
           if (isOnWater() || isUnderWater()) {
             playSwimSfx();
-          } else if (isOnGround && currentBottomBlock) {
-            playWalkSfx(currentBottomBlock->type);
+          } else if (isOnGround && underEntity &&
+                     underEntity->entity_type == EntityType::Block) {
+            playWalkSfx(((Block*)underEntity)->type);
           }
 
           setWalkingAnimation();
@@ -138,21 +145,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   animate(t_camera->getCamType());
 }
 
-void Player::render() {
-  renderPip->render(t_renderer);
-
-  // // Debug content
-  // if (currentUpperBlock) {
-  //   t_renderer->renderer3D.utility.drawBBox(*currentUpperBlock->bbox,
-  //                                           Color(200, 0, 0));
-  // }
-  // if (currentBottomBlock) {
-  //   t_renderer->renderer3D.utility.drawBBox(*currentBottomBlock->bbox,
-  //                                           Color(0, 200, 0));
-  // }
-
-  // t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(200, 200, 0));
-}
+void Player::render() { renderPip->render(t_renderer); }
 
 Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
                              const Vec4& camDir) {
@@ -203,7 +196,7 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
-  if (newPosition.y + hitBox->getHeight() > worldMaxHeight ||
+  if (newPosition.y + bbox->getHeight() > worldMaxHeight ||
       newPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
@@ -212,7 +205,7 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
     return;
   }
 
-  const float playerHeight = std::abs(hitBox->getHeight());
+  const float playerHeight = std::abs(bbox->getHeight());
   const float heightLimit = terrainHeight.maxHeight - playerHeight;
 
   if (newPosition.y < terrainHeight.minHeight) {
@@ -246,7 +239,7 @@ void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
   Vec4 newYPosition = *mesh->getPosition() + (direction * deltaTime);
-  const float playerHeight = std::abs(hitBox->getHeight());
+  const float playerHeight = std::abs(bbox->getHeight());
 
   // Is player inside world bbox?
   if (newYPosition.y + playerHeight >=
@@ -294,18 +287,18 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
   g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
 
   for (u16 i = 0; i < ni.size(); i++) {
-    Block* block = (Block*)g_AABBTree.user_data(ni[i]);
+    Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
 
-    if (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
-        playerBB.getTopFace().axisPosition < block->minCorner.y)
+    if (playerBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
+        playerBB.getTopFace().axisPosition < entity->minCorner.y)
       continue;
 
     const Ray ray = Ray(rayOrigin, rayDir);
 
     Vec4 tempInflatedMin;
     Vec4 tempInflatedMax;
-    Utils::GetMinkowskiSum(playerMin, playerMax, block->minCorner,
-                           block->maxCorner, &tempInflatedMin,
+    Utils::GetMinkowskiSum(playerMin, playerMax, entity->minCorner,
+                           entity->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
 
     if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
@@ -353,37 +346,35 @@ void Player::updateTerrainHeightAtPlayerPosition(
   playerBB.getMinMax(&minPlayer, &maxPlayer);
 
   terrainHeight.reset();
-  currentBottomBlock = nullptr;
-  currentUpperBlock = nullptr;
+  underEntity = nullptr;
+  overEntity = nullptr;
 
   // Prepate the raycast
   const Vec4 offset = Vec4(0, 40, 0);
   const Vec4 segmentStart = maxPlayer + offset;
   const Vec4 segmentEnd = nextVrticalPosition - offset;
 
-  std::vector<index_t> ni;
+  std::vector<int32_t> ni;
   g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
 
   for (u16 i = 0; i < ni.size(); i++) {
-    Block* block = (Block*)g_AABBTree.user_data(ni[i]);
+    Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
 
     // is under or above block
-    if (minPlayer.x <= block->maxCorner.x &&
-        maxPlayer.x >= block->minCorner.x &&
-        minPlayer.z <= block->maxCorner.z &&
-        maxPlayer.z >= block->minCorner.z) {
-      const float underBlockHeight = block->maxCorner.y;
-      if (minPlayer.y >= underBlockHeight &&
-          underBlockHeight > terrainHeight.minHeight) {
-        terrainHeight.minHeight = underBlockHeight;
-        currentBottomBlock = block;
+    if (minPlayer.x <= entity->maxCorner.x &&
+        maxPlayer.x >= entity->minCorner.x &&
+        minPlayer.z <= entity->maxCorner.z &&
+        maxPlayer.z >= entity->minCorner.z) {
+      const float minHeight = entity->maxCorner.y;
+      if (minPlayer.y >= minHeight && minHeight > terrainHeight.minHeight) {
+        terrainHeight.minHeight = minHeight;
+        underEntity = entity;
       }
 
-      const float overBlockHeight = block->minCorner.y;
-      if (maxPlayer.y < overBlockHeight &&
-          overBlockHeight < terrainHeight.maxHeight) {
-        terrainHeight.maxHeight = overBlockHeight;
-        currentUpperBlock = block;
+      const float maxHeight = entity->minCorner.y;
+      if (maxPlayer.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
+        terrainHeight.maxHeight = maxHeight;
+        overEntity = entity;
       }
     }
   }
@@ -488,7 +479,7 @@ void Player::loadArmMesh() {
       Tyra::PipelineTransformationType::TyraMP;
 }
 
-void Player::calcStaticBBox() {
+void Player::loadStaticBBox() {
   const float width = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
   const float depth = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
   const float height = DUBLE_BLOCK_SIZE * 1.8F;
@@ -496,30 +487,25 @@ void Player::calcStaticBBox() {
   Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);
 
-  const u32 count = 8;
-  Vec4 vertices[count] = {Vec4(minCorner),
-                          Vec4(maxCorner.x, minCorner.y, minCorner.z),
-                          Vec4(minCorner.x, maxCorner.y, minCorner.z),
-                          Vec4(minCorner.x, minCorner.y, maxCorner.z),
-                          Vec4(maxCorner),
-                          Vec4(minCorner.x, maxCorner.y, maxCorner.z),
-                          Vec4(maxCorner.x, minCorner.y, maxCorner.z),
-                          Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
+  Vec4 vertices[8] = {Vec4(minCorner),
+                      Vec4(maxCorner.x, minCorner.y, minCorner.z),
+                      Vec4(minCorner.x, maxCorner.y, minCorner.z),
+                      Vec4(minCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner),
+                      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
 
-  this->hitBox = new BBox(vertices, count);
+  bbox = new BBox(vertices, 8);
 
-  // Hitbox Debug stuff
-  // {
-  //   TYRA_LOG("==================");
-  //   TYRA_LOG("DUBLE_BLOCK_SIZE -> ",
-  //   std::to_string(DUBLE_BLOCK_SIZE).c_str()); TYRA_LOG("minCorner");
-  //   minCorner.print();
-  //   TYRA_LOG("maxCorner");
-  //   maxCorner.print();
-  //   TYRA_LOG("Player->StaticBBox");
-  //   this->hitBox->print();
-  //   TYRA_LOG("==================");
-  // }
+  bvh::aabb_t blockAABB = bvh::aabb_t();
+  blockAABB.minx = minCorner.x;
+  blockAABB.miny = minCorner.y;
+  blockAABB.minz = minCorner.z;
+  blockAABB.maxx = maxCorner.x;
+  blockAABB.maxy = maxCorner.y;
+  blockAABB.maxz = maxCorner.z;
+  tree_index = g_AABBTree.insert(blockAABB, this);
 }
 
 void Player::playWalkSfx(const Blocks& blockType) {

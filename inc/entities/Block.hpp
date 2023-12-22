@@ -4,9 +4,9 @@
 #include <array>
 #include <math/vec4.hpp>
 #include "constants.hpp"
+#include "entities/entity.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/block_info_model.hpp"
-#include <3libs/bvh/bvh.h>
 
 #define FRONT_VISIBLE 0x100000
 #define BACK_VISIBLE 0x010000
@@ -18,12 +18,9 @@
 
 enum class FACE_SIDE { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
-using Tyra::BBox;
 using Tyra::Color;
 using Tyra::M4x4;
-using Tyra::McpipBlock;
 using Tyra::Vec4;
-using bvh::index_t;
 
 /** Block 3D object class  */
 
@@ -33,10 +30,9 @@ using bvh::index_t;
  *  Vec4 to u32 compression
  */
 
-class Block {
+class Block : public Entity {
  public:
   Blocks type = Blocks::AIR_BLOCK;  // Init as air
-  index_t treeIndex;                // Index at aabb tree;
   u32 index;                        // Index at terrain;
   u32 offset;                       // Terrain offset;
   u16 chunkId;
@@ -52,11 +48,6 @@ class Block {
   float damage = 0;
 
   M4x4 model;
-  Vec4 minCorner;
-  Vec4 maxCorner;
-  Vec4 position;
-
-  BBox* bbox = nullptr;
 
   u32 visibleFaces = 0x000000;
   u8 visibleFacesCount = 0;
