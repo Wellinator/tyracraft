@@ -5,6 +5,7 @@
 #include "entities/Block.hpp"
 #include <tyra>
 #include <math.h>
+#include <vector>
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -24,6 +25,7 @@ struct Particle {
 
   u8 billboarded = true;
   u8 expired = false;
+  u8 collidable = false;
   u8 col;
   u8 row;
 

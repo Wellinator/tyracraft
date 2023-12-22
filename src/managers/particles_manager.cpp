@@ -2,6 +2,11 @@
 #include "managers/tick_manager.hpp"
 #include "math3d.h"
 #include "utils.hpp"
+#include "managers/collision_manager.hpp"
+
+using bvh::aabb_t;
+using bvh::bvh_t;
+using bvh::node_t;
 
 ParticlesManager::ParticlesManager() {}
 
@@ -76,7 +81,57 @@ void ParticlesManager::updateParticles(const float deltaTime,
 
       // Reduce gravity to 85%, it was too huge for particles
       particles[i]._velocity += GRAVITY * 0.9F * deltaTime;
-      particles[i]._position += particles[i]._velocity * deltaTime;
+
+      // Define next position based on velocity
+      const auto nextPosition =
+          particles[i]._position + (particles[i]._velocity * deltaTime);
+
+      if (particles[i].collidable) {
+        float closestHitDistance = -1.0f;
+        const float maxCollidableDistance =
+            particles[i]._position.distanceTo(nextPosition);
+        u8 willCollide = false;
+        Vec4 finalHitPosition;
+
+        // Broad phase
+        const Vec4 segmentStart = particles[i]._position;
+        const Vec4 segmentEnd = nextPosition;
+
+        std::vector<index_t> ni;
+        g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+
+        Ray ray = Ray(particles[i]._position, particles[i]._direction);
+
+        for (u16 i = 0; i < ni.size(); i++) {
+          Block* block = (Block*)g_AABBTree.user_data(ni[i]);
+          float hitDistance;
+
+          // Narrow Phase
+          if (ray.intersectBox(block->minCorner, block->maxCorner,
+                               &hitDistance) &&
+              hitDistance < maxCollidableDistance) {
+            if (closestHitDistance == -1.0F ||
+                hitDistance < closestHitDistance) {
+              closestHitDistance = hitDistance;
+              willCollide = true;
+              finalHitPosition.set(ray.at(hitDistance));
+            }
+          }
+        }
+
+        if (willCollide) {
+          particles[i]._position.set(finalHitPosition);
+
+          // reverse XYZ direction
+          particles[i]._direction = -particles[i]._direction;
+          // Vec4(-particles[i]._direction.x, particles[i]._direction.y,
+          //      -particles[i]._direction.z);
+        } else {
+          particles[i]._position = nextPosition;
+        }
+      } else {
+        particles[i]._position = nextPosition;
+      }
 
       /**
        * Apply billboard rotation to particle of type equals to
@@ -141,7 +196,11 @@ void ParticlesManager::createBlockParticle(Block* block) {
   // Set type
   particle.type = PaticleType::Block;
 
+  // Define life time
   particle._lifeTime = Tyra::Math::randomf(0.6F, 1.2F);
+
+  // Define if is collidable
+  particle.collidable = (Tyra::Math::randomi(1, 100) % 5) == 0;
 
   // Set particle rotation
   particle.rotation.identity();
