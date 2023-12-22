@@ -1,7 +1,11 @@
 #include "entities/player/player.hpp"
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/collision_manager.hpp"
 
+using bvh::aabb_t;
+using bvh::bvh_t;
+using bvh::node_t;
 using Tyra::Renderer3D;
 
 // ----
@@ -80,8 +84,7 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    Camera* t_camera, std::vector<Chunck*>* loadedChunks,
-                    TerrainHeightModel* terrainHeight, LevelMap* t_terrain) {
+                    Camera* t_camera, LevelMap* t_terrain) {
   // Update updateStateInWater every 5 ticks
   if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
 
@@ -92,8 +95,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
         deltaTime, movementDir, t_camera->unitCirclePosition.getNormalized());
 
     if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-      const bool hasChangedPosition =
-          updatePosition(loadedChunks, deltaTime, nextPlayerPos);
+      const bool hasChangedPosition = updatePosition(deltaTime, nextPlayerPos);
 
       if (hasChangedPosition) {
         if (lastTimePlayedWalkSfx > 0.35) {
@@ -129,12 +131,11 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
     mesh->rotation.rotateY(theta);
   }
 
-  if (!isFlying) updateGravity(deltaTime, terrainHeight);
+  const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
+  updateTerrainHeightAtPlayerPosition(nextYPos);
+  if (!isFlying) updateGravity(nextYPos);
 
   animate(t_camera->getCamType());
-
-  // this->handledItem->mesh->translation.identity();
-  // this->handledItem->mesh->translation.operator*=(this->mesh->translation);
 }
 
 void Player::render() {
@@ -181,9 +182,7 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
   return result + *mesh->getPosition();
 }
 
-/** Update player position by gravity and update index of current block */
-void Player::updateGravity(const float& deltaTime,
-                           TerrainHeightModel* terrainHeight) {
+Vec4 Player::getNextVrticalPosition(const float& deltaTime) {
   // Accelerate the velocity: velocity += gravConst * deltaTime
   velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
 
@@ -194,10 +193,16 @@ void Player::updateGravity(const float& deltaTime,
   }
 
   // Increase the position by velocity
-  Vec4 newPosition = *mesh->getPosition() + (velocity * deltaTime);
+  Vec4 nextVerticalPosition = *mesh->getPosition() + (velocity * deltaTime);
+  return nextVerticalPosition;
+}
 
+/** Update player position by gravity and update index of current block */
+void Player::updateGravity(const Vec4 nextVerticalPosition) {
+  Vec4 newPosition = nextVerticalPosition;
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
+
   if (newPosition.y + hitBox->getHeight() > worldMaxHeight ||
       newPosition.y < worldMinHeight) {
     // Maybe has died, teleport to spaw area
@@ -208,10 +213,10 @@ void Player::updateGravity(const float& deltaTime,
   }
 
   const float playerHeight = std::abs(hitBox->getHeight());
-  const float heightLimit = terrainHeight->maxHeight - playerHeight;
+  const float heightLimit = terrainHeight.maxHeight - playerHeight;
 
-  if (newPosition.y < terrainHeight->minHeight) {
-    newPosition.y = terrainHeight->minHeight;
+  if (newPosition.y < terrainHeight.minHeight) {
+    newPosition.y = terrainHeight.minHeight;
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     isOnGround = true;
   } else if (newPosition.y >= heightLimit) {
@@ -225,15 +230,13 @@ void Player::updateGravity(const float& deltaTime,
 }
 
 /** Fly in up direction */
-void Player::flyUp(const float& deltaTime,
-                   const TerrainHeightModel& terrainHeight) {
+void Player::flyUp(const float& deltaTime) {
   const Vec4 upDir = -GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
-void Player::flyDown(const float& deltaTime,
-                     const TerrainHeightModel& terrainHeight) {
+void Player::flyDown(const float& deltaTime) {
   const Vec4 downDir = GRAVITY * 0.35F;
   this->fly(deltaTime, terrainHeight, downDir);
 }
@@ -265,8 +268,7 @@ void Player::fly(const float& deltaTime,
   }
 }
 
-u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
-                          const float& deltaTime, const Vec4& nextPlayerPos,
+u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
                           u8 isColliding) {
   Vec4 currentPlayerPos = *this->mesh->getPosition();
   Vec4 playerMin;
@@ -276,52 +278,47 @@ u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
 
   // Set ray props
   Vec4 rayOrigin = ((playerMax - playerMin) / 2) + playerMin;
-  Vec4 rayDir = nextPlayerPos - currentPlayerPos;
-  rayDir.normalize();
-  const Ray ray = Ray(rayOrigin, rayDir);
+  Vec4 rayDir = (nextPlayerPos - currentPlayerPos).getNormalized();
 
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
   const float maxCollidableDistance =
       currentPlayerPos.distanceTo(nextPlayerPos);
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
-    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
-      // Broad phase
+  // Prepate the raycast
+  const Vec4 segmentStart = rayOrigin;
+  const Vec4 segmentEnd = (rayDir * (maxCollidableDistance * 2)) + rayOrigin;
 
-      auto block = (*loadedChunks)[chunkIndex]->blocks[i];
+  // Broad phase
+  std::vector<index_t> ni;
+  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
 
-      if (
-          // Prevent colliding to water horizontally
-          !block->isCollidable ||
+  for (u16 i = 0; i < ni.size(); i++) {
+    Block* block = (Block*)g_AABBTree.user_data(ni[i]);
 
-          // is vertically out of range?
-          (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
-           playerBB.getTopFace().axisPosition < block->minCorner.y ||
-           currentPlayerPos.distanceTo(block->position) >
-               DUBLE_BLOCK_SIZE * 2)) {
-        continue;
-      };
+    if (playerBB.getBottomFace().axisPosition >= block->maxCorner.y ||
+        playerBB.getTopFace().axisPosition < block->minCorner.y)
+      continue;
 
-      Vec4 tempInflatedMin;
-      Vec4 tempInflatedMax;
-      Utils::GetMinkowskiSum(playerMin, playerMax, block->minCorner,
-                             block->maxCorner, &tempInflatedMin,
-                             &tempInflatedMax);
+    const Ray ray = Ray(rayOrigin, rayDir);
 
-      if (ray.intersectBox(tempInflatedMin, tempInflatedMax,
-                           &tempHitDistance)) {
-        // Is horizontally collidable?
-        if (tempHitDistance > maxCollidableDistance) continue;
+    Vec4 tempInflatedMin;
+    Vec4 tempInflatedMax;
+    Utils::GetMinkowskiSum(playerMin, playerMax, block->minCorner,
+                           block->maxCorner, &tempInflatedMin,
+                           &tempInflatedMax);
 
-        if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
-          finalHitDistance = tempHitDistance;
-        }
+    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
+      // Is horizontally collidable?
+      if (tempHitDistance > maxCollidableDistance) continue;
+
+      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
+        finalHitDistance = tempHitDistance;
       }
     }
   }
 
-  // Will collide somewhere;
+  // Will collide somewhere?
   if (finalHitDistance > -1.0f) {
     const float timeToHit = finalHitDistance / this->speed;
 
@@ -334,11 +331,11 @@ u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      if (updatePosition(loadedChunks, deltaTime, moveOnXOnly, 1)) return true;
+      if (updatePosition(deltaTime, moveOnXOnly, 1)) return true;
 
       Vec4 moveOnZOnly =
-          Vec4(currentPlayerPos.x, nextPlayerPos.y, currentPlayerPos.z);
-      if (updatePosition(loadedChunks, deltaTime, moveOnZOnly, 1)) return true;
+          Vec4(currentPlayerPos.x, currentPlayerPos.y, nextPlayerPos.z);
+      if (updatePosition(deltaTime, moveOnZOnly, 1)) return true;
 
       return false;
     }
@@ -349,47 +346,47 @@ u8 Player::updatePosition(std::vector<Chunck*>* loadedChunks,
   return true;
 }
 
-TerrainHeightModel Player::getTerrainHeightAtPosition(
-    const std::vector<Chunck*>* loadedChunks) {
-  TerrainHeightModel model;
+void Player::updateTerrainHeightAtPlayerPosition(
+    const Vec4 nextVrticalPosition) {
   BBox playerBB = this->getHitBox();
   Vec4 minPlayer, maxPlayer;
   playerBB.getMinMax(&minPlayer, &maxPlayer);
 
+  terrainHeight.reset();
   currentBottomBlock = nullptr;
   currentUpperBlock = nullptr;
 
-  for (size_t chunkIndex = 0; chunkIndex < loadedChunks->size(); chunkIndex++) {
-    for (size_t i = 0; i < (*loadedChunks)[chunkIndex]->blocks.size(); i++) {
-      Block* block = (*loadedChunks)[chunkIndex]->blocks[i];
+  // Prepate the raycast
+  const Vec4 offset = Vec4(0, 40, 0);
+  const Vec4 segmentStart = maxPlayer + offset;
+  const Vec4 segmentEnd = nextVrticalPosition - offset;
 
-      if (
-          // Is collidable
-          block->isCollidable &&
+  std::vector<index_t> ni;
+  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
 
-          // is under or above block
-          minPlayer.x <= block->maxCorner.x &&
-          maxPlayer.x >= block->minCorner.x &&
-          minPlayer.z <= block->maxCorner.z &&
-          maxPlayer.z >= block->minCorner.z) {
-        const float underBlockHeight = block->maxCorner.y;
-        if (minPlayer.y >= underBlockHeight &&
-            underBlockHeight > model.minHeight) {
-          model.minHeight = underBlockHeight;
-          currentBottomBlock = block;
-        }
+  for (u16 i = 0; i < ni.size(); i++) {
+    Block* block = (Block*)g_AABBTree.user_data(ni[i]);
 
-        const float overBlockHeight = block->minCorner.y;
-        if (maxPlayer.y < overBlockHeight &&
-            overBlockHeight < model.maxHeight) {
-          model.maxHeight = overBlockHeight;
-          currentUpperBlock = block;
-        }
+    // is under or above block
+    if (minPlayer.x <= block->maxCorner.x &&
+        maxPlayer.x >= block->minCorner.x &&
+        minPlayer.z <= block->maxCorner.z &&
+        maxPlayer.z >= block->minCorner.z) {
+      const float underBlockHeight = block->maxCorner.y;
+      if (minPlayer.y >= underBlockHeight &&
+          underBlockHeight > terrainHeight.minHeight) {
+        terrainHeight.minHeight = underBlockHeight;
+        currentBottomBlock = block;
+      }
+
+      const float overBlockHeight = block->minCorner.y;
+      if (maxPlayer.y < overBlockHeight &&
+          overBlockHeight < terrainHeight.maxHeight) {
+        terrainHeight.maxHeight = overBlockHeight;
+        currentUpperBlock = block;
       }
     }
   }
-
-  return model;
 }
 
 /**

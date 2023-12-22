@@ -51,7 +51,6 @@ class CreativePlayingState : public PlayingStateBase {
   u8 debugMode = false;
   TickManager tickManager;
 
-  TerrainHeightModel terrainHeight;
   Vec4 playerMovementDirection;
 
   inline const u8 isInventoryOpened();

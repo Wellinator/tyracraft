@@ -53,12 +53,12 @@ using Tyra::Vec4;
 class Player {
  public:
   Player(Renderer* t_renderer, SoundManager* t_soundManager,
-         BlockManager* t_blockManager, ItemRepository* t_itemRepository, WorldLightModel* t_worldLightModel);
+         BlockManager* t_blockManager, ItemRepository* t_itemRepository,
+         WorldLightModel* t_worldLightModel);
   ~Player();
 
   void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
-              std::vector<Chunck*>* loadedChunks,
-              TerrainHeightModel* terrainHeight, LevelMap* t_terrain);
+              LevelMap* t_terrain);
   void render();
 
   void setRenderArmPip();
@@ -111,14 +111,11 @@ class Player {
   void selectPreviousItem();
   void jump();
   void swim();
-  void flyUp(const float& deltaTime, const TerrainHeightModel& terrainHeight);
-  void flyDown(const float& deltaTime, const TerrainHeightModel& terrainHeight);
+  void flyUp(const float& deltaTime);
+  void flyDown(const float& deltaTime);
   void shiftItemToInventory(const ItemId& itemToShift);
   void setItemToInventory(const ItemId& itemToShift);
   void setRunning(bool _isRunning);
-
-  TerrainHeightModel getTerrainHeightAtPosition(
-      const std::vector<Chunck*>* loadedChunks);
 
   bool isOnWater();
   bool isUnderWater();
@@ -145,6 +142,9 @@ class Player {
   float runningAcceleration = 170.0F;
   float runningMaxSpeed = 100.0F;
 
+  void updateTerrainHeightAtPlayerPosition(const Vec4 nextVrticalPosition);
+  TerrainHeightModel terrainHeight;
+
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
   Vec4 velocity = Vec4(0.0f);
@@ -156,11 +156,12 @@ class Player {
   void loadArmMesh();
   void calcStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  void updateGravity(const float& deltaTime, TerrainHeightModel* terrainHeight);
+  Vec4 getNextVrticalPosition(const float& deltaTime);
+  void updateGravity(const Vec4 nextVerticalPosition);
   void fly(const float& deltaTime, const TerrainHeightModel& terrainHeight,
            const Vec4& direction);
-  u8 updatePosition(std::vector<Chunck*>* loadedChunks, const float& deltaTime,
-                    const Vec4& nextPlayerPos, u8 isColliding = 0);
+  u8 updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
+                    u8 isColliding = 0);
 
   // Inventory
 

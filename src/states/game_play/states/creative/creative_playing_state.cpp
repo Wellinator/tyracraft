@@ -27,10 +27,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 
-  stateGamePlay->player->update(
-      deltaTime, playerMovementDirection, stateGamePlay->context->t_camera,
-      stateGamePlay->world->chunckManager.getNearByChunks(), &terrainHeight,
-      stateGamePlay->world->terrain);
+  stateGamePlay->player->update(deltaTime, playerMovementDirection,
+                                stateGamePlay->context->t_camera,
+                                stateGamePlay->world->terrain);
 
   if (isTicksCounterAt(5)) stateGamePlay->ui->update();
 
@@ -85,9 +84,6 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         Vec4(std::abs(_h) > g_settings.l_stick_H ? _h : 0.0F, 0.0F,
              std::abs(_v) > g_settings.l_stick_V ? _v : 0.0F);
 
-    terrainHeight = stateGamePlay->player->getTerrainHeightAtPosition(
-        stateGamePlay->world->chunckManager.getVisibleChunks());
-
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);
 
@@ -132,9 +128,9 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         stateGamePlay->player->selectPreviousItem();
     } else if (stateGamePlay->player->isFlying) {
       if (pressed.DpadUp) {
-        stateGamePlay->player->flyUp(deltaTime, terrainHeight);
+        stateGamePlay->player->flyUp(deltaTime);
       } else if (pressed.DpadDown) {
-        stateGamePlay->player->flyDown(deltaTime, terrainHeight);
+        stateGamePlay->player->flyDown(deltaTime);
       }
     }
 
