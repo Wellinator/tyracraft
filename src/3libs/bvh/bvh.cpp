@@ -7,6 +7,7 @@
 namespace {
 // fixed size binary heap implementation
 template <typename type_t, size_t c_size>
+
 struct bin_heap_t {
   // index of the root node
   // to simplify the implementation, heap_ is base 1 (index 0 unused).
@@ -112,8 +113,25 @@ struct bin_heap_t {
   }
 };
 
+}  // namespace
+
+namespace bvh {
+
+bool AABB::raycast(float x0, float y0, float x1, float y1) const {
+  return raycast(x0, y0, x1, y1, *this);
+}
+
+bool AABB::raycast(const Vec4 origin, const Vec4 direction) const {
+  return raycast(origin, direction, *this);
+}
+
+bool AABB::intersectLine(const Vec4 p1, const Vec4 p2) const {
+  return intersectLine(p1, p2, *this);
+}
+
 // 2D line segment aabb intersection test
-bool raycast(float ax, float ay, float bx, float by, const bvh::aabb_t& aabb) {
+bool AABB::raycast(float ax, float ay, float bx, float by,
+                   const bvh::AABB& aabb) const {
   static const float EPSILON = 0.0001f;
   const float dx = (bx - ax) * .5f;
   const float dy = (by - ay) * .5f;
@@ -130,7 +148,8 @@ bool raycast(float ax, float ay, float bx, float by, const bvh::aabb_t& aabb) {
 }
 
 // 3D line segment aabb intersection test
-bool intersectLine(const Vec4 p1, const Vec4 p2, const bvh::aabb_t& aabb) {
+bool AABB::intersectLine(const Vec4 p1, const Vec4 p2,
+                         const bvh::AABB& aabb) const {
   static const float EPSILON = 0.0001f;
   const Vec4 min = Vec4(aabb.minx, aabb.miny, aabb.minz);
   const Vec4 max = Vec4(aabb.maxx, aabb.maxy, aabb.maxz);
@@ -155,7 +174,8 @@ bool intersectLine(const Vec4 p1, const Vec4 p2, const bvh::aabb_t& aabb) {
 
 // TODO: update intersction point result to Entity data
 // line segment aabb intersection test
-bool raycast(const Vec4 origin, const Vec4 direction, const bvh::aabb_t& aabb) {
+bool AABB::raycast(const Vec4 origin, const Vec4 direction,
+                   const bvh::AABB& aabb) const {
   Ray ray = Ray(origin, direction);
 
   const Vec4 min = Vec4(aabb.minx, aabb.miny, aabb.minz);
@@ -164,39 +184,30 @@ bool raycast(const Vec4 origin, const Vec4 direction, const bvh::aabb_t& aabb) {
   return ray.intersectBox(min, max);
 }
 
-}  // namespace
-
-namespace bvh {
-
-bool aabb_t::raycast(float x0, float y0, float x1, float y1) const {
-  return ::raycast(x0, y0, x1, y1, *this);
-}
-
-bool aabb_t::raycast(const Vec4 origin, const Vec4 direction) const {
-  return ::raycast(origin, direction, *this);
-}
-
-bool aabb_t::intersectLine(const Vec4 p1, const Vec4 p2) const {
-  return ::intersectLine(p1, p2, *this);
-}
-
-bvh_t::bvh_t() : growth(16.f), _free_list(invalid_index), _root(invalid_index) {
+AABBTree::AABBTree()
+    : growth(16.f), _free_list(invalid_index), _root(invalid_index) {
   clear();
 }
 
-void bvh_t::clear() {
+AABBTree::~AABBTree() {
+  TYRA_LOG("Destroying AABBTree...");
+  clear();
+}
+
+void AABBTree::clear() {
+  TYRA_LOG("Clearing...");
   _free_all();
   _root = invalid_index;
 }
 
-bool bvh_t::_is_leaf(index_t index) const { return get(index).is_leaf(); }
+bool AABBTree::_is_leaf(index_t index) const { return get(index).is_leaf(); }
 
 // return a quality metric for this subtree
-float bvh_t::_quality(index_t n) const {
+float AABBTree::_quality(index_t n) const {
   if (n == invalid_index) {
     return 0.f;
   }
-  const node_t& node = _get(n);
+  const Bvh_Node& node = _get(n);
   if (node.is_leaf()) {
     return 0.f;
   }
@@ -206,7 +217,7 @@ float bvh_t::_quality(index_t n) const {
          _quality(node.child[1]);
 }
 
-index_t bvh_t::_insert_into_leaf(index_t leaf, index_t node) {
+index_t AABBTree::_insert_into_leaf(index_t leaf, index_t node) {
   assert(_is_leaf(leaf));
   // create new internal node
   index_t inter = _new_node();
@@ -218,18 +229,18 @@ index_t bvh_t::_insert_into_leaf(index_t leaf, index_t node) {
   _get(leaf).parent = inter;
   _get(node).parent = inter;
   // recalculate the aabb on way up
-  _get(inter).aabb = aabb_t::find_union(_get(leaf).aabb, _get(node).aabb);
+  _get(inter).aabb = AABB::find_union(_get(leaf).aabb, _get(node).aabb);
   // new child is the intermediate node
   return inter;
 }
 
-index_t bvh_t::insert(aabb_t aabb, void* user_data) {
+index_t AABBTree::insert(AABB aabb, void* user_data) {
   // create the new node
   index_t index = _new_node();
   assert(index != invalid_index);
   auto& node = _get(index);
   // grow the aabb by a factor
-  node.aabb = aabb_t::grow(aabb, growth);
+  node.aabb = AABB::grow(aabb, growth);
   //
   node.user_data = user_data;
   node.parent = invalid_index;
@@ -254,17 +265,17 @@ index_t bvh_t::insert(aabb_t aabb, void* user_data) {
   return index;
 }
 
-void bvh_t::_recalc_aabbs(index_t i) {
+void AABBTree::_recalc_aabbs(index_t i) {
   // walk from leaf to root recalculating aabbs
   while (i != invalid_index) {
-    node_t& y = _get(i);
-    y.aabb = aabb_t::find_union(_get(y.child[0]).aabb, _get(y.child[1]).aabb);
+    Bvh_Node& y = _get(i);
+    y.aabb = AABB::find_union(_get(y.child[0]).aabb, _get(y.child[1]).aabb);
     _optimize(y);
     i = y.parent;
   }
 }
 
-index_t bvh_t::_find_best_sibling(const aabb_t& aabb) const {
+index_t AABBTree::_find_best_sibling(const AABB& aabb) const {
   struct search_t {
     index_t index;
     float cost;
@@ -284,9 +295,9 @@ index_t bvh_t::_find_best_sibling(const aabb_t& aabb) const {
   while (!pqueue.empty()) {
     // pop one node (lowest cost so far)
     const search_t s = pqueue.pop();
-    const node_t& n = _get(s.index);
+    const Bvh_Node& n = _get(s.index);
     // find the cost for inserting into this node
-    const aabb_t uni = aabb_t::find_union(aabb, n.aabb);
+    const AABB uni = AABB::find_union(aabb, n.aabb);
     const float growth = uni.area() - n.aabb.area();
     assert(growth >= 0.f);
     const float cost = s.cost + growth;
@@ -308,30 +319,30 @@ index_t bvh_t::_find_best_sibling(const aabb_t& aabb) const {
   return best_index;
 }
 
-void bvh_t::_insert(index_t node) {
+void AABBTree::_insert(index_t node) {
   // note: this insert phase assumes that there are at least two nodes already
   //       in the tree and thus _root is a non leaf node.
 
   // find the best sibling for node
-  const aabb_t& aabb = _get(node).aabb;
+  const AABB& aabb = _get(node).aabb;
   index_t sibi = _find_best_sibling(aabb);
   assert(sibi != invalid_index);
   // once the best leaf has been found we come to the insertion phase
-  const node_t& sib = _get(sibi);
+  const Bvh_Node& sib = _get(sibi);
   assert(sib.is_leaf());
   const index_t parent = sib.parent;
   const index_t inter = _insert_into_leaf(sibi, node);
   _get(inter).parent = parent;
   // fix up parent child relationship
   if (parent != invalid_index) {
-    node_t& p = _get(parent);
+    Bvh_Node& p = _get(parent);
     p.replace_child(sibi, inter);
   }
   // recalculate aabb and optimize on the way up
   _recalc_aabbs(parent);
 }
 
-void bvh_t::remove(index_t index) {
+void AABBTree::remove(index_t index) {
   assert(index != invalid_index);
   assert(_is_leaf(index));
   auto& node = _get(index);
@@ -344,7 +355,7 @@ void bvh_t::remove(index_t index) {
 #endif
 }
 
-void bvh_t::move(index_t index, const aabb_t& aabb) {
+void AABBTree::move(index_t index, const AABB& aabb) {
   assert(index != invalid_index);
   assert(_is_leaf(index));
   auto& node = _get(index);
@@ -356,7 +367,7 @@ void bvh_t::move(index_t index, const aabb_t& aabb) {
   // effectively remove this node from the tree
   _unlink(index);
   // save the fat version of this aabb
-  node.aabb = aabb_t::grow(aabb, growth);
+  node.aabb = AABB::grow(aabb, growth);
   // insert into the tree
   if (_root == invalid_index) {
     _root = index;
@@ -371,7 +382,8 @@ void bvh_t::move(index_t index, const aabb_t& aabb) {
 #endif
 }
 
-void bvh_t::_free_all() {
+void AABBTree::_free_all() {
+  TYRA_LOG("freeing all...");
   _free_list = 0;
   for (index_t i = 0; i < _max_nodes; ++i) {
     _get(i).child[0] = i + 1;
@@ -385,14 +397,14 @@ void bvh_t::_free_all() {
   _root = invalid_index;
 }
 
-index_t bvh_t::_new_node() {
+index_t AABBTree::_new_node() {
   index_t out = _free_list;
   assert(out != invalid_index);
   _free_list = get(_free_list).child[0];
   return out;
 }
 
-void bvh_t::_unlink(index_t index) {
+void AABBTree::_unlink(index_t index) {
   // assume we only ever unlink a leaf
   assert(_is_leaf(index));
   auto& node = _get(index);
@@ -457,25 +469,25 @@ void bvh_t::_unlink(index_t index) {
   node.parent = invalid_index;
 }
 
-void bvh_t::_touched_aabb(index_t i) {
+void AABBTree::_touched_aabb(index_t i) {
   while (i != invalid_index) {
-    node_t& node = _get(i);
+    Bvh_Node& node = _get(i);
     assert(!node.is_leaf());
     assert(node.child[0] != invalid_index);
     assert(node.child[1] != invalid_index);
-    node.aabb = aabb_t::find_union(_child(i, 0).aabb, _child(i, 1).aabb);
+    node.aabb = AABB::find_union(_child(i, 0).aabb, _child(i, 1).aabb);
     i = node.parent;
   }
 }
 
-void bvh_t::_free_node(index_t index) {
+void AABBTree::_free_node(index_t index) {
   assert(index != invalid_index);
   auto& node = _get(index);
   node.child[0] = _free_list;
   _free_list = index;
 }
 
-void bvh_t::_validate(index_t index) {
+void AABBTree::_validate(index_t index) {
   if (index == invalid_index) {
     return;
   }
@@ -513,7 +525,7 @@ void bvh_t::_validate(index_t index) {
   }
 }
 
-void bvh_t::_optimize(node_t& node) {
+void AABBTree::_optimize(Bvh_Node& node) {
 #if VALIDATE
   const float before = quality();
 #endif
@@ -557,10 +569,10 @@ void bvh_t::_optimize(node_t& node) {
     // current
     const float h0 = c0.aabb.area();
     // rotation 1
-    const aabb_t a1 = aabb_t::find_union(c1.aabb, x1.aabb);
+    const AABB a1 = AABB::find_union(c1.aabb, x1.aabb);
     const float h1 = a1.area();
     // rotation 2
-    const aabb_t a2 = aabb_t::find_union(x0.aabb, c1.aabb);
+    const AABB a2 = AABB::find_union(x0.aabb, c1.aabb);
     const float h2 = a2.area();
 
     if (h1 < h2) {
@@ -602,7 +614,7 @@ void bvh_t::_optimize(node_t& node) {
 #endif
 }
 
-void bvh_t::find_overlaps(const aabb_t& bb, std::vector<index_t>& overlaps) {
+void AABBTree::find_overlaps(const AABB& bb, std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -612,10 +624,10 @@ void bvh_t::find_overlaps(const aabb_t& bb, std::vector<index_t>& overlaps) {
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t& n = _get(ni);
+    const Bvh_Node& n = _get(ni);
 
     // if these aabbs overlap
-    if (aabb_t::overlaps(bb, n.aabb)) {
+    if (AABB::overlaps(bb, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
       } else {
@@ -631,13 +643,13 @@ void bvh_t::find_overlaps(const aabb_t& bb, std::vector<index_t>& overlaps) {
   }
 }
 
-void bvh_t::find_overlaps(index_t node, std::vector<index_t>& overlaps) {
-  const node_t& n = _get(node);
+void AABBTree::find_overlaps(index_t node, std::vector<index_t>& overlaps) {
+  const Bvh_Node& n = _get(node);
   find_overlaps(n.aabb, overlaps);
 }
 
-void bvh_t::raycast(float x0, float y0, float x1, float y1,
-                    std::vector<index_t>& overlaps) {
+void AABBTree::raycast(float x0, float y0, float x1, float y1,
+                       std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -647,9 +659,9 @@ void bvh_t::raycast(float x0, float y0, float x1, float y1,
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t& n = _get(ni);
+    const Bvh_Node& n = _get(ni);
     // if the ray and aabb overlap
-    if (::raycast(x0, y0, x1, y1, n.aabb)) {
+    if (n.aabb.raycast(x0, y0, x1, y1, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
       } else {
@@ -665,8 +677,8 @@ void bvh_t::raycast(float x0, float y0, float x1, float y1,
   }
 }
 
-void bvh_t::raycast(const Vec4 origin, const Vec4 direction,
-                    std::vector<index_t>& overlaps) {
+void AABBTree::raycast(const Vec4 origin, const Vec4 direction,
+                       std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -676,9 +688,9 @@ void bvh_t::raycast(const Vec4 origin, const Vec4 direction,
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t& n = _get(ni);
+    const Bvh_Node& n = _get(ni);
     // if the ray and aabb overlap
-    if (::raycast(origin, direction, n.aabb)) {
+    if (n.aabb.raycast(origin, direction, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
       } else {
@@ -694,8 +706,8 @@ void bvh_t::raycast(const Vec4 origin, const Vec4 direction,
   }
 }
 
-void bvh_t::intersectLine(const Vec4 p1, const Vec4 p2,
-                          std::vector<index_t>& overlaps) {
+void AABBTree::intersectLine(const Vec4 p1, const Vec4 p2,
+                             std::vector<index_t>& overlaps) {
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
@@ -705,9 +717,9 @@ void bvh_t::intersectLine(const Vec4 p1, const Vec4 p2,
     // pop one node
     const index_t ni = stack.back();
     assert(ni != invalid_index);
-    const node_t& n = _get(ni);
+    const Bvh_Node& n = _get(ni);
     // if the ray and aabb overlap
-    if (::intersectLine(p1, p2, n.aabb)) {
+    if (n.aabb.intersectLine(p1, p2, n.aabb)) {
       if (n.is_leaf()) {
         overlaps.push_back(ni);
       } else {

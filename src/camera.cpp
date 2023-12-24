@@ -16,10 +16,10 @@
 // TODO: move to Entity class
 #include "entities/Block.hpp"
 
-using bvh::aabb_t;
-using bvh::bvh_t;
+using bvh::AABB;
+using bvh::AABBTree;
+using bvh::Bvh_Node;
 using bvh::index_t;
-using bvh::node_t;
 using Tyra::CameraInfo3D;
 using Tyra::Math;
 using Tyra::Mesh;
@@ -72,10 +72,10 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
     revRay.direction.set(-unitCirclePosition);
 
     std::vector<index_t> ni;
-    g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+    g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
     for (u16 i = 0; i < ni.size(); i++) {
-      Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
+      Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
       float intersectionPoint;
       if (revRay.intersectBox(entity->minCorner, entity->maxCorner,

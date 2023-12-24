@@ -4,6 +4,11 @@
  * @brief Definition of global AABBTree
  *
  */
-bvh_t g_AABBTree = bvh_t();
+AABBTree* g_AABBTree = nullptr;
 
-void CollisionManager_unloadTree() { g_AABBTree.clear(); };
+void CollisionManager_initTree() { g_AABBTree = new AABBTree(); };
+
+void CollisionManager_unloadTree() {
+  delete g_AABBTree;
+  g_AABBTree = nullptr;
+};

@@ -7,6 +7,7 @@
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
 #include "managers/save_manager.hpp"
+#include "managers/collision_manager.hpp"
 
 using Tyra::Audio;
 using Tyra::FileUtils;
@@ -25,12 +26,22 @@ StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
 StateGamePlay::~StateGamePlay() {
   this->context->t_engine->audio.song.stop();
   this->context->t_engine->audio.song.inLoop = false;
+
+  TYRA_LOG("freeing state...");
   delete this->state;
+  TYRA_LOG("freeing previousState...");
   delete this->previousState;
+  TYRA_LOG("freeing world...");
   delete this->world;
+  TYRA_LOG("freeing ui...");
   delete this->ui;
+  TYRA_LOG("freeing player...");
   delete this->player;
+  TYRA_LOG("freeing itemRepository...");
   delete this->itemRepository;
+  TYRA_LOG("freeing completed!");
+
+  CollisionManager_unloadTree();
 }
 
 void StateGamePlay::handleGameMode(const GameMode& gameMode) {

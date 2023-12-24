@@ -4,10 +4,10 @@
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
 
-using bvh::aabb_t;
-using bvh::bvh_t;
+using bvh::AABB;
+using bvh::AABBTree;
+using bvh::Bvh_Node;
 using bvh::index_t;
-using bvh::node_t;
 using Tyra::Renderer3D;
 
 // ----
@@ -58,8 +58,6 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
 Player::~Player() {
   underEntity = nullptr;
   overEntity = nullptr;
-
-  g_AABBTree.remove(tree_index);
 
   delete bbox;
   delete handledItem;
@@ -284,10 +282,10 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
 
   // Broad phase
   std::vector<index_t> ni;
-  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
   for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
+    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
     if (playerBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
         playerBB.getTopFace().axisPosition < entity->minCorner.y)
@@ -355,10 +353,10 @@ void Player::updateTerrainHeightAtPlayerPosition(
   const Vec4 segmentEnd = nextVrticalPosition - offset;
 
   std::vector<int32_t> ni;
-  g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
   for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
+    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
     // is under or above block
     if (minPlayer.x <= entity->maxCorner.x &&
@@ -498,14 +496,14 @@ void Player::loadStaticBBox() {
 
   bbox = new BBox(vertices, 8);
 
-  bvh::aabb_t blockAABB = bvh::aabb_t();
+  bvh::AABB blockAABB = bvh::AABB();
   blockAABB.minx = minCorner.x;
   blockAABB.miny = minCorner.y;
   blockAABB.minz = minCorner.z;
   blockAABB.maxx = maxCorner.x;
   blockAABB.maxy = maxCorner.y;
   blockAABB.maxz = maxCorner.z;
-  tree_index = g_AABBTree.insert(blockAABB, this);
+  tree_index = g_AABBTree->insert(blockAABB, this);
 }
 
 void Player::playWalkSfx(const Blocks& blockType) {

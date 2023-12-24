@@ -4,9 +4,9 @@
 #include "utils.hpp"
 #include "managers/collision_manager.hpp"
 
-using bvh::aabb_t;
-using bvh::bvh_t;
-using bvh::node_t;
+using bvh::AABB;
+using bvh::AABBTree;
+using bvh::Bvh_Node;
 using bvh::index_t;
 
 ParticlesManager::ParticlesManager() {}
@@ -99,12 +99,12 @@ void ParticlesManager::updateParticles(const float deltaTime,
         const Vec4 segmentEnd = nextPosition;
 
         std::vector<index_t> ni;
-        g_AABBTree.intersectLine(segmentStart, segmentEnd, ni);
+        g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
         Ray ray = Ray(particles[i]._position, particles[i]._direction);
 
         for (u16 i = 0; i < ni.size(); i++) {
-          Entity* entity = (Entity*)g_AABBTree.user_data(ni[i]);
+          Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
           float hitDistance;
 
           // Narrow Phase

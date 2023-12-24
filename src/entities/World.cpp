@@ -15,10 +15,10 @@
 #include <queue>
 #include <stack>
 
-using bvh::aabb_t;
-using bvh::bvh_t;
+using bvh::AABB;
+using bvh::AABBTree;
+using bvh::Bvh_Node;
 using bvh::index_t;
-using bvh::node_t;
 using Tyra::Color;
 using Tyra::M4x4;
 
@@ -34,13 +34,13 @@ World::World(const NewGameOptions& options) {
   worldOptions = options;
   setIntialTime();
   CrossCraft_World_Init(seed);
+  CollisionManager_initTree();
 }
 
 World::~World() {
   delete rawBlockBbox;
   affectedChunksIdByLiquidPropagation.clear();
 
-  CollisionManager_unloadTree();
   CrossCraft_World_Deinit();
 }
 
@@ -1090,14 +1090,14 @@ void World::buildChunk(Chunck* t_chunck) {
 
               // Add data to AABBTree
               if (block->isCollidable) {
-                bvh::aabb_t blockAABB = bvh::aabb_t();
+                bvh::AABB blockAABB = bvh::AABB();
                 blockAABB.minx = block->minCorner.x;
                 blockAABB.miny = block->minCorner.y;
                 blockAABB.minz = block->minCorner.z;
                 blockAABB.maxx = block->maxCorner.x;
                 blockAABB.maxy = block->maxCorner.y;
                 blockAABB.maxz = block->maxCorner.z;
-                block->tree_index = g_AABBTree.insert(blockAABB, block);
+                block->tree_index = g_AABBTree->insert(blockAABB, block);
               }
 
               delete rawBBox;
@@ -1173,14 +1173,14 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           // Add data to AABBTree
           if (block->isCollidable) {
-            bvh::aabb_t blockAABB = bvh::aabb_t();
+            bvh::AABB blockAABB = bvh::AABB();
             blockAABB.minx = block->minCorner.x;
             blockAABB.miny = block->minCorner.y;
             blockAABB.minz = block->minCorner.z;
             blockAABB.maxx = block->maxCorner.x;
             blockAABB.maxy = block->maxCorner.y;
             blockAABB.maxz = block->maxCorner.z;
-            block->tree_index = g_AABBTree.insert(blockAABB, block);
+            block->tree_index = g_AABBTree->insert(blockAABB, block);
           }
 
           delete rawBBox;
@@ -1238,10 +1238,10 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
   ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
   std::vector<index_t> ni;
-  g_AABBTree.intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
+  g_AABBTree->intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
 
   for (u16 b = 0; b < ni.size(); b++) {
-    Entity* entity = (Entity*)g_AABBTree.user_data(ni[b]);
+    Entity* entity = (Entity*)g_AABBTree->user_data(ni[b]);
     if (entity->entity_type == EntityType::Block) {
       Block* block = (Block*)entity;
 

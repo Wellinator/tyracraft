@@ -73,7 +73,7 @@ void Chunck::clear() {
   clearDrawData();
 
   for (u16 i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->isCollidable) g_AABBTree.remove(blocks[i]->tree_index);
+    if (blocks[i]->isCollidable) g_AABBTree->remove(blocks[i]->tree_index);
 
     delete blocks[i];
     blocks[i] = NULL;
