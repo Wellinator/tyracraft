@@ -1359,7 +1359,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
                                   static_cast<BlockOrientation>(orientation));
 
     Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
-    if (moddedChunk) {
+    if (moddedChunk && moddedChunk->isDrawDataLoaded()) {
       affectedChunksIdByLiquidPropagation.insert(moddedChunk);
     }
   }
