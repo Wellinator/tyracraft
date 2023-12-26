@@ -58,30 +58,32 @@ void FontManager_init(Renderer* t_renderer) {
   FontManager_loadFontChars(t_renderer);
 }
 
-void FontManager_printText(const std::string& text, const FontOptions& options);
+void FontManager_printText(const std::string& text,
+                           const FontOptions& options) {
+  FontManager_printText(text.c_str(), text.length(), options);
+};
 
 void FontManager_printText(const char* text, const FontOptions& options) {
-  FontManager_printText(std::string(text), options);
+  FontManager_printText(text, strlen(text), options);
 }
 
 void FontManager_printText(const char* text, const float& x, const float& y) {
-  FontManager_printText(std::string(text), FontOptions(Vec2(x, y)));
+  FontManager_printText(text, strlen(text), FontOptions(Vec2(x, y)));
 }
 
 void FontManager_printText(const std::string& text, const float& x,
                            const float& y) {
-  FontManager_printText(text, FontOptions(Vec2(x, y)));
+  FontManager_printText(text.c_str(), text.size(), FontOptions(Vec2(x, y)));
 }
 
-void FontManager_printText(const std::string& text,
+void FontManager_printText(const char* text, const size_t length,
                            const FontOptions& options) {
   float cursorX = 0.0F;
   float cursorY = 0.0F;
-  const u16 stringLenth = text.size();
-  float padding = FontManager_calcLinePadding(text, options.alignment);
+  float padding = FontManager_calcLinePadding(text, length, options.alignment);
   padding *= options.scale;
 
-  for (size_t i = 0; i < stringLenth; i++) {
+  for (size_t i = 0; i < length; i++) {
     const u8 charCode = FontManager_getCodeFromChar(text[i]);
     const Sprite* fontCharAt = FontManager_getFontChatByCode(charCode);
 
@@ -112,14 +114,14 @@ void FontManager_printText(const std::string& text,
   }
 }
 
-float FontManager_calcLinePadding(const std::string& text,
+float FontManager_calcLinePadding(const char* text, const size_t length,
                                   const TextAlignment alignment) {
   float padding = 0.0F;
 
   if (alignment == TextAlignment::Left)
     return padding;
   else {
-    const size_t stringLenth = text.size();
+    const size_t stringLenth = length;
     for (size_t i = 0; i < stringLenth; i++) {
       const u8 charCode = FontManager_getCodeFromChar(text[i]);
       padding += (char_widths[charCode] + 2);

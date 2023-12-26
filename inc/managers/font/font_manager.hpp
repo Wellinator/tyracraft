@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include <vector>
 #include <array>
+#include <stdlib.h>
 #include <string>
 #include "tyra"
 #include "managers/font/font_options.hpp"
@@ -32,13 +33,15 @@ extern u8 BASE_LINE_HEIGHT;
 
 void FontManager_init(Renderer* t_renderer);
 
+void FontManager_printText(const char* text, const size_t length,
+                           const FontOptions& options);
 void FontManager_printText(const std::string& text, const FontOptions& options);
 void FontManager_printText(const std::string& text, const float& x,
                            const float& y);
 void FontManager_printText(const char* text, const FontOptions& options);
 void FontManager_printText(const char* text, const float& x, const float& y);
 
-float FontManager_calcLinePadding(const std::string& text,
+float FontManager_calcLinePadding(const char* text, const size_t length,
                                   const TextAlignment alignment);
 
 void FontManager_loadFontChars(Renderer* t_renderer);
