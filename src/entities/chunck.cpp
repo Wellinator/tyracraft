@@ -10,10 +10,10 @@
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
-  this->tempLoadingOffset->set(minOffset);
-  this->minOffset->set(minOffset);
-  this->maxOffset->set(maxOffset);
-  this->center->set((maxOffset + minOffset) / 2);
+  this->minOffset.set(minOffset);
+  this->maxOffset.set(maxOffset);
+  this->center.set((maxOffset + minOffset) / 2);
+  tempLoadingOffset.set(minOffset);
 
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;
   const Vec4 tempMax = maxOffset * DUBLE_BLOCK_SIZE;
@@ -36,9 +36,6 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
 
 Chunck::~Chunck() {
   clear();
-  delete minOffset;
-  delete maxOffset;
-  delete center;
   delete bbox;
 };
 
@@ -86,11 +83,6 @@ void Chunck::clear() {
   resetLoadingOffset();
 
   this->state = ChunkState::Clean;
-}
-
-void Chunck::addBlock(Block* t_block) {
-  blocks.emplace_back(t_block);
-  visibleFacesCount += t_block->visibleFacesCount;
 }
 
 // void Chunck::updateBlocks(const Vec4& playerPosition) {}
@@ -167,14 +159,6 @@ void Chunck::sortBlockByTransparency() {
   });
 }
 
-void Chunck::preAllocateMemory() {
-  blocks.reserve(CHUNCK_LENGTH);
-  _isPreAllocated = true;
-}
-
-void Chunck::freeUnusedMemory() { blocks.shrink_to_fit(); }
-
-bool Chunck::isPreAllocated() { return _isPreAllocated; }
 
 Block* Chunck::getBlockByPosition(const Vec4* pos) {
   for (size_t i = 0; i < blocks.size(); i++) {
@@ -196,11 +180,3 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
   }
   return nullptr;
 }
-
-s8 Chunck::getDistanceFromPlayerInChunks() {
-  return this->_distanceFromPlayerInChunks;
-}
-
-void Chunck::setDistanceFromPlayerInChunks(const s8 distante) {
-  this->_distanceFromPlayerInChunks = distante;
-};

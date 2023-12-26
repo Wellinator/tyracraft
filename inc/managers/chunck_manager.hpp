@@ -38,7 +38,7 @@ class ChunckManager {
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
-  void update(const Plane* frustumPlanes, const Vec4& currentPlayerPos);
+  void update(const Plane* frustumPlanes);
   u8 isChunkVisible(Chunck* chunk);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);

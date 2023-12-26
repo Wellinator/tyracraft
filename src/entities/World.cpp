@@ -136,8 +136,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
 
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       *t_player->getPosition());
+  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
 
   // Update scheduled data every 4 ticks
   if (isTicksCounterAt(5)) {
@@ -206,11 +205,11 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
   Chunck* currentChunk = chunckManager.getChunckByOffset(pos);
   if (!currentChunk) return;
 
-  const u8 isAtBorder = isBlockAtChunkBorder(&pos, currentChunk->minOffset,
-                                             currentChunk->maxOffset);
+  const u8 isAtBorder = isBlockAtChunkBorder(&pos, &currentChunk->minOffset,
+                                             &currentChunk->maxOffset);
 
   if (isAtBorder) {
-    if (currentChunk->maxOffset->z - 1 == pos.z) {
+    if (currentChunk->maxOffset.z - 1 == pos.z) {
       // Left
       Chunck* leftChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x, pos.y, pos.z + 1));
@@ -218,7 +217,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
         leftChunk->clear();
         buildChunk(leftChunk);
       }
-    } else if (currentChunk->minOffset->z == pos.z) {
+    } else if (currentChunk->minOffset.z == pos.z) {
       // Right
       Chunck* rightChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x, pos.y, pos.z - 1));
@@ -229,7 +228,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
       }
     }
 
-    if (currentChunk->maxOffset->x - 1 == pos.x) {
+    if (currentChunk->maxOffset.x - 1 == pos.x) {
       // Front
       Chunck* frontChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x + 1, pos.y, pos.z));
@@ -238,7 +237,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
         frontChunk->clear();
         buildChunk(frontChunk);
       }
-    } else if (currentChunk->minOffset->x == pos.x) {
+    } else if (currentChunk->minOffset.x == pos.x) {
       // Back
       Chunck* backChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x - 1, pos.y, pos.z));
@@ -248,7 +247,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
       }
     }
 
-    if (currentChunk->maxOffset->y - 1 == pos.y) {
+    if (currentChunk->maxOffset.y - 1 == pos.y) {
       // Top
       Chunck* topChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x, pos.y + 1, pos.z));
@@ -257,7 +256,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
         topChunk->clear();
         buildChunk(topChunk);
       }
-    } else if (currentChunk->minOffset->y == pos.y) {
+    } else if (currentChunk->minOffset.y == pos.y) {
       // Bottom
       Chunck* bottomChunk =
           chunckManager.getChunckByOffset(Vec4(pos.x, pos.y - 1, pos.z));
@@ -279,7 +278,7 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
   const auto& chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks.size(); i++) {
     const auto distance =
-        floor(t_chunck->center->distanceTo(*chuncks[i]->center) / CHUNCK_SIZE) +
+        floor(t_chunck->center.distanceTo(chuncks[i]->center) / CHUNCK_SIZE) +
         1;
 
     if (distance > worldOptions.drawDistance) {
@@ -308,9 +307,9 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
   std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
             [currentPlayerPos](const Chunck* a, const Chunck* b) {
               const float distanceA =
-                  (*a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+                  (a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
               const float distanceB =
-                  (*b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+                  (b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
               return distanceA < distanceB;
             });
 }
@@ -412,15 +411,15 @@ u32 World::getIndexByOffset(int x, int y, int z) {
   return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
-bool World::isAirAtPosition(const float& x, const float& y, const float& z) {
+u8 World::isAirAtPosition(const float& x, const float& y, const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
   }
   return false;
 }
 
-bool World::isBlockTransparentAtPosition(const float& x, const float& y,
-                                         const float& z) {
+u8 World::isBlockTransparentAtPosition(const float& x, const float& y,
+                                       const float& z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
@@ -431,32 +430,32 @@ bool World::isBlockTransparentAtPosition(const float& x, const float& y,
   }
 }
 
-bool World::isTopFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isTopFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y + 1,
                                       t_blockOffset->z);
 }
 
-bool World::isBottomFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isBottomFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y - 1,
                                       t_blockOffset->z);
 }
 
-bool World::isFrontFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isFrontFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z - 1);
 }
 
-bool World::isBackFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isBackFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
                                       t_blockOffset->z + 1);
 }
 
-bool World::isLeftFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isLeftFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
                                       t_blockOffset->z);
 }
 
-bool World::isRightFaceVisible(const Vec4* t_blockOffset) {
+u8 World::isRightFaceVisible(const Vec4* t_blockOffset) {
   return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
                                       t_blockOffset->z);
 }
@@ -1038,9 +1037,9 @@ u8 World::isCrossedBlock(Blocks block_type) {
 void World::buildChunk(Chunck* t_chunck) {
   t_chunck->preAllocateMemory();
 
-  for (size_t x = t_chunck->minOffset->x; x < t_chunck->maxOffset->x; x++) {
-    for (size_t z = t_chunck->minOffset->z; z < t_chunck->maxOffset->z; z++) {
-      for (size_t y = t_chunck->minOffset->y; y < t_chunck->maxOffset->y; y++) {
+  for (size_t x = t_chunck->minOffset.x; x < t_chunck->maxOffset.x; x++) {
+    for (size_t z = t_chunck->minOffset.z; z < t_chunck->maxOffset.z; z++) {
+      for (size_t y = t_chunck->minOffset.y; y < t_chunck->maxOffset.y; y++) {
         u32 blockIndex = getIndexByOffset(x, y, z);
         const Blocks block_type =
             static_cast<Blocks>(terrain->blocks[blockIndex]);
@@ -1075,7 +1074,7 @@ void World::buildChunk(Chunck* t_chunck) {
               }
 
               block->isAtChunkBorder = isBlockAtChunkBorder(
-                  &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+                  &tempBlockOffset, &t_chunck->minOffset, &t_chunck->maxOffset);
 
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
@@ -1117,15 +1116,15 @@ void World::buildChunk(Chunck* t_chunck) {
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   uint16_t safeWhileBreak = 0;
   uint16_t batchCounter = 0;
-  uint16_t x = t_chunck->tempLoadingOffset->x;
-  uint16_t y = t_chunck->tempLoadingOffset->y;
-  uint16_t z = t_chunck->tempLoadingOffset->z;
+  uint16_t x = t_chunck->tempLoadingOffset.x;
+  uint16_t y = t_chunck->tempLoadingOffset.y;
+  uint16_t z = t_chunck->tempLoadingOffset.z;
   auto limit = LOAD_CHUNK_BATCH;
 
   if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
 
   while (batchCounter < limit) {
-    if (x >= t_chunck->maxOffset->x) break;
+    if (x >= t_chunck->maxOffset.x) break;
     safeWhileBreak++;
 
     u32 blockIndex = getIndexByOffset(x, y, z);
@@ -1160,7 +1159,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           }
 
           block->isAtChunkBorder = isBlockAtChunkBorder(
-              &tempBlockOffset, t_chunck->minOffset, t_chunck->maxOffset);
+              &tempBlockOffset, &t_chunck->minOffset, &t_chunck->maxOffset);
 
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
@@ -1193,12 +1192,12 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     }
 
     y++;
-    if (y >= t_chunck->maxOffset->y) {
-      y = t_chunck->minOffset->y;
+    if (y >= t_chunck->maxOffset.y) {
+      y = t_chunck->minOffset.y;
       z++;
     }
-    if (z >= t_chunck->maxOffset->z) {
-      z = t_chunck->minOffset->z;
+    if (z >= t_chunck->maxOffset.z) {
+      z = t_chunck->minOffset.z;
       x++;
     }
 
@@ -1209,7 +1208,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   }
 
   if (batchCounter >= limit) {
-    t_chunck->tempLoadingOffset->set(x, y, z);
+    t_chunck->tempLoadingOffset.set(x, y, z);
     return;
   }
 
@@ -2067,24 +2066,21 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
-  uint32_t blockCount = OVERWORLD_SIZE;
-  LevelMap map = {.width = OVERWORLD_H_DISTANCE,
-                  .length = OVERWORLD_H_DISTANCE,
-                  .height = OVERWORLD_V_DISTANCE,
+  level.map = {.width = OVERWORLD_H_DISTANCE,
+               .length = OVERWORLD_H_DISTANCE,
+               .height = OVERWORLD_V_DISTANCE,
 
-                  .spawnX = 128,
-                  .spawnY = 59,
-                  .spawnZ = 128,
+               .spawnX = 128,
+               .spawnY = 59,
+               .spawnZ = 128,
 
-                  .blocks = new u8[blockCount],
-                  .lightData = new u8[blockCount],
-                  .metaData = new u8[blockCount]};
-
-  level.map = map;
+               .blocks = new u8[OVERWORLD_SIZE],
+               .lightData = new u8[OVERWORLD_SIZE],
+               .metaData = new u8[OVERWORLD_SIZE]};
 
   // For some reason I need to clear the array garbage
   // I was initialized with new key word, very weird!
-  for (size_t i = 0; i < blockCount; i++) {
+  for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
     level.map.blocks[i] = 0;
     level.map.lightData[i] = 0;
     level.map.metaData[i] = 0;

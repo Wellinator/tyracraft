@@ -46,12 +46,12 @@ class Chunck {
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
-  Vec4* tempLoadingOffset = new Vec4();
-  Vec4* minOffset = new Vec4();
-  Vec4* maxOffset = new Vec4();
+  Vec4 tempLoadingOffset = Vec4();
+  Vec4 minOffset = Vec4();
+  Vec4 maxOffset = Vec4();
   Vec4 scaledMinOffset = Vec4();
   Vec4 scaledMaxOffset = Vec4();
-  Vec4* center = new Vec4();
+  Vec4 center = Vec4();
   BBox* bbox;
 
   int visibleFacesCount = 0;
@@ -77,15 +77,25 @@ class Chunck {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   }
 
-  s8 getDistanceFromPlayerInChunks();
-  void setDistanceFromPlayerInChunks(const s8 distante);
+  inline s8 getDistanceFromPlayerInChunks() {
+    return this->_distanceFromPlayerInChunks;
+  };
+  inline void setDistanceFromPlayerInChunks(const s8 distante) {
+    this->_distanceFromPlayerInChunks = distante;
+  };
 
   // Block controllers
-  void addBlock(Block* t_block);
+  inline void addBlock(Block* t_block) {
+    blocks.emplace_back(t_block);
+    visibleFacesCount += t_block->visibleFacesCount;
+  };
 
-  void preAllocateMemory();
-  void freeUnusedMemory();
-  bool isPreAllocated();
+  inline void preAllocateMemory() {
+    blocks.reserve(CHUNCK_LENGTH);
+    _isPreAllocated = true;
+  };
+  inline void freeUnusedMemory() { blocks.shrink_to_fit(); };
+  inline u8 isPreAllocated() { return _isPreAllocated; };
 
   Block* getBlockByPosition(const Vec4* pos);
   Block* getBlockByOffset(const Vec4* offset);
@@ -102,9 +112,7 @@ class Chunck {
 
   void sortBlockByTransparency();
 
-  inline void resetLoadingOffset() {
-    this->tempLoadingOffset->set(*minOffset);
-  };
+  inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
   u8 _isDrawDataLoaded = false;
 

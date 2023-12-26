@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <array>
 #include <tyra>
+#include <stdint-gcc.h>
 
 using Tyra::Vec4;
 

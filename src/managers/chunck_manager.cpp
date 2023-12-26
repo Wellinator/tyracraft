@@ -29,8 +29,7 @@ void ChunckManager::clearAllChunks() {
   for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
 }
 
-void ChunckManager::update(const Plane* frustumPlanes,
-                           const Vec4& currentPlayerPos) {
+void ChunckManager::update(const Plane* frustumPlanes) {
   visibleChunks.clear();
 
   // TODO: refactore to fast index by offset
@@ -78,8 +77,8 @@ void ChunckManager::generateChunks() {
 
 Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
   for (u16 i = 0; i < chuncks.size(); i++)
-    if (position.collidesBox(*chuncks[i]->minOffset * DUBLE_BLOCK_SIZE,
-                             *chuncks[i]->maxOffset * DUBLE_BLOCK_SIZE)) {
+    if (position.collidesBox(chuncks[i]->minOffset * DUBLE_BLOCK_SIZE,
+                             chuncks[i]->maxOffset * DUBLE_BLOCK_SIZE)) {
       return chuncks[i];
     }
   return nullptr;
@@ -87,12 +86,12 @@ Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
 
 Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
   for (size_t i = 0; i < chuncks.size(); i++)
-    if (offset.x >= chuncks[i]->minOffset->x &&
-        offset.x < chuncks[i]->maxOffset->x &&
-        offset.y >= chuncks[i]->minOffset->y &&
-        offset.y < chuncks[i]->maxOffset->y &&
-        offset.z >= chuncks[i]->minOffset->z &&
-        offset.z < chuncks[i]->maxOffset->z) {
+    if (offset.x >= chuncks[i]->minOffset.x &&
+        offset.x < chuncks[i]->maxOffset.x &&
+        offset.y >= chuncks[i]->minOffset.y &&
+        offset.y < chuncks[i]->maxOffset.y &&
+        offset.z >= chuncks[i]->minOffset.z &&
+        offset.z < chuncks[i]->maxOffset.z) {
       return chuncks[i];
     }
   return nullptr;
@@ -110,8 +109,8 @@ void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),
             [playerPosition](const Chunck* a, const Chunck* b) {
               const Vec4 dest = *playerPosition / DUBLE_BLOCK_SIZE;
-              const float distanceA = (*a->center).distanceTo(dest);
-              const float distanceB = (*b->center).distanceTo(dest);
+              const float distanceA = (a->center).distanceTo(dest);
+              const float distanceB = (b->center).distanceTo(dest);
               return distanceA >= distanceB;
             });
 }

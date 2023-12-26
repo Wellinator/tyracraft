@@ -131,13 +131,13 @@ class World {
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
 
-  size_t getChunksToLoadCount() { return tempChuncksToLoad.size(); };
-  size_t getChunksToUnloadCount() { return tempChuncksToUnLoad.size(); };
-  size_t getChuncksToUpdateLightCount() {
+  inline size_t getChunksToLoadCount() { return tempChuncksToLoad.size(); };
+  inline size_t getChunksToUnloadCount() { return tempChuncksToUnLoad.size(); };
+  inline size_t getChuncksToUpdateLightCount() {
     return chunckManager.getChuncksToUpdateLightCount();
   };
 
-  WorldLightModel* getWorldLightModel() { return &worldLightModel; };
+  inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };
 
  private:
   MinecraftPipeline mcPip;
@@ -169,6 +169,7 @@ class World {
   void renderTargetBlockHitbox(Block* targetBlock);
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
+
   inline void setIntialTime() {
     g_ticksCounter = static_cast<int>(worldOptions.initialTime);
   };
@@ -191,10 +192,11 @@ class World {
 
   uint32_t seed;
 
-  u8 isCrossedBlock(Blocks block_type);
-  u8 isBlockAtChunkBorder(const Vec4* blockOffset, const Vec4* chunkMinOffset,
-                          const Vec4* chunkMaxOffset);
-  u32 getIndexByOffset(int x, int y, int z);
+  inline u8 isCrossedBlock(Blocks block_type);
+  inline u8 isBlockAtChunkBorder(const Vec4* blockOffset,
+                                 const Vec4* chunkMinOffset,
+                                 const Vec4* chunkMaxOffset);
+  inline u32 getIndexByOffset(int x, int y, int z);
 
   /**
    * @brief Update the visible block faces
@@ -204,19 +206,18 @@ class World {
   int getBlockVisibleFaces(const Vec4* t_blockOffset);
   int getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline bool isBlockTransparentAtPosition(const float& x, const float& y,
-                                           const float& z);
-  inline bool isAirAtPosition(const float& x, const float& y, const float& z);
+  inline u8 isBlockTransparentAtPosition(const float& x, const float& y,
+                                         const float& z);
+  inline u8 isAirAtPosition(const float& x, const float& y, const float& z);
 
-  inline bool isTopFaceVisible(const Vec4* t_blockOffset);
-  inline bool isBottomFaceVisible(const Vec4* t_blockOffset);
-  inline bool isLeftFaceVisible(const Vec4* t_blockOffset);
-  inline bool isRightFaceVisible(const Vec4* t_blockOffset);
-  inline bool isFrontFaceVisible(const Vec4* t_blockOffset);
-  inline bool isBackFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isTopFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isBottomFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isLeftFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isRightFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isFrontFaceVisible(const Vec4* t_blockOffset);
+  inline u8 isBackFaceVisible(const Vec4* t_blockOffset);
 
   void calcRawBlockBBox(MinecraftPipeline* mcPip);
-  void getBlockMinMax(Block* t_block);
 
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);

@@ -228,7 +228,6 @@ enum class ItemId {
 #define WATER_PROPAGATION_PER_TICKS 5 * 4
 #define LAVA_PROPAGATION_PER_TICKS 30 * 4
 
-#define BLOCK_LIQUID_METADATA_MASK 0b00011100
 /**
  * https://minecraft.fandom.com/wiki/Water
  * 1	block	  1
@@ -279,13 +278,16 @@ enum class EntityType {
   Painting
 };
 
-// Two bits for orientation
-#define LIQUID_ORIENTATION_MASK 0b00000011
+// Three bits for orientation
+#define BLOCK_LIQUID_LEVEL_MASK 0b00011100
+
+// Three bits for orientation
+#define BLOCK_LIQUID_LEVEL_MASK 0b00011100
 
 // Three bits for orientation for torch
 #define TORCH_ORIENTATION_MASK 0b00000111
 
-// Three bits for orientation for torch
+// Two bits for orientation
 #define BLOCK_ORIENTATION_MASK 0b00000011
 
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
