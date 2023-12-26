@@ -1067,7 +1067,7 @@ void World::buildChunk(Chunck* t_chunck) {
               block->chunkId = t_chunck->id;
 
               if (block->isCrossed) {
-                block->visibleFaces = 0x111111;
+                block->visibleFaces = 0b111111;
                 block->visibleFacesCount = 2;
               } else {
                 block->visibleFaces = visibleFaces;
@@ -1152,7 +1152,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->chunkId = t_chunck->id;
 
           if (block->isCrossed) {
-            block->visibleFaces = 0x111111;
+            block->visibleFaces = 0b111111;
             block->visibleFacesCount = 2;
           } else {
             block->visibleFaces = visibleFaces;

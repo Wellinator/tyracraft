@@ -57,7 +57,7 @@ void PlayerRenderArmPip::loadItemDrawData() {
   if (tempInfo) {
     Block block = Block(tempInfo);
 
-    block.visibleFaces = 0x111111;
+    block.visibleFaces = 0b111111;
     block.visibleFacesCount = 6;
 
     rawMatrix.identity();
