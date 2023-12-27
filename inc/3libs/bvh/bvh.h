@@ -218,7 +218,7 @@ class AABBTree {
   // add a node to the free list
   void _free_node(index_t index);
 
-  static const uint32_t _max_nodes = 1024 * 8;
+  static const uint32_t _max_nodes = 1024 * 32;
 
   // free and taken bvh nodes
   std::array<Bvh_Node, _max_nodes> _nodes;
