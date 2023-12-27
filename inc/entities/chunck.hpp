@@ -59,8 +59,8 @@ class Chunck {
 
   LevelMap* t_terrain;
   WorldLightModel* t_worldLightModel;
-  void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
 
+  void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
@@ -94,12 +94,18 @@ class Chunck {
     blocks.reserve(CHUNCK_LENGTH);
     _isPreAllocated = true;
   };
-  inline void freeUnusedMemory() { blocks.shrink_to_fit(); };
+
+  inline void freeUnusedMemory() {
+    blocks.shrink_to_fit();
+    _isPreAllocated = false;
+  };
+
   inline u8 isPreAllocated() { return _isPreAllocated; };
 
   Block* getBlockByPosition(const Vec4* pos);
   Block* getBlockByOffset(const Vec4* offset);
 
+  void printMemoryUsage();
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;

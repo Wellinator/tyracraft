@@ -52,9 +52,8 @@ void ChunckManager::update(const Plane* frustumPlanes) {
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                              BlockManager* t_blockManager) {
-  for (u16 i = 0; i < chuncks.size(); i++)
-    if (chuncks[i]->isVisible())
-      chuncks[i]->renderer(t_renderer, stapip, t_blockManager);
+  for (u16 i = 0; i < visibleChunks.size(); i++)
+    visibleChunks[i]->renderer(t_renderer, stapip, t_blockManager);
 }
 
 void ChunckManager::generateChunks() {
@@ -73,6 +72,16 @@ void ChunckManager::generateChunks() {
       }
     }
   }
+
+  printf("---- ChunckManager ----\n");
+  printf("Total of chunks pointers: %i; Memory usage: %ikb\n", chuncks.size(),
+         (sizeof(std::vector<Chunck*>) * chuncks.capacity()) / 1024);
+  printf("Total of chunks: %i; Memory usage: %ikb\n", chuncks.size(),
+         (sizeof(std::vector<Chunck>) * chuncks.capacity()) / 1024);
+  printf("Total of visible chunks pointers: %i; Memory usage: %ikb\n",
+         visibleChunks.size(),
+         (sizeof(std::vector<Chunck*>) * visibleChunks.capacity()) / 1024);
+  printf("-----------------------\n");
 };
 
 Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
@@ -98,12 +107,6 @@ Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
 };
 
 Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id]; };
-
-u8 ChunckManager::isChunkVisible(Chunck* chunk) { return chunk->isVisible(); }
-
-std::vector<Chunck*>* ChunckManager::getVisibleChunks() {
-  return &visibleChunks;
-}
 
 void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
   std::sort(chuncks.begin(), chuncks.end(),

@@ -133,6 +133,10 @@ void Chunck::loadDrawData() {
 
   _isDrawDataLoaded = true;
   state = ChunkState::Loaded;
+
+  vertices.shrink_to_fit();
+  verticesColors.shrink_to_fit();
+  uvMap.shrink_to_fit();
 }
 
 void Chunck::reloadLightData() {
@@ -159,7 +163,6 @@ void Chunck::sortBlockByTransparency() {
   });
 }
 
-
 Block* Chunck::getBlockByPosition(const Vec4* pos) {
   for (size_t i = 0; i < blocks.size(); i++) {
     const auto bPos = blocks[i]->position;
@@ -179,4 +182,19 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
       return blocks[i];
   }
   return nullptr;
+}
+
+void Chunck::printMemoryUsage() {
+  printf("---- Chunk %i ----\n", id);
+  printf("Total of blocks pointers: %i; Memory usage: %i kb\n", blocks.size(),
+         (sizeof(std::vector<Block*>) * blocks.capacity()) / 1024);
+  printf("Total of blocks : %i; Memory usage: %i kb\n", blocks.size(),
+         (sizeof(std::vector<Block>) * blocks.capacity()) / 1024);
+  printf("Total of vertices: %i; Memory usage: %ikb\n", vertices.size(),
+         (sizeof(std::vector<Vec4>) * vertices.capacity()) / 1024);
+  printf("Total of colors: %i; Memory usage: %i kb\n", verticesColors.size(),
+         (sizeof(std::vector<Color>) * verticesColors.capacity()) / 1024);
+  printf("Total of uvMap: %i; Memory usage: %i kb\n", uvMap.size(),
+         (sizeof(std::vector<Vec4>) * uvMap.capacity()) / 1024);
+  printf("-------------------\n");
 }

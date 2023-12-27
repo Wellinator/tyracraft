@@ -275,28 +275,29 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
 void World::scheduleChunksNeighbors(Chunck* t_chunck,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
-  const auto& chuncks = chunckManager.getChuncks();
-  for (u16 i = 0; i < chuncks.size(); i++) {
+  auto chuncks = chunckManager.getChuncks();
+  for (u16 i = 0; i < chuncks->size(); i++) {
     const auto distance =
-        floor(t_chunck->center.distanceTo(chuncks[i]->center) / CHUNCK_SIZE) +
+        floor(t_chunck->center.distanceTo((*chuncks)[i]->center) /
+              CHUNCK_SIZE) +
         1;
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
-        chuncks[i]->clear();
-      } else if (chuncks[i]->state != ChunkState::Clean) {
-        addChunkToUnloadAsync(chuncks[i]);
+        (*chuncks)[i]->clear();
+      } else if ((*chuncks)[i]->state != ChunkState::Clean) {
+        addChunkToUnloadAsync((*chuncks)[i]);
       }
 
-      chuncks[i]->setDistanceFromPlayerInChunks(-1);
+      (*chuncks)[i]->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
-        chuncks[i]->clear();
-        buildChunk(chuncks[i]);
-      } else if (chuncks[i]->state != ChunkState::Loaded) {
-        addChunkToLoadAsync(chuncks[i]);
+        (*chuncks)[i]->clear();
+        buildChunk((*chuncks)[i]);
+      } else if ((*chuncks)[i]->state != ChunkState::Loaded) {
+        addChunkToLoadAsync((*chuncks)[i]);
       }
-      chuncks[i]->setDistanceFromPlayerInChunks(distance);
+      (*chuncks)[i]->setDistanceFromPlayerInChunks(distance);
     }
   }
 

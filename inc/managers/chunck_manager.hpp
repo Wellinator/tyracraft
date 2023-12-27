@@ -9,14 +9,12 @@
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
-#include "renderer/3d/bbox/bbox.hpp"
 #include <math/m4x4.hpp>
 #include <vector>
 #include <queue>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 
-using Tyra::BBox;
 using Tyra::M4x4;
 using Tyra::Plane;
 using Tyra::Renderer;
@@ -32,14 +30,16 @@ class ChunckManager {
   Chunck* getChunckByOffset(const Vec4& offset);
   Chunck* getChunckById(const u16& id);
 
-  std::vector<Chunck*>& getChuncks() { return chuncks; };
+  inline std::vector<Chunck*>* getChuncks() { return &chuncks; };
 
-  std::vector<Chunck*>* getVisibleChunks();
+  inline std::vector<Chunck*>* getVisibleChunks() { return &visibleChunks; };
   inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
   void update(const Plane* frustumPlanes);
-  u8 isChunkVisible(Chunck* chunk);
+
+  inline u8 isChunkVisible(Chunck* chunk) { return chunk->isVisible(); };
+
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void clearAllChunks();
