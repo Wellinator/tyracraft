@@ -97,12 +97,18 @@ const Vec4* VertexBlockData::getTorchUVData() {
 
 BBox* VertexBlockData::getTorchRawBBox() {
   const auto vertexData = VertexBlockData::getTorchVertexData();
-  return new BBox(vertexData, VETEX_COUNT);
+  auto result = new BBox(vertexData, VETEX_COUNT);
+  
+  delete vertexData;
+  return result;
 }
 
 BBox* VertexBlockData::getCuboidRawBBox() {
   const auto vertexData = VertexBlockData::getVertexData();
-  return new BBox(vertexData, VETEX_COUNT);
+  auto result = new BBox(vertexData, VETEX_COUNT);
+  
+  delete vertexData;
+  return result;
 }
 
 BBox* VertexBlockData::getRawBBoxByBlockType(const Blocks type) {
