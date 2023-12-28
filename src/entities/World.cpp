@@ -321,6 +321,8 @@ void World::loadScheduledChunks() {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
       chunk->loadDrawData();
+      chunk->state = ChunkState::Loaded;
+
       tempChuncksToLoad.pop_front();
 
       if (tempChuncksToLoad.size() == 0) {
@@ -1123,6 +1125,8 @@ void World::buildChunk(Chunck* t_chunck) {
 
   t_chunck->loadDrawData();
   t_chunck->freeUnusedMemory();
+
+  t_chunck->state = ChunkState::Loaded;
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {

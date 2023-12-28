@@ -92,6 +92,9 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 void Chunck::clear() {
   clearDrawData();
 
+  visibleFacesCount = 0;
+  blocksCount = 0;
+
   for (u16 i = 0; i < blocks.size(); i++) {
     if (blocks[i]->isCollidable) g_AABBTree->remove(blocks[i]->tree_index);
 
@@ -119,13 +122,9 @@ void Chunck::clearDrawData() {
   uvMap.shrink_to_fit();
 
   _isDrawDataLoaded = false;
-  visibleFacesCount = 0;
-  blocksCount = 0;
 }
 
-void Chunck::loadDrawData() {
-  sortBlockByTransparency();
-
+void Chunck::loadDrawDataWithoutSorting() {
   vertices.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
   verticesColors.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
   uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
@@ -140,7 +139,11 @@ void Chunck::loadDrawData() {
   uvMap.shrink_to_fit();
 
   _isDrawDataLoaded = true;
-  state = ChunkState::Loaded;
+}
+
+void Chunck::loadDrawData() {
+  sortBlockByTransparency();
+  loadDrawDataWithoutSorting();
 }
 
 void Chunck::reloadLightData() {

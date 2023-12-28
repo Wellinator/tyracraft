@@ -67,6 +67,7 @@ class Chunck {
   void clear();
 
   void loadDrawData();
+  void loadDrawDataWithoutSorting();
   void reloadLightData();
   void clearDrawData();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };

@@ -40,9 +40,20 @@ void ChunckManager::update(const Plane* frustumPlanes) {
     if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
       chuncks[i]->update(frustumPlanes);
 
-      if (chuncks[i]->state == ChunkState::Loaded &&
-          chuncks[i]->isDrawDataLoaded()) {
-        visibleChunks.emplace_back(chuncks[i]);
+      if (chuncks[i]->state == ChunkState::Loaded) {
+        if (chuncks[i]->isVisible()) {
+          if (!chuncks[i]->isDrawDataLoaded()) {
+            chuncks[i]->loadDrawDataWithoutSorting();
+          }
+        } else {
+          if (chuncks[i]->isDrawDataLoaded()) {
+            chuncks[i]->clearDrawData();
+          }
+        }
+
+        if (chuncks[i]->isDrawDataLoaded()) {
+          visibleChunks.emplace_back(chuncks[i]);
+        }
       }
     }
   }

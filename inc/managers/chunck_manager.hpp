@@ -32,9 +32,6 @@ class ChunckManager {
 
   inline std::vector<Chunck*>* getChuncks() { return &chuncks; };
 
-  inline std::vector<Chunck*>* getVisibleChunks() { return &visibleChunks; };
-  inline const u16 getVisibleChunksCounter() { return visibleChunks.size(); };
-
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
   void update(const Plane* frustumPlanes);
 
