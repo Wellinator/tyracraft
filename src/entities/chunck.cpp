@@ -51,6 +51,29 @@ void Chunck::update(const Plane* frustumPlanes) {
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                       BlockManager* t_blockManager) {
   if (isDrawDataLoaded()) {
+    StaPipTextureBag textureBag;
+    StaPipInfoBag infoBag;
+    StaPipColorBag colorBag;
+    StaPipBag bag;
+
+    textureBag.coordinates = uvMap.data();
+
+    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+    infoBag.blendingEnabled = true;
+    infoBag.antiAliasingEnabled = false;
+    infoBag.fullClipChecks = false;
+    infoBag.frustumCulling =
+        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+    colorBag.many = verticesColors.data();
+
+    bag.count = vertices.size();
+    bag.vertices = vertices.data();
+    bag.color = &colorBag;
+    bag.info = &infoBag;
+    bag.texture = &textureBag;
+
     t_renderer->renderer3D.usePipeline(stapip);
 
     const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
@@ -73,7 +96,7 @@ void Chunck::clear() {
     if (blocks[i]->isCollidable) g_AABBTree->remove(blocks[i]->tree_index);
 
     delete blocks[i];
-    blocks[i] = NULL;
+    blocks[i] = nullptr;
   }
 
   blocks.clear();
@@ -112,31 +135,12 @@ void Chunck::loadDrawData() {
                           t_worldLightModel, t_terrain);
   }
 
-  // Pre-load packet data
-  textureBag.coordinates = uvMap.data();
-
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = true;
-  infoBag.antiAliasingEnabled = false;
-  infoBag.fullClipChecks = false;
-  infoBag.frustumCulling =
-      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
-  colorBag.many = verticesColors.data();
-
-  bag.count = vertices.size();
-  bag.vertices = vertices.data();
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  _isDrawDataLoaded = true;
-  state = ChunkState::Loaded;
-
   vertices.shrink_to_fit();
   verticesColors.shrink_to_fit();
   uvMap.shrink_to_fit();
+
+  _isDrawDataLoaded = true;
+  state = ChunkState::Loaded;
 }
 
 void Chunck::reloadLightData() {
@@ -146,8 +150,6 @@ void Chunck::reloadLightData() {
     MeshBuilder_BuildLightData(blocks[i], &verticesColors, t_worldLightModel,
                                t_terrain);
   }
-
-  colorBag.many = verticesColors.data();
 }
 
 // TODO: move to a block builder
@@ -182,19 +184,4 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
       return blocks[i];
   }
   return nullptr;
-}
-
-void Chunck::printMemoryUsage() {
-  printf("---- Chunk %i ----\n", id);
-  printf("Total of blocks pointers: %i; Memory usage: %i kb\n", blocks.size(),
-         (sizeof(std::vector<Block*>) * blocks.capacity()) / 1024);
-  printf("Total of blocks : %i; Memory usage: %i kb\n", blocks.size(),
-         (sizeof(std::vector<Block>) * blocks.capacity()) / 1024);
-  printf("Total of vertices: %i; Memory usage: %ikb\n", vertices.size(),
-         (sizeof(std::vector<Vec4>) * vertices.capacity()) / 1024);
-  printf("Total of colors: %i; Memory usage: %i kb\n", verticesColors.size(),
-         (sizeof(std::vector<Color>) * verticesColors.capacity()) / 1024);
-  printf("Total of uvMap: %i; Memory usage: %i kb\n", uvMap.size(),
-         (sizeof(std::vector<Vec4>) * uvMap.capacity()) / 1024);
-  printf("-------------------\n");
 }

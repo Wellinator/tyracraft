@@ -203,8 +203,8 @@ class World {
    * @return false if the block is completely hidden
    *
    */
-  int getBlockVisibleFaces(const Vec4* t_blockOffset);
-  int getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
+  u8 getBlockVisibleFaces(const Vec4* t_blockOffset);
+  u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
   inline u8 isBlockTransparentAtPosition(const float& x, const float& y,
                                          const float& z);

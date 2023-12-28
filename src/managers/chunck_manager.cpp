@@ -16,6 +16,9 @@ ChunckManager::~ChunckManager() {
   }
   chuncks.clear();
   chuncks.shrink_to_fit();
+
+  visibleChunks.clear();
+  visibleChunks.shrink_to_fit();
 }
 
 void ChunckManager::init(WorldLightModel* t_worldLightModel,
@@ -48,6 +51,8 @@ void ChunckManager::update(const Plane* frustumPlanes) {
     isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
     if (isTimeToUpdateLight) reloadLightDataAsync();
   }
+
+  visibleChunks.shrink_to_fit();
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -72,16 +77,6 @@ void ChunckManager::generateChunks() {
       }
     }
   }
-
-  printf("---- ChunckManager ----\n");
-  printf("Total of chunks pointers: %i; Memory usage: %ikb\n", chuncks.size(),
-         (sizeof(std::vector<Chunck*>) * chuncks.capacity()) / 1024);
-  printf("Total of chunks: %i; Memory usage: %ikb\n", chuncks.size(),
-         (sizeof(std::vector<Chunck>) * chuncks.capacity()) / 1024);
-  printf("Total of visible chunks pointers: %i; Memory usage: %ikb\n",
-         visibleChunks.size(),
-         (sizeof(std::vector<Chunck*>) * visibleChunks.capacity()) / 1024);
-  printf("-----------------------\n");
 };
 
 Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {

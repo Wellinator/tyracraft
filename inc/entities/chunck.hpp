@@ -105,17 +105,10 @@ class Chunck {
   Block* getBlockByPosition(const Vec4* pos);
   Block* getBlockByOffset(const Vec4* offset);
 
-  void printMemoryUsage();
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
-
-  StaPipTextureBag textureBag;
-  StaPipInfoBag infoBag;
-  StaPipColorBag colorBag;
-  StaPipBag bag;
-
   void sortBlockByTransparency();
 
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };

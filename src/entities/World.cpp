@@ -294,9 +294,10 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
       if (force_loading) {
         (*chuncks)[i]->clear();
         buildChunk((*chuncks)[i]);
-      } else if ((*chuncks)[i]->state != ChunkState::Loaded) {
+      } else if ((*chuncks)[i]->state == ChunkState::Clean) {
         addChunkToLoadAsync((*chuncks)[i]);
       }
+
       (*chuncks)[i]->setDistanceFromPlayerInChunks(distance);
     }
   }
@@ -321,10 +322,14 @@ void World::loadScheduledChunks() {
     if (chunk->state == ChunkState::PreLoaded) {
       chunk->loadDrawData();
       tempChuncksToLoad.pop_front();
-      return;
+
+      if (tempChuncksToLoad.size() == 0) {
+        tempChuncksToLoad.shrink_to_fit();
+      }
     } else if (chunk->state != ChunkState::Loaded) {
       return buildChunkAsync(chunk, worldOptions.drawDistance);
     }
+
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 }
@@ -335,8 +340,14 @@ void World::unloadScheduledChunks() {
     if (chunk->state != ChunkState::Clean) {
       chunk->clear();
       tempChuncksToUnLoad.pop_front();
+
+      if (tempChuncksToUnLoad.size() == 0) {
+        tempChuncksToUnLoad.shrink_to_fit();
+      }
+
       return;
     }
+
     chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 }
@@ -461,11 +472,11 @@ u8 World::isRightFaceVisible(const Vec4* t_blockOffset) {
                                       t_blockOffset->z);
 }
 
-int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
+u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
   const BlockOrientation orientation = GetOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
-  int result = 0x000000;
+  u8 result = 0b000000;
 
   switch (orientation) {
     case BlockOrientation::North:
@@ -508,7 +519,7 @@ int World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
   return result;
 }
 
-int World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
+u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   const auto x = t_blockOffset->x;
   const auto y = t_blockOffset->y;
   const auto z = t_blockOffset->z;
@@ -516,7 +527,7 @@ int World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   const BlockOrientation orientation = GetOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
-  int result = 0x000000;
+  u8 result = 0b000000;
 
   switch (orientation) {
     case BlockOrientation::North:
@@ -1049,7 +1060,7 @@ void World::buildChunk(Chunck* t_chunck) {
             block_type != Blocks::TOTAL_OF_BLOCKS) {
           Vec4 tempBlockOffset = Vec4(x, y, z);
 
-          const int visibleFaces =
+          const u8 visibleFaces =
               block_type == Blocks::WATER_BLOCK ||
                       block_type == Blocks::LAVA_BLOCK
                   ? getLiquidBlockVisibleFaces(&tempBlockOffset)
@@ -1125,6 +1136,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
   if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
 
   while (batchCounter < limit) {
+    t_chunck->state = ChunkState::Loading;
+
     if (x >= t_chunck->maxOffset.x) break;
     safeWhileBreak++;
 
@@ -1135,7 +1148,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
         block_type != Blocks::TOTAL_OF_BLOCKS) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
 
-      const int visibleFaces =
+      const u8 visibleFaces =
           block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK
               ? getLiquidBlockVisibleFaces(&tempBlockOffset)
               : getBlockVisibleFaces(&tempBlockOffset);
@@ -1165,6 +1178,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
           ModelBuilder_BuildModel(block, terrain);
+
           BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
           BBox tempBBox = rawBBox->getTransformed(block->model);
 
@@ -1204,6 +1218,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
     if (safeWhileBreak > CHUNCK_LENGTH) {
       TYRA_WARN("Safely breaking while loop");
+      t_chunck->clear();
       break;
     }
   }

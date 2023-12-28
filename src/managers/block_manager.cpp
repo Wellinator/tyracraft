@@ -25,9 +25,11 @@ BlockManager::~BlockManager() {
   this->blockSfxRepositories.shrink_to_fit();
 
   for (u8 i = 0; i < this->damage_overlay.size(); i++) {
+    delete this->damage_overlay[i]->textureOffset;
     delete this->damage_overlay[i];
     this->damage_overlay[i] = nullptr;
   }
+
   this->damage_overlay.clear();
   this->damage_overlay.shrink_to_fit();
 }
