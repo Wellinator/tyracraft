@@ -23,6 +23,7 @@
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "memory-monitor/memory_monitor.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
 #include "entities/sfx_config.hpp"
@@ -135,6 +136,10 @@ class World {
   inline size_t getChunksToUnloadCount() { return tempChuncksToUnLoad.size(); };
   inline size_t getChuncksToUpdateLightCount() {
     return chunckManager.getChuncksToUpdateLightCount();
+  };
+
+  inline u8 canBuildChunk() {
+    return (get_used_memory() >> 20) < MAX_SAFE_MEMORY_ALLOCATION;
   };
 
   inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };

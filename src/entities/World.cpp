@@ -275,6 +275,8 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
 void World::scheduleChunksNeighbors(Chunck* t_chunck,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
+  if (!canBuildChunk()) return;
+
   auto chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks->size(); i++) {
     const auto distance =
@@ -317,7 +319,7 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 }
 
 void World::loadScheduledChunks() {
-  if (tempChuncksToLoad.size() > 0) {
+  if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
       chunk->loadDrawData();
@@ -1049,6 +1051,8 @@ u8 World::isCrossedBlock(Blocks block_type) {
 
 // TODO: move to chunk builder
 void World::buildChunk(Chunck* t_chunck) {
+  if (!canBuildChunk()) return;
+
   t_chunck->preAllocateMemory();
 
   for (size_t x = t_chunck->minOffset.x; x < t_chunck->maxOffset.x; x++) {
@@ -1123,13 +1127,16 @@ void World::buildChunk(Chunck* t_chunck) {
     }
   }
 
-  t_chunck->loadDrawData();
   t_chunck->freeUnusedMemory();
 
   t_chunck->state = ChunkState::Loaded;
 }
 
 void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
+  if (!canBuildChunk()) {
+    return TYRA_WARN("Out of memory. Not loading chunk!");
+  };
+
   uint16_t safeWhileBreak = 0;
   uint16_t batchCounter = 0;
   uint16_t x = t_chunck->tempLoadingOffset.x;
