@@ -198,9 +198,6 @@ class World {
   uint32_t seed;
 
   inline u8 isCrossedBlock(Blocks block_type);
-  inline u8 isBlockAtChunkBorder(const Vec4* blockOffset,
-                                 const Vec4* chunkMinOffset,
-                                 const Vec4* chunkMaxOffset);
   inline u32 getIndexByOffset(int x, int y, int z);
 
   /**
