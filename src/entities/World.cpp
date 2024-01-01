@@ -146,7 +146,6 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   unloadScheduledChunks();
   loadScheduledChunks();
 
-  // Update chunk light data every 200 ticks
   if (isTicksCounterAt(6)) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
   }
@@ -168,12 +167,12 @@ void World::render() {
 
 void World::buildInitialPosition() {
   TYRA_LOG("building initial position...");
-  Chunck* initialChunck = chunckManager.getChunckByPosition(worldSpawnArea);
+  Chunck* initialChunck =
+      chunckManager.getChunckByWorldPosition(worldSpawnArea);
   if (initialChunck != nullptr) {
     initialChunck->clear();
     buildChunk(initialChunck);
     scheduleChunksNeighbors(initialChunck, lastPlayerPosition, true);
-    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 };
 
@@ -183,10 +182,10 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
   if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
-    Chunck* currentChunck = chunckManager.getChunckByPosition(currentPlayerPos);
+    Chunck* currentChunck =
+        chunckManager.getChunckByWorldPosition(currentPlayerPos);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
-      chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
       t_player->currentChunckId = currentChunck->id;
       scheduleChunksNeighbors(currentChunck, currentPlayerPos);
     }
@@ -194,7 +193,7 @@ void World::updateChunkByPlayerPosition(Player* t_player) {
 }
 
 void World::reloadWorldArea(const Vec4& position) {
-  Chunck* currentChunck = chunckManager.getChunckByPosition(position);
+  Chunck* currentChunck = chunckManager.getChunckByWorldPosition(position);
   if (currentChunck) {
     buildChunk(currentChunck);
     scheduleChunksNeighbors(currentChunck, position, true);
@@ -202,74 +201,42 @@ void World::reloadWorldArea(const Vec4& position) {
 }
 
 void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
-  Chunck* currentChunk = chunckManager.getChunckByOffset(pos);
+  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(pos);
   if (!currentChunk) return;
-
-  const u8 isAtBorder = isBlockAtChunkBorder(&pos, &currentChunk->minOffset,
-                                             &currentChunk->maxOffset);
-
-  if (isAtBorder) {
-    if (currentChunk->maxOffset.z - 1 == pos.z) {
-      // Left
-      Chunck* leftChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x, pos.y, pos.z + 1));
-      if (leftChunk && leftChunk->id != currentChunk->id) {
-        leftChunk->clear();
-        buildChunk(leftChunk);
-      }
-    } else if (currentChunk->minOffset.z == pos.z) {
-      // Right
-      Chunck* rightChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x, pos.y, pos.z - 1));
-
-      if (rightChunk && rightChunk->id != currentChunk->id) {
-        rightChunk->clear();
-        buildChunk(rightChunk);
-      }
-    }
-
-    if (currentChunk->maxOffset.x - 1 == pos.x) {
-      // Front
-      Chunck* frontChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x + 1, pos.y, pos.z));
-
-      if (frontChunk && frontChunk->id != currentChunk->id) {
-        frontChunk->clear();
-        buildChunk(frontChunk);
-      }
-    } else if (currentChunk->minOffset.x == pos.x) {
-      // Back
-      Chunck* backChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x - 1, pos.y, pos.z));
-      if (backChunk && backChunk->id != currentChunk->id) {
-        backChunk->clear();
-        buildChunk(backChunk);
-      }
-    }
-
-    if (currentChunk->maxOffset.y - 1 == pos.y) {
-      // Top
-      Chunck* topChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x, pos.y + 1, pos.z));
-
-      if (topChunk && topChunk->id != currentChunk->id) {
-        topChunk->clear();
-        buildChunk(topChunk);
-      }
-    } else if (currentChunk->minOffset.y == pos.y) {
-      // Bottom
-      Chunck* bottomChunk =
-          chunckManager.getChunckByOffset(Vec4(pos.x, pos.y - 1, pos.z));
-
-      if (bottomChunk && bottomChunk->id != currentChunk->id) {
-        bottomChunk->clear();
-        buildChunk(bottomChunk);
-      }
-    }
-  }
 
   currentChunk->clear();
   buildChunk(currentChunk);
+
+  const u8 isAtBottomBorder = pos.y == currentChunk->minOffset.y;
+  const u8 isAtTopBorder = pos.y + 1 == currentChunk->maxOffset.y;
+  const u8 isAtRightBorder = pos.x == currentChunk->minOffset.x;
+  const u8 isAtLeftBorder = pos.x + 1 == currentChunk->maxOffset.x;
+  const u8 isAtFrontBorder = pos.z == currentChunk->minOffset.z;
+  const u8 isAtBackBorder = pos.z + 1 == currentChunk->maxOffset.z;
+
+  if (isAtRightBorder && currentChunk->rightNeighbor) {
+    currentChunk->rightNeighbor->clear();
+    buildChunk(currentChunk->rightNeighbor);
+  } else if (isAtLeftBorder && currentChunk->leftNeighbor) {
+    currentChunk->leftNeighbor->clear();
+    buildChunk(currentChunk->leftNeighbor);
+  }
+
+  if (isAtFrontBorder && currentChunk->frontNeighbor) {
+    currentChunk->frontNeighbor->clear();
+    buildChunk(currentChunk->frontNeighbor);
+  } else if (isAtBackBorder && currentChunk->backNeighbor) {
+    currentChunk->backNeighbor->clear();
+    buildChunk(currentChunk->backNeighbor);
+  }
+
+  if (isAtTopBorder && currentChunk->topNeighbor) {
+    currentChunk->topNeighbor->clear();
+    buildChunk(currentChunk->topNeighbor);
+  } else if (isAtBottomBorder && currentChunk->bottomNeighbor) {
+    currentChunk->bottomNeighbor->clear();
+    buildChunk(currentChunk->bottomNeighbor);
+  }
 }
 
 void World::scheduleChunksNeighbors(Chunck* t_chunck,
@@ -333,8 +300,6 @@ void World::loadScheduledChunks() {
     } else if (chunk->state != ChunkState::Loaded) {
       return buildChunkAsync(chunk, worldOptions.drawDistance);
     }
-
-    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 }
 
@@ -351,8 +316,6 @@ void World::unloadScheduledChunks() {
 
       return;
     }
-
-    chunckManager.sortChunkByPlayerPosition(&lastPlayerPosition);
   }
 }
 
@@ -671,8 +634,7 @@ void World::removeBlock(Block* blockToRemove) {
         terrain, upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
 
     if (isVegetation(b) || b == Blocks::TORCH) {
-      auto chunk =
-          chunckManager.getChunckByPosition(upBlockOffset * DUBLE_BLOCK_SIZE);
+      auto chunk = chunckManager.getChunkByBlockOffset(upBlockOffset);
       Block* upperBlock = chunk->getBlockByOffset(&upBlockOffset);
       if (upperBlock) removeBlock(upperBlock);
     }
@@ -1033,17 +995,6 @@ void World::playFlowingWaterSound() {
   t_soundManager->playSfx(sound, ch);
 }
 
-u8 World::isBlockAtChunkBorder(const Vec4* blockOffset,
-                               const Vec4* chunkMinOffset,
-                               const Vec4* chunkMaxOffset) {
-  return blockOffset->y == chunkMinOffset->y ||
-         blockOffset->y == chunkMaxOffset->y - 1 ||
-         blockOffset->x == chunkMinOffset->x ||
-         blockOffset->x == chunkMaxOffset->x - 1 ||
-         blockOffset->z == chunkMinOffset->z ||
-         blockOffset->z == chunkMaxOffset->z - 1;
-}
-
 u8 World::isCrossedBlock(Blocks block_type) {
   return block_type == Blocks::POPPY_FLOWER ||
          block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
@@ -1090,9 +1041,6 @@ void World::buildChunk(Chunck* t_chunck) {
                 block->visibleFaces = visibleFaces;
                 block->visibleFacesCount = Utils::countSetBits(visibleFaces);
               }
-
-              block->isAtChunkBorder = isBlockAtChunkBorder(
-                  &tempBlockOffset, &t_chunck->minOffset, &t_chunck->maxOffset);
 
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
@@ -1183,9 +1131,6 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
             block->visibleFacesCount = Utils::countSetBits(visibleFaces);
           }
 
-          block->isAtChunkBorder = isBlockAtChunkBorder(
-              &tempBlockOffset, &t_chunck->minOffset, &t_chunck->maxOffset);
-
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
           ModelBuilder_BuildModel(block, terrain);
@@ -1212,10 +1157,10 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           t_chunck->addBlock(block);
         }
-
-        batchCounter++;
       }
     }
+
+    batchCounter++;
 
     y++;
     if (y >= t_chunck->maxOffset.y) {
@@ -1308,7 +1253,7 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;
     Chunck* currentChunck =
-        chunckManager.getChunckByPosition(lastPlayerPosition);
+        chunckManager.getChunckByWorldPosition(lastPlayerPosition);
     if (currentChunck)
       scheduleChunksNeighbors(currentChunck, lastPlayerPosition, true);
   }
@@ -1384,7 +1329,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
     SetLiquidOrientationDataToMap(terrain, x, y, z,
                                   static_cast<BlockOrientation>(orientation));
 
-    Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+    Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
     if (moddedChunk && moddedChunk->isDrawDataLoaded()) {
       affectedChunksIdByLiquidPropagation.insert(moddedChunk);
     }
@@ -1417,7 +1362,7 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
     SetLiquidDataToMap(terrain, x, y, z, (u8)LiquidLevel::Percent0);
   }
 
-  Chunck* moddedChunk = chunckManager.getChunckByOffset(Vec4(x, y, z));
+  Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
   if (moddedChunk) {
     affectedChunksIdByLiquidPropagation.insert(moddedChunk);
   }
