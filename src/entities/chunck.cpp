@@ -60,7 +60,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = true;
+    infoBag.blendingEnabled = false;
     infoBag.antiAliasingEnabled = false;
     infoBag.fullClipChecks = false;
     infoBag.frustumCulling =
@@ -70,6 +70,48 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     bag.count = vertices.size();
     bag.vertices = vertices.data();
+    bag.color = &colorBag;
+    bag.info = &infoBag;
+    bag.texture = &textureBag;
+
+    t_renderer->renderer3D.usePipeline(stapip);
+
+    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
+    textureBag.texture = isPlayerNear
+                             ? t_blockManager->getBlocksTexture()
+                             : t_blockManager->getBlocksTextureLowRes();
+
+    M4x4 rawMatrix = M4x4::Identity;
+    infoBag.model = &rawMatrix;
+
+    stapip->core.render(&bag);
+    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
+  }
+};
+
+void Chunck::rendererTransparentData(Renderer* t_renderer,
+                                     StaticPipeline* stapip,
+                                     BlockManager* t_blockManager) {
+  if (isDrawDataLoaded()) {
+    StaPipTextureBag textureBag;
+    StaPipInfoBag infoBag;
+    StaPipColorBag colorBag;
+    StaPipBag bag;
+
+    textureBag.coordinates = uvMapWithTransparency.data();
+
+    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+    infoBag.blendingEnabled = true;
+    infoBag.antiAliasingEnabled = false;
+    infoBag.fullClipChecks = false;
+    infoBag.frustumCulling =
+        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+    colorBag.many = verticesColorsWithTransparency.data();
+
+    bag.count = verticesWithTransparency.size();
+    bag.vertices = verticesWithTransparency.data();
     bag.color = &colorBag;
     bag.info = &infoBag;
     bag.texture = &textureBag;
@@ -121,6 +163,13 @@ void Chunck::clearDrawData() {
   uvMap.clear();
   uvMap.shrink_to_fit();
 
+  verticesWithTransparency.clear();
+  verticesWithTransparency.shrink_to_fit();
+  verticesColorsWithTransparency.clear();
+  verticesColorsWithTransparency.shrink_to_fit();
+  uvMapWithTransparency.clear();
+  uvMapWithTransparency.shrink_to_fit();
+
   _isDrawDataLoaded = false;
 }
 
@@ -129,29 +178,49 @@ void Chunck::loadDrawDataWithoutSorting() {
   verticesColors.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
   uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
 
+  verticesWithTransparency.reserve(visibleFacesCount *
+                                   VertexBlockData::FACES_COUNT);
+  verticesColorsWithTransparency.reserve(visibleFacesCount *
+                                         VertexBlockData::FACES_COUNT);
+  uvMapWithTransparency.reserve(visibleFacesCount *
+                                VertexBlockData::FACES_COUNT);
+
   for (size_t i = 0; i < blocks.size(); i++) {
-    MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
-                          t_worldLightModel, t_terrain);
+    if (blocks[i]->hasTransparency) {
+      MeshBuilder_BuildMesh(
+          blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
+          &uvMapWithTransparency, t_worldLightModel, t_terrain);
+    } else {
+      MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
+                            t_worldLightModel, t_terrain);
+    }
   }
 
   vertices.shrink_to_fit();
   verticesColors.shrink_to_fit();
   uvMap.shrink_to_fit();
 
+  verticesWithTransparency.shrink_to_fit();
+  verticesColorsWithTransparency.shrink_to_fit();
+  uvMapWithTransparency.shrink_to_fit();
+
   _isDrawDataLoaded = true;
 }
 
-void Chunck::loadDrawData() {
-  sortBlockByTransparency();
-  loadDrawDataWithoutSorting();
-}
+void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }
 
 void Chunck::reloadLightData() {
   verticesColors.clear();
+  verticesColorsWithTransparency.clear();
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    MeshBuilder_BuildLightData(blocks[i], &verticesColors, t_worldLightModel,
-                               t_terrain);
+    if (blocks[i]->hasTransparency) {
+      MeshBuilder_BuildLightData(blocks[i], &verticesColorsWithTransparency,
+                                 t_worldLightModel, t_terrain);
+    } else {
+      MeshBuilder_BuildLightData(blocks[i], &verticesColors, t_worldLightModel,
+                                 t_terrain);
+    }
   }
 }
 
@@ -160,12 +229,6 @@ void Chunck::reloadLightData() {
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
   this->frustumCheck = Utils::FrustumAABBIntersect(
       frustumPlanes, &scaledMinOffset, &scaledMaxOffset);
-}
-
-void Chunck::sortBlockByTransparency() {
-  std::sort(blocks.begin(), blocks.end(), [](const Block* a, const Block* b) {
-    return (u8)a->hasTransparency < (u8)b->hasTransparency;
-  });
 }
 
 Block* Chunck::getBlockByPosition(const Vec4* pos) {

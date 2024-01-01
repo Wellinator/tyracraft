@@ -46,6 +46,7 @@ class Chunck {
   ChunkState state = ChunkState::Clean;
 
   std::vector<Block*> blocks;
+
   Vec4 tempLoadingOffset = Vec4();
   Vec4 minOffset = Vec4();
   Vec4 maxOffset = Vec4();
@@ -71,6 +72,8 @@ class Chunck {
   void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
+  void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip,
+                               BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
   void clear();
 
@@ -118,7 +121,11 @@ class Chunck {
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
-  void sortBlockByTransparency();
+
+  // Transparency data
+  std::vector<Vec4> verticesWithTransparency;
+  std::vector<Color> verticesColorsWithTransparency;
+  std::vector<Vec4> uvMapWithTransparency;
 
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
