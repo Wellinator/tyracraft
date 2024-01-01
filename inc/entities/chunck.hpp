@@ -54,6 +54,14 @@ class Chunck {
   Vec4 center = Vec4();
   BBox* bbox;
 
+  // Neighborhoods references;
+  Chunck* frontNeighbor = nullptr;
+  Chunck* backNeighbor = nullptr;
+  Chunck* leftNeighbor = nullptr;
+  Chunck* rightNeighbor = nullptr;
+  Chunck* topNeighbor = nullptr;
+  Chunck* bottomNeighbor = nullptr;
+
   int visibleFacesCount = 0;
   u16 blocksCount = 0;
 
