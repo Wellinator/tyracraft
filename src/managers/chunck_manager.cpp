@@ -88,41 +88,28 @@ void ChunckManager::generateChunks() {
       }
     }
   }
+
+  tempId = 0;
+  for (size_t x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
+    for (size_t z = 0; z < OVERWORLD_H_DISTANCE_IN_CHUNKS; z++) {
+      for (size_t y = 0; y < OVERWORLD_V_DISTANCE_IN_CHUNKS; y++) {
+        auto origin = chuncks[tempId++];
+
+        origin->topNeighbor = getChunkByOffset(Vec4(x, y + 1, z));
+        origin->bottomNeighbor = getChunkByOffset(Vec4(x, y - 1, z));
+        origin->backNeighbor = getChunkByOffset(Vec4(x, y, z + 1));
+        origin->frontNeighbor = getChunkByOffset(Vec4(x, y, z - 1));
+        origin->leftNeighbor = getChunkByOffset(Vec4(x + 1, y, z));
+        origin->rightNeighbor = getChunkByOffset(Vec4(x - 1, y, z));
+      }
+    }
+  }
 };
 
-Chunck* ChunckManager::getChunckByPosition(const Vec4& position) {
-  for (u16 i = 0; i < chuncks.size(); i++)
-    if (position.collidesBox(chuncks[i]->minOffset * DUBLE_BLOCK_SIZE,
-                             chuncks[i]->maxOffset * DUBLE_BLOCK_SIZE)) {
-      return chuncks[i];
-    }
+Chunck* ChunckManager::getChunkById(const u16& id) {
+  if (id < chuncks.size()) return chuncks[id];
   return nullptr;
 };
-
-Chunck* ChunckManager::getChunckByOffset(const Vec4& offset) {
-  for (size_t i = 0; i < chuncks.size(); i++)
-    if (offset.x >= chuncks[i]->minOffset.x &&
-        offset.x < chuncks[i]->maxOffset.x &&
-        offset.y >= chuncks[i]->minOffset.y &&
-        offset.y < chuncks[i]->maxOffset.y &&
-        offset.z >= chuncks[i]->minOffset.z &&
-        offset.z < chuncks[i]->maxOffset.z) {
-      return chuncks[i];
-    }
-  return nullptr;
-};
-
-Chunck* ChunckManager::getChunckById(const u16& id) { return chuncks[id]; };
-
-void ChunckManager::sortChunkByPlayerPosition(Vec4* playerPosition) {
-  std::sort(chuncks.begin(), chuncks.end(),
-            [playerPosition](const Chunck* a, const Chunck* b) {
-              const Vec4 dest = *playerPosition / DUBLE_BLOCK_SIZE;
-              const float distanceA = (a->center).distanceTo(dest);
-              const float distanceB = (b->center).distanceTo(dest);
-              return distanceA >= distanceB;
-            });
-}
 
 void ChunckManager::enqueueChunksToReloadLight() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
@@ -154,7 +141,76 @@ void ChunckManager::reloadLightDataOfAllChunks() {
   clearLightDataQueue();
 }
 
-u32 ChunckManager::getIndexByOffset(u16 x, u16 y, u16 z) {
-  return (y * OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD) +
-         (z * OVERWORLD_H_DISTANCE_IN_CHUNKS) + x;
+const uint16_t ChunckManager::getChunkIdByPosition(
+    const Vec4& chunkMinPosition) {
+  const Vec4 pos = chunkMinPosition / CHUNCK_SIZE;
+  const uint16_t row = pos.y;
+  const uint16_t column = pos.z * OVERWORLD_V_DISTANCE_IN_CHUNKS;
+  const uint16_t page = pos.x * OVERWORLD_PAGE_IN_CHUNKS;
+
+  return page + column + row;
+}
+
+const uint16_t ChunckManager::getChunkIdByOffset(const Vec4& chunkMinOffset) {
+  const Vec4 pos = chunkMinOffset;
+  const uint16_t row = pos.y;
+  const uint16_t column = pos.z * OVERWORLD_V_DISTANCE_IN_CHUNKS;
+  const uint16_t page = pos.x * OVERWORLD_PAGE_IN_CHUNKS;
+
+  return page + column + row;
+}
+
+Vec4 ChunckManager::getChunkPosById(const uint16_t& id) {
+  const int x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS);
+  const int z = static_cast<int>((id - (x * OVERWORLD_PAGE_IN_CHUNKS)) /
+                                 OVERWORLD_V_DISTANCE_IN_CHUNKS);
+  const int y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS);
+
+  return Vec4(x, y, z) * CHUNCK_SIZE;
+}
+
+void ChunckManager::getChunkPosById(const uint16_t& id, Vec4* result) {
+  result->x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS) * CHUNCK_SIZE;
+  result->z = static_cast<int>((id - (result->x * OVERWORLD_PAGE_IN_CHUNKS)) /
+                               OVERWORLD_V_DISTANCE_IN_CHUNKS) *
+              CHUNCK_SIZE;
+  result->y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS) * CHUNCK_SIZE;
+}
+
+Chunck* ChunckManager::getChunkByPosition(const Vec4& chunkMinPosition) {
+  const uint16_t id = getChunkIdByPosition(chunkMinPosition);
+
+  if (id < chuncks.size()) {
+    return chuncks[id];
+  } else {
+    return nullptr;
+  }
+}
+
+Chunck* ChunckManager::getChunkByOffset(const Vec4& chunkMinOffset) {
+  const uint16_t id = getChunkIdByOffset(chunkMinOffset);
+
+  if (id < chuncks.size()) {
+    return chuncks[id];
+  } else {
+    return nullptr;
+  }
+}
+
+Chunck* ChunckManager::getChunckByWorldPosition(const Vec4& pos) {
+  Vec4 offset = (pos / DUBLE_BLOCK_SIZE) / CHUNCK_SIZE;
+  Vec4 tempChunkMin =
+      Vec4(std::floor(offset.x), std::floor(offset.y), std::floor(offset.z)) *
+      CHUNCK_SIZE;
+
+  return getChunkByPosition(tempChunkMin);
+}
+
+Chunck* ChunckManager::getChunkByBlockOffset(const Vec4& offset) {
+  Vec4 _offset = offset / CHUNCK_SIZE;
+  Vec4 tempChunkMin = Vec4(std::floor(_offset.x), std::floor(_offset.y),
+                           std::floor(_offset.z)) *
+                      CHUNCK_SIZE;
+
+  return getChunkByPosition(tempChunkMin);
 }
