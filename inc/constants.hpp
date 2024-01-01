@@ -31,16 +31,20 @@
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
+#define OVERWORLD_V_DISTANCE_IN_CHUNKS \
+  (OVERWORLD_V_DISTANCE / CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS \
-  (OVERWORLD_H_DISTANCE /              \
-   CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
+  (OVERWORLD_H_DISTANCE / CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD \
   (OVERWORLD_H_DISTANCE_IN_CHUNKS *         \
    OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Total horizontal overworld distance in
                                     // chunks squared;
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
-  (OVERWORLD_V_DISTANCE /              \
-   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+  (OVERWORLD_V_DISTANCE / CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+#define OVERWORLD_PAGE_IN_CHUNKS    \
+  (OVERWORLD_V_DISTANCE_IN_CHUNKS * \
+   OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Overworld V * H distance in
+                                    // chunks;
 
 // Defines how many chunks will be loaded from player position
 #define MIN_DRAW_DISTANCE 2
@@ -48,8 +52,8 @@
 
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
-#define UNLOAD_CHUNK_BATCH 256
-#define LOAD_CHUNK_BATCH 32
+#define UNLOAD_CHUNK_BATCH 128
+#define LOAD_CHUNK_BATCH 128
 
 // Texture atlas info
 #define MAX_TEX_COLS 16
