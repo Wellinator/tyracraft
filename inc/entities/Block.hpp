@@ -42,7 +42,6 @@ class Block : public Entity {
   u8 isCollidable = false;
   u8 hasTransparency = false;
   u8 isBreakable = false;
-  u8 isAtChunkBorder = false;
   u8 isCrossed = false;
 
   float damage = 0;
