@@ -19,6 +19,7 @@
 #include "entities/chunck.hpp"
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
+#include "entities/level.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -40,18 +41,15 @@ using Tyra::Vec4;
 /** Player 3D object class  */
 class Pig : public PassiveMob {
  public:
-  Pig(Renderer* t_renderer, SoundManager* t_soundManager);
+  Pig(Renderer* t_renderer, SoundManager* t_soundManager, Texture* pigTexture);
   ~Pig();
 
   void update(const float& deltaTime, const Vec4& movementDir,
               LevelMap* t_terrain);
-  void render();
+  void render(){};
 
-  Vec4 spawnPosition;
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isMoving;
-
-  std::unique_ptr<DynamicMesh> mesh;
 
   // Phisycs variables
   Entity* underEntity = nullptr;
@@ -60,9 +58,6 @@ class Pig : public PassiveMob {
   inline BBox getHitBox() const {
     return bbox->getTransformed(mesh->translation);
   };
-
-  DynPipOptions modelDynpipOptions;
-  DynamicPipeline dynpip;
 
   Renderer* t_renderer;
 
@@ -82,7 +77,7 @@ class Pig : public PassiveMob {
   bool isWalkingAnimationSet, isStandStillAnimationSet;
 
   // Forces values
-  float acceleration = 100.0F;
+  float acceleration = 80.0F;
   float speed = 0;
   float maxSpeed = 20.0F;
 
@@ -93,7 +88,6 @@ class Pig : public PassiveMob {
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
   Texture* texture;
 
-  void loadTexture();
   void loadMesh();
   void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
@@ -108,7 +102,7 @@ class Pig : public PassiveMob {
   void animate();
 
   // Animations
-  float baseAnimationSpeed = 0.1F;
+  float baseAnimationSpeed = 0.35F;
   std::vector<u32> standStillSequence = {0};
   std::vector<u32> walkSequence = {1, 2, 1};
 

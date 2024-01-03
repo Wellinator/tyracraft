@@ -1,5 +1,6 @@
 #include "entities/mob/neutralMob.hpp"
 
-NeutralMob::NeutralMob() : Mob(MobType::Neutral){};
+NeutralMob::NeutralMob(const MobType mobType)
+    : Mob(MobCategory::Neutral, mobType){};
 
 NeutralMob::~NeutralMob(){};

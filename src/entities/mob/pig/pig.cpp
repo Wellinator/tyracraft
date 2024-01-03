@@ -14,11 +14,13 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager) : PassiveMob() {
+Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager,
+         Texture* pigTexture)
+    : PassiveMob(MobType::Pig) {
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
+  this->texture = pigTexture;
 
-  loadTexture();
   loadMesh();
   loadStaticBBox();
 
@@ -26,14 +28,6 @@ Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager) : PassiveMob() {
   isStandStillAnimationSet = false;
 
   isOnGround = true;
-
-  dynpip.setRenderer(&this->t_renderer->core);
-  modelDynpipOptions.antiAliasingEnabled = false;
-  modelDynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  modelDynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  modelDynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
 }
 
 Pig::~Pig() {
@@ -42,7 +36,6 @@ Pig::~Pig() {
 
   delete bbox;
 
-  t_renderer->getTextureRepository().free(texture);
   walkSequence.clear();
   walkSequence.shrink_to_fit();
 
@@ -63,7 +56,6 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
 
   if (isMoving) {
     Vec4 nextPosition = getNextPosition(deltaTime, movementDir);
-
     if (nextPosition.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition = updatePosition(deltaTime, nextPosition);
 
@@ -92,20 +84,16 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
   }
 
   // TODO: add direction
-  // mesh.get()->rotation.identity();
-  // float theta = Tyra::Math::atan2(movementDir.x, movementDir.z);
-  // mesh->rotation.rotateY(theta);
+  mesh.get()->rotation.identity();
+  float revTheta =
+      Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
+  mesh->rotation.rotateY(revTheta);
 
   const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
   updateTerrainHeightAtEntityPosition(nextYPos);
   updateGravity(nextYPos);
 
   animate();
-}
-
-void Pig::render() {
-  t_renderer->renderer3D.usePipeline(&dynpip);
-  dynpip.render(mesh.get(), &modelDynpipOptions);
 }
 
 Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
@@ -121,10 +109,7 @@ Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
     if (speed < _maxSpeed) speed = _maxSpeed;
   }
 
-  Vec4 _direction =
-      Vec4(direction.x + direction.z, 0.0F, direction.z + direction.x)
-          .getNormalized();
-
+  Vec4 _direction = direction * Vec4(1, 0, 1);
   Vec4 result = _direction * (speed * deltaTime);
 
   if (_isOnWater) {
@@ -298,7 +283,7 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition) {
 
 void Pig::loadMesh() {
   ObjLoaderOptions options;
-  options.scale = 15.0F;
+  options.scale = 17.0F;
   options.flipUVs = true;
   options.animation.count = 3;
 
@@ -322,9 +307,9 @@ void Pig::loadMesh() {
 }
 
 void Pig::loadStaticBBox() {
-  const float width = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
+  const float width = DUBLE_BLOCK_SIZE * 1.8F;
   const float depth = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
-  const float height = DUBLE_BLOCK_SIZE * 1.8F;
+  const float height = DUBLE_BLOCK_SIZE * 0.45F;
 
   Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);
@@ -384,11 +369,6 @@ void Pig::unsetWalkingAnimation() {
 }
 
 void Pig::animate() { this->mesh->update(); }
-
-void Pig::loadTexture() {
-  texture = t_renderer->getTextureRepository().add(
-      FileUtils::fromCwd("textures/entity/pig/pig.png"));
-}
 
 void Pig::updateStateInWater(LevelMap* terrain) {
   Vec4 min, mid, max, top, bottom;

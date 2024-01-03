@@ -1,5 +1,6 @@
 #include "entities/mob/passiveMob.hpp"
 
-PassiveMob::PassiveMob() : Mob(MobType::Passive){};
+PassiveMob::PassiveMob(const MobType mobType)
+    : Mob(MobCategory::Passive, mobType){};
 
 PassiveMob::~PassiveMob(){};

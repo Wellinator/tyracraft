@@ -6,6 +6,10 @@
 
 class NeutralMob : public Mob {
  public:
-  NeutralMob();
+  NeutralMob(const MobType mobType);
   virtual ~NeutralMob();
+  
+  virtual void update(const float& deltaTime, const Vec4& movementDir,
+                      LevelMap* t_terrain) = 0;
+  virtual void render() = 0;
 };
