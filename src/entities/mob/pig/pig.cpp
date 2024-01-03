@@ -1,4 +1,4 @@
-#include "entities/pig/pig.hpp"
+#include "entities/mob/pig/pig.hpp"
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
@@ -14,8 +14,7 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager)
-    : Entity(EntityType::Mob) {
+Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager) : PassiveMob() {
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
 

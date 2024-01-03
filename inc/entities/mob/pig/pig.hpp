@@ -11,7 +11,7 @@
 #pragma once
 #include "constants.hpp"
 #include "entities/Block.hpp"
-#include "entities/entity.hpp"
+#include "entities/mob/passiveMob.hpp"
 #include <tamtypes.h>
 #include "managers/sound_manager.hpp"
 #include "entities/items/materials.hpp"
@@ -38,7 +38,7 @@ using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Player 3D object class  */
-class Pig : public Entity {
+class Pig : public PassiveMob {
  public:
   Pig(Renderer* t_renderer, SoundManager* t_soundManager);
   ~Pig();
@@ -74,7 +74,7 @@ class Pig : public Entity {
   bool isOnWater();
 
  private:
-  Vec4 getNextPosition(const float& deltaTime,const Vec4& direction);
+  Vec4 getNextPosition(const float& deltaTime, const Vec4& direction);
 
   SoundManager* t_soundManager;
   Audio* t_audio;
