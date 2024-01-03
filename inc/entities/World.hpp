@@ -23,6 +23,7 @@
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/mob/mob_manager.hpp"
 #include "memory-monitor/memory_monitor.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
@@ -74,6 +75,7 @@ class World {
 
   Renderer* t_renderer;
   SoundManager* t_soundManager;
+  MobManager mobManager;
   BlockManager blockManager;
   ChunckManager chunckManager;
   CloudsManager cloudsManager;

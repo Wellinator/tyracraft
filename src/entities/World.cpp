@@ -65,6 +65,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
+  mobManager.init(t_renderer, t_soundManager, &worldLightModel, terrain);
 
   calcRawBlockBBox(&mcPip);
 };
@@ -150,10 +151,13 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
   }
 
+  mobManager.update(deltaTime);
+
   updateTargetBlock(t_camera, t_player);
 };
 
 void World::render() {
+  mobManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
 
   if (targetBlock) {
