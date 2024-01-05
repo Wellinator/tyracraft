@@ -8,6 +8,7 @@ using bvh::AABB;
 using bvh::AABBTree;
 using bvh::Bvh_Node;
 using bvh::index_t;
+using Tyra::ObjLoaderOptions;
 using Tyra::Renderer3D;
 
 // ----
@@ -15,13 +16,15 @@ using Tyra::Renderer3D;
 // ----
 
 Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager,
-         Texture* pigTexture)
+         ChunckManager* t_chunkManager, Texture* pigTexture,
+         DynamicMesh* baseMesh)
     : PassiveMob(MobType::Pig) {
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
+  this->t_chunkManager = t_chunkManager;
   this->texture = pigTexture;
 
-  loadMesh();
+  loadMesh(baseMesh);
   loadStaticBBox();
 
   isWalkingAnimationSet = false;
@@ -33,6 +36,8 @@ Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager,
 Pig::~Pig() {
   underEntity = nullptr;
   overEntity = nullptr;
+
+  g_AABBTree->remove(tree_index);
 
   delete bbox;
 
@@ -49,6 +54,11 @@ Pig::~Pig() {
 
 void Pig::update(const float& deltaTime, const Vec4& movementDir,
                  LevelMap* t_terrain) {
+  if (currentChunck && currentChunck->state != ChunkState::Loaded) {
+    shouldUnspawn = true;
+    return;
+  }
+
   // Update updateStateInWater every 5 ticks
   if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
 
@@ -71,6 +81,8 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
         } else {
           lastTimePlayedSfx += deltaTime;
         }
+
+        currentChunck = t_chunkManager->getChunckByWorldPosition(nextPosition);
       }
     }
   } else {
@@ -84,7 +96,7 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
   }
 
   // TODO: add direction
-  mesh.get()->rotation.identity();
+  mesh->rotation.identity();
   float revTheta =
       Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
   mesh->rotation.rotateY(revTheta);
@@ -140,10 +152,8 @@ void Pig::updateGravity(const Vec4 nextVerticalPosition) {
 
   if (newPosition.y + bbox->getHeight() > worldMaxHeight ||
       newPosition.y < worldMinHeight) {
-    // Maybe has died, teleport to spaw area
-    TYRA_LOG("\nReseting entity position to:\n");
-    mesh->getPosition()->set(spawnPosition);
     velocity = Vec4(0.0f, 0.0f, 0.0f);
+    shouldUnspawn = true;
     return;
   }
 
@@ -281,29 +291,19 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition) {
   }
 }
 
-void Pig::loadMesh() {
-  ObjLoaderOptions options;
-  options.scale = 17.0F;
-  options.flipUVs = true;
-  options.animation.count = 3;
+void Pig::loadMesh(DynamicMesh* baseMesh) {
+  mesh = new DynamicMesh(*baseMesh);
+  mesh->rotation.identity();
+  mesh->scale.identity();
+  mesh->scale.scaleX(0.85F);
 
-  auto data =
-      ObjLoader::load(FileUtils::fromCwd("models/pig/pig.obj"), options);
-  data.get()->loadNormals = false;
-
-  this->mesh = std::make_unique<DynamicMesh>(data.get());
-
-  this->mesh->rotation.identity();
-  this->mesh->scale.identity();
-  this->mesh->scale.scaleX(0.85F);
-
-  auto& materials = this->mesh.get()->materials;
+  auto& materials = mesh->materials;
   for (size_t i = 0; i < materials.size(); i++)
     texture->addLink(materials[i]->id);
 
-  this->mesh->animation.loop = true;
-  this->mesh->animation.setSequence(standStillSequence);
-  this->mesh->animation.speed = 0.08F;
+  mesh->animation.loop = true;
+  mesh->animation.setSequence(standStillSequence);
+  mesh->animation.speed = 0.08F;
 }
 
 void Pig::loadStaticBBox() {

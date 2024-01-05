@@ -9,10 +9,15 @@
 */
 
 #pragma once
+
+#include <tyra>
+#include <memory>
 #include "constants.hpp"
 #include "entities/Block.hpp"
+#include "entities/chunck.hpp"
 #include "entities/mob/passiveMob.hpp"
 #include <tamtypes.h>
+#include "managers/chunck_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "entities/items/materials.hpp"
 #include "models/terrain_height_model.hpp"
@@ -20,7 +25,6 @@
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
 #include "entities/level.hpp"
-#include <tyra>
 
 using Tyra::Audio;
 using Tyra::DynamicMesh;
@@ -28,6 +32,7 @@ using Tyra::DynamicPipeline;
 using Tyra::DynPipOptions;
 using Tyra::FileUtils;
 using Tyra::M4x4;
+using Tyra::MeshBuilderData;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 using Tyra::PadButtons;
@@ -35,13 +40,16 @@ using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::TextureRepository;
+using Tyra::MeshBuilderData;
 using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Player 3D object class  */
 class Pig : public PassiveMob {
  public:
-  Pig(Renderer* t_renderer, SoundManager* t_soundManager, Texture* pigTexture);
+  Pig(Renderer* t_renderer, SoundManager* t_soundManager,
+      ChunckManager* t_chunkManager, Texture* pigTexture,
+      DynamicMesh* baseMesh);
   ~Pig();
 
   void update(const float& deltaTime, const Vec4& movementDir,
@@ -50,6 +58,8 @@ class Pig : public PassiveMob {
 
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isMoving;
+
+  Chunck* currentChunck = nullptr;
 
   // Phisycs variables
   Entity* underEntity = nullptr;
@@ -72,6 +82,7 @@ class Pig : public PassiveMob {
   Vec4 getNextPosition(const float& deltaTime, const Vec4& direction);
 
   SoundManager* t_soundManager;
+  ChunckManager* t_chunkManager;
   Audio* t_audio;
 
   bool isWalkingAnimationSet, isStandStillAnimationSet;
@@ -88,7 +99,7 @@ class Pig : public PassiveMob {
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
   Texture* texture;
 
-  void loadMesh();
+  void loadMesh(DynamicMesh* baseMesh);
   void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   Vec4 getNextVrticalPosition(const float& deltaTime);

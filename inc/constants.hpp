@@ -32,15 +32,18 @@
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
-  (OVERWORLD_V_DISTANCE / CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+  (OVERWORLD_V_DISTANCE /              \
+   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS \
-  (OVERWORLD_H_DISTANCE / CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
+  (OVERWORLD_H_DISTANCE /              \
+   CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD \
   (OVERWORLD_H_DISTANCE_IN_CHUNKS *         \
    OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Total horizontal overworld distance in
                                     // chunks squared;
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
-  (OVERWORLD_V_DISTANCE / CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+  (OVERWORLD_V_DISTANCE /              \
+   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
 #define OVERWORLD_PAGE_IN_CHUNKS    \
   (OVERWORLD_V_DISTANCE_IN_CHUNKS * \
    OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Overworld V * H distance in
@@ -299,6 +302,10 @@ enum class EntityType {
 #define _270DEGINRAD Tyra::Math::ANG2RAD * 270
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
+
+enum class MobCategory { Passive, Neutral, Hostile };
+
+enum class MobType { Pig };
 
 enum class PaticleType { Block };
 

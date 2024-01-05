@@ -34,7 +34,8 @@ class Entity {
 
   const EntityType entity_type;
 
-  Vec4 position, velocity;
+  Vec4 position = Vec4(0, 0, 0);
+  Vec4 velocity = Vec4(0, 0, 0);
   Vec4 minCorner, maxCorner;
 
   BBox* bbox = nullptr;

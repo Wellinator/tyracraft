@@ -65,7 +65,8 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
-  mobManager.init(t_renderer, t_soundManager, &worldLightModel, terrain);
+  mobManager.init(t_renderer, t_soundManager, &worldLightModel, terrain,
+                  &chunckManager);
 
   calcRawBlockBBox(&mcPip);
 };
@@ -296,6 +297,14 @@ void World::loadScheduledChunks() {
       chunk->loadDrawData();
       chunk->state = ChunkState::Loaded;
 
+      // TODO: implement callback 'afterLoadChunk'
+      const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
+      if (shouldSpawnMobInChunk) {
+        Vec4 _spawnPosition;
+        if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+          mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+        }
+      }
       tempChuncksToLoad.pop_front();
 
       if (tempChuncksToLoad.size() == 0) {
@@ -602,6 +611,57 @@ const Vec4 World::calcSpawOffset(int bias) {
     return result * DUBLE_BLOCK_SIZE;
   else
     return calcSpawOffset(bias + 1);
+}
+
+const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
+                                        const Vec4& maxOffset, uint16_t bias) {
+  bool found = false;
+  u8 airBlockCounter = 0;
+  // Pick a X and Z coordinates based on the min offset;
+  int posX = minOffset.x + bias;
+  int posZ = minOffset.z + bias;
+  Vec4 tempResult;
+
+  for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
+    u8 type = GetBlockFromMap(terrain, posX, posY, posZ);
+
+    if (type == (u8)Blocks::GRASS_BLOCK &&
+        GetSunLightFromMap(terrain, posX, posY + 1, posZ) == 15 &&
+        airBlockCounter >= 3) {
+      found = true;
+      tempResult.set(posX, posY + 1, posZ);
+      break;
+    }
+
+    if (type == (u8)Blocks::AIR_BLOCK)
+      airBlockCounter++;
+    else
+      airBlockCounter = 0;
+  }
+
+  if (found) {
+    result->set(tempResult * DUBLE_BLOCK_SIZE);
+    return found;
+  } else {
+    const auto hasOverZisedX = tempResult.x >= maxOffset.x;
+    const auto hasOverZisedZ = tempResult.z >= maxOffset.z;
+
+    if (hasOverZisedX && hasOverZisedZ) {
+      result->set(0, 0, 0);
+      return false;
+    } else {
+      if (hasOverZisedX) tempResult.x = minOffset.x;
+      if (hasOverZisedZ) tempResult.z = minOffset.z;
+    }
+
+    return calcSpawOffsetOfChunk(result, minOffset, maxOffset, bias + 1);
+  }
+}
+
+const bool World::getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
+                                                 Vec4* result) {
+  return calcSpawOffsetOfChunk(result, targetChunk->minOffset,
+                               targetChunk->maxOffset);
 }
 
 void World::removeBlock(Block* blockToRemove) {

@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <loadfile.h>
+#include <stdlib.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -112,4 +113,8 @@ class Utils {
   static float reverseAngle(const float angleInRad) {
     return std::fmod(angleInRad + Tyra::Math::PI, 2 * Tyra::Math::PI);
   };
+
+  static bool Probability(float probability) {
+    return rand() < probability * ((float)RAND_MAX + 1.0);
+  }
 };

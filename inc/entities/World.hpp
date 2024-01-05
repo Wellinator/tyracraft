@@ -177,6 +177,11 @@ class World {
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 
+  const bool getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
+                                            Vec4* result);
+  const bool calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
+                                   const Vec4& maxOffset, uint16_t bias = 0);
+
   inline void setIntialTime() {
     g_ticksCounter = static_cast<int>(worldOptions.initialTime);
   };
