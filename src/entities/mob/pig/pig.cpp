@@ -59,30 +59,37 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     return;
   }
 
+  Vec4 min, max;
+  BBox currentBbox = getHitBox();
+  currentBbox.getMinMax(&min, &max);
+
   // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
+  if (isTicksCounterAt(5)) updateStateInWater(t_terrain, &min, &max);
 
   isMoving = movementDir.length() > 0;
 
   if (isMoving) {
     Vec4 nextPosition = getNextPosition(deltaTime, movementDir);
     if (nextPosition.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-      const bool hasChangedPosition = updatePosition(deltaTime, nextPosition);
+      const bool hasChangedPosition =
+          updatePosition(deltaTime, nextPosition, &currentBbox, &min, &max);
 
       if (hasChangedPosition) {
+        // setWalkingAnimation();
         if (lastTimePlayedSfx > 0.35) {
           if (isOnWater()) {
             // TODO:
             // playSwimSfx();
           }
 
-          setWalkingAnimation();
           lastTimePlayedSfx = 0.0F;
         } else {
           lastTimePlayedSfx += deltaTime;
         }
 
         currentChunck = t_chunkManager->getChunckByWorldPosition(nextPosition);
+      } else {
+        // unsetWalkingAnimation();
       }
     }
   } else {
@@ -92,7 +99,7 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     } else if (speed < 0) {
       speed = 0;
     }
-    unsetWalkingAnimation();
+    // unsetWalkingAnimation();
   }
 
   // TODO: add direction
@@ -101,9 +108,11 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
       Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
   mesh->rotation.rotateY(revTheta);
 
+  updateTerrainHeightAtEntityPosition(position, &min, &max);
   const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
-  updateTerrainHeightAtEntityPosition(nextYPos);
-  updateGravity(nextYPos);
+  updateGravity(nextYPos, &currentBbox, &min, &max);
+
+  mesh->getPosition()->set(position);
 
   animate();
 }
@@ -128,7 +137,7 @@ Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
     result *= IN_WATER_FRICTION;
   }
 
-  return result + *mesh->getPosition();
+  return result + position;
 }
 
 Vec4 Pig::getNextVrticalPosition(const float& deltaTime) {
@@ -140,55 +149,52 @@ Vec4 Pig::getNextVrticalPosition(const float& deltaTime) {
   }
 
   // Increase the position by velocity
-  Vec4 nextVerticalPosition = *mesh->getPosition() + (velocity * deltaTime);
+  Vec4 nextVerticalPosition = position + (velocity * deltaTime);
   return nextVerticalPosition;
 }
 
 /** Update entity position by gravity and update index of current block */
-void Pig::updateGravity(const Vec4 nextVerticalPosition) {
+void Pig::updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
+                        Vec4* entityMin, Vec4* entityMax) {
   Vec4 newPosition = nextVerticalPosition;
+
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
-  if (newPosition.y + bbox->getHeight() > worldMaxHeight ||
-      newPosition.y < worldMinHeight) {
+  if (entityMin->y > worldMaxHeight || entityMax->y < worldMinHeight) {
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     shouldUnspawn = true;
     return;
   }
 
   const float enityHeight = std::abs(bbox->getHeight());
-  const float heightLimit = terrainHeight.maxHeight - enityHeight;
 
   if (newPosition.y < terrainHeight.minHeight) {
     newPosition.y = terrainHeight.minHeight;
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     isOnGround = true;
-  } else if (newPosition.y >= heightLimit) {
-    newPosition.y = heightLimit;
+  } else if (newPosition.y + enityHeight >= terrainHeight.maxHeight) {
+    newPosition.y = terrainHeight.maxHeight;
     velocity = -velocity;
     isOnGround = false;
   }
 
   // Finally updates gravity after checks
-  mesh->getPosition()->set(newPosition);
+  position.set(newPosition);
 }
 
 u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
+                       BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
                        u8 isColliding) {
-  Vec4 currentPlayerPos = *this->mesh->getPosition();
-  Vec4 entityMin;
-  Vec4 entityMax;
-  BBox entityBB = getHitBox();
-  entityBB.getMinMax(&entityMin, &entityMax);
+  Vec4 currentPos = position;
 
   // Set ray props
-  Vec4 rayOrigin = ((entityMax - entityMin) / 2) + entityMin;
-  Vec4 rayDir = (nextPosition - currentPlayerPos).getNormalized();
+  Vec4 rayOrigin = ((*entityMax - *entityMin) / 2) + *entityMin;
+  Vec4 rayDir = (nextPosition - currentPos).getNormalized();
 
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
-  const float maxCollidableDistance = currentPlayerPos.distanceTo(nextPosition);
+  const float maxCollidableDistance = currentPos.distanceTo(nextPosition);
 
   // Prepate the raycast
   const Vec4 segmentStart = rayOrigin;
@@ -201,15 +207,15 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
-    if (entityBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
-        entityBB.getTopFace().axisPosition < entity->minCorner.y)
+    if (entityBB->getBottomFace().axisPosition >= entity->maxCorner.y ||
+        entityBB->getTopFace().axisPosition < entity->minCorner.y)
       continue;
 
     const Ray ray = Ray(rayOrigin, rayDir);
 
     Vec4 tempInflatedMin;
     Vec4 tempInflatedMax;
-    Utils::GetMinkowskiSum(entityMin, entityMax, entity->minCorner,
+    Utils::GetMinkowskiSum(*entityMin, *entityMax, entity->minCorner,
                            entity->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
 
@@ -229,41 +235,40 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
 
     // Will collide this frame;
     if (timeToHit < deltaTime ||
-        finalHitDistance <
-            this->mesh->getPosition()->distanceTo(nextPosition)) {
+        finalHitDistance < position.distanceTo(nextPosition)) {
       if (isColliding) return false;
 
       // Try to move in separated axis;
-      Vec4 moveOnXOnly =
-          Vec4(nextPosition.x, currentPlayerPos.y, currentPlayerPos.z);
-      if (updatePosition(deltaTime, moveOnXOnly, 1)) return true;
+      Vec4 moveOnXOnly = Vec4(nextPosition.x, currentPos.y, currentPos.z);
+      if (updatePosition(deltaTime, moveOnXOnly, entityBB, entityMin, entityMax,
+                         1))
+        return true;
 
-      Vec4 moveOnZOnly =
-          Vec4(currentPlayerPos.x, currentPlayerPos.y, nextPosition.z);
-      if (updatePosition(deltaTime, moveOnZOnly, 1)) return true;
+      Vec4 moveOnZOnly = Vec4(currentPos.x, currentPos.y, nextPosition.z);
+      if (updatePosition(deltaTime, moveOnZOnly, entityBB, entityMin, entityMax,
+                         1))
+        return true;
 
       return false;
     }
   }
 
   // Apply new position;
-  mesh->getPosition()->set(nextPosition);
+  position.set(nextPosition);
   return true;
 }
 
-void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition) {
-  BBox entityBB = this->getHitBox();
-  Vec4 minEntityPos, maxEntityPos;
-  entityBB.getMinMax(&minEntityPos, &maxEntityPos);
-
+void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
+                                              Vec4* minEntityPos,
+                                              Vec4* maxEntityPos) {
   terrainHeight.reset();
   underEntity = nullptr;
   overEntity = nullptr;
 
   // Prepate the raycast
   const Vec4 offset = Vec4(0, 40, 0);
-  const Vec4 segmentStart = maxEntityPos + offset;
-  const Vec4 segmentEnd = nextVrticalPosition - offset;
+  const Vec4 segmentStart = *maxEntityPos + offset;
+  const Vec4 segmentEnd = *minEntityPos - offset;
 
   std::vector<int32_t> ni;
   g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
@@ -272,18 +277,18 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
     // is under or above block
-    if (minEntityPos.x <= entity->maxCorner.x &&
-        maxEntityPos.x >= entity->minCorner.x &&
-        minEntityPos.z <= entity->maxCorner.z &&
-        maxEntityPos.z >= entity->minCorner.z) {
+    if (minEntityPos->x <= entity->maxCorner.x &&
+        maxEntityPos->x >= entity->minCorner.x &&
+        minEntityPos->z <= entity->maxCorner.z &&
+        maxEntityPos->z >= entity->minCorner.z) {
       const float minHeight = entity->maxCorner.y;
-      if (minEntityPos.y >= minHeight && minHeight > terrainHeight.minHeight) {
+      if (minEntityPos->y >= minHeight && minHeight > terrainHeight.minHeight) {
         terrainHeight.minHeight = minHeight;
         underEntity = entity;
       }
 
       const float maxHeight = entity->minCorner.y;
-      if (maxEntityPos.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
+      if (maxEntityPos->y < maxHeight && maxHeight < terrainHeight.maxHeight) {
         terrainHeight.maxHeight = maxHeight;
         overEntity = entity;
       }
@@ -295,7 +300,7 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
   mesh = new DynamicMesh(*baseMesh);
   mesh->rotation.identity();
   mesh->scale.identity();
-  mesh->scale.scaleX(0.85F);
+  // mesh->scale.scaleX(0.85F);
 
   auto& materials = mesh->materials;
   for (size_t i = 0; i < materials.size(); i++)
@@ -303,13 +308,13 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
 
   mesh->animation.loop = true;
   mesh->animation.setSequence(standStillSequence);
-  mesh->animation.speed = 0.08F;
+  mesh->animation.speed = 10.0F;
 }
 
 void Pig::loadStaticBBox() {
-  const float width = DUBLE_BLOCK_SIZE * 1.8F;
-  const float depth = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
-  const float height = DUBLE_BLOCK_SIZE * 0.45F;
+  const float width = DUBLE_BLOCK_SIZE * 0.7F;
+  const float depth = DUBLE_BLOCK_SIZE * 0.5F;
+  const float height = DUBLE_BLOCK_SIZE;
 
   Vec4 minCorner = Vec4(-width, 0, -depth);
   Vec4 maxCorner = Vec4(width, height, depth);
@@ -352,32 +357,27 @@ void Pig::swim() {
 }
 
 void Pig::setWalkingAnimation() {
-  const float _speed = speed * 10;
-  this->mesh->animation.speed = baseAnimationSpeed * _speed;
-
-  if (!isWalkingAnimationSet) {
-    this->mesh->animation.setSequence(walkSequence);
-    isWalkingAnimationSet = true;
-  }
+  if (isWalkingAnimationSet) return;
+  this->mesh->animation.speed = 10.0F;
+  this->mesh->animation.setSequence(standStillSequence);
+  isWalkingAnimationSet = true;
 }
 
 void Pig::unsetWalkingAnimation() {
-  if (!isWalkingAnimationSet) return;
-
-  isWalkingAnimationSet = false;
-  mesh->animation.setSequence(standStillSequence);
+  if (isWalkingAnimationSet) {
+    isWalkingAnimationSet = false;
+    mesh->animation.setSequence(standStillSequence);
+  }
 }
 
 void Pig::animate() { this->mesh->update(); }
 
-void Pig::updateStateInWater(LevelMap* terrain) {
-  Vec4 min, mid, max, top, bottom;
-  BBox bbox = getHitBox();
-  bbox.getMinMax(&min, &max);
-  mid = ((max - min) / 2) + min;
+void Pig::updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max) {
+  Vec4 mid, top, bottom;
+  mid = ((*max - *min) / 2) + *min;
 
-  bottom.set(mid.x, min.y, mid.z);
-  top.set(mid.x, max.y + 6.0F, mid.z);
+  bottom.set(mid.x, min->y, mid.z);
+  top.set(mid.x, max->y + 6.0F, mid.z);
 
   auto blockBottom =
       static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));

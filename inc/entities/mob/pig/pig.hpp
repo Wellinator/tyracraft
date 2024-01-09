@@ -27,6 +27,8 @@
 #include "entities/level.hpp"
 
 using Tyra::Audio;
+using Tyra::BBox;
+using Tyra::CoreBBox;
 using Tyra::DynamicMesh;
 using Tyra::DynamicPipeline;
 using Tyra::DynPipOptions;
@@ -40,11 +42,10 @@ using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::TextureRepository;
-using Tyra::MeshBuilderData;
 using Tyra::Timer;
 using Tyra::Vec4;
 
-/** Player 3D object class  */
+/** Pig 3D object class  */
 class Pig : public PassiveMob {
  public:
   Pig(Renderer* t_renderer, SoundManager* t_soundManager,
@@ -65,8 +66,12 @@ class Pig : public PassiveMob {
   Entity* underEntity = nullptr;
   Entity* overEntity = nullptr;
 
-  inline BBox getHitBox() const {
-    return bbox->getTransformed(mesh->translation);
+  BBox getHitBox() const {
+    const auto rawAABB = mesh->getCurrentBoundingBox();
+    const auto Obb = rawAABB.getTransformed(mesh->getModelMatrix());
+    const auto aabb = BBox(Obb.vertices, Obb.getVertexCount());
+
+    return aabb;
   };
 
   Renderer* t_renderer;
@@ -92,7 +97,9 @@ class Pig : public PassiveMob {
   float speed = 0;
   float maxSpeed = 20.0F;
 
-  void updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition);
+  void updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
+                                           Vec4* minEntityPos,
+                                           Vec4* maxEntityPos);
   TerrainHeightModel terrainHeight;
 
   // Phisycs values
@@ -103,8 +110,10 @@ class Pig : public PassiveMob {
   void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   Vec4 getNextVrticalPosition(const float& deltaTime);
-  void updateGravity(const Vec4 nextVerticalPosition);
+  void updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
+                     Vec4* entityMin, Vec4* entityMax);
   u8 updatePosition(const float& deltaTime, const Vec4& nextPosition,
+                    BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
                     u8 isColliding = 0);
 
   float lastTimePlayedSfx = 0.0F;
@@ -115,8 +124,9 @@ class Pig : public PassiveMob {
   // Animations
   float baseAnimationSpeed = 0.35F;
   std::vector<u32> standStillSequence = {0};
-  std::vector<u32> walkSequence = {1, 2, 1};
+  std::vector<u32> walkSequence = {1, 2};
+  // std::vector<u32> walkSequence = {0};
 
   u8 _isOnWater;
-  void updateStateInWater(LevelMap* terrain);
+  void updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max);
 };
