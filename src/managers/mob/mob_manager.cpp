@@ -55,11 +55,14 @@ void MobManager::update(const float& deltaTime) {
 
     const auto isTimeToChangeDir = changeDirectionTimer > changeDirectionLimit;
     if (isTimeToChangeDir) {
-      const Vec4 start = mobs[i]->moviemntDirection;
-      const Vec4 end = _getMobMoviementDirection(mobs[i]);
+      const u8 shouldChangeDirection = Utils::Probability(0.7);
+      if (shouldChangeDirection) {
+        const Vec4 start = mobs[i]->moviemntDirection;
+        const Vec4 end = _getMobMoviementDirection(mobs[i]);
 
-      Vec4::setLerp(&mobs[i]->moviemntDirection, start, end, 0.1f);
-      mobs[i]->moviemntDirection.normalize();
+        Vec4::setLerp(&mobs[i]->moviemntDirection, start, end, 0.1f);
+        mobs[i]->moviemntDirection.normalize();
+      }
 
       changeDirectionTimer = 0;
       changeDirectionLimit = Tyra::Math::randomf(2, 3);
@@ -97,7 +100,6 @@ void MobManager::_loadPigMesh() {
       ObjLoader::load(FileUtils::fromCwd("models/pig/pig.obj"), options)
           .release();
   pigMeshBuilderData->loadNormals = false;
-
   pigBaseMesh = new DynamicMesh(pigMeshBuilderData);
 }
 
@@ -108,7 +110,6 @@ Vec4 MobManager::_getMobMoviementDirection(Mob* mob) {
 
 Mob* MobManager::spawnMob(const MobType type) {
   if (mobs.size() >= MAX_MOBS_LIMIT) {
-    TYRA_WARN("Reached MOB LIMIT");
     return nullptr;
   }
 
@@ -124,7 +125,6 @@ Mob* MobManager::spawnMob(const MobType type) {
 
 Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
   if (mobs.size() >= MAX_MOBS_LIMIT) {
-    TYRA_WARN("Reached MOB LIMIT");
     return nullptr;
   }
 
