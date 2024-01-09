@@ -19,6 +19,8 @@ class Mob : public Entity {
                       LevelMap* t_terrain) = 0;
   virtual void render() = 0;
 
+  virtual BBox getHitBox() const = 0;
+
   void setPosition(const Vec4& pos) {
     position.set(pos);
     mesh->getPosition()->set(position);
