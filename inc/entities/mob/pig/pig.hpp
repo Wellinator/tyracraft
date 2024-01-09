@@ -77,6 +77,7 @@ class Pig : public PassiveMob {
   Renderer* t_renderer;
 
   void setWalkingAnimation();
+  void updateWalkingAnimationSpeed();
   void unsetWalkingAnimation();
   void jump();
   void swim();
@@ -119,13 +120,10 @@ class Pig : public PassiveMob {
   float lastTimePlayedSfx = 0.0F;
   void playSfx(const Blocks& blockType);
 
-  void animate();
-
   // Animations
   float baseAnimationSpeed = 0.35F;
   std::vector<u32> standStillSequence = {0};
   std::vector<u32> walkSequence = {1, 2};
-  // std::vector<u32> walkSequence = {0};
 
   u8 _isOnWater;
   void updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max);

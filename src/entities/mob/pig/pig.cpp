@@ -39,6 +39,9 @@ Pig::~Pig() {
 
   g_AABBTree->remove(tree_index);
 
+  for (size_t i = 0; i < mesh->materials.size(); i++)
+    texture->removeLinkById(mesh->materials[i]->id);
+
   delete bbox;
 
   walkSequence.clear();
@@ -75,12 +78,16 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
           updatePosition(deltaTime, nextPosition, &currentBbox, &min, &max);
 
       if (hasChangedPosition) {
-        // setWalkingAnimation();
+        if (isWalkingAnimationSet)
+          updateWalkingAnimationSpeed();
+        else
+          setWalkingAnimation();
+
         if (lastTimePlayedSfx > 0.35) {
-          if (isOnWater()) {
-            // TODO:
-            // playSwimSfx();
-          }
+          // if (isOnWater()) {
+          // TODO:
+          // playSwimSfx();
+          // }
 
           lastTimePlayedSfx = 0.0F;
         } else {
@@ -88,8 +95,8 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
         }
 
         currentChunck = t_chunkManager->getChunckByWorldPosition(nextPosition);
-      } else {
-        // unsetWalkingAnimation();
+      } else if (isWalkingAnimationSet) {
+        unsetWalkingAnimation();
       }
     }
   } else {
@@ -99,7 +106,10 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     } else if (speed < 0) {
       speed = 0;
     }
-    // unsetWalkingAnimation();
+
+    if (isWalkingAnimationSet) {
+      unsetWalkingAnimation();
+    }
   }
 
   // TODO: add direction
@@ -113,8 +123,7 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
   updateGravity(nextYPos, &currentBbox, &min, &max);
 
   mesh->getPosition()->set(position);
-
-  animate();
+  mesh->update();
 }
 
 Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
@@ -306,9 +315,9 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
   for (size_t i = 0; i < materials.size(); i++)
     texture->addLink(materials[i]->id);
 
-  mesh->animation.loop = true;
   mesh->animation.setSequence(standStillSequence);
-  mesh->animation.speed = 10.0F;
+  mesh->animation.loop = false;
+  mesh->animation.speed = 0;
 }
 
 void Pig::loadStaticBBox() {
@@ -357,20 +366,21 @@ void Pig::swim() {
 }
 
 void Pig::setWalkingAnimation() {
-  if (isWalkingAnimationSet) return;
-  this->mesh->animation.speed = 10.0F;
-  this->mesh->animation.setSequence(standStillSequence);
+  mesh->animation.setSequence(walkSequence);
+  mesh->animation.speed = 0.3f / speed;
+  mesh->animation.loop = true;
   isWalkingAnimationSet = true;
 }
 
-void Pig::unsetWalkingAnimation() {
-  if (isWalkingAnimationSet) {
-    isWalkingAnimationSet = false;
-    mesh->animation.setSequence(standStillSequence);
-  }
+void Pig::updateWalkingAnimationSpeed() {
+  mesh->animation.speed = 0.3f / speed;
 }
 
-void Pig::animate() { this->mesh->update(); }
+void Pig::unsetWalkingAnimation() {
+  mesh->animation.setSequence(standStillSequence);
+  mesh->animation.loop = false;
+  isWalkingAnimationSet = false;
+}
 
 void Pig::updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max) {
   Vec4 mid, top, bottom;
