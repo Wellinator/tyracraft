@@ -299,6 +299,10 @@ void World::loadScheduledChunks() {
 
       // TODO: implement callback 'afterLoadChunk'
       const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
+      
+      // TODO: move to chunk randon tick
+      // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
+
       if (shouldSpawnMobInChunk) {
         Vec4 _spawnPosition;
         if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
