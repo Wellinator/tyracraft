@@ -1,6 +1,7 @@
 #include "tyracraft_game.hpp"
 #include "managers/font/font_manager.hpp"
 #include "managers/settings_manager.hpp"
+#include "memory-monitor/memory_monitor.hpp"
 #include "utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,6 +13,7 @@ using namespace Tyra;
 TyraCraftGame::TyraCraftGame(Engine* t_engine)
     : camera(engine->renderer.core.getSettings()) {
   engine = t_engine;
+  init_memory_manager();
 }
 
 TyraCraftGame::~TyraCraftGame() {}
@@ -27,9 +29,11 @@ void TyraCraftGame::init() {
 }
 
 void TyraCraftGame::loop() {
-  engine->renderer.beginFrame(camera.getCameraInfo());
-  const auto dt = 1 / static_cast<float>(engine->info.getFps());
+  const float dt = 1 / static_cast<float>(engine->info.getFps());
   stateManager->update(dt);
+
+  engine->renderer.beginFrame(camera.getCameraInfo());
+  stateManager->render();
   engine->renderer.endFrame();
 }
 

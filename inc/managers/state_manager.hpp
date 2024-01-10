@@ -13,6 +13,7 @@ class StateManager {
   ~StateManager();
 
   void update(const float& deltaTime);
+  void render();
 
   Context* context;
 };
