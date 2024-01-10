@@ -17,8 +17,6 @@ MobManager::MobManager() {
 };
 
 MobManager::~MobManager() {
-  t_renderer->getTextureRepository().free(pigTexture);
-
   for (size_t i = 0; i < mobs.size(); i++) {
     delete mobs[i];
     mobs[i] = nullptr;
@@ -26,6 +24,8 @@ MobManager::~MobManager() {
 
   delete pigBaseMesh;
   delete pigMeshBuilderData;
+
+  t_renderer->getTextureRepository().free(pigTexture);
 
   mobs.clear();
   mobs.shrink_to_fit();
