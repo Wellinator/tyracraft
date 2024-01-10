@@ -130,6 +130,8 @@ void World::tick(Player* t_player, Camera* t_camera) {
   particlesManager.tick();
   chunckManager.tick();
 
+  mobManager.tick();
+
   // Update cloudsManager every 150 ticks
   if (isTicksCounterAt(150)) {
     cloudsManager.update();

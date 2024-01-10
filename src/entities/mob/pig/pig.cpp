@@ -59,13 +59,14 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
                  LevelMap* t_terrain) {
   u8 fullProcessing = true;
   if (currentChunck) {
-    if (currentChunck->state != ChunkState::Loaded) {
+    if (currentChunck->state != ChunkState::Loaded ||
+        currentChunck->getDistanceFromPlayerInChunks() > 6) {
       shouldUnspawn = true;
       return;
     } else if (currentChunck->getDistanceFromPlayerInChunks() > 3) {
       // Too faraway, no updates
       return;
-    } else if (currentChunck->getDistanceFromPlayerInChunks() >= 2) {
+    } else if (currentChunck->getDistanceFromPlayerInChunks() == 3) {
       // no sounds and larger ticks updates
       fullProcessing = false;
     }
