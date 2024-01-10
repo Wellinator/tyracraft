@@ -6,6 +6,7 @@
 #include "entities/sfx_categories/sfx_category_dig.hpp"
 #include "entities/sfx_categories/sfx_category_step.hpp"
 #include "entities/sfx_categories/sfx_category_liquid.hpp"
+#include "entities/sfx_categories/sfx_category_mob.hpp"
 #include <vector>
 #include "tyra"
 

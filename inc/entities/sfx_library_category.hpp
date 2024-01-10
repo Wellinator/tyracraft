@@ -6,7 +6,7 @@
 
 using Tyra::Audio;
 
-enum class SoundFxCategory { Random, Dig, Step, Broken, Liquid };
+enum class SoundFxCategory { Random, Dig, Step, Broken, Liquid, Mob };
 
 class SfxLibraryCategory {
  public:

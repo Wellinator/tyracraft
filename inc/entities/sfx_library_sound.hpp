@@ -21,7 +21,7 @@ enum class SoundFX {
   Stone1,
   Wood1,
 
-  //Liquid
+  // Liquid
   Splash,
   Splash1,
   Splash2,
@@ -29,7 +29,19 @@ enum class SoundFX {
   Swim2,
   Swim3,
   Swim4,
-  Water
+  Water,
+
+  // Mobs
+  // Pig
+  PigDeath,
+  PigSay1,
+  PigSay2,
+  PigSay3,
+  PigStep1,
+  PigStep2,
+  PigStep3,
+  PigStep4,
+  PigStep5
 };
 
 class SfxLibrarySound {

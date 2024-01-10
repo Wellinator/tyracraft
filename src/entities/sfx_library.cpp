@@ -18,6 +18,7 @@ void SfxLibrary::buildSoundFXLibraries(Audio* t_audio) {
   categories.push_back(new SfxDigCategory(t_audio));
   categories.push_back(new SfxStepCategory(t_audio));
   categories.push_back(new SfxLiquidCategory(t_audio));
+  categories.push_back(new SfxMobCategory(t_audio));
 }
 
 SfxLibraryCategory* SfxLibrary::getCategory(const SoundFxCategory& idCategory) {
