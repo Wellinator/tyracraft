@@ -17,6 +17,7 @@
 #include "entities/chunck.hpp"
 #include "entities/mob/passiveMob.hpp"
 #include <tamtypes.h>
+#include <array>
 #include "managers/chunck_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "entities/items/materials.hpp"
@@ -117,8 +118,18 @@ class Pig : public PassiveMob {
                     BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
                     u8 isColliding = 0);
 
-  float lastTimePlayedSfx = 0.0F;
-  void playSfx(const Blocks& blockType);
+  // Sound control timers;
+  float stepSfxLimit = 0.25f;
+  float saySfxLimit = 0.70f;
+  float lastTimePlayedSaySfx = 0;
+  float lastTimePlayedStepSfx = 0;
+  void playStepSfx();
+  void playSaySfx();
+  void playDeathSfx();
+  inline const u8 canPlayStepSfx() {
+    return lastTimePlayedStepSfx > stepSfxLimit;
+  }
+  inline const u8 canPlaySaySfx() { return lastTimePlayedSaySfx > saySfxLimit; }
 
   // Animations
   float baseAnimationSpeed = 0.35F;

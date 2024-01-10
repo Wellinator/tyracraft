@@ -57,9 +57,19 @@ Pig::~Pig() {
 
 void Pig::update(const float& deltaTime, const Vec4& movementDir,
                  LevelMap* t_terrain) {
-  if (currentChunck && currentChunck->state != ChunkState::Loaded) {
-    shouldUnspawn = true;
-    return;
+  u8 fullProcessing = true;
+  if (currentChunck) {
+    if (currentChunck->state != ChunkState::Loaded) {
+      shouldUnspawn = true;
+      return;
+    } else if (currentChunck->getDistanceFromPlayerInChunks() > 3) {
+      // Too faraway, no updates
+      return;
+    } else if (currentChunck->getDistanceFromPlayerInChunks() >= 2) {
+      // no sounds and larger ticks updates
+      fullProcessing = false;
+      if (isTicksCounterAt(3)) return;
+    }
   }
 
   Vec4 min, max;
@@ -67,7 +77,7 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
   currentBbox.getMinMax(&min, &max);
 
   // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater(t_terrain, &min, &max);
+  // if (isTicksCounterAt(5)) updateStateInWater(t_terrain, &min, &max);
 
   isMoving = movementDir.length() > 0;
 
@@ -83,15 +93,19 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
         else
           setWalkingAnimation();
 
-        if (lastTimePlayedSfx > 0.35) {
-          // if (isOnWater()) {
-          // TODO:
-          // playSwimSfx();
-          // }
+        // TODO:
+        // if (isOnWater()) {
+        // playSwimSfx();
+        // }
 
-          lastTimePlayedSfx = 0.0F;
-        } else {
-          lastTimePlayedSfx += deltaTime;
+        if (fullProcessing) {
+          if (canPlayStepSfx()) {
+            playStepSfx();
+            lastTimePlayedStepSfx = 0.0F;
+            stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);
+          } else {
+            lastTimePlayedStepSfx += deltaTime;
+          }
         }
 
         currentChunck = t_chunkManager->getChunckByWorldPosition(nextPosition);
@@ -109,6 +123,16 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
 
     if (isWalkingAnimationSet) {
       unsetWalkingAnimation();
+    }
+  }
+
+  if (fullProcessing) {
+    if (canPlaySaySfx()) {
+      playSaySfx();
+      lastTimePlayedSaySfx = 0;
+      saySfxLimit = Tyra::Math::randomf(5.0f, 20.0f);
+    } else {
+      lastTimePlayedSaySfx += deltaTime;
     }
   }
 
@@ -396,3 +420,59 @@ void Pig::updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max) {
 }
 
 bool Pig::isOnWater() { return _isOnWater; }
+
+void Pig::playStepSfx() {
+  const std::array<SoundFX, 5> availableStepSounds = {
+      SoundFX::PigStep1, SoundFX::PigStep2, SoundFX::PigStep3,
+      SoundFX::PigStep4, SoundFX::PigStep5,
+  };
+
+  const auto index = Tyra::Math::randomi(0, 4);
+  SoundFX stepSfx = availableStepSounds[index];
+
+  int ch = t_soundManager->getAvailableChannel();
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Mob, stepSfx);
+
+  SfxConfigModel config;
+  config._volume = 15;
+  config._pitch = 100;
+
+  t_soundManager->setSfxVolume(config._volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
+void Pig::playSaySfx() {
+  const std::array<SoundFX, 3> availableSaySounds = {
+      SoundFX::PigSay1,
+      SoundFX::PigSay2,
+      SoundFX::PigSay3,
+  };
+
+  const auto index = Tyra::Math::randomi(0, 2);
+  SoundFX saySfx = availableSaySounds[index];
+
+  int ch = t_soundManager->getAvailableChannel();
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Mob, saySfx);
+
+  SfxConfigModel config;
+  config._volume = 100;
+  config._pitch = Tyra::Math::randomi(80, 120);
+
+  t_soundManager->setSfxVolume(config._volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
+
+void Pig::playDeathSfx() {
+  int ch = t_soundManager->getAvailableChannel();
+  SfxLibrarySound* sound =
+      t_soundManager->getSound(SoundFxCategory::Mob, SoundFX::PigDeath);
+
+  SfxConfigModel config;
+  config._volume = 100;
+  config._pitch = Tyra::Math::randomi(80, 120);
+
+  t_soundManager->setSfxVolume(config._volume, ch);
+  t_soundManager->playSfx(sound, ch);
+}
