@@ -28,6 +28,7 @@ class MobManager {
             WorldLightModel* t_worldLightModel, LevelMap* t_terrain,
             ChunckManager* t_chunkManager);
   void update(const float& deltaTime);
+  void tick();
   void render();
 
   Mob* spawnMob(const MobType type);

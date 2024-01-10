@@ -46,6 +46,7 @@ class ParticlesManager {
   void init(Renderer* renderer, Texture* t_blocksTexture,
             const std::string& texturePack);
   void update(const float deltaTime, Camera* t_camera);
+  void tick();
 
   void render();
   void renderBlocksParticles();

@@ -11,6 +11,7 @@ class SurvivalPlayingState : public PlayingStateBase {
 
   void init();
   void update(const float& deltaTime);
+  void tick();
   void render();
 
  private:

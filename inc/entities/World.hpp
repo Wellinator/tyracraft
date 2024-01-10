@@ -85,6 +85,7 @@ class World {
   void init(Renderer* t_renderer, ItemRepository* itemRepository,
             SoundManager* t_soundManager);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
+  void tick(Player* t_player, Camera* t_camera);
   void render();
   void generate();
   void generateLight();
@@ -260,7 +261,7 @@ class World {
                           u8 nextLevel, u8 orientation);
   void floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
                              u8 level);
-  void updateLiquidWater(const float deltaTime);
+  void updateLiquidWater();
   void propagateWaterRemovalQueue();
   void propagateWaterAddQueue();
   void updateLiquidLava();

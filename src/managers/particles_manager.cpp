@@ -49,10 +49,13 @@ Texture* ParticlesManager::getParticlesTexture() { return particlesTexture; }
 
 void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
   updateParticles(deltaTime, &t_camera->position);
-  if (isTicksCounterAt(15) && particlesHasChanged) {
+};
+
+void ParticlesManager::tick() {
+  if (particlesHasChanged && isTicksCounterAt(15)) {
     destroyExpiredParticles();
   }
-};
+}
 
 void ParticlesManager::updateParticles(const float deltaTime,
                                        const Vec4* camPos) {

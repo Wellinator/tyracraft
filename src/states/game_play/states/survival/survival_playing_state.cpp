@@ -9,6 +9,8 @@ void SurvivalPlayingState::init() {}
 
 void SurvivalPlayingState::update(const float& deltaTime) {}
 
+void SurvivalPlayingState::tick() {}
+
 void SurvivalPlayingState::render() {}
 
 void SurvivalPlayingState::handleInput(const float& deltaTime) {}

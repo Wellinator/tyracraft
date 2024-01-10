@@ -14,6 +14,7 @@ class Context {
   ~Context();
 
   void update(const float& deltaTime);
+  void render();
   void setState(GameState* newState);
 
   Camera* t_camera = nullptr;

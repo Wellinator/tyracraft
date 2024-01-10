@@ -21,6 +21,7 @@ class StateWelcome : public PlayingStateBase {
 
   void init();
   void update(const float& deltaTime);
+  void tick(){};
   void render();
   void handleInput(const float& deltaTime);
 

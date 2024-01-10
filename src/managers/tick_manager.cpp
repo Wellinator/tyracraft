@@ -5,7 +5,7 @@
  *
  */
 double elapsedRealTime = 0;
-int g_ticksCounter = DAY_MID;
+uint32_t g_ticksCounter = DAY_MID;
 float g_ticksFraftion = 0;
 u16 ticksDayCounter = 0;
 
@@ -13,14 +13,13 @@ TickManager::TickManager() {}
 
 TickManager::~TickManager() {}
 
-void TickManager::update(const float& deltaTime) { updateTicks(deltaTime); }
-
-void TickManager::updateTicks(const float& deltaTime) {
+void TickManager::update(const float& deltaTime) {
   elapsedRealTime += deltaTime;
 
   if (g_ticksFraftion > TICKS_IN_SECONDS) {
     g_ticksCounter++;
     g_ticksFraftion -= TICKS_IN_SECONDS;
+    onTick();
   } else {
     g_ticksFraftion += deltaTime;
   }

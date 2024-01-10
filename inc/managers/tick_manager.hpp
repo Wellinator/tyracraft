@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include "tyra"
 #include "constants.hpp"
+#include <functional>
 
 // Values in ticks
 #define TICK 1.0F / 20.0F
@@ -21,7 +22,7 @@
  *
  */
 extern double elapsedRealTime;
-extern int g_ticksCounter;
+extern uint32_t g_ticksCounter;
 extern u16 ticksDayCounter;
 extern u8 isTicksCounterAt(const uint32_t ticks);
 
@@ -31,5 +32,6 @@ class TickManager {
   ~TickManager();
 
   void update(const float& deltaTime);
-  void updateTicks(const float& deltaTime);
+
+  std::function<void()> onTick = std::function<void()>{};
 };

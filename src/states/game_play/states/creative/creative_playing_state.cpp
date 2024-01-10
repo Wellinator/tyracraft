@@ -13,6 +13,8 @@ void CreativePlayingState::init() {
   creativeAudioListener.init(&stateGamePlay->context->t_engine->audio.song);
   audioListenerId = stateGamePlay->context->t_engine->audio.song.addListener(
       &creativeAudioListener);
+
+  tickManager.onTick = [this]() { tick(); };
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
@@ -31,15 +33,21 @@ void CreativePlayingState::update(const float& deltaTime) {
                                 stateGamePlay->context->t_camera,
                                 stateGamePlay->world->terrain);
 
-  if (isTicksCounterAt(5)) stateGamePlay->ui->update();
-
   stateGamePlay->context->t_camera->setPositionByMesh(
       stateGamePlay->player->mesh.get());
   stateGamePlay->context->t_camera->setLookDirectionByPad(
       &stateGamePlay->context->t_engine->pad, deltaTime);
   stateGamePlay->context->t_camera->update();
+}
 
-  if (isTicksCounterAt(200) && !isSongPlaying()) playNewRandomSong();
+void CreativePlayingState::tick() {
+  stateGamePlay->world->tick(stateGamePlay->player,
+                             stateGamePlay->context->t_camera);
+
+  stateGamePlay->player->tick(stateGamePlay->world->terrain);
+
+  if (isTicksCounterAt(5)) stateGamePlay->ui->update();
+  if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();
 }
 
 void CreativePlayingState::render() {

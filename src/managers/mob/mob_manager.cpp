@@ -72,8 +72,10 @@ void MobManager::update(const float& deltaTime) {
 
     mobs[i]->update(deltaTime, mobs[i]->moviemntDirection, t_terrain);
   }
+}
 
-  if (isTicksCounterAt(15) && _mobsHasChanged) {
+void MobManager::tick() {
+  if (_mobsHasChanged && isTicksCounterAt(15)) {
     _destroyUnspownedMobs();
   }
 }

@@ -58,12 +58,19 @@ void ChunckManager::update(const Plane* frustumPlanes) {
     }
   }
 
-  if (isTicksCounterAt(10) || isTimeToUpdateLight) {
+  if (isTimeToUpdateLight) {
     isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
     if (isTimeToUpdateLight) reloadLightDataAsync();
   }
 
   visibleChunks.shrink_to_fit();
+}
+
+void ChunckManager::tick() {
+  if (isTicksCounterAt(10)) {
+    isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
+    if (isTimeToUpdateLight) reloadLightDataAsync();
+  }
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,

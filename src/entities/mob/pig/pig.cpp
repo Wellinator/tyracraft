@@ -68,7 +68,6 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     } else if (currentChunck->getDistanceFromPlayerInChunks() >= 2) {
       // no sounds and larger ticks updates
       fullProcessing = false;
-      if (isTicksCounterAt(3)) return;
     }
   }
 

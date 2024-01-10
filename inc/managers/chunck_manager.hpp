@@ -30,6 +30,7 @@ class ChunckManager {
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
   void update(const Plane* frustumPlanes);
+  void tick();
 
   inline u8 isChunkVisible(Chunck* chunk) { return chunk->isVisible(); };
 

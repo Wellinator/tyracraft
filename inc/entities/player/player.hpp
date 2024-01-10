@@ -60,6 +60,7 @@ class Player : public Entity {
 
   void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
               LevelMap* t_terrain);
+  void tick(LevelMap* t_terrain);
   void render();
 
   void setRenderArmPip();

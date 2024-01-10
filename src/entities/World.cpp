@@ -110,13 +110,31 @@ void World::setSavedSpawnArea(Vec4 pos) {
 }
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
+  particlesManager.update(deltaTime, t_camera);
+
+  if (affectedChunksIdByLiquidPropagation.size() > 0)
+    updateChunksAffectedByLiquidPropagation();
+
+  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
+
+  unloadScheduledChunks();
+  loadScheduledChunks();
+
+  mobManager.update(deltaTime);
+
+  updateTargetBlock(t_camera, t_player);
+};
+
+// Tick based logics
+void World::tick(Player* t_player, Camera* t_camera) {
+  particlesManager.tick();
+  chunckManager.tick();
+
   // Update cloudsManager every 150 ticks
   if (isTicksCounterAt(150)) {
     cloudsManager.update();
     dayNightCycleManager.update(&t_camera->position);
   }
-
-  particlesManager.update(deltaTime, t_camera);
 
   // Update chunk light data every 1000 ticks
   if (isTicksCounterAt(1000)) {
@@ -128,34 +146,22 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
-    updateLiquidWater(deltaTime);
+    updateLiquidWater();
   }
 
   if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
     updateLiquidLava();
   }
 
-  if (affectedChunksIdByLiquidPropagation.size() > 0)
-    updateChunksAffectedByLiquidPropagation();
-
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
-
   // Update scheduled data every 4 ticks
   if (isTicksCounterAt(5)) {
     updateChunkByPlayerPosition(t_player);
   }
 
-  unloadScheduledChunks();
-  loadScheduledChunks();
-
   if (isTicksCounterAt(6)) {
     t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
   }
-
-  mobManager.update(deltaTime);
-
-  updateTargetBlock(t_camera, t_player);
-};
+}
 
 void World::render() {
   mobManager.render();
@@ -299,7 +305,7 @@ void World::loadScheduledChunks() {
 
       // TODO: implement callback 'afterLoadChunk'
       const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
-      
+
       // TODO: move to chunk randon tick
       // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
 
@@ -1480,7 +1486,7 @@ void World::initLiquidExpansion() {
   }
 }
 
-void World::updateLiquidWater(const float deltaTime) {
+void World::updateLiquidWater() {
   propagateWaterRemovalQueue();
   propagateWaterAddQueue();
 

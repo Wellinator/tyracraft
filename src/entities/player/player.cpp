@@ -89,9 +89,6 @@ Player::~Player() {
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
                     Camera* t_camera, LevelMap* t_terrain) {
-  // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
-
   isMoving = movementDir.length() > 0;
 
   if (isMoving) {
@@ -141,6 +138,11 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   if (!isFlying) updateGravity(nextYPos);
 
   animate(t_camera->getCamType());
+}
+
+void Player::tick(LevelMap* t_terrain) {
+  // Update updateStateInWater every 5 ticks
+  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
 }
 
 void Player::render() { renderPip->render(t_renderer); }
