@@ -36,6 +36,7 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
   isOnGround = true;
   isFlying = false;
   isBreaking = false;
+  isCollidable = false;
 
   dynpip.setRenderer(&this->t_renderer->core);
   modelDynpipOptions.antiAliasingEnabled = false;
@@ -288,6 +289,7 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    if (!entity->isCollidable) continue;
 
     if (playerBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
         playerBB.getTopFace().axisPosition < entity->minCorner.y)
@@ -359,6 +361,7 @@ void Player::updateTerrainHeightAtPlayerPosition(
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    if (!entity->isCollidable) continue;
 
     // is under or above block
     if (minPlayer.x <= entity->maxCorner.x &&

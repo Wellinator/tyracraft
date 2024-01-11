@@ -39,4 +39,6 @@ class Entity {
   Vec4 minCorner, maxCorner;
 
   BBox* bbox = nullptr;
+
+  u8 isCollidable = false;
 };

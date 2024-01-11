@@ -77,6 +77,8 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
     for (u16 i = 0; i < ni.size(); i++) {
       Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
+      if (!entity->isCollidable) continue;
+      
       float intersectionPoint;
       if (revRay.intersectBox(entity->minCorner, entity->maxCorner,
                               &intersectionPoint) &&

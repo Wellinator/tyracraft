@@ -39,7 +39,6 @@ class Block : public Entity {
 
   // Block state
   u8 isTarget = false;
-  u8 isCollidable = false;
   u8 hasTransparency = false;
   u8 isBreakable = false;
   u8 isCrossed = false;

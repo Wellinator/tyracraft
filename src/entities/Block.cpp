@@ -22,5 +22,5 @@ Block::Block(BlockInfo* blockInfo) : Entity(EntityType::Block) {
 
 Block::~Block() {
   if (bbox) delete bbox;
-  bbox = NULL;
+  bbox = nullptr;
 }

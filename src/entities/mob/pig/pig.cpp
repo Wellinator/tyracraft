@@ -239,6 +239,7 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    if (!entity->isCollidable) continue;
 
     if (entityBB->getBottomFace().axisPosition >= entity->maxCorner.y ||
         entityBB->getTopFace().axisPosition < entity->minCorner.y)
@@ -308,6 +309,7 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    if (!entity->isCollidable) continue;
 
     // is under or above block
     if (minEntityPos->x <= entity->maxCorner.x &&

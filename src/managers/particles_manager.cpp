@@ -108,9 +108,10 @@ void ParticlesManager::updateParticles(const float deltaTime,
 
         for (u16 i = 0; i < ni.size(); i++) {
           Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-          float hitDistance;
+          if (!entity->isCollidable) continue;
 
           // Narrow Phase
+          float hitDistance;
           if (ray.intersectBox(entity->minCorner, entity->maxCorner,
                                &hitDistance) &&
               hitDistance < maxCollidableDistance) {

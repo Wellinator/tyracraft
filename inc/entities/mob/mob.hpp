@@ -43,4 +43,5 @@ class Mob : public Entity {
   Vec4 moviemntDirection;
 
   u8 shouldUnspawn = false;
+  u8 isCollidable = true;
 };

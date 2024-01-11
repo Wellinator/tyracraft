@@ -121,7 +121,6 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   loadScheduledChunks();
 
   mobManager.update(deltaTime);
-
   updateTargetBlock(t_camera, t_player);
 };
 
@@ -129,7 +128,6 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 void World::tick(Player* t_player, Camera* t_camera) {
   particlesManager.tick();
   chunckManager.tick();
-
   mobManager.tick();
 
   // Update cloudsManager every 150 ticks
@@ -169,7 +167,7 @@ void World::render() {
   mobManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
 
-  if (targetBlock) {
+  if (targetBlock && targetBlock->bbox) {
     renderTargetBlockHitbox(targetBlock);
     if (isBreakingBLock() && targetBlock->damage > 0 &&
         targetBlock->getHardness() > 0.05F) {
@@ -1089,15 +1087,14 @@ void World::buildChunk(Chunck* t_chunck) {
         const Blocks block_type =
             static_cast<Blocks>(terrain->blocks[blockIndex]);
 
-        if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
-            block_type != Blocks::TOTAL_OF_BLOCKS) {
+        if (block_type != Blocks::AIR_BLOCK) {
           Vec4 tempBlockOffset = Vec4(x, y, z);
 
+          const u8 isLiquid = block_type == Blocks::WATER_BLOCK ||
+                              block_type == Blocks::LAVA_BLOCK;
           const u8 visibleFaces =
-              block_type == Blocks::WATER_BLOCK ||
-                      block_type == Blocks::LAVA_BLOCK
-                  ? getLiquidBlockVisibleFaces(&tempBlockOffset)
-                  : getBlockVisibleFaces(&tempBlockOffset);
+              isLiquid ? getLiquidBlockVisibleFaces(&tempBlockOffset)
+                       : getBlockVisibleFaces(&tempBlockOffset);
 
           // Have any face visible?
           if (visibleFaces > 0) {
@@ -1130,16 +1127,14 @@ void World::buildChunk(Chunck* t_chunck) {
               block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
               // Add data to AABBTree
-              if (block->isCollidable) {
-                bvh::AABB blockAABB = bvh::AABB();
-                blockAABB.minx = block->minCorner.x;
-                blockAABB.miny = block->minCorner.y;
-                blockAABB.minz = block->minCorner.z;
-                blockAABB.maxx = block->maxCorner.x;
-                blockAABB.maxy = block->maxCorner.y;
-                blockAABB.maxz = block->maxCorner.z;
-                block->tree_index = g_AABBTree->insert(blockAABB, block);
-              }
+              bvh::AABB blockAABB = bvh::AABB();
+              blockAABB.minx = block->minCorner.x;
+              blockAABB.miny = block->minCorner.y;
+              blockAABB.minz = block->minCorner.z;
+              blockAABB.maxx = block->maxCorner.x;
+              blockAABB.maxy = block->maxCorner.y;
+              blockAABB.maxz = block->maxCorner.z;
+              block->tree_index = g_AABBTree->insert(blockAABB, block);
 
               delete rawBBox;
 
@@ -1179,14 +1174,14 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     u32 blockIndex = getIndexByOffset(x, y, z);
     const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
 
-    if (block_type != Blocks::VOID && block_type != Blocks::AIR_BLOCK &&
-        block_type != Blocks::TOTAL_OF_BLOCKS) {
+    if (block_type != Blocks::AIR_BLOCK) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
 
-      const u8 visibleFaces =
-          block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK
-              ? getLiquidBlockVisibleFaces(&tempBlockOffset)
-              : getBlockVisibleFaces(&tempBlockOffset);
+      const u8 isLiquid =
+          block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK;
+      const u8 visibleFaces = isLiquid
+                                  ? getLiquidBlockVisibleFaces(&tempBlockOffset)
+                                  : getBlockVisibleFaces(&tempBlockOffset);
 
       // Is any face vísible?
       if (visibleFaces > 0) {
@@ -1218,16 +1213,14 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
           // Add data to AABBTree
-          if (block->isCollidable) {
-            bvh::AABB blockAABB = bvh::AABB();
-            blockAABB.minx = block->minCorner.x;
-            blockAABB.miny = block->minCorner.y;
-            blockAABB.minz = block->minCorner.z;
-            blockAABB.maxx = block->maxCorner.x;
-            blockAABB.maxy = block->maxCorner.y;
-            blockAABB.maxz = block->maxCorner.z;
-            block->tree_index = g_AABBTree->insert(blockAABB, block);
-          }
+          bvh::AABB blockAABB = bvh::AABB();
+          blockAABB.minx = block->minCorner.x;
+          blockAABB.miny = block->minCorner.y;
+          blockAABB.minz = block->minCorner.z;
+          blockAABB.maxx = block->maxCorner.x;
+          blockAABB.maxy = block->maxCorner.y;
+          blockAABB.maxz = block->maxCorner.z;
+          block->tree_index = g_AABBTree->insert(blockAABB, block);
 
           delete rawBBox;
 
@@ -1292,6 +1285,8 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
     if (entity->entity_type == EntityType::Block) {
       Block* block = (Block*)entity;
 
+      if (!block->isBreakable) continue;
+
       float distanceFromCurrentBlockToPlayer =
           baseOrigin.distanceTo(entity->position);
 
@@ -1319,8 +1314,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
     targetBlock->distance = tempTargetDistance;
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
 
-    const uint32_t _hitedBlockId = targetBlock->index;
-    if (_hitedBlockId != _lastTargetBlockId) breaking_time_pessed = 0;
+    if (targetBlock->index != _lastTargetBlockId) breaking_time_pessed = 0;
   }
 }
 

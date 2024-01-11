@@ -138,7 +138,7 @@ void Chunck::clear() {
   blocksCount = 0;
 
   for (u16 i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->isCollidable) g_AABBTree->remove(blocks[i]->tree_index);
+    g_AABBTree->remove(blocks[i]->tree_index);
 
     delete blocks[i];
     blocks[i] = nullptr;
