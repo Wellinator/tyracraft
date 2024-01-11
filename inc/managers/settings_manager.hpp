@@ -31,6 +31,9 @@ struct settings_file {
   bool invert_cam_y = false;
   u16 cam_h_sensitivity = 115;
   u16 cam_v_sensitivity = 95;
+
+  // Language options
+  std::string skin = "player";
 };
 
 /**

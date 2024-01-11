@@ -6,6 +6,7 @@
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
+#include <managers/settings_manager.hpp>
 
 using Tyra::Audio;
 using Tyra::FileUtils;
@@ -31,10 +32,14 @@ void StateMainMenu::init() {
    * TODO: Add menu actions sfx;
    * */
 
-  this->stapip.setRenderer(&this->context->t_engine->renderer.core);
+  stapip.setRenderer(&this->context->t_engine->renderer.core);
+  dynpip.setRenderer(&this->context->t_engine->renderer.core);
 
   const float halfWidth =
       this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
+
+  this->loadSkinTexture(&this->context->t_engine->renderer);
+  this->loadPlayerPreview(&this->context->t_engine->renderer);
 
   this->loadSkybox(&this->context->t_engine->renderer);
   this->context->t_camera->reset();
@@ -61,30 +66,25 @@ void StateMainMenu::init() {
 }
 
 void StateMainMenu::update(const float& deltaTime) {
-  // Switch to audio thread
-  Tyra::Threading::switchThread();
+  this->context->t_camera->setPositionByMesh(menuSkybox);
+  this->context->t_camera->update();
 
-  // Update skybox and camera;
-  {
-    // this->context->t_camera->update(this->context->t_engine->pad,
-    //                                 *this->menuSkybox);
-    this->context->t_camera->setPositionByMesh(menuSkybox);
-    this->context->t_camera->update();
-
-    this->menuSkybox->rotation.rotateY(0.0001F);
-  }
+  this->menuSkybox->rotation.rotateY(0.0001F);
 
   // Update current screen state
   this->screen->update();
 
-  // Switch to audio thread
-  Tyra::Threading::switchThread();
+  playerPreviewMesh->update();
 }
 
 void StateMainMenu::render() {
   // Meshes
   this->context->t_engine->renderer.renderer3D.usePipeline(&stapip);
-  { stapip.render(this->menuSkybox, skyboxOptions); }
+  stapip.render(this->menuSkybox, skyboxOptions);
+
+  this->context->t_engine->renderer.renderer3D.usePipeline(&dynpip);
+  dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
+
 
   /**
    * --------------- Sprites ---------------
@@ -119,6 +119,51 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
       "png");
 }
 
+void StateMainMenu::loadSkinTexture(Renderer* renderer) {
+  const auto skinPath =
+      std::string("textures/skin/").append(g_settings.skin).append(".png");
+
+  skinTexture = renderer->getTextureRepository().add(
+      FileUtils::fromCwd(skinPath.c_str()));
+}
+
+void StateMainMenu::loadPlayerPreview(Renderer* renderer) {
+  dynpipOptions.antiAliasingEnabled = false;
+  dynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+
+  dynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
+
+  ObjLoaderOptions options;
+  options.scale = 5.0F;
+  options.flipUVs = true;
+  options.animation.count = 2;
+
+  auto data = ObjLoader::load(
+      FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
+  data.get()->loadNormals = false;
+
+  playerPreviewMesh = std::make_unique<DynamicMesh>(data.get());
+
+  playerPreviewMesh->rotation.identity();
+  playerPreviewMesh->rotation.rotateY(_90DEGINRAD - 0.2f);
+
+  playerPreviewMesh->scale.identity();
+  playerPreviewMesh->translation.identity();
+
+  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 17.0F, 11.0f));
+
+  auto& materials = playerPreviewMesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    skinTexture->addLink(materials[i]->id);
+
+  playerPreviewMesh->animation.loop = true;
+  playerPreviewMesh->animation.setSequence(standStillSequence);
+  playerPreviewMesh->animation.speed = 0.005F;
+}
+
 void StateMainMenu::unloadTextures() {
   this->context->t_engine->renderer.getTextureRepository().freeByMesh(
       menuSkybox);
@@ -126,6 +171,8 @@ void StateMainMenu::unloadTextures() {
   for (u8 i = 0; i < 2; i++)
     this->context->t_engine->renderer.getTextureRepository().freeBySprite(
         title[i]);
+
+  this->context->t_engine->renderer.getTextureRepository().free(skinTexture);
 
   delete this->menuSkybox;
   delete this->skyboxOptions;
