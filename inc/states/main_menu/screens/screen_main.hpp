@@ -46,6 +46,9 @@ class ScreenMain : public ScreenBase {
   Sprite raw_slot[4];
   Sprite active_slot;
   Sprite textBack;
+  Sprite beacon_button_default;
+  Sprite beacon_button_hover;
+  Sprite glyph_skin_pack;
 
   Sprite btnCross;
   Sprite btnTriangle;

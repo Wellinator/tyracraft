@@ -15,6 +15,9 @@ ScreenMain::~ScreenMain() {
   t_renderer->getTextureRepository().free(raw_slot_texture->id);
   t_renderer->getTextureRepository().freeBySprite(active_slot);
   t_renderer->getTextureRepository().freeBySprite(btnCross);
+  t_renderer->getTextureRepository().freeBySprite(beacon_button_default);
+  t_renderer->getTextureRepository().freeBySprite(beacon_button_hover);
+  t_renderer->getTextureRepository().freeBySprite(glyph_skin_pack);
   t_renderer->getTextureRepository().free(skinTexture);
 }
 
@@ -30,7 +33,15 @@ void ScreenMain::render() {
   t_renderer->renderer2D.render(raw_slot[1]);
   t_renderer->renderer2D.render(raw_slot[2]);
   t_renderer->renderer2D.render(raw_slot[3]);
-  t_renderer->renderer2D.render(active_slot);
+  t_renderer->renderer2D.render(beacon_button_default);
+
+  if (activeOption == ScreenMainOptions::SkinSelection) {
+    t_renderer->renderer2D.render(beacon_button_hover);
+  } else {
+    t_renderer->renderer2D.render(active_slot);
+  }
+
+  t_renderer->renderer2D.render(glyph_skin_pack);
 
   auto baseX = 248;
   auto baseY = 206;
@@ -95,7 +106,8 @@ void ScreenMain::render() {
   // About
   {
     FontOptions fontOptions;
-    fontOptions.position.set(Vec2(baseX + 160, baseY - 10));
+    fontOptions.scale = 0.9f;
+    fontOptions.position.set(Vec2(baseX + 160, baseY - 20));
     fontOptions.alignment = TextAlignment::Center;
     fontOptions.color.set(activeOption == ScreenMainOptions::SkinSelection
                               ? Tyra::Color(255, 255, 0)
@@ -158,6 +170,30 @@ void ScreenMain::init() {
   t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
+
+  beacon_button_default.mode = Tyra::MODE_STRETCH;
+  beacon_button_default.size.set(32, 32);
+  beacon_button_default.position.set(baseX + 225, baseY + 20);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/beacon_button_default.png"))
+      ->addLink(beacon_button_default.id);
+
+  beacon_button_hover.mode = Tyra::MODE_STRETCH;
+  beacon_button_hover.size.set(32, 32);
+  beacon_button_hover.position.set(baseX + 225, baseY + 20);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/beacon_button_hover.png"))
+      ->addLink(beacon_button_hover.id);
+
+  glyph_skin_pack.mode = Tyra::MODE_STRETCH;
+  glyph_skin_pack.size.set(24, 24);
+  glyph_skin_pack.position.set(baseX + 229, baseY + 24);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/glyph_skin_pack.png"))
+      ->addLink(glyph_skin_pack.id);
 }
 
 void ScreenMain::handleInput() {
@@ -175,6 +211,14 @@ void ScreenMain::handleInput() {
         activeOption = ScreenMainOptions::About;
       else
         activeOption = static_cast<ScreenMainOptions>(nextOption);
+    } else if (context->context->t_engine->pad.getClicked().DpadRight) {
+      if (activeOption != ScreenMainOptions::SkinSelection) {
+        activeOption = ScreenMainOptions::SkinSelection;
+      }
+    } else if (context->context->t_engine->pad.getClicked().DpadLeft) {
+      if (activeOption == ScreenMainOptions::SkinSelection) {
+        activeOption = ScreenMainOptions::PlayGame;
+      }
     }
   }
 
