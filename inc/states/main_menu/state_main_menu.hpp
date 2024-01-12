@@ -34,16 +34,12 @@
 #include "managers/sound_manager.hpp"
 
 using Tyra::Audio;
-using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
 using Tyra::Mesh;
 using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::StaPipOptions;
 using Tyra::StaticMesh;
 using Tyra::StaticPipeline;
-using Tyra::Texture;
 
 class ScreenBase;
 class StateMainMenu : public GameState {
@@ -70,12 +66,6 @@ class StateMainMenu : public GameState {
   StaPipOptions* skyboxOptions;
   StaticPipeline stapip;
 
-  DynPipOptions dynpipOptions;
-  DynamicPipeline dynpip;
-  std::unique_ptr<DynamicMesh> playerPreviewMesh;
-  std::vector<u32> standStillSequence = {0, 1};
-  Texture* skinTexture = nullptr;
-
   ScreenBase* screen = nullptr;
 
   const float SLOT_WIDTH = 160;
@@ -86,8 +76,6 @@ class StateMainMenu : public GameState {
 
   u8 hasFinished();
   void loadSkybox(Renderer* renderer);
-  void loadSkinTexture(Renderer* renderer);
-  void loadPlayerPreview(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
 };

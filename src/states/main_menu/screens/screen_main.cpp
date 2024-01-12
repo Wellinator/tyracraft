@@ -15,12 +15,14 @@ ScreenMain::~ScreenMain() {
   t_renderer->getTextureRepository().free(raw_slot_texture->id);
   t_renderer->getTextureRepository().freeBySprite(active_slot);
   t_renderer->getTextureRepository().freeBySprite(btnCross);
+  t_renderer->getTextureRepository().free(skinTexture);
 }
 
 void ScreenMain::update() {
   handleInput();
   hightLightActiveOption();
   navigate();
+  playerPreviewMesh->update();
 }
 
 void ScreenMain::render() {
@@ -84,9 +86,30 @@ void ScreenMain::render() {
 
   t_renderer->renderer2D.render(btnCross);
   FontManager_printText(Label_Select, 35, 407);
+
+  // Draw player skin
+  t_renderer->renderer3D.usePipeline(&dynpip);
+  dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
+
+  // Draw player name
+  // About
+  {
+    FontOptions fontOptions;
+    fontOptions.position.set(Vec2(baseX + 160, baseY - 10));
+    fontOptions.alignment = TextAlignment::Center;
+    fontOptions.color.set(activeOption == ScreenMainOptions::SkinSelection
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+    FontManager_printText(g_settings.skin, fontOptions);
+  }
 }
 
 void ScreenMain::init() {
+  dynpip.setRenderer(&t_renderer->core);
+
+  loadSkinTexture(t_renderer);
+  loadPlayerPreview(t_renderer);
+
   const float halfWidth = t_renderer->core.getSettings().getWidth() / 2;
   auto baseX = halfWidth - SLOT_WIDTH / 2;
   auto baseY = 200;
@@ -178,4 +201,49 @@ void ScreenMain::navigate() {
     context->setScreen(new ScreenHowToPlay(context));
   else if (selectedOption == ScreenMainOptions::About)
     context->setScreen(new ScreenAbout(context));
+}
+
+void ScreenMain::loadSkinTexture(Renderer* renderer) {
+  const auto skinPath =
+      std::string("textures/skin/").append(g_settings.skin).append(".png");
+
+  skinTexture = renderer->getTextureRepository().add(
+      FileUtils::fromCwd(skinPath.c_str()));
+}
+
+void ScreenMain::loadPlayerPreview(Renderer* renderer) {
+  dynpipOptions.antiAliasingEnabled = false;
+  dynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+
+  dynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
+
+  ObjLoaderOptions options;
+  options.scale = 3.5F;
+  options.flipUVs = true;
+  options.animation.count = 2;
+
+  auto data = ObjLoader::load(
+      FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
+  data.get()->loadNormals = false;
+
+  playerPreviewMesh = std::make_unique<DynamicMesh>(data.get());
+
+  playerPreviewMesh->rotation.identity();
+  playerPreviewMesh->rotation.rotateY(_90DEGINRAD - 0.2f);
+
+  playerPreviewMesh->scale.identity();
+  playerPreviewMesh->translation.identity();
+
+  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 19.0F, 12.0f));
+
+  auto& materials = playerPreviewMesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    skinTexture->addLink(materials[i]->id);
+
+  playerPreviewMesh->animation.loop = true;
+  playerPreviewMesh->animation.setSequence(standStillSequence);
+  playerPreviewMesh->animation.speed = 0.005F;
 }

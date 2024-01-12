@@ -10,12 +10,24 @@
 #include "utils.hpp"
 #include "models/block_info_model.hpp"
 
+using Tyra::DynamicMesh;
+using Tyra::DynamicPipeline;
+using Tyra::DynPipOptions;
 using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::Texture;
+using Tyra::ObjLoaderOptions;
+using Tyra::ObjLoader;
 
-enum class ScreenMainOptions { PlayGame, Options, HowToPlay, About, None };
+enum class ScreenMainOptions {
+  PlayGame,
+  Options,
+  HowToPlay,
+  About,
+  SkinSelection,
+  None
+};
 
 class ScreenMain : public ScreenBase {
  public:
@@ -40,6 +52,15 @@ class ScreenMain : public ScreenBase {
 
   ScreenMainOptions selectedOption = ScreenMainOptions::None;
   ScreenMainOptions activeOption = ScreenMainOptions::PlayGame;
+
+  DynPipOptions dynpipOptions;
+  DynamicPipeline dynpip;
+  std::unique_ptr<DynamicMesh> playerPreviewMesh;
+  std::vector<u32> standStillSequence = {0, 1};
+  Texture* skinTexture = nullptr;
+
+  void loadSkinTexture(Renderer* renderer);
+  void loadPlayerPreview(Renderer* renderer);
 
   const float SLOT_WIDTH = 160;
   const float SLOT_HIGHT_OFFSET = 200;
