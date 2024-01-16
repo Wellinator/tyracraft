@@ -4,6 +4,7 @@
 #include "states/main_menu/screens/screen_about.hpp"
 #include "states/main_menu/screens/screen_new_game.hpp"
 #include "states/main_menu/screens/screen_load_game.hpp"
+#include "states/main_menu/screens/screen_skin_selection.hpp"
 #include "managers/font/font_manager.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
@@ -245,6 +246,8 @@ void ScreenMain::navigate() {
     context->setScreen(new ScreenHowToPlay(context));
   else if (selectedOption == ScreenMainOptions::About)
     context->setScreen(new ScreenAbout(context));
+  else if (selectedOption == ScreenMainOptions::SkinSelection)
+    context->setScreen(new ScreenSkinSelection(context));
 }
 
 void ScreenMain::loadSkinTexture(Renderer* renderer) {

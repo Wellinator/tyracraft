@@ -7,6 +7,7 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
+#include "managers/settings_manager.hpp"
 #include "utils.hpp"
 #include "models/block_info_model.hpp"
 
