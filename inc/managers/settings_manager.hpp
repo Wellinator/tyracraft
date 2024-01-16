@@ -22,10 +22,10 @@ struct settings_file {
   std::string language = "en_US";
 
   // Sticks deadzones
-  float l_stick_H = 0.0F;
-  float l_stick_V = 0.0F;
-  float r_stick_H = 0.0F;
-  float r_stick_V = 0.0F;
+  float l_stick_H = 0.25F;
+  float l_stick_V = 0.25F;
+  float r_stick_H = 0.25F;
+  float r_stick_V = 0.25F;
 
   // Camera options
   bool invert_cam_y = false;
@@ -33,7 +33,7 @@ struct settings_file {
   u16 cam_v_sensitivity = 95;
 
   // Language options
-  std::string skin = "player";
+  std::string skin = "steve";
 };
 
 /**

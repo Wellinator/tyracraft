@@ -27,6 +27,7 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Camera"]["invert_cam_y"] = settings.invert_cam_y;
   _settings["Camera"]["cam_h_sensitivity"] = settings.cam_h_sensitivity;
   _settings["Camera"]["cam_v_sensitivity"] = settings.cam_v_sensitivity;
+  _settings["Player"]["skin"] = settings.skin;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -45,6 +46,7 @@ void SettingsManager::Save() {
   _settings["Camera"]["invert_cam_y"] = g_settings.invert_cam_y;
   _settings["Camera"]["cam_h_sensitivity"] = g_settings.cam_h_sensitivity;
   _settings["Camera"]["cam_v_sensitivity"] = g_settings.cam_v_sensitivity;
+  _settings["Player"]["skin"] = g_settings.skin;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -67,6 +69,14 @@ settings_file SettingsManager::Load() {
       _settings["Camera"]["cam_h_sensitivity"].as<int>();
   g_settings.cam_v_sensitivity =
       _settings["Camera"]["cam_v_sensitivity"].as<int>();
+
+  // Selected skin name
+  const auto skinName = _settings["Player"]["skin"].as<std::string>();
+  if (skinName.empty()) {
+    g_settings.skin = std::string("steve");
+  } else {
+    g_settings.skin = skinName;
+  }
 
   return g_settings;
 };
