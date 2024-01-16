@@ -151,20 +151,19 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (clicked.R3) {
       Camera* t_cam = stateGamePlay->context->t_camera;
-      const auto camType = t_cam->getCamType();
 
-      if (camType == CamType::FirstPerson) {
+      if (t_cam->getCamType() == CamType::FirstPerson) {
         t_cam->setThirdPerson();
-      } else if (camType == CamType::ThirdPerson) {
+      } else if (t_cam->getCamType() == CamType::ThirdPerson) {
         t_cam->setFirstPerson();
       }
 
       // TODO: Implements inverted third person cam
-      // else if (camType == CamType::ThirdPersonInverted) {
+      // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
       //   t_cam->setFirstPerson();
       // }
 
-      if (camType == CamType::FirstPerson) {
+      if (t_cam->getCamType() == CamType::FirstPerson) {
         stateGamePlay->player->setRenderArmPip();
       } else {
         stateGamePlay->player->setRenderBodyPip();
