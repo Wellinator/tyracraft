@@ -11,6 +11,8 @@
 #include <sifrpc.h>
 #include <debug.h>
 #include <unistd.h>
+#include <memory>
+#include <vector>
 #include <math.h>
 #include <string>
 #include "constants.hpp"
@@ -76,5 +78,4 @@ class StateMainMenu : public GameState {
   void loadSkybox(Renderer* renderer);
   void unloadTextures();
   void loadMenuSong();
-  
 };

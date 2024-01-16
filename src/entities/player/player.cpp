@@ -3,6 +3,7 @@
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
+#include "managers/settings_manager.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -700,8 +701,10 @@ void Player::setItemToInventory(const ItemId& itemToShift) {
 }
 
 void Player::loadPlayerTexture() {
+  const auto skinPath =
+      std::string("textures/skin/").append(g_settings.skin).append(".png");
   playerTexture = t_renderer->getTextureRepository().add(
-      FileUtils::fromCwd("textures/entity/player/steve.png"));
+      FileUtils::fromCwd(skinPath.c_str()));
 }
 
 void Player::updateStateInWater(LevelMap* terrain) {

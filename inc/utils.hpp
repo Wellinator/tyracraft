@@ -117,4 +117,6 @@ class Utils {
   static bool Probability(float probability) {
     return rand() < probability * ((float)RAND_MAX + 1.0);
   }
+
+  static float lerp(float a, float b, float f) { return a + f * (b - a); }
 };

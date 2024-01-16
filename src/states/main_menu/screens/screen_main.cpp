@@ -4,6 +4,7 @@
 #include "states/main_menu/screens/screen_about.hpp"
 #include "states/main_menu/screens/screen_new_game.hpp"
 #include "states/main_menu/screens/screen_load_game.hpp"
+#include "states/main_menu/screens/screen_skin_selection.hpp"
 #include "managers/font/font_manager.hpp"
 
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
@@ -15,12 +16,17 @@ ScreenMain::~ScreenMain() {
   t_renderer->getTextureRepository().free(raw_slot_texture->id);
   t_renderer->getTextureRepository().freeBySprite(active_slot);
   t_renderer->getTextureRepository().freeBySprite(btnCross);
+  t_renderer->getTextureRepository().freeBySprite(beacon_button_default);
+  t_renderer->getTextureRepository().freeBySprite(beacon_button_hover);
+  t_renderer->getTextureRepository().freeBySprite(glyph_skin_pack);
+  t_renderer->getTextureRepository().free(skinTexture);
 }
 
 void ScreenMain::update() {
   handleInput();
   hightLightActiveOption();
   navigate();
+  playerPreviewMesh->update();
 }
 
 void ScreenMain::render() {
@@ -28,7 +34,15 @@ void ScreenMain::render() {
   t_renderer->renderer2D.render(raw_slot[1]);
   t_renderer->renderer2D.render(raw_slot[2]);
   t_renderer->renderer2D.render(raw_slot[3]);
-  t_renderer->renderer2D.render(active_slot);
+  t_renderer->renderer2D.render(beacon_button_default);
+
+  if (activeOption == ScreenMainOptions::SkinSelection) {
+    t_renderer->renderer2D.render(beacon_button_hover);
+  } else {
+    t_renderer->renderer2D.render(active_slot);
+  }
+
+  t_renderer->renderer2D.render(glyph_skin_pack);
 
   auto baseX = 248;
   auto baseY = 206;
@@ -84,9 +98,31 @@ void ScreenMain::render() {
 
   t_renderer->renderer2D.render(btnCross);
   FontManager_printText(Label_Select, 35, 407);
+
+  // Draw player skin
+  t_renderer->renderer3D.usePipeline(&dynpip);
+  dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
+
+  // Draw player name
+  // About
+  {
+    FontOptions fontOptions;
+    fontOptions.scale = 0.9f;
+    fontOptions.position.set(Vec2(baseX + 160, baseY - 20));
+    fontOptions.alignment = TextAlignment::Center;
+    fontOptions.color.set(activeOption == ScreenMainOptions::SkinSelection
+                              ? Tyra::Color(255, 255, 0)
+                              : Tyra::Color(255, 255, 255));
+    FontManager_printText(g_settings.skin, fontOptions);
+  }
 }
 
 void ScreenMain::init() {
+  dynpip.setRenderer(&t_renderer->core);
+
+  loadSkinTexture(t_renderer);
+  loadPlayerPreview(t_renderer);
+
   const float halfWidth = t_renderer->core.getSettings().getWidth() / 2;
   auto baseX = halfWidth - SLOT_WIDTH / 2;
   auto baseY = 200;
@@ -135,6 +171,30 @@ void ScreenMain::init() {
   t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/btn_cross.png"))
       ->addLink(btnCross.id);
+
+  beacon_button_default.mode = Tyra::MODE_STRETCH;
+  beacon_button_default.size.set(32, 32);
+  beacon_button_default.position.set(baseX + 225, baseY + 20);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/beacon_button_default.png"))
+      ->addLink(beacon_button_default.id);
+
+  beacon_button_hover.mode = Tyra::MODE_STRETCH;
+  beacon_button_hover.size.set(32, 32);
+  beacon_button_hover.position.set(baseX + 225, baseY + 20);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/beacon_button_hover.png"))
+      ->addLink(beacon_button_hover.id);
+
+  glyph_skin_pack.mode = Tyra::MODE_STRETCH;
+  glyph_skin_pack.size.set(24, 24);
+  glyph_skin_pack.position.set(baseX + 229, baseY + 24);
+
+  t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd("textures/gui/glyph_skin_pack.png"))
+      ->addLink(glyph_skin_pack.id);
 }
 
 void ScreenMain::handleInput() {
@@ -152,6 +212,14 @@ void ScreenMain::handleInput() {
         activeOption = ScreenMainOptions::About;
       else
         activeOption = static_cast<ScreenMainOptions>(nextOption);
+    } else if (context->context->t_engine->pad.getClicked().DpadRight) {
+      if (activeOption != ScreenMainOptions::SkinSelection) {
+        activeOption = ScreenMainOptions::SkinSelection;
+      }
+    } else if (context->context->t_engine->pad.getClicked().DpadLeft) {
+      if (activeOption == ScreenMainOptions::SkinSelection) {
+        activeOption = ScreenMainOptions::PlayGame;
+      }
     }
   }
 
@@ -178,4 +246,51 @@ void ScreenMain::navigate() {
     context->setScreen(new ScreenHowToPlay(context));
   else if (selectedOption == ScreenMainOptions::About)
     context->setScreen(new ScreenAbout(context));
+  else if (selectedOption == ScreenMainOptions::SkinSelection)
+    context->setScreen(new ScreenSkinSelection(context));
+}
+
+void ScreenMain::loadSkinTexture(Renderer* renderer) {
+  const auto skinPath =
+      std::string("textures/skin/").append(g_settings.skin).append(".png");
+
+  skinTexture = renderer->getTextureRepository().add(
+      FileUtils::fromCwd(skinPath.c_str()));
+}
+
+void ScreenMain::loadPlayerPreview(Renderer* renderer) {
+  dynpipOptions.antiAliasingEnabled = false;
+  dynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+
+  dynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
+
+  ObjLoaderOptions options;
+  options.scale = 3.5F;
+  options.flipUVs = true;
+  options.animation.count = 2;
+
+  auto data = ObjLoader::load(
+      FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
+  data.get()->loadNormals = false;
+
+  playerPreviewMesh = std::make_unique<DynamicMesh>(data.get());
+
+  playerPreviewMesh->rotation.identity();
+  playerPreviewMesh->rotation.rotateY(_90DEGINRAD - 0.2f);
+
+  playerPreviewMesh->scale.identity();
+  playerPreviewMesh->translation.identity();
+
+  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 19.0F, 12.0f));
+
+  auto& materials = playerPreviewMesh.get()->materials;
+  for (size_t i = 0; i < materials.size(); i++)
+    skinTexture->addLink(materials[i]->id);
+
+  playerPreviewMesh->animation.loop = true;
+  playerPreviewMesh->animation.setSequence(standStillSequence);
+  playerPreviewMesh->animation.speed = 0.005F;
 }

@@ -6,12 +6,11 @@
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
+#include <managers/settings_manager.hpp>
 
 using Tyra::Audio;
 using Tyra::FileUtils;
 using Tyra::Math;
-using Tyra::ObjLoader;
-using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
 using Tyra::RendererSettings;
 
@@ -31,7 +30,7 @@ void StateMainMenu::init() {
    * TODO: Add menu actions sfx;
    * */
 
-  this->stapip.setRenderer(&this->context->t_engine->renderer.core);
+  stapip.setRenderer(&this->context->t_engine->renderer.core);
 
   const float halfWidth =
       this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
@@ -61,30 +60,19 @@ void StateMainMenu::init() {
 }
 
 void StateMainMenu::update(const float& deltaTime) {
-  // Switch to audio thread
-  Tyra::Threading::switchThread();
+  this->context->t_camera->setPositionByMesh(menuSkybox);
+  this->context->t_camera->update();
 
-  // Update skybox and camera;
-  {
-    // this->context->t_camera->update(this->context->t_engine->pad,
-    //                                 *this->menuSkybox);
-    this->context->t_camera->setPositionByMesh(menuSkybox);
-    this->context->t_camera->update();
-
-    this->menuSkybox->rotation.rotateY(0.0001F);
-  }
+  this->menuSkybox->rotation.rotateY(0.0001F);
 
   // Update current screen state
   this->screen->update();
-
-  // Switch to audio thread
-  Tyra::Threading::switchThread();
 }
 
 void StateMainMenu::render() {
   // Meshes
   this->context->t_engine->renderer.renderer3D.usePipeline(&stapip);
-  { stapip.render(this->menuSkybox, skyboxOptions); }
+  stapip.render(this->menuSkybox, skyboxOptions);
 
   /**
    * --------------- Sprites ---------------
