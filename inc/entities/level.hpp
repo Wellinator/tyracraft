@@ -16,9 +16,9 @@ typedef struct {
 
   uint16_t spawnX, spawnY, spawnZ;
 
-  uint8_t* blocks;
-  uint8_t* lightData;
-  uint8_t* metaData;
+  uint8_t blocks[OVERWORLD_SIZE];
+  uint8_t lightData[OVERWORLD_SIZE];
+  uint8_t metaData[OVERWORLD_SIZE];
 } LevelMap;
 
 typedef struct {

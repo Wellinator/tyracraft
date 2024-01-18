@@ -2108,17 +2108,15 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
-  level.map = {.width = OVERWORLD_H_DISTANCE,
-               .length = OVERWORLD_H_DISTANCE,
-               .height = OVERWORLD_V_DISTANCE,
+  level.map = {
+      .width = OVERWORLD_H_DISTANCE,
+      .length = OVERWORLD_H_DISTANCE,
+      .height = OVERWORLD_V_DISTANCE,
 
-               .spawnX = 128,
-               .spawnY = 59,
-               .spawnZ = 128,
-
-               .blocks = new u8[OVERWORLD_SIZE],
-               .lightData = new u8[OVERWORLD_SIZE],
-               .metaData = new u8[OVERWORLD_SIZE]};
+      .spawnX = 128,
+      .spawnY = 59,
+      .spawnZ = 128,
+  };
 
   // For some reason I need to clear the array garbage
   // I was initialized with new key word, very weird!
@@ -2131,13 +2129,7 @@ void CrossCraft_World_Init(const uint32_t& seed) {
   TYRA_LOG("Generated base level template");
 }
 
-void CrossCraft_World_Deinit() {
-  TYRA_LOG("Destroying the world");
-  if (level.map.blocks) delete[] level.map.blocks;
-  if (level.map.lightData) delete[] level.map.lightData;
-  if (level.map.metaData) delete[] level.map.metaData;
-  TYRA_LOG("World freed");
-}
+void CrossCraft_World_Deinit() { TYRA_LOG("Destroying the world"); }
 
 /**
  * @brief Generates the world
