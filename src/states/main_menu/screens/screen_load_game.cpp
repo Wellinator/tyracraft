@@ -1,5 +1,6 @@
 #include "states/main_menu/screens/screen_load_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "managers/save_manager.hpp"
 
 ScreenLoadGame::ScreenLoadGame(StateMainMenu* t_context)
     : ScreenBase(t_context) {
@@ -23,13 +24,19 @@ ScreenLoadGame::~ScreenLoadGame() {
   textureRepo->freeBySprite(btnR1);
   textureRepo->freeBySprite(selectedSaveOverlay);
 
+  textureRepo->free(saveIconTex->id);
+  textureRepo->free(badSaveIconTex->id);
+
   unloadSaved();
 }
 
 void ScreenLoadGame::init() {
-  loadAvailableSavesFromUSB();
-
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+
+  saveIconTex =
+      textureRepo->add(FileUtils::fromCwd("textures/gui/save_icon.png"));
+  badSaveIconTex = textureRepo->add(
+      FileUtils::fromCwd("textures/gui/save_icon_invalid.png"));
 
   backgroundLoadGame.mode = Tyra::MODE_STRETCH;
   backgroundLoadGame.size.set(512, 512);
@@ -111,6 +118,8 @@ void ScreenLoadGame::init() {
 
   textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
       ->addLink(selectedSaveOverlay.id);
+
+  loadAvailableSavesFromUSB();
 }
 
 void ScreenLoadGame::update() { handleInput(); }
@@ -167,10 +176,10 @@ void ScreenLoadGame::render() {
       t_renderer->renderer2D.render(selectedSaveOverlay);
 
       FontManager_printText(
-          item->title.c_str(),
+          item->name.c_str(),
           FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
     } else {
-      FontManager_printText(item->title.c_str(), 173.0F, iconYPosition);
+      FontManager_printText(item->name.c_str(), 173.0F, iconYPosition);
     }
 
     t_renderer->renderer2D.render(item->icon);
@@ -240,7 +249,6 @@ void ScreenLoadGame::unloadSaved() {
 }
 
 void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
-  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   std::vector<UtilDirectory> saveFilesList = Utils::listDir(fullPath);
   u8 tempId = 1;
 
@@ -256,15 +264,25 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
 
       model->id = tempId++;
       model->path = std::string(fullPath).append(dir.name);
-      model->title = FileUtils::getFilenameWithoutExtension(dir.name);
       model->createdAt = dir.createdAt;
+
+      SaveManager::SetSaveInfo(model->path.c_str(), model);
+
+      TYRA_LOG("Version: ", model->version);
+      TYRA_LOG("name: ", model->name.c_str());
+
+      // Make sure it'll only load from version 1 above
+      model->valid = model->version > 0;
 
       model->icon.size.set(32, 32);
       model->icon.position.set(127, 146);
       model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
 
-      textureRepo->add(FileUtils::fromCwd("textures/gui/save_icon.png"))
-          ->addLink(model->icon.id);
+      if (model->valid) {
+        saveIconTex->addLink(model->icon.id);
+      } else {
+        badSaveIconTex->addLink(model->icon.id);
+      }
 
       savedGamesList.push_back(model);
     }
@@ -324,10 +342,7 @@ void ScreenLoadGame::selectNextSave() {
 }
 
 void ScreenLoadGame::loadSelectedSave() {
-  if (selectedSavedGame) {
+  if (selectedSavedGame && selectedSavedGame->valid) {
     return context->loadSavedGame(selectedSavedGame->path);
   }
-
-  TYRA_ERROR(
-      "No selected save data to load! Please choose one or save a game first.");
 }

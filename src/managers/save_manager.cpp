@@ -90,7 +90,7 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
     gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
 
     // World name
-    uint16_t worldNameSize = 0;
+    uint16_t worldNameSize;
     gzread(save_file, &worldNameSize, sizeof(worldNameSize));
     gameOptions->name.resize(worldNameSize / sizeof(char));
     gzread(save_file, gameOptions->name.data(), worldNameSize);
@@ -154,9 +154,10 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
   NewGameOptions* model = new NewGameOptions();
 
   gzFile save_file = gzopen(fullPath, "rb");
-  gzrewind(save_file);
 
   if (save_file != nullptr) {
+    gzrewind(save_file);
+
     // Save Version
     int version = 0;
     gzread(save_file, &version, sizeof(int));
@@ -166,7 +167,7 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     gzread(save_file, &model->seed, sizeof(uint32_t));
 
     // World name
-    uint16_t worldNameSize = 0;
+    uint16_t worldNameSize;
     gzread(save_file, &worldNameSize, sizeof(worldNameSize));
     model->name.resize(worldNameSize / sizeof(char));
     gzread(save_file, model->name.data(), worldNameSize);
@@ -194,6 +195,42 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
   }
 
   return model;
+}
+
+void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
+  gzFile save_file = gzopen(fullPath, "rb");
+  if (save_file) {
+    gzrewind(save_file);
+
+    // Set Version
+    u8 version;
+    gzread(save_file, &version, sizeof(int));
+
+    if (version != 1) {
+      target->version = 0;
+      target->name = std::string(FileUtils::getFilenameWithoutExtension(
+          FileUtils::getFilenameFromPath(fullPath)));
+
+    } else {
+      target->version = version;
+
+      // World seed
+      uint32_t seed;
+      gzread(save_file, &seed, sizeof(uint32_t));
+
+      // World name
+      uint16_t worldNameSize;
+      gzread(save_file, &worldNameSize, sizeof(worldNameSize));
+      target->name.resize(worldNameSize / sizeof(char));
+      gzread(save_file, target->name.data(), worldNameSize);
+    }
+
+    gzclose(save_file);
+  } else {
+    target->version = 0;
+    target->name = std::string(FileUtils::getFilenameWithoutExtension(
+        FileUtils::getFilenameFromPath(fullPath)));
+  }
 }
 
 bool SaveManager::CheckIfSaveExist(const char* fullPath) {

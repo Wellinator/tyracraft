@@ -60,8 +60,8 @@ class ScreenLoadGame : public ScreenBase {
   u8 totalOfSaves = 0;
   const u8 MAX_ITEMS_PER_PAGE = 4;
 
-  Texture* slotTexture;
-  Texture* slotActiveTexture;
+  Texture* saveIconTex;
+  Texture* badSaveIconTex;
 
   ScreenLoadGameOptions activeOption = ScreenLoadGameOptions::SaveFile;
   ScreenLoadGameSaveOrigin saveOrigin = ScreenLoadGameSaveOrigin::Mass;

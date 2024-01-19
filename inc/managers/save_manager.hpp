@@ -25,5 +25,7 @@ class SaveManager {
 
   static NewGameOptions* GetNewGameOptionsFromSaveFile(const char* fullPath);
 
+  static void SetSaveInfo(const char* fullPath, SaveInfoModel* target);
+
   static bool CheckIfSaveExist(const char* fullPath);
 };
