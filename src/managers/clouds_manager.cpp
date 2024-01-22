@@ -8,7 +8,6 @@ CloudsManager::CloudsManager() {
 
 CloudsManager::~CloudsManager() {
   t_renderer->getTextureRepository().free(cloudsTex->id);
-  delete[] vertices;
   uvMap.clear();
   uvMap.shrink_to_fit();
 }
@@ -42,14 +41,16 @@ void CloudsManager::updateCloudsPosition() {
   YMap += 0.00001F;
   if (XMap > 4.0F) XMap = 1;
   if (YMap > 4.0F) YMap = 1;
+
   calcUVMapping();
 }
 
 void CloudsManager::update() {
   tempColor = LightManager::IntensifyColor(&baseColor,
                                            worldLightModel->sunLightIntensity);
-  updateCloudsPosition();
 };
+
+void CloudsManager::tick() { updateCloudsPosition(); };
 
 void CloudsManager::render() {
   t_renderer->renderer3D.usePipeline(stapip);
@@ -70,7 +71,7 @@ void CloudsManager::render() {
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.fullClipChecks = true;
   infoBag.blendingEnabled = true;
-  infoBag.antiAliasingEnabled = true;
+  // infoBag.antiAliasingEnabled = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
 

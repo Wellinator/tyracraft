@@ -1,5 +1,6 @@
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "managers/settings_manager.hpp"
+#include "utils.hpp"
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context) {}
@@ -89,8 +90,8 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     const auto _h = (lJoyPad.h - 128.0F) / 128.0F;
     const auto _v = (lJoyPad.v - 128.0F) / 128.0F;
     playerMovementDirection =
-        Vec4(std::abs(_h) > g_settings.l_stick_H ? _h : 0.0F, 0.0F,
-             std::abs(_v) > g_settings.l_stick_V ? _v : 0.0F);
+        Vec4(Utils::Abs(_h) > g_settings.l_stick_H ? _h : 0.0F, 0.0F,
+             Utils::Abs(_v) > g_settings.l_stick_V ? _v : 0.0F);
 
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);

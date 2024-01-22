@@ -59,7 +59,7 @@ void DayNightCycleManager::loadDrawData() {
 void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
   M4x4 result, temp, model;
   M4x4::lookAt(&temp, sunPosition, *camPos);
-  matrix_inverse(result.data, temp.data);
+  Utils::inverseMatrix(&result, &temp);
 
   model.identity();
   model = result * sunScale;
@@ -75,7 +75,7 @@ void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
 void DayNightCycleManager::updateMoonDrawData(const Vec4* camPos) {
   M4x4 result, temp, model;
   M4x4::lookAt(&temp, moonPosition, *camPos);
-  matrix_inverse(result.data, temp.data);
+  Utils::inverseMatrix(&result, &temp);
 
   model.identity();
   model = result * moonScale;
@@ -88,19 +88,27 @@ void DayNightCycleManager::updateMoonDrawData(const Vec4* camPos) {
   moonVertexData[5] = (model * rawData[5]);
 }
 
-void DayNightCycleManager::update() {
+void DayNightCycleManager::preLoad() {
   updateCurrentAngle();
   updateIntensityByAngle();
   updateEntitiesPosition(&center);
 }
 
-void DayNightCycleManager::update(const Vec4* camPos) {
+void DayNightCycleManager::update() {
   updateCurrentAngle();
   updateIntensityByAngle();
+}
+
+void DayNightCycleManager::tick(const Vec4* camPos) {
   updateEntitiesPosition(camPos);
 
-  updateSunDrawData(camPos);
-  updateMoonDrawData(camPos);
+  if (g_ticksCounter > 22300 || g_ticksCounter < 13702) {
+    updateSunDrawData(camPos);
+  }
+
+  if (g_ticksCounter >= 11834 || g_ticksCounter < 167) {
+    updateMoonDrawData(camPos);
+  }
 }
 
 /**

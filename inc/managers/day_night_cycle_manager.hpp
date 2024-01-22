@@ -24,8 +24,9 @@ class DayNightCycleManager {
   DayNightCycleManager();
   ~DayNightCycleManager();
   void init(Renderer* renderer);
+  void preLoad();
   void update();
-  void update(const Vec4* camPos);
+  void tick(const Vec4* camPos);
   void render();
 
   float currentAngleInDegrees = 0.0F;

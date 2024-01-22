@@ -4,6 +4,7 @@
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
 #include "managers/settings_manager.hpp"
+#include "utils.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -207,7 +208,7 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
     return;
   }
 
-  const float playerHeight = std::abs(bbox->getHeight());
+  const float playerHeight = Utils::Abs(bbox->getHeight());
   const float heightLimit = terrainHeight.maxHeight - playerHeight;
 
   if (newPosition.y < terrainHeight.minHeight) {
@@ -241,7 +242,7 @@ void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
   Vec4 newYPosition = *mesh->getPosition() + (direction * deltaTime);
-  const float playerHeight = std::abs(bbox->getHeight());
+  const float playerHeight = Utils::Abs(bbox->getHeight());
 
   // Is player inside world bbox?
   if (newYPosition.y + playerHeight >=

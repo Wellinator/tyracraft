@@ -200,7 +200,7 @@ void Pig::updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
     return;
   }
 
-  const float enityHeight = std::abs(bbox->getHeight());
+  const float enityHeight = Utils::Abs(bbox->getHeight());
 
   if (newPosition.y < terrainHeight.minHeight) {
     newPosition.y = terrainHeight.minHeight;

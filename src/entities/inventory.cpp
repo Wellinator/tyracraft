@@ -1,5 +1,6 @@
 
 #include "entities/inventory.hpp"
+#include "utils.hpp"
 
 Inventory::Inventory(Renderer* renderer, ItemRepository* itemRepository) {
   t_renderer = renderer;
@@ -140,7 +141,7 @@ void Inventory::load_sprites() {
 void Inventory::update() {
   // TODO: implements scroller percentage
   selector_overlay_opacity += 3;
-  const float percent = std::abs(selector_overlay_opacity - 128.0F) / 128.0F;
+  const float percent = Utils::Abs(selector_overlay_opacity - 128.0F) / 128.0F;
   selector_overlay.color.a = percent * 128;
 }
 

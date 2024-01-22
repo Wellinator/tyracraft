@@ -78,7 +78,7 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
       Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
 
       if (!entity->isCollidable) continue;
-      
+
       float intersectionPoint;
       if (revRay.intersectBox(entity->minCorner, entity->maxCorner,
                               &intersectionPoint) &&
@@ -120,7 +120,7 @@ void Camera::setThirdPersonInverted() {
 void Camera::calculatePitch(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const auto _v = (rightJoy.v - 128.0F) / 128.0F;
-  const auto tempPitch = std::abs(_v) > g_settings.r_stick_V ? _v : 0.0F;
+  const auto tempPitch = Utils::Abs(_v) > g_settings.r_stick_V ? _v : 0.0F;
 
   pitch += g_settings.cam_v_sensitivity * deltatime * -tempPitch;
 
@@ -131,7 +131,7 @@ void Camera::calculatePitch(Pad* t_pad, const float deltatime) {
 void Camera::calculateYaw(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const auto _h = (rightJoy.h - 128.0F) / 128.0F;
-  const auto tempYaw = std::abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
+  const auto tempYaw = Utils::Abs(_h) > g_settings.r_stick_H ? _h : 0.0F;
 
   yaw += g_settings.cam_h_sensitivity * deltatime * tempYaw;
 

@@ -73,11 +73,6 @@ void ParticlesManager::updateParticles(const float deltaTime,
     particles[i]._elapsedTime += deltaTime;
     if (particles[i]._elapsedTime > particles[i]._lifeTime) {
       particles[i].expired = true;
-
-      particlesUVMap.erase(particlesUVMap.begin() + relativeIndex,
-                           particlesUVMap.begin() + relativeIndex + 6);
-      particlesColors.erase(particlesColors.begin() + relativeIndex,
-                            particlesColors.begin() + relativeIndex + 6);
     } else {
       // Update position
       particles[i]._velocity +=
@@ -142,7 +137,7 @@ void ParticlesManager::updateParticles(const float deltaTime,
         M4x4 result;
         M4x4 temp;
         M4x4::lookAt(&temp, particles[i]._position, *camPos);
-        matrix_inverse(result.data, temp.data);
+        Utils::inverseMatrix(&result, &temp);
 
         // Set particle model. M = R * S;
         particles[i].model = result * particles[i].scale;
@@ -169,9 +164,31 @@ void ParticlesManager::updateParticles(const float deltaTime,
 };
 
 void ParticlesManager::destroyExpiredParticles() {
-  particles.erase(std::remove_if(particles.begin(), particles.end(),
-                                 [](const Particle& p) { return p.expired; }),
-                  particles.end());
+  int count = 0;
+  auto t_particlesColors = &particlesColors;
+  auto t_particlesUVMap = &particlesUVMap;
+
+  particles.erase(
+      std::remove_if(particles.begin(), particles.end(),
+                     [&count, t_particlesColors,
+                      t_particlesUVMap](const Particle& p) mutable {
+                       count++;
+
+                       u16 relativeIndex = count * 6;
+                       if (relativeIndex > 0) relativeIndex -= 1;
+
+                       if (p.expired) {
+                         t_particlesUVMap->erase(
+                             t_particlesUVMap->begin() + relativeIndex,
+                             t_particlesUVMap->begin() + relativeIndex + 6);
+                         t_particlesColors->erase(
+                             t_particlesColors->begin() + relativeIndex,
+                             t_particlesColors->begin() + relativeIndex + 6);
+                       }
+
+                       return p.expired;
+                     }),
+      particles.end());
 
   particles.shrink_to_fit();
   particlesColors.shrink_to_fit();

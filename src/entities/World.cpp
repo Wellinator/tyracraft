@@ -74,7 +74,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
 void World::generate() { CrossCraft_World_GenerateMap(worldOptions.type); }
 
 void World::generateLight() {
-  dayNightCycleManager.update();
+  dayNightCycleManager.preLoad();
   updateLightModel();
 
   initSunLight(g_ticksCounter);
@@ -111,6 +111,8 @@ void World::setSavedSpawnArea(Vec4 pos) {
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   particlesManager.update(deltaTime, t_camera);
+  cloudsManager.update();
+  dayNightCycleManager.update();
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
@@ -130,10 +132,10 @@ void World::tick(Player* t_player, Camera* t_camera) {
   chunckManager.tick();
   mobManager.tick();
 
-  // Update cloudsManager every 150 ticks
-  if (isTicksCounterAt(150)) {
-    cloudsManager.update();
-    dayNightCycleManager.update(&t_camera->position);
+  // Update clouds and sun/moon every 50 ticks
+  if (isTicksCounterAt(50)) {
+    cloudsManager.tick();
+    dayNightCycleManager.tick(&t_camera->position);
   }
 
   // Update chunk light data every 1000 ticks
