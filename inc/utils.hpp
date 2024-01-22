@@ -21,12 +21,17 @@
 #include <loadfile.h>
 #include <stdlib.h>
 
+#define TWOPI 6.283185307179586476925286766559f
+#define PIHALF 1.5707963267948966192313216916398f
+#define PIDIV4 0.78539816339744830961566084581988f
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using Tyra::BBox;
 using Tyra::Color;
 using Tyra::CoreBBoxFrustum;
+using Tyra::M4x4;
 using Tyra::Mesh;
 using Tyra::Plane;
 using Tyra::Vec4;
@@ -119,4 +124,8 @@ class Utils {
   }
 
   static float lerp(float a, float b, float f) { return a + f * (b - a); }
+
+  static float Abs(const float x);
+
+  static void inverseMatrix(M4x4* mOut, const M4x4* mIn);
 };

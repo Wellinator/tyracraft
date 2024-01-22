@@ -256,3 +256,43 @@ u8 Utils::countSetBits(u32 n) {
   }
   return count;
 }
+
+float Utils::Abs(const float x) {
+  float r;
+  asm(" abs.s %0, %1 " : "=&f"(r) : "f"(x));
+  return r;
+}
+
+void Utils::inverseMatrix(M4x4* mOut, const M4x4* mIn) {
+    // Inverse of input matrix.
+    // This was salvaged from libVu0.c
+    asm volatile(
+        "lq           $8,   0x00(%1) \n\t"
+        "lq           $9,   0x10(%1) \n\t"
+        "lq           $10,  0x20(%1) \n\t"
+        "lqc2         $vf4, 0x30(%1) \n\t"
+        "vmove.xyzw   $vf5, $vf4 \n\t"
+        "vsub.xyz     $vf4, $vf4, $vf4 \n\t"
+        "vmove.xyzw   $vf9, $vf4 \n\t"
+        "qmfc2        $11,  $vf4 \n\t"
+        "pextlw       $12,  $9,  $8 \n\t"
+        "pextuw       $13,  $9,  $8 \n\t"
+        "pextlw       $14,  $11, $10 \n\t"
+        "pextuw       $15,  $11, $10 \n\t"
+        "pcpyld       $8,   $14, $12 \n\t"
+        "pcpyud       $9,   $12, $14 \n\t"
+        "pcpyld       $10,  $15, $13 \n\t"
+        "qmtc2        $8,   $vf6 \n\t"
+        "qmtc2        $9,   $vf7 \n\t"
+        "qmtc2        $10,  $vf8 \n\t"
+        "vmulax.xyz   $ACC, $vf6, $vf5 \n\t"
+        "vmadday.xyz  $ACC, $vf7, $vf5 \n\t"
+        "vmaddz.xyz   $vf4, $vf8, $vf5 \n\t"
+        "vsub.xyz     $vf4, $vf9, $vf4 \n\t"
+        "sq           $8,   0x00(%0) \n\t"
+        "sq           $9,   0x10(%0) \n\t"
+        "sq           $10,  0x20(%0) \n\t"
+        "sqc2         $vf4, 0x30(%0) \n\t"
+        :
+        : "r"(mOut->data), "r"(mIn->data));
+  }
