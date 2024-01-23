@@ -1,6 +1,7 @@
 #pragma once
 #include <tamtypes.h>
 #include "constants.hpp"
+#include "entities/Block.hpp"
 #include "tyra"
 
 using Tyra::BBox;
@@ -12,7 +13,7 @@ class VertexBlockData {
 
   ~VertexBlockData();
 
-  static BBox* getRawBBoxByBlockType(const Blocks type);
+  static BBox* getRawBBoxByBlock(Block* t_block);
 
   /**
    * @brief Provides 36 vertices of raw cube
@@ -20,6 +21,14 @@ class VertexBlockData {
    */
   static const Vec4* getVertexData();
   static BBox* getCuboidRawBBox();
+
+  /**
+   * @brief Provides 36 vertices of raw slab
+   * @returns new Vec4[36]
+   */
+  static const Vec4* getTopSlabVertexData();
+  static const Vec4* getBottomSlabVertexData();
+  static BBox* getSlabRawBBox(Block* t_block);
 
   /**
    * @brief Provides 36 vertices of raw torch

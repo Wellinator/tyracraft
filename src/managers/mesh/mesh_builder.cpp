@@ -1,5 +1,6 @@
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/mesh/cuboid/cuboid_mesh_builder.hpp"
+#include "managers/mesh/slab/slab_mesh_builder.hpp"
 #include "managers/mesh/crossed/crossed_mesh_builder.hpp"
 #include "managers/mesh/water/water_mesh_builder.hpp"
 #include "managers/mesh/lava/lava_mesh_builder.hpp"
@@ -34,6 +35,20 @@ void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                                     t_uv_map, t_worldLightModel, t_terrain);
       break;
 
+    case Blocks::STONE_SLAB:
+    case Blocks::BRICKS_SLAB:
+    case Blocks::OAK_PLANKS_SLAB:
+    case Blocks::SPRUCE_PLANKS_SLAB:
+    case Blocks::BIRCH_PLANKS_SLAB:
+    case Blocks::ACACIA_PLANKS_SLAB:
+    case Blocks::STONE_BRICK_SLAB:
+    case Blocks::CRACKED_STONE_BRICKS_SLAB:
+    case Blocks::MOSSY_STONE_BRICKS_SLAB:
+    case Blocks::CHISELED_STONE_BRICKS_SLAB:
+      SlabMeshBuilder_GenerateMesh(t_block, t_vertices, t_vertices_colors,
+                                   t_uv_map, t_worldLightModel, t_terrain);
+      break;
+
     // Cuboid mesh blocks
     default:
       CuboidMeshBuilder_GenerateMesh(t_block, t_vertices, t_vertices_colors,
@@ -66,7 +81,21 @@ void MeshBuilder_BuildLightData(Block* t_block,
 
     case Blocks::TORCH:
       TorchMeshBuilder_loadLightData(t_block, t_vertices_colors,
-                                          t_worldLightModel, t_terrain);
+                                     t_worldLightModel, t_terrain);
+      break;
+
+    case Blocks::STONE_SLAB:
+    case Blocks::BRICKS_SLAB:
+    case Blocks::OAK_PLANKS_SLAB:
+    case Blocks::SPRUCE_PLANKS_SLAB:
+    case Blocks::BIRCH_PLANKS_SLAB:
+    case Blocks::ACACIA_PLANKS_SLAB:
+    case Blocks::STONE_BRICK_SLAB:
+    case Blocks::CRACKED_STONE_BRICKS_SLAB:
+    case Blocks::MOSSY_STONE_BRICKS_SLAB:
+    case Blocks::CHISELED_STONE_BRICKS_SLAB:
+      SlabMeshBuilder_loadLightData(t_block, t_vertices_colors,
+                                    t_worldLightModel, t_terrain);
       break;
 
     // Cuboid mesh blocks

@@ -22,8 +22,6 @@ using bvh::index_t;
 using Tyra::Color;
 using Tyra::M4x4;
 
-static Level level;
-
 World::World(const NewGameOptions& options) {
   seed = options.seed;
 
@@ -427,6 +425,7 @@ u8 World::isBlockTransparentAtPosition(const float& x, const float& y,
   if (BoundCheckMap(terrain, x, y, z)) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+
     return (blockType == Blocks::VOID || isTransparent(blockType) ||
             blockType == Blocks::LAVA_BLOCK);
   } else {
@@ -511,6 +510,60 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
   return result;
 }
 
+u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
+  const BlockOrientation orientationXZ = GetOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const SlabOrientation orientationY = GetSlabOrientationDataFromMap(
+      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+
+  u8 result = 0b000000;
+
+  switch (orientationXZ) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
+      if (isLeftFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      break;
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
+      if (isLeftFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      break;
+    case BlockOrientation::East:
+    default:
+      if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+
+      break;
+  }
+
+  if (orientationY == SlabOrientation::Top) {
+    if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
+    result = result | BOTTOM_VISIBLE;
+  } else if (orientationY == SlabOrientation::Bottom) {
+    result = result | TOP_VISIBLE;
+    if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+  }
+
+  return result;
+}
+
 u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   const auto x = t_blockOffset->x;
   const auto y = t_blockOffset->y;
@@ -590,9 +643,11 @@ void World::calcRawBlockBBox(MinecraftPipeline* mcPip) {
 const Vec4 World::defineSpawnArea() {
   Vec4 spawPos = calcSpawOffset();
 
-  level.map.spawnX = spawPos.x;
-  level.map.spawnY = spawPos.y;
-  level.map.spawnZ = spawPos.z;
+  auto level = CrossCraft_World_GetLevelPtr();
+
+  level->map.spawnX = spawPos.x;
+  level->map.spawnY = spawPos.y;
+  level->map.spawnZ = spawPos.z;
 
   return spawPos;
 }
@@ -768,6 +823,20 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
       putTorchBlock(placementDirection, cameraYaw, blockOffset);
       break;
 
+    case Blocks::STONE_SLAB:
+    case Blocks::BRICKS_SLAB:
+    case Blocks::OAK_PLANKS_SLAB:
+    case Blocks::SPRUCE_PLANKS_SLAB:
+    case Blocks::BIRCH_PLANKS_SLAB:
+    case Blocks::ACACIA_PLANKS_SLAB:
+    case Blocks::STONE_BRICK_SLAB:
+    case Blocks::CRACKED_STONE_BRICKS_SLAB:
+    case Blocks::MOSSY_STONE_BRICKS_SLAB:
+    case Blocks::CHISELED_STONE_BRICKS_SLAB:
+      putSlab(blockToPlace, placementDirection, t_player, cameraYaw,
+              blockOffset, targetPos);
+      break;
+
     default:
       putDefaultBlock(blockToPlace, t_player, cameraYaw, blockOffset);
       break;
@@ -833,6 +902,182 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
     updateBlockLights();
 
     chunckManager.reloadLightData();
+  }
+}
+
+void World::putSlab(const Blocks& blockType,
+                    const PlacementDirection placementDirection,
+                    Player* t_player, const float cameraYaw, Vec4 blockOffset,
+                    Vec4 targetPos) {
+  Vec4 originalOffset;
+  GetXYZFromPos(&targetBlock->offset, &originalOffset);
+
+  const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(GetBlockFromMap(
+      terrain, originalOffset.x, originalOffset.y, originalOffset.z));
+
+  // Is placing two slabs at target position?
+  // If so, fix the blockOffset;
+  if ((u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
+      (u8)blockTypeAtTargetPosition <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+    const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
+        terrain, originalOffset.x, originalOffset.y, originalOffset.z);
+
+    if (targetSlabHeightOrientation == SlabOrientation::Bottom &&
+        blockOffset.y > originalOffset.y) {
+      blockOffset.y--;
+    } else if (targetSlabHeightOrientation == SlabOrientation::Top &&
+               blockOffset.y < originalOffset.y) {
+      blockOffset.y++;
+    }
+  }
+
+  const Blocks blockTypeAtOffsetPosition = static_cast<Blocks>(
+      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+
+  // Is placing two slabs at offset position?
+  if ((u8)blockTypeAtOffsetPosition >= (u8)Blocks::STONE_SLAB &&
+      (u8)blockTypeAtOffsetPosition <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+    // If so, check if are same slab type;
+    // Prevent to place a different type of slab;
+    if (blockTypeAtOffsetPosition != blockType) {
+      return;
+    } else {
+      // convert double slab to solid block
+      Blocks newBlock;
+
+      switch (blockType) {
+        case Blocks::STONE_SLAB:
+          newBlock = Blocks::STONE_BLOCK;
+          break;
+        case Blocks::BRICKS_SLAB:
+          newBlock = Blocks::BRICKS_BLOCK;
+          break;
+        case Blocks::OAK_PLANKS_SLAB:
+          newBlock = Blocks::OAK_PLANKS_BLOCK;
+          break;
+        case Blocks::SPRUCE_PLANKS_SLAB:
+          newBlock = Blocks::SPRUCE_PLANKS_BLOCK;
+          break;
+        case Blocks::BIRCH_PLANKS_SLAB:
+          newBlock = Blocks::BIRCH_PLANKS_BLOCK;
+          break;
+        case Blocks::ACACIA_PLANKS_SLAB:
+          newBlock = Blocks::ACACIA_PLANKS_BLOCK;
+          break;
+        case Blocks::STONE_BRICK_SLAB:
+          newBlock = Blocks::STONE_BRICK_BLOCK;
+          break;
+        case Blocks::CRACKED_STONE_BRICKS_SLAB:
+          newBlock = Blocks::CRACKED_STONE_BRICKS_BLOCK;
+          break;
+        case Blocks::MOSSY_STONE_BRICKS_SLAB:
+          newBlock = Blocks::MOSSY_STONE_BRICKS_BLOCK;
+          break;
+        case Blocks::CHISELED_STONE_BRICKS_SLAB:
+          newBlock = Blocks::CHISELED_STONE_BRICKS_BLOCK;
+          break;
+
+        default:
+          newBlock = Blocks::AIR_BLOCK;
+          TYRA_ERROR("Not valid double slab!");
+          break;
+      }
+
+      ResetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                    blockOffset.z);
+      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                    static_cast<u8>(Blocks::AIR_BLOCK));
+      putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
+      return;
+    }
+
+    const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
+        terrain, blockOffset.x, blockOffset.y, blockOffset.z);
+  }
+
+  // Prevent to put a block at the player position;
+  Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
+  M4x4 tempModel = M4x4();
+  tempModel.identity();
+  tempModel.scaleX(BLOCK_SIZE);
+  tempModel.scaleZ(BLOCK_SIZE);
+  tempModel.scaleY(HALF_BLOCK_SIZE);
+  tempModel.translate(newBlockPos);
+
+  BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
+  Vec4 newBlockPosMin;
+  Vec4 newBlockPosMax;
+  tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+
+  Vec4 minPlayerCorner;
+  Vec4 maxPlayerCorner;
+  t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+  // Will Collide to player?
+  if (newBlockPosMax.x > minPlayerCorner.x &&
+      newBlockPosMin.x < maxPlayerCorner.x &&
+      newBlockPosMax.z > minPlayerCorner.z &&
+      newBlockPosMin.z < maxPlayerCorner.z &&
+      newBlockPosMax.y > minPlayerCorner.y &&
+      newBlockPosMin.y < maxPlayerCorner.y) {
+    return;  // Return on collision
+  }
+
+  const float heightOffset =
+      std::fmod(targetPos.y - BLOCK_SIZE, DUBLE_BLOCK_SIZE);
+
+  const SlabOrientation slabOrientation = heightOffset > BLOCK_SIZE
+                                              ? SlabOrientation::Top
+                                              : SlabOrientation::Bottom;
+  SetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                              blockOffset.z, slabOrientation);
+
+  const u8 canReplace = blockTypeAtOffsetPosition == Blocks::AIR_BLOCK ||
+                        blockTypeAtOffsetPosition == Blocks::WATER_BLOCK ||
+                        blockTypeAtOffsetPosition == Blocks::LAVA_BLOCK ||
+                        blockTypeAtOffsetPosition == Blocks::TORCH ||
+                        blockTypeAtOffsetPosition == Blocks::POPPY_FLOWER ||
+                        blockTypeAtOffsetPosition == Blocks::DANDELION_FLOWER ||
+                        blockTypeAtOffsetPosition == Blocks::GRASS;
+
+  if (canReplace) {
+    // Calc block orientation
+    BlockOrientation orientation;
+
+    if (blockManager.isBlockOriented(blockType)) {
+      if (cameraYaw > 315 || cameraYaw < 45) {
+        orientation = BlockOrientation::North;
+      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+        orientation = BlockOrientation::South;
+      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+        orientation = BlockOrientation::East;
+      } else {
+        orientation = BlockOrientation::West;
+      }
+    } else {
+      orientation = BlockOrientation::East;
+    }
+
+    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
+                  static_cast<u8>(blockType));
+    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                 blockOffset.z, orientation);
+    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+    removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
+
+    updateSunlight();
+    updateBlockLights();
+
+    chunckManager.reloadLightData();
+
+    const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
+
+    // It was liquid at position
+    if (oldTypeBlock == Blocks::WATER_BLOCK ||
+        oldTypeBlock == Blocks::LAVA_BLOCK) {
+      removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
+                   (u8)oldTypeBlock);
+    }
   }
 }
 
@@ -1091,12 +1336,18 @@ void World::buildChunk(Chunck* t_chunck) {
 
         if (block_type != Blocks::AIR_BLOCK) {
           Vec4 tempBlockOffset = Vec4(x, y, z);
+          u8 visibleFaces;
 
-          const u8 isLiquid = block_type == Blocks::WATER_BLOCK ||
-                              block_type == Blocks::LAVA_BLOCK;
-          const u8 visibleFaces =
-              isLiquid ? getLiquidBlockVisibleFaces(&tempBlockOffset)
-                       : getBlockVisibleFaces(&tempBlockOffset);
+          if (block_type == Blocks::WATER_BLOCK ||
+              block_type == Blocks::LAVA_BLOCK) {
+            visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
+          } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+                     (u8)block_type <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+            visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+          } else {
+            visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+            (&tempBlockOffset);
+          }
 
           // Have any face visible?
           if (visibleFaces > 0) {
@@ -1120,8 +1371,7 @@ void World::buildChunk(Chunck* t_chunck) {
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
               ModelBuilder_BuildModel(block, terrain);
-              BBox* rawBBox =
-                  VertexBlockData::getRawBBoxByBlockType(block_type);
+              BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block);
               BBox tempBBox = rawBBox->getTransformed(block->model);
 
               block->bbox =
@@ -1178,12 +1428,18 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
     if (block_type != Blocks::AIR_BLOCK) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
+      u8 visibleFaces;
 
-      const u8 isLiquid =
-          block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK;
-      const u8 visibleFaces = isLiquid
-                                  ? getLiquidBlockVisibleFaces(&tempBlockOffset)
-                                  : getBlockVisibleFaces(&tempBlockOffset);
+      if (block_type == Blocks::WATER_BLOCK ||
+          block_type == Blocks::LAVA_BLOCK) {
+        visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
+      } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+                 (u8)block_type <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+        visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+      } else {
+        visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+        (&tempBlockOffset);
+      }
 
       // Is any face vísible?
       if (visibleFaces > 0) {
@@ -1208,7 +1464,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           ModelBuilder_BuildModel(block, terrain);
 
-          BBox* rawBBox = VertexBlockData::getRawBBoxByBlockType(block_type);
+          BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block);
           BBox tempBBox = rawBBox->getTransformed(block->model);
 
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -2072,6 +2328,12 @@ void initSunLight(uint32_t tick) {
             lv -= 2;
           else
             lv = 0;
+        } else if ((u8)b >= (u8)Blocks::STONE_SLAB &&
+                   (u8)b <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+          if (lv >= 1)
+            lv -= 1;
+          else
+            lv = 0;
         } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
                    b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
                    b != Blocks::GRASS) {
@@ -2110,7 +2372,9 @@ void CrossCraft_World_Init(const uint32_t& seed) {
 
   CrossCraft_WorldGenerator_Init(rand());
 
-  level.map = {
+  const auto level = CrossCraft_World_GetLevelPtr();
+
+  level->map = {
       .width = OVERWORLD_H_DISTANCE,
       .length = OVERWORLD_H_DISTANCE,
       .height = OVERWORLD_V_DISTANCE,
@@ -2123,9 +2387,9 @@ void CrossCraft_World_Init(const uint32_t& seed) {
   // For some reason I need to clear the array garbage
   // I was initialized with new key word, very weird!
   for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
-    level.map.blocks[i] = 0;
-    level.map.lightData[i] = 0;
-    level.map.metaData[i] = 0;
+    level->map.blocks[i] = 0;
+    level->map.lightData[i] = 0;
+    level->map.metaData[i] = 0;
   }
 
   TYRA_LOG("Generated base level template");
@@ -2138,23 +2402,22 @@ void CrossCraft_World_Deinit() { TYRA_LOG("Destroying the world"); }
  * @TODO Offer a callback for world percentage
  */
 void CrossCraft_World_GenerateMap(WorldType worldType) {
+  const auto level = CrossCraft_World_GetLevelPtr();
   switch (worldType) {
     case WORLD_TYPE_ORIGINAL:
-      CrossCraft_WorldGenerator_Generate_Original(&level.map);
+      CrossCraft_WorldGenerator_Generate_Original(&level->map);
       break;
     case WORLD_TYPE_FLAT:
-      CrossCraft_WorldGenerator_Generate_Flat(&level.map);
+      CrossCraft_WorldGenerator_Generate_Flat(&level->map);
       break;
     case WORLD_TYPE_ISLAND:
-      CrossCraft_WorldGenerator_Generate_Island(&level.map);
+      CrossCraft_WorldGenerator_Generate_Island(&level->map);
       break;
     case WORLD_TYPE_WOODS:
-      CrossCraft_WorldGenerator_Generate_Woods(&level.map);
+      CrossCraft_WorldGenerator_Generate_Woods(&level->map);
       break;
     case WORLD_TYPE_FLOATING:
-      CrossCraft_WorldGenerator_Generate_Floating(&level.map);
+      CrossCraft_WorldGenerator_Generate_Floating(&level->map);
       break;
   }
 }
-
-LevelMap* CrossCraft_World_GetMapPtr() { return &level.map; }

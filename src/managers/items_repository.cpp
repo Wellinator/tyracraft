@@ -328,6 +328,7 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/black_concrete.png"))
       ->addLink(black_concrete.sprite.id);
 
+  // --------------------------Items-------------------------
   water_bucket.id = ItemId::water_bucket;
   water_bucket.blockId = Blocks::WATER_BLOCK;
   this->items.push_back(&water_bucket);
@@ -348,6 +349,77 @@ void ItemRepository::loadItems(const std::string& texturePack) {
   this->t_renderer->getTextureRepository()
       .add(FileUtils::fromCwd(dir + "/items/torch.png"))
       ->addLink(torch.sprite.id);
+
+  // --------------------------Slabs-------------------------
+  stone_slab.id = ItemId::stone_slab;
+  stone_slab.blockId = Blocks::STONE_SLAB;
+  this->items.push_back(&stone_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/stone_slab.png"))
+      ->addLink(stone_slab.sprite.id);
+
+  bricks_slab.id = ItemId::bricks_slab;
+  bricks_slab.blockId = Blocks::BRICKS_SLAB;
+  this->items.push_back(&bricks_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/bricks_slab.png"))
+      ->addLink(bricks_slab.sprite.id);
+
+  oak_slab.id = ItemId::oak_slab;
+  oak_slab.blockId = Blocks::OAK_PLANKS_SLAB;
+  this->items.push_back(&oak_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/oak_slab.png"))
+      ->addLink(oak_slab.sprite.id);
+
+  spruce_slab.id = ItemId::spruce_slab;
+  spruce_slab.blockId = Blocks::SPRUCE_PLANKS_SLAB;
+  this->items.push_back(&spruce_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/spruce_slab.png"))
+      ->addLink(spruce_slab.sprite.id);
+
+  birch_slab.id = ItemId::birch_slab;
+  birch_slab.blockId = Blocks::BIRCH_PLANKS_SLAB;
+  this->items.push_back(&birch_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/birch_slab.png"))
+      ->addLink(birch_slab.sprite.id);
+
+  acacia_slab.id = ItemId::acacia_slab;
+  acacia_slab.blockId = Blocks::ACACIA_PLANKS_SLAB;
+  this->items.push_back(&acacia_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/acacia_slab.png"))
+      ->addLink(acacia_slab.sprite.id);
+
+  stone_brick_slab.id = ItemId::stone_brick_slab;
+  stone_brick_slab.blockId = Blocks::STONE_BRICK_SLAB;
+  this->items.push_back(&stone_brick_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/stone_brick_slab.png"))
+      ->addLink(stone_brick_slab.sprite.id);
+
+  cracked_stone_bricks_slab.id = ItemId::cracked_stone_bricks_slab;
+  cracked_stone_bricks_slab.blockId = Blocks::CRACKED_STONE_BRICKS_SLAB;
+  this->items.push_back(&cracked_stone_bricks_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/cracked_stone_bricks_slab.png"))
+      ->addLink(cracked_stone_bricks_slab.sprite.id);
+
+  mossy_stone_bricks_slab.id = ItemId::mossy_stone_bricks_slab;
+  mossy_stone_bricks_slab.blockId = Blocks::MOSSY_STONE_BRICKS_SLAB;
+  this->items.push_back(&mossy_stone_bricks_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/mossy_stone_bricks_slab.png"))
+      ->addLink(mossy_stone_bricks_slab.sprite.id);
+
+  chiseled_stone_bricks_slab.id = ItemId::chiseled_stone_bricks_slab;
+  chiseled_stone_bricks_slab.blockId = Blocks::CHISELED_STONE_BRICKS_SLAB;
+  this->items.push_back(&chiseled_stone_bricks_slab);
+  this->t_renderer->getTextureRepository()
+      .add(FileUtils::fromCwd(dir + "/items/chiseled_stone_bricks_slab.png"))
+      ->addLink(chiseled_stone_bricks_slab.sprite.id);
 
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;

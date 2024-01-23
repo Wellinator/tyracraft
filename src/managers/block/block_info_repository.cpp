@@ -133,4 +133,26 @@ void BlockInfoRepository::loadBlocksInfo() {
   // Items
   models[(u8)Blocks::TORCH] =
       (BlockInfo(Blocks::TORCH, true, {1}, 0.001F, true, true, false, false));
+
+  // Slabs
+  models[(u8)Blocks::STONE_SLAB] =
+      (BlockInfo(Blocks::STONE_SLAB, true, {115}, 1.5F, true));
+  models[(u8)Blocks::BRICKS_SLAB] =
+      (BlockInfo(Blocks::BRICKS_SLAB, true, {100}, 2.0F, true));
+  models[(u8)Blocks::OAK_PLANKS_SLAB] =
+      (BlockInfo(Blocks::OAK_PLANKS_SLAB, true, {176}, 2.0F, true));
+  models[(u8)Blocks::SPRUCE_PLANKS_SLAB] =
+      (BlockInfo(Blocks::SPRUCE_PLANKS_SLAB, true, {177}, 2.0F, true));
+  models[(u8)Blocks::ACACIA_PLANKS_SLAB] =
+      (BlockInfo(Blocks::ACACIA_PLANKS_SLAB, true, {178}, 2.0F, true));
+  models[(u8)Blocks::BIRCH_PLANKS_SLAB] =
+      (BlockInfo(Blocks::BIRCH_PLANKS_SLAB, true, {179}, 2.0F, true));
+  models[(u8)Blocks::CRACKED_STONE_BRICKS_SLAB] =
+      (BlockInfo(Blocks::CRACKED_STONE_BRICKS_SLAB, true, {96}, 1.5F, true));
+  models[(u8)Blocks::STONE_BRICK_SLAB] =
+      (BlockInfo(Blocks::STONE_BRICK_SLAB, true, {97}, 1.5F, true));
+  models[(u8)Blocks::MOSSY_STONE_BRICKS_SLAB] =
+      (BlockInfo(Blocks::MOSSY_STONE_BRICKS_SLAB, true, {98}, 1.5F, true));
+  models[(u8)Blocks::CHISELED_STONE_BRICKS_SLAB] =
+      (BlockInfo(Blocks::CHISELED_STONE_BRICKS_SLAB, true, {99}, 1.5F, true));
 }

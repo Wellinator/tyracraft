@@ -29,6 +29,7 @@
 #define HALF_CHUNCK_SIZE (CHUNCK_SIZE / 2)
 #define BLOCK_SIZE 8.0F
 #define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
+#define HALF_BLOCK_SIZE (BLOCK_SIZE / 2.0F)
 #define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
 
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
@@ -130,6 +131,18 @@ enum class Blocks {
   // Items
   TORCH,
 
+  // Slabs
+  STONE_SLAB,
+  BRICKS_SLAB,
+  OAK_PLANKS_SLAB,
+  SPRUCE_PLANKS_SLAB,
+  BIRCH_PLANKS_SLAB,
+  ACACIA_PLANKS_SLAB,
+  STONE_BRICK_SLAB,
+  CRACKED_STONE_BRICKS_SLAB,
+  MOSSY_STONE_BRICKS_SLAB,
+  CHISELED_STONE_BRICKS_SLAB,
+
   // Helper index
   TOTAL_OF_BLOCKS
 };
@@ -220,6 +233,18 @@ enum class ItemId {
   lava_bucket,
   torch,
 
+  // Slabs
+  stone_slab,
+  bricks_slab,
+  oak_slab,
+  spruce_slab,
+  birch_slab,
+  acacia_slab,
+  stone_brick_slab,
+  cracked_stone_bricks_slab,
+  mossy_stone_bricks_slab,
+  chiseled_stone_bricks_slab,
+
   // TODO: move total_of_items to the end of enum this is temp!
   // Helper
   total_of_items,
@@ -264,6 +289,11 @@ enum class BlockOrientation {
   Top = 4,
 };
 
+enum class SlabOrientation {
+  Top = 0,
+  Bottom = 1,
+};
+
 enum class PlacementDirection {
   Top = 0,
   Bottom = 1,
@@ -288,14 +318,14 @@ enum class EntityType {
 // Three bits for orientation
 #define BLOCK_LIQUID_LEVEL_MASK 0b00011100
 
-// Three bits for orientation
-#define BLOCK_LIQUID_LEVEL_MASK 0b00011100
-
 // Three bits for orientation for torch
 #define TORCH_ORIENTATION_MASK 0b00000111
 
 // Two bits for orientation
 #define BLOCK_ORIENTATION_MASK 0b00000011
+
+// Two bits for slab orientation (Top or Bottom)
+#define SLAB_ORIENTATION_MASK 0b00000100
 
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
 #define _180DEGINRAD Tyra::Math::ANG2RAD * 180

@@ -25,6 +25,14 @@ typedef struct {
   LevelMap map;
 } Level;
 
+/**
+ * This method should ONLY be used by a client in single-player or a server for
+ * internal use.
+ * @return Returns a pointer to the level
+ */
+Level* CrossCraft_World_GetLevelPtr();
+LevelMap* CrossCraft_World_GetMapPtr();
+
 uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
 
 void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y, uint32_t* z);
@@ -40,7 +48,6 @@ void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                              const BlockOrientation orientation);
 BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
                                            uint16_t y, uint16_t z);
-
 
 void SetLiquidOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
                                    uint16_t z,
@@ -63,6 +70,13 @@ BlockOrientation GetBlockOrientationDataFromMap(LevelMap* map, uint16_t x,
 void SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                         const u8 liquidLevel);
 u8 GetLiquidDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
+
+void SetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                 uint16_t z, const SlabOrientation orientation);
+void ResetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                   uint16_t z);
+SlabOrientation GetSlabOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                              uint16_t y, uint16_t z);
 
 uint8_t GetLightDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);

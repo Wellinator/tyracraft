@@ -1,5 +1,6 @@
 #include "managers/mesh/handled_item_mesh_builder.hpp"
 #include "managers/mesh/cuboid/cuboid_hand_item_mesh_builder.hpp"
+#include "managers/mesh/slab/slab_hand_item_mesh_builder.hpp"
 #include "managers/mesh/torch/torch_hand_item_mesh_builder.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
@@ -21,6 +22,20 @@ void HandledItemMeshBuilder_BuildMesh(Item* t_item, Block* t_block,
 
     case ItemId::torch:
       TorchHandItemMeshBuilder_GenerateMesh(
+          t_block, t_vertices, t_vertices_colors, t_uv_map, t_worldLightModel);
+      break;
+
+    case ItemId::stone_slab:
+    case ItemId::bricks_slab:
+    case ItemId::oak_slab:
+    case ItemId::spruce_slab:
+    case ItemId::birch_slab:
+    case ItemId::acacia_slab:
+    case ItemId::stone_brick_slab:
+    case ItemId::cracked_stone_bricks_slab:
+    case ItemId::mossy_stone_bricks_slab:
+    case ItemId::chiseled_stone_bricks_slab:
+      SlabHandItemMeshBuilder_GenerateMesh(
           t_block, t_vertices, t_vertices_colors, t_uv_map, t_worldLightModel);
       break;
 
@@ -47,6 +62,20 @@ void HandledItemMeshBuilder_BuildLightData(
 
     case ItemId::torch:
       TorchHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
+                                             t_worldLightModel);
+      break;
+
+    case ItemId::stone_slab:
+    case ItemId::bricks_slab:
+    case ItemId::oak_slab:
+    case ItemId::spruce_slab:
+    case ItemId::birch_slab:
+    case ItemId::acacia_slab:
+    case ItemId::stone_brick_slab:
+    case ItemId::cracked_stone_bricks_slab:
+    case ItemId::mossy_stone_bricks_slab:
+    case ItemId::chiseled_stone_bricks_slab:
+      SlabHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
                                              t_worldLightModel);
       break;
 

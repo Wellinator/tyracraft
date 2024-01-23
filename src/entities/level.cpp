@@ -1,5 +1,11 @@
 #include "entities/level.hpp"
 
+static Level level;
+
+Level* CrossCraft_World_GetLevelPtr() { return &level; }
+
+LevelMap* CrossCraft_World_GetMapPtr() { return &level.map; }
+
 // Gets the position in the data array from the given x, y, and z coordinates.
 uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z) {
   return x + (y << 7) + (z << 14);
@@ -97,6 +103,33 @@ void SetBlockOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
   map->metaData[index] = _setedValue;
 }
 
+void SetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                 uint16_t z,
+                                 const SlabOrientation orientation) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+  // value = (value & ~mask) | (newvalue & mask);
+  const uint8_t newvalue =
+      static_cast<uint8_t>(orientation) << 2 & SLAB_ORIENTATION_MASK;
+
+  const u8 _setedValue =
+      (map->metaData[index] & ~SLAB_ORIENTATION_MASK) | newvalue;
+
+  map->metaData[index] = _setedValue;
+}
+
+void ResetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
+                                   uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+  // value = (value & ~mask) | (newvalue & mask);
+  const uint8_t newvalue = 0 & SLAB_ORIENTATION_MASK;
+  const u8 _setedValue =
+      (map->metaData[index] & ~SLAB_ORIENTATION_MASK) | newvalue;
+
+  map->metaData[index] = _setedValue;
+}
+
 // Gets the metadata value at the given coordinates in the map.
 BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
                                            uint16_t y, uint16_t z) {
@@ -136,6 +169,13 @@ BlockOrientation GetBlockOrientationDataFromMap(LevelMap* map, uint16_t x,
   uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
   const uint8_t response = map->metaData[index] & BLOCK_ORIENTATION_MASK;
   return static_cast<BlockOrientation>(response);
+}
+
+SlabOrientation GetSlabOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                              uint16_t y, uint16_t z) {
+  uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+  const uint8_t response = map->metaData[index] & SLAB_ORIENTATION_MASK;
+  return static_cast<SlabOrientation>(response >> 2);
 }
 
 // Set the liquid metadata value at the given coordinates in the map.

@@ -108,6 +108,9 @@ class World {
                 const float cameraYaw);
   void putTorchBlock(const PlacementDirection placementDirection,
                      const float cameraYaw, Vec4 blockOffset);
+  void putSlab(const Blocks& blockType,
+               const PlacementDirection placementDirection, Player* t_player,
+               const float cameraYaw, Vec4 blockOffset, Vec4 targetPos);
   void putDefaultBlock(const Blocks blockToPlace, Player* t_player,
                        const float cameraYaw, Vec4 blockOffset);
 
@@ -214,6 +217,7 @@ class World {
    *
    */
   u8 getBlockVisibleFaces(const Vec4* t_blockOffset);
+  u8 getSlabVisibleFaces(const Vec4* t_blockOffset);
   u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
   inline u8 isBlockTransparentAtPosition(const float& x, const float& y,
@@ -280,7 +284,10 @@ bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
          block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
          block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS ||
-         block == Blocks::TORCH;
+         block == Blocks::TORCH ||
+         // It it's slab, it's visible;
+         ((u8)block >= (u8)Blocks::STONE_SLAB &&
+          (u8)block <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB);
 };
 
 ///////////////////////////////////
@@ -313,13 +320,6 @@ void propagateLightAddQueue();
 // FROM CrossCraft
 void CrossCraft_World_Init(const uint32_t& seed);
 void CrossCraft_World_Deinit();
-
-/**
- * This method should ONLY be used by a clien t in single-player or a server for
- * internal use.
- * @return Returns a pointer to the level
- */
-LevelMap* CrossCraft_World_GetMapPtr();
 
 /**
  * @brief Generates the world
