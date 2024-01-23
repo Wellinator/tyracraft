@@ -30,7 +30,9 @@ void SlabMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
 void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
                                   LevelMap* t_terrain);
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
-void SlabMeshBuilder_loadUVFaceData(const u8& index,
+void SlabMeshBuilder_loadSideUVFaceData(const u8& index,
+                                    std::vector<Vec4>* t_uv_map);
+void SlabMeshBuilder_loadTopDownUVFaceData(const u8&   index,
                                     std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,

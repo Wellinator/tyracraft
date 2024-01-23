@@ -24,7 +24,9 @@ void SlabHandItemMeshBuilder_loadMeshData(Block* t_block,
                                           std::vector<Vec4>* t_vertices);
 void SlabHandItemMeshBuilder_loadUVData(Block* t_block,
                                         std::vector<Vec4>* t_uv_map);
-void SlabHandItemMeshBuilder_loadUVFaceData(const u8& index,
+void SlabHandItemMeshBuilder_loadSideUVFaceData(const u8& index,
+                                            std::vector<Vec4>* t_uv_map);
+void SlabHandItemMeshBuilder_loadTopDownUVFaceData(const u8& index,
                                             std::vector<Vec4>* t_uv_map);
 void SlabHandItemMeshBuilder_loadLightData(
     Block* t_block, std::vector<Color>* t_vertices_colors,

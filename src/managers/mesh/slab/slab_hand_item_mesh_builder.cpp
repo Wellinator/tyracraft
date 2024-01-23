@@ -79,27 +79,49 @@ void SlabHandItemMeshBuilder_loadMeshData(Block* t_block,
 void SlabHandItemMeshBuilder_loadUVData(Block* t_block,
                                         std::vector<Vec4>* t_uv_map) {
   if (t_block->isTopFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[0], t_uv_map);
+    SlabHandItemMeshBuilder_loadTopDownUVFaceData(t_block->facesMapIndex[0],
+                                                  t_uv_map);
   }
   if (t_block->isBottomFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[1], t_uv_map);
+    SlabHandItemMeshBuilder_loadTopDownUVFaceData(t_block->facesMapIndex[1],
+                                                  t_uv_map);
   }
   if (t_block->isLeftFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[2], t_uv_map);
+    SlabHandItemMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[2],
+                                               t_uv_map);
   }
   if (t_block->isRightFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[3], t_uv_map);
+    SlabHandItemMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[3],
+                                               t_uv_map);
   }
   if (t_block->isBackFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[4], t_uv_map);
+    SlabHandItemMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[4],
+                                               t_uv_map);
   }
   if (t_block->isFrontFaceVisible()) {
-    SlabHandItemMeshBuilder_loadUVFaceData(t_block->facesMapIndex[5], t_uv_map);
+    SlabHandItemMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[5],
+                                               t_uv_map);
   }
 }
 
-void SlabHandItemMeshBuilder_loadUVFaceData(const u8& index,
-                                            std::vector<Vec4>* t_uv_map) {
+void SlabHandItemMeshBuilder_loadSideUVFaceData(const u8& index,
+                                                std::vector<Vec4>* t_uv_map) {
+  const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
+  const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
+  const float scale = 1.0F / 16.0F;
+  const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
+
+  t_uv_map->emplace_back(Vec4(X, (Y + 0.5F), 1.0F, 0.0F) * scaleVec);
+  t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+  t_uv_map->emplace_back(Vec4((X + 1.0F), (Y + 0.5F), 1.0F, 0.0F) * scaleVec);
+
+  t_uv_map->emplace_back(Vec4(X, (Y + 0.5F), 1.0F, 0.0F) * scaleVec);
+  t_uv_map->emplace_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
+  t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+}
+
+void SlabHandItemMeshBuilder_loadTopDownUVFaceData(
+    const u8& index, std::vector<Vec4>* t_uv_map) {
   const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
   const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
   const float scale = 1.0F / 16.0F;
