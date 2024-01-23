@@ -419,6 +419,14 @@ void Player::moveSelectorToTheLeft() {
   if (selectedInventoryIndex < 0)
     selectedInventoryIndex = HOT_INVENTORY_SIZE - 1;
   selectedSlotHasChanged = 1;
+
+  const auto currentItemId = inventory[selectedInventoryIndex];
+  if (currentItemId == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::moveSelectorToTheRight() {
@@ -426,6 +434,14 @@ void Player::moveSelectorToTheRight() {
   if (selectedInventoryIndex > HOT_INVENTORY_SIZE - 1)
     selectedInventoryIndex = 0;
   selectedSlotHasChanged = 1;
+
+  const auto currentItemId = inventory[selectedInventoryIndex];
+  if (currentItemId == ItemId::empty) {
+    this->renderPip->unloadItemDrawData();
+  } else {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  }
 }
 
 void Player::loadMesh() {
