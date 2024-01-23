@@ -113,6 +113,7 @@ class Player : public Entity {
   void selectNextItem();
   void selectPreviousItem();
   void jump();
+  void jumpQuickly();
   void swim();
   void flyUp(const float& deltaTime);
   void flyDown(const float& deltaTime);

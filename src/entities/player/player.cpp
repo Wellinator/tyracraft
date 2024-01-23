@@ -272,6 +272,8 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
   BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
 
+  u8 canJump = false;
+
   // Set ray props
   Vec4 rayOrigin = ((playerMax - playerMin) / 2) + playerMin;
   Vec4 rayDir = (nextPlayerPos - currentPlayerPos).getNormalized();
@@ -311,6 +313,8 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
 
       if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
         finalHitDistance = tempHitDistance;
+        canJump = entity->maxCorner.y > playerMin.y &&
+                  (entity->maxCorner.y - playerMin.y <= BLOCK_SIZE);
       }
     }
   }
@@ -323,7 +327,15 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
     if (timeToHit < deltaTime ||
         finalHitDistance <
             this->mesh->getPosition()->distanceTo(nextPlayerPos)) {
-      if (isColliding) return false;
+      if (isColliding) {
+        return false;
+      }
+
+      // Check if can jump
+      if (canJump && isOnGround) {
+        jumpQuickly();
+        return true;
+      }
 
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
@@ -614,6 +626,11 @@ void Player::selectPreviousItem() {
 
 void Player::jump() {
   velocity += lift;
+  isOnGround = false;
+}
+
+void Player::jumpQuickly() {
+  velocity += lift * 0.75f;
   isOnGround = false;
 }
 
