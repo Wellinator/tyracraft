@@ -990,9 +990,6 @@ void World::putSlab(const Blocks& blockType,
       putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
       return;
     }
-
-    const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
-        terrain, blockOffset.x, blockOffset.y, blockOffset.z);
   }
 
   // Prevent to put a block at the player position;
