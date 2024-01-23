@@ -832,7 +832,6 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-    case Blocks::CHISELED_STONE_BRICKS_SLAB:
       putSlab(blockToPlace, placementDirection, t_player, cameraYaw,
               blockOffset, targetPos);
       break;
@@ -918,7 +917,7 @@ void World::putSlab(const Blocks& blockType,
   // Is placing two slabs at target position?
   // If so, fix the blockOffset;
   if ((u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtTargetPosition <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
     const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
         terrain, originalOffset.x, originalOffset.y, originalOffset.z);
 
@@ -936,7 +935,7 @@ void World::putSlab(const Blocks& blockType,
 
   // Is placing two slabs at offset position?
   if ((u8)blockTypeAtOffsetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtOffsetPosition <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+      (u8)blockTypeAtOffsetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
     // If so, check if are same slab type;
     // Prevent to place a different type of slab;
     if (blockTypeAtOffsetPosition != blockType) {
@@ -972,9 +971,6 @@ void World::putSlab(const Blocks& blockType,
           break;
         case Blocks::MOSSY_STONE_BRICKS_SLAB:
           newBlock = Blocks::MOSSY_STONE_BRICKS_BLOCK;
-          break;
-        case Blocks::CHISELED_STONE_BRICKS_SLAB:
-          newBlock = Blocks::CHISELED_STONE_BRICKS_BLOCK;
           break;
 
         default:
@@ -1339,7 +1335,7 @@ void World::buildChunk(Chunck* t_chunck) {
               block_type == Blocks::LAVA_BLOCK) {
             visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
           } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
-                     (u8)block_type <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+                     (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
             visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
           } else {
             visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
@@ -1431,7 +1427,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block_type == Blocks::LAVA_BLOCK) {
         visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
       } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
-                 (u8)block_type <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+                 (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
         visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
       } else {
         visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
@@ -2326,7 +2322,7 @@ void initSunLight(uint32_t tick) {
           else
             lv = 0;
         } else if ((u8)b >= (u8)Blocks::STONE_SLAB &&
-                   (u8)b <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB) {
+                   (u8)b <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
           if (lv >= 1)
             lv -= 1;
           else

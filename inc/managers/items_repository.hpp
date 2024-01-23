@@ -96,7 +96,6 @@ class ItemRepository {
   Item stone_brick_slab;
   Item cracked_stone_bricks_slab;
   Item mossy_stone_bricks_slab;
-  Item chiseled_stone_bricks_slab;
 
   // Toolds
   // Item wooden_axe;

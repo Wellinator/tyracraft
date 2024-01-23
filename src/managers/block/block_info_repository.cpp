@@ -153,6 +153,4 @@ void BlockInfoRepository::loadBlocksInfo() {
       (BlockInfo(Blocks::STONE_BRICK_SLAB, true, {97}, 1.5F, true));
   models[(u8)Blocks::MOSSY_STONE_BRICKS_SLAB] =
       (BlockInfo(Blocks::MOSSY_STONE_BRICKS_SLAB, true, {98}, 1.5F, true));
-  models[(u8)Blocks::CHISELED_STONE_BRICKS_SLAB] =
-      (BlockInfo(Blocks::CHISELED_STONE_BRICKS_SLAB, true, {99}, 1.5F, true));
 }

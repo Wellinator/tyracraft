@@ -44,7 +44,6 @@ void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-    case Blocks::CHISELED_STONE_BRICKS_SLAB:
       SlabMeshBuilder_GenerateMesh(t_block, t_vertices, t_vertices_colors,
                                    t_uv_map, t_worldLightModel, t_terrain);
       break;
@@ -93,7 +92,6 @@ void MeshBuilder_BuildLightData(Block* t_block,
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-    case Blocks::CHISELED_STONE_BRICKS_SLAB:
       SlabMeshBuilder_loadLightData(t_block, t_vertices_colors,
                                     t_worldLightModel, t_terrain);
       break;

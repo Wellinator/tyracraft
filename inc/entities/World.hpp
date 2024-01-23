@@ -287,7 +287,7 @@ bool inline isTransparent(Blocks block) {
          block == Blocks::TORCH ||
          // It it's slab, it's visible;
          ((u8)block >= (u8)Blocks::STONE_SLAB &&
-          (u8)block <= (u8)Blocks::CHISELED_STONE_BRICKS_SLAB);
+          (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
 };
 
 ///////////////////////////////////

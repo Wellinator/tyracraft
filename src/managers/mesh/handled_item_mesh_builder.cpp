@@ -34,7 +34,6 @@ void HandledItemMeshBuilder_BuildMesh(Item* t_item, Block* t_block,
     case ItemId::stone_brick_slab:
     case ItemId::cracked_stone_bricks_slab:
     case ItemId::mossy_stone_bricks_slab:
-    case ItemId::chiseled_stone_bricks_slab:
       SlabHandItemMeshBuilder_GenerateMesh(
           t_block, t_vertices, t_vertices_colors, t_uv_map, t_worldLightModel);
       break;
@@ -74,7 +73,6 @@ void HandledItemMeshBuilder_BuildLightData(
     case ItemId::stone_brick_slab:
     case ItemId::cracked_stone_bricks_slab:
     case ItemId::mossy_stone_bricks_slab:
-    case ItemId::chiseled_stone_bricks_slab:
       SlabHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
                                              t_worldLightModel);
       break;

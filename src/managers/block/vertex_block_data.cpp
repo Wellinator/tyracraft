@@ -213,7 +213,6 @@ BBox* VertexBlockData::getRawBBoxByBlock(Block* t_block) {
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-    case Blocks::CHISELED_STONE_BRICKS_SLAB:
       return VertexBlockData::getSlabRawBBox(t_block);
       break;
 

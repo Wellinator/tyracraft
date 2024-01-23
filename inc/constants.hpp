@@ -141,7 +141,6 @@ enum class Blocks {
   STONE_BRICK_SLAB,
   CRACKED_STONE_BRICKS_SLAB,
   MOSSY_STONE_BRICKS_SLAB,
-  CHISELED_STONE_BRICKS_SLAB,
 
   // Helper index
   TOTAL_OF_BLOCKS
@@ -243,7 +242,6 @@ enum class ItemId {
   stone_brick_slab,
   cracked_stone_bricks_slab,
   mossy_stone_bricks_slab,
-  chiseled_stone_bricks_slab,
 
   // TODO: move total_of_items to the end of enum this is temp!
   // Helper

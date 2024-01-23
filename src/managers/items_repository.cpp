@@ -414,13 +414,6 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/mossy_stone_bricks_slab.png"))
       ->addLink(mossy_stone_bricks_slab.sprite.id);
 
-  chiseled_stone_bricks_slab.id = ItemId::chiseled_stone_bricks_slab;
-  chiseled_stone_bricks_slab.blockId = Blocks::CHISELED_STONE_BRICKS_SLAB;
-  this->items.push_back(&chiseled_stone_bricks_slab);
-  this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/chiseled_stone_bricks_slab.png"))
-      ->addLink(chiseled_stone_bricks_slab.sprite.id);
-
   // -------------------- Tools ----------------
   //   wooden_axe.id = ItemId::wooden_axe;
   //   wooden_axe.blockId = Blocks::VOID;
