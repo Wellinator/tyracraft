@@ -177,7 +177,6 @@ class World {
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void renderBlockDamageOverlay();
-  void renderTargetBlockHitbox(Block* targetBlock);
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 

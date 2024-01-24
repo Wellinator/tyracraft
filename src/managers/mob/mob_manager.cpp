@@ -83,7 +83,9 @@ void MobManager::tick() {
 void MobManager::render() {
   t_renderer->renderer3D.usePipeline(&dynpip);
   for (size_t i = 0; i < mobs.size(); i++) {
-    if (mobs[i]) dynpip.render(mobs[i]->mesh, &dynpipOptions);
+    if (mobs[i] && !mobs[i]->shouldUnspawn) {
+      dynpip.render(mobs[i]->mesh, &dynpipOptions);
+    }
   }
 }
 

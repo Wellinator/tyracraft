@@ -168,7 +168,8 @@ void World::render() {
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
 
   if (targetBlock && targetBlock->bbox) {
-    renderTargetBlockHitbox(targetBlock);
+    t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
+
     if (isBreakingBLock() && targetBlock->damage > 0 &&
         targetBlock->getHardness() > 0.05F) {
       renderBlockDamageOverlay();
@@ -257,32 +258,32 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
 
   auto chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks->size(); i++) {
+    auto t_chunk = (*chuncks)[i];
     const auto distance =
-        floor(t_chunck->center.distanceTo((*chuncks)[i]->center) /
-              CHUNCK_SIZE) +
-        1;
+        floor(t_chunck->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) + 1;
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
-        (*chuncks)[i]->clear();
-      } else if ((*chuncks)[i]->state != ChunkState::Clean) {
-        addChunkToUnloadAsync((*chuncks)[i]);
+        t_chunk->clear();
+      } else if (t_chunk->state != ChunkState::Clean) {
+        addChunkToUnloadAsync(t_chunk);
       }
 
-      (*chuncks)[i]->setDistanceFromPlayerInChunks(-1);
+      t_chunk->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
-        (*chuncks)[i]->clear();
-        buildChunk((*chuncks)[i]);
-      } else if ((*chuncks)[i]->state == ChunkState::Clean) {
-        addChunkToLoadAsync((*chuncks)[i]);
+        t_chunk->clear();
+        buildChunk(t_chunk);
+      } else if (t_chunk->state == ChunkState::Clean) {
+        addChunkToLoadAsync(t_chunk);
       }
 
-      (*chuncks)[i]->setDistanceFromPlayerInChunks(distance);
+      t_chunk->setDistanceFromPlayerInChunks(distance);
     }
   }
 
-  if (tempChuncksToLoad.size()) sortChunksToLoad(currentPlayerPos);
+  if (!force_loading && tempChuncksToLoad.size())
+    sortChunksToLoad(currentPlayerPos);
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
@@ -370,10 +371,6 @@ void World::renderBlockDamageOverlay() {
     t_renderer->renderer3D.usePipeline(&mcPip);
     mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
   }
-}
-
-void World::renderTargetBlockHitbox(Block* targetBlock) {
-  t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
@@ -1575,8 +1572,11 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
     worldOptions.drawDistance = drawDistanceInChunks;
     Chunck* currentChunck =
         chunckManager.getChunckByWorldPosition(lastPlayerPosition);
-    if (currentChunck)
+    TYRA_ASSERT(currentChunck, "Invalid chunk pointer");
+    if (currentChunck) {
       scheduleChunksNeighbors(currentChunck, lastPlayerPosition, true);
+      targetBlock = nullptr;
+    }
   }
 }
 
