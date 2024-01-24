@@ -25,7 +25,6 @@ ScreenMain::~ScreenMain() {
 void ScreenMain::update() {
   handleInput();
   hightLightActiveOption();
-  navigate();
   playerPreviewMesh->update();
 }
 
@@ -226,6 +225,7 @@ void ScreenMain::handleInput() {
   if (context->context->t_engine->pad.getClicked().Cross) {
     context->playClickSound();
     selectedOption = activeOption;
+    navigate();
   }
 }
 
