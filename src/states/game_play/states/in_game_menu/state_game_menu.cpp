@@ -15,6 +15,14 @@ void StateGameMenu::init() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
 
+  // Backgrund
+  background.mode = Tyra::MODE_STRETCH;
+  background.size.set(512, 512);
+  background.position.set(0, 0);
+  textureRepo
+      ->add(FileUtils::fromCwd("textures/gui/menu/load_game_background.png"))
+      ->addLink(background.id);
+
   // OverlayL
   overlay.mode = Tyra::MODE_STRETCH;
   overlay.size.set(halfWidth * 2, halfHeight * 2);
@@ -102,9 +110,8 @@ void StateGameMenu::update(const float& deltaTime) {
 void StateGameMenu::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
-  stateGamePlay->getPreviousState()->render();
 
-  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(background);
 
   FontOptions drawDistanceLabel;
   drawDistanceLabel.position.set(248, 180);
@@ -256,6 +263,7 @@ void StateGameMenu::unloadTextures() {
       &this->t_renderer->getTextureRepository();
 
   textureRepository->free(this->textureRawSlot->id);
+  textureRepository->freeBySprite(background);
   textureRepository->freeBySprite(overlay);
   textureRepository->freeBySprite(active_slot);
   textureRepository->freeBySprite(btnCross);

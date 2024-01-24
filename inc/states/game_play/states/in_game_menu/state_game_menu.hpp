@@ -49,6 +49,7 @@ class StateGameMenu : public PlayingStateBase {
   Sprite horizontalScrollHandler;
   Sprite dialogWindow;
   Sprite btnStart;
+  Sprite background;
 
   GameMenuOptions selectedOption = GameMenuOptions::None;
   GameMenuOptions activeOption = GameMenuOptions::SaveGame;
