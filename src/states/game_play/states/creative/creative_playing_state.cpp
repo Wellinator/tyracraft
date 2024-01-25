@@ -34,11 +34,13 @@ void CreativePlayingState::update(const float& deltaTime) {
                                 stateGamePlay->context->t_camera,
                                 stateGamePlay->world->terrain);
 
-  stateGamePlay->context->t_camera->setPositionByMesh(
-      stateGamePlay->player->mesh.get());
+  stateGamePlay->context->t_camera->setPosition(
+      *stateGamePlay->player->mesh->getPosition());
   stateGamePlay->context->t_camera->setLookDirectionByPad(
       &stateGamePlay->context->t_engine->pad, deltaTime);
-  stateGamePlay->context->t_camera->update();
+
+  stateGamePlay->context->t_camera->update(deltaTime,
+                                           stateGamePlay->player->isMoving);
 }
 
 void CreativePlayingState::tick() {

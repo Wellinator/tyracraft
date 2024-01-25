@@ -55,17 +55,40 @@ void Camera::update() {
   lookPos.set(unitCirclePosition + position);
 }
 
+void Camera::update(const float& deltaTime, const u8 isWalking) {
+  camera_time += deltaTime * 5.0F;
+
+  unitCirclePosition.x = Math::cos(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
+  unitCirclePosition.z = Math::sin(Utils::degreesToRadian(yaw)) *
+                         Math::cos(Utils::degreesToRadian(pitch));
+
+  if (g_settings.invert_cam_y) {
+    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(-pitch));
+  } else {
+    unitCirclePosition.y = Math::sin(Utils::degreesToRadian(pitch));
+  }
+
+  unitCirclePosition.normalize();
+
+  if (isWalking) {
+    shakeCamera();
+  } else {
+    camera_time = 0;
+  }
+
+  lookPos.set(unitCirclePosition + position);
+}
+
 // TODO: refactore method signature to receive the position directly
-void Camera::setPositionByMesh(Mesh* t_mesh) {
+void Camera::setPosition(Vec4 newPosition) {
   if (camera_type == CamType::FirstPerson) {
-    position.set(*t_mesh->getPosition() -
-                 (unitCirclePosition.getNormalized() * 4.5F));
+    position.set(newPosition - (unitCirclePosition.getNormalized() * 4.5F));
     position.y += CAMERA_Y;
   } else {
     hitDistance = distanceFromPlayer;
 
-    const Vec4 segmentStart =
-        *t_mesh->getPosition() + Vec4(0.0f, getCamY(), 0.0f);
+    const Vec4 segmentStart = newPosition + Vec4(0.0f, getCamY(), 0.0f);
     const Vec4 segmentEnd = -unitCirclePosition * distanceFromPlayer;
 
     revRay.origin.set(segmentStart);
@@ -91,9 +114,9 @@ void Camera::setPositionByMesh(Mesh* t_mesh) {
     const float vDistance = calculateVerticalDistance();
 
     if (g_settings.invert_cam_y) {
-      calculateCameraPosition(t_mesh, hDistance, vDistance);
+      calculateCameraPosition(&newPosition, hDistance, vDistance);
     } else {
-      calculateCameraPosition(t_mesh, hDistance, -vDistance);
+      calculateCameraPosition(&newPosition, hDistance, -vDistance);
     }
   }
 }
@@ -156,7 +179,7 @@ float Camera::calculateVerticalDistance() {
   return maxDist * Tyra::Math::sin(Tyra::Math::ANG2RAD * pitch);
 }
 
-void Camera::calculateCameraPosition(Mesh* t_mesh,
+void Camera::calculateCameraPosition(Vec4* newPosition,
                                      const float horizontalDistance,
                                      const float verticalDistance) {
   const float theta = yaw;
@@ -165,7 +188,21 @@ void Camera::calculateCameraPosition(Mesh* t_mesh,
   const float offsetZ =
       horizontalDistance * Tyra::Math::sin(Tyra::Math::ANG2RAD * theta);
 
-  const Vec4 playerPos = *t_mesh->getPosition();
-  position.set(playerPos.x - offsetX, playerPos.y + CAMERA_Y + verticalDistance,
-               playerPos.z - offsetZ);
+  position.set(newPosition->x - offsetX,
+               newPosition->y + CAMERA_Y + verticalDistance,
+               newPosition->z - offsetZ);
+}
+
+void Camera::shakeCamera() {
+  M4x4 rot = M4x4::Identity;
+  rot.rotateY(_90DEGINRAD);
+
+  Vec4 orientatioFix = Vec4(Math::cos(Utils::degreesToRadian(yaw)), 1.0f,
+                            Math::sin(Utils::degreesToRadian(yaw)));
+
+  const float dH = Math::sin(camera_time);
+  const float dV = Math::sin(Math::HALF_PI - 2 * camera_time);
+  Vec4 offset_factor = Vec4(dH, dV, dH) * (rot * orientatioFix);
+
+  position += offset_factor;
 }

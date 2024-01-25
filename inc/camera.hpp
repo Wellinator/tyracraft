@@ -10,19 +10,11 @@
 
 #pragma once
 
-#include <pad/pad.hpp>
-#include <renderer/3d/mesh/mesh.hpp>
-#include <math/vec4.hpp>
-#include <renderer/renderer_settings.hpp>
-#include <renderer/core/3d/camera_info_3d.hpp>
+#include <tyra>
+#include "constants.hpp"
 #include <tamtypes.h>
 #include <utils.hpp>
-#include <math/math.hpp>
-#include "constants.hpp"
-#include <debug/debug.hpp>
 #include <fastmath.h>
-#include "renderer/renderer_settings.hpp"
-#include <tyra>
 
 using Tyra::CameraInfo3D;
 using Tyra::Pad;
@@ -37,14 +29,15 @@ class Camera {
   Camera(const RendererSettings& t_screen);
   ~Camera();
 
-  Vec4 position, lookPos, unitCirclePosition;
+  Vec4 position, lookPos, unitCirclePosition, camShake;
 
   float pitch, yaw;
   float hitDistance;
 
   void update();
+  void update(const float& deltaTime, const u8 isWalking);
   void reset();
-  void setPositionByMesh(Mesh* t_mesh);
+  void setPosition(Vec4 newPosition);
   void setLookDirectionByPad(Pad* t_pad, const float deltatime);
 
   void setFirstPerson();
@@ -62,12 +55,15 @@ class Camera {
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
 
+  float camera_time = 0;
+
   Ray revRay;
 
+  void shakeCamera();
   void calculatePitch(Pad* t_pad, const float deltatime);
   void calculateYaw(Pad* t_pad, const float deltatime);
   float calculateHorizontalDistance();
   float calculateVerticalDistance();
-  void calculateCameraPosition(Mesh* t_mesh, const float horizontalDistance,
+  void calculateCameraPosition(Vec4* newPosition, const float horizontalDistance,
                                const float verticalDistance);
 };
