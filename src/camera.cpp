@@ -204,5 +204,7 @@ void Camera::shakeCamera() {
   const float dV = Math::sin(Math::HALF_PI - 2 * camera_time);
   Vec4 offset_factor = Vec4(dH, dV, dH) * (rot * orientatioFix);
 
-  position += offset_factor;
+  const auto _result =
+      Vec4::getByLerp(position + offset_factor, position, 0.4f);
+  position.set(_result);
 }

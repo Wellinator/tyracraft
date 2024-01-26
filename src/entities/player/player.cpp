@@ -28,7 +28,6 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
 
   loadPlayerTexture();
   loadMesh();
-  loadArmMesh();
   loadStaticBBox();
 
   isWalkingAnimationSet = false;
@@ -75,15 +74,6 @@ Player::~Player() {
 
   standStillSequence.clear();
   standStillSequence.shrink_to_fit();
-
-  armStandStillSequence.clear();
-  armStandStillSequence.shrink_to_fit();
-
-  armWalkingSequence.clear();
-  armWalkingSequence.shrink_to_fit();
-
-  armHitingSequence.clear();
-  armHitingSequence.shrink_to_fit();
 }
 
 // ----
@@ -140,6 +130,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   updateTerrainHeightAtPlayerPosition(nextYPos);
   if (!isFlying) updateGravity(nextYPos);
 
+  renderPip->update(deltaTime, t_camera);
   animate(t_camera->getCamType());
 }
 
@@ -423,6 +414,7 @@ void Player::moveSelectorToTheLeft() {
   const auto currentItemId = inventory[selectedInventoryIndex];
   if (currentItemId == ItemId::empty) {
     this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
   } else {
     this->renderPip->unloadItemDrawData();
     this->renderPip->loadItemDrawData();
@@ -438,6 +430,7 @@ void Player::moveSelectorToTheRight() {
   const auto currentItemId = inventory[selectedInventoryIndex];
   if (currentItemId == ItemId::empty) {
     this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
   } else {
     this->renderPip->unloadItemDrawData();
     this->renderPip->loadItemDrawData();
@@ -467,49 +460,6 @@ void Player::loadMesh() {
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
   this->mesh->animation.speed = 0.08F;
-}
-
-void Player::loadArmMesh() {
-  ObjLoaderOptions options;
-  options.scale = 15.0F;
-  options.flipUVs = true;
-  options.animation.count = 21;
-
-  auto data =
-      ObjLoader::load(FileUtils::fromCwd("models/player_arm/arm.obj"), options);
-  data.get()->loadNormals = false;
-
-  this->armMesh = std::make_unique<DynamicMesh>(data.get());
-
-  this->armMesh->scale.identity();
-  this->armMesh->scale.scaleX(0.85F);
-  this->armMesh->scale.scaleZ(1.15F);
-
-  this->armMesh->translation.identity();
-  this->armMesh->translation.translateZ(-13.0F);
-  this->armMesh->translation.translateY(-8.5F);
-  this->armMesh->translation.translateX(3.5F);
-
-  this->armMesh->rotation.identity();
-  this->armMesh->rotation.rotateY(-3.24);
-  this->armMesh->rotation.rotateX(0.35);
-
-  auto& materials = this->armMesh.get()->materials;
-  for (size_t i = 0; i < materials.size(); i++)
-    playerTexture->addLink(materials[i]->id);
-
-  this->armMesh->animation.loop = true;
-  this->armMesh->animation.setSequence(armStandStillSequence);
-  this->armMesh->animation.speed = 0.08F;
-
-  armDynpipOptions.antiAliasingEnabled = false;
-  armDynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  armDynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  armDynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
-  armDynpipOptions.transformationType =
-      Tyra::PipelineTransformationType::TyraMP;
 }
 
 void Player::loadStaticBBox() {
@@ -613,6 +563,7 @@ void Player::selectNextItem() {
 
   if (nextItem == ItemId::empty) {
     this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
   } else {
     this->renderPip->unloadItemDrawData();
     this->renderPip->loadItemDrawData();
@@ -634,6 +585,7 @@ void Player::selectPreviousItem() {
 
   if (previousItem == ItemId::empty) {
     this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
   } else {
     this->renderPip->unloadItemDrawData();
     this->renderPip->loadItemDrawData();
@@ -675,8 +627,8 @@ void Player::setArmBreakingAnimation() {
   mesh->animation.setSequence(breakBlockSequence);
 
   if (isHandFree()) {
-    armMesh->animation.speed = baseAnimationSpeed * 6;
-    armMesh->animation.setSequence(armHitingSequence);
+    // armMesh->animation.speed = baseAnimationSpeed * 6;
+    // armMesh->animation.setSequence(armHitingSequence);
   }
 
   isBreakingAnimationSet = true;
@@ -689,17 +641,17 @@ void Player::unsetArmBreakingAnimation() {
   isBreaking = false;
   isBreakingAnimationSet = false;
   mesh->animation.setSequence(standStillSequence);
-  armMesh->animation.setSequence(armStandStillSequence);
+  // armMesh->animation.setSequence(armStandStillSequence);
 }
 
 void Player::setWalkingAnimation() {
   const float _speed = (speed / runningMaxSpeed) * 4;
   this->mesh->animation.speed = baseAnimationSpeed * _speed;
-  this->armMesh->animation.speed = baseAnimationSpeed * _speed;
+  // this->armMesh->animation.speed = baseAnimationSpeed * _speed;
 
   if (!isWalkingAnimationSet) {
     this->mesh->animation.setSequence(walkSequence);
-    this->armMesh->animation.setSequence(armWalkingSequence);
+    // this->armMesh->animation.setSequence(armWalkingSequence);
     isWalkingAnimationSet = true;
   }
 }
@@ -708,14 +660,12 @@ void Player::unsetWalkingAnimation() {
   if (!isWalkingAnimationSet) return;
 
   isWalkingAnimationSet = false;
-  armMesh->animation.setSequence(armStandStillSequence);
+  // armMesh->animation.setSequence(armStandStillSequence);
   mesh->animation.setSequence(standStillSequence);
 }
 
 void Player::animate(CamType camType) {
-  if (camType == CamType::FirstPerson && isHandFree()) {
-    this->armMesh->update();
-  } else {
+  if (camType == CamType::ThirdPerson) {
     this->mesh->update();
   }
 }

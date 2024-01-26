@@ -51,6 +51,8 @@ class Camera {
 
   const float distanceFromPlayer = 80.0F;
 
+  inline const float getCamTime() const { return camera_time; };
+
  private:
   CamType camera_type = CamType::FirstPerson;
   const float CAMERA_Y = 25.0F;
@@ -64,6 +66,7 @@ class Camera {
   void calculateYaw(Pad* t_pad, const float deltatime);
   float calculateHorizontalDistance();
   float calculateVerticalDistance();
-  void calculateCameraPosition(Vec4* newPosition, const float horizontalDistance,
+  void calculateCameraPosition(Vec4* newPosition,
+                               const float horizontalDistance,
                                const float verticalDistance);
 };

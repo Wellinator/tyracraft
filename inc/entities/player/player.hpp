@@ -76,7 +76,6 @@ class Player : public Entity {
   };
 
   std::unique_ptr<DynamicMesh> mesh;
-  std::unique_ptr<DynamicMesh> armMesh;
 
   Vec4 spawnArea;
   u16 currentChunckId = 0;
@@ -98,7 +97,6 @@ class Player : public Entity {
   };
 
   DynPipOptions modelDynpipOptions;
-  DynPipOptions armDynpipOptions;
   DynamicPipeline dynpip;
 
   Renderer* t_renderer;
@@ -123,6 +121,8 @@ class Player : public Entity {
 
   bool isOnWater();
   bool isUnderWater();
+
+  inline Texture* getPlayerTexture() { return playerTexture; };
 
   BlockManager* t_blockManager;
   ItemRepository* t_itemRepository;
@@ -155,7 +155,6 @@ class Player : public Entity {
 
   void loadPlayerTexture();
   void loadMesh();
-  void loadArmMesh();
   void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
   Vec4 getNextVrticalPosition(const float& deltaTime);
@@ -190,12 +189,6 @@ class Player : public Entity {
   std::vector<u32> walkSequence = {2, 1, 0, 1};
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
-
-  // Player arm
-  std::vector<u32> armStandStillSequence = {6};
-  std::vector<u32> armWalkingSequence = {0, 1, 2, 3,  4,  5, 6,
-                                         7, 8, 9, 10, 11, 12};
-  std::vector<u32> armHitingSequence = {13, 14, 15, 16, 17, 18, 19, 20};
 
   u8 _isOnWater;
   u8 _isUnderWater;

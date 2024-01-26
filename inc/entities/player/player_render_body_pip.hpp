@@ -12,6 +12,7 @@ class PlayerRenderBodyPip : public PlayerRenderPip {
   PlayerRenderBodyPip(Player* t_player);
   ~PlayerRenderBodyPip();
 
+  void update(const float& deltaTime, Camera* t_camera){};
   void render(Renderer* t_render);
   void loadItemDrawData();
   void unloadItemDrawData();
