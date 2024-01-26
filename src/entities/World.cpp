@@ -168,6 +168,7 @@ void World::render() {
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
 
   if (targetBlock && targetBlock->bbox) {
+    // FIXME: this call is too slow, loke 50 FPS drop
     t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
 
     if (isBreakingBLock() && targetBlock->damage > 0 &&
