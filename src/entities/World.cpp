@@ -7,6 +7,7 @@
 #include "managers/block/vertex_block_data.hpp"
 #include "managers/model_builder.hpp"
 #include "managers/collision_manager.hpp"
+#include "managers/mesh/mesh_builder.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -33,6 +34,7 @@ World::World(const NewGameOptions& options) {
   setIntialTime();
   CrossCraft_World_Init(seed);
   CollisionManager_initTree();
+  MeshBuilder_RegisterBuilders();
 }
 
 World::~World() {
@@ -40,6 +42,7 @@ World::~World() {
   affectedChunksIdByLiquidPropagation.clear();
 
   CrossCraft_World_Deinit();
+  MeshBuilder_UnregisterBuilders();
 }
 
 void World::init(Renderer* renderer, ItemRepository* itemRepository,
