@@ -156,12 +156,8 @@ class World {
   Vec4 lastPlayerPosition;
   NewGameOptions worldOptions = NewGameOptions();
 
-  int maxLoadPerCall = 1;
-  int maxUnloadPerCall = 2;
-
   std::deque<Chunck*> tempChuncksToLoad;
   std::deque<Chunck*> tempChuncksToUnLoad;
-  std::vector<McpipBlock*> overlayData;
 
   WorldLightModel worldLightModel;
 
@@ -206,9 +202,6 @@ class World {
   float breaking_time_pessed = 0.0F;
   float lastTimePlayedBreakingSfx = 0.0F;
 
-  Vec4 minWorldPos;
-  Vec4 maxWorldPos;
-
   uint32_t seed;
 
   inline u8 isCrossedBlock(Blocks block_type);
@@ -240,10 +233,6 @@ class World {
   void playFlowingWaterSound();
 
   void initWorldLightModel();
-
-  // Should be true after propagate 5 blocks;
-  u8 hasMachedLimitAdd = false;
-  u8 hasMachedLimitRemove = false;
 
   // Liquids
   uint16_t waterSoundDuration = 4000;

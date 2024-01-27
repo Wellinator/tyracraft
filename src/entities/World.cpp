@@ -50,7 +50,6 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   // Set renders
   t_renderer = renderer;
   stapip.setRenderer(&t_renderer->core);
-  overlayData.reserve(1);
 
   // Set soundManager ref
   this->t_soundManager = t_soundManager;
@@ -744,7 +743,7 @@ void World::removeBlock(Block* blockToRemove) {
   playDestroyBlockSound(blockToRemove->type);
 
   // Generate amount of particles right begore block gets destroyed
-  particlesManager.createBlockParticleBatch(blockToRemove, 24);
+  particlesManager.createBlockParticleBatch(blockToRemove, 18);
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
@@ -1232,7 +1231,7 @@ void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
       targetBlock->damage = breaking_time_pessed / breakingTime * 100;
 
       if (lastTimeCreatedParticle > 0.2) {
-        particlesManager.createBlockParticleBatch(targetBlock, 4);
+        particlesManager.createBlockParticleBatch(targetBlock, 3);
         lastTimeCreatedParticle = 0;
       } else {
         lastTimeCreatedParticle += deltaTime;
