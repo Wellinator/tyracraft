@@ -13,7 +13,8 @@ class VertexBlockData {
 
   ~VertexBlockData();
 
-  static BBox* getRawBBoxByBlock(Block* t_block);
+  static BBox* getRawBBoxByBlock(const Blocks block_type,
+                                 const u32 block_offset);
 
   /**
    * @brief Provides 36 vertices of raw cube
@@ -28,7 +29,7 @@ class VertexBlockData {
    */
   static const Vec4* getTopSlabVertexData();
   static const Vec4* getBottomSlabVertexData();
-  static BBox* getSlabRawBBox(Block* t_block);
+  static BBox* getSlabRawBBox( u32 block_offset);
 
   /**
    * @brief Provides 36 vertices of raw torch

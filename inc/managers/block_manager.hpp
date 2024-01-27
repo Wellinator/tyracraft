@@ -31,8 +31,7 @@ class BlockManager {
  public:
   BlockManager();
   ~BlockManager();
-  void init(Renderer* t_renderer, MinecraftPipeline* mcPip,
-            const std::string& texturePack);
+  void init(Renderer* t_renderer, const std::string& texturePack);
 
   BlockInfo* getBlockInfoByType(const Blocks& blockType);
   const u8 isBlockTransparent(const Blocks& blockType);
@@ -45,7 +44,6 @@ class BlockManager {
   inline Texture* getBlocksTextureLowRes() {
     return this->blocksTexAtlasLowRes;
   };
-  McpipBlock* getDamageOverlay(const float& damage_percentage);
 
   float getBlockBreakingTime(Block* targetBlock);
   u8 getBlockLightValue(Blocks blockType);
@@ -64,6 +62,5 @@ class BlockManager {
   Renderer* t_renderer;
   BlockInfoRepository* t_BlockInfoRepository;
 
-  std::vector<McpipBlock*> damage_overlay;
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;
 };

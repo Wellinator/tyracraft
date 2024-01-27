@@ -101,9 +101,7 @@ class World {
 
   Block* targetBlock = nullptr;
 
-  void updateTargetBlock(Camera* t_camera, Player* t_player);
   void removeBlock(Block* blockToRemove);
-
   void putBlock(const Blocks& blockType, Player* t_player,
                 const float cameraYaw);
   void putTorchBlock(const PlacementDirection placementDirection,
@@ -151,7 +149,6 @@ class World {
   inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };
 
  private:
-  MinecraftPipeline mcPip;
   StaticPipeline stapip;
 
   Vec4 worldSpawnArea;
@@ -185,6 +182,14 @@ class World {
   const bool calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
                                    const Vec4& maxOffset, uint16_t bias = 0);
 
+  std::vector<Vec4> _targetBlockVertices;
+  std::vector<Vec4> _targetBlockUVMap;
+  std::vector<Color> _targetBlockColors;
+  void updateTargetBlock(Camera* t_camera, Player* t_player);
+  void updateBlockDamage();
+  void buildTargetBlockDrawData();
+  void clearTargetBlockDrawData();
+
   inline void setIntialTime() {
     g_ticksCounter = static_cast<int>(worldOptions.initialTime);
   };
@@ -203,7 +208,6 @@ class World {
 
   Vec4 minWorldPos;
   Vec4 maxWorldPos;
-  BBox* rawBlockBbox;
 
   uint32_t seed;
 
@@ -229,8 +233,6 @@ class World {
   inline u8 isRightFaceVisible(const Vec4* t_blockOffset);
   inline u8 isFrontFaceVisible(const Vec4* t_blockOffset);
   inline u8 isBackFaceVisible(const Vec4* t_blockOffset);
-
-  void calcRawBlockBBox(MinecraftPipeline* mcPip);
 
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);

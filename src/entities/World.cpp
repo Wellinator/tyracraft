@@ -38,9 +38,9 @@ World::World(const NewGameOptions& options) {
 }
 
 World::~World() {
-  delete rawBlockBbox;
   affectedChunksIdByLiquidPropagation.clear();
 
+  clearTargetBlockDrawData();
   CrossCraft_World_Deinit();
   MeshBuilder_UnregisterBuilders();
 }
@@ -49,7 +49,6 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
                  SoundManager* t_soundManager) {
   // Set renders
   t_renderer = renderer;
-  mcPip.setRenderer(&t_renderer->core);
   stapip.setRenderer(&t_renderer->core);
   overlayData.reserve(1);
 
@@ -61,15 +60,13 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   initWorldLightModel();
 
   terrain = CrossCraft_World_GetMapPtr();
-  blockManager.init(t_renderer, &mcPip, worldOptions.texturePack);
+  blockManager.init(t_renderer, worldOptions.texturePack);
   chunckManager.init(&worldLightModel, terrain);
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
   mobManager.init(t_renderer, t_soundManager, &worldLightModel, terrain,
                   &chunckManager);
-
-  calcRawBlockBBox(&mcPip);
 };
 
 void World::generate() { CrossCraft_World_GenerateMap(worldOptions.type); }
@@ -133,6 +130,8 @@ void World::tick(Player* t_player, Camera* t_camera) {
   chunckManager.tick();
   mobManager.tick();
 
+  if (targetBlock && targetBlock->damage > 0) updateBlockDamage();
+
   // Update clouds and sun/moon every 50 ticks
   if (isTicksCounterAt(50)) {
     cloudsManager.tick();
@@ -169,16 +168,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
 void World::render() {
   mobManager.render();
   chunckManager.renderer(t_renderer, &stapip, &blockManager);
-
-  if (targetBlock && targetBlock->bbox) {
-    // FIXME: this call is too slow, loke 50 FPS drop
-    t_renderer->renderer3D.utility.drawBBox(*targetBlock->bbox, Color(0, 0, 0));
-
-    if (isBreakingBLock() && targetBlock->damage > 0 &&
-        targetBlock->getHardness() > 0.05F) {
-      renderBlockDamageOverlay();
-    }
-  }
+  if (targetBlock) renderBlockDamageOverlay();
 };
 
 void World::buildInitialPosition() {
@@ -348,33 +338,38 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
-  McpipBlock* overlay = blockManager.getDamageOverlay(targetBlock->damage);
-  if (overlay) {
-    if (overlayData.size() > 0) {
-      // Clear last overlay;
-      for (u8 i = 0; i < overlayData.size(); i++) {
-        delete overlayData[i]->color;
-        delete overlayData[i]->model;
-      }
-      overlayData.clear();
-    }
+  t_renderer->renderer3D.usePipeline(stapip);
 
-    M4x4 scale = M4x4();
-    M4x4 translation = M4x4();
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
 
-    scale.identity();
-    scale.scale(BLOCK_SIZE + 0.015f);
+  textureBag.coordinates = _targetBlockUVMap.data();
 
-    translation.identity();
-    translation.translate(targetBlock->position);
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
-    overlay->model = new M4x4(translation * scale);
-    overlay->color = new Color(128.0f, 128.0f, 128.0f, 70.0f);
+  colorBag.many = _targetBlockColors.data();
 
-    overlayData.emplace_back(overlay);
-    t_renderer->renderer3D.usePipeline(&mcPip);
-    mcPip.render(overlayData, blockManager.getBlocksTexture(), false);
-  }
+  bag.count = _targetBlockVertices.size();
+  bag.vertices = _targetBlockVertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  textureBag.texture = blockManager.getBlocksTexture();
+
+  M4x4 model = M4x4::Identity;
+  // model.scale(0.01f);
+  infoBag.model = &model;
+
+  stapip.core.render(&bag);
 }
 
 void World::addChunkToLoadAsync(Chunck* t_chunck) {
@@ -634,11 +629,6 @@ u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   if (isAirAtPosition(x, y - 1, z)) result = result | BOTTOM_VISIBLE;
 
   return result;
-}
-
-void World::calcRawBlockBBox(MinecraftPipeline* mcPip) {
-  const auto& blockData = mcPip->getBlockData();
-  rawBlockBbox = new BBox(blockData.vertices, blockData.count);
 }
 
 const Vec4 World::defineSpawnArea() {
@@ -998,14 +988,20 @@ void World::putSlab(const Blocks& blockType,
   tempModel.scaleY(HALF_BLOCK_SIZE);
   tempModel.translate(newBlockPos);
 
-  BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
+  BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+      blockType, GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+  BBox tempBBox = rawBBox->getTransformed(tempModel);
+  BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
+
   Vec4 newBlockPosMin;
   Vec4 newBlockPosMax;
-  tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+  finalBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
 
   Vec4 minPlayerCorner;
   Vec4 maxPlayerCorner;
   t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+  delete rawBBox;
 
   // Will Collide to player?
   if (newBlockPosMax.x > minPlayerCorner.x &&
@@ -1085,14 +1081,20 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
   tempModel.scale(BLOCK_SIZE);
   tempModel.translate(newBlockPos);
 
-  BBox tempBBox = rawBlockBbox->getTransformed(tempModel);
+  BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+      blockToPlace, GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+  BBox tempBBox = rawBBox->getTransformed(tempModel);
+  BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
+
   Vec4 newBlockPosMin;
   Vec4 newBlockPosMax;
-  tempBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
+  finalBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
 
   Vec4 minPlayerCorner;
   Vec4 maxPlayerCorner;
   t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
+
+  delete rawBBox;
 
   // Will Collide to player?
   if (newBlockPosMax.x > minPlayerCorner.x &&
@@ -1170,7 +1172,11 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
 void World::stopBreakTargetBlock() {
   _isBreakingBlock = false;
   breaking_time_pessed = 0;
-  if (targetBlock) targetBlock->damage = 0;
+  if (targetBlock) {
+    targetBlock->damage = 0;
+    clearTargetBlockDrawData();
+    buildTargetBlockDrawData();
+  }
 }
 
 void World::breakTargetBlock(const float& deltaTime) {
@@ -1365,7 +1371,8 @@ void World::buildChunk(Chunck* t_chunck) {
               block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
               ModelBuilder_BuildModel(block, terrain);
-              BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block);
+              BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block->type,
+                                                                 block->offset);
               BBox tempBBox = rawBBox->getTransformed(block->model);
 
               block->bbox =
@@ -1458,7 +1465,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
 
           ModelBuilder_BuildModel(block, terrain);
 
-          BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block);
+          BBox* rawBBox =
+              VertexBlockData::getRawBBoxByBlock(block->type, block->offset);
           BBox tempBBox = rawBBox->getTransformed(block->model);
 
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -1566,8 +1574,69 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
     targetBlock->distance = tempTargetDistance;
     targetBlock->hitPosition.set(ray.at(tempTargetDistance));
 
-    if (targetBlock->index != _lastTargetBlockId) breaking_time_pessed = 0;
+    if (targetBlock->index != _lastTargetBlockId) {
+      breaking_time_pessed = 0;
+      clearTargetBlockDrawData();
+      buildTargetBlockDrawData();
+    };
+  } else {
+    if (_targetBlockVertices.size() > 0) clearTargetBlockDrawData();
   }
+}
+
+void World::buildTargetBlockDrawData() {
+  TYRA_ASSERT(targetBlock != nullptr, "No target block to build draw data!");
+
+  const u8 size = targetBlock->visibleFacesCount * VertexBlockData::FACES_COUNT;
+
+  _targetBlockVertices.reserve(size);
+  _targetBlockColors.reserve(size);
+  _targetBlockUVMap.reserve(size);
+
+  MeshBuilder_BuildMesh(targetBlock, &_targetBlockVertices, &_targetBlockColors,
+                        &_targetBlockUVMap, &worldLightModel, terrain);
+
+  const float highLight = 25.0f;
+  for (size_t i = 0; i < size; i++) _targetBlockColors[i] += highLight;
+}
+
+void World::updateBlockDamage() {
+  _targetBlockUVMap.clear();
+
+  const u8 V = 15;
+  const u8 U = floor(targetBlock->damage / 10);
+  const float _scale = 1.0F / 16.0F;
+  const Vec4 UVScale = Vec4(_scale, _scale, 1.0F, 0.0F);
+  const u8 size = targetBlock->visibleFacesCount * VertexBlockData::FACES_COUNT;
+
+  u8 idx = 0;
+  const u8 faces = size / 6;
+
+  for (size_t i = 0; i < faces; i++) {
+    _targetBlockUVMap[idx++] = (Vec4(U, (V + 1.0F), 1.0F, 0.0F) * UVScale);
+    _targetBlockUVMap[idx++] = (Vec4((U + 1.0F), V, 1.0F, 0.0F) * UVScale);
+    _targetBlockUVMap[idx++] =
+        (Vec4((U + 1.0F), (V + 1.0F), 1.0F, 0.0F) * UVScale);
+
+    _targetBlockUVMap[idx++] = (Vec4(U, (V + 1.0F), 1.0F, 0.0F) * UVScale);
+    _targetBlockUVMap[idx++] = (Vec4(U, V, 1.0F, 0.0F) * UVScale);
+    _targetBlockUVMap[idx++] = (Vec4((U + 1.0F), V, 1.0F, 0.0F) * UVScale);
+  }
+
+  for (size_t i = 0; i < size; i++) {
+    _targetBlockColors[i].a = 70.0f;
+  };
+}
+
+void World::clearTargetBlockDrawData() {
+  _targetBlockVertices.clear();
+  _targetBlockVertices.shrink_to_fit();
+
+  _targetBlockColors.clear();
+  _targetBlockColors.shrink_to_fit();
+
+  _targetBlockUVMap.clear();
+  _targetBlockUVMap.shrink_to_fit();
 }
 
 void World::setDrawDistace(const u8& drawDistanceInChunks) {

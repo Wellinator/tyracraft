@@ -23,25 +23,14 @@ BlockManager::~BlockManager() {
   }
   this->blockSfxRepositories.clear();
   this->blockSfxRepositories.shrink_to_fit();
-
-  for (u8 i = 0; i < this->damage_overlay.size(); i++) {
-    delete this->damage_overlay[i]->textureOffset;
-    delete this->damage_overlay[i];
-    this->damage_overlay[i] = nullptr;
-  }
-
-  this->damage_overlay.clear();
-  this->damage_overlay.shrink_to_fit();
 }
 
-void BlockManager::init(Renderer* t_renderer, MinecraftPipeline* mcPip,
-                        const std::string& texturePack) {
+void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
   this->loadBlocksTexturesLowRes(texturePack);
   this->registerBlockSoundsEffects();
-  this->registerDamageOverlayBlocks(mcPip);
 }
 
 void BlockManager::loadBlocksTextures(const std::string& texturePack) {
@@ -79,24 +68,6 @@ const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
 const u8 BlockManager::isBlockOriented(const Blocks& blockType) {
   return blockType == Blocks::JACK_O_LANTERN_BLOCK ||
          blockType == Blocks::PUMPKIN_BLOCK;
-}
-
-void BlockManager::registerDamageOverlayBlocks(MinecraftPipeline* mcPip) {
-  float offsetY = mcPip->getTextureOffset() * 15;
-  for (u8 i = 0; i <= 10; i++) {
-    McpipBlock* damageOverlay = new McpipBlock();
-
-    damageOverlay->textureOffset =
-        new Vec4(mcPip->getTextureOffset() * i, offsetY, 0.0F, 1.0F);
-    this->damage_overlay.push_back(damageOverlay);
-  }
-}
-
-McpipBlock* BlockManager::getDamageOverlay(const float& damage_percentage) {
-  int normal_damage = floor(damage_percentage / 10);
-  for (u8 i = 0; i < damage_overlay.size(); i++)
-    if (i >= normal_damage) return damage_overlay[i];
-  return nullptr;
 }
 
 SfxBlockModel* BlockManager::getBrokenSoundByBlockType(

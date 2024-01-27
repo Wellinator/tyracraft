@@ -80,8 +80,8 @@ const Vec4* VertexBlockData::getTopSlabVertexData() {
   Vec4 cornerVetices[8] = {
       Vec4(1.0F, 0.0F, -1.0F), Vec4(1.0F, 0.0F, 1.0F),
       Vec4(-1.0F, 0.0F, 1.0F), Vec4(-1.0F, 0.0F, -1.0F),
-      Vec4(1.0F, 1.0F, -1.0F),  Vec4(1.0F, 1.0F, 1.0F),
-      Vec4(-1.0F, 1.0F, 1.0F),  Vec4(-1.0F, 1.0F, -1.0F),
+      Vec4(1.0F, 1.0F, -1.0F), Vec4(1.0F, 1.0F, 1.0F),
+      Vec4(-1.0F, 1.0F, 1.0F), Vec4(-1.0F, 1.0F, -1.0F),
   };
 
   u32 vertexFacesIndex[VETEX_COUNT] = {// Top OK
@@ -182,9 +182,9 @@ BBox* VertexBlockData::getCuboidRawBBox() {
   return result;
 }
 
-BBox* VertexBlockData::getSlabRawBBox(Block* t_block) {
+BBox* VertexBlockData::getSlabRawBBox(u32 block_offset) {
   Vec4 pos;
-  GetXYZFromPos(&t_block->offset, &pos);
+  GetXYZFromPos(&block_offset, &pos);
   const auto t_terrain = CrossCraft_World_GetMapPtr();
   const SlabOrientation orientation =
       GetSlabOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
@@ -198,8 +198,9 @@ BBox* VertexBlockData::getSlabRawBBox(Block* t_block) {
   return result;
 }
 
-BBox* VertexBlockData::getRawBBoxByBlock(Block* t_block) {
-  switch (t_block->type) {
+BBox* VertexBlockData::getRawBBoxByBlock(const Blocks block_type,
+                                         const u32 block_offset) {
+  switch (block_type) {
     case Blocks::TORCH:
       return VertexBlockData::getTorchRawBBox();
       break;
@@ -213,7 +214,7 @@ BBox* VertexBlockData::getRawBBoxByBlock(Block* t_block) {
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-      return VertexBlockData::getSlabRawBBox(t_block);
+      return VertexBlockData::getSlabRawBBox(block_offset);
       break;
 
     default:
