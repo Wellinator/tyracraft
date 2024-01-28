@@ -626,11 +626,6 @@ void Player::setArmBreakingAnimation() {
   mesh->animation.speed = baseAnimationSpeed * 3;
   mesh->animation.setSequence(breakBlockSequence);
 
-  if (isHandFree()) {
-    // armMesh->animation.speed = baseAnimationSpeed * 6;
-    // armMesh->animation.setSequence(armHitingSequence);
-  }
-
   isBreakingAnimationSet = true;
   isBreaking = true;
 }
@@ -641,17 +636,14 @@ void Player::unsetArmBreakingAnimation() {
   isBreaking = false;
   isBreakingAnimationSet = false;
   mesh->animation.setSequence(standStillSequence);
-  // armMesh->animation.setSequence(armStandStillSequence);
 }
 
 void Player::setWalkingAnimation() {
   const float _speed = (speed / runningMaxSpeed) * 4;
   this->mesh->animation.speed = baseAnimationSpeed * _speed;
-  // this->armMesh->animation.speed = baseAnimationSpeed * _speed;
 
   if (!isWalkingAnimationSet) {
     this->mesh->animation.setSequence(walkSequence);
-    // this->armMesh->animation.setSequence(armWalkingSequence);
     isWalkingAnimationSet = true;
   }
 }
@@ -660,9 +652,12 @@ void Player::unsetWalkingAnimation() {
   if (!isWalkingAnimationSet) return;
 
   isWalkingAnimationSet = false;
-  // armMesh->animation.setSequence(armStandStillSequence);
   mesh->animation.setSequence(standStillSequence);
 }
+
+void Player::playPutBlockAnimation() { isPuting = true; }
+
+void Player::stopPutBlockAnimation() { isPuting = false; }
 
 void Player::animate(CamType camType) {
   if (camType == CamType::ThirdPerson) {

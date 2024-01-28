@@ -808,6 +808,8 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   if (!BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z))
     return;
 
+  t_player->playPutBlockAnimation();
+
   switch (blockToPlace) {
     case Blocks::TORCH:
       putTorchBlock(placementDirection, cameraYaw, blockOffset);

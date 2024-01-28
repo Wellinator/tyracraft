@@ -17,8 +17,11 @@ PlayerRenderArmPip::~PlayerRenderArmPip() { unloadItemDrawData(); };
 void PlayerRenderArmPip::update(const float& deltaTime, Camera* t_camera) {
   if (is_playing_break_animation || t_player->isBreaking) {
     updateBreakAnimation(deltaTime);
-  } else if (t_player->isMoving)
+  } else if (is_playing_put_animation || t_player->isPuting) {
+    updatePutAnimation(deltaTime);
+  } else if (t_player->isMoving) {
     updateWalkAnimation(t_camera);
+  }
 };
 
 void PlayerRenderArmPip::render(Renderer* t_render) {
@@ -96,6 +99,11 @@ void PlayerRenderArmPip::loadItemDrawData() {
     breaking_start_pos.set(armPos);
     breaking_end_pos.set(armPos + breaking_animation_pos_offset);
 
+    puting_start_rot.set(armRot);
+    puting_end_rot.set(armRot + puting_animation_rot_offset);
+    puting_start_pos.set(armPos);
+    puting_end_pos.set(armPos + puting_animation_pos_offset);
+
   } else {
     Item* t_item = t_player->t_itemRepository->getItemById(activeItemType);
     BlockInfo* tempInfo =
@@ -119,6 +127,11 @@ void PlayerRenderArmPip::loadItemDrawData() {
         breaking_end_rot.set(torchRot + breaking_animation_rot_offset);
         breaking_start_pos.set(torchPos);
         breaking_end_pos.set(torchPos + breaking_animation_pos_offset);
+
+        puting_start_rot.set(torchRot);
+        puting_end_rot.set(torchRot + puting_animation_rot_offset);
+        puting_start_pos.set(torchPos);
+        puting_end_pos.set(torchPos + puting_animation_pos_offset);
       } else {
         scale = blockScale;
         rotation.set(blockRot);
@@ -129,6 +142,11 @@ void PlayerRenderArmPip::loadItemDrawData() {
         breaking_end_rot.set(blockRot + breaking_animation_rot_offset);
         breaking_start_pos.set(blockPos);
         breaking_end_pos.set(blockPos + breaking_animation_pos_offset);
+
+        puting_start_rot.set(blockRot);
+        puting_end_rot.set(blockRot + puting_animation_rot_offset);
+        puting_start_pos.set(blockPos);
+        puting_end_pos.set(blockPos + puting_animation_pos_offset);
       }
 
       rawMatrix.identity();
@@ -211,6 +229,34 @@ void PlayerRenderArmPip::updateBreakAnimation(const float& deltaTime) {
 
   is_playing_break_animation = animantion_time < animantion_time_limit;
   if (is_playing_break_animation) {
+    animantion_time += deltaTime * animantion_speed;
+  } else {
+    interpolation = 0;
+    animantion_time = default_animantion_time;
+  }
+};
+
+void PlayerRenderArmPip::updatePutAnimation(const float& deltaTime) {
+  const float d = Math::cos(animantion_time);
+
+  interpolation = 1.0f - Utils::reRangeScale(0.0f, 1.0f, -1.0f, 1.0f, d);
+
+  const Vec4 dy_translation = Vec4(0.0f, Math::sin(animantion_time), 0.0f);
+  Vec4 _rotation =
+      Vec4::getByLerp(puting_start_rot, puting_end_rot, interpolation);
+  Vec4 _translation =
+      Vec4::getByLerp(puting_start_pos, puting_end_pos, interpolation) +
+      dy_translation;
+
+  rawMatrix.identity();
+  rawMatrix.rotate(_rotation);
+  rawMatrix.scale(scale);
+  rawMatrix.translate(_translation);
+
+  animantion_time += deltaTime;
+
+  is_playing_put_animation = animantion_time < animantion_time_limit;
+  if (is_playing_put_animation) {
     animantion_time += deltaTime * animantion_speed;
   } else {
     interpolation = 0;

@@ -119,6 +119,7 @@ class PlayerRenderArmPip : public PlayerRenderPip {
    */
 
   // Base nimation settings
+  float interpolation = 0.0f;
   float animantion_speed = 27.0f;
   float animantion_time = 0.02f;
   const float default_animantion_time = 0.02f;
@@ -131,13 +132,17 @@ class PlayerRenderArmPip : public PlayerRenderPip {
 
   // Break animation;
   u8 is_playing_break_animation = false;
-  float interpolation = 0.0f;
-
   const Vec4 breaking_animation_rot_offset = Vec4(-0.3f, 0.34f, 0.0f);
   const Vec4 breaking_animation_pos_offset = Vec4(-1.5F, -1.5F, -3.0F);
-
   Vec4 breaking_start_rot, breaking_end_rot;
   Vec4 breaking_start_pos, breaking_end_pos;
+
+  // Puting animation;
+  u8 is_playing_put_animation = false;
+  const Vec4 puting_animation_rot_offset = Vec4(-0.3f, 0.34f, 0.0f);
+  const Vec4 puting_animation_pos_offset = Vec4(-1.5F, -1.5F, -3.0F);
+  Vec4 puting_start_rot, puting_end_rot;
+  Vec4 puting_start_pos, puting_end_pos;
 
   // Base arm settings
   const Vec4 armRot = Vec4(0.35f, -3.24f, 0.0f);
@@ -158,4 +163,5 @@ class PlayerRenderArmPip : public PlayerRenderPip {
 
   void updateWalkAnimation(Camera* t_camera);
   void updateBreakAnimation(const float& deltaTime);
+  void updatePutAnimation(const float& deltaTime);
 };

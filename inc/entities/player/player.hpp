@@ -68,12 +68,15 @@ class Player : public Entity {
 
   void toggleFlying();
   inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isFlying, isBreaking, isMoving, isRunning;
+  bool isOnGround, isFlying, isBreaking, isPuting, isMoving, isRunning;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
     return getSelectedInventoryItemType() != ItemId::empty;
   };
+
+  void playPutBlockAnimation();
+  void stopPutBlockAnimation();
 
   std::unique_ptr<DynamicMesh> mesh;
 
