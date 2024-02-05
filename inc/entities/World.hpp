@@ -159,6 +159,8 @@ class World {
   std::deque<Chunck*> tempChuncksToLoad;
   std::deque<Chunck*> tempChuncksToUnLoad;
 
+  u8 _updateDayNightCycle = true;
+
   WorldLightModel worldLightModel;
 
   void updateChunkByPlayerPosition(Player* player);
@@ -187,7 +189,11 @@ class World {
   void clearTargetBlockDrawData();
 
   inline void setIntialTime() {
-    g_ticksCounter = static_cast<int>(worldOptions.initialTime);
+    if (worldOptions.type == WorldType::WORLD_MINI_GAME_MAZECRAFT) {
+      g_ticksCounter = NIGHT_MID;
+    } else {
+      g_ticksCounter = static_cast<int>(worldOptions.initialTime);
+    }
   };
 
   // From terrain manager

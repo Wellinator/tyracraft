@@ -8,6 +8,7 @@
 #include "managers/model_builder.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
+#include "managers/mazecraft_generator.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -31,7 +32,9 @@ World::World(const NewGameOptions& options) {
   printf("|------------------------|\n\n");
 
   worldOptions = options;
+  _updateDayNightCycle = options.type != WorldType::WORLD_MINI_GAME_MAZECRAFT;
   setIntialTime();
+
   CrossCraft_World_Init(seed);
   CollisionManager_initTree();
   MeshBuilder_RegisterBuilders();
@@ -68,7 +71,13 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
                   &chunckManager);
 };
 
-void World::generate() { CrossCraft_World_GenerateMap(worldOptions.type); }
+void World::generate() {
+  if (worldOptions.type == WorldType::WORLD_MINI_GAME_MAZECRAFT) {
+    Mazecraft_GenerateMap();
+  } else {
+    CrossCraft_World_GenerateMap(worldOptions.type);
+  }
+}
 
 void World::generateLight() {
   dayNightCycleManager.preLoad();
@@ -109,7 +118,7 @@ void World::setSavedSpawnArea(Vec4 pos) {
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   particlesManager.update(deltaTime, t_camera);
   cloudsManager.update();
-  dayNightCycleManager.update();
+  if (_updateDayNightCycle) dayNightCycleManager.update();
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
@@ -134,7 +143,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
   // Update clouds and sun/moon every 50 ticks
   if (isTicksCounterAt(50)) {
     cloudsManager.tick();
-    dayNightCycleManager.tick(&t_camera->position);
+    if (_updateDayNightCycle) dayNightCycleManager.tick(&t_camera->position);
   }
 
   // Update chunk light data every 1000 ticks
@@ -631,7 +640,13 @@ u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
 }
 
 const Vec4 World::defineSpawnArea() {
-  Vec4 spawPos = calcSpawOffset();
+  Vec4 spawPos;
+
+  if (worldOptions.type != WorldType::WORLD_MINI_GAME_MAZECRAFT) {
+    spawPos = calcSpawOffset();
+  } else {
+    spawPos = Vec4(1, 3, 1) * DUBLE_BLOCK_SIZE;
+  }
 
   auto level = CrossCraft_World_GetLevelPtr();
 
@@ -1597,7 +1612,7 @@ void World::buildTargetBlockDrawData() {
   MeshBuilder_BuildMesh(targetBlock, &_targetBlockVertices, &_targetBlockColors,
                         &_targetBlockUVMap, &worldLightModel, terrain);
 
-  const float highLight = 25.0f;
+  const float highLight = 50.0f * worldLightModel.sunLightIntensity;
   for (size_t i = 0; i < size; i++) _targetBlockColors[i] += highLight;
 }
 
