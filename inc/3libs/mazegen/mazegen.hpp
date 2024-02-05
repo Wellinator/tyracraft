@@ -550,7 +550,7 @@ bool is_dead_end(const Point& p) {
 
 // Removes blind parts of the maze with (1.0 - DEADEND_CHANCE) probability
 void reduce_maze() {
-    bool done = false;
+    // bool done = false;
     std::uniform_real_distribution<double> reduce_distribution(0.0, 1.0);
     for (auto& end_p : dead_ends) {
         if (reduce_distribution(rng) < cfg.DEADEND_CHANCE) continue;
