@@ -8,8 +8,10 @@ void TorchHandItemMeshBuilder_GenerateMesh(
     WorldLightModel* t_worldLightModel) {
   TorchHandItemMeshBuilder_loadMeshData(t_block, t_vertices);
   TorchHandItemMeshBuilder_loadUVData(t_uv_map);
-  TorchHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
-                                         t_worldLightModel);
+  if (t_vertices_colors) {
+    TorchHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
+                                           t_worldLightModel);
+  }
 }
 
 void TorchHandItemMeshBuilder_loadMeshData(Block* t_block,

@@ -131,6 +131,8 @@ class Player : public Entity {
   ItemRepository* t_itemRepository;
   WorldLightModel* t_worldLightModel;
 
+  inline Color* getBaseColorAtPlayerPos() { return &_baseColorAtPlayerPos; };
+
  private:
   SoundManager* t_soundManager;
   StaticPipeline stpip;
@@ -202,4 +204,7 @@ class Player : public Entity {
   const float _minFovFlaying = 70.0F;
   const float _maxFovFlaying = _minFovFlaying + 10.0F;
   void updateFovBySpeed();
+
+  void updateItemColorByCurrentPosition();
+  Color _baseColorAtPlayerPos = Color(128, 128, 128);
 };

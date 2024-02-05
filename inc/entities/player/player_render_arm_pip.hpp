@@ -28,7 +28,6 @@ class PlayerRenderArmPip : public PlayerRenderPip {
 
  private:
   std::vector<Vec4> vertices;
-  std::vector<Color> verticesColors;
   std::vector<Vec4> uvMap;
 
   std::array<Vec4, 36> armVertices = {Vec4(-0.119292f, 0.002216f, 0.39074f),
@@ -87,21 +86,6 @@ class PlayerRenderArmPip : public PlayerRenderPip {
       Vec4(0.751403f, 0.312009f, 1.0f), Vec4(0.688596f, 0.312624f, 1.0f),
       Vec4(0.688417f, 0.499619f, 1.0f), Vec4(0.812536f, 0.312046f, 1.0f),
       Vec4(0.751403f, 0.312009f, 1.0f), Vec4(0.750576f, 0.50038f, 1.0f),
-  };
-
-  std::array<Color, 36> armColors = {
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
-      Color(128, 128, 128), Color(128, 128, 128), Color(128, 128, 128),
   };
 
   StaticPipeline stapip;

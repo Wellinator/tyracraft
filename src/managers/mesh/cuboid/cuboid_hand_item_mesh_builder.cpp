@@ -8,8 +8,10 @@ void CuboidHandItemMeshBuilder_GenerateMesh(
     WorldLightModel* t_worldLightModel) {
   CuboidHandItemMeshBuilder_loadMeshData(t_block, t_vertices);
   CuboidHandItemMeshBuilder_loadUVData(t_block, t_uv_map);
-  CuboidHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
-                                          t_worldLightModel);
+  if (t_vertices_colors) {
+    CuboidHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
+                                            t_worldLightModel);
+  }
 }
 
 void CuboidHandItemMeshBuilder_loadMeshData(Block* t_block,

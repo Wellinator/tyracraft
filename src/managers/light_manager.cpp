@@ -48,13 +48,13 @@ std::array<u8, 4> LightManager::getCornersAOValues(
 float LightManager::calcAOIntensity(u8 AOValue) {
   switch (AOValue) {
     case 0:
-      return 0.5F;
+      return 0.35F;
 
     case 1:
-      return 0.7F;
+      return 0.5F;
 
     case 2:
-      return 0.8F;
+      return 0.6F;
 
     default:
       return 1.0F;
@@ -70,7 +70,7 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                     FACE_SIDE faceSide, LevelMap* t_terrain,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
-  const float MIN_LIGHT_FACTOR = 0.25F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
 
   u8 lightData;
   u8 sunLightLevel;
@@ -152,7 +152,7 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
                                     LevelMap* t_terrain,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
-  const float MIN_LIGHT_FACTOR = 0.25F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
 
   Vec4 targetBlockOffset;
   GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);

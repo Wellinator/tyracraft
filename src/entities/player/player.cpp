@@ -137,6 +137,9 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
 void Player::tick(LevelMap* t_terrain) {
   // Update updateStateInWater every 5 ticks
   if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
+
+  // Update base color after updating position
+  updateItemColorByCurrentPosition();
 }
 
 void Player::render() { renderPip->render(t_renderer); }
@@ -736,3 +739,23 @@ void Player::updateFovBySpeed() {
   }
   t_renderer->core.renderer3D.setFov(_fovByLerp);
 }
+
+void Player::updateItemColorByCurrentPosition() {
+  const auto level = CrossCraft_World_GetLevelPtr();
+  const Vec4 pos = (*mesh->getPosition() / DUBLE_BLOCK_SIZE);
+  const Vec4 offset = Vec4(std::floor(pos.x + 0.5f), std::floor(pos.y + 1),
+                           std::floor(pos.z + 0.5f));
+
+  if (BoundCheckMap(&level->map, offset.x, offset.y, offset.z)) {
+    const int lightLevelAtPos =
+        GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
+    const float sunLightLevel =
+        static_cast<float>((lightLevelAtPos >> 4) & 0xF);
+    const float blockLightLevel = static_cast<float>(lightLevelAtPos & 0x0F);
+    const auto maxLevel = std::max(sunLightLevel, blockLightLevel);
+    const auto minLevel = 3.0f;
+    const float intenisty = 128.0f * (std::max(maxLevel, minLevel) / 15.0f);
+
+    _baseColorAtPlayerPos = Color(intenisty, intenisty, intenisty);
+  }
+};
