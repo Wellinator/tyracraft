@@ -9,8 +9,10 @@ void SlabHandItemMeshBuilder_GenerateMesh(Block* t_block,
                                           WorldLightModel* t_worldLightModel) {
   SlabHandItemMeshBuilder_loadMeshData(t_block, t_vertices);
   SlabHandItemMeshBuilder_loadUVData(t_block, t_uv_map);
-  SlabHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
-                                        t_worldLightModel);
+  if (t_vertices_colors) {
+    SlabHandItemMeshBuilder_loadLightData(t_block, t_vertices_colors,
+                                          t_worldLightModel);
+  }
 }
 
 void SlabHandItemMeshBuilder_loadMeshData(Block* t_block,

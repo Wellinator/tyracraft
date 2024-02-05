@@ -85,7 +85,7 @@ void PlayerRenderArmPip::loadItemDrawData() {
     infoBag.frustumCulling =
         Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
-    colorBag.many = armColors.data();
+    colorBag.single = t_player->getBaseColorAtPlayerPos();
 
     bag.count = 36;
     bag.vertices = armVertices.data();
@@ -154,9 +154,8 @@ void PlayerRenderArmPip::loadItemDrawData() {
       rawMatrix.scale(scale);
       rawMatrix.translate(translation);
 
-      HandledItemMeshBuilder_BuildMesh(t_item, &block, &vertices,
-                                       &verticesColors, &uvMap,
-                                       t_player->t_worldLightModel);
+      HandledItemMeshBuilder_BuildMesh(t_item, &block, &vertices, nullptr,
+                                       &uvMap, t_player->t_worldLightModel);
 
       textureBag.texture = t_player->t_blockManager->getBlocksTexture();
       textureBag.coordinates = uvMap.data();
@@ -173,7 +172,7 @@ void PlayerRenderArmPip::loadItemDrawData() {
       infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
           PipelineInfoBagFrustumCulling_None;
 
-      colorBag.many = verticesColors.data();
+      colorBag.single = t_player->getBaseColorAtPlayerPos();
 
       bag.count = vertices.size();
       bag.vertices = vertices.data();
@@ -187,8 +186,6 @@ void PlayerRenderArmPip::loadItemDrawData() {
 void PlayerRenderArmPip::unloadItemDrawData() {
   vertices.clear();
   vertices.shrink_to_fit();
-  verticesColors.clear();
-  verticesColors.shrink_to_fit();
   uvMap.clear();
   uvMap.shrink_to_fit();
 };

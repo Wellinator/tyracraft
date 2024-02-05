@@ -27,7 +27,3 @@ void HandledItemMeshBuilder_BuildMesh(Item* t_item, Block* t_block,
                                       std::vector<Color>* t_vertices_colors,
                                       std::vector<Vec4>* t_uv_map,
                                       WorldLightModel* t_worldLightModel);
-
-void HandledItemMeshBuilder_BuildLightData(
-    Item* t_item, Block* t_block, std::vector<Color>* t_vertices_colors,
-    WorldLightModel* t_worldLightModel);
