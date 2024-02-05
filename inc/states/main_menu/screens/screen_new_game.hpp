@@ -155,6 +155,9 @@ class ScreenNewGame : public ScreenBase {
   const std::string Label_WorldTypeFloating =
       g_language_repository["screen_new_game"]["world_type_floating"]
           .get<std::string>();
+  const std::string Label_WorldTypeMazecraft =
+      g_language_repository["screen_new_game"]["world_type_mazecraft"]
+          .get<std::string>();
   const std::string Label_WorldNameErrorPart1 =
       g_language_repository["screen_new_game"]["world_name_exists_error_part1"]
           .get<std::string>();

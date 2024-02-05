@@ -129,6 +129,10 @@ void ScreenNewGame::render() {
       worldTypeOptions.position.set(248, 295);
       FontManager_printText(Label_WorldTypeFloating, worldTypeOptions);
       break;
+    case WorldType::WORLD_MINI_GAME_MAZECRAFT:
+      worldTypeOptions.position.set(248, 295);
+      FontManager_printText(Label_WorldTypeMazecraft, worldTypeOptions);
+      break;
 
     default:
       break;
@@ -489,7 +493,7 @@ void ScreenNewGame::handleWorldNameInput() {
 void ScreenNewGame::updateModel() {
   if (this->activeOption == ScreenNewGameOptions::WorldType) {
     int nextOption = (int)this->model.type + 1;
-    if (nextOption > 4)
+    if (nextOption > (u8)WorldType::WORLD_MINI_GAME_MAZECRAFT)
       this->model.type = WorldType::WORLD_TYPE_ORIGINAL;
     else
       this->model.type = static_cast<WorldType>(nextOption);
