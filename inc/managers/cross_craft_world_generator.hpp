@@ -16,3 +16,7 @@ void CrossCraft_WorldGenerator_Generate_Flat(LevelMap* map);
 void CrossCraft_WorldGenerator_Generate_Woods(LevelMap* map);
 void CrossCraft_WorldGenerator_Generate_Island(LevelMap* map);;
 void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map);
+
+bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight);
+void growOakTree(LevelMap* map, int x, int y, int z, int treeHeight);
+void growBirchTree(LevelMap* map, int x, int y, int z, int treeHeight);
