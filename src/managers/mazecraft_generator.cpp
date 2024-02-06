@@ -1,19 +1,14 @@
 #include "managers/mazecraft_generator.hpp"
 #include "managers/cross_craft_world_generator.hpp"
 
-void Mazecraft_GenerateMap() {
+void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
+                           mazegen::Config cfg) {
   const auto level = CrossCraft_World_GetLevelPtr();
-
-  const auto width = level->map.length;
-  const auto height = level->map.width;
 
   mazegen::PointSet constraints{{1, 1}, {width - 3, height - 3}};
 
-  mazegen::Config cfg;
-  cfg.CONSTRAIN_HALL_ONLY = true;
-
   auto gen = mazegen::Generator();
-  gen.set_seed(1000);
+  gen.set_seed(1);
   gen.generate(width, height, cfg, constraints);
 
   if (!gen.get_warnings().empty()) {
