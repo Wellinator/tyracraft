@@ -15,13 +15,7 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions {
-  DrawDistance,
-  SaveGame,
-  SaveAndQuit,
-  QuitWithoutSave,
-  None
-};
+enum class GameMenuOptions { DrawDistance, SaveGame, Quit, None };
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -55,8 +49,7 @@ class StateGameMenu : public PlayingStateBase {
   GameMenuOptions activeOption = GameMenuOptions::SaveGame;
 
   u8 needSaveOverwriteConfirmation = false;
-  u8 needSaveAndQuitConfirmation = false;
-  u8 needQuitWithoutSaveConfirmation = false;
+  u8 needQuitConfirmation = false;
 
   const float SLOT_WIDTH = 230;
   const float SLOT_HIGHT_OFFSET = 240;
@@ -68,6 +61,8 @@ class StateGameMenu : public PlayingStateBase {
       g_language_repository["gui"]["overwrite"].get<std::string>();
   const std::string Label_Quit =
       g_language_repository["gui"]["quit"].get<std::string>();
+  const std::string Label_Save =
+      g_language_repository["gui"]["save"].get<std::string>();
   const std::string Label_Select =
       g_language_repository["gui"]["select"].get<std::string>();
   const std::string Label_Cancel =
@@ -79,14 +74,6 @@ class StateGameMenu : public PlayingStateBase {
           .get<std::string>();
   const std::string Label_GameMenu =
       g_language_repository["state_game_menu"]["game_menu"].get<std::string>();
-  const std::string Label_SaveGame =
-      g_language_repository["state_game_menu"]["save_game"].get<std::string>();
-  const std::string Label_SaveAndQuit =
-      g_language_repository["state_game_menu"]["save_and_quit"]
-          .get<std::string>();
-  const std::string Label_QuitWithoutSave =
-      g_language_repository["state_game_menu"]["quit_without_save"]
-          .get<std::string>();
   const std::string Label_BackToGame =
       g_language_repository["state_game_menu"]["back_to_game"]
           .get<std::string>();
