@@ -17,9 +17,11 @@ void TickManager::update(const float& deltaTime) {
   elapsedRealTime += deltaTime;
 
   if (g_ticksFraftion > TICKS_IN_SECONDS) {
-    g_ticksCounter++;
-    g_ticksFraftion -= TICKS_IN_SECONDS;
-    onTick();
+    while (g_ticksFraftion > TICKS_IN_SECONDS) {
+      g_ticksCounter++;
+      g_ticksFraftion -= TICKS_IN_SECONDS;
+      onTick();
+    }
   } else {
     g_ticksFraftion += deltaTime;
   }
