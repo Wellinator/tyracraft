@@ -46,7 +46,6 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
  */
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
-                                          const BlockOrientation orientation,
                                           const LiquidQuadMapModel quadMap,
                                           float topHeight);
 

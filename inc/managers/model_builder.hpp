@@ -14,4 +14,6 @@ void ModelBuilder_BuildModel(Block* t_block, LevelMap* t_terrain);
 
 void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain);
 
+void ModelBuilder_NoRotationModel(Block* t_block);
+
 void ModelBuilder_TorchModel(Block* t_block, LevelMap* t_terrain);

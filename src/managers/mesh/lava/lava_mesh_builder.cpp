@@ -19,7 +19,7 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
   Vec4 pos;
   GetXYZFromPos(&t_block->offset, &pos);
 
-  const BlockOrientation orientation =
+  const LiquidOrientation orientation =
       GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
 
   const u8 isUpperBlockLava =
@@ -38,7 +38,7 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 
 void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                          std::vector<Vec4>* t_vertices,
-                                         const BlockOrientation orientation,
+                                         const LiquidOrientation orientation,
                                          const LiquidQuadMapModel quadMap,
                                          float topHeight) {
   u8 vert = 0;

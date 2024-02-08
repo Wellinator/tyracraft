@@ -408,15 +408,22 @@ u32 World::getIndexByOffset(int x, int y, int z) {
   return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
-u8 World::isAirAtPosition(const float& x, const float& y, const float& z) {
+u8 World::isAirAtPosition(const u8 x, const u8 y, const u8 z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
   }
   return false;
 }
 
-u8 World::isBlockTransparentAtPosition(const float& x, const float& y,
-                                       const float& z) {
+u8 World::isLiquidAtPosition(const u8 x, const u8 y, const u8 z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    const auto b = GetBlockFromMap(terrain, x, y, z);
+    return b == (u8)Blocks::WATER_BLOCK || b == (u8)Blocks::LAVA_BLOCK;
+  }
+  return false;
+}
+
+u8 World::isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
@@ -459,7 +466,7 @@ u8 World::isRightFaceVisible(const Vec4* t_blockOffset) {
 }
 
 u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientation = GetOrientationDataFromMap(
+  const BlockOrientation orientation = GetBlockOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
   u8 result = 0b000000;
@@ -506,7 +513,7 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
 }
 
 u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientationXZ = GetOrientationDataFromMap(
+  const BlockOrientation orientationXZ = GetBlockOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
   const SlabOrientation orientationY = GetSlabOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
@@ -560,72 +567,58 @@ u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
 }
 
 u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
+  u8 result = 0b000000;
+
   const auto x = t_blockOffset->x;
   const auto y = t_blockOffset->y;
   const auto z = t_blockOffset->z;
 
-  const BlockOrientation orientation = GetOrientationDataFromMap(
-      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const u8 currentLevel = GetLiquidDataFromMap(terrain, x, y, z);
 
-  u8 result = 0b000000;
+  const auto bFront =
+      static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+  const auto bBlack =
+      static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+  const auto bRight =
+      static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+  const auto bLeft = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+  const auto bTop = static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+  const auto bBottom =
+      static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
 
-  switch (orientation) {
-    case BlockOrientation::North:
-      // Will be rotated by 90deg
-      // Left turns Back & Right turns Front
-
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | LEFT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | RIGHT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | FRONT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | BACK_VISIBLE;
-      break;
-    case BlockOrientation::South:
-      // Will be rotated by 270deg
-      // Left turns Front & Right turns Back
-
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | RIGHT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | LEFT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | BACK_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | FRONT_VISIBLE;
-      break;
-    case BlockOrientation::West:
-      // Will be rotated by 180deg
-      // Left turns Right & Front turns Back
-
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | BACK_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | FRONT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | LEFT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | RIGHT_VISIBLE;
-      break;
-    case BlockOrientation::East:
-    default:
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | FRONT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | BACK_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | RIGHT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | LEFT_VISIBLE;
-      break;
-  }
+  // Front
+  if (bFront != Blocks::LAVA_BLOCK && bFront != Blocks::WATER_BLOCK &&
+      bFront != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bFront || blockManager.isBlockTransparent(bFront)))
+    result = result | FRONT_VISIBLE;
+  // Back
+  if (bBlack != Blocks::LAVA_BLOCK && bBlack != Blocks::WATER_BLOCK &&
+      bBlack != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bBlack || blockManager.isBlockTransparent(bBlack)))
+    result = result | BACK_VISIBLE;
+  // Right
+  if (bRight != Blocks::LAVA_BLOCK && bRight != Blocks::WATER_BLOCK &&
+      bRight != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bRight || blockManager.isBlockTransparent(bRight)))
+    result = result | RIGHT_VISIBLE;
+  // Left
+  if (bLeft != Blocks::LAVA_BLOCK && bLeft != Blocks::WATER_BLOCK &&
+      bLeft != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bLeft || blockManager.isBlockTransparent(bLeft)))
+    result = result | LEFT_VISIBLE;
 
   // Top
-  if (isAirAtPosition(x, y + 1, z)) result = result | TOP_VISIBLE;
+  if (bTop != Blocks::LAVA_BLOCK && bTop != Blocks::WATER_BLOCK &&
+      bTop != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bTop || blockManager.isBlockTransparent(bTop) ||
+       currentLevel < (u8)LiquidLevel::Percent100))
+    result = result | TOP_VISIBLE;
   // Bottom
-  if (isAirAtPosition(x, y - 1, z)) result = result | BOTTOM_VISIBLE;
+  if (bBottom != Blocks::LAVA_BLOCK && bBottom != Blocks::WATER_BLOCK &&
+      bBottom != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bBottom ||
+       blockManager.isBlockTransparent(bBottom)))
+    result = result | BOTTOM_VISIBLE;
 
   return result;
 }
@@ -1721,8 +1714,35 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 
     SetBlockInMap(terrain, x, y, z, type);
     SetLiquidDataToMap(terrain, x, y, z, level);
-    SetLiquidOrientationDataToMap(terrain, x, y, z,
-                                  static_cast<BlockOrientation>(orientation));
+
+    const auto prevDir = GetLiquidOrientationDataFromMap(terrain, x, y, z);
+
+    // Fix traversal orientation to linear
+    // It two traversal flux encounter each other, it will become a linear flux
+    if (((u8)LiquidOrientation::NorthEast == orientation &&
+         LiquidOrientation::NorthWest == prevDir) ||
+        ((u8)LiquidOrientation::NorthWest == orientation &&
+         LiquidOrientation::NorthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::North);
+    } else if (((u8)LiquidOrientation::NorthEast == orientation &&
+                LiquidOrientation::SouthEast == prevDir) ||
+               ((u8)LiquidOrientation::SouthEast == orientation &&
+                LiquidOrientation::NorthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::East);
+    } else if (((u8)LiquidOrientation::SouthEast == orientation &&
+                LiquidOrientation::SouthWest == prevDir) ||
+               ((u8)LiquidOrientation::SouthWest == orientation &&
+                LiquidOrientation::SouthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::South);
+    } else if (((u8)LiquidOrientation::NorthWest == orientation &&
+                LiquidOrientation::SouthWest == prevDir) ||
+               ((u8)LiquidOrientation::SouthWest == orientation &&
+                LiquidOrientation::NorthWest == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::West);
+    } else {
+      SetLiquidOrientationDataToMap(
+          terrain, x, y, z, static_cast<LiquidOrientation>(orientation));
+    }
 
     Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
     if (moddedChunk && moddedChunk->isDrawDataLoaded()) {
@@ -1732,7 +1752,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 }
 
 void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
-  addLiquid(x, y, z, type, level, (u8)BlockOrientation::East);
+  addLiquid(x, y, z, type, level, (u8)LiquidOrientation::East);
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
@@ -1830,101 +1850,112 @@ void World::updateLiquidLava() {
 
 void World::propagateWaterRemovalQueue() {
   if (waterRemovalBfsQueue.empty() == false) {
-    Node liquidNode = waterRemovalBfsQueue.front();
+    const auto countToUpdateThisTick = waterRemovalBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      Node liquidNode = waterRemovalBfsQueue.front();
 
-    // get the index
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
-    uint8_t liquidValue = liquidNode.val - 1;
+      // get the index
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
+      uint8_t liquidValue = liquidNode.val - 1;
 
-    waterRemovalBfsQueue.pop();
+      waterRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (liquidValue > (u8)LiquidLevel::Percent0) {
-      waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
+      if (liquidValue > (u8)LiquidLevel::Percent0) {
+        waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
+      }
     }
   }
 }
 
 void World::propagateLavaRemovalQueue() {
   if (lavaRemovalBfsQueue.empty() == false) {
-    Node liquidNode = lavaRemovalBfsQueue.front();
+    const auto countToUpdateThisTick = lavaRemovalBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      Node liquidNode = lavaRemovalBfsQueue.front();
 
-    // get the index
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+      // get the index
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    s8 nextLevel = (u8)LiquidLevel::Percent0;
-    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
-      nextLevel = (u8)LiquidLevel::Percent75;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
-      nextLevel = (u8)LiquidLevel::Percent50;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
-      nextLevel = (u8)LiquidLevel::Percent25;
-    } else {
-      return;
-    }
+      s8 nextLevel = (u8)LiquidLevel::Percent0;
+      if (liquidNode.val == (u8)LiquidLevel::Percent100) {
+        nextLevel = (u8)LiquidLevel::Percent75;
+      } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
+        nextLevel = (u8)LiquidLevel::Percent50;
+      } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
+        nextLevel = (u8)LiquidLevel::Percent25;
+      } else {
+        return;
+      }
 
-    lavaRemovalBfsQueue.pop();
+      lavaRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (nextLevel > (u8)LiquidLevel::Percent0) {
-      lavaRemovalBfsQueue.emplace(nx, ny, nz, nextLevel);
+      if (nextLevel > (u8)LiquidLevel::Percent0) {
+        lavaRemovalBfsQueue.emplace(nx, ny, nz, nextLevel);
+      }
     }
   }
 }
@@ -1949,102 +1980,158 @@ void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
 
 void World::propagateWaterAddQueue() {
   if (waterBfsQueue.empty() == false) {
-    auto liquidNode = waterBfsQueue.front();
+    const auto countToUpdateThisTick = waterBfsQueue.size();
 
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      auto liquidNode = waterBfsQueue.front();
 
-    waterBfsQueue.pop();
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    s16 nextLevel = liquidNode.val - 1;
-    u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
+      waterBfsQueue.pop();
 
-    if (canPropagateLiquid(nx, ny - 1, nz)) {
-      // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
-                         (u8)BlockOrientation::East);
-      return;
-    }
+      s16 nextLevel = liquidNode.val - 1;
+      u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
-    if (nextLevel <= (u8)LiquidLevel::Percent0) {
-      return;
-    }
+      if (canPropagateLiquid(nx, ny - 1, nz)) {
+        // If down block is air, keep propagating until hit a surface;
+        floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                           (u8)LiquidOrientation::East);
+        return;
+      }
 
-    if (canPropagateLiquid(nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::North);
-    }
+      if (nextLevel <= (u8)LiquidLevel::Percent0) {
+        return;
+      }
 
-    if (canPropagateLiquid(nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
-                         (u8)BlockOrientation::East);
-    }
+      if (canPropagateLiquid(nx + 1, ny, nz)) {
+        floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                           (u8)LiquidOrientation::North);
+      }
 
-    if (canPropagateLiquid(nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::South);
-    }
+      if (canPropagateLiquid(nx, ny, nz + 1)) {
+        floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                           (u8)LiquidOrientation::East);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz - 1)) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
-                         (u8)BlockOrientation::West);
+      if (canPropagateLiquid(nx - 1, ny, nz)) {
+        floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                           (u8)LiquidOrientation::South);
+      }
+
+      if (canPropagateLiquid(nx, ny, nz - 1)) {
+        floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                           (u8)LiquidOrientation::West);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz + 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::NorthEast);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz - 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::NorthWest);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz + 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::SouthEast);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz - 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::SouthWest);
+      }
     }
   }
 }
 
 void World::propagateLavaAddQueue() {
   if (lavaBfsQueue.empty() == false) {
-    auto liquidNode = lavaBfsQueue.front();
+    const auto countToUpdateThisTick = lavaBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      auto liquidNode = lavaBfsQueue.front();
 
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    lavaBfsQueue.pop();
+      lavaBfsQueue.pop();
 
-    s8 nextLevel = (u8)LiquidLevel::Percent0;
-    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
-      nextLevel = (u8)LiquidLevel::Percent75;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
-      nextLevel = (u8)LiquidLevel::Percent50;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
-      nextLevel = (u8)LiquidLevel::Percent25;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent25) {
-      nextLevel = (u8)LiquidLevel::Percent0;
-    }
+      s8 nextLevel = getNextLavaLevel(liquidNode.val);
+      u8 type = (u8)Blocks::LAVA_BLOCK;
 
-    u8 type = (u8)Blocks::LAVA_BLOCK;
+      if (canPropagateLiquid(nx, ny - 1, nz)) {
+        // If down block is air, keep propagating until hit a surface;
+        floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                           (u8)BlockOrientation::East);
+        return;
+      }
 
-    if (canPropagateLiquid(nx, ny - 1, nz)) {
-      // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
-                         (u8)BlockOrientation::East);
-      return;
-    }
+      if (nextLevel <= (u8)LiquidLevel::Percent0) return;
 
-    if (nextLevel <= 0) return;
+      if (canPropagateLiquid(nx + 1, ny, nz)) {
+        floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                           (u8)BlockOrientation::North);
+      }
 
-    if (canPropagateLiquid(nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::North);
-    }
+      if (canPropagateLiquid(nx, ny, nz + 1)) {
+        floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                           (u8)BlockOrientation::East);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
-                         (u8)BlockOrientation::East);
-    }
+      if (canPropagateLiquid(nx - 1, ny, nz)) {
+        floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                           (u8)BlockOrientation::South);
+      }
 
-    if (canPropagateLiquid(nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::South);
-    }
+      if (canPropagateLiquid(nx, ny, nz - 1)) {
+        floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                           (u8)BlockOrientation::West);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz - 1)) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
-                         (u8)BlockOrientation::West);
+      if (canPropagateLiquid(nx + 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz + 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::NorthEast);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz - 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::NorthWest);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz + 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::SouthEast);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz - 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::SouthWest);
+      }
     }
   }
+}
+
+const s8 World::getNextLavaLevel(const s8 currentLevel) {
+  s8 nextLevel = (u8)LiquidLevel::Percent0;
+  if (currentLevel == (u8)LiquidLevel::Percent100) {
+    nextLevel = (u8)LiquidLevel::Percent75;
+  } else if (currentLevel == (u8)LiquidLevel::Percent75) {
+    nextLevel = (u8)LiquidLevel::Percent50;
+  } else if (currentLevel == (u8)LiquidLevel::Percent50) {
+    nextLevel = (u8)LiquidLevel::Percent25;
+  } else if (currentLevel == (u8)LiquidLevel::Percent25) {
+    nextLevel = (u8)LiquidLevel::Percent0;
+  }
+
+  return nextLevel;
 }
 
 void World::updateChunksAffectedByLiquidPropagation() {
@@ -2063,7 +2150,7 @@ u8 World::canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z) {
   if (!BoundCheckMap(terrain, x, y, z)) return false;
   const u8 type = GetBlockFromMap(terrain, x, y, z);
   return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
-         type == (u8)Blocks::POPPY_FLOWER ||
+         type == (u8)Blocks::POPPY_FLOWER || type == (u8)Blocks::TORCH ||
          type == (u8)Blocks::DANDELION_FLOWER;
 }
 

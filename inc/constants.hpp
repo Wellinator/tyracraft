@@ -255,8 +255,8 @@ enum class ItemId {
   diamond_axe,
 };
 
-#define WATER_PROPAGATION_PER_TICKS 5 * 4
-#define LAVA_PROPAGATION_PER_TICKS 30 * 4
+#define WATER_PROPAGATION_PER_TICKS 5
+#define LAVA_PROPAGATION_PER_TICKS 10
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -287,6 +287,17 @@ enum class BlockOrientation {
   Top = 4,
 };
 
+enum class LiquidOrientation {
+  East,
+  NorthEast,
+  North,
+  NorthWest,
+  West,
+  SouthEast,
+  South,
+  SouthWest
+};
+
 enum class SlabOrientation {
   Top = 0,
   Bottom = 1,
@@ -313,8 +324,11 @@ enum class EntityType {
   Painting
 };
 
+// Three bits for liquid volume
+#define LIQUID_LEVEL_MASK 0b00011100
+
 // Three bits for orientation
-#define BLOCK_LIQUID_LEVEL_MASK 0b00011100
+#define LIQUID_ORIENTATION_MASK 0b11100000
 
 // Three bits for orientation for torch
 #define TORCH_ORIENTATION_MASK 0b00000111

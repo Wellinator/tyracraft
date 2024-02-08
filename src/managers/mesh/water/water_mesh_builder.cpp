@@ -22,9 +22,6 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
   Vec4 pos;
   GetXYZFromPos(&t_block->offset, &pos);
 
-  const BlockOrientation orientation =
-      GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
-
   const u8 isUpperBlockWater =
       BoundCheckMap(t_terrain, pos.x, pos.y + 1, pos.z) &&
       GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z) ==
@@ -32,16 +29,16 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
 
   float topHeight = isUpperBlockWater ? 0.00F : 0.05F * DUBLE_BLOCK_SIZE;
 
+  const LiquidOrientation orientation =
+      GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
   const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
       t_terrain, orientation, &pos, (u8)Blocks::WATER_BLOCK);
 
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
-                                       quadMap, topHeight);
+  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, quadMap, topHeight);
 }
 
 void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                           std::vector<Vec4>* t_vertices,
-                                          const BlockOrientation orientation,
                                           const LiquidQuadMapModel quadMap,
                                           float topHeight) {
   u8 vert = 0;

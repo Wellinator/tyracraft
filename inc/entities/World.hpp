@@ -216,9 +216,9 @@ class World {
   u8 getSlabVisibleFaces(const Vec4* t_blockOffset);
   u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline u8 isBlockTransparentAtPosition(const float& x, const float& y,
-                                         const float& z);
-  inline u8 isAirAtPosition(const float& x, const float& y, const float& z);
+  inline u8 isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z);
+  inline u8 isAirAtPosition(const u8 x, const u8 y, const u8 z);
+  inline u8 isLiquidAtPosition(const u8 x, const u8 y, const u8 z);
 
   inline u8 isTopFaceVisible(const Vec4* t_blockOffset);
   inline u8 isBottomFaceVisible(const Vec4* t_blockOffset);
@@ -262,6 +262,7 @@ class World {
   void propagateLavaRemovalQueue();
   void propagateLavaAddQueue();
   void updateChunksAffectedByLiquidPropagation();
+  const s8 getNextLavaLevel(const s8 currentLevel);
   u8 canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z);
 };
 

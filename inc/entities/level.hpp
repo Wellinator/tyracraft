@@ -44,15 +44,10 @@ uint8_t GetMetaDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
 uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
                          uint8_t data);
 
-void SetOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                             const BlockOrientation orientation);
-BlockOrientation GetOrientationDataFromMap(LevelMap* map, uint16_t x,
-                                           uint16_t y, uint16_t z);
-
 void SetLiquidOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
                                    uint16_t z,
-                                   const BlockOrientation orientation);
-BlockOrientation GetLiquidOrientationDataFromMap(LevelMap* map, uint16_t x,
+                                   const LiquidOrientation orientation);
+LiquidOrientation GetLiquidOrientationDataFromMap(LevelMap* map, uint16_t x,
                                                  uint16_t y, uint16_t z);
 
 void SetTorchOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
