@@ -8,14 +8,6 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
   const u8 currentLevel =
       GetLiquidDataFromMap(t_terrain, offset->x, offset->y, offset->z);
 
-  if (currentLevel == (u8)LiquidLevel::Percent100) {
-    result.NW = 0;
-    result.NE = 0;
-    result.SE = 0;
-    result.SW = 0;
-    return result;
-  }
-
   u8 left = currentLevel;
   u8 topLeft = currentLevel;
   u8 top = currentLevel;
@@ -109,6 +101,20 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
     result.SW = LiquidHelper_getLavaHeightByVolume(SW);
   }
 
+  // Fix offset height if its upper block is liquid
+  float topHeightOffset = 0.05F * DUBLE_BLOCK_SIZE;
+
+  if (currentLevel == (u8)LiquidLevel::Percent100 &&
+      GetBlockFromMap(t_terrain, offset->x, offset->y + 1, offset->z) ==
+          liquid_type) {
+    topHeightOffset = 0;
+  }
+
+  result.NW += topHeightOffset;
+  result.NE += topHeightOffset;
+  result.SE += topHeightOffset;
+  result.SW += topHeightOffset;
+
   return result;
 }
 
@@ -155,15 +161,3 @@ float LiquidHelper_getLavaHeightByVolume(u8 liquid_volume) {
       return DUBLE_BLOCK_SIZE;
   }
 }
-
-const u8 LiquidHelper_getMaxCorner(const u8 cornerA, const u8 cornerB,
-                                   const u8 cornerC) {
-  return cornerA > cornerB ? (cornerA > cornerC ? cornerA : cornerC)
-                           : (cornerB > cornerC ? cornerB : cornerC);
-};
-
-const u8 LiquidHelper_getMinCorner(const u8 cornerA, const u8 cornerB,
-                                   const u8 cornerC) {
-  return cornerA < cornerB ? (cornerA < cornerC ? cornerA : cornerC)
-                           : (cornerB < cornerC ? cornerB : cornerC);
-};

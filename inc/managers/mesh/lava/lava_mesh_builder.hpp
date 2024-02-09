@@ -42,8 +42,7 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                          std::vector<Vec4>* t_vertices,
                                          const LiquidOrientation orientation,
-                                         const LiquidQuadMapModel quadMap,
-                                         float topHeight);
+                                         const LiquidQuadMapModel quadMap);
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void LavaMeshBuilder_loadUVFaceData(const u8& index,
