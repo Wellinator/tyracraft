@@ -101,23 +101,23 @@ void BlockInfoRepository::loadBlocksInfo() {
   models[(u8)Blocks::CHISELED_STONE_BRICKS_BLOCK] =
       (BlockInfo(Blocks::CHISELED_STONE_BRICKS_BLOCK, true, {99}, 1.5F, false));
 
-  // Concretes
-  models[(u8)Blocks::YELLOW_CONCRETE] =
-      (BlockInfo(Blocks::YELLOW_CONCRETE, true, {102}, 1.8F, false));
-  models[(u8)Blocks::BLUE_CONCRETE] =
-      (BlockInfo(Blocks::BLUE_CONCRETE, true, {103}, 1.8F, false));
-  models[(u8)Blocks::GREEN_CONCRETE] =
-      (BlockInfo(Blocks::GREEN_CONCRETE, true, {104}, 1.8F, false));
-  models[(u8)Blocks::ORANGE_CONCRETE] =
-      (BlockInfo(Blocks::ORANGE_CONCRETE, true, {105}, 1.8F, false));
-  models[(u8)Blocks::PURPLE_CONCRETE] =
-      (BlockInfo(Blocks::PURPLE_CONCRETE, true, {106}, 1.8F, false));
-  models[(u8)Blocks::RED_CONCRETE] =
-      (BlockInfo(Blocks::RED_CONCRETE, true, {107}, 1.8F, false));
-  models[(u8)Blocks::WHITE_CONCRETE] =
-      (BlockInfo(Blocks::WHITE_CONCRETE, true, {108}, 1.8F, false));
-  models[(u8)Blocks::BLACK_CONCRETE] =
-      (BlockInfo(Blocks::BLACK_CONCRETE, true, {109}, 1.8F, false));
+  // Wools
+  models[(u8)Blocks::YELLOW_WOOL] =
+      (BlockInfo(Blocks::YELLOW_WOOL, true, {102}, 1.8F, false));
+  models[(u8)Blocks::BLUE_WOOL] =
+      (BlockInfo(Blocks::BLUE_WOOL, true, {103}, 1.8F, false));
+  models[(u8)Blocks::GREEN_WOOL] =
+      (BlockInfo(Blocks::GREEN_WOOL, true, {104}, 1.8F, false));
+  models[(u8)Blocks::ORANGE_WOOL] =
+      (BlockInfo(Blocks::ORANGE_WOOL, true, {105}, 1.8F, false));
+  models[(u8)Blocks::PURPLE_WOOL] =
+      (BlockInfo(Blocks::PURPLE_WOOL, true, {106}, 1.8F, false));
+  models[(u8)Blocks::RED_WOOL] =
+      (BlockInfo(Blocks::RED_WOOL, true, {107}, 1.8F, false));
+  models[(u8)Blocks::WHITE_WOOL] =
+      (BlockInfo(Blocks::WHITE_WOOL, true, {108}, 1.8F, false));
+  models[(u8)Blocks::BLACK_WOOL] =
+      (BlockInfo(Blocks::BLACK_WOOL, true, {109}, 1.8F, false));
 
   // Logs
   models[(u8)Blocks::OAK_LOG_BLOCK] = (BlockInfo(

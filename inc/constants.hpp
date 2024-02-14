@@ -106,15 +106,15 @@ enum class Blocks {
   MOSSY_STONE_BRICKS_BLOCK,
   CHISELED_STONE_BRICKS_BLOCK,
 
-  // Concretes
-  YELLOW_CONCRETE,
-  BLUE_CONCRETE,
-  GREEN_CONCRETE,
-  ORANGE_CONCRETE,
-  PURPLE_CONCRETE,
-  RED_CONCRETE,
-  WHITE_CONCRETE,
-  BLACK_CONCRETE,
+  // Wool
+  YELLOW_WOOL,
+  BLUE_WOOL,
+  GREEN_WOOL,
+  ORANGE_WOOL,
+  PURPLE_WOOL,
+  RED_WOOL,
+  WHITE_WOOL,
+  BLACK_WOOL,
 
   // Light Emissors
   GLOWSTONE_BLOCK,
@@ -213,15 +213,15 @@ enum class ItemId {
   poppy_flower,
   dandelion_flower,
 
-  // Concretes
-  yellow_concrete,
-  blue_concrete,
-  green_concrete,
-  orange_concrete,
-  purple_concrete,
-  red_concrete,
-  white_concrete,
-  black_concrete,
+  // Wools
+  yellow_wool,
+  blue_wool,
+  green_wool,
+  orange_wool,
+  purple_wool,
+  red_wool,
+  white_wool,
+  black_wool,
 
   // Light Emissors
   glowstone,

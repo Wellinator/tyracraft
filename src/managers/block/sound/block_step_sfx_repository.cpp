@@ -66,22 +66,22 @@ void BlockStepSfxRepository::loadModels() {
   models.push_back(new SfxBlockModel(Blocks::BRICKS_BLOCK,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
-  //  Concretes
-  models.push_back(new SfxBlockModel(Blocks::YELLOW_CONCRETE,
+  //  Wools
+  models.push_back(new SfxBlockModel(Blocks::YELLOW_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::BLUE_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::BLUE_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::GREEN_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::GREEN_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::ORANGE_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::ORANGE_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::PURPLE_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::PURPLE_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::RED_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::RED_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::WHITE_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::WHITE_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
-  models.push_back(new SfxBlockModel(Blocks::BLACK_CONCRETE,
+  models.push_back(new SfxBlockModel(Blocks::BLACK_WOOL,
                                      SoundFxCategory::Step, SoundFX::Stone1));
 
   // Woods
