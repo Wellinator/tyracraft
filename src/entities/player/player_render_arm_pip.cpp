@@ -15,6 +15,8 @@ PlayerRenderArmPip::PlayerRenderArmPip(Player* t_player)
 PlayerRenderArmPip::~PlayerRenderArmPip() { unloadItemDrawData(); };
 
 void PlayerRenderArmPip::update(const float& deltaTime, Camera* t_camera) {
+  colorBag.single = t_player->getBaseColorAtPlayerPos();
+
   if (is_playing_break_animation || t_player->isBreaking) {
     updateBreakAnimation(deltaTime);
   } else if (is_playing_put_animation || t_player->isPuting) {

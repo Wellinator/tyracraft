@@ -747,15 +747,12 @@ void Player::updateItemColorByCurrentPosition() {
                            std::floor(pos.z + 0.5f));
 
   if (BoundCheckMap(&level->map, offset.x, offset.y, offset.z)) {
-    const int lightLevelAtPos =
-        GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
-    const float sunLightLevel =
-        static_cast<float>((lightLevelAtPos >> 4) & 0xF);
-    const float blockLightLevel = static_cast<float>(lightLevelAtPos & 0x0F);
-    const auto maxLevel = std::max(sunLightLevel, blockLightLevel);
-    const auto minLevel = 3.0f;
-    const float intenisty = 128.0f * (std::max(maxLevel, minLevel) / 15.0f);
-
-    _baseColorAtPlayerPos = Color(intenisty, intenisty, intenisty);
+    const int lvl = GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
+    const float s_lvl = static_cast<float>((lvl >> 4) & 0xF) * t_worldLightModel->sunLightIntensity;
+    const float b_lvl = static_cast<float>(lvl & 0x0F);
+    const auto maxLevel = std::max({s_lvl , b_lvl, 3.0f});
+    const float color = 128.0f * (maxLevel / 15.0f);
+    
+    _baseColorAtPlayerPos.set(color, color, color);
   }
 };
