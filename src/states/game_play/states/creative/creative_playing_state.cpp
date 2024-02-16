@@ -69,7 +69,29 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
   if (clicked.Select) debugMode = !debugMode;
-  if (debugMode && clicked.Circle) printMemoryInfoToLog();
+  if (debugMode) {
+    if (clicked.Circle) printMemoryInfoToLog();
+
+    // List loaded textures and VRAM
+    if (clicked.Triangle) {
+      TYRA_LOG("-----------FREE VRAM-----------");
+      TYRA_LOG(stateGamePlay->context->t_engine->renderer.core.gs.vram
+                   .getFreeSpaceInMB(),
+               "MB");
+
+      auto& texRepo =
+          stateGamePlay->context->t_engine->renderer.getTextureRepository();
+      TYRA_LOG("---------TEXTURES---------");
+      TYRA_LOG("Total of loaded textures: ", (int)texRepo.getTexturesCount());
+
+      std::vector<Texture*>* textures = texRepo.getAll();
+      for (size_t i = 0; i < textures->size(); i++) {
+        auto tex = textures->at(i);
+        TYRA_LOG(i, ": ", tex->name.c_str(), ", ", tex->getSizeInMB(), "MB.");
+      }
+      TYRA_LOG("---------------------------");
+    }
+  }
 
   if (isInventoryOpened()) {
     inventoryInputHandler(deltaTime);
