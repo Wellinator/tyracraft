@@ -186,7 +186,7 @@ class Player : public Entity {
 
   void animate(CamType camType);
 
-  Axe* handledItem = new Axe(ItemsMaterials::Wood);
+  // Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
   // Animations
   // Player body

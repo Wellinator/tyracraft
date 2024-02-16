@@ -23,7 +23,7 @@ class TyraCraftGame : public Tyra::Game {
 
  private:
   Camera camera;
-  StateManager* stateManager;
+  StateManager stateManager;
 
   Tyra::Engine* engine;
 

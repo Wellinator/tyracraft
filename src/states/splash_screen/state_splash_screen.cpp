@@ -18,21 +18,19 @@ void StateSplashScreen::init() {
       FileUtils::fromCwd("textures/gui/splash/tyracraft.png");
   std::string tyraSplash = FileUtils::fromCwd("textures/gui/splash/tyra.png");
 
-  tyracraft = new Sprite;
-  tyracraft->mode = Tyra::MODE_STRETCH;
-  tyracraft->size.set(width, height);
-  tyracraft->position.set(0, 0);
+  tyracraft.mode = Tyra::MODE_STRETCH;
+  tyracraft.size.set(width, height);
+  tyracraft.position.set(0, 0);
 
-  tyra = new Sprite;
-  tyra->mode = Tyra::MODE_STRETCH;
-  tyra->size.set(width, height);
-  tyra->position.set(0, 0);
+  tyra.mode = Tyra::MODE_STRETCH;
+  tyra.size.set(width, height);
+  tyra.position.set(0, 0);
 
   this->context->t_engine->renderer.core.texture.repository
       .add(tyracraftSplash)
-      ->addLink(tyracraft->id);
+      ->addLink(tyracraft.id);
   this->context->t_engine->renderer.core.texture.repository.add(tyraSplash)
-      ->addLink(tyra->id);
+      ->addLink(tyra.id);
 };
 
 void StateSplashScreen::update(const float& deltaTime) {
@@ -60,13 +58,13 @@ void StateSplashScreen::render() {
 };
 
 void StateSplashScreen::renderTyraSplash() {
-  this->tyra->color.a = alpha;
+  this->tyra.color.a = alpha;
   this->context->t_engine->renderer.renderer2D.render(tyra);
   if (alpha == 0) hasShowedTyra = 1;
 }
 
 void StateSplashScreen::renderTyraCraftSplash() {
-  this->tyracraft->color.a = alpha;
+  this->tyracraft.color.a = alpha;
   this->context->t_engine->renderer.renderer2D.render(tyracraft);
   if (alpha == 0) hasShowedTyraCraft = 1;
 }
@@ -78,11 +76,8 @@ void StateSplashScreen::setBgColorBlack(Renderer* renderer) {
 
 void StateSplashScreen::unloadTextures() {
   this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *tyracraft);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(*tyra);
-
-  delete this->tyracraft;
-  delete this->tyra;
+      tyracraft);
+  this->context->t_engine->renderer.getTextureRepository().freeBySprite(tyra);
 }
 
 u8 StateSplashScreen::hasFinished() {

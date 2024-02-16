@@ -41,8 +41,8 @@ class StateSplashScreen : public GameState {
   u8 hasFinished();
   void nextState();
 
-  Sprite* tyracraft = new Sprite;
-  Sprite* tyra = new Sprite;
+  Sprite tyracraft;
+  Sprite tyra;
   u8 alpha = 1;
   u8 isFading = 0;
   u8 hasShowedTyraCraft = 0;

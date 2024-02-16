@@ -48,10 +48,9 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
       Tyra::PipelineTextureMappingType::TyraNearest;
 
   // TODO: refactor to handled item, temp stuff...
-  {
-    this->handledItem->init(t_renderer);
-    stpip.setRenderer(&t_renderer->core);
-  }
+  // this->handledItem->init(t_renderer);
+
+  stpip.setRenderer(&t_renderer->core);
 
   // Set render pip
   this->setRenderPip(new PlayerRenderArmPip(this));
@@ -62,7 +61,7 @@ Player::~Player() {
   overEntity = nullptr;
 
   delete bbox;
-  delete handledItem;
+  // delete handledItem;
   delete this->renderPip;
 
   t_renderer->getTextureRepository().free(playerTexture);
@@ -747,12 +746,14 @@ void Player::updateItemColorByCurrentPosition() {
                            std::floor(pos.z + 0.5f));
 
   if (BoundCheckMap(&level->map, offset.x, offset.y, offset.z)) {
-    const int lvl = GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
-    const float s_lvl = static_cast<float>((lvl >> 4) & 0xF) * t_worldLightModel->sunLightIntensity;
+    const int lvl =
+        GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
+    const float s_lvl = static_cast<float>((lvl >> 4) & 0xF) *
+                        t_worldLightModel->sunLightIntensity;
     const float b_lvl = static_cast<float>(lvl & 0x0F);
-    const auto maxLevel = std::max({s_lvl , b_lvl, 3.0f});
+    const auto maxLevel = std::max({s_lvl, b_lvl, 3.0f});
     const float color = 128.0f * (maxLevel / 15.0f);
-    
+
     _baseColorAtPlayerPos.set(color, color, color);
   }
 };

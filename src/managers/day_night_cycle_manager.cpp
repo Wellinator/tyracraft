@@ -1,4 +1,5 @@
 #include "managers/day_night_cycle_manager.hpp"
+#include <array>
 
 using Tyra::StaPipBag;
 using Tyra::StaPipColorBag;
@@ -57,6 +58,11 @@ void DayNightCycleManager::loadDrawData() {
 }
 
 void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
+  std::array<Vec4, 6> rawData = {
+      Vec4(1.0F, -1.0F, -1.0),  Vec4(-1.0F, 1.0F, -1.0),
+      Vec4(-1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
+
   M4x4 result, temp, model;
   M4x4::lookAt(&temp, sunPosition, *camPos);
   Utils::inverseMatrix(&result, &temp);
@@ -73,6 +79,11 @@ void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
 }
 
 void DayNightCycleManager::updateMoonDrawData(const Vec4* camPos) {
+  std::array<Vec4, 6> rawData = {
+      Vec4(1.0F, -1.0F, -1.0),  Vec4(-1.0F, 1.0F, -1.0),
+      Vec4(-1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
+
   M4x4 result, temp, model;
   M4x4::lookAt(&temp, moonPosition, *camPos);
   Utils::inverseMatrix(&result, &temp);

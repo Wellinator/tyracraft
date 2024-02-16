@@ -69,10 +69,6 @@ class DayNightCycleManager {
   float _intensity;
 
   const u8 DRAW_DATA_COUNT = 6;
-  Vec4* rawData = new Vec4[DRAW_DATA_COUNT]{
-      Vec4(1.0F, -1.0F, -1.0),  Vec4(-1.0F, 1.0F, -1.0),
-      Vec4(-1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, -1.0),
-      Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
 
   const float baseLightIntensity = 25.0F;
   const float dayLightIntensity = 45.0F;
