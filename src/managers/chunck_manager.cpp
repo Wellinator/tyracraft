@@ -62,8 +62,6 @@ void ChunckManager::update(const Plane* frustumPlanes) {
     isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
     if (isTimeToUpdateLight) reloadLightDataAsync();
   }
-
-  visibleChunks.shrink_to_fit();
 }
 
 void ChunckManager::tick() {

@@ -120,7 +120,7 @@ class World {
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
-  void buildChunkAsync(Chunck* t_chunck, const u8& loading_speed);
+  void buildChunkAsync(Chunck* t_chunck);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
@@ -238,10 +238,10 @@ class World {
   uint16_t waterSoundDuration = 4000;
   float waterSoundTimeCounter = 0.0F;
   float lastTimePlayedWaterSound = 0.0F;
-  std::queue<Node> waterBfsQueue;
-  std::queue<Node> waterRemovalBfsQueue;
-  std::queue<Node> lavaBfsQueue;
-  std::queue<Node> lavaRemovalBfsQueue;
+  std::queue<Node> waterBfsQueue = {};
+  std::queue<Node> waterRemovalBfsQueue = {};
+  std::queue<Node> lavaBfsQueue = {};
+  std::queue<Node> lavaRemovalBfsQueue = {};
   std::unordered_set<Chunck*> affectedChunksIdByLiquidPropagation;
 
   void initLiquidExpansion();
@@ -272,12 +272,16 @@ bool inline isVegetation(Blocks block) {
 };
 
 bool inline isTransparent(Blocks block) {
-  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
-         block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS ||
-         block == Blocks::TORCH ||
-         // It it's slab, it's visible;
-         ((u8)block >= (u8)Blocks::STONE_SLAB &&
+  return  block == Blocks::AIR_BLOCK || 
+          block == Blocks::WATER_BLOCK ||
+          block == Blocks::GRASS ||
+          block == Blocks::POPPY_FLOWER ||
+          block == Blocks::DANDELION_FLOWER || 
+          block == Blocks::TORCH ||
+          block == Blocks::GLASS_BLOCK ||
+
+          // If it's slab, it's visible;
+          ((u8)block >= (u8)Blocks::STONE_SLAB &&
           (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
 };
 

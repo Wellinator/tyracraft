@@ -15,6 +15,8 @@
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 #include <array>
+#include <time.h>
+#include "managers/block/vertex_block_data.hpp"
 
 using Tyra::BBox;
 using Tyra::BBoxFace;
@@ -64,10 +66,14 @@ class Chunck {
   Chunck* bottomNeighbor = nullptr;
 
   int visibleFacesCount = 0;
+  int visibleFacesCountWithTransparency = 0;
   u16 blocksCount = 0;
 
   LevelMap* t_terrain;
   WorldLightModel* t_worldLightModel;
+
+  clock_t buildingTimeStart;
+  double timeToBuild = 0;
 
   void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -99,7 +105,14 @@ class Chunck {
   // Block controllers
   inline void addBlock(Block* t_block) {
     blocks.emplace_back(t_block);
-    visibleFacesCount += t_block->visibleFacesCount;
+
+    if (t_block->hasTransparency) {
+      visibleFacesCountWithTransparency +=
+          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+    } else {
+      visibleFacesCount +=
+          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+    }
   };
 
   inline void preAllocateMemory() {

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
-#include "managers/block/vertex_block_data.hpp"
 #include "managers/collision_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
@@ -174,16 +173,13 @@ void Chunck::clearDrawData() {
 }
 
 void Chunck::loadDrawDataWithoutSorting() {
-  vertices.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
-  verticesColors.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
-  uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
+  vertices.reserve(visibleFacesCount);
+  verticesColors.reserve(visibleFacesCount);
+  uvMap.reserve(visibleFacesCount);
 
-  verticesWithTransparency.reserve(visibleFacesCount *
-                                   VertexBlockData::FACES_COUNT);
-  verticesColorsWithTransparency.reserve(visibleFacesCount *
-                                         VertexBlockData::FACES_COUNT);
-  uvMapWithTransparency.reserve(visibleFacesCount *
-                                VertexBlockData::FACES_COUNT);
+  verticesWithTransparency.reserve(visibleFacesCountWithTransparency);
+  verticesColorsWithTransparency.reserve(visibleFacesCountWithTransparency);
+  uvMapWithTransparency.reserve(visibleFacesCountWithTransparency);
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
@@ -195,14 +191,6 @@ void Chunck::loadDrawDataWithoutSorting() {
                             t_worldLightModel, t_terrain);
     }
   }
-
-  vertices.shrink_to_fit();
-  verticesColors.shrink_to_fit();
-  uvMap.shrink_to_fit();
-
-  verticesWithTransparency.shrink_to_fit();
-  verticesColorsWithTransparency.shrink_to_fit();
-  uvMapWithTransparency.shrink_to_fit();
 
   _isDrawDataLoaded = true;
 }

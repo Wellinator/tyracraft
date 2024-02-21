@@ -3,6 +3,7 @@
 #include "tyra"
 #include "constants.hpp"
 #include <functional>
+#include <deque>
 
 // Values in ticks
 #define TICK 1.0F / 20.0F
@@ -25,6 +26,7 @@ extern double elapsedRealTime;
 extern uint32_t g_ticksCounter;
 extern u16 ticksDayCounter;
 extern u8 isTicksCounterAt(const uint32_t ticks);
+extern std::deque<float> tickAverageQueue;
 
 class TickManager {
  public:
@@ -32,6 +34,8 @@ class TickManager {
   ~TickManager();
 
   void update(const float& deltaTime);
+
+  float getTickTimeAverage();
 
   std::function<void()> onTick = std::function<void()>{};
 };

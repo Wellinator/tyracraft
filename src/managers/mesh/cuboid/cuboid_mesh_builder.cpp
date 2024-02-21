@@ -1,6 +1,7 @@
 #include "managers/mesh/cuboid/cuboid_mesh_builder.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "math3d.h"
 
 void CuboidMeshBuilder_GenerateMesh(Block* t_block,
                                     std::vector<Vec4>* t_vertices,

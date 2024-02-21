@@ -1,5 +1,6 @@
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "managers/settings_manager.hpp"
+#include "debug.hpp"
 #include "utils.hpp"
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
@@ -58,18 +59,18 @@ void CreativePlayingState::render() {
   stateGamePlay->world->cloudsManager.render();
   stateGamePlay->player->render();
   stateGamePlay->world->render();
-  stateGamePlay->world->particlesManager.renderBlocksParticles();
+  stateGamePlay->world->particlesManager.render();
   renderCreativeUi();
 
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
-  if (debugMode) drawDegubInfo();
+  if (g_debug_mode) drawDegubInfo();
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
-  if (clicked.Select) debugMode = !debugMode;
-  if (debugMode) {
+  if (clicked.Select) g_debug_mode = !g_debug_mode;
+  if (g_debug_mode) {
     if (clicked.Circle) printMemoryInfoToLog();
 
     // List loaded textures and VRAM
@@ -287,6 +288,20 @@ void CreativePlayingState::drawDegubInfo() {
               stateGamePlay->world->getChuncksToUpdateLightCount())));
   FontManager_printText(chunksToUpdateLight,
                         FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
+
+  // Draw particles counter
+  std::string particle_counter =
+      std::string("Particles alive: ")
+          .append(std::to_string(
+              stateGamePlay->world->particlesManager.getParticlesCounter()));
+  FontManager_printText(particle_counter,
+                        FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
+  // Draw tick avg
+  std::string tick_avg =
+      std::string("Tick avg speed")
+          .append(std::to_string(tickManager.getTickTimeAverage()));
+  FontManager_printText(tick_avg,
+                        FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
 
   // Draw version
   std::string version = std::string("Version: ").append(VERSION);

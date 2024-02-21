@@ -8,6 +8,7 @@
 #include "managers/model_builder.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
+#include "debug.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -275,8 +276,8 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     }
   }
 
-  if (!force_loading && tempChuncksToLoad.size())
-    sortChunksToLoad(currentPlayerPos);
+  // if (!force_loading && tempChuncksToLoad.size())
+  //   sortChunksToLoad(currentPlayerPos);
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
@@ -294,8 +295,14 @@ void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
-      chunk->loadDrawData();
       chunk->state = ChunkState::Loaded;
+
+      if (g_debug_mode) {
+        chunk->timeToBuild =
+            ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+        printf("Time to async build chunk %i: %f\n", chunk->id,
+               chunk->timeToBuild);
+      }
 
       // TODO: implement callback 'afterLoadChunk'
       const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
@@ -309,13 +316,13 @@ void World::loadScheduledChunks() {
           mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
         }
       }
-      tempChuncksToLoad.pop_front();
 
+      tempChuncksToLoad.pop_front();
       if (tempChuncksToLoad.size() == 0) {
         tempChuncksToLoad.shrink_to_fit();
       }
     } else if (chunk->state != ChunkState::Loaded) {
-      return buildChunkAsync(chunk, worldOptions.drawDistance);
+      return buildChunkAsync(chunk);
     }
   }
 }
@@ -428,8 +435,7 @@ u8 World::isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
 
-    return (blockType == Blocks::VOID || isTransparent(blockType) ||
-            blockType == Blocks::LAVA_BLOCK);
+    return (isTransparent(blockType) || blockType == Blocks::LAVA_BLOCK);
   } else {
     return false;
   }
@@ -502,7 +508,6 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
       if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
       if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
       if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
       break;
   }
 
@@ -551,7 +556,6 @@ u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
       if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
       if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
       if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
       break;
   }
 
@@ -576,15 +580,34 @@ u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   const u8 currentLevel = GetLiquidDataFromMap(terrain, x, y, z);
 
   const auto bFront =
-      static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+      !BoundCheckMap(terrain, x, y, z - 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+
   const auto bBlack =
-      static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+      !BoundCheckMap(terrain, x, y, z + 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+
   const auto bRight =
-      static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
-  const auto bLeft = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
-  const auto bTop = static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+      !BoundCheckMap(terrain, x - 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+
+  const auto bLeft =
+      !BoundCheckMap(terrain, x + 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+
+  const auto bTop =
+      !BoundCheckMap(terrain, x, y + 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+
   const auto bBottom =
-      static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+      !BoundCheckMap(terrain, x, y - 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
 
   // Front
   if (bFront != Blocks::LAVA_BLOCK && bFront != Blocks::WATER_BLOCK &&
@@ -715,9 +738,11 @@ const bool World::getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
 }
 
 void World::removeBlock(Block* blockToRemove) {
+  // Generate amount of particles right begore block gets destroyed
+  particlesManager.createBlockParticleBatch(blockToRemove, 18);
+
   Vec4 offsetToRemove;
   GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
-
   SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
   SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
                      offsetToRemove.z, (u8)LiquidLevel::Percent0);
@@ -735,8 +760,6 @@ void World::removeBlock(Block* blockToRemove) {
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   playDestroyBlockSound(blockToRemove->type);
 
-  // Generate amount of particles right begore block gets destroyed
-  particlesManager.createBlockParticleBatch(blockToRemove, 18);
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
@@ -966,6 +989,25 @@ void World::putSlab(const Blocks& blockType,
 
       ResetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
                                     blockOffset.z);
+
+      // Calc block orientation
+      BlockOrientation orientation;
+
+      if (blockManager.isBlockOriented(blockType)) {
+        if (cameraYaw > 315 || cameraYaw < 45) {
+          orientation = BlockOrientation::North;
+        } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+          orientation = BlockOrientation::South;
+        } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+          orientation = BlockOrientation::East;
+        } else {
+          orientation = BlockOrientation::West;
+        }
+      } else {
+        orientation = BlockOrientation::East;
+      }
+      SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                   blockOffset.z, orientation);
       SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                     static_cast<u8>(Blocks::AIR_BLOCK));
       putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
@@ -1025,27 +1067,8 @@ void World::putSlab(const Blocks& blockType,
                         blockTypeAtOffsetPosition == Blocks::GRASS;
 
   if (canReplace) {
-    // Calc block orientation
-    BlockOrientation orientation;
-
-    if (blockManager.isBlockOriented(blockType)) {
-      if (cameraYaw > 315 || cameraYaw < 45) {
-        orientation = BlockOrientation::North;
-      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
-        orientation = BlockOrientation::South;
-      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
-        orientation = BlockOrientation::East;
-      } else {
-        orientation = BlockOrientation::West;
-      }
-    } else {
-      orientation = BlockOrientation::East;
-    }
-
     SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                   static_cast<u8>(blockType));
-    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                 blockOffset.z, orientation);
     checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
     removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
 
@@ -1318,6 +1341,7 @@ u8 World::isCrossedBlock(Blocks block_type) {
 // TODO: move to chunk builder
 void World::buildChunk(Chunck* t_chunck) {
   if (!canBuildChunk()) return;
+  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
 
   t_chunck->preAllocateMemory();
 
@@ -1340,7 +1364,6 @@ void World::buildChunk(Chunck* t_chunck) {
             visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
           } else {
             visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-            (&tempBlockOffset);
           }
 
           // Have any face visible?
@@ -1396,23 +1419,35 @@ void World::buildChunk(Chunck* t_chunck) {
   t_chunck->freeUnusedMemory();
 
   t_chunck->state = ChunkState::Loaded;
+
+  if (g_debug_mode) {
+    t_chunck->timeToBuild =
+        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk %i: %f\n", t_chunck->id,
+           t_chunck->timeToBuild);
+  }
 }
 
-void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
+void World::buildChunkAsync(Chunck* t_chunck) {
   if (!canBuildChunk()) {
     return TYRA_WARN("Out of memory. Not loading chunk!");
   };
+
+  if (g_debug_mode) {
+    if (t_chunck->state == ChunkState::Clean) {
+      t_chunck->buildingTimeStart = clock();
+    }
+  }
 
   uint16_t safeWhileBreak = 0;
   uint16_t batchCounter = 0;
   uint16_t x = t_chunck->tempLoadingOffset.x;
   uint16_t y = t_chunck->tempLoadingOffset.y;
   uint16_t z = t_chunck->tempLoadingOffset.z;
-  auto limit = LOAD_CHUNK_BATCH;
 
   if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
 
-  while (batchCounter < limit) {
+  while (batchCounter < LOAD_CHUNK_BATCH) {
     t_chunck->state = ChunkState::Loading;
 
     if (x >= t_chunck->maxOffset.x) break;
@@ -1433,11 +1468,12 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
         visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
       } else {
         visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-        (&tempBlockOffset);
       }
 
       // Is any face vísible?
       if (visibleFaces > 0) {
+        batchCounter++;
+
         BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
         if (blockInfo) {
@@ -1466,6 +1502,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
           block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
+          delete rawBBox;
+
           // Add data to AABBTree
           bvh::AABB blockAABB = bvh::AABB();
           blockAABB.minx = block->minCorner.x;
@@ -1476,14 +1514,10 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           blockAABB.maxz = block->maxCorner.z;
           block->tree_index = g_AABBTree->insert(blockAABB, block);
 
-          delete rawBBox;
-
           t_chunck->addBlock(block);
         }
       }
     }
-
-    batchCounter++;
 
     y++;
     if (y >= t_chunck->maxOffset.y) {
@@ -1502,7 +1536,7 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
     }
   }
 
-  if (batchCounter >= limit) {
+  if (batchCounter >= LOAD_CHUNK_BATCH) {
     t_chunck->tempLoadingOffset.set(x, y, z);
     return;
   }
