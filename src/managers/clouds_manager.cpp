@@ -1,15 +1,11 @@
 #include "managers/clouds_manager.hpp"
 #include "managers/light_manager.hpp"
+#include "managers/tick_manager.hpp"
 
-CloudsManager::CloudsManager() {
-  uvMap.reserve(6);
-  calcUVMapping();
-}
+CloudsManager::CloudsManager() { calcUVMapping(); }
 
 CloudsManager::~CloudsManager() {
   t_renderer->getTextureRepository().free(cloudsTex->id);
-  uvMap.clear();
-  uvMap.shrink_to_fit();
 }
 
 void CloudsManager::init(Renderer* renderer,
@@ -22,32 +18,31 @@ void CloudsManager::init(Renderer* renderer,
 }
 
 void CloudsManager::calcUVMapping() {
-  uvMap.clear();
-
-  const float scale = 1.0F / 4.0F;
-  const Vec4& scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-
-  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((XMap + 1.0F), (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-  uvMap.emplace_back(Vec4(XMap, (YMap + 1.0F), 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4(XMap, YMap, 1.0F, 0.0F) * scaleVec);
-  uvMap.emplace_back(Vec4((XMap + 1.0F), YMap, 1.0F, 0.0F) * scaleVec);
+  uvMap[0] = Vec4(position.x, (position.y + 1.0F), 1.0F) * scaleVec;
+  uvMap[1] = Vec4((position.x + 1.0F), position.y, 1.0F) * scaleVec;
+  uvMap[2] = Vec4((position.x + 1.0F), (position.y + 1.0F), 1.0F) * scaleVec;
+  uvMap[3] = Vec4(position.x, (position.y + 1.0F), 1.0F) * scaleVec;
+  uvMap[4] = Vec4(position.x, position.y, 1.0F) * scaleVec;
+  uvMap[5] = Vec4((position.x + 1.0F), position.y, 1.0F) * scaleVec;
 };
 
 void CloudsManager::updateCloudsPosition() {
-  XMap += 0.00001F;
-  YMap += 0.00001F;
-  if (XMap > 4.0F) XMap = 1;
-  if (YMap > 4.0F) YMap = 1;
-
-  calcUVMapping();
+  positionStart.set(position);
+  positionEnd = position + (velocity * 0.05F);
+  lerp = 0.0;
 }
 
-void CloudsManager::update() {
+void CloudsManager::update(const float deltaTime) {
   tempColor = LightManager::IntensifyColor(&baseColor,
                                            worldLightModel->sunLightIntensity);
+
+  lerp += deltaTime / 0.05;
+  Vec4::setLerp(&position, positionStart, positionEnd, lerp);
+
+  if (position.x > 4.0F) position.x = 1;
+  if (position.y > 4.0F) position.y = 1;
+
+  calcUVMapping();
 };
 
 void CloudsManager::tick() { updateCloudsPosition(); };
@@ -64,7 +59,7 @@ void CloudsManager::render() {
 
   StaPipTextureBag textureBag;
   textureBag.texture = cloudsTex;
-  textureBag.coordinates = uvMap.data();
+  textureBag.coordinates = uvMap;
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;

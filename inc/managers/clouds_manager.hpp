@@ -24,7 +24,7 @@ class CloudsManager {
   ~CloudsManager();
 
   void init(Renderer* renderer, WorldLightModel* t_worldLightModel);
-  void update();
+  void update(const float deltaTime);
   void tick();
   void render();
 
@@ -40,15 +40,20 @@ class CloudsManager {
       Vec4(-1.0F, 1.0F, -1.0), Vec4(-1.0F, 1.0F, 1.0), Vec4(1.0F, 1.0F, 1.0),
   };
 
-  std::vector<Vec4> uvMap;
+  Vec4 uvMap[6];
 
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;
   Texture* cloudsTex = nullptr;
 
-  float XMap = 1;
-  float YMap = 1;
-
   void calcUVMapping();
   void updateCloudsPosition();
+
+  double lerp = 0.0;
+  Vec4 position = Vec4(1.0f, 1.0f, 0);
+  Vec4 positionStart = Vec4(0, 0, 0);
+  Vec4 positionEnd = Vec4(0, 0, 0);
+  Vec4 velocity = Vec4(0.001f, 0.0005f, 0);
+  // Vec4 velocity = Vec4(0.001f, 0.0001f);
+  const Vec4 scaleVec = Vec4(1.0F / 4.0F, 1.0F / 4.0F, 1.0F, 0.0F);
 };

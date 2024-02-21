@@ -109,7 +109,7 @@ void World::setSavedSpawnArea(Vec4 pos) {
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   particlesManager.update(deltaTime, t_camera);
-  cloudsManager.update();
+  cloudsManager.update(deltaTime);
   dayNightCycleManager.update();
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
@@ -129,12 +129,12 @@ void World::tick(Player* t_player, Camera* t_camera) {
   particlesManager.tick();
   chunckManager.tick();
   mobManager.tick();
+  cloudsManager.tick();
 
   if (targetBlock && targetBlock->damage > 0) updateBlockDamage();
 
   // Update clouds and sun/moon every 50 ticks
   if (isTicksCounterAt(50)) {
-    cloudsManager.tick();
     dayNightCycleManager.tick(&t_camera->position);
   }
 
