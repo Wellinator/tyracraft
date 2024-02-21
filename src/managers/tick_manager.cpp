@@ -31,10 +31,10 @@ void TickManager::update(const float& deltaTime) {
           tickAverageQueue.pop_front();
         }
         tickAverageQueue.push_back(elapsedRealTime - lastTickTimeOccurence);
+        lastTickTimeOccurence = elapsedRealTime;
       }
     }
 
-    lastTickTimeOccurence = elapsedRealTime;
   } else {
     g_ticksFraftion += deltaTime;
   }
