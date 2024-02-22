@@ -28,7 +28,7 @@ void CloudsManager::calcUVMapping() {
 
 void CloudsManager::updateCloudsPosition() {
   positionStart.set(position);
-  positionEnd = position + (velocity * 0.05F);
+  positionEnd = position + (velocity * TICKS_IN_SECONDS);
   lerp = 0.0;
 }
 
