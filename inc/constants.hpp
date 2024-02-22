@@ -342,6 +342,14 @@ enum class EntityType {
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
 #define _180DEGINRAD Tyra::Math::ANG2RAD * 180
 #define _270DEGINRAD Tyra::Math::ANG2RAD * 270
+#define SIN_90 1.000000f
+#define COS_90 0.000000f
+#define SIN_180 0.000000f
+#define COS_180 -1.00000f
+#define SIN_270 -1.00000f
+#define COS_270 0.000000f
+#define SIN_360 0.000000f
+#define COS_360 1.000000f
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 

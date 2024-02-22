@@ -25,8 +25,8 @@ class DayNightCycleManager {
   ~DayNightCycleManager();
   void init(Renderer* renderer);
   void preLoad();
-  void update();
-  void tick(const Vec4* camPos);
+  void update(const float deltaTime, const Vec4* camPos);
+  void tick();
   void render();
 
   float currentAngleInDegrees = 0.0F;
@@ -51,20 +51,29 @@ class DayNightCycleManager {
 
   void loadTextures();
   void loadDrawData();
-  void updateSunDrawData(const Vec4* camPos);
-  void updateMoonDrawData(const Vec4* camPos);
+  void updateSunDrawData(const Vec4& camPos);
+  void updateMoonDrawData(const Vec4& camPos);
   void renderSun();
   void renderMoon();
 
-  void updateEntitiesPosition(const Vec4* camPos);
+  void calNextEntitiesPosition();
+  void updateEntitiesPosition();
   void updateCurrentAngle();
   void updateIntensityByAngle();
   inline const float getLightScaleFromAngle() { return _intensity; };
 
   const float distance = HALF_OVERWORLD_H_DISTANCE * DUBLE_BLOCK_SIZE;
   Vec4 center = CENTER_WORLD_POS;
-  Vec4 sunPosition;
-  Vec4 moonPosition;
+
+  float lerp = 0.0f;
+
+  Vec4 sunPosition = Vec4(0, 0, 0);
+  Vec4 sunPositionStart = Vec4(0, 0, 0);
+  Vec4 sunPositionEnd = Vec4(0, 0, 0);
+
+  Vec4 moonPosition = Vec4(0, 0, 0);
+  Vec4 moonPositionStart = Vec4(0, 0, 0);
+  Vec4 moonPositionEnd = Vec4(0, 0, 0);
 
   float _intensity;
 

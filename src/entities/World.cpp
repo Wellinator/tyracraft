@@ -110,7 +110,7 @@ void World::setSavedSpawnArea(Vec4 pos) {
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   particlesManager.update(deltaTime, t_camera);
   cloudsManager.update(deltaTime);
-  dayNightCycleManager.update();
+  dayNightCycleManager.update(deltaTime, &t_camera->position);
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
@@ -130,13 +130,9 @@ void World::tick(Player* t_player, Camera* t_camera) {
   chunckManager.tick();
   mobManager.tick();
   cloudsManager.tick();
+  dayNightCycleManager.tick();
 
   if (targetBlock && targetBlock->damage > 0) updateBlockDamage();
-
-  // Update clouds and sun/moon every 50 ticks
-  if (isTicksCounterAt(50)) {
-    dayNightCycleManager.tick(&t_camera->position);
-  }
 
   // Update chunk light data every 1000 ticks
   if (isTicksCounterAt(1000)) {
@@ -759,7 +755,6 @@ void World::removeBlock(Block* blockToRemove) {
 
   updateNeighBorsChunksByModdedPosition(offsetToRemove);
   playDestroyBlockSound(blockToRemove->type);
-
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
