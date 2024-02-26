@@ -108,19 +108,25 @@ void World::setSavedSpawnArea(Vec4 pos) {
 }
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
+  dispatchChunkBatch();
   particlesManager.update(deltaTime, t_camera);
+
+  dispatchChunkBatch();
   cloudsManager.update(deltaTime);
+
+  dispatchChunkBatch();
   dayNightCycleManager.update(deltaTime, &t_camera->position);
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
 
+  dispatchChunkBatch();
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
 
-  unloadScheduledChunks();
-  loadScheduledChunks();
-
+  dispatchChunkBatch();
   mobManager.update(deltaTime);
+
+  dispatchChunkBatch();
   updateTargetBlock(t_camera, t_player);
 };
 
@@ -326,15 +332,14 @@ void World::loadScheduledChunks() {
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() > 0) {
     Chunck* chunk = tempChuncksToUnLoad.front();
-    if (chunk->state != ChunkState::Clean) {
-      chunk->clear();
-      tempChuncksToUnLoad.pop_front();
 
+    if (chunk->state != ChunkState::Clean) {
+      return chunk->clearAsync();
+    } else {
+      tempChuncksToUnLoad.pop_front();
       if (tempChuncksToUnLoad.size() == 0) {
         tempChuncksToUnLoad.shrink_to_fit();
       }
-
-      return;
     }
   }
 }

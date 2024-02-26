@@ -264,6 +264,11 @@ class World {
   void updateChunksAffectedByLiquidPropagation();
   const s8 getNextLavaLevel(const s8 currentLevel);
   u8 canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z);
+
+  inline void dispatchChunkBatch() {
+    unloadScheduledChunks();
+    loadScheduledChunks();
+  }
 };
 
 bool inline isVegetation(Blocks block) {
@@ -272,16 +277,13 @@ bool inline isVegetation(Blocks block) {
 };
 
 bool inline isTransparent(Blocks block) {
-  return  block == Blocks::AIR_BLOCK || 
-          block == Blocks::WATER_BLOCK ||
-          block == Blocks::GRASS ||
-          block == Blocks::POPPY_FLOWER ||
-          block == Blocks::DANDELION_FLOWER || 
-          block == Blocks::TORCH ||
-          block == Blocks::GLASS_BLOCK ||
+  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
+         block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
+         block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
+         block == Blocks::GLASS_BLOCK ||
 
-          // If it's slab, it's visible;
-          ((u8)block >= (u8)Blocks::STONE_SLAB &&
+         // If it's slab, it's visible;
+         ((u8)block >= (u8)Blocks::STONE_SLAB &&
           (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
 };
 

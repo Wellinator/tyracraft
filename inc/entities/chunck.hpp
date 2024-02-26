@@ -82,6 +82,7 @@ class Chunck {
                                BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
   void clear();
+  void clearAsync();
 
   void loadDrawData();
   void loadDrawDataWithoutSorting();
@@ -146,4 +147,6 @@ class Chunck {
 
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
+
+  u8 _unloaderBatchCounter = 0;
 };

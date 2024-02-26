@@ -152,6 +152,36 @@ void Chunck::clear() {
   this->state = ChunkState::Clean;
 }
 
+void Chunck::clearAsync() {
+  size_t counter = 0;
+  for (size_t i = _unloaderBatchCounter; i < blocks.size(); i++) {
+    g_AABBTree->remove(blocks[i]->tree_index);
+    delete blocks[i];
+    blocks[i] = nullptr;
+
+    if (counter >= UNLOAD_CHUNK_BATCH) {
+      _unloaderBatchCounter = i + 1;
+      return;
+    } else {
+      counter++;
+    }
+  }
+
+  clearDrawData();
+
+  visibleFacesCount = 0;
+  blocksCount = 0;
+
+  blocks.clear();
+  blocks.shrink_to_fit();
+  _isPreAllocated = false;
+
+  resetLoadingOffset();
+  _unloaderBatchCounter = 0;
+
+  state = ChunkState::Clean;
+}
+
 // void Chunck::updateBlocks(const Vec4& playerPosition) {}
 
 void Chunck::clearDrawData() {
