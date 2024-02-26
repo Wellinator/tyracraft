@@ -95,7 +95,7 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
 
   ObjLoaderOptions options;
   options.flipUVs = true;
-  options.scale = 300.0F;
+  options.scale = 500.0F;
 
   auto data =
       ObjLoader::load(FileUtils::fromCwd("models/skybox/skybox.obj"), options);
