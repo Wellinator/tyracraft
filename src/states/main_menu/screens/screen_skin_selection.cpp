@@ -192,12 +192,10 @@ void ScreenSkinSelection::unloadSkinTextures() {
 }
 
 void ScreenSkinSelection::loadModels() {
-  dynpipOptions.antiAliasingEnabled = false;
-  dynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
+  dynpipOptions.antiAliasingEnabled = true;
+  dynpipOptions.frustumCulling = Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
   dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  dynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
+  dynpipOptions.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   ObjLoaderOptions options;
   options.scale = 3.5F;
