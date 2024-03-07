@@ -188,7 +188,10 @@ void World::resetWorldData() { chunckManager.clearAllChunks(); }
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-  if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
+  float displacement =
+      (lastPlayerPosition - currentPlayerPos).length() / CHUNCK_SIZE;
+
+  if (displacement > CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck =
         chunckManager.getChunckByWorldPosition(currentPlayerPos);
@@ -247,7 +250,7 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
   }
 }
 
-void World::scheduleChunksNeighbors(Chunck* t_chunck,
+void World::scheduleChunksNeighbors(Chunck* origin_chunk,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
@@ -256,7 +259,8 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
   for (u16 i = 0; i < chuncks->size(); i++) {
     auto t_chunk = (*chuncks)[i];
     const auto distance =
-        floor(t_chunck->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) + 1;
+        floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) +
+        1;
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
@@ -278,17 +282,18 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     }
   }
 
-  // if (!force_loading && tempChuncksToLoad.size())
-  //   sortChunksToLoad(currentPlayerPos);
+  if (!force_loading && !tempChuncksToLoad.empty())
+    sortChunksToLoad(currentPlayerPos);
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
   std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
             [currentPlayerPos](const Chunck* a, const Chunck* b) {
-              const float distanceA =
-                  (a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
-              const float distanceB =
-                  (b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              auto distanceA =
+                  ((a->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+              auto distanceB =
+                  ((b->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+
               return distanceA < distanceB;
             });
 }
