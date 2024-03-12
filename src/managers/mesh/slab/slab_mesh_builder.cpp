@@ -152,9 +152,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -170,9 +170,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -187,9 +187,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -204,9 +204,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -221,9 +221,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -238,9 +238,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -441,4 +441,96 @@ void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
   t_vertices_colors->emplace_back(*faceColor);
   t_vertices_colors->emplace_back(*faceColor);
   t_vertices_colors->emplace_back(*faceColor);
+}
+
+void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                                      FACE_SIDE faceSide, LevelMap* t_terrain,
+                                      const float sunlightIntensity) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
+
+  u8 lightData;
+  u8 sunLightLevel;
+  u8 lightLevel;
+
+  Vec4 targetBlockOffset;
+  GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
+  const SlabOrientation orientation = GetSlabOrientationDataFromMap(
+      t_terrain, targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
+
+  switch (faceSide) {
+    case FACE_SIDE::TOP:
+      if (orientation == SlabOrientation::Top) {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y + 1, targetBlockOffset.z);
+      } else {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y, targetBlockOffset.z);
+      }
+
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::BOTTOM:
+      if (orientation == SlabOrientation::Top) {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y, targetBlockOffset.z);
+      } else {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y - 1, targetBlockOffset.z);
+      }
+
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::LEFT:
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x + 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::RIGHT:
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x - 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::BACK:
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z + 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::FRONT:
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z - 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    default:
+      return;
+  }
+
+  /**
+   *  I've built this formula:
+   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
+   */
+  const float sunLightFactor = std::max(
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
+  const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+  *baseColor = LightManager::IntensifyColor(
+      baseColor, std::max(sunLightFactor, lightLevelFactor));
 }

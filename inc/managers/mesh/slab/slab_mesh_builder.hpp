@@ -31,9 +31,9 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
                                   LevelMap* t_terrain);
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadSideUVFaceData(const u8& index,
-                                    std::vector<Vec4>* t_uv_map);
-void SlabMeshBuilder_loadTopDownUVFaceData(const u8&   index,
-                                    std::vector<Vec4>* t_uv_map);
+                                        std::vector<Vec4>* t_uv_map);
+void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
+                                           std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
@@ -49,3 +49,7 @@ bool SlabMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> SlabMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                     Block* block,
                                                     LevelMap* t_terrain);
+
+void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                                      FACE_SIDE faceSide, LevelMap* t_terrain,
+                                      const float sunlightIntensity);
