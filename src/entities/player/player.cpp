@@ -173,7 +173,11 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 
 Vec4 Player::getNextVrticalPosition(const float& deltaTime) {
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+  if (isFlying) {
+    return *mesh->getPosition();
+  } else {
+    velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+  }
 
   if (_isUnderWater) {
     velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
@@ -206,11 +210,11 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
 
   if (newPosition.y < terrainHeight.minHeight) {
     newPosition.y = terrainHeight.minHeight;
-    velocity = Vec4(0.0f, 0.0f, 0.0f);
+    velocity.y = 0.0f;
     isOnGround = true;
   } else if (newPosition.y >= heightLimit) {
     newPosition.y = heightLimit;
-    velocity = -velocity;
+    velocity.y = -velocity.y;
     isOnGround = false;
   }
 
