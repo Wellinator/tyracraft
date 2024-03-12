@@ -15,7 +15,7 @@ namespace TyraCraft {
 
 class TyraCraftGame : public Tyra::Game {
  public:
-  TyraCraftGame(Tyra::Engine* engine);
+  explicit TyraCraftGame(Tyra::Engine* engine);
   ~TyraCraftGame();
 
   void init();
