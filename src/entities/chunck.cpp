@@ -59,7 +59,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = false;
+    infoBag.blendingEnabled = true;
     infoBag.antiAliasingEnabled = false;
     infoBag.fullClipChecks = false;
     infoBag.frustumCulling =
