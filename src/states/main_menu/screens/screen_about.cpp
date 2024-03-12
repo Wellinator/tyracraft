@@ -15,7 +15,7 @@ ScreenAbout::~ScreenAbout() {
   this->t_renderer->getTextureRepository().freeBySprite(textBack);
 }
 
-void ScreenAbout::update() {
+void ScreenAbout::update(const float& deltaTime) {
   this->handleInput();
   this->alpha = isFading ? alpha - 1 : alpha + 1;
   if (alpha == 128) {

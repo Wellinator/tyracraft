@@ -15,7 +15,7 @@ class ScreenAbout : public ScreenBase {
   ~ScreenAbout();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

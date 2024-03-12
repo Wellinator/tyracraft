@@ -37,7 +37,7 @@ ScreenNewGame::~ScreenNewGame() {
   }
 }
 
-void ScreenNewGame::update() {
+void ScreenNewGame::update(const float& deltaTime) {
   fpsCounter++;
   this->handleInput();
   fpsCounter %= 50;

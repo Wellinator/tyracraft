@@ -8,7 +8,7 @@ class ScreenBase {
   ScreenBase(StateMainMenu* context) { this->context = context; };
   virtual ~ScreenBase(){};
   virtual void init() = 0;
-  virtual void update() = 0;
+  virtual void update(const float& deltaTime) = 0;
   virtual void render() = 0;
   StateMainMenu* context;
 };

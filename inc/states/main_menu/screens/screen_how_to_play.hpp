@@ -14,7 +14,7 @@ class ScreenHowToPlay : public ScreenBase {
   ~ScreenHowToPlay();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

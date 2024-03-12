@@ -122,7 +122,7 @@ void ScreenLoadGame::init() {
   loadAvailableSavesFromUSB();
 }
 
-void ScreenLoadGame::update() { handleInput(); }
+void ScreenLoadGame::update(const float& deltaTime) { handleInput(); }
 
 void ScreenLoadGame::render() {
   t_renderer->renderer2D.render(backgroundLoadGame);

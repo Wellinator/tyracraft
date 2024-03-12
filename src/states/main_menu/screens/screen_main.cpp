@@ -22,7 +22,7 @@ ScreenMain::~ScreenMain() {
   t_renderer->getTextureRepository().free(skinTexture);
 }
 
-void ScreenMain::update() {
+void ScreenMain::update(const float& deltaTime) {
   handleInput();
   hightLightActiveOption();
   playerPreviewMesh->update();

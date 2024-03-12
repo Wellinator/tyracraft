@@ -38,7 +38,7 @@ class ScreenNewGame : public ScreenBase {
   ~ScreenNewGame();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

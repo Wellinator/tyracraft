@@ -66,7 +66,7 @@ void StateMainMenu::update(const float& deltaTime) {
   this->menuSkybox->rotation.rotateY(0.0001F);
 
   // Update current screen state
-  this->screen->update();
+  this->screen->update(deltaTime);
 }
 
 void StateMainMenu::render() {

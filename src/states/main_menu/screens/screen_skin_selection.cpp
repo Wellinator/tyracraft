@@ -20,9 +20,10 @@ ScreenSkinSelection::~ScreenSkinSelection() {
   unloadSkinTextures();
 }
 
-void ScreenSkinSelection::update() {
+void ScreenSkinSelection::update(const float& deltaTime) {
   handleInput();
-  if (isMoving) isMovingForward ? moveForward() : moveBackward();
+  if (isMoving)
+    isMovingForward ? moveForward(deltaTime) : moveBackward(deltaTime);
   for (size_t i = 0; i < models.size(); i++) models[i].get()->update();
 }
 
@@ -95,10 +96,10 @@ void ScreenSkinSelection::handleInput() {
 
   if (clickedButtons.DpadLeft) {
     if (isMoving) return;
-    startMoving(false);
+    startMoving(true);
   } else if (clickedButtons.DpadRight) {
     if (isMoving) return;
-    startMoving(true);
+    startMoving(false);
   }
 
   if (clickedButtons.Triangle) {
@@ -193,9 +194,11 @@ void ScreenSkinSelection::unloadSkinTextures() {
 
 void ScreenSkinSelection::loadModels() {
   dynpipOptions.antiAliasingEnabled = true;
-  dynpipOptions.frustumCulling = Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
+  dynpipOptions.frustumCulling =
+      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
   dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  dynpipOptions.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  dynpipOptions.textureMappingType =
+      Tyra::PipelineTextureMappingType::TyraNearest;
 
   ObjLoaderOptions options;
   options.scale = 3.5F;
@@ -290,8 +293,8 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
   }
 }
 
-void ScreenSkinSelection::moveForward() {
-  calcLerp();
+void ScreenSkinSelection::moveForward(const float& deltaTime) {
+  calcLerp(deltaTime);
 
   if (interpolation == 1.0f) {
     TextureRepository* textureRepo = &t_renderer->getTextureRepository();
@@ -330,8 +333,8 @@ void ScreenSkinSelection::moveForward() {
   }
 }
 
-void ScreenSkinSelection::moveBackward() {
-  calcLerp();
+void ScreenSkinSelection::moveBackward(const float& deltaTime) {
+  calcLerp(deltaTime);
 
   if (interpolation == 1.0f) {
     TextureRepository* textureRepo = &t_renderer->getTextureRepository();
@@ -375,8 +378,8 @@ void ScreenSkinSelection::stopMoving() {
   interpolation = 0.0f;
 }
 
-void ScreenSkinSelection::calcLerp() {
-  float nextVal = interpolation + lerpSpeed;
+void ScreenSkinSelection::calcLerp(const float& deltaTime) {
+  float nextVal = interpolation + (TRANSITION_SPEED * deltaTime);
   if (nextVal > 1.0f) nextVal = 1.0f;
   interpolation = nextVal;
 
