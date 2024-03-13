@@ -47,10 +47,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 void CreativePlayingState::tick() {
   stateGamePlay->world->tick(stateGamePlay->player,
                              stateGamePlay->context->t_camera);
-
   stateGamePlay->player->tick(stateGamePlay->world->terrain);
+  stateGamePlay->ui->update();
 
-  if (isTicksCounterAt(5)) stateGamePlay->ui->update();
   if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();
 }
 
