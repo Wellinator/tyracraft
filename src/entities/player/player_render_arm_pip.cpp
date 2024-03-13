@@ -53,6 +53,7 @@ void PlayerRenderArmPip::renderArm(Renderer* t_render) {
   t_render->renderer3D.usePipeline(stapip);
   stapip.core.render(&bag);
 }
+
 void PlayerRenderArmPip::renderItem(Renderer* t_render) {
   if (bag.count > 0) {
     t_render->renderer3D.usePipeline(stapip);
@@ -80,8 +81,8 @@ void PlayerRenderArmPip::loadItemDrawData() {
 
     infoBag.transformationType = Tyra::PipelineTransformationType::TyraMP;
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = false;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+    infoBag.blendingEnabled = true;
     infoBag.antiAliasingEnabled = false;
     infoBag.fullClipChecks = false;
     infoBag.frustumCulling =

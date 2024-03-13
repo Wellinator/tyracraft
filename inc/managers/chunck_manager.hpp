@@ -36,6 +36,10 @@ class ChunckManager {
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
+  void rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip,
+                      BlockManager* t_blockManager);
+  void rendererTransparent(Renderer* t_renderer, StaticPipeline* stapip,
+                           BlockManager* t_blockManager);
   void clearAllChunks();
 
   void enqueueChunksToReloadLight();

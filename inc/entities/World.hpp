@@ -86,7 +86,9 @@ class World {
             SoundManager* t_soundManager);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
   void tick(Player* t_player, Camera* t_camera);
-  void render();
+  void renderOpaque();
+  void renderTransparent();
+  void renderBlockDamageOverlay();
   void generate();
   void generateLight();
   void propagateLiquids();
@@ -169,7 +171,6 @@ class World {
   void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
-  void renderBlockDamageOverlay();
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 

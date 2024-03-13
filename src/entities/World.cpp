@@ -167,10 +167,12 @@ void World::tick(Player* t_player, Camera* t_camera) {
   }
 }
 
-void World::render() {
-  mobManager.render();
-  chunckManager.renderer(t_renderer, &stapip, &blockManager);
-  if (targetBlock) renderBlockDamageOverlay();
+void World::renderOpaque() {
+  chunckManager.rendererOpaque(t_renderer, &stapip, &blockManager);
+};
+
+void World::renderTransparent() {
+  chunckManager.rendererTransparent(t_renderer, &stapip, &blockManager);
 };
 
 void World::buildInitialPosition() {
@@ -350,6 +352,8 @@ void World::unloadScheduledChunks() {
 }
 
 void World::renderBlockDamageOverlay() {
+  if (!targetBlock) return;
+
   t_renderer->renderer3D.usePipeline(stapip);
 
   StaPipTextureBag textureBag;
