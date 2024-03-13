@@ -282,6 +282,8 @@ bool inline isTransparent(Blocks block) {
          block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
          block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
          block == Blocks::GLASS_BLOCK ||
+         block == Blocks::OAK_LEAVES_BLOCK ||
+         block == Blocks::BIRCH_LEAVES_BLOCK ||
 
          // If it's slab, it's visible;
          ((u8)block >= (u8)Blocks::STONE_SLAB &&
