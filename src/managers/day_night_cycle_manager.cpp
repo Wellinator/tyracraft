@@ -177,6 +177,7 @@ void DayNightCycleManager::renderMoon() {
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
   infoBag.blendingEnabled = true;
+  infoBag.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   StaPipColorBag colorBag;
