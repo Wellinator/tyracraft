@@ -23,9 +23,9 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 
   Vec4* rawData;
   if (orientation == SlabOrientation::Top) {
-    rawData = (Vec4*)VertexBlockData::getTopSlabVertexData();
+    rawData = (Vec4*)VertexBlockData::topSlabVertexData;
   } else {
-    rawData = (Vec4*)VertexBlockData::getBottomSlabVertexData();
+    rawData = (Vec4*)VertexBlockData::bottomSlabVertexData;
   }
 
   if (t_block->isTopFaceVisible()) {
@@ -82,8 +82,6 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
   }
-
-  delete rawData;
 }
 
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {

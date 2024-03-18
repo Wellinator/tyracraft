@@ -18,7 +18,7 @@ void CuboidMeshBuilder_GenerateMesh(Block* t_block,
 void CuboidMeshBuilder_loadMeshData(Block* t_block,
                                     std::vector<Vec4>* t_vertices) {
   int vert;
-  const Vec4* rawData = VertexBlockData::getVertexData();
+  const Vec4* rawData = VertexBlockData::cuboidVertexData;
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
@@ -74,8 +74,6 @@ void CuboidMeshBuilder_loadMeshData(Block* t_block,
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
   }
-
-  delete rawData;
 }
 
 void CuboidMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {

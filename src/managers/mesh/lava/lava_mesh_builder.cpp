@@ -34,7 +34,7 @@ void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
                                          const LiquidOrientation orientation,
                                          const LiquidQuadMapModel quadMap) {
   u8 vert = 0;
-  const Vec4* rawData = VertexBlockData::getVertexData();
+  const Vec4* rawData = VertexBlockData::cuboidVertexData;
 
   Vec4 modelNW = Vec4(0.0F, quadMap.NW, 0.0F);
   Vec4 modelNE = Vec4(0.0F, quadMap.NE, 0.0F);
@@ -100,8 +100,6 @@ void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
     t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
     t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
   }
-
-  delete rawData;
 }
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {

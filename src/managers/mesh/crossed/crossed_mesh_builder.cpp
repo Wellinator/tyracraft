@@ -17,7 +17,7 @@ void CrossedMeshBuilder_GenerateMesh(Block* t_block,
 void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
                                             std::vector<Vec4>* t_vertices) {
   int vert = 0;
-  const Vec4* crossBlockRawData = VertexBlockData::getCrossedVertexData();
+  const Vec4* crossBlockRawData = VertexBlockData::crossedVertexData;
 
   t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                            t_block->position);
@@ -44,8 +44,6 @@ void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
                            t_block->position);
   t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE +
                            t_block->position);
-
-  delete crossBlockRawData;
 }
 
 void CrossedMeshBuilder_loadCrossedUVData(Block* t_block,

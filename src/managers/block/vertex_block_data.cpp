@@ -6,6 +6,17 @@ VertexBlockData::VertexBlockData() {}
 
 VertexBlockData::~VertexBlockData() {}
 
+const Vec4* VertexBlockData::torchVertexData =
+    VertexBlockData::getTorchVertexData();
+const Vec4* VertexBlockData::topSlabVertexData =
+    VertexBlockData::getTopSlabVertexData();
+const Vec4* VertexBlockData::bottomSlabVertexData =
+    VertexBlockData::getBottomSlabVertexData();
+const Vec4* VertexBlockData::cuboidVertexData =
+    VertexBlockData::getVertexData();
+const Vec4* VertexBlockData::crossedVertexData =
+    VertexBlockData::getCrossedVertexData();
+
 const Vec4* VertexBlockData::getVertexData() {
   Vec4 cornerVetices[8] = {
       Vec4(1.0F, -1.0F, -1.0F), Vec4(1.0F, -1.0F, 1.0F),
@@ -167,20 +178,29 @@ const Vec4* VertexBlockData::getTorchUVData() {
 }
 
 BBox* VertexBlockData::getTorchRawBBox() {
-  const auto vertexData = VertexBlockData::getTorchVertexData();
-  auto result = new BBox(vertexData, VETEX_COUNT);
-
-  delete vertexData;
+  auto result = new BBox(VertexBlockData::torchVertexData, VETEX_COUNT);
   return result;
 }
+
+// BBox* VertexBlockData::getTransformedTorchRawBBox(M4x4* model) {
+//   const Vec4* vertexData = VertexBlockData::getTorchVertexData();
+
+//   auto result = new BBox(vertexData, VETEX_COUNT);
+
+//   return result;
+// }
 
 BBox* VertexBlockData::getCuboidRawBBox() {
-  const auto vertexData = VertexBlockData::getVertexData();
-  auto result = new BBox(vertexData, VETEX_COUNT);
-
-  delete vertexData;
+  auto result = new BBox(VertexBlockData::cuboidVertexData, VETEX_COUNT);
   return result;
 }
+
+// BBox* VertexBlockData::getTransformedCuboidRawBBox(M4x4* model) {
+//   const auto vertexData = VertexBlockData::getVertexData();
+//   auto result = new BBox(vertexData, VETEX_COUNT);
+
+//   return result;
+// }
 
 BBox* VertexBlockData::getSlabRawBBox(u32 block_offset) {
   Vec4 pos;
@@ -190,13 +210,28 @@ BBox* VertexBlockData::getSlabRawBBox(u32 block_offset) {
       GetSlabOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
 
   const auto vertexData = orientation == SlabOrientation::Top
-                              ? VertexBlockData::getTopSlabVertexData()
-                              : VertexBlockData::getBottomSlabVertexData();
+                              ? VertexBlockData::topSlabVertexData
+                              : VertexBlockData::bottomSlabVertexData;
   auto result = new BBox(vertexData, VETEX_COUNT);
 
-  delete vertexData;
   return result;
 }
+
+// BBox* VertexBlockData::getTransformedSlabRawBBox(u32 block_offset,
+//                                                  M4x4* model) {
+//   Vec4 pos;
+//   GetXYZFromPos(&block_offset, &pos);
+//   const auto t_terrain = CrossCraft_World_GetMapPtr();
+//   const SlabOrientation orientation =
+//       GetSlabOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+
+//   const auto vertexData = orientation == SlabOrientation::Top
+//                               ? VertexBlockData::getTopSlabVertexData()
+//                               : VertexBlockData::getBottomSlabVertexData();
+//   auto result = new BBox(vertexData, VETEX_COUNT);
+
+//   return result;
+// }
 
 BBox* VertexBlockData::getRawBBoxByBlock(const Blocks block_type,
                                          const u32 block_offset) {
@@ -222,6 +257,32 @@ BBox* VertexBlockData::getRawBBoxByBlock(const Blocks block_type,
       break;
   }
 }
+
+// BBox* VertexBlockData::getTransformedRawBBoxByBlock(const Blocks block_type,
+//                                                     const u32 block_offset,
+//                                                     M4x4* model) {
+//   switch (block_type) {
+//     case Blocks::TORCH:
+//       return VertexBlockData::getTorchRawBBox();
+//       break;
+
+//     case Blocks::STONE_SLAB:
+//     case Blocks::BRICKS_SLAB:
+//     case Blocks::OAK_PLANKS_SLAB:
+//     case Blocks::SPRUCE_PLANKS_SLAB:
+//     case Blocks::BIRCH_PLANKS_SLAB:
+//     case Blocks::ACACIA_PLANKS_SLAB:
+//     case Blocks::STONE_BRICK_SLAB:
+//     case Blocks::CRACKED_STONE_BRICKS_SLAB:
+//     case Blocks::MOSSY_STONE_BRICKS_SLAB:
+//       return VertexBlockData::getSlabRawBBox(block_offset);
+//       break;
+
+//     default:
+//       return VertexBlockData::getCuboidRawBBox();
+//       break;
+//   }
+// }
 
 const Vec4* VertexBlockData::getCrossedVertexData() {
   Vec4 cornerVetices[8] = {
