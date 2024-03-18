@@ -206,7 +206,9 @@ class World {
   uint32_t seed;
 
   inline u8 isCrossedBlock(Blocks block_type);
-  inline u32 getIndexByOffset(int x, int y, int z);
+  inline u32 getIndexByOffset(int x, int y, int z) {
+    return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
+  }
 
   /**
    * @brief Update the visible block faces
@@ -215,6 +217,7 @@ class World {
    */
   u8 getBlockVisibleFaces(const Vec4* t_blockOffset);
   u8 getSlabVisibleFaces(const Vec4* t_blockOffset);
+  u8 getLeavesVisibleFaces(const Vec4* t_blockOffset);
   u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
   inline u8 isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z);
@@ -281,8 +284,7 @@ bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
          block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
          block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
-         block == Blocks::GLASS_BLOCK ||
-         block == Blocks::OAK_LEAVES_BLOCK ||
+         block == Blocks::GLASS_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
          block == Blocks::BIRCH_LEAVES_BLOCK ||
 
          // If it's slab, it's visible;

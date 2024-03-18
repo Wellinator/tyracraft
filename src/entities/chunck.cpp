@@ -56,6 +56,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     StaPipBag bag;
 
     textureBag.coordinates = uvMap.data();
+    textureBag.texture = t_blockManager->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -75,11 +76,6 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     t_renderer->renderer3D.usePipeline(stapip);
 
-    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
-    textureBag.texture = isPlayerNear
-                             ? t_blockManager->getBlocksTexture()
-                             : t_blockManager->getBlocksTextureLowRes();
-
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
 
@@ -98,6 +94,7 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     StaPipBag bag;
 
     textureBag.coordinates = uvMapWithTransparency.data();
+    textureBag.texture = t_blockManager->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -116,11 +113,6 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     bag.texture = &textureBag;
 
     t_renderer->renderer3D.usePipeline(stapip);
-
-    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
-    textureBag.texture = isPlayerNear
-                             ? t_blockManager->getBlocksTexture()
-                             : t_blockManager->getBlocksTextureLowRes();
 
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
@@ -200,6 +192,24 @@ void Chunck::clearDrawData() {
   uvMapWithTransparency.shrink_to_fit();
 
   _isDrawDataLoaded = false;
+  _isMemoryReserved = false;
+  _isPreAllocated = false;
+
+  _loaderBatchCounter = 0;
+  _unloaderBatchCounter = 0;
+
+}
+
+void Chunck::clearDrawDataWithoutShrink() {
+  vertices.clear();
+  verticesColors.clear();
+  uvMap.clear();
+
+  verticesWithTransparency.clear();
+  verticesColorsWithTransparency.clear();
+  uvMapWithTransparency.clear();
+
+  _isDrawDataLoaded = false;
 }
 
 void Chunck::loadDrawDataWithoutSorting() {
@@ -223,6 +233,42 @@ void Chunck::loadDrawDataWithoutSorting() {
   }
 
   _isDrawDataLoaded = true;
+}
+
+void Chunck::loadDrawDataAsync() {
+  if (_isMemoryReserved == false) {
+    vertices.reserve(visibleFacesCount);
+    verticesColors.reserve(visibleFacesCount);
+    uvMap.reserve(visibleFacesCount);
+
+    verticesWithTransparency.reserve(visibleFacesCountWithTransparency);
+    verticesColorsWithTransparency.reserve(visibleFacesCountWithTransparency);
+    uvMapWithTransparency.reserve(visibleFacesCountWithTransparency);
+
+    _isMemoryReserved = true;
+  }
+
+  size_t counter = 0;
+  for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
+    if (blocks[i]->hasTransparency) {
+      MeshBuilder_BuildMesh(
+          blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
+          &uvMapWithTransparency, t_worldLightModel, t_terrain);
+    } else {
+      MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
+                            t_worldLightModel, t_terrain);
+    }
+
+    if (counter >= LOAD_CHUNK_BATCH) {
+      _loaderBatchCounter = i + 1;
+      return;
+    } else {
+      counter++;
+    }
+  }
+
+  _isDrawDataLoaded = true;
+  _loaderBatchCounter = 0;
 }
 
 void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }

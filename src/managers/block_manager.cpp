@@ -29,7 +29,7 @@ void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
-  this->loadBlocksTexturesLowRes(texturePack);
+  // this->loadBlocksTexturesLowRes(texturePack);
   this->registerBlockSoundsEffects();
 }
 

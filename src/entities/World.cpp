@@ -109,24 +109,20 @@ void World::setSavedSpawnArea(Vec4 pos) {
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   dispatchChunkBatch();
-  particlesManager.update(deltaTime, t_camera);
 
-  dispatchChunkBatch();
+  particlesManager.update(deltaTime, t_camera);
   cloudsManager.update(deltaTime);
 
   dispatchChunkBatch();
-  dayNightCycleManager.update(deltaTime, &t_camera->position);
 
+  dayNightCycleManager.update(deltaTime, &t_camera->position);
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
-
-  dispatchChunkBatch();
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
 
   dispatchChunkBatch();
-  mobManager.update(deltaTime);
 
-  dispatchChunkBatch();
+  mobManager.update(deltaTime);
   updateTargetBlock(t_camera, t_player);
 };
 
@@ -162,9 +158,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateChunkByPlayerPosition(t_player);
   }
 
-  if (isTicksCounterAt(6)) {
-    t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-  }
+  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 }
 
 void World::renderOpaque() {
@@ -304,6 +298,8 @@ void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
+      if (!chunk->isDrawDataLoaded()) return chunk->loadDrawDataAsync();
+
       chunk->state = ChunkState::Loaded;
 
       if (g_debug_mode) {
@@ -314,7 +310,7 @@ void World::loadScheduledChunks() {
       }
 
       // TODO: implement callback 'afterLoadChunk'
-      const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
+      const u8 shouldSpawnMobInChunk = Utils::Probability(0.0075f);
 
       // TODO: move to chunk randon tick
       // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
@@ -419,10 +415,6 @@ void World::updateLightModel() {
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.sunLightIntensity =
       dayNightCycleManager.getSunLightIntensity();
-}
-
-u32 World::getIndexByOffset(int x, int y, int z) {
-  return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
 }
 
 u8 World::isAirAtPosition(const u8 x, const u8 y, const u8 z) {
@@ -576,6 +568,78 @@ u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
     result = result | TOP_VISIBLE;
     if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
   }
+
+  return result;
+}
+
+u8 World::getLeavesVisibleFaces(const Vec4* t_blockOffset) {
+  u8 result = 0b000000;
+
+  const auto x = t_blockOffset->x;
+  const auto y = t_blockOffset->y;
+  const auto z = t_blockOffset->z;
+
+  const auto bFront =
+      !BoundCheckMap(terrain, x, y, z - 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+
+  const auto bBlack =
+      !BoundCheckMap(terrain, x, y, z + 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+
+  const auto bRight =
+      !BoundCheckMap(terrain, x - 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+
+  const auto bLeft =
+      !BoundCheckMap(terrain, x + 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+
+  const auto bTop =
+      !BoundCheckMap(terrain, x, y + 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+
+  const auto bBottom =
+      !BoundCheckMap(terrain, x, y - 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+
+  // Front
+  if (!(bFront == Blocks::OAK_LEAVES_BLOCK ||
+        bFront == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bFront || blockManager.isBlockTransparent(bFront)))
+    result = result | FRONT_VISIBLE;
+  // Back
+  if (!(bBlack == Blocks::OAK_LEAVES_BLOCK ||
+        bBlack == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bBlack || blockManager.isBlockTransparent(bBlack)))
+    result = result | BACK_VISIBLE;
+  // Right
+  if (!(bRight == Blocks::OAK_LEAVES_BLOCK ||
+        bRight == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bRight || blockManager.isBlockTransparent(bRight)))
+    result = result | RIGHT_VISIBLE;
+  // Left
+  if (!(bLeft == Blocks::OAK_LEAVES_BLOCK ||
+        bLeft == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bLeft || blockManager.isBlockTransparent(bLeft)))
+    result = result | LEFT_VISIBLE;
+  // Top
+  if (!(bTop == Blocks::OAK_LEAVES_BLOCK ||
+        bTop == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bTop || blockManager.isBlockTransparent(bTop)))
+    result = result | TOP_VISIBLE;
+  // Bottom
+  if (!(bBottom == Blocks::OAK_LEAVES_BLOCK ||
+        bBottom == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bBottom ||
+       blockManager.isBlockTransparent(bBottom)))
+    result = result | BOTTOM_VISIBLE;
 
   return result;
 }
@@ -1371,6 +1435,9 @@ void World::buildChunk(Chunck* t_chunck) {
           } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
                      (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
             visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+          } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+                     block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+            visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
           } else {
             visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
           }
@@ -1426,7 +1493,6 @@ void World::buildChunk(Chunck* t_chunck) {
   }
 
   t_chunck->freeUnusedMemory();
-
   t_chunck->state = ChunkState::Loaded;
 
   if (g_debug_mode) {
@@ -1438,17 +1504,12 @@ void World::buildChunk(Chunck* t_chunck) {
 }
 
 void World::buildChunkAsync(Chunck* t_chunck) {
-  if (!canBuildChunk()) {
-    return TYRA_WARN("Out of memory. Not loading chunk!");
-  };
-
   if (g_debug_mode) {
     if (t_chunck->state == ChunkState::Clean) {
       t_chunck->buildingTimeStart = clock();
     }
   }
 
-  uint16_t safeWhileBreak = 0;
   uint16_t batchCounter = 0;
   uint16_t x = t_chunck->tempLoadingOffset.x;
   uint16_t y = t_chunck->tempLoadingOffset.y;
@@ -1460,7 +1521,6 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     t_chunck->state = ChunkState::Loading;
 
     if (x >= t_chunck->maxOffset.x) break;
-    safeWhileBreak++;
 
     u32 blockIndex = getIndexByOffset(x, y, z);
     const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
@@ -1475,6 +1535,9 @@ void World::buildChunkAsync(Chunck* t_chunck) {
       } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
                  (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
         visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+      } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+                 block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+        visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
       } else {
         visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
       }
@@ -1536,12 +1599,6 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     if (z >= t_chunck->maxOffset.z) {
       z = t_chunck->minOffset.z;
       x++;
-    }
-
-    if (safeWhileBreak > CHUNCK_LENGTH) {
-      TYRA_WARN("Safely breaking while loop");
-      t_chunck->clear();
-      break;
     }
   }
 

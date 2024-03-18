@@ -38,9 +38,9 @@ void ChunckManager::update(const Plane* frustumPlanes) {
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
     if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
-      chuncks[i]->update(frustumPlanes);
-
       if (chuncks[i]->state == ChunkState::Loaded) {
+        chuncks[i]->update(frustumPlanes);
+
         if (chuncks[i]->isVisible()) {
           if (!chuncks[i]->isDrawDataLoaded()) {
             chuncks[i]->loadDrawDataWithoutSorting();

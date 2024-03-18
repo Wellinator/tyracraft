@@ -85,9 +85,11 @@ class Chunck {
   void clearAsync();
 
   void loadDrawData();
+  void loadDrawDataAsync();
   void loadDrawDataWithoutSorting();
   void reloadLightData();
   void clearDrawData();
+  void clearDrawDataWithoutShrink();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
@@ -144,9 +146,11 @@ class Chunck {
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
   u8 _isDrawDataLoaded = false;
+  u8 _isMemoryReserved = false;
+  u8 _loaderBatchCounter = 0;
+  u8 _unloaderBatchCounter = 0;
 
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
 
-  u8 _unloaderBatchCounter = 0;
 };
