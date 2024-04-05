@@ -207,45 +207,6 @@ void World::reloadWorldArea(const Vec4& position) {
   }
 }
 
-void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
-  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(pos);
-  if (!currentChunk) return;
-
-  currentChunk->clear();
-  buildChunk(currentChunk);
-
-  const u8 isAtBottomBorder = pos.y == currentChunk->minOffset.y;
-  const u8 isAtTopBorder = pos.y + 1 == currentChunk->maxOffset.y;
-  const u8 isAtRightBorder = pos.x == currentChunk->minOffset.x;
-  const u8 isAtLeftBorder = pos.x + 1 == currentChunk->maxOffset.x;
-  const u8 isAtFrontBorder = pos.z == currentChunk->minOffset.z;
-  const u8 isAtBackBorder = pos.z + 1 == currentChunk->maxOffset.z;
-
-  if (isAtRightBorder && currentChunk->rightNeighbor) {
-    currentChunk->rightNeighbor->clear();
-    buildChunk(currentChunk->rightNeighbor);
-  } else if (isAtLeftBorder && currentChunk->leftNeighbor) {
-    currentChunk->leftNeighbor->clear();
-    buildChunk(currentChunk->leftNeighbor);
-  }
-
-  if (isAtFrontBorder && currentChunk->frontNeighbor) {
-    currentChunk->frontNeighbor->clear();
-    buildChunk(currentChunk->frontNeighbor);
-  } else if (isAtBackBorder && currentChunk->backNeighbor) {
-    currentChunk->backNeighbor->clear();
-    buildChunk(currentChunk->backNeighbor);
-  }
-
-  if (isAtTopBorder && currentChunk->topNeighbor) {
-    currentChunk->topNeighbor->clear();
-    buildChunk(currentChunk->topNeighbor);
-  } else if (isAtBottomBorder && currentChunk->bottomNeighbor) {
-    currentChunk->bottomNeighbor->clear();
-    buildChunk(currentChunk->bottomNeighbor);
-  }
-}
-
 void World::removeBlockFromChunk(Block* blockToRemove) {
   Chunck* currentChunk = chunckManager.getChunkById(blockToRemove->chunkId);
   if (!currentChunk) return;
@@ -1617,73 +1578,8 @@ void World::buildChunk(Chunck* t_chunck) {
   for (size_t x = t_chunck->minOffset.x; x < t_chunck->maxOffset.x; x++) {
     for (size_t z = t_chunck->minOffset.z; z < t_chunck->maxOffset.z; z++) {
       for (size_t y = t_chunck->minOffset.y; y < t_chunck->maxOffset.y; y++) {
-        u32 blockIndex = getIndexByOffset(x, y, z);
-        const Blocks block_type =
-            static_cast<Blocks>(terrain->blocks[blockIndex]);
-
-        if (block_type != Blocks::AIR_BLOCK) {
-          Vec4 tempBlockOffset = Vec4(x, y, z);
-          u8 visibleFaces;
-
-          if (block_type == Blocks::WATER_BLOCK ||
-              block_type == Blocks::LAVA_BLOCK) {
-            visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
-          } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
-                     (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
-            visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
-          } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
-                     block_type == Blocks::BIRCH_LEAVES_BLOCK) {
-            visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
-          } else {
-            visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-          }
-
-          // Have any face visible?
-          if (visibleFaces > 0) {
-            BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
-
-            if (blockInfo) {
-              Block* block = new Block(blockInfo);
-              block->index = blockIndex;
-              block->offset = GetPosFromXYZ(
-                  tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
-              block->chunkId = t_chunck->id;
-
-              if (block->isCrossed) {
-                block->visibleFaces = 0b111111;
-                block->visibleFacesCount = 2;
-              } else {
-                block->visibleFaces = visibleFaces;
-                block->visibleFacesCount = Utils::countSetBits(visibleFaces);
-              }
-
-              block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
-
-              ModelBuilder_BuildModel(block, terrain);
-              BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block->type,
-                                                                 block->offset);
-              BBox tempBBox = rawBBox->getTransformed(block->model);
-
-              block->bbox =
-                  new BBox(tempBBox.vertices, tempBBox.getVertexCount());
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-              // Add data to AABBTree
-              bvh::AABB blockAABB = bvh::AABB();
-              blockAABB.minx = block->minCorner.x;
-              blockAABB.miny = block->minCorner.y;
-              blockAABB.minz = block->minCorner.z;
-              blockAABB.maxx = block->maxCorner.x;
-              blockAABB.maxy = block->maxCorner.y;
-              blockAABB.maxz = block->maxCorner.z;
-              block->tree_index = g_AABBTree->insert(blockAABB, block);
-
-              delete rawBBox;
-
-              t_chunck->addBlock(block);
-            }
-          }
-        }
+        Vec4 tempBlockOffset = Vec4(x, y, z);
+        addBlockToChunk(t_chunck, &tempBlockOffset);
       }
     }
   }
