@@ -92,6 +92,14 @@ class Chunck {
   void clearDrawDataWithoutShrink();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
 
+  void removeBlock(Block* target);
+  void removeBlockByOffset(u32 offset);
+  void removeBlockByOffset(Vec4* offset);
+  void removeBlockByLocalIndex(u16 index);
+  void removeBlockByPosition(Vec4* position);
+
+  u8 containsBlock(Vec4* offset);
+
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   void updateFrustumCheck(const Plane* frustumPlanes);
   inline const u8 isVisible() {
@@ -107,6 +115,7 @@ class Chunck {
 
   // Block controllers
   inline void addBlock(Block* t_block) {
+    t_block->localIndex = blocks.size();
     blocks.emplace_back(t_block);
 
     if (t_block->hasTransparency) {
@@ -152,5 +161,4 @@ class Chunck {
 
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
-
 };

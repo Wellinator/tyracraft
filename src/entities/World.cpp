@@ -246,6 +246,25 @@ void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
   }
 }
 
+void World::removeBlockFromChunk(Block* blockToRemove) {
+  Chunck* currentChunk = chunckManager.getChunkById(blockToRemove->chunkId);
+  if (!currentChunk) return;
+
+  Vec4 offset;
+  GetXYZFromPos(&blockToRemove->offset, &offset);
+
+  currentChunk->removeBlock(blockToRemove);
+  rebuildChunkFragment(currentChunk, &offset);
+}
+
+void World::updateNeighBorsChunksByAddedBlock(Vec4* offset) {
+  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(*offset);
+  if (!currentChunk) return;
+
+  addBlockToChunk(currentChunk, offset);
+  rebuildChunkFragment(currentChunk, offset);
+}
+
 void World::scheduleChunksNeighbors(Chunck* origin_chunk,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
@@ -831,7 +850,7 @@ void World::removeBlock(Block* blockToRemove) {
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
 
-  updateNeighBorsChunksByModdedPosition(offsetToRemove);
+  removeBlockFromChunk(blockToRemove);
   playDestroyBlockSound(blockToRemove->type);
 
   // Remove up block if it's is vegetation
@@ -923,7 +942,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   }
 
   playPutBlockSound(blockToPlace);
-  updateNeighBorsChunksByModdedPosition(blockOffset);
+  updateNeighBorsChunksByAddedBlock(&blockOffset);
 }
 
 void World::putTorchBlock(const PlacementDirection placementDirection,
@@ -1409,6 +1428,183 @@ void World::playFlowingWaterSound() {
 u8 World::isCrossedBlock(Blocks block_type) {
   return block_type == Blocks::POPPY_FLOWER ||
          block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
+}
+
+void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
+  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
+
+  std::vector<Chunck*> affected_chunks;
+  affected_chunks.emplace_back(t_chunck);
+
+  Vec4 bottom = *moddedOffset + Vec4(0, -1, 0);
+  if (t_chunck->containsBlock(&bottom)) {
+    addOrupdateBlockInChunk(t_chunck, &bottom);
+  } else if (t_chunck->bottomNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->bottomNeighbor, &bottom);
+    affected_chunks.emplace_back(t_chunck->bottomNeighbor);
+  }
+
+  Vec4 top = *moddedOffset + Vec4(0, 1, 0);
+  if (t_chunck->containsBlock(&top)) {
+    addOrupdateBlockInChunk(t_chunck, &top);
+  } else if (t_chunck->topNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->topNeighbor, &top);
+    affected_chunks.emplace_back(t_chunck->topNeighbor);
+  }
+
+  Vec4 right = *moddedOffset + Vec4(-1, 0, 0);
+  if (t_chunck->containsBlock(&right)) {
+    addOrupdateBlockInChunk(t_chunck, &right);
+  } else if (t_chunck->rightNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->rightNeighbor, &right);
+    affected_chunks.emplace_back(t_chunck->rightNeighbor);
+  }
+
+  Vec4 left = *moddedOffset + Vec4(1, 0, 0);
+  if (t_chunck->containsBlock(&left)) {
+    addOrupdateBlockInChunk(t_chunck, &left);
+  } else if (t_chunck->leftNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->leftNeighbor, &left);
+    affected_chunks.emplace_back(t_chunck->leftNeighbor);
+  }
+
+  Vec4 front = *moddedOffset + Vec4(0, 0, -1);
+  if (t_chunck->containsBlock(&front)) {
+    addOrupdateBlockInChunk(t_chunck, &front);
+  } else if (t_chunck->frontNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->frontNeighbor, &front);
+    affected_chunks.emplace_back(t_chunck->frontNeighbor);
+  }
+
+  Vec4 back = *moddedOffset + Vec4(0, 0, 1);
+  if (t_chunck->containsBlock(&back)) {
+    addOrupdateBlockInChunk(t_chunck, &back);
+  } else if (t_chunck->backNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->backNeighbor, &back);
+    affected_chunks.emplace_back(t_chunck->backNeighbor);
+  }
+
+  for (size_t i = 0; i < affected_chunks.size(); i++) {
+    affected_chunks[i]->clearDrawData();
+    affected_chunks[i]->loadDrawData();
+  }
+
+  if (g_debug_mode) {
+    t_chunck->timeToBuild =
+        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk fragment %i: %f\n", t_chunck->id,
+           t_chunck->timeToBuild);
+  }
+}
+
+void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
+  const u8 validOffset =
+      BoundCheckMap(terrain, moddedOffset->x, moddedOffset->y, moddedOffset->z);
+  const u8 isInChunk =
+      moddedOffset->collidesBox(t_chunck->minOffset, t_chunck->maxOffset);
+
+  if (validOffset && isInChunk) {
+    Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
+
+    if (t_block) {
+      // TODO: check if need to remove block
+      // refactore to updateOrRemoveBlockInChunk
+      updateOrRemoveBlockInChunk(t_chunck, t_block);
+    } else {
+      addBlockToChunk(t_chunck, moddedOffset);
+    }
+  }
+}
+
+void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
+  Vec4 tempBlockOffset;
+  GetXYZFromPos(&t_block->offset, &tempBlockOffset);
+
+  const Blocks block_type = static_cast<Blocks>(t_block->type);
+  u8 visibleFaces;
+
+  if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
+    visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
+  } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+             (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+    visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+  } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+             block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+    visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
+  } else {
+    visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+  }
+
+  // Check if visible faces changed
+  if (visibleFaces != t_block->visibleFaces) {
+    t_block->visibleFaces = visibleFaces;
+  }
+}
+
+void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
+  u32 blockIndex = getIndexByOffset(offset->x, offset->y, offset->z);
+
+  const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
+
+  if (block_type != Blocks::AIR_BLOCK) {
+    u8 visibleFaces;
+
+    if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
+      visibleFaces = getLiquidBlockVisibleFaces(offset);
+    } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+               (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+      visibleFaces = getSlabVisibleFaces(offset);
+    } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+               block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+      visibleFaces = getLeavesVisibleFaces(offset);
+    } else {
+      visibleFaces = getBlockVisibleFaces(offset);
+    }
+
+    // Have any face visible?
+    if (visibleFaces > 0) {
+      BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
+
+      if (blockInfo) {
+        Block* block = new Block(blockInfo);
+        block->index = blockIndex;
+        block->offset = GetPosFromXYZ(offset->x, offset->y, offset->z);
+        block->chunkId = t_chunck->id;
+
+        if (block->isCrossed) {
+          block->visibleFaces = 0b111111;
+          block->visibleFacesCount = 2;
+        } else {
+          block->visibleFaces = visibleFaces;
+          block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+        }
+
+        block->position.set((*offset) * DUBLE_BLOCK_SIZE);
+
+        ModelBuilder_BuildModel(block, terrain);
+        BBox* rawBBox =
+            VertexBlockData::getRawBBoxByBlock(block->type, block->offset);
+        BBox tempBBox = rawBBox->getTransformed(block->model);
+
+        block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+        block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
+        // Add data to AABBTree
+        bvh::AABB blockAABB = bvh::AABB();
+        blockAABB.minx = block->minCorner.x;
+        blockAABB.miny = block->minCorner.y;
+        blockAABB.minz = block->minCorner.z;
+        blockAABB.maxx = block->maxCorner.x;
+        blockAABB.maxy = block->maxCorner.y;
+        blockAABB.maxz = block->maxCorner.z;
+        block->tree_index = g_AABBTree->insert(blockAABB, block);
+
+        delete rawBBox;
+
+        t_chunck->addBlock(block);
+      }
+    }
+  }
 }
 
 // TODO: move to chunk builder

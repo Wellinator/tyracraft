@@ -197,7 +197,6 @@ void Chunck::clearDrawData() {
 
   _loaderBatchCounter = 0;
   _unloaderBatchCounter = 0;
-
 }
 
 void Chunck::clearDrawDataWithoutShrink() {
@@ -223,12 +222,26 @@ void Chunck::loadDrawDataWithoutSorting() {
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
+      blocks[i]->drawDataIndex = verticesWithTransparency.size();
       MeshBuilder_BuildMesh(
           blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
           &uvMapWithTransparency, t_worldLightModel, t_terrain);
+      blocks[i]->drawDataLength =
+          verticesWithTransparency.size() - blocks[i]->drawDataIndex;
+
+      // printf("Transparent Block %i\n", (int)i);
+      // printf("drawDataIndex %i | drawDataLength %i \n\n",
+      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
+
     } else {
+      blocks[i]->drawDataIndex = vertices.size();
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, t_terrain);
+      blocks[i]->drawDataLength = vertices.size() - blocks[i]->drawDataIndex;
+
+      // printf("Block %i\n", (int)i);
+      // printf("drawDataIndex %i | drawDataLength %i \n\n",
+      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
     }
   }
 
@@ -314,4 +327,44 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
       return blocks[i];
   }
   return nullptr;
+}
+
+void Chunck::removeBlock(Block* target) {
+  blocks.erase(
+      std::remove_if(blocks.begin(), blocks.end(),
+                     [target](Block* b) { return b->index == target->index; }),
+      blocks.end());
+  g_AABBTree->remove(target->tree_index);
+  delete target;
+}
+
+void Chunck::removeBlockByOffset(u32 offset) {
+  Vec4 _offsetVec;
+  GetXYZFromPos(&offset, &_offsetVec);
+  Block* target = getBlockByOffset(&_offsetVec);
+
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByOffset(Vec4* offset) {
+  Block* target = getBlockByOffset(offset);
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByLocalIndex(u16 index) {
+  TYRA_ASSERT(index < blocks.size(), "Invalid block index!");
+
+  Block* target = blocks[index];
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByPosition(Vec4* position) {
+  Block* target = getBlockByPosition(position);
+  if (target) removeBlock(target);
+}
+
+u8 Chunck::containsBlock(Vec4* offset) {
+  return offset->x >= minOffset.x && offset->x < maxOffset.x &&
+         offset->y >= minOffset.y && offset->y < maxOffset.y &&
+         offset->z >= minOffset.z && offset->z < maxOffset.z;
 }

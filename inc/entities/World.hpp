@@ -123,6 +123,10 @@ class World {
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
   void buildChunkAsync(Chunck* t_chunck);
+  void rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset);
+  void addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset);
+  void updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block);
+  void addBlockToChunk(Chunck* t_chunck, Vec4* offset);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
@@ -169,6 +173,8 @@ class World {
   void loadScheduledChunks();
   void unloadScheduledChunks();
   void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
+  void removeBlockFromChunk(Block* blockToRemove);
+  void updateNeighBorsChunksByAddedBlock(Vec4* offset);
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
   void updateLightModel();
