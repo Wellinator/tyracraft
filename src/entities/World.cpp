@@ -1468,8 +1468,6 @@ void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
     Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
 
     if (t_block) {
-      // TODO: check if need to remove block
-      // refactore to updateOrRemoveBlockInChunk
       updateOrRemoveBlockInChunk(t_chunck, t_block);
     } else {
       addBlockToChunk(t_chunck, moddedOffset);
@@ -1497,7 +1495,10 @@ void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
   }
 
   // Check if visible faces changed
-  if (visibleFaces != t_block->visibleFaces) {
+  if (visibleFaces == 0) {
+    t_chunck->removeBlock(t_block);
+    rebuildChunkFragment(t_chunck, &tempBlockOffset);
+  } else if (visibleFaces != t_block->visibleFaces) {
     t_block->visibleFaces = visibleFaces;
   }
 }
