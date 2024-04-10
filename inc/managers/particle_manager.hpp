@@ -85,6 +85,10 @@ class ParticlesManager {
   Texture* blocksTexture = nullptr;
   Texture* particlesTexture = nullptr;
 
+  std::vector<Color> colors;
+  std::vector<Vec4> vertex;
+  std::vector<Vec4> uv;
+
   void updateParticles(const float deltaTime, const Vec4* camPos);
   void destroyExpiredParticles();
 

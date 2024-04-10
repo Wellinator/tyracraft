@@ -45,6 +45,10 @@ void ParticlesManager::tick() { destroyExpiredParticles(); }
 
 void ParticlesManager::updateParticles(const float deltaTime,
                                        const Vec4* camPos) {
+  colors.clear();
+  vertex.clear();
+  uv.clear();
+
   const auto PARTICLE_GRAVITY = GRAVITY * 0.9F * deltaTime;
   const float instantSpeed = particleSpeed * deltaTime;
 
@@ -138,17 +142,29 @@ void ParticlesManager::updateParticles(const float deltaTime,
       for (size_t j = 0; j < 6; j++) {
         particles[i].vertex[j] = particles[i].model * rawData[j];
       }
+
+      colors.insert(colors.end(), 6, *particles[i].t_color);
+      vertex.insert(vertex.end(), std::begin(particles[i].vertex),
+                    std::end(particles[i].vertex));
+      uv.insert(uv.end(), std::begin(particles[i].uv),
+                std::end(particles[i].uv));
     }
   }
 };
 
 void ParticlesManager::destroyExpiredParticles() {
-  particles.erase(std::remove_if(particles.begin(), particles.end(),
-                                 [](const Particle& p) { return p.expired; }),
-                  particles.end());
+  if (particlesHasChanged) {
+    particles.erase(std::remove_if(particles.begin(), particles.end(),
+                                   [](const Particle& p) { return p.expired; }),
+                    particles.end());
 
-  particles.shrink_to_fit();
-  particlesHasChanged = false;
+    particles.shrink_to_fit();
+    particlesHasChanged = false;
+
+    colors.shrink_to_fit();
+    vertex.shrink_to_fit();
+    uv.shrink_to_fit();
+  }
 }
 
 void ParticlesManager::createBlockParticleBatch(Block* block, const u16 size) {
@@ -164,17 +180,17 @@ void ParticlesManager::createBlockParticle(Block* block) {
   particle.type = PaticleType::Block;
 
   // Define life time
-  particle._lifeTime = Tyra::Math::randomf(0.6F, 1.2F);
+  particle._lifeTime = Tyra::Math::randomf(0.3F, 0.7F);
 
   // Define if is collidable
-  particle.collidable = (Tyra::Math::randomi(1, 100) % 5) == 0;
+  particle.collidable = Utils::Probability(0.1);
 
   // Set particle rotation
   particle.rotation.identity();
 
   // Set particle initial velocity
-  // Initiate with a random value from 2 to 5 to lift it on spawn
-  particle._velocity.y = Tyra::Math::randomf(10.0F, 15.0F);
+  // Initiate with a random value from 5 to 15 to lift it on spawn
+  particle._velocity.y = Tyra::Math::randomf(5.0F, 15.0F);
 
   if (block->isTarget) {
     particle._position =
@@ -184,9 +200,9 @@ void ParticlesManager::createBlockParticle(Block* block) {
     particle._direction = particle._position - block->hitPosition;
   } else {
     particle._position =
-        Vec4(block->position.x + (Tyra::Math::randomf(-4.0F, 4.0F)),
-             block->position.y + (Tyra::Math::randomf(-4.0F, 4.0F)),
-             block->position.z + (Tyra::Math::randomf(-4.0F, 4.0F)));
+        Vec4(block->position.x + (Tyra::Math::randomf(-4.5F, 4.5F)),
+             block->position.y + (Tyra::Math::randomf(-4.5F, 4.5F)),
+             block->position.z + (Tyra::Math::randomf(-4.5F, 4.5F)));
     particle._direction = particle._position - block->position;
   }
 
@@ -229,29 +245,24 @@ void ParticlesManager::renderBlocksParticles() {
 
   StaPipTextureBag textureBag;
   textureBag.texture = blocksTexture;
+  textureBag.coordinates = uv.data();
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   StaPipColorBag colorBag;
+  colorBag.single = colors.data();
 
   StaPipBag bag;
-  bag.count = 6;
+  bag.count = vertex.size();
+  bag.vertices = vertex.data();
 
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
 
-  for (size_t i = 0; i < particles.size(); i++) {
-    if (!particles[i].expired) {
-      textureBag.coordinates = const_cast<Vec4*>(particles[i].uv);
-      colorBag.single = const_cast<Color*>(particles[i].t_color);
-      bag.vertices = const_cast<Vec4*>(particles[i].vertex);
-
-      stapip.core.render(&bag);
-    }
-  }
+  stapip.core.render(&bag);
 }
 
 void ParticlesManager::render() {
