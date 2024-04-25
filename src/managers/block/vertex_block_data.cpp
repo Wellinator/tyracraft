@@ -309,11 +309,11 @@ const Vec4* VertexBlockData::getCrossedVertexData() {
 
 const Vec4* VertexBlockData::getVertexNormalData() {
   Vec4* normals = new Vec4[FACES_COUNT];
-  normals[0] = Vec4(0, -1, 0);
-  normals[1] = Vec4(0, 1, 0);
-  normals[2] = Vec4(-1, 0, 0);
-  normals[3] = Vec4(1, 0, 0);
-  normals[4] = Vec4(0, 0, -1);
-  normals[5] = Vec4(0, 0, 1);
+  normals[0] = DOWN_VEC;
+  normals[1] = UP_VEC;
+  normals[2] = RIGHT_VEC;
+  normals[3] = LEFT_VEC;
+  normals[4] = FRONT_VEC;
+  normals[5] = BACK_VEC;
   return normals;
 }

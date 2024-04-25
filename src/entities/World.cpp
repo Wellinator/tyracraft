@@ -1397,7 +1397,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   std::vector<Chunck*> affected_chunks;
   affected_chunks.emplace_back(t_chunck);
 
-  Vec4 bottom = *moddedOffset + Vec4(0, -1, 0);
+  Vec4 bottom = *moddedOffset + DOWN_VEC;
   if (t_chunck->containsBlock(&bottom)) {
     addOrupdateBlockInChunk(t_chunck, &bottom);
   } else if (t_chunck->bottomNeighbor) {
@@ -1405,7 +1405,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
     affected_chunks.emplace_back(t_chunck->bottomNeighbor);
   }
 
-  Vec4 top = *moddedOffset + Vec4(0, 1, 0);
+  Vec4 top = *moddedOffset + UP_VEC;
   if (t_chunck->containsBlock(&top)) {
     addOrupdateBlockInChunk(t_chunck, &top);
   } else if (t_chunck->topNeighbor) {
@@ -1413,7 +1413,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
     affected_chunks.emplace_back(t_chunck->topNeighbor);
   }
 
-  Vec4 right = *moddedOffset + Vec4(-1, 0, 0);
+  Vec4 right = *moddedOffset + RIGHT_VEC;
   if (t_chunck->containsBlock(&right)) {
     addOrupdateBlockInChunk(t_chunck, &right);
   } else if (t_chunck->rightNeighbor) {
@@ -1421,7 +1421,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
     affected_chunks.emplace_back(t_chunck->rightNeighbor);
   }
 
-  Vec4 left = *moddedOffset + Vec4(1, 0, 0);
+  Vec4 left = *moddedOffset + LEFT_VEC;
   if (t_chunck->containsBlock(&left)) {
     addOrupdateBlockInChunk(t_chunck, &left);
   } else if (t_chunck->leftNeighbor) {
@@ -1429,7 +1429,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
     affected_chunks.emplace_back(t_chunck->leftNeighbor);
   }
 
-  Vec4 front = *moddedOffset + Vec4(0, 0, -1);
+  Vec4 front = *moddedOffset + FRONT_VEC;
   if (t_chunck->containsBlock(&front)) {
     addOrupdateBlockInChunk(t_chunck, &front);
   } else if (t_chunck->frontNeighbor) {
@@ -1437,7 +1437,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
     affected_chunks.emplace_back(t_chunck->frontNeighbor);
   }
 
-  Vec4 back = *moddedOffset + Vec4(0, 0, 1);
+  Vec4 back = *moddedOffset + BACK_VEC;
   if (t_chunck->containsBlock(&back)) {
     addOrupdateBlockInChunk(t_chunck, &back);
   } else if (t_chunck->backNeighbor) {

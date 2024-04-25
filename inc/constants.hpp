@@ -395,3 +395,10 @@ typedef enum {
 #define TORCH_UV_COUNTER 20
 
 #define MAX_SAFE_MEMORY_ALLOCATION 29
+
+#define DOWN_VEC Vec4(0, -1, 0)
+#define UP_VEC Vec4(0, 1, 0)
+#define RIGHT_VEC Vec4(-1, 0, 0)
+#define LEFT_VEC Vec4(1, 0, 0)
+#define FRONT_VEC Vec4(0, 0, -1)
+#define BACK_VEC Vec4(0, 0, 1)
