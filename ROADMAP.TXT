@@ -136,4 +136,4 @@
     ✅ -> Apply light intensity to particles;
     ✅ -> Fix clouds color at night:
     ✅ -> Fix game crash when trying to save with max draw distance;
-    🔲 -> Fix player mesh illuminaton at night;
+    ✅ -> Fix player mesh illuminaton at night;
