@@ -29,14 +29,14 @@ void CloudsManager::calcUVMapping() {
 void CloudsManager::updateCloudsPosition() {
   positionStart.set(position);
   positionEnd = position + (velocity * TICKS_IN_SECONDS);
-  lerp = 0.0;
+  lerp = 0.0f;
 }
 
 void CloudsManager::update(const float deltaTime) {
   tempColor = LightManager::IntensifyColor(&baseColor,
                                            worldLightModel->sunLightIntensity);
 
-  lerp += deltaTime / 0.05;
+  lerp += deltaTime / 0.05f;
   Vec4::setLerp(&position, positionStart, positionEnd, lerp);
 
   if (position.x > 4.0F) position.x = 1;
@@ -55,7 +55,7 @@ void CloudsManager::render() {
 
   rawMatrix.scaleX(3000.0F);
   rawMatrix.scaleZ(3000.0F);
-  rawMatrix.translateY(MAX_WORLD_POS.y);
+  rawMatrix.translateY(MAX_WORLD_POS.y - 100.0f);
 
   StaPipTextureBag textureBag;
   textureBag.texture = cloudsTex;
@@ -66,12 +66,11 @@ void CloudsManager::render() {
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.fullClipChecks = true;
   infoBag.blendingEnabled = true;
-  // infoBag.antiAliasingEnabled = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
 
   StaPipColorBag colorBag;
-  colorBag.single = &tempColor;
+  colorBag.single = &baseColor;
 
   StaPipBag bag;
   bag.count = DRAW_DATA_COUNT;
@@ -81,21 +80,4 @@ void CloudsManager::render() {
   bag.texture = &textureBag;
 
   stapip.core.render(&bag);
-
-  // // Render sky limits || Debug content
-  // {
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[0], rawMatrix * vertices[1], Color(255, 0, 0));
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[1], rawMatrix * vertices[2], Color(255, 0, 0));
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[2], rawMatrix * vertices[0], Color(255, 0, 0));
-
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[3], rawMatrix * vertices[4], Color(255, 0, 0));
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[4], rawMatrix * vertices[5], Color(255, 0, 0));
-  //   t_renderer->renderer3D.utility.drawLine(
-  //       rawMatrix * vertices[5], rawMatrix * vertices[3], Color(255, 0, 0));
-  // }
 };

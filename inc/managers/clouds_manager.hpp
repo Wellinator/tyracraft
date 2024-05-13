@@ -36,8 +36,8 @@ class CloudsManager {
 
   const u8 DRAW_DATA_COUNT = 6;
   Vec4 vertices[6] = {
-      Vec4(-1.0F, 1.0F, -1.0), Vec4(1.0F, 1.0F, 1.0),  Vec4(1.0F, 1.0F, -1.0),
-      Vec4(-1.0F, 1.0F, -1.0), Vec4(-1.0F, 1.0F, 1.0), Vec4(1.0F, 1.0F, 1.0),
+      Vec4(-1.0F, 1.0F, -1.0f), Vec4(1.0F, 1.0F, 1.0f),  Vec4(1.0F, 1.0F, -1.0f),
+      Vec4(-1.0F, 1.0F, -1.0f), Vec4(-1.0F, 1.0F, 1.0f), Vec4(1.0F, 1.0F, 1.0f),
   };
 
   Vec4 uvMap[6];
@@ -49,11 +49,10 @@ class CloudsManager {
   void calcUVMapping();
   void updateCloudsPosition();
 
-  double lerp = 0.0;
-  Vec4 position = Vec4(1.0f, 1.0f, 0);
-  Vec4 positionStart = Vec4(0, 0, 0);
-  Vec4 positionEnd = Vec4(0, 0, 0);
-  Vec4 velocity = Vec4(0.001f, 0.0005f, 0);
-  // Vec4 velocity = Vec4(0.001f, 0.0001f);
+  double lerp = 0.0f;
+  Vec4 position = Vec4(1.0f, 1.0f, 0.0f);
+  Vec4 positionStart = Vec4(0.0f, 0.0f, 0.0f);
+  Vec4 positionEnd = Vec4(0.0f, 0.0f, 0.0f);
+  Vec4 velocity = Vec4(0.001f, 0.0005f, 0.0f);
   const Vec4 scaleVec = Vec4(1.0F / 4.0F, 1.0F / 4.0F, 1.0F, 0.0F);
 };
