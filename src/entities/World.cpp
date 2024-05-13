@@ -463,38 +463,38 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
     case BlockOrientation::North:
       // Will be rotated by 90deg
       // Left turns Back & Right turns Front
-      if (isLeftFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
       break;
     case BlockOrientation::South:
       // Will be rotated by 270deg
       // Left turns Front & Right turns Back
-      if (isLeftFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::West:
       // Will be rotated by 180deg
       // Left turns Right & Front turns Back
-      if (isLeftFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::East:
     default:
-      if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
       break;
   }
 
-  if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
-  if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+  if (isTopFaceVisible(t_blockOffset)) result |= TOP_VISIBLE;
+  if (isBottomFaceVisible(t_blockOffset)) result |= BOTTOM_VISIBLE;
 
   return result;
 }

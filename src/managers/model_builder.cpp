@@ -36,6 +36,7 @@ void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain) {
     case BlockOrientation::West:
       t_block->model.rotateY(_180DEGINRAD);
       break;
+    case BlockOrientation::East:
     case BlockOrientation::Top:
     default:
       break;

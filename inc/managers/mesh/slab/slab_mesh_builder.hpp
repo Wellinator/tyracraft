@@ -39,6 +39,16 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
                                    WorldLightModel* t_worldLightModel,
                                    LevelMap* t_terrain);
 
+/**
+ * @brief Return an array with the correct face by rotation
+ * This function basicaly reverse the getBlockVisibleFaces orientation for
+ * correct lighting face
+ * This is the sequence of the array: [ left, front, back, right]
+ *
+ */
+std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(
+    Block* t_block, LevelMap* t_terrain);
+
 void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
                                        std::vector<Color>* t_vertices_colors);
 void SlabMeshBuilder_loadLightFaceDataWithAO(
