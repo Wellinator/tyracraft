@@ -831,6 +831,26 @@ void World::removeBlock(Block* blockToRemove) {
   }
 }
 
+void World::removeBlockSilently(Block* blockToRemove) {
+  Vec4 offsetToRemove;
+  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
+                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
+
+  // Update sunlight and block light at position
+  removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  updateSunlight();
+  updateBlockLights();
+  chunckManager.reloadLightData();
+
+  // Update liquid at position
+  checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+
+  removeBlockFromChunk(blockToRemove);
+}
+
 void World::putBlock(const Blocks& blockToPlace, Player* t_player,
                      const float cameraYaw) {
   Vec4 targetPos = ray.at(targetBlock->distance);
@@ -975,12 +995,15 @@ void World::putSlab(const Blocks& blockType,
   const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(GetBlockFromMap(
       terrain, originalOffset.x, originalOffset.y, originalOffset.z));
 
+  const u8 isPlacingTwoSlabsAtTargetPosition =
+      (u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
+      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB;
+
   // Is placing two slabs at target position?
   // If so, fix the blockOffset;
-  if ((u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+  if (isPlacingTwoSlabsAtTargetPosition) {
     const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
-        terrain, originalOffset.x, originalOffset.y, originalOffset.z);
+        terrain, blockOffset.x, blockOffset.y, blockOffset.z);
 
     if (targetSlabHeightOrientation == SlabOrientation::Bottom &&
         blockOffset.y > originalOffset.y) {
@@ -1059,12 +1082,19 @@ void World::putSlab(const Blocks& blockType,
       } else {
         orientation = BlockOrientation::East;
       }
+
       SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
                                    blockOffset.z, orientation);
-      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                    static_cast<u8>(Blocks::AIR_BLOCK));
-      putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
-      return;
+
+      Chunck* chunk = chunckManager.getChunkByBlockOffset(blockOffset);
+      Block* currentSlabAtOffsetPosition =
+          chunk->getBlockByOffset(&blockOffset);
+
+      if (currentSlabAtOffsetPosition) {
+        removeBlockSilently(currentSlabAtOffsetPosition);
+      }
+
+      return putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
     }
   }
 

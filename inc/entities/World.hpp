@@ -104,6 +104,7 @@ class World {
   Block* targetBlock = nullptr;
 
   void removeBlock(Block* blockToRemove);
+  void removeBlockSilently(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player,
                 const float cameraYaw);
   void putTorchBlock(const PlacementDirection placementDirection,
