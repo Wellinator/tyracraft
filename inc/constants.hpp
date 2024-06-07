@@ -3,7 +3,7 @@
 #include <math/vec4.hpp>
 
 #ifndef VERSION
-#define VERSION "v0.43.71-pre-alpha"  // Software version
+#define VERSION "v0.83.120-pre-alpha"  // Software version
 #endif
 
 #define OVERWORLD_H_DISTANCE 128  // Total horizontal overworld distance;
@@ -56,8 +56,8 @@
 
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
-#define UNLOAD_CHUNK_BATCH 128
-#define LOAD_CHUNK_BATCH 128
+#define UNLOAD_CHUNK_BATCH 8
+#define LOAD_CHUNK_BATCH 6
 
 // Texture atlas info
 #define MAX_TEX_COLS 16
@@ -106,15 +106,15 @@ enum class Blocks {
   MOSSY_STONE_BRICKS_BLOCK,
   CHISELED_STONE_BRICKS_BLOCK,
 
-  // Concretes
-  YELLOW_CONCRETE,
-  BLUE_CONCRETE,
-  GREEN_CONCRETE,
-  ORANGE_CONCRETE,
-  PURPLE_CONCRETE,
-  RED_CONCRETE,
-  WHITE_CONCRETE,
-  BLACK_CONCRETE,
+  // Wool
+  YELLOW_WOOL,
+  BLUE_WOOL,
+  GREEN_WOOL,
+  ORANGE_WOOL,
+  PURPLE_WOOL,
+  RED_WOOL,
+  WHITE_WOOL,
+  BLACK_WOOL,
 
   // Light Emissors
   GLOWSTONE_BLOCK,
@@ -213,15 +213,15 @@ enum class ItemId {
   poppy_flower,
   dandelion_flower,
 
-  // Concretes
-  yellow_concrete,
-  blue_concrete,
-  green_concrete,
-  orange_concrete,
-  purple_concrete,
-  red_concrete,
-  white_concrete,
-  black_concrete,
+  // Wools
+  yellow_wool,
+  blue_wool,
+  green_wool,
+  orange_wool,
+  purple_wool,
+  red_wool,
+  white_wool,
+  black_wool,
 
   // Light Emissors
   glowstone,
@@ -255,8 +255,8 @@ enum class ItemId {
   diamond_axe,
 };
 
-#define WATER_PROPAGATION_PER_TICKS 5 * 4
-#define LAVA_PROPAGATION_PER_TICKS 30 * 4
+#define WATER_PROPAGATION_PER_TICKS 5
+#define LAVA_PROPAGATION_PER_TICKS 10
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -287,6 +287,17 @@ enum class BlockOrientation {
   Top = 4,
 };
 
+enum class LiquidOrientation {
+  East,
+  NorthEast,
+  North,
+  NorthWest,
+  West,
+  SouthEast,
+  South,
+  SouthWest
+};
+
 enum class SlabOrientation {
   Top = 0,
   Bottom = 1,
@@ -313,8 +324,11 @@ enum class EntityType {
   Painting
 };
 
+// Three bits for liquid volume
+#define LIQUID_LEVEL_MASK 0b00011100
+
 // Three bits for orientation
-#define BLOCK_LIQUID_LEVEL_MASK 0b00011100
+#define LIQUID_ORIENTATION_MASK 0b11100000
 
 // Three bits for orientation for torch
 #define TORCH_ORIENTATION_MASK 0b00000111
@@ -328,6 +342,14 @@ enum class EntityType {
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
 #define _180DEGINRAD Tyra::Math::ANG2RAD * 180
 #define _270DEGINRAD Tyra::Math::ANG2RAD * 270
+#define SIN_90 1.000000f
+#define COS_90 0.000000f
+#define SIN_180 0.000000f
+#define COS_180 -1.00000f
+#define SIN_270 -1.00000f
+#define COS_270 0.000000f
+#define SIN_360 0.000000f
+#define COS_360 1.000000f
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
@@ -374,3 +396,10 @@ typedef enum {
 #define TORCH_UV_COUNTER 20
 
 #define MAX_SAFE_MEMORY_ALLOCATION 29
+
+#define DOWN_VEC Vec4(0, -1, 0)
+#define UP_VEC Vec4(0, 1, 0)
+#define RIGHT_VEC Vec4(-1, 0, 0)
+#define LEFT_VEC Vec4(1, 0, 0)
+#define FRONT_VEC Vec4(0, 0, -1)
+#define BACK_VEC Vec4(0, 0, 1)

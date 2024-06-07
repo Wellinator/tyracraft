@@ -15,6 +15,8 @@
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 #include <array>
+#include <time.h>
+#include "managers/block/vertex_block_data.hpp"
 
 using Tyra::BBox;
 using Tyra::BBoxFace;
@@ -64,10 +66,14 @@ class Chunck {
   Chunck* bottomNeighbor = nullptr;
 
   int visibleFacesCount = 0;
+  int visibleFacesCountWithTransparency = 0;
   u16 blocksCount = 0;
 
   LevelMap* t_terrain;
   WorldLightModel* t_worldLightModel;
+
+  clock_t buildingTimeStart;
+  double timeToBuild = 0;
 
   void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -76,12 +82,23 @@ class Chunck {
                                BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
   void clear();
+  void clearAsync();
 
   void loadDrawData();
+  void loadDrawDataAsync();
   void loadDrawDataWithoutSorting();
   void reloadLightData();
   void clearDrawData();
+  void clearDrawDataWithoutShrink();
   inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
+
+  void removeBlock(Block* target);
+  void removeBlockByOffset(u32 offset);
+  void removeBlockByOffset(Vec4* offset);
+  void removeBlockByLocalIndex(u16 index);
+  void removeBlockByPosition(Vec4* position);
+
+  u8 containsBlock(Vec4* offset);
 
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   void updateFrustumCheck(const Plane* frustumPlanes);
@@ -98,8 +115,16 @@ class Chunck {
 
   // Block controllers
   inline void addBlock(Block* t_block) {
+    t_block->localIndex = blocks.size();
     blocks.emplace_back(t_block);
-    visibleFacesCount += t_block->visibleFacesCount;
+
+    if (t_block->hasTransparency) {
+      visibleFacesCountWithTransparency +=
+          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+    } else {
+      visibleFacesCount +=
+          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+    }
   };
 
   inline void preAllocateMemory() {
@@ -130,6 +155,9 @@ class Chunck {
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
   u8 _isDrawDataLoaded = false;
+  u8 _isMemoryReserved = false;
+  u8 _loaderBatchCounter = 0;
+  u8 _unloaderBatchCounter = 0;
 
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;

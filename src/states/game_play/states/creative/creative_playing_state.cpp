@@ -1,5 +1,6 @@
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "managers/settings_manager.hpp"
+#include "debug.hpp"
 #include "utils.hpp"
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
@@ -46,30 +47,54 @@ void CreativePlayingState::update(const float& deltaTime) {
 void CreativePlayingState::tick() {
   stateGamePlay->world->tick(stateGamePlay->player,
                              stateGamePlay->context->t_camera);
-
   stateGamePlay->player->tick(stateGamePlay->world->terrain);
+  stateGamePlay->ui->update();
 
-  if (isTicksCounterAt(5)) stateGamePlay->ui->update();
   if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();
 }
 
 void CreativePlayingState::render() {
   stateGamePlay->world->dayNightCycleManager.render();
   stateGamePlay->world->cloudsManager.render();
+  stateGamePlay->world->mobManager.render();
+  stateGamePlay->world->renderOpaque();
+  stateGamePlay->world->renderTransparent();
+  stateGamePlay->world->renderBlockDamageOverlay();
   stateGamePlay->player->render();
-  stateGamePlay->world->render();
-  stateGamePlay->world->particlesManager.renderBlocksParticles();
+  stateGamePlay->world->particlesManager.render();
   renderCreativeUi();
 
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
-  if (debugMode) drawDegubInfo();
+  if (g_debug_mode) drawDegubInfo();
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
 
-  if (clicked.Select) debugMode = !debugMode;
-  if (debugMode && clicked.Circle) printMemoryInfoToLog();
+  if (clicked.Select) g_debug_mode = !g_debug_mode;
+  if (g_debug_mode) {
+    if (clicked.Circle) printMemoryInfoToLog();
+
+    // List loaded textures and VRAM
+    if (clicked.Triangle) {
+      TYRA_LOG("-----------FREE VRAM-----------");
+      TYRA_LOG(stateGamePlay->context->t_engine->renderer.core.gs.vram
+                   .getFreeSpaceInMB(),
+               "MB");
+
+      auto& texRepo =
+          stateGamePlay->context->t_engine->renderer.getTextureRepository();
+      TYRA_LOG("---------TEXTURES---------");
+      TYRA_LOG("Total of loaded textures: ", (int)texRepo.getTexturesCount());
+
+      std::vector<Texture*>* textures = texRepo.getAll();
+      for (size_t i = 0; i < textures->size(); i++) {
+        auto tex = textures->at(i);
+        TYRA_LOG(i, ": ", tex->name.c_str(), ", ", tex->getSizeInMB(), "MB.");
+      }
+      TYRA_LOG("---------------------------");
+    }
+  }
 
   if (isInventoryOpened()) {
     inventoryInputHandler(deltaTime);
@@ -265,6 +290,20 @@ void CreativePlayingState::drawDegubInfo() {
               stateGamePlay->world->getChuncksToUpdateLightCount())));
   FontManager_printText(chunksToUpdateLight,
                         FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
+
+  // Draw particles counter
+  std::string particle_counter =
+      std::string("Particles alive: ")
+          .append(std::to_string(
+              stateGamePlay->world->particlesManager.getParticlesCounter()));
+  FontManager_printText(particle_counter,
+                        FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
+  // Draw tick avg
+  std::string tick_avg =
+      std::string("Tick avg speed")
+          .append(std::to_string(tickManager.getTickTimeAverage()));
+  FontManager_printText(tick_avg,
+                        FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
 
   // Draw version
   std::string version = std::string("Version: ").append(VERSION);

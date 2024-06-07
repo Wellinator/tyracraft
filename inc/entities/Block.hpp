@@ -37,6 +37,10 @@ class Block : public Entity {
   u32 offset;                       // Terrain offset;
   u16 chunkId;
 
+  u16 localIndex;
+  u16 drawDataIndex;
+  u8 drawDataLength;
+
   // Block state
   u8 isTarget = false;
   u8 hasTransparency = false;

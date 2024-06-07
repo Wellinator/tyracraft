@@ -12,6 +12,7 @@ std::string SpecialValidChars = std::string(" -_");
 std::string NumericValidChars = std::string("1234567890");
 std::string UpperCaseAlphaChars = std::string("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 std::string LowerCaseAlphaChars = std::string("abcdefghijklmnopqrstuvwxyz");
+Texture* Font_ASCII_Texture = nullptr;
 
 std::string AlphaValidChars =
     std::string(UpperCaseAlphaChars + LowerCaseAlphaChars);
@@ -132,21 +133,24 @@ float FontManager_calcLinePadding(const char* text, const size_t length,
 }
 
 void FontManager_loadFontChars(Renderer* t_renderer) {
+  const int MAX_COLS = 16;
   const u8 INITIAL_CHAR_CODE = 0;
   const u8 FINAL_CHAR_CODE = 255;
 
+  Font_ASCII_Texture = t_renderer->getTextureRepository().add(
+      FileUtils::fromCwd("textures/font/ascii.png"));
+
   for (size_t code = INITIAL_CHAR_CODE; code <= FINAL_CHAR_CODE; code++) {
     Sprite* charSprite = new Sprite();
-    charSprite->mode = Tyra::MODE_STRETCH;
+
+    charSprite->mode = Tyra::MODE_REPEAT;
     charSprite->size.set(32.0F, 32.0F);
 
-    std::string charPath = "textures/font/chars/";
-    charPath.append(std::to_string(code));
-    charPath.append(".png");
+    const u8 x_offset = code < MAX_COLS ? code : code % MAX_COLS;
+    const u8 y_offset = code < MAX_COLS ? 0 : std::floor(code / MAX_COLS);
+    charSprite->offset = Vec2(x_offset, y_offset) * charSprite->size;
 
-    t_renderer->getTextureRepository()
-        .add(FileUtils::fromCwd(charPath))
-        ->addLink(charSprite->id);
+    Font_ASCII_Texture->addLink(charSprite->id);
 
     printable_ascii_chars_sprites[code] = charSprite;
   }

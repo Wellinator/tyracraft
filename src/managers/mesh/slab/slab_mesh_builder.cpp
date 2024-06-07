@@ -23,9 +23,9 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 
   Vec4* rawData;
   if (orientation == SlabOrientation::Top) {
-    rawData = (Vec4*)VertexBlockData::getTopSlabVertexData();
+    rawData = (Vec4*)VertexBlockData::topSlabVertexData;
   } else {
-    rawData = (Vec4*)VertexBlockData::getBottomSlabVertexData();
+    rawData = (Vec4*)VertexBlockData::bottomSlabVertexData;
   }
 
   if (t_block->isTopFaceVisible()) {
@@ -82,8 +82,6 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
   }
-
-  delete rawData;
 }
 
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
@@ -139,6 +137,59 @@ void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
   t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
+std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(
+    Block* t_block, LevelMap* t_terrain) {
+  Vec4 tempBlockOffset;
+  std::array<FACE_SIDE, 4> result = {};
+
+  GetXYZFromPos(&t_block->offset, &tempBlockOffset);
+
+  const BlockOrientation orientation = GetBlockOrientationDataFromMap(
+      t_terrain, tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
+
+  switch (orientation) {
+    case BlockOrientation::North:
+      // Will be rotated by 90deg
+      // Left turns Back & Right turns Front
+      // [ left, front, back, right]
+      result[0] = FACE_SIDE::FRONT;
+      result[1] = FACE_SIDE::RIGHT;
+      result[2] = FACE_SIDE::LEFT;
+      result[3] = FACE_SIDE::BACK;
+      break;
+
+    case BlockOrientation::West:
+      // Will be rotated by 180deg
+      // Left turns Right & Front turns Back
+      // [ left, front, back, right]
+      result[0] = FACE_SIDE::RIGHT;
+      result[1] = FACE_SIDE::BACK;
+      result[2] = FACE_SIDE::FRONT;
+      result[3] = FACE_SIDE::LEFT;
+      break;
+
+    case BlockOrientation::South:
+      // Will be rotated by 270deg
+      // Left turns Front & Right turns Back
+      // [ left, front, back, right]
+      result[0] = FACE_SIDE::BACK;
+      result[1] = FACE_SIDE::LEFT;
+      result[2] = FACE_SIDE::RIGHT;
+      result[3] = FACE_SIDE::FRONT;
+      break;
+
+    case BlockOrientation::East:
+    default:
+      result[0] = FACE_SIDE::LEFT;
+      result[1] = FACE_SIDE::FRONT;
+      result[2] = FACE_SIDE::BACK;
+      result[3] = FACE_SIDE::RIGHT;
+      break;
+  }
+
+  return result;
+}
+
 void SlabMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
@@ -147,14 +198,17 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
+  const std::array<FACE_SIDE, 4> faceByRotation =
+      SlabMeshBuilder_getFaceByRotation(t_block, t_terrain);
+
   if (t_block->isTopFaceVisible()) {
     //   Top face 100% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -170,9 +224,9 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
@@ -187,14 +241,14 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[0],
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::LEFT, t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[0], t_block, t_terrain);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -204,14 +258,14 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[3],
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::RIGHT, t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[3], t_block, t_terrain);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -221,14 +275,14 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[2],
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::BACK, t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[2], t_block, t_terrain);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -238,14 +292,14 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   t_terrain,
-                                   t_worldLightModel->sunLightIntensity);
+    SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[1],
+                                     t_terrain,
+                                     t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::FRONT, t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[1], t_block, t_terrain);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -441,4 +495,96 @@ void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
   t_vertices_colors->emplace_back(*faceColor);
   t_vertices_colors->emplace_back(*faceColor);
   t_vertices_colors->emplace_back(*faceColor);
+}
+
+void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
+                                      FACE_SIDE faceSide, LevelMap* t_terrain,
+                                      const float sunlightIntensity) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
+
+  u8 lightData;
+  u8 sunLightLevel;
+  u8 lightLevel;
+
+  Vec4 targetBlockOffset;
+  GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
+  const SlabOrientation orientation = GetSlabOrientationDataFromMap(
+      t_terrain, targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
+
+  switch (faceSide) {
+    case FACE_SIDE::TOP:
+      if (orientation == SlabOrientation::Top) {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y + 1, targetBlockOffset.z);
+      } else {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y, targetBlockOffset.z);
+      }
+
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::BOTTOM:
+      if (orientation == SlabOrientation::Top) {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y, targetBlockOffset.z);
+      } else {
+        lightData =
+            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                                targetBlockOffset.y - 1, targetBlockOffset.z);
+      }
+
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::LEFT:
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x + 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::RIGHT:
+      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x - 1,
+                                      targetBlockOffset.y, targetBlockOffset.z);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::BACK:
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z + 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    case FACE_SIDE::FRONT:
+      lightData =
+          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
+                              targetBlockOffset.y, targetBlockOffset.z - 1);
+      sunLightLevel = ((lightData >> 4) & 0xF);
+      lightLevel = lightData & 0x0F;
+      break;
+
+    default:
+      return;
+  }
+
+  /**
+   *  I've built this formula:
+   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
+   */
+  const float sunLightFactor = std::max(
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
+  const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+  *baseColor = LightManager::IntensifyColor(
+      baseColor, std::max(sunLightFactor, lightLevelFactor));
 }

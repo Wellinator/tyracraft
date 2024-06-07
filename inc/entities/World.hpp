@@ -86,7 +86,9 @@ class World {
             SoundManager* t_soundManager);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
   void tick(Player* t_player, Camera* t_camera);
-  void render();
+  void renderOpaque();
+  void renderTransparent();
+  void renderBlockDamageOverlay();
   void generate();
   void generateLight();
   void propagateLiquids();
@@ -102,6 +104,7 @@ class World {
   Block* targetBlock = nullptr;
 
   void removeBlock(Block* blockToRemove);
+  void removeBlockSilently(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player,
                 const float cameraYaw);
   void putTorchBlock(const PlacementDirection placementDirection,
@@ -120,7 +123,11 @@ class World {
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
   void buildChunk(Chunck* t_chunck);
-  void buildChunkAsync(Chunck* t_chunck, const u8& loading_speed);
+  void buildChunkAsync(Chunck* t_chunck);
+  void rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset);
+  void addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset);
+  void updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block);
+  void addBlockToChunk(Chunck* t_chunck, Vec4* offset);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
@@ -169,9 +176,10 @@ class World {
   void loadScheduledChunks();
   void unloadScheduledChunks();
   void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
+  void removeBlockFromChunk(Block* blockToRemove);
+  void updateNeighBorsChunksByAddedBlock(Vec4* offset);
   void addChunkToLoadAsync(Chunck* t_chunck);
   void addChunkToUnloadAsync(Chunck* t_chunck);
-  void renderBlockDamageOverlay();
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 
@@ -211,7 +219,9 @@ class World {
   uint32_t seed;
 
   inline u8 isCrossedBlock(Blocks block_type);
-  inline u32 getIndexByOffset(int x, int y, int z);
+  inline u32 getIndexByOffset(int x, int y, int z) {
+    return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
+  }
 
   /**
    * @brief Update the visible block faces
@@ -220,11 +230,12 @@ class World {
    */
   u8 getBlockVisibleFaces(const Vec4* t_blockOffset);
   u8 getSlabVisibleFaces(const Vec4* t_blockOffset);
+  u8 getLeavesVisibleFaces(const Vec4* t_blockOffset);
   u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline u8 isBlockTransparentAtPosition(const float& x, const float& y,
-                                         const float& z);
-  inline u8 isAirAtPosition(const float& x, const float& y, const float& z);
+  inline u8 isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z);
+  inline u8 isAirAtPosition(const u8 x, const u8 y, const u8 z);
+  inline u8 isLiquidAtPosition(const u8 x, const u8 y, const u8 z);
 
   inline u8 isTopFaceVisible(const Vec4* t_blockOffset);
   inline u8 isBottomFaceVisible(const Vec4* t_blockOffset);
@@ -244,10 +255,10 @@ class World {
   uint16_t waterSoundDuration = 4000;
   float waterSoundTimeCounter = 0.0F;
   float lastTimePlayedWaterSound = 0.0F;
-  std::queue<Node> waterBfsQueue;
-  std::queue<Node> waterRemovalBfsQueue;
-  std::queue<Node> lavaBfsQueue;
-  std::queue<Node> lavaRemovalBfsQueue;
+  std::queue<Node> waterBfsQueue = {};
+  std::queue<Node> waterRemovalBfsQueue = {};
+  std::queue<Node> lavaBfsQueue = {};
+  std::queue<Node> lavaRemovalBfsQueue = {};
   std::unordered_set<Chunck*> affectedChunksIdByLiquidPropagation;
 
   void initLiquidExpansion();
@@ -268,7 +279,13 @@ class World {
   void propagateLavaRemovalQueue();
   void propagateLavaAddQueue();
   void updateChunksAffectedByLiquidPropagation();
+  const s8 getNextLavaLevel(const s8 currentLevel);
   u8 canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z);
+
+  inline void dispatchChunkBatch() {
+    unloadScheduledChunks();
+    loadScheduledChunks();
+  }
 };
 
 bool inline isVegetation(Blocks block) {
@@ -278,10 +295,12 @@ bool inline isVegetation(Blocks block) {
 
 bool inline isTransparent(Blocks block) {
   return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
-         block == Blocks::GLASS_BLOCK || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER || block == Blocks::GRASS ||
-         block == Blocks::TORCH ||
-         // It it's slab, it's visible;
+         block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
+         block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
+         block == Blocks::GLASS_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
+         block == Blocks::BIRCH_LEAVES_BLOCK ||
+
+         // If it's slab, it's visible;
          ((u8)block >= (u8)Blocks::STONE_SLAB &&
           (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
 };

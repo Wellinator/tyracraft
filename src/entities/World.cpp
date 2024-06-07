@@ -9,6 +9,7 @@
 #include "managers/collision_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/mazecraft_generator.hpp"
+#include "debug.hpp"
 #include <tyra>
 
 // From CrossCraft
@@ -74,6 +75,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
 void World::generate() {
   if (worldOptions.type == WorldType::WORLD_MINI_GAME_MAZECRAFT) {
     // TODO: save/load level
+    // In mazecraft mode the seed is a auto increment integer used as a level
     unsigned int level = 1;
 
     mazegen::Config cfg;
@@ -163,17 +165,21 @@ void World::setSavedSpawnArea(Vec4 pos) {
 }
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
+  dispatchChunkBatch();
+
   particlesManager.update(deltaTime, t_camera);
-  cloudsManager.update();
-  if (_updateDayNightCycle) dayNightCycleManager.update();
+  cloudsManager.update(deltaTime);
+
+  dispatchChunkBatch();
+
+  if (_updateDayNightCycle)
+    dayNightCycleManager.update(deltaTime, &t_camera->position);
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
-
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
 
-  unloadScheduledChunks();
-  loadScheduledChunks();
+  dispatchChunkBatch();
 
   mobManager.update(deltaTime);
   updateTargetBlock(t_camera, t_player);
@@ -184,13 +190,14 @@ void World::tick(Player* t_player, Camera* t_camera) {
   particlesManager.tick();
   chunckManager.tick();
   mobManager.tick();
+  cloudsManager.tick();
 
   if (targetBlock && targetBlock->damage > 0) updateBlockDamage();
 
   // Update clouds and sun/moon every 50 ticks
   if (isTicksCounterAt(50)) {
     cloudsManager.tick();
-    if (_updateDayNightCycle) dayNightCycleManager.tick(&t_camera->position);
+    if (_updateDayNightCycle) dayNightCycleManager.tick();
   }
 
   // Update chunk light data every 1000 ticks
@@ -215,15 +222,15 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateChunkByPlayerPosition(t_player);
   }
 
-  if (isTicksCounterAt(6)) {
-    t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
-  }
+  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 }
 
-void World::render() {
-  mobManager.render();
-  chunckManager.renderer(t_renderer, &stapip, &blockManager);
-  if (targetBlock) renderBlockDamageOverlay();
+void World::renderOpaque() {
+  chunckManager.rendererOpaque(t_renderer, &stapip, &blockManager);
+};
+
+void World::renderTransparent() {
+  chunckManager.rendererTransparent(t_renderer, &stapip, &blockManager);
 };
 
 void World::buildInitialPosition() {
@@ -241,7 +248,10 @@ void World::resetWorldData() { chunckManager.clearAllChunks(); }
 
 void World::updateChunkByPlayerPosition(Player* t_player) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-  if (lastPlayerPosition.distanceTo(currentPlayerPos) > CHUNCK_SIZE) {
+  float displacement =
+      (lastPlayerPosition - currentPlayerPos).length() / CHUNCK_SIZE;
+
+  if (displacement > CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck =
         chunckManager.getChunckByWorldPosition(currentPlayerPos);
@@ -261,46 +271,26 @@ void World::reloadWorldArea(const Vec4& position) {
   }
 }
 
-void World::updateNeighBorsChunksByModdedPosition(const Vec4& pos) {
-  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(pos);
+void World::removeBlockFromChunk(Block* blockToRemove) {
+  Chunck* currentChunk = chunckManager.getChunkById(blockToRemove->chunkId);
   if (!currentChunk) return;
 
-  currentChunk->clear();
-  buildChunk(currentChunk);
+  Vec4 offset;
+  GetXYZFromPos(&blockToRemove->offset, &offset);
 
-  const u8 isAtBottomBorder = pos.y == currentChunk->minOffset.y;
-  const u8 isAtTopBorder = pos.y + 1 == currentChunk->maxOffset.y;
-  const u8 isAtRightBorder = pos.x == currentChunk->minOffset.x;
-  const u8 isAtLeftBorder = pos.x + 1 == currentChunk->maxOffset.x;
-  const u8 isAtFrontBorder = pos.z == currentChunk->minOffset.z;
-  const u8 isAtBackBorder = pos.z + 1 == currentChunk->maxOffset.z;
-
-  if (isAtRightBorder && currentChunk->rightNeighbor) {
-    currentChunk->rightNeighbor->clear();
-    buildChunk(currentChunk->rightNeighbor);
-  } else if (isAtLeftBorder && currentChunk->leftNeighbor) {
-    currentChunk->leftNeighbor->clear();
-    buildChunk(currentChunk->leftNeighbor);
-  }
-
-  if (isAtFrontBorder && currentChunk->frontNeighbor) {
-    currentChunk->frontNeighbor->clear();
-    buildChunk(currentChunk->frontNeighbor);
-  } else if (isAtBackBorder && currentChunk->backNeighbor) {
-    currentChunk->backNeighbor->clear();
-    buildChunk(currentChunk->backNeighbor);
-  }
-
-  if (isAtTopBorder && currentChunk->topNeighbor) {
-    currentChunk->topNeighbor->clear();
-    buildChunk(currentChunk->topNeighbor);
-  } else if (isAtBottomBorder && currentChunk->bottomNeighbor) {
-    currentChunk->bottomNeighbor->clear();
-    buildChunk(currentChunk->bottomNeighbor);
-  }
+  currentChunk->removeBlock(blockToRemove);
+  rebuildChunkFragment(currentChunk, &offset);
 }
 
-void World::scheduleChunksNeighbors(Chunck* t_chunck,
+void World::updateNeighBorsChunksByAddedBlock(Vec4* offset) {
+  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(*offset);
+  if (!currentChunk) return;
+
+  addBlockToChunk(currentChunk, offset);
+  rebuildChunkFragment(currentChunk, offset);
+}
+
+void World::scheduleChunksNeighbors(Chunck* origin_chunk,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
@@ -309,7 +299,8 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
   for (u16 i = 0; i < chuncks->size(); i++) {
     auto t_chunk = (*chuncks)[i];
     const auto distance =
-        floor(t_chunck->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) + 1;
+        floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) +
+        1;
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
@@ -331,17 +322,18 @@ void World::scheduleChunksNeighbors(Chunck* t_chunck,
     }
   }
 
-  if (!force_loading && tempChuncksToLoad.size())
+  if (!force_loading && !tempChuncksToLoad.empty())
     sortChunksToLoad(currentPlayerPos);
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
   std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
             [currentPlayerPos](const Chunck* a, const Chunck* b) {
-              const float distanceA =
-                  (a->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
-              const float distanceB =
-                  (b->center * DUBLE_BLOCK_SIZE).distanceTo(currentPlayerPos);
+              auto distanceA =
+                  ((a->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+              auto distanceB =
+                  ((b->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+
               return distanceA < distanceB;
             });
 }
@@ -350,11 +342,19 @@ void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
     Chunck* chunk = tempChuncksToLoad.front();
     if (chunk->state == ChunkState::PreLoaded) {
-      chunk->loadDrawData();
+      if (!chunk->isDrawDataLoaded()) return chunk->loadDrawDataAsync();
+
       chunk->state = ChunkState::Loaded;
 
+      if (g_debug_mode) {
+        chunk->timeToBuild =
+            ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+        printf("Time to async build chunk %i: %f\n", chunk->id,
+               chunk->timeToBuild);
+      }
+
       // TODO: implement callback 'afterLoadChunk'
-      const u8 shouldSpawnMobInChunk = Utils::Probability(0.01f);
+      const u8 shouldSpawnMobInChunk = Utils::Probability(0.0075f);
 
       // TODO: move to chunk randon tick
       // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
@@ -365,13 +365,13 @@ void World::loadScheduledChunks() {
           mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
         }
       }
-      tempChuncksToLoad.pop_front();
 
+      tempChuncksToLoad.pop_front();
       if (tempChuncksToLoad.size() == 0) {
         tempChuncksToLoad.shrink_to_fit();
       }
     } else if (chunk->state != ChunkState::Loaded) {
-      return buildChunkAsync(chunk, worldOptions.drawDistance);
+      return buildChunkAsync(chunk);
     }
   }
 }
@@ -379,20 +379,21 @@ void World::loadScheduledChunks() {
 void World::unloadScheduledChunks() {
   if (tempChuncksToUnLoad.size() > 0) {
     Chunck* chunk = tempChuncksToUnLoad.front();
-    if (chunk->state != ChunkState::Clean) {
-      chunk->clear();
-      tempChuncksToUnLoad.pop_front();
 
+    if (chunk->state != ChunkState::Clean) {
+      return chunk->clearAsync();
+    } else {
+      tempChuncksToUnLoad.pop_front();
       if (tempChuncksToUnLoad.size() == 0) {
         tempChuncksToUnLoad.shrink_to_fit();
       }
-
-      return;
     }
   }
 }
 
 void World::renderBlockDamageOverlay() {
+  if (!targetBlock) return;
+
   t_renderer->renderer3D.usePipeline(stapip);
 
   StaPipTextureBag textureBag;
@@ -460,25 +461,27 @@ void World::updateLightModel() {
       dayNightCycleManager.getSunLightIntensity();
 }
 
-u32 World::getIndexByOffset(int x, int y, int z) {
-  return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
-}
-
-u8 World::isAirAtPosition(const float& x, const float& y, const float& z) {
+u8 World::isAirAtPosition(const u8 x, const u8 y, const u8 z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
   }
   return false;
 }
 
-u8 World::isBlockTransparentAtPosition(const float& x, const float& y,
-                                       const float& z) {
+u8 World::isLiquidAtPosition(const u8 x, const u8 y, const u8 z) {
+  if (BoundCheckMap(terrain, x, y, z)) {
+    const auto b = GetBlockFromMap(terrain, x, y, z);
+    return b == (u8)Blocks::WATER_BLOCK || b == (u8)Blocks::LAVA_BLOCK;
+  }
+  return false;
+}
+
+u8 World::isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z) {
   if (BoundCheckMap(terrain, x, y, z)) {
     const Blocks blockType =
         static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
 
-    return (blockType == Blocks::VOID || isTransparent(blockType) ||
-            blockType == Blocks::LAVA_BLOCK);
+    return (isTransparent(blockType) || blockType == Blocks::LAVA_BLOCK);
   } else {
     return false;
   }
@@ -515,7 +518,7 @@ u8 World::isRightFaceVisible(const Vec4* t_blockOffset) {
 }
 
 u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientation = GetOrientationDataFromMap(
+  const BlockOrientation orientation = GetBlockOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
   u8 result = 0b000000;
@@ -524,45 +527,44 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
     case BlockOrientation::North:
       // Will be rotated by 90deg
       // Left turns Back & Right turns Front
-      if (isLeftFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
       break;
     case BlockOrientation::South:
       // Will be rotated by 270deg
       // Left turns Front & Right turns Back
-      if (isLeftFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::West:
       // Will be rotated by 180deg
       // Left turns Right & Front turns Back
-      if (isLeftFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isFrontFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
+      if (isLeftFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::East:
     default:
-      if (isFrontFaceVisible(t_blockOffset)) result = result | FRONT_VISIBLE;
-      if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
-      if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
-      if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
+      if (isLeftFaceVisible(t_blockOffset)) result |= LEFT_VISIBLE;
+      if (isFrontFaceVisible(t_blockOffset)) result |= FRONT_VISIBLE;
+      if (isBackFaceVisible(t_blockOffset)) result |= BACK_VISIBLE;
+      if (isRightFaceVisible(t_blockOffset)) result |= RIGHT_VISIBLE;
       break;
   }
 
-  if (isTopFaceVisible(t_blockOffset)) result = result | TOP_VISIBLE;
-  if (isBottomFaceVisible(t_blockOffset)) result = result | BOTTOM_VISIBLE;
+  if (isTopFaceVisible(t_blockOffset)) result |= TOP_VISIBLE;
+  if (isBottomFaceVisible(t_blockOffset)) result |= BOTTOM_VISIBLE;
 
   return result;
 }
 
 u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientationXZ = GetOrientationDataFromMap(
+  const BlockOrientation orientationXZ = GetBlockOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
   const SlabOrientation orientationY = GetSlabOrientationDataFromMap(
       terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
@@ -600,7 +602,6 @@ u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
       if (isBackFaceVisible(t_blockOffset)) result = result | BACK_VISIBLE;
       if (isRightFaceVisible(t_blockOffset)) result = result | RIGHT_VISIBLE;
       if (isLeftFaceVisible(t_blockOffset)) result = result | LEFT_VISIBLE;
-
       break;
   }
 
@@ -615,73 +616,150 @@ u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
   return result;
 }
 
-u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
+u8 World::getLeavesVisibleFaces(const Vec4* t_blockOffset) {
+  u8 result = 0b000000;
+
   const auto x = t_blockOffset->x;
   const auto y = t_blockOffset->y;
   const auto z = t_blockOffset->z;
 
-  const BlockOrientation orientation = GetOrientationDataFromMap(
-      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const auto bFront =
+      !BoundCheckMap(terrain, x, y, z - 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
 
+  const auto bBlack =
+      !BoundCheckMap(terrain, x, y, z + 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+
+  const auto bRight =
+      !BoundCheckMap(terrain, x - 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+
+  const auto bLeft =
+      !BoundCheckMap(terrain, x + 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+
+  const auto bTop =
+      !BoundCheckMap(terrain, x, y + 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+
+  const auto bBottom =
+      !BoundCheckMap(terrain, x, y - 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+
+  // Front
+  if (!(bFront == Blocks::OAK_LEAVES_BLOCK ||
+        bFront == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bFront || blockManager.isBlockTransparent(bFront)))
+    result = result | FRONT_VISIBLE;
+  // Back
+  if (!(bBlack == Blocks::OAK_LEAVES_BLOCK ||
+        bBlack == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bBlack || blockManager.isBlockTransparent(bBlack)))
+    result = result | BACK_VISIBLE;
+  // Right
+  if (!(bRight == Blocks::OAK_LEAVES_BLOCK ||
+        bRight == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bRight || blockManager.isBlockTransparent(bRight)))
+    result = result | RIGHT_VISIBLE;
+  // Left
+  if (!(bLeft == Blocks::OAK_LEAVES_BLOCK ||
+        bLeft == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bLeft || blockManager.isBlockTransparent(bLeft)))
+    result = result | LEFT_VISIBLE;
+  // Top
+  if (!(bTop == Blocks::OAK_LEAVES_BLOCK ||
+        bTop == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bTop || blockManager.isBlockTransparent(bTop)))
+    result = result | TOP_VISIBLE;
+  // Bottom
+  if (!(bBottom == Blocks::OAK_LEAVES_BLOCK ||
+        bBottom == Blocks::BIRCH_LEAVES_BLOCK) &&
+      (Blocks::AIR_BLOCK == bBottom ||
+       blockManager.isBlockTransparent(bBottom)))
+    result = result | BOTTOM_VISIBLE;
+
+  return result;
+}
+
+u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   u8 result = 0b000000;
 
-  switch (orientation) {
-    case BlockOrientation::North:
-      // Will be rotated by 90deg
-      // Left turns Back & Right turns Front
+  const auto x = t_blockOffset->x;
+  const auto y = t_blockOffset->y;
+  const auto z = t_blockOffset->z;
 
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | LEFT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | RIGHT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | FRONT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | BACK_VISIBLE;
-      break;
-    case BlockOrientation::South:
-      // Will be rotated by 270deg
-      // Left turns Front & Right turns Back
+  const u8 currentLevel = GetLiquidDataFromMap(terrain, x, y, z);
 
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | RIGHT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | LEFT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | BACK_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | FRONT_VISIBLE;
-      break;
-    case BlockOrientation::West:
-      // Will be rotated by 180deg
-      // Left turns Right & Front turns Back
+  const auto bFront =
+      !BoundCheckMap(terrain, x, y, z - 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
 
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | BACK_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | FRONT_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | LEFT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | RIGHT_VISIBLE;
-      break;
-    case BlockOrientation::East:
-    default:
-      // Front
-      if (isAirAtPosition(x, y, z - 1)) result = result | FRONT_VISIBLE;
-      // Back
-      if (isAirAtPosition(x, y, z + 1)) result = result | BACK_VISIBLE;
-      // Right
-      if (isAirAtPosition(x - 1, y, z)) result = result | RIGHT_VISIBLE;
-      // Left
-      if (isAirAtPosition(x + 1, y, z)) result = result | LEFT_VISIBLE;
-      break;
-  }
+  const auto bBlack =
+      !BoundCheckMap(terrain, x, y, z + 1)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+
+  const auto bRight =
+      !BoundCheckMap(terrain, x - 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+
+  const auto bLeft =
+      !BoundCheckMap(terrain, x + 1, y, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+
+  const auto bTop =
+      !BoundCheckMap(terrain, x, y + 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+
+  const auto bBottom =
+      !BoundCheckMap(terrain, x, y - 1, z)
+          ? Blocks::VOID
+          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+
+  // Front
+  if (bFront != Blocks::LAVA_BLOCK && bFront != Blocks::WATER_BLOCK &&
+      bFront != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bFront || blockManager.isBlockTransparent(bFront)))
+    result = result | FRONT_VISIBLE;
+  // Back
+  if (bBlack != Blocks::LAVA_BLOCK && bBlack != Blocks::WATER_BLOCK &&
+      bBlack != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bBlack || blockManager.isBlockTransparent(bBlack)))
+    result = result | BACK_VISIBLE;
+  // Right
+  if (bRight != Blocks::LAVA_BLOCK && bRight != Blocks::WATER_BLOCK &&
+      bRight != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bRight || blockManager.isBlockTransparent(bRight)))
+    result = result | RIGHT_VISIBLE;
+  // Left
+  if (bLeft != Blocks::LAVA_BLOCK && bLeft != Blocks::WATER_BLOCK &&
+      bLeft != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bLeft || blockManager.isBlockTransparent(bLeft)))
+    result = result | LEFT_VISIBLE;
 
   // Top
-  if (isAirAtPosition(x, y + 1, z)) result = result | TOP_VISIBLE;
+  if (bTop != Blocks::LAVA_BLOCK && bTop != Blocks::WATER_BLOCK &&
+      bTop != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bTop || blockManager.isBlockTransparent(bTop) ||
+       currentLevel < (u8)LiquidLevel::Percent100))
+    result = result | TOP_VISIBLE;
   // Bottom
-  if (isAirAtPosition(x, y - 1, z)) result = result | BOTTOM_VISIBLE;
+  if (bBottom != Blocks::LAVA_BLOCK && bBottom != Blocks::WATER_BLOCK &&
+      bBottom != Blocks::VOID &&
+      (Blocks::AIR_BLOCK == bBottom ||
+       blockManager.isBlockTransparent(bBottom)))
+    result = result | BOTTOM_VISIBLE;
 
   return result;
 }
@@ -784,9 +862,11 @@ const bool World::getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
 }
 
 void World::removeBlock(Block* blockToRemove) {
+  // Generate amount of particles right begore block gets destroyed
+  particlesManager.createBlockParticleBatch(blockToRemove, 18);
+
   Vec4 offsetToRemove;
   GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
-
   SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
   SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
                      offsetToRemove.z, (u8)LiquidLevel::Percent0);
@@ -801,11 +881,8 @@ void World::removeBlock(Block* blockToRemove) {
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
 
-  updateNeighBorsChunksByModdedPosition(offsetToRemove);
+  removeBlockFromChunk(blockToRemove);
   playDestroyBlockSound(blockToRemove->type);
-
-  // Generate amount of particles right begore block gets destroyed
-  particlesManager.createBlockParticleBatch(blockToRemove, 18);
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
@@ -822,6 +899,26 @@ void World::removeBlock(Block* blockToRemove) {
       if (upperBlock) removeBlock(upperBlock);
     }
   }
+}
+
+void World::removeBlockSilently(Block* blockToRemove) {
+  Vec4 offsetToRemove;
+  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
+                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
+
+  // Update sunlight and block light at position
+  removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+  updateSunlight();
+  updateBlockLights();
+  chunckManager.reloadLightData();
+
+  // Update liquid at position
+  checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+
+  removeBlockFromChunk(blockToRemove);
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player,
@@ -896,7 +993,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   }
 
   playPutBlockSound(blockToPlace);
-  updateNeighBorsChunksByModdedPosition(blockOffset);
+  updateNeighBorsChunksByAddedBlock(&blockOffset);
 }
 
 void World::putTorchBlock(const PlacementDirection placementDirection,
@@ -968,12 +1065,15 @@ void World::putSlab(const Blocks& blockType,
   const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(GetBlockFromMap(
       terrain, originalOffset.x, originalOffset.y, originalOffset.z));
 
+  const u8 isPlacingTwoSlabsAtTargetPosition =
+      (u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
+      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB;
+
   // Is placing two slabs at target position?
   // If so, fix the blockOffset;
-  if ((u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+  if (isPlacingTwoSlabsAtTargetPosition) {
     const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
-        terrain, originalOffset.x, originalOffset.y, originalOffset.z);
+        terrain, blockOffset.x, blockOffset.y, blockOffset.z);
 
     if (targetSlabHeightOrientation == SlabOrientation::Bottom &&
         blockOffset.y > originalOffset.y) {
@@ -1035,10 +1135,36 @@ void World::putSlab(const Blocks& blockType,
 
       ResetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
                                     blockOffset.z);
-      SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                    static_cast<u8>(Blocks::AIR_BLOCK));
-      putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
-      return;
+
+      // Calc block orientation
+      BlockOrientation orientation;
+
+      if (blockManager.isBlockOriented(blockType)) {
+        if (cameraYaw > 315 || cameraYaw < 45) {
+          orientation = BlockOrientation::North;
+        } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+          orientation = BlockOrientation::South;
+        } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+          orientation = BlockOrientation::East;
+        } else {
+          orientation = BlockOrientation::West;
+        }
+      } else {
+        orientation = BlockOrientation::East;
+      }
+
+      SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
+                                   blockOffset.z, orientation);
+
+      Chunck* chunk = chunckManager.getChunkByBlockOffset(blockOffset);
+      Block* currentSlabAtOffsetPosition =
+          chunk->getBlockByOffset(&blockOffset);
+
+      if (currentSlabAtOffsetPosition) {
+        removeBlockSilently(currentSlabAtOffsetPosition);
+      }
+
+      return putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
     }
   }
 
@@ -1094,27 +1220,8 @@ void World::putSlab(const Blocks& blockType,
                         blockTypeAtOffsetPosition == Blocks::GRASS;
 
   if (canReplace) {
-    // Calc block orientation
-    BlockOrientation orientation;
-
-    if (blockManager.isBlockOriented(blockType)) {
-      if (cameraYaw > 315 || cameraYaw < 45) {
-        orientation = BlockOrientation::North;
-      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
-        orientation = BlockOrientation::South;
-      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
-        orientation = BlockOrientation::East;
-      } else {
-        orientation = BlockOrientation::West;
-      }
-    } else {
-      orientation = BlockOrientation::East;
-    }
-
     SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
                   static_cast<u8>(blockType));
-    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                 blockOffset.z, orientation);
     checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
     removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
 
@@ -1384,108 +1491,229 @@ u8 World::isCrossedBlock(Blocks block_type) {
          block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
 }
 
+void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
+  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
+
+  std::vector<Chunck*> affected_chunks;
+  affected_chunks.emplace_back(t_chunck);
+
+  Vec4 bottom = *moddedOffset + DOWN_VEC;
+  if (t_chunck->containsBlock(&bottom)) {
+    addOrupdateBlockInChunk(t_chunck, &bottom);
+  } else if (t_chunck->bottomNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->bottomNeighbor, &bottom);
+    affected_chunks.emplace_back(t_chunck->bottomNeighbor);
+  }
+
+  Vec4 top = *moddedOffset + UP_VEC;
+  if (t_chunck->containsBlock(&top)) {
+    addOrupdateBlockInChunk(t_chunck, &top);
+  } else if (t_chunck->topNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->topNeighbor, &top);
+    affected_chunks.emplace_back(t_chunck->topNeighbor);
+  }
+
+  Vec4 right = *moddedOffset + RIGHT_VEC;
+  if (t_chunck->containsBlock(&right)) {
+    addOrupdateBlockInChunk(t_chunck, &right);
+  } else if (t_chunck->rightNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->rightNeighbor, &right);
+    affected_chunks.emplace_back(t_chunck->rightNeighbor);
+  }
+
+  Vec4 left = *moddedOffset + LEFT_VEC;
+  if (t_chunck->containsBlock(&left)) {
+    addOrupdateBlockInChunk(t_chunck, &left);
+  } else if (t_chunck->leftNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->leftNeighbor, &left);
+    affected_chunks.emplace_back(t_chunck->leftNeighbor);
+  }
+
+  Vec4 front = *moddedOffset + FRONT_VEC;
+  if (t_chunck->containsBlock(&front)) {
+    addOrupdateBlockInChunk(t_chunck, &front);
+  } else if (t_chunck->frontNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->frontNeighbor, &front);
+    affected_chunks.emplace_back(t_chunck->frontNeighbor);
+  }
+
+  Vec4 back = *moddedOffset + BACK_VEC;
+  if (t_chunck->containsBlock(&back)) {
+    addOrupdateBlockInChunk(t_chunck, &back);
+  } else if (t_chunck->backNeighbor) {
+    addOrupdateBlockInChunk(t_chunck->backNeighbor, &back);
+    affected_chunks.emplace_back(t_chunck->backNeighbor);
+  }
+
+  for (size_t i = 0; i < affected_chunks.size(); i++) {
+    affected_chunks[i]->clearDrawData();
+    affected_chunks[i]->loadDrawData();
+  }
+
+  if (g_debug_mode) {
+    t_chunck->timeToBuild =
+        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk fragment %i: %f\n", t_chunck->id,
+           t_chunck->timeToBuild);
+  }
+}
+
+void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
+  const u8 validOffset =
+      BoundCheckMap(terrain, moddedOffset->x, moddedOffset->y, moddedOffset->z);
+  const u8 isInChunk =
+      moddedOffset->collidesBox(t_chunck->minOffset, t_chunck->maxOffset);
+
+  if (validOffset && isInChunk) {
+    Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
+
+    if (t_block) {
+      updateOrRemoveBlockInChunk(t_chunck, t_block);
+    } else {
+      addBlockToChunk(t_chunck, moddedOffset);
+    }
+  }
+}
+
+void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
+  Vec4 tempBlockOffset;
+  GetXYZFromPos(&t_block->offset, &tempBlockOffset);
+
+  const Blocks block_type = static_cast<Blocks>(t_block->type);
+  u8 visibleFaces;
+
+  if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
+    visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
+  } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+             (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+    visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+  } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+             block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+    visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
+  } else {
+    visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
+  }
+
+  // Check if visible faces changed
+  if (visibleFaces == 0) {
+    t_chunck->removeBlock(t_block);
+    rebuildChunkFragment(t_chunck, &tempBlockOffset);
+  } else if (visibleFaces != t_block->visibleFaces) {
+    t_block->visibleFaces = visibleFaces;
+  }
+}
+
+void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
+  u32 blockIndex = getIndexByOffset(offset->x, offset->y, offset->z);
+
+  const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
+
+  if (block_type != Blocks::AIR_BLOCK) {
+    u8 visibleFaces;
+
+    if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
+      visibleFaces = getLiquidBlockVisibleFaces(offset);
+    } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+               (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+      visibleFaces = getSlabVisibleFaces(offset);
+    } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+               block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+      visibleFaces = getLeavesVisibleFaces(offset);
+    } else {
+      visibleFaces = getBlockVisibleFaces(offset);
+    }
+
+    // Have any face visible?
+    if (visibleFaces > 0) {
+      BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
+
+      if (blockInfo) {
+        Block* block = new Block(blockInfo);
+        block->index = blockIndex;
+        block->offset = GetPosFromXYZ(offset->x, offset->y, offset->z);
+        block->chunkId = t_chunck->id;
+
+        if (block->isCrossed) {
+          block->visibleFaces = 0b111111;
+          block->visibleFacesCount = 2;
+        } else {
+          block->visibleFaces = visibleFaces;
+          block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+        }
+
+        block->position.set((*offset) * DUBLE_BLOCK_SIZE);
+
+        ModelBuilder_BuildModel(block, terrain);
+        BBox* rawBBox =
+            VertexBlockData::getRawBBoxByBlock(block->type, block->offset);
+        BBox tempBBox = rawBBox->getTransformed(block->model);
+
+        block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+        block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
+        // Add data to AABBTree
+        bvh::AABB blockAABB = bvh::AABB();
+        blockAABB.minx = block->minCorner.x;
+        blockAABB.miny = block->minCorner.y;
+        blockAABB.minz = block->minCorner.z;
+        blockAABB.maxx = block->maxCorner.x;
+        blockAABB.maxy = block->maxCorner.y;
+        blockAABB.maxz = block->maxCorner.z;
+        block->tree_index = g_AABBTree->insert(blockAABB, block);
+
+        delete rawBBox;
+
+        t_chunck->addBlock(block);
+      }
+    }
+  }
+}
+
 // TODO: move to chunk builder
 void World::buildChunk(Chunck* t_chunck) {
   if (!canBuildChunk()) return;
+  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
 
   t_chunck->preAllocateMemory();
 
   for (size_t x = t_chunck->minOffset.x; x < t_chunck->maxOffset.x; x++) {
     for (size_t z = t_chunck->minOffset.z; z < t_chunck->maxOffset.z; z++) {
       for (size_t y = t_chunck->minOffset.y; y < t_chunck->maxOffset.y; y++) {
-        u32 blockIndex = getIndexByOffset(x, y, z);
-        const Blocks block_type =
-            static_cast<Blocks>(terrain->blocks[blockIndex]);
-
-        if (block_type != Blocks::AIR_BLOCK) {
-          Vec4 tempBlockOffset = Vec4(x, y, z);
-          u8 visibleFaces;
-
-          if (block_type == Blocks::WATER_BLOCK ||
-              block_type == Blocks::LAVA_BLOCK) {
-            visibleFaces = getLiquidBlockVisibleFaces(&tempBlockOffset);
-          } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
-                     (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
-            visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
-          } else {
-            visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-            (&tempBlockOffset);
-          }
-
-          // Have any face visible?
-          if (visibleFaces > 0) {
-            BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
-
-            if (blockInfo) {
-              Block* block = new Block(blockInfo);
-              block->index = blockIndex;
-              block->offset = GetPosFromXYZ(
-                  tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
-              block->chunkId = t_chunck->id;
-
-              if (block->isCrossed) {
-                block->visibleFaces = 0b111111;
-                block->visibleFacesCount = 2;
-              } else {
-                block->visibleFaces = visibleFaces;
-                block->visibleFacesCount = Utils::countSetBits(visibleFaces);
-              }
-
-              block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
-
-              ModelBuilder_BuildModel(block, terrain);
-              BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(block->type,
-                                                                 block->offset);
-              BBox tempBBox = rawBBox->getTransformed(block->model);
-
-              block->bbox =
-                  new BBox(tempBBox.vertices, tempBBox.getVertexCount());
-              block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-              // Add data to AABBTree
-              bvh::AABB blockAABB = bvh::AABB();
-              blockAABB.minx = block->minCorner.x;
-              blockAABB.miny = block->minCorner.y;
-              blockAABB.minz = block->minCorner.z;
-              blockAABB.maxx = block->maxCorner.x;
-              blockAABB.maxy = block->maxCorner.y;
-              blockAABB.maxz = block->maxCorner.z;
-              block->tree_index = g_AABBTree->insert(blockAABB, block);
-
-              delete rawBBox;
-
-              t_chunck->addBlock(block);
-            }
-          }
-        }
+        Vec4 tempBlockOffset = Vec4(x, y, z);
+        addBlockToChunk(t_chunck, &tempBlockOffset);
       }
     }
   }
 
   t_chunck->freeUnusedMemory();
-
   t_chunck->state = ChunkState::Loaded;
+
+  if (g_debug_mode) {
+    t_chunck->timeToBuild =
+        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk %i: %f\n", t_chunck->id,
+           t_chunck->timeToBuild);
+  }
 }
 
-void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
-  if (!canBuildChunk()) {
-    return TYRA_WARN("Out of memory. Not loading chunk!");
-  };
+void World::buildChunkAsync(Chunck* t_chunck) {
+  if (g_debug_mode) {
+    if (t_chunck->state == ChunkState::Clean) {
+      t_chunck->buildingTimeStart = clock();
+    }
+  }
 
-  uint16_t safeWhileBreak = 0;
   uint16_t batchCounter = 0;
   uint16_t x = t_chunck->tempLoadingOffset.x;
   uint16_t y = t_chunck->tempLoadingOffset.y;
   uint16_t z = t_chunck->tempLoadingOffset.z;
-  auto limit = LOAD_CHUNK_BATCH;
 
   if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
 
-  while (batchCounter < limit) {
+  while (batchCounter < LOAD_CHUNK_BATCH) {
     t_chunck->state = ChunkState::Loading;
 
     if (x >= t_chunck->maxOffset.x) break;
-    safeWhileBreak++;
 
     u32 blockIndex = getIndexByOffset(x, y, z);
     const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
@@ -1500,13 +1728,17 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
                  (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
         visibleFaces = getSlabVisibleFaces(&tempBlockOffset);
+      } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+                 block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+        visibleFaces = getLeavesVisibleFaces(&tempBlockOffset);
       } else {
         visibleFaces = getBlockVisibleFaces(&tempBlockOffset);
-        (&tempBlockOffset);
       }
 
       // Is any face vísible?
       if (visibleFaces > 0) {
+        batchCounter++;
+
         BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
         if (blockInfo) {
@@ -1535,6 +1767,8 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
           block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
 
+          delete rawBBox;
+
           // Add data to AABBTree
           bvh::AABB blockAABB = bvh::AABB();
           blockAABB.minx = block->minCorner.x;
@@ -1545,14 +1779,10 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
           blockAABB.maxz = block->maxCorner.z;
           block->tree_index = g_AABBTree->insert(blockAABB, block);
 
-          delete rawBBox;
-
           t_chunck->addBlock(block);
         }
       }
     }
-
-    batchCounter++;
 
     y++;
     if (y >= t_chunck->maxOffset.y) {
@@ -1563,15 +1793,9 @@ void World::buildChunkAsync(Chunck* t_chunck, const u8& loading_speed) {
       z = t_chunck->minOffset.z;
       x++;
     }
-
-    if (safeWhileBreak > CHUNCK_LENGTH) {
-      TYRA_WARN("Safely breaking while loop");
-      t_chunck->clear();
-      break;
-    }
   }
 
-  if (batchCounter >= limit) {
+  if (batchCounter >= LOAD_CHUNK_BATCH) {
     t_chunck->tempLoadingOffset.set(x, y, z);
     return;
   }
@@ -1783,8 +2007,35 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 
     SetBlockInMap(terrain, x, y, z, type);
     SetLiquidDataToMap(terrain, x, y, z, level);
-    SetLiquidOrientationDataToMap(terrain, x, y, z,
-                                  static_cast<BlockOrientation>(orientation));
+
+    const auto prevDir = GetLiquidOrientationDataFromMap(terrain, x, y, z);
+
+    // Fix traversal orientation to linear
+    // It two traversal flux encounter each other, it will become a linear flux
+    if (((u8)LiquidOrientation::NorthEast == orientation &&
+         LiquidOrientation::NorthWest == prevDir) ||
+        ((u8)LiquidOrientation::NorthWest == orientation &&
+         LiquidOrientation::NorthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::North);
+    } else if (((u8)LiquidOrientation::NorthEast == orientation &&
+                LiquidOrientation::SouthEast == prevDir) ||
+               ((u8)LiquidOrientation::SouthEast == orientation &&
+                LiquidOrientation::NorthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::East);
+    } else if (((u8)LiquidOrientation::SouthEast == orientation &&
+                LiquidOrientation::SouthWest == prevDir) ||
+               ((u8)LiquidOrientation::SouthWest == orientation &&
+                LiquidOrientation::SouthEast == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::South);
+    } else if (((u8)LiquidOrientation::NorthWest == orientation &&
+                LiquidOrientation::SouthWest == prevDir) ||
+               ((u8)LiquidOrientation::SouthWest == orientation &&
+                LiquidOrientation::NorthWest == prevDir)) {
+      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::West);
+    } else {
+      SetLiquidOrientationDataToMap(
+          terrain, x, y, z, static_cast<LiquidOrientation>(orientation));
+    }
 
     Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
     if (moddedChunk && moddedChunk->isDrawDataLoaded()) {
@@ -1794,7 +2045,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
 }
 
 void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
-  addLiquid(x, y, z, type, level, (u8)BlockOrientation::East);
+  addLiquid(x, y, z, type, level, (u8)LiquidOrientation::East);
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
@@ -1892,101 +2143,112 @@ void World::updateLiquidLava() {
 
 void World::propagateWaterRemovalQueue() {
   if (waterRemovalBfsQueue.empty() == false) {
-    Node liquidNode = waterRemovalBfsQueue.front();
+    const auto countToUpdateThisTick = waterRemovalBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      Node liquidNode = waterRemovalBfsQueue.front();
 
-    // get the index
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
-    uint8_t liquidValue = liquidNode.val - 1;
+      // get the index
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
+      uint8_t liquidValue = liquidNode.val - 1;
 
-    waterRemovalBfsQueue.pop();
+      waterRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
-                            liquidValue);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
+                              liquidValue);
+      }
 
-    if (liquidValue > (u8)LiquidLevel::Percent0) {
-      waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
+      if (liquidValue > (u8)LiquidLevel::Percent0) {
+        waterRemovalBfsQueue.emplace(nx, ny, nz, liquidValue);
+      }
     }
   }
 }
 
 void World::propagateLavaRemovalQueue() {
   if (lavaRemovalBfsQueue.empty() == false) {
-    Node liquidNode = lavaRemovalBfsQueue.front();
+    const auto countToUpdateThisTick = lavaRemovalBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      Node liquidNode = lavaRemovalBfsQueue.front();
 
-    // get the index
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+      // get the index
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    s8 nextLevel = (u8)LiquidLevel::Percent0;
-    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
-      nextLevel = (u8)LiquidLevel::Percent75;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
-      nextLevel = (u8)LiquidLevel::Percent50;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
-      nextLevel = (u8)LiquidLevel::Percent25;
-    } else {
-      return;
-    }
+      s8 nextLevel = (u8)LiquidLevel::Percent0;
+      if (liquidNode.val == (u8)LiquidLevel::Percent100) {
+        nextLevel = (u8)LiquidLevel::Percent75;
+      } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
+        nextLevel = (u8)LiquidLevel::Percent50;
+      } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
+        nextLevel = (u8)LiquidLevel::Percent25;
+      } else {
+        return;
+      }
 
-    lavaRemovalBfsQueue.pop();
+      lavaRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-        GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
+          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-        GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
+          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-        GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
-      floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK, nextLevel);
-    }
+      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
+          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
+        floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK,
+                              nextLevel);
+      }
 
-    if (nextLevel > (u8)LiquidLevel::Percent0) {
-      lavaRemovalBfsQueue.emplace(nx, ny, nz, nextLevel);
+      if (nextLevel > (u8)LiquidLevel::Percent0) {
+        lavaRemovalBfsQueue.emplace(nx, ny, nz, nextLevel);
+      }
     }
   }
 }
@@ -2011,102 +2273,158 @@ void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
 
 void World::propagateWaterAddQueue() {
   if (waterBfsQueue.empty() == false) {
-    auto liquidNode = waterBfsQueue.front();
+    const auto countToUpdateThisTick = waterBfsQueue.size();
 
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      auto liquidNode = waterBfsQueue.front();
 
-    waterBfsQueue.pop();
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    s16 nextLevel = liquidNode.val - 1;
-    u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
+      waterBfsQueue.pop();
 
-    if (canPropagateLiquid(nx, ny - 1, nz)) {
-      // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
-                         (u8)BlockOrientation::East);
-      return;
-    }
+      s16 nextLevel = liquidNode.val - 1;
+      u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
-    if (nextLevel <= (u8)LiquidLevel::Percent0) {
-      return;
-    }
+      if (canPropagateLiquid(nx, ny - 1, nz)) {
+        // If down block is air, keep propagating until hit a surface;
+        floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                           (u8)LiquidOrientation::East);
+        return;
+      }
 
-    if (canPropagateLiquid(nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::North);
-    }
+      if (nextLevel <= (u8)LiquidLevel::Percent0) {
+        return;
+      }
 
-    if (canPropagateLiquid(nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
-                         (u8)BlockOrientation::East);
-    }
+      if (canPropagateLiquid(nx + 1, ny, nz)) {
+        floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                           (u8)LiquidOrientation::North);
+      }
 
-    if (canPropagateLiquid(nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::South);
-    }
+      if (canPropagateLiquid(nx, ny, nz + 1)) {
+        floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                           (u8)LiquidOrientation::East);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz - 1)) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
-                         (u8)BlockOrientation::West);
+      if (canPropagateLiquid(nx - 1, ny, nz)) {
+        floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                           (u8)LiquidOrientation::South);
+      }
+
+      if (canPropagateLiquid(nx, ny, nz - 1)) {
+        floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                           (u8)LiquidOrientation::West);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz + 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::NorthEast);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz - 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::NorthWest);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz + 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::SouthEast);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz - 1, type, nextLevel - 1,
+                           (u8)LiquidOrientation::SouthWest);
+      }
     }
   }
 }
 
 void World::propagateLavaAddQueue() {
   if (lavaBfsQueue.empty() == false) {
-    auto liquidNode = lavaBfsQueue.front();
+    const auto countToUpdateThisTick = lavaBfsQueue.size();
+    for (size_t i = 0; i < countToUpdateThisTick; i++) {
+      auto liquidNode = lavaBfsQueue.front();
 
-    uint16_t nx = liquidNode.x;
-    uint16_t ny = liquidNode.y;
-    uint16_t nz = liquidNode.z;
+      uint16_t nx = liquidNode.x;
+      uint16_t ny = liquidNode.y;
+      uint16_t nz = liquidNode.z;
 
-    lavaBfsQueue.pop();
+      lavaBfsQueue.pop();
 
-    s8 nextLevel = (u8)LiquidLevel::Percent0;
-    if (liquidNode.val == (u8)LiquidLevel::Percent100) {
-      nextLevel = (u8)LiquidLevel::Percent75;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent75) {
-      nextLevel = (u8)LiquidLevel::Percent50;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent50) {
-      nextLevel = (u8)LiquidLevel::Percent25;
-    } else if (liquidNode.val == (u8)LiquidLevel::Percent25) {
-      nextLevel = (u8)LiquidLevel::Percent0;
-    }
+      s8 nextLevel = getNextLavaLevel(liquidNode.val);
+      u8 type = (u8)Blocks::LAVA_BLOCK;
 
-    u8 type = (u8)Blocks::LAVA_BLOCK;
+      if (canPropagateLiquid(nx, ny - 1, nz)) {
+        // If down block is air, keep propagating until hit a surface;
+        floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
+                           (u8)BlockOrientation::East);
+        return;
+      }
 
-    if (canPropagateLiquid(nx, ny - 1, nz)) {
-      // If down block is air, keep propagating until hit a surface;
-      floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
-                         (u8)BlockOrientation::East);
-      return;
-    }
+      if (nextLevel <= (u8)LiquidLevel::Percent0) return;
 
-    if (nextLevel <= 0) return;
+      if (canPropagateLiquid(nx + 1, ny, nz)) {
+        floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                           (u8)BlockOrientation::North);
+      }
 
-    if (canPropagateLiquid(nx + 1, ny, nz)) {
-      floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::North);
-    }
+      if (canPropagateLiquid(nx, ny, nz + 1)) {
+        floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                           (u8)BlockOrientation::East);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz + 1)) {
-      floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
-                         (u8)BlockOrientation::East);
-    }
+      if (canPropagateLiquid(nx - 1, ny, nz)) {
+        floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                           (u8)BlockOrientation::South);
+      }
 
-    if (canPropagateLiquid(nx - 1, ny, nz)) {
-      floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
-                         (u8)BlockOrientation::South);
-    }
+      if (canPropagateLiquid(nx, ny, nz - 1)) {
+        floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                           (u8)BlockOrientation::West);
+      }
 
-    if (canPropagateLiquid(nx, ny, nz - 1)) {
-      floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
-                         (u8)BlockOrientation::West);
+      if (canPropagateLiquid(nx + 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz + 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::NorthEast);
+      }
+
+      if (canPropagateLiquid(nx + 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx + 1, ny, nz - 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::NorthWest);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz + 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz + 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::SouthEast);
+      }
+
+      if (canPropagateLiquid(nx - 1, ny, nz - 1)) {
+        floodFillLiquidAdd(nx - 1, ny, nz - 1, type,
+                           getNextLavaLevel(nextLevel),
+                           (u8)LiquidOrientation::SouthWest);
+      }
     }
   }
+}
+
+const s8 World::getNextLavaLevel(const s8 currentLevel) {
+  s8 nextLevel = (u8)LiquidLevel::Percent0;
+  if (currentLevel == (u8)LiquidLevel::Percent100) {
+    nextLevel = (u8)LiquidLevel::Percent75;
+  } else if (currentLevel == (u8)LiquidLevel::Percent75) {
+    nextLevel = (u8)LiquidLevel::Percent50;
+  } else if (currentLevel == (u8)LiquidLevel::Percent50) {
+    nextLevel = (u8)LiquidLevel::Percent25;
+  } else if (currentLevel == (u8)LiquidLevel::Percent25) {
+    nextLevel = (u8)LiquidLevel::Percent0;
+  }
+
+  return nextLevel;
 }
 
 void World::updateChunksAffectedByLiquidPropagation() {
@@ -2125,7 +2443,7 @@ u8 World::canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z) {
   if (!BoundCheckMap(terrain, x, y, z)) return false;
   const u8 type = GetBlockFromMap(terrain, x, y, z);
   return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
-         type == (u8)Blocks::POPPY_FLOWER ||
+         type == (u8)Blocks::POPPY_FLOWER || type == (u8)Blocks::TORCH ||
          type == (u8)Blocks::DANDELION_FLOWER;
 }
 

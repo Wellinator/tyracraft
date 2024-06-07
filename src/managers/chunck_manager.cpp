@@ -38,9 +38,9 @@ void ChunckManager::update(const Plane* frustumPlanes) {
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
     if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
-      chuncks[i]->update(frustumPlanes);
-
       if (chuncks[i]->state == ChunkState::Loaded) {
+        chuncks[i]->update(frustumPlanes);
+
         if (chuncks[i]->isVisible()) {
           if (!chuncks[i]->isDrawDataLoaded()) {
             chuncks[i]->loadDrawDataWithoutSorting();
@@ -62,8 +62,6 @@ void ChunckManager::update(const Plane* frustumPlanes) {
     isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
     if (isTimeToUpdateLight) reloadLightDataAsync();
   }
-
-  visibleChunks.shrink_to_fit();
 }
 
 void ChunckManager::tick() {
@@ -77,6 +75,20 @@ void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
                              BlockManager* t_blockManager) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->renderer(t_renderer, stapip, t_blockManager);
+  for (u16 i = 0; i < visibleChunks.size(); i++)
+    visibleChunks[i]->rendererTransparentData(t_renderer, stapip,
+                                              t_blockManager);
+}
+
+void ChunckManager::rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip,
+                                   BlockManager* t_blockManager) {
+  for (u16 i = 0; i < visibleChunks.size(); i++)
+    visibleChunks[i]->renderer(t_renderer, stapip, t_blockManager);
+}
+
+void ChunckManager::rendererTransparent(Renderer* t_renderer,
+                                        StaticPipeline* stapip,
+                                        BlockManager* t_blockManager) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip,
                                               t_blockManager);

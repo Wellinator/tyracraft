@@ -17,7 +17,7 @@ void CuboidHandItemMeshBuilder_GenerateMesh(
 void CuboidHandItemMeshBuilder_loadMeshData(Block* t_block,
                                             std::vector<Vec4>* t_vertices) {
   int vert;
-  const Vec4* rawData = VertexBlockData::getVertexData();
+  const Vec4* rawData = VertexBlockData::cuboidVertexData;
 
   if (t_block->isTopFaceVisible()) {
     vert = 0;
@@ -73,8 +73,6 @@ void CuboidHandItemMeshBuilder_loadMeshData(Block* t_block,
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
     t_vertices->emplace_back(t_block->model * rawData[vert++]);
   }
-
-  delete rawData;
 }
 
 void CuboidHandItemMeshBuilder_loadUVData(Block* t_block,

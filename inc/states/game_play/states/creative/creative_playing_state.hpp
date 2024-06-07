@@ -49,7 +49,6 @@ class CreativePlayingState : public PlayingStateBase {
   CreativeAudioListener creativeAudioListener;
   u32 audioListenerId;
   float elapsedTimeInSec;
-  u8 debugMode = false;
   TickManager tickManager;
 
   Vec4 playerMovementDirection;

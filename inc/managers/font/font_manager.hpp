@@ -11,6 +11,7 @@ using Tyra::Color;
 using Tyra::FileUtils;
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::Texture;
 using Tyra::Vec2;
 
 /**
@@ -30,6 +31,7 @@ extern u8 LINE_FEED;
 extern u8 NULL_CHAR;
 extern u8 BACK_SPACE;
 extern u8 BASE_LINE_HEIGHT;
+extern Texture* Font_ASCII_Texture;
 
 void FontManager_init(Renderer* t_renderer);
 

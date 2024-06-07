@@ -15,6 +15,9 @@ class VertexBlockData {
 
   static BBox* getRawBBoxByBlock(const Blocks block_type,
                                  const u32 block_offset);
+  static BBox* getTransformedRawBBoxByBlock(const Blocks block_type,
+                                            const u32 block_offset,
+                                            M4x4* model);
 
   /**
    * @brief Provides 36 vertices of raw cube
@@ -29,7 +32,7 @@ class VertexBlockData {
    */
   static const Vec4* getTopSlabVertexData();
   static const Vec4* getBottomSlabVertexData();
-  static BBox* getSlabRawBBox( u32 block_offset);
+  static BBox* getSlabRawBBox(u32 block_offset);
 
   /**
    * @brief Provides 36 vertices of raw torch
@@ -56,6 +59,12 @@ class VertexBlockData {
 
   static const u8 CROSSED_VETEX_COUNT = 12;
   static const u8 CROSSED_FACES_COUNT = 2;
+
+  static const Vec4* torchVertexData;
+  static const Vec4* topSlabVertexData;
+  static const Vec4* bottomSlabVertexData;
+  static const Vec4* cuboidVertexData;
+  static const Vec4* crossedVertexData;
 
   inline const u8* getTopFaceIndexes() { return topFacesIndex; };
   inline const u8* getBottomFaceIndexes() { return bottomFaceIndex; };

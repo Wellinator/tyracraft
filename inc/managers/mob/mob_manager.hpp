@@ -35,7 +35,7 @@ class MobManager {
   Mob* spawnMobAtPosition(const MobType type, const Vec4& position);
   void unspawnMob(const uint32_t id);
 
-  static const u8 MAX_MOBS_LIMIT = 5;
+  static const u8 MAX_MOBS_LIMIT = 3;
 
  private:
   // TODO: move to mob AI

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
-#include "managers/block/vertex_block_data.hpp"
 #include "managers/collision_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
@@ -57,6 +56,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     StaPipBag bag;
 
     textureBag.coordinates = uvMap.data();
+    textureBag.texture = t_blockManager->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -76,11 +76,6 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     t_renderer->renderer3D.usePipeline(stapip);
 
-    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
-    textureBag.texture = isPlayerNear
-                             ? t_blockManager->getBlocksTexture()
-                             : t_blockManager->getBlocksTextureLowRes();
-
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
 
@@ -99,6 +94,7 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     StaPipBag bag;
 
     textureBag.coordinates = uvMapWithTransparency.data();
+    textureBag.texture = t_blockManager->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -117,11 +113,6 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     bag.texture = &textureBag;
 
     t_renderer->renderer3D.usePipeline(stapip);
-
-    const u8 isPlayerNear = _distanceFromPlayerInChunks <= 3;
-    textureBag.texture = isPlayerNear
-                             ? t_blockManager->getBlocksTexture()
-                             : t_blockManager->getBlocksTextureLowRes();
 
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
@@ -153,6 +144,36 @@ void Chunck::clear() {
   this->state = ChunkState::Clean;
 }
 
+void Chunck::clearAsync() {
+  size_t counter = 0;
+  for (size_t i = _unloaderBatchCounter; i < blocks.size(); i++) {
+    g_AABBTree->remove(blocks[i]->tree_index);
+    delete blocks[i];
+    blocks[i] = nullptr;
+
+    if (counter >= UNLOAD_CHUNK_BATCH) {
+      _unloaderBatchCounter = i + 1;
+      return;
+    } else {
+      counter++;
+    }
+  }
+
+  clearDrawData();
+
+  visibleFacesCount = 0;
+  blocksCount = 0;
+
+  blocks.clear();
+  blocks.shrink_to_fit();
+  _isPreAllocated = false;
+
+  resetLoadingOffset();
+  _unloaderBatchCounter = 0;
+
+  state = ChunkState::Clean;
+}
+
 // void Chunck::updateBlocks(const Vec4& playerPosition) {}
 
 void Chunck::clearDrawData() {
@@ -171,21 +192,77 @@ void Chunck::clearDrawData() {
   uvMapWithTransparency.shrink_to_fit();
 
   _isDrawDataLoaded = false;
+  _isMemoryReserved = false;
+  _isPreAllocated = false;
+
+  _loaderBatchCounter = 0;
+  _unloaderBatchCounter = 0;
+}
+
+void Chunck::clearDrawDataWithoutShrink() {
+  vertices.clear();
+  verticesColors.clear();
+  uvMap.clear();
+
+  verticesWithTransparency.clear();
+  verticesColorsWithTransparency.clear();
+  uvMapWithTransparency.clear();
+
+  _isDrawDataLoaded = false;
 }
 
 void Chunck::loadDrawDataWithoutSorting() {
-  vertices.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
-  verticesColors.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
-  uvMap.reserve(visibleFacesCount * VertexBlockData::FACES_COUNT);
+  vertices.reserve(visibleFacesCount);
+  verticesColors.reserve(visibleFacesCount);
+  uvMap.reserve(visibleFacesCount);
 
-  verticesWithTransparency.reserve(visibleFacesCount *
-                                   VertexBlockData::FACES_COUNT);
-  verticesColorsWithTransparency.reserve(visibleFacesCount *
-                                         VertexBlockData::FACES_COUNT);
-  uvMapWithTransparency.reserve(visibleFacesCount *
-                                VertexBlockData::FACES_COUNT);
+  verticesWithTransparency.reserve(visibleFacesCountWithTransparency);
+  verticesColorsWithTransparency.reserve(visibleFacesCountWithTransparency);
+  uvMapWithTransparency.reserve(visibleFacesCountWithTransparency);
 
   for (size_t i = 0; i < blocks.size(); i++) {
+    if (blocks[i]->hasTransparency) {
+      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+      MeshBuilder_BuildMesh(
+          blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
+          &uvMapWithTransparency, t_worldLightModel, t_terrain);
+      blocks[i]->drawDataLength =
+          verticesWithTransparency.size() - blocks[i]->drawDataIndex;
+
+      // printf("Transparent Block %i\n", (int)i);
+      // printf("drawDataIndex %i | drawDataLength %i \n\n",
+      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
+
+    } else {
+      blocks[i]->drawDataIndex = vertices.size();
+      MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
+                            t_worldLightModel, t_terrain);
+      blocks[i]->drawDataLength = vertices.size() - blocks[i]->drawDataIndex;
+
+      // printf("Block %i\n", (int)i);
+      // printf("drawDataIndex %i | drawDataLength %i \n\n",
+      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
+    }
+  }
+
+  _isDrawDataLoaded = true;
+}
+
+void Chunck::loadDrawDataAsync() {
+  if (_isMemoryReserved == false) {
+    vertices.reserve(visibleFacesCount);
+    verticesColors.reserve(visibleFacesCount);
+    uvMap.reserve(visibleFacesCount);
+
+    verticesWithTransparency.reserve(visibleFacesCountWithTransparency);
+    verticesColorsWithTransparency.reserve(visibleFacesCountWithTransparency);
+    uvMapWithTransparency.reserve(visibleFacesCountWithTransparency);
+
+    _isMemoryReserved = true;
+  }
+
+  size_t counter = 0;
+  for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
       MeshBuilder_BuildMesh(
           blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
@@ -194,17 +271,17 @@ void Chunck::loadDrawDataWithoutSorting() {
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, t_terrain);
     }
+
+    if (counter >= LOAD_CHUNK_BATCH) {
+      _loaderBatchCounter = i + 1;
+      return;
+    } else {
+      counter++;
+    }
   }
 
-  vertices.shrink_to_fit();
-  verticesColors.shrink_to_fit();
-  uvMap.shrink_to_fit();
-
-  verticesWithTransparency.shrink_to_fit();
-  verticesColorsWithTransparency.shrink_to_fit();
-  uvMapWithTransparency.shrink_to_fit();
-
   _isDrawDataLoaded = true;
+  _loaderBatchCounter = 0;
 }
 
 void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }
@@ -250,4 +327,44 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
       return blocks[i];
   }
   return nullptr;
+}
+
+void Chunck::removeBlock(Block* target) {
+  blocks.erase(
+      std::remove_if(blocks.begin(), blocks.end(),
+                     [target](Block* b) { return b->index == target->index; }),
+      blocks.end());
+  g_AABBTree->remove(target->tree_index);
+  delete target;
+}
+
+void Chunck::removeBlockByOffset(u32 offset) {
+  Vec4 _offsetVec;
+  GetXYZFromPos(&offset, &_offsetVec);
+  Block* target = getBlockByOffset(&_offsetVec);
+
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByOffset(Vec4* offset) {
+  Block* target = getBlockByOffset(offset);
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByLocalIndex(u16 index) {
+  TYRA_ASSERT(index < blocks.size(), "Invalid block index!");
+
+  Block* target = blocks[index];
+  if (target) removeBlock(target);
+}
+
+void Chunck::removeBlockByPosition(Vec4* position) {
+  Block* target = getBlockByPosition(position);
+  if (target) removeBlock(target);
+}
+
+u8 Chunck::containsBlock(Vec4* offset) {
+  return offset->x >= minOffset.x && offset->x < maxOffset.x &&
+         offset->y >= minOffset.y && offset->y < maxOffset.y &&
+         offset->z >= minOffset.z && offset->z < maxOffset.z;
 }

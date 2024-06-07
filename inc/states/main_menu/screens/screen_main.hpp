@@ -36,7 +36,7 @@ class ScreenMain : public ScreenBase {
   ~ScreenMain();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

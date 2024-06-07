@@ -28,7 +28,7 @@ class ScreenOptions : public ScreenBase {
   ~ScreenOptions();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

@@ -13,7 +13,7 @@ ScreenHowToPlay::~ScreenHowToPlay() {
   this->t_renderer->getTextureRepository().freeBySprite(textBack);
 }
 
-void ScreenHowToPlay::update() { this->handleInput(); }
+void ScreenHowToPlay::update(const float& deltaTime) { this->handleInput(); }
 
 void ScreenHowToPlay::render() {
   this->t_renderer->renderer2D.render(&how_to_play);

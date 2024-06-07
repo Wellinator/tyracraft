@@ -38,16 +38,12 @@ void StateGameMenu::init() {
   raw_slot[1].mode = Tyra::MODE_STRETCH;
   raw_slot[1].size.set(SLOT_WIDTH, 35);
   raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 40);
-  raw_slot[2].mode = Tyra::MODE_STRETCH;
-  raw_slot[2].size.set(SLOT_WIDTH, 35);
-  raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 80);
 
   this->textureRawSlot =
       textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
 
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
-  this->textureRawSlot->addLink(raw_slot[2].id);
 
   horizontalScrollArea.mode = Tyra::MODE_STRETCH;
   horizontalScrollArea.size.set(SLOT_WIDTH, 32);
@@ -125,7 +121,6 @@ void StateGameMenu::render() {
 
   t_renderer->renderer2D.render(raw_slot[0]);
   t_renderer->renderer2D.render(raw_slot[1]);
-  t_renderer->renderer2D.render(raw_slot[2]);
   if (activeOption != GameMenuOptions::DrawDistance)
     t_renderer->renderer2D.render(active_slot);
 
@@ -136,27 +131,18 @@ void StateGameMenu::render() {
   saveGameLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::SaveGame)
     saveGameLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_SaveGame, saveGameLabel);
-
-  FontOptions backToGameLabel;
-  backToGameLabel.position.set(246, 240 + 43);
-  backToGameLabel.alignment = TextAlignment::Center;
-  if (activeOption == GameMenuOptions::SaveAndQuit)
-    backToGameLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_SaveAndQuit, backToGameLabel);
+  FontManager_printText(Label_Save, saveGameLabel);
 
   FontOptions quitToTitleLabel;
-  quitToTitleLabel.position.set(246, 240 + 83);
+  quitToTitleLabel.position.set(246, 240 + 43);
   quitToTitleLabel.alignment = TextAlignment::Center;
-  if (activeOption == GameMenuOptions::QuitWithoutSave)
+  if (activeOption == GameMenuOptions::Quit)
     quitToTitleLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_QuitWithoutSave, quitToTitleLabel);
+  FontManager_printText(Label_Quit, quitToTitleLabel);
 
   if (needSaveOverwriteConfirmation) {
     renderSaveOverwritingDialog();
-  } else if (needSaveAndQuitConfirmation) {
-    renderSaveAndQuitDialog();
-  } else if (needQuitWithoutSaveConfirmation) {
+  } else if (needQuitConfirmation) {
     renderQuitWithoutSavingDialog();
   } else {
     t_renderer->renderer2D.render(btnCross);
@@ -184,29 +170,19 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       needSaveOverwriteConfirmation = false;
     }
     return;
-  } else if (needSaveAndQuitConfirmation) {
-    if (clicked.Cross) {
-      playClickSound();
-      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
-      stateGamePlay->saveGame();
-      stateGamePlay->quitToTitle();
-    } else if (clicked.Triangle) {
-      needSaveAndQuitConfirmation = false;
-    }
-    return;
-  } else if (needQuitWithoutSaveConfirmation) {
+  } else if (needQuitConfirmation) {
     if (clicked.Cross) {
       this->playClickSound();
       stateGamePlay->quitToTitle();
     } else if (clicked.Triangle) {
-      needQuitWithoutSaveConfirmation = false;
+      needQuitConfirmation = false;
     }
     return;
   }
 
   if (clicked.DpadDown) {
     int nextOption = (int)this->activeOption + 1;
-    if (nextOption > (int)GameMenuOptions::QuitWithoutSave)
+    if (nextOption > (int)GameMenuOptions::Quit)
       this->activeOption = GameMenuOptions::DrawDistance;
     else
       this->activeOption = static_cast<GameMenuOptions>(nextOption);
@@ -214,7 +190,7 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   } else if (clicked.DpadUp) {
     int nextOption = (int)this->activeOption - 1;
     if (nextOption < 0)
-      this->activeOption = GameMenuOptions::QuitWithoutSave;
+      this->activeOption = GameMenuOptions::Quit;
     else
       this->activeOption = static_cast<GameMenuOptions>(nextOption);
   }
@@ -240,12 +216,9 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       } else {
         stateGamePlay->saveGame();
       }
-    } else if (activeOption == GameMenuOptions::SaveAndQuit) {
+    } else if (activeOption == GameMenuOptions::Quit) {
       this->playClickSound();
-      needSaveAndQuitConfirmation = true;
-    } else if (activeOption == GameMenuOptions::QuitWithoutSave) {
-      this->playClickSound();
-      needQuitWithoutSaveConfirmation = true;
+      needQuitConfirmation = true;
     }
 
     this->selectedOption = this->activeOption;
@@ -287,12 +260,9 @@ void StateGameMenu::hightLightActiveOption() {
   if (this->activeOption == GameMenuOptions::SaveGame) {
     this->active_slot.position.y =
         (0 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::SaveAndQuit) {
+  } else if (this->activeOption == GameMenuOptions::Quit) {
     this->active_slot.position.y =
         (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::QuitWithoutSave) {
-    this->active_slot.position.y =
-        (2 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
   }
 
   if (t_selectedOptionSprite) {
@@ -349,35 +319,6 @@ void StateGameMenu::renderSaveOverwritingDialog() {
 
   t_renderer->renderer2D.render(btnTriangle);
   FontManager_printText(Label_Cancel, 205, 407);
-}
-
-void StateGameMenu::renderSaveAndQuitDialog() {
-  t_renderer->renderer2D.render(overlay);
-  t_renderer->renderer2D.render(dialogWindow);
-
-  FontOptions titleOptions = FontOptions();
-  titleOptions.position = Vec2(246, 135);
-  titleOptions.scale = 0.9F;
-  titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_SaveAndQuit + "?", titleOptions);
-
-  FontOptions dialogueOptions = FontOptions();
-  dialogueOptions.position = Vec2(246, 180);
-  dialogueOptions.scale = 0.6F;
-  dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_PreviousSaveErrorMessagePart1, dialogueOptions);
-  dialogueOptions.position.y += 15;
-  FontManager_printText(Label_PreviousSaveErrorMessagePart2, dialogueOptions);
-  dialogueOptions.position.y += 15;
-  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
-
-  t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_SaveAndQuit, 40, 407);
-
-  btnTriangle.position.x = 225;
-  t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Cancel, 245, 407);
-  btnTriangle.position.x = 185;
 }
 
 void StateGameMenu::renderQuitWithoutSavingDialog() {

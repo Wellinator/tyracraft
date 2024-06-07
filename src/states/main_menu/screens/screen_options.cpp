@@ -15,7 +15,7 @@ ScreenOptions::~ScreenOptions() {
   t_renderer->getTextureRepository().freeBySprite(btnCross);
 }
 
-void ScreenOptions::update() {
+void ScreenOptions::update(const float& deltaTime) {
   handleInput();
   hightLightActiveOption();
 }

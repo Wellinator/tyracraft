@@ -32,7 +32,7 @@ class ScreenSkinSelection : public ScreenBase {
   ~ScreenSkinSelection();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:
@@ -45,7 +45,6 @@ class ScreenSkinSelection : public ScreenBase {
 
   u8 isMoving = false;
   u8 isMovingForward = false;
-  const float lerpSpeed = 0.01f;
   float interpolation = 0;
 
   const std::array<float, 3> defaultRotation = {_90DEGINRAD + 0.2f, _90DEGINRAD,
@@ -89,6 +88,8 @@ class ScreenSkinSelection : public ScreenBase {
   DynamicPipeline dynpip;
   std::vector<u32> standStillSequence = {0, 1};
 
+  const float TRANSITION_SPEED = 6.0f;
+
   void handleInput();
   void backToMainMenu();
   void saveSkin();
@@ -99,9 +100,9 @@ class ScreenSkinSelection : public ScreenBase {
   void unloadSkinTextures();
   void loadModels();
   void unloadModels();
-  void calcLerp();
+  void calcLerp(const float& deltaTime);
   void startMoving(u8 _movingForward);
-  void moveForward();
-  void moveBackward();
+  void moveForward(const float& deltaTime);
+  void moveBackward(const float& deltaTime);
   void stopMoving();
 };

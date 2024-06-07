@@ -48,14 +48,14 @@ ItemRepository::~ItemRepository() {
   this->t_renderer->getTextureRepository().freeBySprite(
       chiseled_stone_bricks.sprite);
 
-  this->t_renderer->getTextureRepository().freeBySprite(yellow_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(blue_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(green_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(orange_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(purple_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(red_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(white_concrete.sprite);
-  this->t_renderer->getTextureRepository().freeBySprite(black_concrete.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(yellow_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(blue_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(green_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(orange_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(purple_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(red_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(white_wool.sprite);
+  this->t_renderer->getTextureRepository().freeBySprite(black_wool.sprite);
 
   this->t_renderer->getTextureRepository().freeBySprite(water_bucket.sprite);
   this->t_renderer->getTextureRepository().freeBySprite(lava_bucket.sprite);
@@ -271,62 +271,62 @@ void ItemRepository::loadItems(const std::string& texturePack) {
       .add(FileUtils::fromCwd(dir + "/items/chiseled_stone_bricks.png"))
       ->addLink(chiseled_stone_bricks.sprite.id);
 
-  // --------------------------Concretes-------------------------
-  yellow_concrete.id = ItemId::yellow_concrete;
-  yellow_concrete.blockId = Blocks::YELLOW_CONCRETE;
-  this->items.push_back(&yellow_concrete);
+  // --------------------------Wools-------------------------
+  yellow_wool.id = ItemId::yellow_wool;
+  yellow_wool.blockId = Blocks::YELLOW_WOOL;
+  this->items.push_back(&yellow_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/yellow_concrete.png"))
-      ->addLink(yellow_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/yellow_wool.png"))
+      ->addLink(yellow_wool.sprite.id);
 
-  blue_concrete.id = ItemId::blue_concrete;
-  blue_concrete.blockId = Blocks::BLUE_CONCRETE;
-  this->items.push_back(&blue_concrete);
+  blue_wool.id = ItemId::blue_wool;
+  blue_wool.blockId = Blocks::BLUE_WOOL;
+  this->items.push_back(&blue_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/blue_concrete.png"))
-      ->addLink(blue_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/blue_wool.png"))
+      ->addLink(blue_wool.sprite.id);
 
-  green_concrete.id = ItemId::green_concrete;
-  green_concrete.blockId = Blocks::GREEN_CONCRETE;
-  this->items.push_back(&green_concrete);
+  green_wool.id = ItemId::green_wool;
+  green_wool.blockId = Blocks::GREEN_WOOL;
+  this->items.push_back(&green_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/green_concrete.png"))
-      ->addLink(green_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/green_wool.png"))
+      ->addLink(green_wool.sprite.id);
 
-  orange_concrete.id = ItemId::orange_concrete;
-  orange_concrete.blockId = Blocks::ORANGE_CONCRETE;
-  this->items.push_back(&orange_concrete);
+  orange_wool.id = ItemId::orange_wool;
+  orange_wool.blockId = Blocks::ORANGE_WOOL;
+  this->items.push_back(&orange_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/orange_concrete.png"))
-      ->addLink(orange_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/orange_wool.png"))
+      ->addLink(orange_wool.sprite.id);
 
-  purple_concrete.id = ItemId::purple_concrete;
-  purple_concrete.blockId = Blocks::PURPLE_CONCRETE;
-  this->items.push_back(&purple_concrete);
+  purple_wool.id = ItemId::purple_wool;
+  purple_wool.blockId = Blocks::PURPLE_WOOL;
+  this->items.push_back(&purple_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/purple_concrete.png"))
-      ->addLink(purple_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/purple_wool.png"))
+      ->addLink(purple_wool.sprite.id);
 
-  red_concrete.id = ItemId::red_concrete;
-  red_concrete.blockId = Blocks::RED_CONCRETE;
-  this->items.push_back(&red_concrete);
+  red_wool.id = ItemId::red_wool;
+  red_wool.blockId = Blocks::RED_WOOL;
+  this->items.push_back(&red_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/red_concrete.png"))
-      ->addLink(red_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/red_wool.png"))
+      ->addLink(red_wool.sprite.id);
 
-  white_concrete.id = ItemId::white_concrete;
-  white_concrete.blockId = Blocks::WHITE_CONCRETE;
-  this->items.push_back(&white_concrete);
+  white_wool.id = ItemId::white_wool;
+  white_wool.blockId = Blocks::WHITE_WOOL;
+  this->items.push_back(&white_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/white_concrete.png"))
-      ->addLink(white_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/white_wool.png"))
+      ->addLink(white_wool.sprite.id);
 
-  black_concrete.id = ItemId::black_concrete;
-  black_concrete.blockId = Blocks::BLACK_CONCRETE;
-  this->items.push_back(&black_concrete);
+  black_wool.id = ItemId::black_wool;
+  black_wool.blockId = Blocks::BLACK_WOOL;
+  this->items.push_back(&black_wool);
   this->t_renderer->getTextureRepository()
-      .add(FileUtils::fromCwd(dir + "/items/black_concrete.png"))
-      ->addLink(black_concrete.sprite.id);
+      .add(FileUtils::fromCwd(dir + "/items/black_wool.png"))
+      ->addLink(black_wool.sprite.id);
 
   // --------------------------Items-------------------------
   water_bucket.id = ItemId::water_bucket;

@@ -11,7 +11,8 @@ namespace TyraCraft {
 using namespace Tyra;
 
 TyraCraftGame::TyraCraftGame(Engine* t_engine)
-    : camera(engine->renderer.core.getSettings()) {
+    : camera(engine->renderer.core.getSettings()),
+      stateManager(t_engine, &camera) {
   engine = t_engine;
   init_memory_manager();
 }
@@ -25,15 +26,14 @@ void TyraCraftGame::init() {
   engine->renderer.core.setFrameLimit(g_settings.vsync);
 
   FontManager_init(&engine->renderer);
-  stateManager = new StateManager(engine, &camera);
 }
 
 void TyraCraftGame::loop() {
   const float dt = 1 / static_cast<float>(engine->info.getFps());
-  stateManager->update(dt);
+  stateManager.update(dt);
 
   engine->renderer.beginFrame(camera.getCameraInfo());
-  stateManager->render();
+  stateManager.render();
   engine->renderer.endFrame();
 }
 

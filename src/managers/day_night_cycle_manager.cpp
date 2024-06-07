@@ -1,4 +1,6 @@
 #include "managers/day_night_cycle_manager.hpp"
+#include "managers/tick_manager.hpp"
+#include <array>
 
 using Tyra::StaPipBag;
 using Tyra::StaPipColorBag;
@@ -14,12 +16,8 @@ DayNightCycleManager::~DayNightCycleManager() {
 }
 
 void DayNightCycleManager::init(Renderer* renderer) {
-  printf("Initiating Day/Night Manager...\n");
   updateCurrentAngle();
   updateIntensityByAngle();
-  updateEntitiesPosition(&center);
-  printf("Day/Night Manager initiated!\n");
-  printf("getSunLightIntensity: %f\n", getSunLightIntensity());
 
   t_renderer = renderer;
   stapip.setRenderer(&renderer->core);
@@ -56,9 +54,16 @@ void DayNightCycleManager::loadDrawData() {
   moonUVMap[5] = (Vec4(xMax, yMin, 1.0F, 0.0F));
 }
 
-void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
+void DayNightCycleManager::updateSunDrawData(const Vec4& camPos) {
+  std::array<Vec4, 6> rawData = {
+      Vec4(1.0F, -1.0F, -1.0),
+      Vec4(-1.0F, 1.0F, -1.0),
+      Vec4(-1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),
+  };
+
   M4x4 result, temp, model;
-  M4x4::lookAt(&temp, sunPosition, *camPos);
+  M4x4::lookAt(&temp, sunPosition + camPos, camPos);
   Utils::inverseMatrix(&result, &temp);
 
   model.identity();
@@ -67,14 +72,21 @@ void DayNightCycleManager::updateSunDrawData(const Vec4* camPos) {
   sunVertexData[0] = (model * rawData[0]);
   sunVertexData[1] = (model * rawData[1]);
   sunVertexData[2] = (model * rawData[2]);
-  sunVertexData[3] = (model * rawData[3]);
-  sunVertexData[4] = (model * rawData[4]);
-  sunVertexData[5] = (model * rawData[5]);
+  sunVertexData[3] = (model * rawData[0]);
+  sunVertexData[4] = (model * rawData[3]);
+  sunVertexData[5] = (model * rawData[1]);
 }
 
-void DayNightCycleManager::updateMoonDrawData(const Vec4* camPos) {
+void DayNightCycleManager::updateMoonDrawData(const Vec4& camPos) {
+  std::array<Vec4, 6> rawData = {
+      Vec4(1.0F, -1.0F, -1.0),
+      Vec4(-1.0F, 1.0F, -1.0),
+      Vec4(-1.0F, -1.0F, -1.0),
+      Vec4(1.0F, 1.0F, -1.0),
+  };
+
   M4x4 result, temp, model;
-  M4x4::lookAt(&temp, moonPosition, *camPos);
+  M4x4::lookAt(&temp, moonPosition + camPos, camPos);
   Utils::inverseMatrix(&result, &temp);
 
   model.identity();
@@ -83,33 +95,33 @@ void DayNightCycleManager::updateMoonDrawData(const Vec4* camPos) {
   moonVertexData[0] = (model * rawData[0]);
   moonVertexData[1] = (model * rawData[1]);
   moonVertexData[2] = (model * rawData[2]);
-  moonVertexData[3] = (model * rawData[3]);
-  moonVertexData[4] = (model * rawData[4]);
-  moonVertexData[5] = (model * rawData[5]);
+  moonVertexData[3] = (model * rawData[0]);
+  moonVertexData[4] = (model * rawData[3]);
+  moonVertexData[5] = (model * rawData[1]);
 }
 
 void DayNightCycleManager::preLoad() {
   updateCurrentAngle();
   updateIntensityByAngle();
-  updateEntitiesPosition(&center);
 }
 
-void DayNightCycleManager::update() {
+void DayNightCycleManager::update(const float deltaTime, const Vec4* camPos) {
+  lerp += deltaTime / 0.05;
+
   updateCurrentAngle();
   updateIntensityByAngle();
-}
-
-void DayNightCycleManager::tick(const Vec4* camPos) {
-  updateEntitiesPosition(camPos);
+  updateEntitiesPosition();
 
   if (g_ticksCounter > 22300 || g_ticksCounter < 13702) {
-    updateSunDrawData(camPos);
+    updateSunDrawData(*camPos);
   }
 
   if (g_ticksCounter >= 11834 || g_ticksCounter < 167) {
-    updateMoonDrawData(camPos);
+    updateMoonDrawData(*camPos);
   }
 }
+
+void DayNightCycleManager::tick() { calNextEntitiesPosition(); }
 
 /**
  * Based in https://minecraft.fandom.com/wiki/Daylight_cycle
@@ -165,6 +177,7 @@ void DayNightCycleManager::renderMoon() {
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
   infoBag.blendingEnabled = true;
+  infoBag.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
   StaPipColorBag colorBag;
@@ -188,25 +201,32 @@ void DayNightCycleManager::updateCurrentAngle() {
   currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360;
 }
 
-void DayNightCycleManager::updateEntitiesPosition(const Vec4* camPos) {
-  const int angle = currentAngleInDegrees;
+void DayNightCycleManager::calNextEntitiesPosition() {
+  lerp = 0.0;
 
-  const auto Y = Math::sin(Tyra::Math::ANG2RAD * angle);
-  const auto Z = Math::sin(Tyra::Math::ANG2RAD * 90) *
-                 Math::cos(Tyra::Math::ANG2RAD * angle);
-  Vec4 dirFromAng = Vec4(0.0F, Y, Z).getNormalized();
+  const float angleStart = Tyra::Math::ANG2RAD * currentAngleInDegrees;
+  Vec4 startDirection =
+      Vec4(0.0F, Math::sin(angleStart), SIN_90 * Math::cos(angleStart))
+          .getNormalized();
 
-  // Set sun position and scale;
-  Vec4 sunDir = dirFromAng;
-  Vec4 sunPos = sunDir * distance;
-  sunPos += *camPos;
-  sunPosition.set(sunPos);
+  const float angleEnd = Tyra::Math::ANG2RAD *
+                         (((g_ticksCounter + 1) / DAY_DURATION_IN_TICKS) * 360);
+  Vec4 endDirection =
+      Vec4(0.0F, Math::sin(angleEnd), SIN_90 * Math::cos(angleEnd))
+          .getNormalized();
 
-  // Set sun position and scale;
-  Vec4 moonDir = -dirFromAng;
-  Vec4 moonPos = moonDir * distance;
-  moonPos += *camPos;
-  moonPosition.set(moonPos);
+  // Set next sun height position;
+  sunPositionStart.set(startDirection * distance);
+  sunPositionEnd.set(endDirection * distance);
+
+  // Set next sun position;
+  moonPositionStart.set(-startDirection * distance);
+  moonPositionEnd = (-endDirection * distance);
+}
+
+void DayNightCycleManager::updateEntitiesPosition() {
+  Vec4::setLerp(&sunPosition, sunPositionStart, sunPositionEnd, lerp);
+  Vec4::setLerp(&moonPosition, moonPositionStart, moonPositionEnd, lerp);
 }
 
 const Color DayNightCycleManager::getSkyColor() {

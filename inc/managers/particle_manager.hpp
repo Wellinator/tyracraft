@@ -20,8 +20,11 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-struct Particle {
+class Particle {
+ public:
   PaticleType type;
+
+  int id = 0;
 
   u8 billboarded = true;
   u8 expired = false;
@@ -32,10 +35,14 @@ struct Particle {
   M4x4 model, translation, rotation, scale;
 
   float _elapsedTime = 0;
-  float _lifeTime;
+  float _lifeTime = 0;
   Vec4 _velocity;
   Vec4 _position;
   Vec4 _direction;
+
+  Color* t_color = nullptr;
+  Vec4 uv[6] = {};
+  Vec4 vertex[6] = {};
 };
 
 class ParticlesManager {
@@ -56,6 +63,8 @@ class ParticlesManager {
 
   Texture* getParticlesTexture();
 
+  inline uint16_t getParticlesCounter() { return particles.size(); };
+
  private:
   Vec4 camPos;
   const float particleSpeed = 65.0F;
@@ -69,15 +78,16 @@ class ParticlesManager {
       Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
 
   std::vector<Particle> particles;
-  std::vector<Color> particlesColors;
-  std::vector<Vec4> particlesUVMap;
-  std::vector<Vec4> particlesVertexData;
 
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;
 
   Texture* blocksTexture = nullptr;
   Texture* particlesTexture = nullptr;
+
+  std::vector<Color> colors;
+  std::vector<Vec4> vertex;
+  std::vector<Vec4> uv;
 
   void updateParticles(const float deltaTime, const Vec4* camPos);
   void destroyExpiredParticles();

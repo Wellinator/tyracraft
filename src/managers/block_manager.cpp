@@ -29,7 +29,7 @@ void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
-  this->loadBlocksTexturesLowRes(texturePack);
+  // this->loadBlocksTexturesLowRes(texturePack);
   this->registerBlockSoundsEffects();
 }
 
@@ -125,9 +125,9 @@ bool BlockManager::isBestTool(const Blocks blockType) {
       // Bricks
       ((u8)blockType >= (u8)Blocks::STONE_BRICK_BLOCK &&
        (u8)blockType >= (u8)Blocks::CHISELED_STONE_BRICKS_BLOCK) ||
-      // Concretes
-      ((u8)blockType >= (u8)Blocks::YELLOW_CONCRETE &&
-       (u8)blockType >= (u8)Blocks::BLACK_CONCRETE)) {
+      // Wools
+      ((u8)blockType >= (u8)Blocks::YELLOW_WOOL &&
+       (u8)blockType >= (u8)Blocks::BLACK_WOOL)) {
     return false;
   }
 

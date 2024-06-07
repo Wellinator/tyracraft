@@ -15,6 +15,8 @@ PlayerRenderArmPip::PlayerRenderArmPip(Player* t_player)
 PlayerRenderArmPip::~PlayerRenderArmPip() { unloadItemDrawData(); };
 
 void PlayerRenderArmPip::update(const float& deltaTime, Camera* t_camera) {
+  colorBag.single = t_player->getBaseColorAtPlayerPos();
+
   if (is_playing_break_animation || t_player->isBreaking) {
     updateBreakAnimation(deltaTime);
   } else if (is_playing_put_animation || t_player->isPuting) {
@@ -51,6 +53,7 @@ void PlayerRenderArmPip::renderArm(Renderer* t_render) {
   t_render->renderer3D.usePipeline(stapip);
   stapip.core.render(&bag);
 }
+
 void PlayerRenderArmPip::renderItem(Renderer* t_render) {
   if (bag.count > 0) {
     t_render->renderer3D.usePipeline(stapip);
@@ -78,8 +81,8 @@ void PlayerRenderArmPip::loadItemDrawData() {
 
     infoBag.transformationType = Tyra::PipelineTransformationType::TyraMP;
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = false;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
+    infoBag.blendingEnabled = true;
     infoBag.antiAliasingEnabled = false;
     infoBag.fullClipChecks = false;
     infoBag.frustumCulling =

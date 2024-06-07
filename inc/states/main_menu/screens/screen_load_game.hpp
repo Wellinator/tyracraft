@@ -33,7 +33,7 @@ class ScreenLoadGame : public ScreenBase {
   ~ScreenLoadGame();
 
   void init();
-  void update();
+  void update(const float& deltaTime);
   void render();
 
  private:

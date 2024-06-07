@@ -140,7 +140,7 @@ void Inventory::load_sprites() {
 
 void Inventory::update() {
   // TODO: implements scroller percentage
-  selector_overlay_opacity += 3;
+  selector_overlay_opacity += 10;
   const float percent = Utils::Abs(selector_overlay_opacity - 128.0F) / 128.0F;
   selector_overlay.color.a = percent * 128;
 }

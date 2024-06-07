@@ -6,6 +6,11 @@ void ModelBuilder_BuildModel(Block* t_block, LevelMap* t_terrain) {
       ModelBuilder_TorchModel(t_block, t_terrain);
       break;
 
+    case Blocks::WATER_BLOCK:
+    case Blocks::LAVA_BLOCK:
+      ModelBuilder_NoRotationModel(t_block);
+      break;
+
     default:
       ModelBuilder_DefaultModel(t_block, t_terrain);
       break;
@@ -17,7 +22,7 @@ void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain) {
   GetXYZFromPos(&t_block->offset, &pos);
 
   const auto orientation =
-      GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      GetBlockOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
 
   t_block->model.identity();
 
@@ -31,6 +36,7 @@ void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain) {
     case BlockOrientation::West:
       t_block->model.rotateY(_180DEGINRAD);
       break;
+    case BlockOrientation::East:
     case BlockOrientation::Top:
     default:
       break;
@@ -40,12 +46,18 @@ void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain) {
   t_block->model.translate(t_block->position);
 }
 
+void ModelBuilder_NoRotationModel(Block* t_block) {
+  t_block->model.identity();
+  t_block->model.scale(BLOCK_SIZE);
+  t_block->model.translate(t_block->position);
+}
+
 void ModelBuilder_TorchModel(Block* t_block, LevelMap* t_terrain) {
   Vec4 pos;
   GetXYZFromPos(&t_block->offset, &pos);
 
   const auto orientation =
-      GetOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      GetTorchOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
 
   Vec4 offsetCorrection = Vec4(0, 0, 0);
   const float offsetH = BLOCK_SIZE * 0.70F;

@@ -48,10 +48,9 @@ Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
       Tyra::PipelineTextureMappingType::TyraNearest;
 
   // TODO: refactor to handled item, temp stuff...
-  {
-    this->handledItem->init(t_renderer);
-    stpip.setRenderer(&t_renderer->core);
-  }
+  // this->handledItem->init(t_renderer);
+
+  stpip.setRenderer(&t_renderer->core);
 
   // Set render pip
   this->setRenderPip(new PlayerRenderArmPip(this));
@@ -62,7 +61,7 @@ Player::~Player() {
   overEntity = nullptr;
 
   delete bbox;
-  delete handledItem;
+  // delete handledItem;
   delete this->renderPip;
 
   t_renderer->getTextureRepository().free(playerTexture);
@@ -174,7 +173,11 @@ Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
 
 Vec4 Player::getNextVrticalPosition(const float& deltaTime) {
   // Accelerate the velocity: velocity += gravConst * deltaTime
-  velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+  if (isFlying) {
+    return *mesh->getPosition();
+  } else {
+    velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+  }
 
   if (_isUnderWater) {
     velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
@@ -207,11 +210,11 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
 
   if (newPosition.y < terrainHeight.minHeight) {
     newPosition.y = terrainHeight.minHeight;
-    velocity = Vec4(0.0f, 0.0f, 0.0f);
+    velocity.y = 0.0f;
     isOnGround = true;
   } else if (newPosition.y >= heightLimit) {
     newPosition.y = heightLimit;
-    velocity = -velocity;
+    velocity.y = -velocity.y;
     isOnGround = false;
   }
 
@@ -747,15 +750,14 @@ void Player::updateItemColorByCurrentPosition() {
                            std::floor(pos.z + 0.5f));
 
   if (BoundCheckMap(&level->map, offset.x, offset.y, offset.z)) {
-    const int lightLevelAtPos =
+    const int lvl =
         GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
-    const float sunLightLevel =
-        static_cast<float>((lightLevelAtPos >> 4) & 0xF);
-    const float blockLightLevel = static_cast<float>(lightLevelAtPos & 0x0F);
-    const auto maxLevel = std::max(sunLightLevel, blockLightLevel);
-    const auto minLevel = 3.0f;
-    const float intenisty = 128.0f * (std::max(maxLevel, minLevel) / 15.0f);
+    const float s_lvl = static_cast<float>((lvl >> 4) & 0xF) *
+                        t_worldLightModel->sunLightIntensity;
+    const float b_lvl = static_cast<float>(lvl & 0x0F);
+    const auto maxLevel = std::max({s_lvl, b_lvl, 3.0f});
+    const float color = 128.0f * (maxLevel / 15.0f);
 
-    _baseColorAtPlayerPos = Color(intenisty, intenisty, intenisty);
+    _baseColorAtPlayerPos.set(color, color, color);
   }
 };

@@ -16,11 +16,10 @@ void TorchHandItemMeshBuilder_GenerateMesh(
 
 void TorchHandItemMeshBuilder_loadMeshData(Block* t_block,
                                            std::vector<Vec4>* t_vertices) {
-  const Vec4* vertexData = VertexBlockData::getTorchVertexData();
   for (size_t i = 0; i < VertexBlockData::VETEX_COUNT; i++) {
-    t_vertices->emplace_back(t_block->model * vertexData[i]);
+    t_vertices->emplace_back(t_block->model *
+                             VertexBlockData::torchVertexData[i]);
   }
-  delete vertexData;
 }
 
 void TorchHandItemMeshBuilder_loadUVData(std::vector<Vec4>* t_uv_map) {
