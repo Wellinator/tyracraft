@@ -221,7 +221,8 @@ u8 MazePlayingState::hasReachedTargetBlock() {
 
 void MazePlayingState::setHappyTheme() {
   stateGamePlay->world->dayNightCycleManager.resetSkyColor();
-  tickManager.setDayInit();
+  tickManager.setDayMid();
+  stateGamePlay->world->chunckManager.reloadLightDataOfAllChunks();
 }
 
 void MazePlayingState::setDarkTheme() {
