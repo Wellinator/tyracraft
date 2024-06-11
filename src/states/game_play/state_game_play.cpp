@@ -49,6 +49,8 @@ void StateGamePlay::handleGameMode(const GameMode& gameMode) {
     this->setPlayingState(new CreativePlayingState(this));
   } else if (gameMode == GameMode::Survival) {
     this->setPlayingState(new SurvivalPlayingState(this));
+  } else if (gameMode == GameMode::Maze) {
+    this->setPlayingState(new MazePlayingState(this));
   }
 }
 
