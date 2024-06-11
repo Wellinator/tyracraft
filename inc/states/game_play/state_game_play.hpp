@@ -64,6 +64,8 @@ class StateGamePlay : public GameState {
   u8 paused = false;
   u8 isAtWelcomeState = false;
 
+  const GameMode _gameMode;
+
   void handleGameMode(const GameMode& gameMode);
   void handleInput();
   void pauseGame();

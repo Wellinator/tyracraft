@@ -1,6 +1,7 @@
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 #include "states/game_play/states/welcome/state_welcome.hpp"
+#include "states/game_play/states/minigame/mazecraft/mazecraft_level_init.hpp"
 #include "states/loading/state_loading_game.hpp"
 #include "file/file_utils.hpp"
 #include <renderer/renderer_settings.hpp>
@@ -18,7 +19,7 @@ using Tyra::Renderer3D;
 using Tyra::RendererSettings;
 
 StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
-    : GameState(context) {
+    : GameState(context), _gameMode(gameMode)  {
   this->handleGameMode(gameMode);
   this->init();
 }
@@ -110,7 +111,17 @@ void StateGamePlay::unpauseGame() {
 
 void StateGamePlay::displayWelcome() {
   this->previousState = this->state;
-  this->state = new StateWelcome(this);
+
+  switch (_gameMode) {
+    case GameMode::Maze:
+      this->state = new MazecraftLevelInit(this);
+      break;
+
+    default:
+      this->state = new StateWelcome(this);
+      break;
+  }
+
   this->isAtWelcomeState = true;
 }
 
