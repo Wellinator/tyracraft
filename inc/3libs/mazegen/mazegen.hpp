@@ -346,7 +346,7 @@ void place_rooms() {
     std::uniform_int_distribution<> room_position_y_distribution(0, maze_height() - room_avg);
 
     for (int i = 0; i < cfg.ROOM_BASE_NUMBER; i++) {
-        bool room_is_placed = false;
+        // bool room_is_placed = false;
         int width = room_size_distribution(rng) / 2 * 2 + 1;
         int height = room_size_distribution(rng) / 2 * 2 + 1;
         int room_x = room_position_x_distribution(rng) / 2 * 2 + 1;
@@ -378,7 +378,7 @@ void place_rooms() {
             if (breaks_hall_constraint) continue;
         }
         rooms.push_back(room);
-        room_is_placed = true;
+        // room_is_placed = true;
         for (int x = room.min_point.x; x <= room.max_point.x; x++) {
             for (int y = room.min_point.y; y <= room.max_point.y; y++) {
                 grid[y][x]= room_id;
