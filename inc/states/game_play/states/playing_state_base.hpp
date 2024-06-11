@@ -8,6 +8,7 @@ class PlayingStateBase {
   PlayingStateBase(StateGamePlay* context) { this->stateGamePlay = context; };
   virtual ~PlayingStateBase(){};
   virtual void init() = 0;
+  virtual void afterInit() = 0;
   virtual void update(const float& deltaTime) = 0;
   virtual void tick() = 0;
   virtual void render() = 0;

@@ -39,6 +39,7 @@ class StateLoadingGame : public GameState {
   ~StateLoadingGame();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void render();
 

@@ -171,6 +171,7 @@ void StateLoadingGame::initPlayer() {
 
 void StateLoadingGame::nextState() {
   TYRA_LOG("nextState");
+  this->stateGamePlay->afterInit();
   this->context->setState(this->stateGamePlay);
 }
 

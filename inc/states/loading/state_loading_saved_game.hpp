@@ -36,6 +36,7 @@ class StateLoadingSavedGame : public GameState {
   ~StateLoadingSavedGame();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void render();
 

@@ -23,6 +23,7 @@ class StateGameMenu : public PlayingStateBase {
   ~StateGameMenu();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void tick(){};
   void render();

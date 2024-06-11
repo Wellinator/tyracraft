@@ -48,6 +48,7 @@ class StateMainMenu : public GameState {
   ~StateMainMenu();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void render();
   void setScreen(ScreenBase* screen);

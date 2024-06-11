@@ -23,6 +23,9 @@ class StateLanguageLoaderScreen : public GameState {
   ~StateLanguageLoaderScreen(){};
 
   void init(){};
+  
+  void afterInit(){};
+
   void update(const float& deltaTime) {
     if (SettingsManager::CheckIfSettingsExist()) {
       loadSavedLanguage();

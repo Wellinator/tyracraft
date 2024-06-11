@@ -21,6 +21,7 @@ class StateLanguageSelectionScreen : public GameState {
   ~StateLanguageSelectionScreen();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void render();
 

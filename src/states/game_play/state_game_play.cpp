@@ -60,6 +60,11 @@ void StateGamePlay::init() {
   displayWelcome();
 }
 
+void StateGamePlay::afterInit() {
+  if (previousState != nullptr) previousState->afterInit();
+  this->state->afterInit();
+}
+
 void StateGamePlay::update(const float& deltaTime) {
   this->handleInput();
   this->state->update(deltaTime);

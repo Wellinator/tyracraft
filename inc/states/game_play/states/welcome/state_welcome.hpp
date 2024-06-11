@@ -20,6 +20,7 @@ class StateWelcome : public PlayingStateBase {
   ~StateWelcome();
 
   void init();
+  void afterInit(){};
   void update(const float& deltaTime);
   void tick(){};
   void render();
