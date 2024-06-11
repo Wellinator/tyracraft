@@ -515,6 +515,9 @@ void ScreenNewGame::createNewWorld() {
   model.name = inputWorldName;
   model.seed = std::stoull(inputSeed);
   model.texturePack = selectedTexturePack->path;
+  model.gameMode = model.type == WorldType::WORLD_MINI_GAME_MAZECRAFT
+                       ? GameMode::Maze
+                       : GameMode::Creative;
   context->loadGame(model);
 }
 
