@@ -37,5 +37,10 @@ class TickManager {
 
   float getTickTimeAverage();
 
+  inline void setDayInit() { g_ticksCounter = DAY_INIT; }
+  inline void setDaySunrise() { g_ticksCounter = DAY_SUNRISE; }
+  inline void setDayMid() { g_ticksCounter = DAY_MID; }
+  inline void setDaySunset() { g_ticksCounter = DAY_SUNSET; }
+
   std::function<void()> onTick = std::function<void()>{};
 };
