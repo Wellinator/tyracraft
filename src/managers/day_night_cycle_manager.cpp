@@ -234,10 +234,24 @@ const Color DayNightCycleManager::getSkyColor() {
   const auto isDay = g_ticksCounter > DAY_INIT && g_ticksCounter < NIGHT_INIT;
   float interpolation = _intensity;
 
-  isDay ? result.lerp(AFTERNOON_MORNING_COLOR, DAY_MID_COLOR, interpolation)
-        : result.lerp(NIGHT_MID_COLOR, AFTERNOON_MORNING_COLOR, interpolation);
+  isDay ? result.lerp(_afterNoonAndMorningColor, _midDaycolor, interpolation)
+        : result.lerp(_midNight, _afterNoonAndMorningColor, interpolation);
 
   return result;
+}
+
+void DayNightCycleManager::setSkyColor(Color midDaycolor,
+                                       Color afterNoonAndMorningColor,
+                                       Color midNight) {
+  _midDaycolor.set(midDaycolor);
+  _afterNoonAndMorningColor.set(afterNoonAndMorningColor);
+  _midNight.set(midNight);
+}
+
+void DayNightCycleManager::resetSkyColor() {
+  _midDaycolor.set(DAY_MID_COLOR);
+  _afterNoonAndMorningColor.set(AFTERNOON_MORNING_COLOR);
+  _midNight.set(NIGHT_MID_COLOR);
 }
 
 void DayNightCycleManager::updateIntensityByAngle() {

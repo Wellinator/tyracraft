@@ -6,9 +6,9 @@
 #include "constants.hpp"
 #include "managers/tick_manager.hpp"
 
-#define DAY_MID_COLOR Color(120, 169, 255)
-#define AFTERNOON_MORNING_COLOR Color(45, 64, 97)
-#define NIGHT_MID_COLOR Color(10, 10, 25)
+#define DAY_MID_COLOR Color(120.0f, 169.0f, 255.0f)
+#define AFTERNOON_MORNING_COLOR Color(45.0f, 64.0f, 97.0f)
+#define NIGHT_MID_COLOR Color(10.0f, 10.0f, 25.0f)
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -39,6 +39,9 @@ class DayNightCycleManager {
    *
    */
   const Color getSkyColor();
+  void setSkyColor(Color midDaycolor, Color afterNoonAndMorningColor,
+                   Color midNight);
+  void resetSkyColor();
 
   const float getSunLightIntensity();
 
@@ -76,6 +79,10 @@ class DayNightCycleManager {
   Vec4 moonPositionEnd = Vec4(0, 0, 0);
 
   float _intensity;
+
+  Color _midDaycolor = DAY_MID_COLOR;
+  Color _afterNoonAndMorningColor = AFTERNOON_MORNING_COLOR;
+  Color _midNight = NIGHT_MID_COLOR;
 
   const u8 DRAW_DATA_COUNT = 6;
 
