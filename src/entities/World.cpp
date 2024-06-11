@@ -2866,5 +2866,7 @@ void CrossCraft_World_GenerateMap(WorldType worldType) {
     case WORLD_TYPE_FLOATING:
       CrossCraft_WorldGenerator_Generate_Floating(&level->map);
       break;
+    case WORLD_MINI_GAME_MAZECRAFT:
+      break;
   }
 }
