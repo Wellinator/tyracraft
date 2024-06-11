@@ -403,3 +403,5 @@ typedef enum {
 #define LEFT_VEC Vec4(1, 0, 0)
 #define FRONT_VEC Vec4(0, 0, -1)
 #define BACK_VEC Vec4(0, 0, 1)
+
+enum class GameMode { Survival, Creative, Maze };

@@ -28,8 +28,6 @@ using Tyra::Renderer;
 using Tyra::Sprite;
 using Tyra::StaticMesh;
 
-enum class GameMode { Survival, Creative };
-
 class PlayingStateBase;
 
 class StateGamePlay : public GameState {
