@@ -13,6 +13,10 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     gzwrite(save_file, &state->world->getWorldOptions()->seed,
             sizeof(uint32_t));
 
+    // Game mode
+    gzwrite(save_file, &state->world->getWorldOptions()->gameMode,
+            sizeof(uint8_t));
+
     // World name
     uint16_t worldNameSize =
         state->world->getWorldOptions()->name.size() * sizeof(char);
@@ -88,6 +92,9 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
 
     // World seed
     gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
+
+    // Game mode
+    gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
 
     // World name
     uint16_t worldNameSize;
@@ -166,6 +173,9 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     // World seed
     gzread(save_file, &model->seed, sizeof(uint32_t));
 
+    // Game mode
+    gzread(save_file, &model->gameMode, sizeof(uint8_t));
+
     // World name
     uint16_t worldNameSize;
     gzread(save_file, &worldNameSize, sizeof(worldNameSize));
@@ -217,6 +227,9 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
       // World seed
       uint32_t seed;
       gzread(save_file, &seed, sizeof(uint32_t));
+
+      uint8_t gameMode;
+      gzread(save_file, &gameMode, sizeof(uint8_t));
 
       // World name
       uint16_t worldNameSize;
