@@ -389,6 +389,7 @@ typedef enum {
 } WorldType;
 
 #define SAVE_FILE_EXTENSION "tcw"
+#define MINIGAME_FILE_EXTENSION "mgw"
 
 // Blocks params
 #define BREAKING_TIME_IN_CREATIVE_MODE 0.150F
