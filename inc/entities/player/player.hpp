@@ -67,6 +67,11 @@ class Player : public Entity {
   void setRenderBodyPip();
 
   void toggleFlying();
+  inline void unFly() {
+    this->isFlying = false;
+    this->isOnGround = false;
+  };
+
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isFlying, isBreaking, isPuting, isMoving, isRunning;
 
@@ -93,6 +98,11 @@ class Player : public Entity {
   u8 selectedSlotHasChanged = 0;
   ItemId getSelectedInventoryItemType();
   u8 getSelectedInventorySlot();
+  void fillInventoryWithItem(ItemId);
+  inline void updateHandledItem() {
+    this->renderPip->unloadItemDrawData();
+    this->renderPip->loadItemDrawData();
+  };
   inline ItemId* getInventoryData() { return inventory; };
 
   inline BBox getHitBox() const {
@@ -175,7 +185,6 @@ class Player : public Entity {
       ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
       ItemId::empty, ItemId::empty, ItemId::empty, ItemId::empty,
   };
-
   short int selectedInventoryIndex = 0;
 
   float lastTimePlayedWalkSfx = 0.0F;

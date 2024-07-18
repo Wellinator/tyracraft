@@ -419,11 +419,9 @@ void Player::moveSelectorToTheLeft() {
 
   const auto currentItemId = inventory[selectedInventoryIndex];
   if (currentItemId == ItemId::empty) {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   } else {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   }
 }
 
@@ -435,11 +433,15 @@ void Player::moveSelectorToTheRight() {
 
   const auto currentItemId = inventory[selectedInventoryIndex];
   if (currentItemId == ItemId::empty) {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   } else {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
+  }
+}
+
+void Player::fillInventoryWithItem(ItemId itemId) {
+  for (size_t i = 0; i < HOT_INVENTORY_SIZE; i++) {
+    inventory[i] = itemId;
   }
 }
 
@@ -568,11 +570,9 @@ void Player::selectNextItem() {
   this->inventoryHasChanged = true;
 
   if (nextItem == ItemId::empty) {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   } else {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   }
 }
 
@@ -590,11 +590,9 @@ void Player::selectPreviousItem() {
   this->inventoryHasChanged = true;
 
   if (previousItem == ItemId::empty) {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   } else {
-    this->renderPip->unloadItemDrawData();
-    this->renderPip->loadItemDrawData();
+    this->updateHandledItem();
   }
 }
 
