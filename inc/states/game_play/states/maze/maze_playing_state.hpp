@@ -50,7 +50,7 @@ class MazePlayingState : public PlayingStateBase {
 
   MazeAudioListener mazeAudioListener;
   u32 audioListenerId;
-  float elapsedTimeInSec;
+  // float elapsedTimeInSec;
   TickManager tickManager;
 
   Vec4 playerMovementDirection;

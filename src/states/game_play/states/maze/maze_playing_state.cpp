@@ -19,13 +19,17 @@ void MazePlayingState::init() {
   tickManager.onTick = [this]() { tick(); };
 }
 
-void MazePlayingState::afterInit() { 
-  setDarkTheme(); 
+void MazePlayingState::afterInit() {
+  setDarkTheme();
+
+  stateGamePlay->player->fillInventoryWithItem(ItemId::torch);
+  stateGamePlay->player->updateHandledItem();
+  stateGamePlay->player->unFly();
 }
 
 void MazePlayingState::update(const float& deltaTime) {
   if (deltaTime <= 0.0F) return;
-  elapsedTimeInSec += deltaTime;
+  // elapsedTimeInSec += deltaTime;
   tickManager.update(deltaTime);
 
   handleInput(deltaTime);
@@ -117,10 +121,10 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);
 
-    if (clicked.L1)
-      stateGamePlay->player->moveSelectorToTheLeft();
-    else if (clicked.R1)
-      stateGamePlay->player->moveSelectorToTheRight();
+    // if (clicked.L1)
+    //   stateGamePlay->player->moveSelectorToTheLeft();
+    // else if (clicked.R1)
+    //   stateGamePlay->player->moveSelectorToTheRight();
 
     if (pressed.L2) {
       if (stateGamePlay->world->validTargetBlock()) {
@@ -132,6 +136,11 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
           return;
         }
 
+        // prevent to break the scenario
+        if (stateGamePlay->world->targetBlock->type != Blocks::TORCH) {
+          return;
+        }
+
         stateGamePlay->world->breakTargetBlockInCreativeMode(deltaTime);
         stateGamePlay->player->setArmBreakingAnimation();
       }
@@ -140,24 +149,19 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
       stateGamePlay->player->unsetArmBreakingAnimation();
     }
 
-    if (clicked.R2) {
-      ItemId activeItemType =
-          stateGamePlay->player->getSelectedInventoryItemType();
-      if (activeItemType != ItemId::empty &&
-          stateGamePlay->world->validTargetBlock()) {
-        const Blocks blockid =
-            stateGamePlay->itemRepository->getItemById(activeItemType)->blockId;
-        if (blockid != Blocks::AIR_BLOCK) {
-          stateGamePlay->player->playPutBlockAnimation();
-          stateGamePlay->world->putBlock(blockid, stateGamePlay->player,
-                                         stateGamePlay->context->t_camera->yaw);
+    if (clicked.R2 && stateGamePlay->world->validTargetBlock()) {
+      const Blocks blockid = Blocks::TORCH;
 
-          if (hasReachedTargetBlock()) {
-            // TODO: set happy layout and load next level
-            setHappyTheme();
-            TYRA_LOG("Level FInished!");
-            return;
-          }
+      if (blockid != Blocks::AIR_BLOCK) {
+        stateGamePlay->player->playPutBlockAnimation();
+        stateGamePlay->world->putBlock(blockid, stateGamePlay->player,
+                                       stateGamePlay->context->t_camera->yaw);
+
+        if (hasReachedTargetBlock()) {
+          // TODO: set happy layout and load next level
+          setHappyTheme();
+          TYRA_LOG("Level FInished!");
+          return;
         }
       }
     } else {
@@ -171,45 +175,26 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
-      if (clicked.DpadUp)
-        stateGamePlay->player->selectNextItem();
-      else if (clicked.DpadDown)
-        stateGamePlay->player->selectPreviousItem();
-    } else if (stateGamePlay->player->isFlying) {
-      if (pressed.DpadUp) {
-        stateGamePlay->player->flyUp(deltaTime);
-      } else if (pressed.DpadDown) {
-        stateGamePlay->player->flyDown(deltaTime);
-      }
+      // if (clicked.DpadUp)
+      //   stateGamePlay->player->selectNextItem();
+      // else if (clicked.DpadDown)
+      //   stateGamePlay->player->selectPreviousItem();
     }
 
-    if (clicked.Cross) {
-      if (elapsedTimeInSec < 0.45F) {
-        stateGamePlay->player->toggleFlying();
-      }
-      elapsedTimeInSec = 0.0F;
-    }
+    // else if (stateGamePlay->player->isFlying) {
+    // if (pressed.DpadUp) {
+    //   stateGamePlay->player->flyUp(deltaTime);
+    // } else if (pressed.DpadDown) {
+    //   stateGamePlay->player->flyDown(deltaTime);
+    // }
+    // }
 
-    if (clicked.R3) {
-      Camera* t_cam = stateGamePlay->context->t_camera;
-
-      if (t_cam->getCamType() == CamType::FirstPerson) {
-        t_cam->setThirdPerson();
-      } else if (t_cam->getCamType() == CamType::ThirdPerson) {
-        t_cam->setFirstPerson();
-      }
-
-      // TODO: Implements inverted third person cam
-      // else if (t_cam->getCamType() == CamType::ThirdPersonInverted) {
-      //   t_cam->setFirstPerson();
-      // }
-
-      if (t_cam->getCamType() == CamType::FirstPerson) {
-        stateGamePlay->player->setRenderArmPip();
-      } else {
-        stateGamePlay->player->setRenderBodyPip();
-      }
-    }
+    // if (clicked.Cross) {
+    //   if (elapsedTimeInSec < 0.45F) {
+    //     stateGamePlay->player->toggleFlying();
+    //   }
+    //   elapsedTimeInSec = 0.0F;
+    // }
   }
 }
 
@@ -228,7 +213,7 @@ void MazePlayingState::setHappyTheme() {
 void MazePlayingState::setDarkTheme() {
   Color darkColor = Color(AFTERNOON_MORNING_COLOR);
   NewGameOptions* worldOptions = stateGamePlay->world->getWorldOptions();
-  u8 level = 39;  // worldOptions->seed;
+  u8 level = worldOptions->seed;
 
   if (level < 10) {
     darkColor = Color(AFTERNOON_MORNING_COLOR);
@@ -251,13 +236,10 @@ void MazePlayingState::setDarkTheme() {
 void MazePlayingState::navigate() {}
 
 void MazePlayingState::renderMazeUi() {
-  if (stateGamePlay->player->isUnderWater())
-    stateGamePlay->ui->renderUnderWaterOverlay();
+  stateGamePlay->ui->renderCrosshair();
 
-  if (stateGamePlay->context->t_camera->getCamType() == CamType::FirstPerson)
-    stateGamePlay->ui->renderCrosshair();
-
-  stateGamePlay->ui->renderInventory();
+  // Do not render invetory, it just contains torch
+  // stateGamePlay->ui->renderInventory();
 }
 
 void MazePlayingState::drawDegubInfo() {
