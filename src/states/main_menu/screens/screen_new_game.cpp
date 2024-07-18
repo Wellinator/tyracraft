@@ -1,4 +1,5 @@
 #include "states/main_menu/screens/screen_new_game.hpp"
+#include "states/main_menu/screens/screen_mini_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "managers/save_manager.hpp"
 
@@ -375,8 +376,10 @@ void ScreenNewGame::handleOptionsSelection() {
     return;
   }
 
-  if (clickedButtons.L1 || clickedButtons.R1) {
+  if (clickedButtons.L1) {
     context->setScreen(new ScreenLoadGame(context));
+  } else if (clickedButtons.R1) {
+    context->setScreen(new ScreenMiniGame(context));
   }
 
   if (clickedButtons.DpadDown) {
