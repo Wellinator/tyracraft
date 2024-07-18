@@ -385,7 +385,7 @@ void AABBTree::move(index_t index, const AABB& aabb) {
 void AABBTree::_free_all() {
   TYRA_LOG("freeing all...");
   _free_list = 0;
-  for (int32_t i = 0; i < _max_nodes; ++i) {
+  for (uint32_t i = 0; i < _max_nodes; ++i) {
     _get(i).child[0] = i + 1;
     _get(i).child[1] = invalid_index;
     _get(i).parent = invalid_index;
