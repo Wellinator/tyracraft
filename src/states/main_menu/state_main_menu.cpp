@@ -1,5 +1,7 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "states/loading/state_loading_game.hpp"
+#include "states/loading/mini_games/state_create_maze_craft.hpp"
+#include "states/loading/mini_games/state_load_maze_craft.hpp"
 #include "states/loading/state_loading_saved_game.hpp"
 #include "states/language_selection/language_selection_screen.hpp"
 #include "file/file_utils.hpp"
@@ -127,6 +129,26 @@ void StateMainMenu::loadGame(const NewGameOptions& options) {
 void StateMainMenu::loadSavedGame(const std::string save_file_full_path) {
   this->context->setState(
       new StateLoadingSavedGame(this->context, save_file_full_path));
+  delete this->screen;
+}
+
+void StateMainMenu::createMiniGame(const NewGameOptions& options) {
+  switch (options.gameMode) {
+    case GameMode::Maze:
+      this->context->setState(new StateCreateMazeCraft(this->context, options));
+      break;
+
+    default:
+      return TYRA_ERROR("Invalis mini game creation!");
+      break;
+  }
+
+  delete this->screen;
+}
+
+void StateMainMenu::loadSavedMiniGame(const std::string save_file_full_path) {
+  this->context->setState(
+      new StateLoadMazeCraft(this->context, save_file_full_path));
   delete this->screen;
 }
 
