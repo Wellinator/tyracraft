@@ -7,7 +7,6 @@
 #include <renderer/renderer_settings.hpp>
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
-#include "managers/save_manager.hpp"
 #include "managers/collision_manager.hpp"
 
 using Tyra::Audio;
@@ -19,7 +18,7 @@ using Tyra::Renderer3D;
 using Tyra::RendererSettings;
 
 StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
-    : GameState(context), _gameMode(gameMode)  {
+    : GameState(context), _gameMode(gameMode) {
   this->handleGameMode(gameMode);
   this->init();
 }
@@ -138,8 +137,5 @@ void StateGamePlay::quitToTitle() {
 }
 
 void StateGamePlay::saveGame() {
-  std::string saveFileName = FileUtils::fromCwd(
-      "saves/" + this->world->getWorldOptions()->name + ".tcw");
-  SaveManager::SaveGame(this, saveFileName.c_str());
-  TYRA_LOG("Saving at: ", saveFileName.c_str());
+  this->previousState->handleAction(MenuAction::Save);
 }

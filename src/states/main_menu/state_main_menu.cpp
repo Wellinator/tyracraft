@@ -146,9 +146,19 @@ void StateMainMenu::createMiniGame(const NewGameOptions& options) {
   delete this->screen;
 }
 
-void StateMainMenu::loadSavedMiniGame(const std::string save_file_full_path) {
-  this->context->setState(
-      new StateLoadMazeCraft(this->context, save_file_full_path));
+void StateMainMenu::loadSavedMiniGame(GameMode gameMode,
+                                      const std::string save_file_full_path) {
+  switch (gameMode) {
+    case GameMode::Maze:
+      this->context->setState(
+          new StateLoadMazeCraft(this->context, save_file_full_path));
+      break;
+
+    default:
+      return TYRA_ERROR("Invalid mini game loading!");
+      break;
+  }
+
   delete this->screen;
 }
 

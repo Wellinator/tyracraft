@@ -22,7 +22,7 @@ void StateCreateMazeCraft::init() {
 
   // Background
   std::string backgroundTex =
-      FileUtils::fromCwd("textures/gui/loading/background.png");
+      FileUtils::fromCwd("textures/gui/mini_game/maze_background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);

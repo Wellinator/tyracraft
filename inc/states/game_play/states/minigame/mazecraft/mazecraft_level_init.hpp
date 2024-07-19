@@ -21,6 +21,7 @@ class MazecraftLevelInit : public PlayingStateBase {
 
   void init();
   void afterInit(){};
+  void handleAction(MenuAction action){};
   void update(const float& deltaTime);
   void tick(){};
   void render();

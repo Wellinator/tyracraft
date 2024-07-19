@@ -406,3 +406,5 @@ typedef enum {
 #define BACK_VEC Vec4(0, 0, 1)
 
 enum class GameMode { Survival, Creative, Maze };
+
+enum class MenuAction { Save };

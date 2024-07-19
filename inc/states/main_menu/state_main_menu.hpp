@@ -56,7 +56,8 @@ class StateMainMenu : public GameState {
   void loadGame(const NewGameOptions& options);
   void loadSavedGame(const std::string save_file_full_path);
   void createMiniGame(const NewGameOptions& options);
-  void loadSavedMiniGame(const std::string save_file_full_path);
+  void loadSavedMiniGame(GameMode gameMode,
+                         const std::string save_file_full_path);
   void playClickSound();
   void goToLanguageSelectioScreen();
 

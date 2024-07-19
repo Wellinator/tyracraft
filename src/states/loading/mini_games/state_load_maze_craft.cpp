@@ -1,12 +1,12 @@
 #include "states/loading/mini_games/state_load_maze_craft.hpp"
 #include "managers/save_manager.hpp"
 
-StateLoadMazeCraft::StateLoadMazeCraft(
-    Context* t_context, const std::string save_file_full_path)
+StateLoadMazeCraft::StateLoadMazeCraft(Context* t_context,
+                                       const std::string save_file_full_path)
     : GameState(t_context), saveFileFullPath(save_file_full_path) {
   worldOptions =
       SaveManager::GetNewGameOptionsFromSaveFile(save_file_full_path.c_str());
-  stateGamePlay = new StateGamePlay(context, GameMode::Creative);
+  stateGamePlay = new StateGamePlay(context, GameMode::Maze );
   init();
 }
 
@@ -24,7 +24,7 @@ void StateLoadMazeCraft::init() {
 
   // Background
   std::string backgroundTex =
-      FileUtils::fromCwd("textures/gui/loading/background.png");
+      FileUtils::fromCwd("textures/gui/mini_game/maze_background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -169,6 +169,7 @@ void StateLoadMazeCraft::initPlayer() {
 
 void StateLoadMazeCraft::nextState() {
   TYRA_LOG("nextState");
+  this->stateGamePlay->afterInit();
   this->context->setState(this->stateGamePlay);
 }
 

@@ -22,6 +22,7 @@ class MazePlayingState : public PlayingStateBase {
 
   void init();
   void afterInit();
+  void handleAction(MenuAction action);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -33,6 +34,7 @@ class MazePlayingState : public PlayingStateBase {
   void drawDegubInfo();
   void playNewRandomSong();
   void gamePlayInputHandler(const float& deltaTime);
+  void saveProgress();
 
   u8 hasReachedTargetBlock();
   void setHappyTheme();

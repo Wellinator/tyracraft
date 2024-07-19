@@ -1,4 +1,5 @@
 #include "states/game_play/states/creative/creative_playing_state.hpp"
+#include "managers/save_manager.hpp"
 #include "managers/settings_manager.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
@@ -335,4 +336,23 @@ void CreativePlayingState::openInventory() {
 
 const u8 CreativePlayingState::isInventoryOpened() {
   return stateGamePlay->ui->isInventoryOpened();
+}
+
+void CreativePlayingState::handleAction(MenuAction action) {
+  switch (action) {
+    case MenuAction::Save:
+      saveProgress();
+      break;
+
+    default:
+      break;
+  }
+}
+
+void CreativePlayingState::saveProgress() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      SAVE_FILE_EXTENSION);
+  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  TYRA_LOG("Saving at: ", saveFileName.c_str());
 }

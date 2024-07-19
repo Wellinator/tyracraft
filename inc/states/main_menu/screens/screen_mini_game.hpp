@@ -2,6 +2,7 @@
 
 #include "states/main_menu/screens/screen_base.hpp"
 #include "models/new_game_model.hpp"
+#include "models/save_info_model.hpp"
 #include "models/mini_game_info_model.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
@@ -178,11 +179,14 @@ class ScreenMiniGame : public ScreenBase {
 
   std::vector<MiniGameInfoModel*> miniGames;
   MiniGameInfoModel* selectedMiniGame = nullptr;
+  SaveInfoModel* savedGame = nullptr;
 
   void handleInput();
   void handleOptionsSelection();
   void backToMainMenu();
   void createNewWorld();
+  void unloadSaved();
+  void loadAvailableSaveFromPath();
   bool isThereMiniGameSavedData();
   void updateModel();
   void renderSelectedOptions();

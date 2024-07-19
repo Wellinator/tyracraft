@@ -1,5 +1,6 @@
 #include "states/game_play/states/maze/maze_playing_state.hpp"
 #include "managers/settings_manager.hpp"
+#include "managers/save_manager.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
 
@@ -325,4 +326,23 @@ void MazePlayingState::printMemoryInfoToLog() {
 void MazePlayingState::playNewRandomSong() {
   TYRA_LOG("Song finished, playing a new random song.");
   mazeAudioListener.playRandomMazeSound();
+}
+
+void MazePlayingState::handleAction(MenuAction action) {
+  switch (action) {
+    case MenuAction::Save:
+      saveProgress();
+      break;
+
+    default:
+      break;
+  }
+}
+
+void MazePlayingState::saveProgress() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      MINIGAME_FILE_EXTENSION);
+  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
 }

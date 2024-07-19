@@ -22,6 +22,7 @@ class CreativePlayingState : public PlayingStateBase {
 
   void init();
   void afterInit(){};
+  void handleAction(MenuAction action);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -36,6 +37,7 @@ class CreativePlayingState : public PlayingStateBase {
   void closeInventory();
   void gamePlayInputHandler(const float& deltaTime);
   void inventoryInputHandler(const float& deltaTime);
+  void saveProgress();
 
   inline const u8 isSongPlaying() {
     return creativeAudioListener.t_song->isPlaying();

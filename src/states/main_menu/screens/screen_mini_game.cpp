@@ -33,6 +33,8 @@ ScreenMiniGame::~ScreenMiniGame() {
     textureRepo->freeBySprite(miniGames[i]->icon);
     delete miniGames[i];
   }
+
+  unloadSaved();
 }
 
 void ScreenMiniGame::update(const float& deltaTime) {
@@ -324,15 +326,23 @@ void ScreenMiniGame::handleOptionsSelection() {
     this->updateModel();
 
     if (this->selectedOption == ScreenMiniGameOptions::NewGame) {
+      TYRA_LOG("NewGame");
       if (isThereMiniGameSavedData()) {
         displayPreviousSavePresent = true;
       } else {
-        createNewWorld();
+        return createNewWorld();
       }
-      TYRA_LOG("NewGame");
-      return;
-    } else if (this->selectedOption == ScreenMiniGameOptions::LoadGame)
-      TYRA_LOG("LoadGame");
+    } else if (this->selectedOption == ScreenMiniGameOptions::LoadGame) {
+      if (isThereMiniGameSavedData()) {
+        TYRA_LOG("LoadGame");
+        loadAvailableSaveFromPath();
+        if (savedGame)
+          return context->loadSavedMiniGame(GameMode::Maze, savedGame->path);
+      }
+
+      TYRA_LOG("Display message: NO SAVED GAME DATA");
+    }
+
     else if (this->selectedOption == ScreenMiniGameOptions::ResetProgress)
       TYRA_LOG("ResetProgress");
   }
@@ -349,6 +359,31 @@ void ScreenMiniGame::updateModel() {
 
 void ScreenMiniGame::backToMainMenu() {
   this->context->setScreen(new ScreenMain(this->context));
+}
+
+void ScreenMiniGame::unloadSaved() { delete savedGame; }
+
+void ScreenMiniGame::loadAvailableSaveFromPath() {
+  std::string tempSaveFileName = FileUtils::fromCwd(
+      "saves/" + inputWorldName + "." + MINIGAME_FILE_EXTENSION);
+
+  TYRA_LOG("Loading saved mini game: ", inputWorldName);
+
+  savedGame = new SaveInfoModel();
+
+  savedGame->id = 1;
+  savedGame->name = inputWorldName;
+  savedGame->path = tempSaveFileName;
+
+  SaveManager::SetSaveInfo(savedGame->path.c_str(), savedGame);
+
+  TYRA_LOG("Version: ", savedGame->version);
+  TYRA_LOG("name: ", savedGame->name.c_str());
+
+  // Make sure it'll only load from version 1 above
+  savedGame->valid = savedGame->version > 0;
+
+  return;
 }
 
 bool ScreenMiniGame::isThereMiniGameSavedData() {
@@ -371,7 +406,7 @@ void ScreenMiniGame::createNewWorld() {
     default:
       return TYRA_ERROR("Not valid Mini Game");
   }
-  context->loadGame(model);
+  context->createMiniGame(model);
 }
 
 void ScreenMiniGame::renderSelectedOptions() {
