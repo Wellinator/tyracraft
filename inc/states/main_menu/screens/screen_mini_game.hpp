@@ -101,6 +101,7 @@ class ScreenMiniGame : public ScreenBase {
   u8 isEditingWorldName = false;
   u8 editingIndexWorldName = 0;
   u8 displayPreviousSavePresent = false;
+  u8 displayProgressReseted = false;
 
   const std::string Label_Load =
       g_language_repository["gui"]["load"].get<std::string>();
@@ -138,6 +139,8 @@ class ScreenMiniGame : public ScreenBase {
           .get<std::string>();
   const std::string Label_Ops =
       g_language_repository["common"]["ops_exclamation"].get<std::string>();
+  const std::string Label_Success =
+      g_language_repository["common"]["success_exclamation"].get<std::string>();
 
   const std::string Label_MiniGame =
       g_language_repository["minigame"]["common"]["mini_games"]
@@ -164,6 +167,14 @@ class ScreenMiniGame : public ScreenBase {
   //       g_language_repository["screen_new_game"]["world_type_mazecraft"]
   //           .get<std::string>();
 
+  const std::string Label_PreviousSaveDeletedSuccessPart1 =
+      g_language_repository["minigame"]["common"]
+                           ["minigame_previous_save_deleted_part1"]
+                               .get<std::string>();
+  const std::string Label_PreviousSaveDeletedSuccessPart2 =
+      g_language_repository["minigame"]["common"]
+                           ["minigame_previous_save_deleted_part2"]
+                               .get<std::string>();
   const std::string Label_PreviousSavePresentErrorPart1 =
       g_language_repository["minigame"]["common"]
                            ["minigame_previous_save_error_part1"]
@@ -185,12 +196,14 @@ class ScreenMiniGame : public ScreenBase {
   void handleOptionsSelection();
   void backToMainMenu();
   void createNewWorld();
+  void deleteProgress();
   void unloadSaved();
   void loadAvailableSaveFromPath();
   bool isThereMiniGameSavedData();
   void updateModel();
   void renderSelectedOptions();
   void renderPreviousSavePresentDialog();
+  void renderProgressResetedDialog();
   void selectPreviousMiniGame();
   void selectNextMiniGame();
   void getAvailableMiniGames();

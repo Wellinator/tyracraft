@@ -130,6 +130,10 @@ void ScreenMiniGame::render() {
   if (displayPreviousSavePresent) {
     renderPreviousSavePresentDialog();
   }
+
+  if (displayProgressReseted) {
+    renderProgressResetedDialog();
+  }
 }
 
 void ScreenMiniGame::init() {
@@ -288,6 +292,13 @@ void ScreenMiniGame::handleOptionsSelection() {
       activeOption = ScreenMiniGameOptions::NewGame;
     }
     return;
+  } else if (displayProgressReseted) {
+    if (clickedButtons.Cross) {
+      this->context->playClickSound();
+      displayProgressReseted = false;
+      activeOption = ScreenMiniGameOptions::NewGame;
+    }
+    return;
   }
 
   if (clickedButtons.L1) {
@@ -343,8 +354,10 @@ void ScreenMiniGame::handleOptionsSelection() {
       TYRA_LOG("Display message: NO SAVED GAME DATA");
     }
 
-    else if (this->selectedOption == ScreenMiniGameOptions::ResetProgress)
-      TYRA_LOG("ResetProgress");
+    else if (this->selectedOption == ScreenMiniGameOptions::ResetProgress) {
+      TYRA_LOG("Deleting progress...");
+      deleteProgress();
+    }
   }
 }
 
@@ -407,6 +420,14 @@ void ScreenMiniGame::createNewWorld() {
       return TYRA_ERROR("Not valid Mini Game");
   }
   context->createMiniGame(model);
+}
+
+void ScreenMiniGame::deleteProgress() {
+  std::string tempSaveFileName = FileUtils::fromCwd(
+      "saves/" + inputWorldName + "." + MINIGAME_FILE_EXTENSION);
+
+  SaveManager::DeleteSave(tempSaveFileName.c_str());
+  displayProgressReseted = !isThereMiniGameSavedData();
 }
 
 void ScreenMiniGame::renderSelectedOptions() {
@@ -497,6 +518,28 @@ void ScreenMiniGame::renderPreviousSavePresentDialog() {
   FontManager_printText(Label_PreviousSavePresentErrorPart2, dialogueOptions);
   dialogueOptions.position.y += 15;
   FontManager_printText(Label_PreviousSavePresentErrorPart3, dialogueOptions);
+
+  t_renderer->renderer2D.render(btnCross);
+  FontManager_printText(Label_Confirm, 40, 407);
+}
+
+void ScreenMiniGame::renderProgressResetedDialog() {
+  t_renderer->renderer2D.render(overlay);
+  t_renderer->renderer2D.render(dialogWindow);
+
+  FontOptions titleOptions = FontOptions();
+  titleOptions.position = Vec2(246, 135);
+  titleOptions.scale = 0.9F;
+  titleOptions.alignment = TextAlignment::Center;
+  FontManager_printText(Label_Success, titleOptions);
+
+  FontOptions dialogueOptions = FontOptions();
+  dialogueOptions.position = Vec2(246, 180);
+  dialogueOptions.scale = 0.6F;
+  dialogueOptions.alignment = TextAlignment::Center;
+  FontManager_printText(Label_PreviousSaveDeletedSuccessPart1, dialogueOptions);
+  dialogueOptions.position.y += 15;
+  FontManager_printText(Label_PreviousSaveDeletedSuccessPart2, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
   FontManager_printText(Label_Confirm, 40, 407);

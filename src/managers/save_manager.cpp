@@ -250,3 +250,8 @@ bool SaveManager::CheckIfSaveExist(const char* fullPath) {
   struct stat buffer;
   return (stat(fullPath, &buffer) == 0);
 }
+
+int SaveManager::DeleteSave(const char* fullPath) {
+  if (SaveManager::CheckIfSaveExist(fullPath)) return unlink(fullPath);
+  return -1;
+}

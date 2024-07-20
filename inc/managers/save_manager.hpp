@@ -28,4 +28,6 @@ class SaveManager {
   static void SetSaveInfo(const char* fullPath, SaveInfoModel* target);
 
   static bool CheckIfSaveExist(const char* fullPath);
+
+  static int DeleteSave(const char* fullPath);
 };
