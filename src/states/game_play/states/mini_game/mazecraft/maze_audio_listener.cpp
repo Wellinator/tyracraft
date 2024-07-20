@@ -1,5 +1,5 @@
 
-#include "states/game_play/states/maze/maze_audio_listener.hpp"
+#include "states/game_play/states/minigame/mazecraft/maze_audio_listener.hpp"
 #include "managers/sound_manager.hpp"
 
 MazeAudioListener::MazeAudioListener() {}

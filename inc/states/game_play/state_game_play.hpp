@@ -14,7 +14,7 @@
 #include "states/main_menu/state_main_menu.hpp"
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "states/game_play/states/survival/survival_playing_state.hpp"
-#include "states/game_play/states/maze/maze_playing_state.hpp"
+#include "states/game_play/states/minigame/mazecraft/maze_playing_state.hpp"
 #include <tyra>
 #include "entities/World.hpp"
 #include "entities/player/player.hpp"

@@ -1,4 +1,4 @@
-#include "states/game_play/states/maze/maze_playing_state.hpp"
+#include "states/game_play/states/minigame/mazecraft/maze_playing_state.hpp"
 #include "managers/settings_manager.hpp"
 #include "managers/save_manager.hpp"
 #include "debug.hpp"
