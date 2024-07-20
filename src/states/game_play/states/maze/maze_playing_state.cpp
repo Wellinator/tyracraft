@@ -35,6 +35,10 @@ void MazePlayingState::update(const float& deltaTime) {
 
   handleInput(deltaTime);
 
+  if (shouldLoadNextLevel) {
+    return loadNextLevel();
+  }
+
   stateGamePlay->world->update(stateGamePlay->player,
                                stateGamePlay->context->t_camera, deltaTime);
 
@@ -132,8 +136,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
         // TODO: check if target block is the final pupkin and load next level;
         if (hasReachedTargetBlock()) {
           // TODO: set happy layout and load next level
-          setHappyTheme();
-          TYRA_LOG("Level FInished!");
+          shouldLoadNextLevel = true;
           return;
         }
 
@@ -160,8 +163,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
         if (hasReachedTargetBlock()) {
           // TODO: set happy layout and load next level
-          setHappyTheme();
-          TYRA_LOG("Level FInished!");
+          shouldLoadNextLevel = true;
           return;
         }
       }
@@ -345,4 +347,12 @@ void MazePlayingState::saveProgress() {
       MINIGAME_FILE_EXTENSION);
   SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
   TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+}
+
+void MazePlayingState::loadNextLevel() {
+  setHappyTheme();
+  NewGameOptions model = *stateGamePlay->world->getWorldOptions();
+  model.seed += 1;
+  TYRA_LOG("Generating level: ", model.seed);
+  stateGamePlay->loadNextMiniGameLevel(model);
 }

@@ -35,10 +35,13 @@ class MazePlayingState : public PlayingStateBase {
   void playNewRandomSong();
   void gamePlayInputHandler(const float& deltaTime);
   void saveProgress();
+  void loadNextLevel();
 
   u8 hasReachedTargetBlock();
   void setHappyTheme();
   void setDarkTheme();
+
+  u8 shouldLoadNextLevel = false;
 
   inline const u8 isSongPlaying() {
     return mazeAudioListener.t_song->isPlaying();
