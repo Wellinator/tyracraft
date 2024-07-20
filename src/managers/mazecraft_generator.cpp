@@ -8,7 +8,7 @@ void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
   mazegen::PointSet constraints{{1, 1}, {width - 3, height - 3}};
 
   auto gen = mazegen::Generator();
-  gen.set_seed(1);
+  gen.set_seed(seed);
   gen.generate(width, height, cfg, constraints);
 
   if (!gen.get_warnings().empty()) {
