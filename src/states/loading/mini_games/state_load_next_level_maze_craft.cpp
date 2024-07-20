@@ -1,16 +1,19 @@
-#include "states/loading/mini_games/state_create_maze_craft.hpp"
+#include "states/loading/mini_games/state_load_next_level_maze_craft.hpp"
+#include "managers/save_manager.hpp"
 
-StateCreateMazeCraft::StateCreateMazeCraft(Context* t_context,
-                                           const NewGameOptions& options)
+StateLoadNextLevelMazeCraft::StateLoadNextLevelMazeCraft(
+    Context* t_context, const NewGameOptions& options)
     : GameState(t_context) {
   this->worldOptions = options;
   this->stateGamePlay = new StateGamePlay(t_context, options.gameMode);
   this->init();
 }
 
-StateCreateMazeCraft::~StateCreateMazeCraft() { this->unload(); }
+StateLoadNextLevelMazeCraft::~StateLoadNextLevelMazeCraft() { 
+    this->unload(); 
+  }
 
-void StateCreateMazeCraft::init() {
+void StateLoadNextLevelMazeCraft::init() {
   this->setBgColorBlack();
   progressLabel = Label_Loading;
 
@@ -52,7 +55,7 @@ void StateCreateMazeCraft::init() {
       ->addLink(loadingprogress->id);
 }
 
-void StateCreateMazeCraft::update(const float& deltaTime) {
+void StateLoadNextLevelMazeCraft::update(const float& deltaTime) {
   if (this->hasFinished()) {
     this->nextState();
   }
@@ -77,7 +80,7 @@ void StateCreateMazeCraft::update(const float& deltaTime) {
   this->isLoading = false;
 }
 
-void StateCreateMazeCraft::render() {
+void StateLoadNextLevelMazeCraft::render() {
   this->context->t_engine->renderer.renderer2D.render(background);
   this->context->t_engine->renderer.renderer2D.render(loadingSlot);
   this->context->t_engine->renderer.renderer2D.render(loadingprogress);
@@ -85,7 +88,7 @@ void StateCreateMazeCraft::render() {
   FontManager_printText(progressLabel, progressLabelOptions);
 }
 
-void StateCreateMazeCraft::unload() {
+void StateLoadNextLevelMazeCraft::unload() {
   this->context->t_engine->renderer.getTextureRepository().freeBySprite(
       *background);
   this->context->t_engine->renderer.getTextureRepository().freeBySprite(
@@ -98,7 +101,7 @@ void StateCreateMazeCraft::unload() {
   delete loadingprogress;
 }
 
-void StateCreateMazeCraft::createEntities() {
+void StateLoadNextLevelMazeCraft::createEntities() {
   this->stateGamePlay->world = new World(this->worldOptions);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
@@ -113,7 +116,7 @@ void StateCreateMazeCraft::createEntities() {
   this->shouldCreatedEntities = 0;
 }
 
-void StateCreateMazeCraft::initItemRepository() {
+void StateLoadNextLevelMazeCraft::initItemRepository() {
   this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer,
                                             this->worldOptions.texturePack);
 
@@ -122,7 +125,7 @@ void StateCreateMazeCraft::initItemRepository() {
   TYRA_LOG("initItemRepository");
 }
 
-void StateCreateMazeCraft::initUI() {
+void StateLoadNextLevelMazeCraft::initUI() {
   this->stateGamePlay->ui->init(&this->context->t_engine->renderer,
                                 this->stateGamePlay->itemRepository,
                                 this->stateGamePlay->player);
@@ -131,7 +134,7 @@ void StateCreateMazeCraft::initUI() {
   TYRA_LOG("initUI");
 }
 
-void StateCreateMazeCraft::initWorld() {
+void StateLoadNextLevelMazeCraft::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository,
                                    this->context->t_soundManager);
@@ -150,7 +153,7 @@ void StateCreateMazeCraft::initWorld() {
   TYRA_LOG("initWorld");
 }
 
-void StateCreateMazeCraft::initPlayer() {
+void StateLoadNextLevelMazeCraft::initPlayer() {
   TYRA_LOG("Initiating player...");
 
   TYRA_LOG("Setting player position...");
@@ -169,20 +172,31 @@ void StateCreateMazeCraft::initPlayer() {
   TYRA_LOG("Player initiated!");
 }
 
-void StateCreateMazeCraft::nextState() {
+void StateLoadNextLevelMazeCraft::nextState() {
   TYRA_LOG("nextState");
-  this->stateGamePlay->afterInit();
   this->context->setState(this->stateGamePlay);
+  this->stateGamePlay->afterInit();
+  saveProgress();
 }
 
-void StateCreateMazeCraft::setPercent(float completed) {
+void StateLoadNextLevelMazeCraft::setPercent(float completed) {
   this->_percent = completed;
   this->loadingprogress->size.set(this->_percent / 100 * 250, 9);
 }
 
-void StateCreateMazeCraft::setBgColorBlack() {
+void StateLoadNextLevelMazeCraft::setBgColorBlack() {
   this->context->t_engine->renderer.setClearScreenColor(
       Color(0.0F, 0.0F, 0.0F));
 }
 
-bool StateCreateMazeCraft::hasFinished() { return this->isLoading == false; }
+bool StateLoadNextLevelMazeCraft::hasFinished() {
+  return this->isLoading == false;
+}
+
+void StateLoadNextLevelMazeCraft::saveProgress() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      MINIGAME_FILE_EXTENSION);
+  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+}

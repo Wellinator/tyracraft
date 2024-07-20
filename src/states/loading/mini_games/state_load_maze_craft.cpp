@@ -24,7 +24,7 @@ void StateLoadMazeCraft::init() {
 
   // Background
   std::string backgroundTex =
-      FileUtils::fromCwd("textures/gui/mini_game/maze_background.png");
+      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/loading_background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -34,7 +34,7 @@ void StateLoadMazeCraft::init() {
 
   // Loading slot
   std::string loadingSlotTex =
-      FileUtils::fromCwd("textures/gui/loading/empty_loading_bar.png");
+      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/empty_loading_bar.png");
   loadingSlot = new Sprite;
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
@@ -44,7 +44,7 @@ void StateLoadMazeCraft::init() {
 
   // Loading bar
   std::string loadingprogressTex =
-      FileUtils::fromCwd("textures/gui/loading/load.png");
+      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/load.png");
   loadingprogress = new Sprite;
   loadingprogress->mode = Tyra::MODE_STRETCH;
   loadingprogress->size.set(this->_percent / 100 * 253, 9);

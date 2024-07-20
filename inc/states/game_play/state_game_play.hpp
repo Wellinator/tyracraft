@@ -19,6 +19,7 @@
 #include "entities/World.hpp"
 #include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
+#include "models/new_game_model.hpp"
 #include "ui.hpp"
 #include <chrono>
 
@@ -44,6 +45,7 @@ class StateGamePlay : public GameState {
   void inline hideWelcomeMessage() { this->hideWelcome(); };
   void inline backToGame() { this->unpauseGame(); };
   void quitToTitle();
+  void loadNextMiniGameLevel(const NewGameOptions& options);
 
   void setPlayingState(PlayingStateBase* t_playingState);
   PlayingStateBase* getPreviousState();

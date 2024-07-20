@@ -1,4 +1,6 @@
 #include "states/game_play/state_game_play.hpp"
+#include "states/loading/mini_games/state_load_next_level_maze_craft.hpp"
+#include "states/loading/mini_games/state_create_maze_craft.hpp"
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 #include "states/game_play/states/welcome/state_welcome.hpp"
 #include "states/game_play/states/minigame/mazecraft/mazecraft_level_init.hpp"
@@ -45,12 +47,20 @@ StateGamePlay::~StateGamePlay() {
 }
 
 void StateGamePlay::handleGameMode(const GameMode& gameMode) {
-  if (gameMode == GameMode::Creative) {
-    this->setPlayingState(new CreativePlayingState(this));
-  } else if (gameMode == GameMode::Survival) {
-    this->setPlayingState(new SurvivalPlayingState(this));
-  } else if (gameMode == GameMode::Maze) {
-    this->setPlayingState(new MazePlayingState(this));
+  switch (gameMode) {
+    case GameMode::Creative:
+      this->setPlayingState(new CreativePlayingState(this));
+      break;
+    case GameMode::Survival:
+      this->setPlayingState(new SurvivalPlayingState(this));
+      break;
+    case GameMode::Maze:
+      this->setPlayingState(new MazePlayingState(this));
+      break;
+
+    default:
+      TYRA_TRAP("Invalid handleGameMode");
+      break;
   }
 }
 
@@ -138,4 +148,9 @@ void StateGamePlay::quitToTitle() {
 
 void StateGamePlay::saveGame() {
   this->previousState->handleAction(MenuAction::Save);
+}
+
+void StateGamePlay::loadNextMiniGameLevel(const NewGameOptions& options) {
+  TYRA_LOG("loadNextMiniGameLevel()");
+  context->setState(new StateLoadNextLevelMazeCraft(context, options));
 }
