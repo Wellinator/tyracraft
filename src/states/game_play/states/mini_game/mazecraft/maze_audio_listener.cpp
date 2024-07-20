@@ -25,3 +25,17 @@ void MazeAudioListener::playRandomMazeSound() {
     t_song->play();
   }
 }
+
+void MazeAudioListener::playLevelDoneSound() {
+  t_song->stop();
+  const std::string levelDoneSfx =
+      FileUtils::fromCwd("sounds/game/mazecraft/level_done.wav");
+
+  if (levelDoneSfx.size() > 0) {
+    TYRA_LOG("Playing song -> ", levelDoneSfx.c_str());
+    t_song->load(levelDoneSfx);
+    t_song->inLoop = false;
+    t_song->setVolume(90);
+    t_song->play();
+  }
+}

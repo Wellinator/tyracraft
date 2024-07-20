@@ -161,6 +161,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
         // TODO: check if target block is the final pupkin and load next level;
         if (hasReachedTargetBlock()) {
           shouldRenderLevelDoneDialog = true;
+          mazeAudioListener.playLevelDoneSound();
           return;
         }
 
@@ -187,6 +188,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
         if (hasReachedTargetBlock()) {
           shouldRenderLevelDoneDialog = true;
+          mazeAudioListener.playLevelDoneSound();
           return;
         }
       }

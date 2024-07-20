@@ -19,6 +19,7 @@ class MazeAudioListener : public AudioListener {
   void onAudioTick();
   void onAudioFinish();
   void playRandomMazeSound();
+  void playLevelDoneSound();
   const std::string getRandonMenuSongName();
 
   AudioSong* t_song = nullptr;
