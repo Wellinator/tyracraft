@@ -74,9 +74,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
 
 void World::generate() {
   if (worldOptions.type == WorldType::WORLD_MINI_GAME_MAZECRAFT) {
-    // TODO: save/load level
-    // In mazecraft mode the seed is a auto increment integer used as a level
-    unsigned int level = 1;
+    unsigned int level = getWorldOptions()->seed;
 
     mazegen::Config cfg;
     cfg.CONSTRAIN_HALL_ONLY = false;
@@ -85,14 +83,14 @@ void World::generate() {
 
     // setup level
     if (level < 10) {
-      cfg.DEADEND_CHANCE = 0;
-      cfg.WIGGLE_CHANCE = 0;
+      cfg.DEADEND_CHANCE = 0.1;
+      cfg.WIGGLE_CHANCE = 0.1;
 
       width = 16;
       height = 16;
     } else if (level < 20) {
-      cfg.DEADEND_CHANCE = 0.1;
-      cfg.WIGGLE_CHANCE = 0.1;
+      cfg.DEADEND_CHANCE = 0.15;
+      cfg.WIGGLE_CHANCE = 0.15;
 
       width = 16;
       height = 16;
@@ -100,17 +98,35 @@ void World::generate() {
       cfg.DEADEND_CHANCE = 0.2;
       cfg.WIGGLE_CHANCE = 0.2;
 
-      width = 32;
-      height = 32;
+      width = 24;
+      height = 24;
     } else if (level < 40) {
-      cfg.DEADEND_CHANCE = 0.3;
-      cfg.WIGGLE_CHANCE = 0.3;
+      cfg.DEADEND_CHANCE = 0.2;
+      cfg.WIGGLE_CHANCE = 0.2;
 
       width = 32;
       height = 32;
     } else if (level < 50) {
-      cfg.DEADEND_CHANCE = 0.4;
-      cfg.WIGGLE_CHANCE = 0.4;
+      cfg.DEADEND_CHANCE = 0.3;
+      cfg.WIGGLE_CHANCE = 0.3;
+
+      width = 40;
+      height = 40;
+    } else if (level < 60) {
+      cfg.DEADEND_CHANCE = 0.3;
+      cfg.WIGGLE_CHANCE = 0.3;
+
+      width = 48;
+      height = 48;
+    } else if (level < 70) {
+      cfg.DEADEND_CHANCE = 0.35f;
+      cfg.WIGGLE_CHANCE = 0.35f;
+
+      width = 56;
+      height = 56;
+    } else if (level < 80) {
+      cfg.DEADEND_CHANCE = 0.4f;
+      cfg.WIGGLE_CHANCE = 0.4f;
 
       width = 64;
       height = 64;
