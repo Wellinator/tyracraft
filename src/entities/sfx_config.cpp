@@ -10,22 +10,22 @@ SfxConfigModel* SfxConfig::getPlaceSoundConfig(Blocks blockType) {
   switch (blockType) {
     case Blocks::GRASS_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 50;
       break;
 
     case Blocks::DIRTY_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 50;
       break;
 
     case Blocks::STONE_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 50;
       break;
 
     default:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 50;
       break;
   }
 
@@ -38,22 +38,22 @@ SfxConfigModel* SfxConfig::getStepSoundConfig(Blocks blockType) {
   switch (blockType) {
     case Blocks::GRASS_BLOCK:
       model->_pitch = 15;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     case Blocks::DIRTY_BLOCK:
       model->_pitch = 15;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     case Blocks::STONE_BLOCK:
       model->_pitch = 15;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     default:
       model->_pitch = 15;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
   }
 
@@ -66,22 +66,22 @@ SfxConfigModel* SfxConfig::getBreakingSoundConfig(Blocks blockType) {
   switch (blockType) {
     case Blocks::GRASS_BLOCK:
       model->_pitch = 25;
-      model->_volume = 50;
+      model->_volume = 35;
       break;
 
     case Blocks::DIRTY_BLOCK:
       model->_pitch = 25;
-      model->_volume = 50;
+      model->_volume = 35;
       break;
 
     case Blocks::STONE_BLOCK:
       model->_pitch = 25;
-      model->_volume = 50;
+      model->_volume = 35;
       break;
 
     default:
       model->_pitch = 25;
-      model->_volume = 50;
+      model->_volume = 35;
       break;
   }
 
@@ -94,22 +94,22 @@ SfxConfigModel* SfxConfig::getBrokenSoundConfig(Blocks blockType) {
   switch (blockType) {
     case Blocks::GRASS_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     case Blocks::DIRTY_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     case Blocks::STONE_BLOCK:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
 
     default:
       model->_pitch = 80;
-      model->_volume = 100;
+      model->_volume = 35;
       break;
   }
 
