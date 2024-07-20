@@ -139,6 +139,8 @@ void ScreenLoadGame::render() {
       Label_Load, FontOptions(Vec2(140, 128), Color(250, 250, 250), 0.9F));
   FontManager_printText(
       Label_Create, FontOptions(Vec2(220, 128), Color(180, 180, 180), 0.9F));
+  FontManager_printText(
+      Label_Mini, FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
 
   FontManager_printText("USB", 130.0F, 160.0F);
   FontManager_printText("MC", 210.0F, 160.0F);

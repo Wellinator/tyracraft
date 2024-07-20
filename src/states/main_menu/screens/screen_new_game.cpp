@@ -56,6 +56,8 @@ void ScreenNewGame::render() {
       Label_Load, FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
   FontManager_printText(
       Label_Create, FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
+  FontManager_printText(
+      Label_Mini, FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
 
   Color infoColor = Color(70, 70, 70);
   FontManager_printText(Label_TexturePack,

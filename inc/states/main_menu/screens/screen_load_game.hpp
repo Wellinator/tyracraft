@@ -73,6 +73,8 @@ class ScreenLoadGame : public ScreenBase {
       g_language_repository["gui"]["load"].get<std::string>();
   const std::string Label_Create =
       g_language_repository["gui"]["create"].get<std::string>();
+  const std::string Label_Mini =
+      g_language_repository["gui"]["mini"].get<std::string>();
   const std::string Label_Prev =
       g_language_repository["gui"]["prev"].get<std::string>();
   const std::string Label_Next =
