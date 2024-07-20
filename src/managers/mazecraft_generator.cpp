@@ -37,9 +37,15 @@ void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
           }
         } else if (y > 1 && y < 8) {
           if (isConstraints) {
-            block_type =
-                y == 2 ? static_cast<uint8_t>(Blocks::JACK_O_LANTERN_BLOCK)
-                       : static_cast<uint8_t>(Blocks::AIR_BLOCK);
+            if (y == 2) {
+              if (x == 1 && z == 1)
+                block_type = static_cast<uint8_t>(Blocks::GLOWSTONE_BLOCK);
+              else
+                block_type = static_cast<uint8_t>(Blocks::JACK_O_LANTERN_BLOCK);
+            } else {
+              block_type = static_cast<uint8_t>(Blocks::AIR_BLOCK);
+            }
+
           }
           // else if (x == 0 || x == level->map.length - 1 || z == 0 ||
           //            z == level->map.width - 1) {
