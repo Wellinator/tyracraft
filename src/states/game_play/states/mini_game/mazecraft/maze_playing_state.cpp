@@ -161,6 +161,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
         // TODO: check if target block is the final pupkin and load next level;
         if (hasReachedTargetBlock()) {
           shouldRenderLevelDoneDialog = true;
+          setHappyTheme();
           mazeAudioListener.playLevelDoneSound();
           return;
         }
@@ -188,6 +189,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
         if (hasReachedTargetBlock()) {
           shouldRenderLevelDoneDialog = true;
+          setHappyTheme();
           mazeAudioListener.playLevelDoneSound();
           return;
         }
@@ -375,7 +377,6 @@ void MazePlayingState::saveProgress() {
 }
 
 void MazePlayingState::loadNextLevel() {
-  setHappyTheme();
   NewGameOptions model = *stateGamePlay->world->getWorldOptions();
   model.seed += 1;
   TYRA_LOG("Generating level: ", model.seed);
