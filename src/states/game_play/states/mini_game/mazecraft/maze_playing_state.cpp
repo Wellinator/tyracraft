@@ -10,6 +10,10 @@ MazePlayingState::MazePlayingState(StateGamePlay* t_context)
 MazePlayingState::~MazePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
+
+  Renderer* t_renderer = &stateGamePlay->context->t_engine->renderer;
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+  textureRepo->freeBySprite(overlay);
 }
 
 void MazePlayingState::init() {
@@ -18,6 +22,19 @@ void MazePlayingState::init() {
       &mazeAudioListener);
 
   tickManager.onTick = [this]() { tick(); };
+
+  Renderer* t_renderer = &stateGamePlay->context->t_engine->renderer;
+  TextureRepository* textureRepo = &t_renderer->getTextureRepository();
+  const float halfWidth = t_renderer->core.getSettings().getWidth() / 2;
+  const float halfHeight = t_renderer->core.getSettings().getHeight() / 2;
+
+  // Overlay
+  overlay.mode = Tyra::MODE_STRETCH;
+  overlay.size.set(halfWidth * 2, halfHeight * 2);
+  overlay.position.set(0, 0);
+
+  textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
+      ->addLink(overlay.id);
 }
 
 void MazePlayingState::afterInit() {
@@ -33,11 +50,18 @@ void MazePlayingState::update(const float& deltaTime) {
   // elapsedTimeInSec += deltaTime;
   tickManager.update(deltaTime);
 
-  handleInput(deltaTime);
+  if (shouldRenderLevelDoneDialog) {
+    _nextLevelCounter -= deltaTime;
+    shouldLoadNextLevel = _nextLevelCounter <= 0;
 
-  if (shouldLoadNextLevel) {
-    return loadNextLevel();
+    if (shouldLoadNextLevel) {
+      return loadNextLevel();
+    }
+
+    return;
   }
+
+  handleInput(deltaTime);
 
   stateGamePlay->world->update(stateGamePlay->player,
                                stateGamePlay->context->t_camera, deltaTime);
@@ -76,6 +100,7 @@ void MazePlayingState::render() {
   renderMazeUi();
 
   if (g_debug_mode) drawDegubInfo();
+  if (shouldRenderLevelDoneDialog) renderCountDown();
 }
 
 void MazePlayingState::handleInput(const float& deltaTime) {
@@ -135,8 +160,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
       if (stateGamePlay->world->validTargetBlock()) {
         // TODO: check if target block is the final pupkin and load next level;
         if (hasReachedTargetBlock()) {
-          // TODO: set happy layout and load next level
-          shouldLoadNextLevel = true;
+          shouldRenderLevelDoneDialog = true;
           return;
         }
 
@@ -162,8 +186,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
                                        stateGamePlay->context->t_camera->yaw);
 
         if (hasReachedTargetBlock()) {
-          // TODO: set happy layout and load next level
-          shouldLoadNextLevel = true;
+          shouldRenderLevelDoneDialog = true;
           return;
         }
       }
@@ -355,4 +378,23 @@ void MazePlayingState::loadNextLevel() {
   model.seed += 1;
   TYRA_LOG("Generating level: ", model.seed);
   stateGamePlay->loadNextMiniGameLevel(model);
+}
+
+void MazePlayingState::renderCountDown() {
+  const float halfWidth = 512 / 2;
+  stateGamePlay->context->t_engine->renderer.renderer2D.render(overlay);
+
+  FontOptions titleOption;
+  titleOption.position.set(halfWidth - 20, 110);
+  titleOption.alignment = TextAlignment::Center;
+  titleOption.scale = 1.6F;
+  FontManager_printText(Label_LevelDone, titleOption);
+
+  FontOptions textOption;
+  textOption.position.set(halfWidth - 10, 185);
+  textOption.alignment = TextAlignment::Center;
+  textOption.scale = 0.8F;
+  FontManager_printText(
+      Label_LoadingNextLevelIn + std::to_string((int)_nextLevelCounter),
+      textOption);
 }
