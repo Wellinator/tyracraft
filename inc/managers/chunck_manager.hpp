@@ -29,7 +29,7 @@ class ChunckManager {
   inline std::vector<Chunck*>* getChuncks() { return &chuncks; };
 
   void init(WorldLightModel* worldLightModel, LevelMap* terrain);
-  void update(const Plane* frustumPlanes);
+  void update(const Plane* frustumPlanes, Vec4* camPos);
   void tick();
 
   inline u8 isChunkVisible(Chunck* chunk) { return chunk->isVisible(); };

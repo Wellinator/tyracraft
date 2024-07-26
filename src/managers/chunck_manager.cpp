@@ -32,13 +32,14 @@ void ChunckManager::clearAllChunks() {
   for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
 }
 
-void ChunckManager::update(const Plane* frustumPlanes) {
+void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   visibleChunks.clear();
 
   // TODO: refactore to fast index by offset
   for (u16 i = 0; i < chuncks.size(); i++) {
     if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
       if (chuncks[i]->state == ChunkState::Loaded) {
+        chuncks[i]->setCamPosition(camPos);
         chuncks[i]->update(frustumPlanes);
 
         if (chuncks[i]->isVisible()) {

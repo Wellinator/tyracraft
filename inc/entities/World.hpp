@@ -170,7 +170,7 @@ class World {
 
   WorldLightModel worldLightModel;
 
-  void updateChunkByPlayerPosition(Player* player);
+  void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
   void scheduleChunksNeighbors(Chunck* t_chunck, const Vec4 currentPlayerPos,
                                u8 force_loading = 0);
   void loadScheduledChunks();

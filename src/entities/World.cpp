@@ -193,7 +193,9 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
   if (affectedChunksIdByLiquidPropagation.size() > 0)
     updateChunksAffectedByLiquidPropagation();
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll());
+
+  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
+                       &t_camera->lookPos);
 
   dispatchChunkBatch();
 
@@ -235,7 +237,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
 
   // Update scheduled data every 4 ticks
   if (isTicksCounterAt(5)) {
-    updateChunkByPlayerPosition(t_player);
+    updateChunkByPlayerPosition(t_player, t_camera);
   }
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
@@ -262,15 +264,14 @@ void World::buildInitialPosition() {
 
 void World::resetWorldData() { chunckManager.clearAllChunks(); }
 
-void World::updateChunkByPlayerPosition(Player* t_player) {
+void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   Vec4 currentPlayerPos = *t_player->getPosition();
-  float displacement =
-      (lastPlayerPosition - currentPlayerPos).length() / CHUNCK_SIZE;
+  float delta = lastPlayerPosition.distanceTo(currentPlayerPos) / CHUNCK_SIZE;
 
-  if (displacement > CHUNCK_SIZE) {
+  if (delta > HALF_CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck =
-        chunckManager.getChunckByWorldPosition(currentPlayerPos);
+        chunckManager.getChunckByWorldPosition(t_camera->lookPos);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
@@ -337,6 +338,8 @@ void World::scheduleChunksNeighbors(Chunck* origin_chunk,
       t_chunk->setDistanceFromPlayerInChunks(distance);
     }
   }
+
+  origin_chunk->setDistanceFromPlayerInChunks(0);
 
   if (!force_loading && !tempChuncksToLoad.empty())
     sortChunksToLoad(currentPlayerPos);

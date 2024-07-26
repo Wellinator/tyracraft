@@ -109,9 +109,12 @@ class Chunck {
   inline s8 getDistanceFromPlayerInChunks() {
     return this->_distanceFromPlayerInChunks;
   };
+
   inline void setDistanceFromPlayerInChunks(const s8 distante) {
     this->_distanceFromPlayerInChunks = distante;
   };
+
+  inline void setCamPosition(Vec4* pos) { this->camPositon.set(*pos); };
 
   // Block controllers
   inline void addBlock(Block* t_block) {
@@ -159,6 +162,7 @@ class Chunck {
   u8 _loaderBatchCounter = 0;
   u8 _unloaderBatchCounter = 0;
 
+  Vec4 camPositon = Vec4(0, 0, 0);
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
 };
