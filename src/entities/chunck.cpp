@@ -222,22 +222,23 @@ void Chunck::loadDrawDataWithoutSorting() {
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
-      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+      const auto prevSize = verticesWithTransparency.size();
+      blocks[i]->drawDataIndex = prevSize > 0 ? prevSize - 1 : 0;
       MeshBuilder_BuildMesh(
           blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
           &uvMapWithTransparency, t_worldLightModel, t_terrain);
-      blocks[i]->drawDataLength =
-          verticesWithTransparency.size() - blocks[i]->drawDataIndex;
+      blocks[i]->drawDataLength = verticesWithTransparency.size() - prevSize;
 
       // printf("Transparent Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
       //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
 
     } else {
-      blocks[i]->drawDataIndex = vertices.size();
+      const auto prevSize = vertices.size();
+      blocks[i]->drawDataIndex = prevSize > 0 ? prevSize - 1 : 0;
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, t_terrain);
-      blocks[i]->drawDataLength = vertices.size() - blocks[i]->drawDataIndex;
+      blocks[i]->drawDataLength = vertices.size() - prevSize;
 
       // printf("Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
