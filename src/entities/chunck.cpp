@@ -207,8 +207,8 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
 
       // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
       // 0));
-      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager,
-                                 &inVertices, &inUVMap, &inColors);
+      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager, inVertices,
+                                 inUVMap, inColors);
     }
   }
 }
@@ -245,8 +245,8 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
 
       // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
       // 0));
-      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager,
-                                 &inVertices, &inUVMap, &inColors);
+      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager, inVertices,
+                                 inUVMap, inColors);
     }
   }
 }
@@ -254,9 +254,9 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
 void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
                                         StaticPipeline* stapip,
                                         BlockManager* t_blockManager,
-                                        const std::vector<Vec4>* in_vertex,
-                                        const std::vector<Vec4>* in_uv,
-                                        const std::vector<Color>* in_colors) {
+                                        std::vector<Vec4>& in_vertex,
+                                        std::vector<Vec4>& in_uv,
+                                        std::vector<Color>& in_colors) {
   StaPipTextureBag textureBag;
   StaPipInfoBag infoBag;
   StaPipColorBag colorBag;

@@ -54,12 +54,11 @@ class CustomPlanesClipAlgorithm {
   CustomPlanesClipAlgorithm();
   ~CustomPlanesClipAlgorithm();
 
-  u8 clip(PlanesClipVertex* o_vertices, PlanesClipVertexPtrs* i_vertices,
+  u8 clip(std::vector<PlanesClipVertex>& o_vertices,
+          PlanesClipVertexPtrs* i_vertices,
           const EEClipAlgorithmSettings& settings, Plane* frustumPlanes);
 
  private:
-  PlanesClipVertex* tempVertices;
-
   Vec4 intersectPlane(Vec4& plane_p, Vec4& plane_n, Vec4& lineStart,
                       Vec4& lineEnd, float plane_d, float& t);
 

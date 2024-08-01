@@ -28,38 +28,29 @@ Vec4 CustomPlanesClipAlgorithm::intersectPlane(Vec4& plane_p, Vec4& plane_n,
   return p + (d * t);
 }
 
-u8 CustomPlanesClipAlgorithm::clip(PlanesClipVertex* o_vertices,
+u8 CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
                                    PlanesClipVertexPtrs* i_vertices,
                                    const EEClipAlgorithmSettings& settings,
                                    Plane* frustumPlanes) {
-  // u8 tempVerticesSize = 0;
-  // u8 outputSize = 0;
-  // u8 clippedCount = 0;
   std::queue<Triangle> trianglesToClip = {};
-  // std::vector<PlanesClipVertex> tempOut(9);
 
-  // TYRA_LOG("\n\n--------- Clipping vertice ---------");
   Triangle initialInput;
 
   initialInput.a.position = *i_vertices[0].position;
   if (settings.lerpColors) initialInput.a.color = *i_vertices[0].color;
   if (settings.lerpNormals) initialInput.a.normal = *i_vertices[0].normal;
   if (settings.lerpTexCoords) initialInput.a.st = *i_vertices[0].st;
-  // TYRA_LOG("Vertice: ", 0, " ", initialInput.a.position.getPrint().c_str());
 
   initialInput.b.position = *i_vertices[1].position;
   if (settings.lerpColors) initialInput.b.color = *i_vertices[1].color;
   if (settings.lerpNormals) initialInput.b.normal = *i_vertices[1].normal;
   if (settings.lerpTexCoords) initialInput.b.st = *i_vertices[1].st;
-  // TYRA_LOG("Vertice: ", 1, " ", initialInput.b.position.getPrint().c_str());
 
   initialInput.c.position = *i_vertices[2].position;
   if (settings.lerpColors) initialInput.c.color = *i_vertices[2].color;
   if (settings.lerpNormals) initialInput.c.normal = *i_vertices[2].normal;
   if (settings.lerpTexCoords) initialInput.c.st = *i_vertices[2].st;
-  // TYRA_LOG("Vertice: ", 2, " ", initialInput.c.position.getPrint().c_str());
 
-  // TYRA_LOG("------------------------------------");
   trianglesToClip.push(initialInput);
   int nNewTriangles = 1;
 
@@ -67,19 +58,14 @@ u8 CustomPlanesClipAlgorithm::clip(PlanesClipVertex* o_vertices,
     u8 clipped = 0;
 
     while (nNewTriangles > 0) {
-      // TYRA_LOG("nNewTriangles: ", nNewTriangles);
-
       PlanesClipVertex tempVertices[9];
-
       Triangle input = trianglesToClip.front();
       trianglesToClip.pop();
       nNewTriangles--;
 
-      // TYRA_LOG("--------- Clip Against Plane ", (int)i, ",  ---------");
       clipped =
           clipAgainstPlane(input, tempVertices, settings, &frustumPlanes[i]);
 
-      // TYRA_LOG("Clipped count: ", (int)clipped);
       for (size_t j = 0; j < clipped; j++) {
         Triangle newtri(tempVertices[j * 3], tempVertices[j * 3 + 1],
                         tempVertices[j * 3 + 2]);
@@ -89,19 +75,15 @@ u8 CustomPlanesClipAlgorithm::clip(PlanesClipVertex* o_vertices,
     }
 
     nNewTriangles = trianglesToClip.size();
-    // TYRA_LOG("update nNewTriangles: ", nNewTriangles);
   }
 
   u8 result = trianglesToClip.size();
+  o_vertices.resize(result * 3, {Vec4()});
 
   int i = 0;
   while (!trianglesToClip.empty()) {
     Triangle t = trianglesToClip.front();
     trianglesToClip.pop();
-
-    // t.a.position.print("T.a");
-    // t.b.position.print("T.b");
-    // t.c.position.print("T.c");
 
     o_vertices[i].position = t.a.position;
     if (settings.lerpColors) o_vertices[i].color = t.a.color;
@@ -124,7 +106,7 @@ u8 CustomPlanesClipAlgorithm::clip(PlanesClipVertex* o_vertices,
   }
 
   // If was clippled by any plane, return the clipped size else, return zero;
-  return result * 3;
+  return o_vertices.size();
 }
 
 u8 CustomPlanesClipAlgorithm::clipAgainstPlane(

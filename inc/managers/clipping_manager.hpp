@@ -21,19 +21,18 @@ using Tyra::Vec4;
  * @param in_colors
  * @return int
  */
-int ClippingManager_ClipMesh(const std::vector<Vec4>* in_vertex,
-                             const std::vector<Vec4>* in_uv,
-                             const std::vector<Color>* in_colors,
+int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
+                             std::vector<Vec4>& in_uv,
+                             std::vector<Color>& in_colors,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
                              Renderer* t_renderer) {
-  const RendererSettings& settings = t_renderer->core.getSettings();
   Plane* frustumPlanes =
       (Plane*)t_renderer->core.renderer3D.frustumPlanes.getAll();
 
   EEClipAlgorithmSettings algoSettings;
-  algoSettings = {false, in_uv->size() > 0, in_colors->size() > 0};
+  algoSettings = {false, in_uv.size() > 0, in_colors.size() > 0};
 
   CustomPlanesClipAlgorithm algorithm;
 
@@ -42,18 +41,17 @@ int ClippingManager_ClipMesh(const std::vector<Vec4>* in_vertex,
   Vec4 inputVerts[3];
   std::array<PlanesClipVertexPtrs, 3> inputTriangle;
 
-  std::array<PlanesClipVertex, 9> clippedTriangle;
+  std::vector<PlanesClipVertex> clippedTriangle;
   std::vector<PlanesClipVertex> clippedVertices;
   clippedVertices.reserve(9);
 
   // Iterate over the input vertices per triangles
-  for (u32 i = 0; i < in_vertex->size() / 3; i++) {
+  for (u32 i = 0; i < in_vertex.size() / 3; i++) {
     // Iterate over the triangles
     for (u8 j = 0; j < 3; j++) {
-      Vec4* vert = const_cast<Vec4*>(in_vertex->data());
-      Vec4* sts = const_cast<Vec4*>(in_uv->data());
-      Vec4* colors =
-          reinterpret_cast<Vec4*>(const_cast<Color*>(in_colors->data()));
+      Vec4* vert = const_cast<Vec4*>(in_vertex.data());
+      Vec4* sts = const_cast<Vec4*>(in_uv.data());
+      Vec4* colors = reinterpret_cast<Vec4*>(in_colors.data());
 
       inputVerts[j] = vert[i * 3 + j];
 
@@ -69,9 +67,8 @@ int ClippingManager_ClipMesh(const std::vector<Vec4>* in_vertex,
                           &colors[i * 3 + j]};
     }
 
-    u8 clippedVertivesCount =
-        algorithm.clip(clippedTriangle.data(), inputTriangle.data(),
-                       algoSettings, frustumPlanes);
+    u8 clippedVertivesCount = algorithm.clip(
+        clippedTriangle, inputTriangle.data(), algoSettings, frustumPlanes);
 
     if (clippedVertivesCount == 0) {
       continue;

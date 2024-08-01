@@ -185,9 +185,10 @@ class Chunck {
                                       StaticPipeline* stapip,
                                       BlockManager* t_blockManager);
 
-  void renderPartialBlockDrawData(Renderer* t_renderer, StaticPipeline* stapip,
+  void renderPartialBlockDrawData(Renderer* t_renderer,
+                                  StaticPipeline* stapip,
                                   BlockManager* t_blockManager,
-                                  const std::vector<Vec4>* in_vertex,
-                                  const std::vector<Vec4>* in_uv,
-                                  const std::vector<Color>* in_colors);
+                                  std::vector<Vec4>& in_vertex,
+                                  std::vector<Vec4>& in_uv,
+                                  std::vector<Color>& in_colors);
 };
