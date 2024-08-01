@@ -6,6 +6,8 @@
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/collision_manager.hpp"
+#include "managers/clipping_manager.hpp"
+// #include "3libs/re-clipper/clipper.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -31,6 +33,9 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
       Vec4(tempMax.x, tempMax.y, tempMin.z),
   };
   this->bbox = new BBox(_vertices, count);
+
+  surroundingBlocks.reserve(9 + 9 + 8);
+  surroundingTransparentBlocks.reserve(9 + 9 + 8);
 };
 
 Chunck::~Chunck() {
@@ -45,6 +50,49 @@ void Chunck::init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel) {
 
 void Chunck::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
+
+  if (_distanceFromPlayerInChunks == 0) updateSurroundingBlocks();
+}
+
+void Chunck::updateSurroundingBlocks() {
+  // TYRA_LOG("Chunck::updateSurroundingBlocks");
+  surroundingBlocks.clear();
+  surroundingTransparentBlocks.clear();
+
+  Vec4 tempOffset = camPositon / DUBLE_BLOCK_SIZE;
+  Vec4 camOffset = Vec4(static_cast<uint16_t>(tempOffset.x),
+                        static_cast<uint16_t>(tempOffset.y),
+                        static_cast<uint16_t>(tempOffset.z));
+
+  // camOffset.print("camOffset");
+
+  for (s8 _x = -1; _x < 2; _x++) {
+    for (s8 _y = -1; _y < 2; _y++) {
+      for (s8 _z = -1; _z < 2; _z++) {
+        if (_x + _y + _z == 0) continue;  // Skip origin
+
+        Vec4 _layerOffset = Vec4(_x, _y, _z);
+        Vec4 _blockOffset = camOffset + _layerOffset;
+        u32 blockIndex =
+            getIndexByOffset(_blockOffset.x, _blockOffset.y, _blockOffset.z);
+
+        Block* t_block = getBlockById(blockIndex);
+
+        if (t_block
+            // &&
+            // Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
+            //                             &t_block->maxCorner) ==
+            //     CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM
+        ) {
+          if (t_block->hasTransparency) {
+            surroundingTransparentBlocks.push_back(t_block);
+          } else {
+            surroundingBlocks.push_back(t_block);
+          }
+        }
+      }
+    }
+  }
 }
 
 void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
@@ -81,6 +129,10 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
 
     stapip->core.render(&bag);
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
+
+    if (surroundingBlocks.size() > 0) {
+      renderSolidPartialBlocks(t_renderer, stapip, t_blockManager);
+    }
   }
 };
 
@@ -119,8 +171,138 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
 
     stapip->core.render(&bag);
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
+
+    if (surroundingTransparentBlocks.size() > 0) {
+      renderTransparentPartialBlocks(t_renderer, stapip, t_blockManager);
+    }
   }
 };
+
+void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
+                                      StaticPipeline* stapip,
+                                      BlockManager* t_blockManager) {
+  for (size_t i = 0; i < surroundingBlocks.size(); i++) {
+    Block* t_block = surroundingBlocks[i];
+    if (!t_block->hasTransparency) {
+      const auto start = t_block->drawDataIndex;
+      const auto end = (t_block->drawDataIndex + t_block->drawDataLength);
+
+      //------------------------
+      // Temp clipped draw data
+      //------------------------
+      std::vector<Vec4> inVertices;
+      std::vector<Vec4> inUVMap;
+      std::vector<Color> inColors;
+
+      inVertices.reserve(t_block->drawDataLength);
+      inUVMap.reserve(t_block->drawDataLength);
+      inColors.reserve(t_block->drawDataLength);
+
+      std::copy(vertices.begin() + start, vertices.begin() + end,
+                std::back_inserter(inVertices));
+      std::copy(uvMap.begin() + start, uvMap.begin() + end,
+                std::back_inserter(inUVMap));
+      std::copy(verticesColors.begin() + start, verticesColors.begin() + end,
+                std::back_inserter(inColors));
+
+      // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
+      // 0));
+      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager,
+                                 &inVertices, &inUVMap, &inColors);
+    }
+  }
+}
+
+void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
+                                            StaticPipeline* stapip,
+                                            BlockManager* t_blockManager) {
+  for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
+    Block* t_block = surroundingTransparentBlocks[i];
+    if (t_block->hasTransparency) {
+      const auto start = t_block->drawDataIndex;
+      const auto end = (t_block->drawDataIndex + t_block->drawDataLength);
+
+      //------------------------
+      // Temp clipped draw data
+      //------------------------
+      std::vector<Vec4> inVertices;
+      std::vector<Vec4> inUVMap;
+      std::vector<Color> inColors;
+
+      inVertices.reserve(t_block->drawDataLength);
+      inUVMap.reserve(t_block->drawDataLength);
+      inColors.reserve(t_block->drawDataLength);
+
+      std::copy(verticesWithTransparency.begin() + start,
+                verticesWithTransparency.begin() + end,
+                std::back_inserter(inVertices));
+      std::copy(uvMapWithTransparency.begin() + start,
+                uvMapWithTransparency.begin() + end,
+                std::back_inserter(inUVMap));
+      std::copy(verticesColorsWithTransparency.begin() + start,
+                verticesColorsWithTransparency.begin() + end,
+                std::back_inserter(inColors));
+
+      // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
+      // 0));
+      renderPartialBlockDrawData(t_renderer, stapip, t_blockManager,
+                                 &inVertices, &inUVMap, &inColors);
+    }
+  }
+}
+
+void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
+                                        StaticPipeline* stapip,
+                                        BlockManager* t_blockManager,
+                                        const std::vector<Vec4>* in_vertex,
+                                        const std::vector<Vec4>* in_uv,
+                                        const std::vector<Color>* in_colors) {
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
+
+  std::vector<Vec4> outVertices;
+  std::vector<Vec4> outUVMap;
+  std::vector<Color> outColors;
+
+  outVertices.reserve(9);
+  outUVMap.reserve(9);
+  outColors.reserve(9);
+
+  u8 generatedVertexCounter =
+      ClippingManager_ClipMesh(in_vertex, in_uv, in_colors, outVertices,
+                               outUVMap, outColors, t_renderer);
+
+  if (generatedVertexCounter == 0) return;
+
+  textureBag.coordinates = outUVMap.data();
+  textureBag.texture = t_blockManager->getBlocksTexture();
+
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = false;
+  infoBag.antiAliasingEnabled = false;
+
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  colorBag.many = outColors.data();
+
+  bag.count = outVertices.size();
+  bag.vertices = outVertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  t_renderer->renderer3D.usePipeline(stapip);
+
+  M4x4 rawMatrix = M4x4::Identity;
+  infoBag.model = &rawMatrix;
+
+  stapip->core.render(&bag);
+}
 
 void Chunck::clear() {
   clearDrawData();
@@ -138,6 +320,12 @@ void Chunck::clear() {
   blocks.clear();
   blocks.shrink_to_fit();
   _isPreAllocated = false;
+
+  surroundingBlocks.clear();
+  surroundingBlocks.shrink_to_fit();
+
+  surroundingTransparentBlocks.clear();
+  surroundingTransparentBlocks.shrink_to_fit();
 
   resetLoadingOffset();
 
@@ -191,6 +379,9 @@ void Chunck::clearDrawData() {
   uvMapWithTransparency.clear();
   uvMapWithTransparency.shrink_to_fit();
 
+  surroundingBlocks.clear();
+  surroundingTransparentBlocks.clear();
+
   _isDrawDataLoaded = false;
   _isMemoryReserved = false;
   _isPreAllocated = false;
@@ -222,23 +413,25 @@ void Chunck::loadDrawDataWithoutSorting() {
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
-      const auto prevSize = verticesWithTransparency.size();
-      blocks[i]->drawDataIndex = prevSize > 0 ? prevSize - 1 : 0;
+      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+
       MeshBuilder_BuildMesh(
           blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
           &uvMapWithTransparency, t_worldLightModel, t_terrain);
-      blocks[i]->drawDataLength = verticesWithTransparency.size() - prevSize;
+
+      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
 
       // printf("Transparent Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
       //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
 
     } else {
-      const auto prevSize = vertices.size();
-      blocks[i]->drawDataIndex = prevSize > 0 ? prevSize - 1 : 0;
+      blocks[i]->drawDataIndex = vertices.size();
+
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, t_terrain);
-      blocks[i]->drawDataLength = vertices.size() - prevSize;
+
+      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
 
       // printf("Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
@@ -265,12 +458,20 @@ void Chunck::loadDrawDataAsync() {
   size_t counter = 0;
   for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
+      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+
       MeshBuilder_BuildMesh(
           blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
           &uvMapWithTransparency, t_worldLightModel, t_terrain);
+
+      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
     } else {
+      blocks[i]->drawDataIndex = vertices.size();
+
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, t_terrain);
+
+      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
     }
 
     if (counter >= LOAD_CHUNK_BATCH) {
@@ -305,6 +506,7 @@ void Chunck::reloadLightData() {
 // TODO: move to a block builder
 
 void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
+  this->frustumPlanes = (Plane*)frustumPlanes;
   this->frustumCheck = Utils::FrustumAABBIntersect(
       frustumPlanes, &scaledMinOffset, &scaledMaxOffset);
 }
@@ -326,6 +528,13 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
     if (_tempBlockOffset.x == offset->x && _tempBlockOffset.y == offset->y &&
         _tempBlockOffset.z == offset->z)
       return blocks[i];
+  }
+  return nullptr;
+}
+
+Block* Chunck::getBlockById(const u32 blockId) {
+  for (size_t i = 0; i < blocks.size(); i++) {
+    if (blocks[i]->index == blockId) return blocks[i];
   }
   return nullptr;
 }

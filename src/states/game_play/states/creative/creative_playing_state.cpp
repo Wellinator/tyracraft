@@ -60,7 +60,7 @@ void CreativePlayingState::render() {
   stateGamePlay->world->mobManager.render();
   stateGamePlay->world->renderOpaque();
   stateGamePlay->world->renderTransparent();
-  stateGamePlay->world->renderBlockDamageOverlay();
+  // stateGamePlay->world->renderBlockDamageOverlay();
   stateGamePlay->player->render();
   stateGamePlay->world->particlesManager.render();
   renderCreativeUi();

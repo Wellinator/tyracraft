@@ -26,6 +26,7 @@ using Tyra::M4x4;
 using Tyra::McpipBlock;
 using Tyra::MinecraftPipeline;
 using Tyra::PipelineDirLightsBag;
+using Tyra::PipelineTransformationType;
 using Tyra::Plane;
 using Tyra::Renderer;
 using Tyra::StaPipBag;
@@ -144,6 +145,12 @@ class Chunck {
 
   Block* getBlockByPosition(const Vec4* pos);
   Block* getBlockByOffset(const Vec4* offset);
+  Block* getBlockById(const u32 blockId);
+
+  inline u32 getIndexByOffset(int x, int y, int z) {
+    return (y * t_terrain->length * t_terrain->width) + (z * t_terrain->width) +
+           x;
+  }
 
  private:
   std::vector<Vec4> vertices;
@@ -165,4 +172,22 @@ class Chunck {
   Vec4 camPositon = Vec4(0, 0, 0);
   s8 _distanceFromPlayerInChunks = -1;
   bool _isPreAllocated = false;
+
+  std::vector<Block*> surroundingBlocks;
+  std::vector<Block*> surroundingTransparentBlocks;
+  Plane* frustumPlanes = nullptr;
+  void updateSurroundingBlocks();
+
+  void renderSolidPartialBlocks(Renderer* t_renderer, StaticPipeline* stapip,
+                                BlockManager* t_blockManager);
+
+  void renderTransparentPartialBlocks(Renderer* t_renderer,
+                                      StaticPipeline* stapip,
+                                      BlockManager* t_blockManager);
+
+  void renderPartialBlockDrawData(Renderer* t_renderer, StaticPipeline* stapip,
+                                  BlockManager* t_blockManager,
+                                  const std::vector<Vec4>* in_vertex,
+                                  const std::vector<Vec4>* in_uv,
+                                  const std::vector<Color>* in_colors);
 };
