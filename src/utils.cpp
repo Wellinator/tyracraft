@@ -205,6 +205,26 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
   return result;
 }
 
+CoreBBoxFrustum Utils::FrustumTriangleIntersect(const Plane* frustumPlanes,
+                                                const Vec4& v0, const Vec4& v1,
+                                                const Vec4& v2) {
+  // inside counters
+  u8 A, B, C;
+
+  for (u8 i = 0; i < 4; i++) {
+    if (frustumPlanes[i].distanceTo(v0) >= 0) A++;
+    if (frustumPlanes[i].distanceTo(v1) >= 0) B++;
+    if (frustumPlanes[i].distanceTo(v2) >= 0) C++;
+
+    if ((A + B + C) == 0) return Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+  }
+
+  // If all vertices are inside all planes
+  // the counter will be equals 4(num of planes) x 3 (num of inside vertices)
+  return (A + B + C) == 12 ? Tyra::CoreBBoxFrustum::IN_FRUSTUM
+                           : Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
+}
+
 std::vector<UtilDirectory> Utils::listDir(const char* dir) {
   std::vector<UtilDirectory> result;
 
@@ -264,35 +284,35 @@ float Utils::Abs(const float x) {
 }
 
 void Utils::inverseMatrix(M4x4* mOut, const M4x4* mIn) {
-    // Inverse of input matrix.
-    // This was salvaged from libVu0.c
-    asm volatile(
-        "lq           $8,   0x00(%1) \n\t"
-        "lq           $9,   0x10(%1) \n\t"
-        "lq           $10,  0x20(%1) \n\t"
-        "lqc2         $vf4, 0x30(%1) \n\t"
-        "vmove.xyzw   $vf5, $vf4 \n\t"
-        "vsub.xyz     $vf4, $vf4, $vf4 \n\t"
-        "vmove.xyzw   $vf9, $vf4 \n\t"
-        "qmfc2        $11,  $vf4 \n\t"
-        "pextlw       $12,  $9,  $8 \n\t"
-        "pextuw       $13,  $9,  $8 \n\t"
-        "pextlw       $14,  $11, $10 \n\t"
-        "pextuw       $15,  $11, $10 \n\t"
-        "pcpyld       $8,   $14, $12 \n\t"
-        "pcpyud       $9,   $12, $14 \n\t"
-        "pcpyld       $10,  $15, $13 \n\t"
-        "qmtc2        $8,   $vf6 \n\t"
-        "qmtc2        $9,   $vf7 \n\t"
-        "qmtc2        $10,  $vf8 \n\t"
-        "vmulax.xyz   $ACC, $vf6, $vf5 \n\t"
-        "vmadday.xyz  $ACC, $vf7, $vf5 \n\t"
-        "vmaddz.xyz   $vf4, $vf8, $vf5 \n\t"
-        "vsub.xyz     $vf4, $vf9, $vf4 \n\t"
-        "sq           $8,   0x00(%0) \n\t"
-        "sq           $9,   0x10(%0) \n\t"
-        "sq           $10,  0x20(%0) \n\t"
-        "sqc2         $vf4, 0x30(%0) \n\t"
-        :
-        : "r"(mOut->data), "r"(mIn->data));
-  }
+  // Inverse of input matrix.
+  // This was salvaged from libVu0.c
+  asm volatile(
+      "lq           $8,   0x00(%1) \n\t"
+      "lq           $9,   0x10(%1) \n\t"
+      "lq           $10,  0x20(%1) \n\t"
+      "lqc2         $vf4, 0x30(%1) \n\t"
+      "vmove.xyzw   $vf5, $vf4 \n\t"
+      "vsub.xyz     $vf4, $vf4, $vf4 \n\t"
+      "vmove.xyzw   $vf9, $vf4 \n\t"
+      "qmfc2        $11,  $vf4 \n\t"
+      "pextlw       $12,  $9,  $8 \n\t"
+      "pextuw       $13,  $9,  $8 \n\t"
+      "pextlw       $14,  $11, $10 \n\t"
+      "pextuw       $15,  $11, $10 \n\t"
+      "pcpyld       $8,   $14, $12 \n\t"
+      "pcpyud       $9,   $12, $14 \n\t"
+      "pcpyld       $10,  $15, $13 \n\t"
+      "qmtc2        $8,   $vf6 \n\t"
+      "qmtc2        $9,   $vf7 \n\t"
+      "qmtc2        $10,  $vf8 \n\t"
+      "vmulax.xyz   $ACC, $vf6, $vf5 \n\t"
+      "vmadday.xyz  $ACC, $vf7, $vf5 \n\t"
+      "vmaddz.xyz   $vf4, $vf8, $vf5 \n\t"
+      "vsub.xyz     $vf4, $vf9, $vf4 \n\t"
+      "sq           $8,   0x00(%0) \n\t"
+      "sq           $9,   0x10(%0) \n\t"
+      "sq           $10,  0x20(%0) \n\t"
+      "sqc2         $vf4, 0x30(%0) \n\t"
+      :
+      : "r"(mOut->data), "r"(mIn->data));
+}
