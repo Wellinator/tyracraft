@@ -27,7 +27,7 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
-                             Renderer* t_renderer) {
+                             Renderer* t_renderer, Vec4& camPos) {
   Plane* frustumPlanes =
       (Plane*)t_renderer->core.renderer3D.frustumPlanes.getAll();
 
@@ -65,6 +65,11 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
 
                           // Colors
                           &colors[i * 3 + j]};
+    }
+
+    if (!Vec4::shouldBeBackfaceCulled(&camPos, &inputVerts[0], &inputVerts[1],
+                                     &inputVerts[2])) {
+      continue;
     }
 
     int clippedVertivesCount = algorithm.clip(

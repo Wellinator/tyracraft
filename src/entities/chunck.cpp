@@ -256,7 +256,7 @@ void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
 
   u8 generatedVertexCounter =
       ClippingManager_ClipMesh(in_vertex, in_uv, in_colors, outVertices,
-                               outUVMap, outColors, t_renderer);
+                               outUVMap, outColors, t_renderer, camPositon);
 
   if (generatedVertexCounter == 0) return;
 
