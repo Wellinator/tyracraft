@@ -132,10 +132,6 @@ void ScreenNewGame::render() {
       worldTypeOptions.position.set(248, 295);
       FontManager_printText(Label_WorldTypeFloating, worldTypeOptions);
       break;
-    case WorldType::WORLD_MINI_GAME_MAZECRAFT:
-      worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeMazecraft, worldTypeOptions);
-      break;
 
     default:
       break;
@@ -498,7 +494,7 @@ void ScreenNewGame::handleWorldNameInput() {
 void ScreenNewGame::updateModel() {
   if (this->activeOption == ScreenNewGameOptions::WorldType) {
     int nextOption = (int)this->model.type + 1;
-    if (nextOption > (u8)WorldType::WORLD_MINI_GAME_MAZECRAFT)
+    if (nextOption > (u8)WorldType::WORLD_TYPE_FLOATING)
       this->model.type = WorldType::WORLD_TYPE_ORIGINAL;
     else
       this->model.type = static_cast<WorldType>(nextOption);
@@ -520,9 +516,7 @@ void ScreenNewGame::createNewWorld() {
   model.name = inputWorldName;
   model.seed = std::stoull(inputSeed);
   model.texturePack = selectedTexturePack->path;
-  model.gameMode = model.type == WorldType::WORLD_MINI_GAME_MAZECRAFT
-                       ? GameMode::Maze
-                       : GameMode::Creative;
+  model.gameMode = GameMode::Creative;
   context->loadGame(model);
 }
 
