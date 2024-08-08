@@ -152,6 +152,8 @@ class Chunck {
            x;
   }
 
+  void updateSurroundingBlocks();
+
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
@@ -176,7 +178,6 @@ class Chunck {
   std::vector<Block*> surroundingBlocks;
   std::vector<Block*> surroundingTransparentBlocks;
   Plane* frustumPlanes = nullptr;
-  void updateSurroundingBlocks();
 
   void renderSolidPartialBlocks(Renderer* t_renderer, StaticPipeline* stapip,
                                 BlockManager* t_blockManager);
@@ -185,8 +186,7 @@ class Chunck {
                                       StaticPipeline* stapip,
                                       BlockManager* t_blockManager);
 
-  void renderPartialBlockDrawData(Renderer* t_renderer,
-                                  StaticPipeline* stapip,
+  void renderPartialBlockDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                                   BlockManager* t_blockManager,
                                   std::vector<Vec4>& in_vertex,
                                   std::vector<Vec4>& in_uv,
