@@ -48,8 +48,8 @@ void Chunck::init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel) {
 void Chunck::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
 
-  if (isDrawDataLoaded() && _distanceFromPlayerInChunks > -1 &&
-      _distanceFromPlayerInChunks < 2) {
+  if (isDrawDataLoaded() && frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
+      _distanceFromPlayerInChunks > -1 && _distanceFromPlayerInChunks < 3) {
     updateSurroundingBlocks();
   }
 }
@@ -193,7 +193,8 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
     std::copy(verticesColors.begin() + start, verticesColors.begin() + end,
               std::back_inserter(inColors));
 
-    t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0, 0));
+    // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
+    // 0));
     renderPartialBlockDrawData(t_renderer, stapip, t_blockManager, inVertices,
                                inUVMap, inColors);
   }

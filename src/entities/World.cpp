@@ -315,7 +315,7 @@ void World::scheduleChunksNeighbors(Chunck* origin_chunk,
   auto chuncks = chunckManager.getChuncks();
   for (u16 i = 0; i < chuncks->size(); i++) {
     auto t_chunk = (*chuncks)[i];
-    const auto distance =
+    const s8 distance =
         floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) +
         1;
 
