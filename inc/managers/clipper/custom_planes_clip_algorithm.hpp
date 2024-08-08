@@ -26,20 +26,20 @@ struct Triangle {
   PlanesClipVertex c;
 
   Triangle() {
-    a.position = Vec4();
-    a.st = Vec4();
-    a.normal = Vec4();
-    a.color = Vec4();
+    a.position = Vec4(0, 0, 0);
+    a.st = Vec4(0, 0, 0);
+    a.normal = Vec4(0, 0, 0);
+    a.color = Vec4(0, 0, 0);
 
-    b.position = Vec4();
-    b.st = Vec4();
-    b.normal = Vec4();
-    b.color = Vec4();
+    b.position = Vec4(0, 0, 0);
+    b.st = Vec4(0, 0, 0);
+    b.normal = Vec4(0, 0, 0);
+    b.color = Vec4(0, 0, 0);
 
-    c.position = Vec4();
-    c.st = Vec4();
-    c.normal = Vec4();
-    c.color = Vec4();
+    c.position = Vec4(0, 0, 0);
+    c.st = Vec4(0, 0, 0);
+    c.normal = Vec4(0, 0, 0);
+    c.color = Vec4(0, 0, 0);
   }
 
   Triangle(PlanesClipVertex _a, PlanesClipVertex _b, PlanesClipVertex _c) {
@@ -54,9 +54,9 @@ class CustomPlanesClipAlgorithm {
   CustomPlanesClipAlgorithm();
   ~CustomPlanesClipAlgorithm();
 
-  u8 clip(std::vector<PlanesClipVertex>& o_vertices,
-          PlanesClipVertexPtrs* i_vertices,
-          const EEClipAlgorithmSettings& settings, Plane* frustumPlanes);
+  int clip(std::vector<PlanesClipVertex>& o_vertices,
+           PlanesClipVertexPtrs* i_vertices,
+           const EEClipAlgorithmSettings& settings, Plane* frustumPlanes);
 
  private:
   Vec4 intersectPlane(Vec4& plane_p, Vec4& plane_n, Vec4& lineStart,

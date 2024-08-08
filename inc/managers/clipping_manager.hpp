@@ -43,16 +43,16 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
 
   std::vector<PlanesClipVertex> clippedTriangle;
   std::vector<PlanesClipVertex> clippedVertices;
-  clippedVertices.reserve(9);
+  // clippedVertices.reserve(9);
+
+  Vec4* vert = in_vertex.data();
+  Vec4* sts = in_uv.data();
+  Vec4* colors = reinterpret_cast<Vec4*>(in_colors.data());
 
   // Iterate over the input vertices per triangles
   for (u32 i = 0; i < in_vertex.size() / 3; i++) {
     // Iterate over the triangles
     for (u8 j = 0; j < 3; j++) {
-      Vec4* vert = const_cast<Vec4*>(in_vertex.data());
-      Vec4* sts = const_cast<Vec4*>(in_uv.data());
-      Vec4* colors = reinterpret_cast<Vec4*>(in_colors.data());
-
       inputVerts[j] = vert[i * 3 + j];
 
       inputTriangle[j] = {&inputVerts[j],
@@ -67,7 +67,7 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                           &colors[i * 3 + j]};
     }
 
-    u8 clippedVertivesCount = algorithm.clip(
+    int clippedVertivesCount = algorithm.clip(
         clippedTriangle, inputTriangle.data(), algoSettings, frustumPlanes);
 
     if (clippedVertivesCount == 0) {
@@ -76,7 +76,7 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
 
     result += clippedVertivesCount;
 
-    for (u8 j = 0; j < clippedVertivesCount; j++) {
+    for (size_t j = 0; j < clippedTriangle.size(); j++) {
       clippedVertices.push_back(clippedTriangle[j]);
     }
   }
@@ -87,11 +87,9 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
     out_colors.reserve(clippedVertices.size());
 
     for (u32 i = 0; i < clippedVertices.size(); i++) {
-      out_vertex.push_back(clippedVertices[i].position);
-      out_uv.push_back(clippedVertices[i].st);
-      out_colors.push_back(Color(clippedVertices[i].color.x,
-                                 clippedVertices[i].color.y,
-                                 clippedVertices[i].color.z));
+      out_vertex.emplace_back(clippedVertices[i].position);
+      out_uv.emplace_back(clippedVertices[i].st);
+      out_colors.emplace_back(clippedVertices[i].color.xyzw);
     }
   }
 

@@ -9,7 +9,7 @@
 */
 
 #include "managers/clipper/custom_planes_clip_algorithm.hpp"
-#include <queue>
+#include <list>
 
 CustomPlanesClipAlgorithm::CustomPlanesClipAlgorithm() {}
 
@@ -18,21 +18,28 @@ CustomPlanesClipAlgorithm::~CustomPlanesClipAlgorithm() {}
 Vec4 CustomPlanesClipAlgorithm::intersectPlane(Vec4& plane_p, Vec4& plane_n,
                                                Vec4& lineStart, Vec4& lineEnd,
                                                float plane_d, float& t) {
-  Vec4 n = plane_n;
-  Vec4 p = lineStart;
-  Vec4 d = (lineEnd - lineStart).getNormalized();
+  // Vec4 dir = (lineEnd - lineStart).getNormalized();
+  // t = -((plane_n.dot3(lineStart)) + plane_d) / dir.dot3(plane_n);
+  // return lineStart + (dir * t);
 
-  double denominator = d.dot3(n);
+  float d1 = plane_d + plane_n.innerProduct(lineStart);
+  float d2 = plane_d + plane_n.innerProduct(lineEnd);
 
-  t = -((n.dot3(p)) + plane_d) / denominator;
-  return p + (d * t);
+  t = d1 / (d1 - d2);
+  Vec4 result = lineStart + ((lineEnd - lineStart) * t);
+
+  // Fix W values
+  result.w = 1.0F;
+
+  return result;
 }
 
-u8 CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
-                                   PlanesClipVertexPtrs* i_vertices,
-                                   const EEClipAlgorithmSettings& settings,
-                                   Plane* frustumPlanes) {
-  std::queue<Triangle> trianglesToClip = {};
+int CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
+                                    PlanesClipVertexPtrs* i_vertices,
+                                    const EEClipAlgorithmSettings& settings,
+                                    Plane* frustumPlanes) {
+  std::list<Triangle> trianglesToClip;
+  PlanesClipVertex tempVertices[6] = {};
 
   Triangle initialInput;
 
@@ -51,40 +58,42 @@ u8 CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
   if (settings.lerpNormals) initialInput.c.normal = *i_vertices[2].normal;
   if (settings.lerpTexCoords) initialInput.c.st = *i_vertices[2].st;
 
-  trianglesToClip.push(initialInput);
+  trianglesToClip.push_back(initialInput);
   int nNewTriangles = 1;
 
   for (u8 i = 0; i < 6; i++) {
     u8 clipped = 0;
 
     while (nNewTriangles > 0) {
-      PlanesClipVertex tempVertices[9];
       Triangle input = trianglesToClip.front();
-      trianglesToClip.pop();
+      trianglesToClip.pop_front();
       nNewTriangles--;
 
       clipped =
           clipAgainstPlane(input, tempVertices, settings, &frustumPlanes[i]);
 
-      for (size_t j = 0; j < clipped; j++) {
-        Triangle newtri(tempVertices[j * 3], tempVertices[j * 3 + 1],
-                        tempVertices[j * 3 + 2]);
+      if (clipped == 0) {
+        continue;
+      } else if (clipped == 1) {
+        trianglesToClip.emplace_back(tempVertices[0], tempVertices[1],
+                                     tempVertices[2]);
+      } else if (clipped == 2) {
+        trianglesToClip.emplace_back(tempVertices[0], tempVertices[1],
+                                     tempVertices[2]);
 
-        trianglesToClip.push(newtri);
+        trianglesToClip.emplace_back(tempVertices[3], tempVertices[4],
+                                     tempVertices[5]);
       }
     }
 
     nNewTriangles = trianglesToClip.size();
   }
 
-  u8 result = trianglesToClip.size();
-  o_vertices.resize(result * 3, {Vec4()});
+  o_vertices.resize(nNewTriangles * 3, {Vec4(0, 0, 0), Vec4(0, 0, 0),
+                                        Vec4(0, 0, 0), Vec4(0, 0, 0)});
 
   int i = 0;
-  while (!trianglesToClip.empty()) {
-    Triangle t = trianglesToClip.front();
-    trianglesToClip.pop();
-
+  for (auto& t : trianglesToClip) {
     o_vertices[i].position = t.a.position;
     if (settings.lerpColors) o_vertices[i].color = t.a.color;
     if (settings.lerpNormals) o_vertices[i].normal = t.a.normal;
@@ -115,44 +124,55 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
   Vec4 plane_p = plane->normal * plane->distance;
 
   Vec4 inside_points[3];
-  int nInsidePointCount = 0;
+  u8 nInsidePointCount = 0;
   Vec4 outside_points[3];
-  int nOutsidePointCount = 0;
+  u8 nOutsidePointCount = 0;
 
   Vec4 inside_tex[3];
-  int nInsideTexCount = 0;
+  u8 nInsideTexCount = 0;
   Vec4 outside_tex[3];
-  int nOutsideTexCount = 0;
+  u8 nOutsideTexCount = 0;
 
-  auto a = original.a;
-  auto b = original.b;
-  auto c = original.c;
+  Vec4 inside_col[3];
+  u8 nInsideColCount = 0;
+  Vec4 outside_col[3];
+  u8 nOutsideColCount = 0;
+
+  PlanesClipVertex& a = original.a;
+  PlanesClipVertex& b = original.b;
+  PlanesClipVertex& c = original.c;
 
   // Get signed distance of each point in triangle to plane
-  float d0 = plane->distanceTo(a.position);  // dist(a.position);
-  float d1 = plane->distanceTo(b.position);  // dist(b.position);
-  float d2 = plane->distanceTo(c.position);  // dist(c.position);
+  float d0 = plane->distanceTo(a.position);
+  float d1 = plane->distanceTo(b.position);
+  float d2 = plane->distanceTo(c.position);
 
   if (d0 >= 0) {
     inside_points[nInsidePointCount++] = a.position;
     inside_tex[nInsideTexCount++] = a.st;
+    inside_col[nInsideColCount++] = a.color;
   } else {
     outside_points[nOutsidePointCount++] = a.position;
     outside_tex[nOutsideTexCount++] = a.st;
+    outside_col[nOutsideColCount++] = a.color;
   }
   if (d1 >= 0) {
     inside_points[nInsidePointCount++] = b.position;
     inside_tex[nInsideTexCount++] = b.st;
+    inside_col[nInsideColCount++] = b.color;
   } else {
     outside_points[nOutsidePointCount++] = b.position;
     outside_tex[nOutsideTexCount++] = b.st;
+    outside_col[nOutsideColCount++] = b.color;
   }
   if (d2 >= 0) {
     inside_points[nInsidePointCount++] = c.position;
     inside_tex[nInsideTexCount++] = c.st;
+    inside_col[nInsideColCount++] = c.color;
   } else {
     outside_points[nOutsidePointCount++] = c.position;
     outside_tex[nOutsideTexCount++] = c.st;
+    outside_col[nOutsideColCount++] = c.color;
   }
 
   if (nInsidePointCount == 0) {
@@ -194,115 +214,113 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
   }
 
   if (nInsidePointCount == 1 && nOutsidePointCount == 2) {
+    // Distance from inside to plane intersection
+    float p;
+
     // Copy appearance info to new triangle
     // The inside point is valid, so keep that...
     clipped[0].position = inside_points[0];
     clipped[0].st = inside_tex[0];
-    clipped[0].color = a.color;
+    clipped[0].color = inside_col[0];
 
-    float p;
+    // but the two new points are at the locations where the
+    // original sides of the triangle (lines) intersect with the plane
     clipped[1].position =
         intersectPlane(plane_p, plane->normal, inside_points[0],
                        outside_points[0], plane->distance, p);
-    // TYRA_LOG("f: ", p);
 
-    if (settings.lerpNormals)
+    if (settings.lerpNormals) {
       clipped[1].normal = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
-
-    if (settings.lerpTexCoords) {
-      // clipped[1].st = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
-      // out_tri1.t[1].u = t * (outside_tex[0]->u - inside_tex[0]->u) +
-      // inside_tex[0]->u;
-      clipped[1].st = (outside_tex[0] - inside_tex[0]) * p + inside_tex[0];
     }
 
-    // if (settings.lerpColors){
-    //   clipped[1].color = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
-    // }
+    if (settings.lerpTexCoords) {
+      clipped[1].st = Vec4::getByLerp(inside_tex[0], outside_tex[0], p);
+    }
+
+    if (settings.lerpColors) {
+      clipped[1].color = Vec4::getByLerp(inside_col[0], outside_col[0], p);
+    }
 
     clipped[2].position =
         intersectPlane(plane_p, plane->normal, inside_points[0],
                        outside_points[1], plane->distance, p);
-    if (settings.lerpNormals)
-      clipped[2].normal = Vec4::getByLerp(outside_tex[1], inside_tex[0], p);
 
-    if (settings.lerpTexCoords) {
-      // clipped[2].st = Vec4::getByLerp(outside_tex[1], inside_tex[0], p);
-      // out_tri1.t[2].u = t * (outside_tex[1]->u - inside_tex[0]->u) +
-      // inside_tex[0]->u;
-      clipped[2].st = (outside_tex[1] - inside_tex[0]) * p + inside_tex[0];
+    if (settings.lerpNormals) {
+      clipped[2].normal = Vec4::getByLerp(outside_tex[1], inside_tex[0], p);
     }
 
-    // if (settings.lerpColors)
-    //   clipped[2].color = Vec4::getByLerp(outside_tex[1], inside_tex[0], p);
+    if (settings.lerpTexCoords) {
+      clipped[2].st = Vec4::getByLerp(inside_tex[0], outside_tex[1], p);
+    }
+
+    if (settings.lerpColors) {
+      clipped[2].color = Vec4::getByLerp(inside_col[0], outside_col[1], p);
+    }
 
     return 1;  // Return the newly formed single triangle
   }
 
   if (nInsidePointCount == 2 && nOutsidePointCount == 1) {
-    // Copy appearance info to new triangle
-    clipped[0].color = a.color;
-    clipped[1].color = b.color;
-    clipped[2].color = c.color;
-
-    // Copy appearance info to new triangle
-    clipped[3].color = a.color;
-    clipped[4].color = b.color;
-    clipped[5].color = c.color;
+    // Distance from inside to plane intersection
+    float p;
 
     // The first triangle consists of the two inside points and a new
     // point determined by the location where one side of the triangle
     // intersects with the plane
     clipped[0].position = inside_points[0];
-    clipped[1].position = inside_points[1];
     clipped[0].st = inside_tex[0];
-    clipped[1].st = inside_tex[1];
+    clipped[0].color = inside_col[0];
 
-    float p;
+    clipped[1].position = inside_points[1];
+    clipped[1].st = inside_tex[1];
+    clipped[1].color = inside_col[1];
+
     clipped[2].position =
         intersectPlane(plane_p, plane->normal, inside_points[0],
                        outside_points[0], plane->distance, p);
 
-    if (settings.lerpNormals)
+    if (settings.lerpNormals) {
       clipped[2].normal = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
-
-    if (settings.lerpTexCoords) {
-      // clipped[2].st = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
-      // out_tri1.t[2].u = t * (outside_tex[0]->u - inside_tex[0]->u) +
-      // inside_tex[0]->u;
-      clipped[2].st = (outside_tex[0] - inside_tex[0]) * p + inside_tex[0];
     }
 
-    // if (settings.lerpColors)
-    //   clipped[2].color = Vec4::getByLerp(outside_tex[0], inside_tex[0], p);
+    if (settings.lerpTexCoords) {
+      clipped[2].st = Vec4::getByLerp(inside_tex[0], outside_tex[0], p);
+    }
+
+    if (settings.lerpColors) {
+      clipped[2].color = Vec4::getByLerp(inside_col[0], outside_col[0], p);
+    }
 
     // The second triangle is composed of one of he inside points, a
     // new point determined by the intersection of the other side of the
     // triangle and the plane, and the newly created point above
     clipped[3].position = inside_points[1];
     clipped[3].st = inside_tex[1];
+    clipped[3].color = inside_col[1];
+
     clipped[4].position = clipped[2].position;
     clipped[4].st = clipped[2].st;
+    clipped[4].color = clipped[2].color;
 
     clipped[5].position =
         intersectPlane(plane_p, plane->normal, inside_points[1],
                        outside_points[0], plane->distance, p);
 
-    if (settings.lerpNormals)
-      clipped[5].normal = Vec4::getByLerp(outside_tex[0], inside_tex[1], p);
-
-    if (settings.lerpTexCoords) {
-      // clipped[2].st = Vec4::getByLerp(outside_tex[0], inside_tex[1], p);
-      // out_tri2.t[2].u = t * (outside_tex[0]->u - inside_tex[1]->u) +
-      // inside_tex[1]->u;
-      clipped[5].st = (outside_tex[0] - inside_tex[1]) * p + inside_tex[1];
+    if (settings.lerpNormals) {
+      clipped[5].normal = Vec4::getByLerp(inside_tex[1], outside_tex[0], p);
     }
 
-    // if (settings.lerpColors)
-    //   clipped[5].color = Vec4::getByLerp(outside_tex[0], inside_tex[1], p);
+    if (settings.lerpTexCoords) {
+      clipped[5].st = Vec4::getByLerp(inside_tex[1], outside_tex[0], p);
+    }
+
+    if (settings.lerpColors) {
+      clipped[5].color = Vec4::getByLerp(inside_col[1], outside_col[0], p);
+    }
 
     return 2;  // Return two newly formed triangles which form a quad
   }
 
+  TYRA_TRAP("Invalid clipping values!");
   return 0;
 }
