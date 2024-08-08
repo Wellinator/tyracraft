@@ -195,7 +195,7 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
     // 0));
-    renderPartialBlockDrawData(t_renderer, stapip, t_blockManager, inVertices,
+    renderPartialBlockDrawData(t_renderer, false, stapip, t_blockManager, inVertices,
                                inUVMap, inColors);
   }
 }
@@ -230,12 +230,13 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(0, 0,
     // 255));
-    renderPartialBlockDrawData(t_renderer, stapip, t_blockManager, inVertices,
+    renderPartialBlockDrawData(t_renderer, true, stapip, t_blockManager, inVertices,
                                inUVMap, inColors);
   }
 }
 
 void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
+                                        u8 hasTransparency,
                                         StaticPipeline* stapip,
                                         BlockManager* t_blockManager,
                                         std::vector<Vec4>& in_vertex,
@@ -265,7 +266,7 @@ void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
 
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = true;
+  infoBag.blendingEnabled = hasTransparency;
   infoBag.antiAliasingEnabled = false;
 
   infoBag.fullClipChecks = false;

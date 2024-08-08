@@ -186,7 +186,8 @@ class Chunck {
                                       StaticPipeline* stapip,
                                       BlockManager* t_blockManager);
 
-  void renderPartialBlockDrawData(Renderer* t_renderer, StaticPipeline* stapip,
+  void renderPartialBlockDrawData(Renderer* t_renderer, u8 hasTransparency,
+                                  StaticPipeline* stapip,
                                   BlockManager* t_blockManager,
                                   std::vector<Vec4>& in_vertex,
                                   std::vector<Vec4>& in_uv,
