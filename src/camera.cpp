@@ -83,7 +83,7 @@ void Camera::update(const float& deltaTime, const u8 isWalking) {
 // TODO: refactore method signature to receive the position directly
 void Camera::setPosition(Vec4 newPosition) {
   if (camera_type == CamType::FirstPerson) {
-    position.set(newPosition - (unitCirclePosition.getNormalized() * 4.5F));
+    position.set(newPosition);
     position.y += CAMERA_Y;
   } else {
     hitDistance = distanceFromPlayer;
