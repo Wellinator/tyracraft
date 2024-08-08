@@ -3,6 +3,7 @@
 #include "tyra"
 #include <tamtypes.h>
 #include "managers/clipper/custom_planes_clip_algorithm.hpp"
+#include "utils.hpp"
 
 using Tyra::Color;
 using Tyra::EEClipAlgorithmSettings;
@@ -67,8 +68,15 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                           &colors[i * 3 + j]};
     }
 
-    if (!Vec4::shouldBeBackfaceCulled(&camPos, &inputVerts[0], &inputVerts[1],
-                                     &inputVerts[2])) {
+    if (
+        // Back face culling
+        !Vec4::shouldBeBackfaceCulled(&camPos, &inputVerts[0], &inputVerts[1],
+                                      &inputVerts[2]) ||
+
+        // Check if the triangle is partially visible
+        Utils::FrustumTriangleIntersect(frustumPlanes, inputVerts[0],
+                                        inputVerts[1], inputVerts[2]) !=
+            Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
       continue;
     }
 
