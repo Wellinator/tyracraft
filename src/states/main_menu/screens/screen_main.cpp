@@ -268,7 +268,7 @@ void ScreenMain::loadPlayerPreview(Renderer* renderer) {
       Tyra::PipelineTextureMappingType::TyraNearest;
 
   ObjLoaderOptions options;
-  options.scale = 3.5F;
+  options.scale = 3.4F;
   options.flipUVs = true;
   options.animation.count = 2;
 
@@ -284,7 +284,7 @@ void ScreenMain::loadPlayerPreview(Renderer* renderer) {
   playerPreviewMesh->scale.identity();
   playerPreviewMesh->translation.identity();
 
-  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 19.0F, 12.0f));
+  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 19.5F, 10.0f));
 
   auto& materials = playerPreviewMesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
