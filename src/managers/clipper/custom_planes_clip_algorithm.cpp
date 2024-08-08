@@ -61,7 +61,8 @@ int CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
   trianglesToClip.push_back(initialInput);
   int nNewTriangles = 1;
 
-  for (u8 i = 0; i < 6; i++) {
+  // Check against left, right, top and bottom planes
+  for (u8 i = 0; i < 4; i++) {
     u8 clipped = 0;
 
     while (nNewTriangles > 0) {
