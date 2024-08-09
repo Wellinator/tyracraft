@@ -145,27 +145,6 @@ class ScreenMiniGame : public ScreenBase {
   const std::string Label_MiniGame =
       g_language_repository["minigame"]["common"]["mini_games"]
           .get<std::string>();
-  //   const std::string Label_CreateNewWorld =
-  //       g_language_repository["screen_new_game"]["create_new_world"]
-  //   .get<std::string>();
-  //   const std::string Label_WorldTypeOriginal =
-  //       g_language_repository["screen_new_game"]["world_type_original"]
-  //           .get<std::string>();
-  //   const std::string Label_WorldTypeFlat =
-  //       g_language_repository["screen_new_game"]["world_type_flat"]
-  //           .get<std::string>();
-  //   const std::string Label_WorldTypeIsland =
-  //       g_language_repository["screen_new_game"]["world_type_island"]
-  //           .get<std::string>();
-  //   const std::string Label_WorldTypeWoods =
-  //       g_language_repository["screen_new_game"]["world_type_woods"]
-  //           .get<std::string>();
-  //   const std::string Label_WorldTypeFloating =
-  //       g_language_repository["screen_new_game"]["world_type_floating"]
-  //           .get<std::string>();
-  //   const std::string Label_WorldTypeMazecraft =
-  //       g_language_repository["screen_new_game"]["world_type_mazecraft"]
-  //           .get<std::string>();
 
   const std::string Label_PreviousSaveDeletedSuccessPart1 =
       g_language_repository["minigame"]["common"]
