@@ -47,7 +47,7 @@ class ScreenOptions : public ScreenBase {
 
   OptionsScreenOptions activeOption = OptionsScreenOptions::VSyncOnOff;
 
-  const float SLOT_WIDTH = 250;
+  const float SLOT_WIDTH = 315;
   const float SLOT_HIGHT_OFFSET = 30;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
 
