@@ -207,7 +207,7 @@ void ScreenSkinSelection::loadModels() {
 
   auto data = ObjLoader::load(
       FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
-  data.get()->loadNormals = false;
+  data.get()->loadNormals = false; 
   baseMesh = std::make_unique<DynamicMesh>(data.get());
 
   for (size_t i = 0; i < models.size(); i++) {
@@ -224,7 +224,7 @@ void ScreenSkinSelection::loadModels() {
       textures[i]->addLink(materials[j]->id);
   }
 
-  models[1]->scale.scale(1.5f);
+  models[1]->scale.scale(1.3f);
 
   models[0]->rotation.rotateY(defaultRotation[0]);
   models[1]->rotation.rotateY(defaultRotation[1]);
@@ -257,7 +257,7 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
 
     startScale = defaultScale;
     endScale = {
-        1.5f,
+        1.3f,
         1.0f,
         1.0f,
     };
@@ -281,7 +281,7 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
     endScale = {
         1.0f,
         1.0f,
-        1.5f,
+        1.3f,
     };
 
     startPositions = defaultPositions;

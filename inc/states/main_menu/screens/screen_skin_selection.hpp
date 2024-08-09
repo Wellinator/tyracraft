@@ -53,14 +53,14 @@ class ScreenSkinSelection : public ScreenBase {
   std::array<float, 3> tempRotation = defaultRotation;
   std::array<float, 3> endRotation = defaultRotation;
 
-  const std::array<float, 3> defaultScale = {1.0f, 1.5f, 1.0f};
+  const std::array<float, 3> defaultScale = {1.0f, 1.3f, 1.0f};
   std::array<float, 3> startScale = defaultScale;
   std::array<float, 3> tempScale = defaultScale;
   std::array<float, 3> endScale = defaultScale;
 
-  const std::array<Vec4, 3> defaultPositions = {Vec4(25.0f, 15.0F, -12.0f),
-                                                Vec4(25.0f, 15.0F, 0.0f),
-                                                Vec4(25.0f, 15.0F, 12.0f)};
+  const std::array<Vec4, 3> defaultPositions = {Vec4(25.0f, 16.5F, -12.0f),
+                                                Vec4(25.0f, 16.5F, 0.0f),
+                                                Vec4(25.0f, 16.5F, 12.0f)};
   std::array<Vec4, 3> startPositions = defaultPositions;
   std::array<Vec4, 3> endPositions = defaultPositions;
   std::array<Vec4, 3> tempPositions = defaultPositions;
