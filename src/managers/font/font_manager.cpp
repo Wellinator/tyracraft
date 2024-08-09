@@ -59,25 +59,30 @@ void FontManager_init(Renderer* t_renderer) {
   FontManager_loadFontChars(t_renderer);
 }
 
-void FontManager_printText(const std::string& text,
-                           const FontOptions& options) {
-  FontManager_printText(text.c_str(), text.length(), options);
-};
+// void FontManager_printText(const std::string& text,
+//                            const FontOptions& options) {
+//   FontManager_printText(text.c_str(), text.length(), options);
+// };
 
 void FontManager_printText(const char* text, const FontOptions& options) {
-  FontManager_printText(text, strlen(text), options);
+  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+  std::wstring tempWstr = converter.from_bytes(text, text + strlen(text));
+  FontManager_printText(tempWstr.c_str(), tempWstr.length(), options);
 }
 
 void FontManager_printText(const char* text, const float& x, const float& y) {
-  FontManager_printText(text, strlen(text), FontOptions(Vec2(x, y)));
+  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+  std::wstring tempWstr = converter.from_bytes(text, text + strlen(text));
+  FontManager_printText(tempWstr.c_str(), tempWstr.length(),
+                        FontOptions(Vec2(x, y)));
 }
 
-void FontManager_printText(const std::string& text, const float& x,
-                           const float& y) {
-  FontManager_printText(text.c_str(), text.size(), FontOptions(Vec2(x, y)));
-}
+// void FontManager_printText(const std::string& text, const float& x,
+//                            const float& y) {
+//   FontManager_printText(text.c_str(), text.size(), FontOptions(Vec2(x, y)));
+// }
 
-void FontManager_printText(const char* text, const size_t length,
+void FontManager_printText(const wchar_t* text, const size_t length,
                            const FontOptions& options) {
   float cursorX = 0.0F;
   float cursorY = 0.0F;
@@ -115,7 +120,7 @@ void FontManager_printText(const char* text, const size_t length,
   }
 }
 
-float FontManager_calcLinePadding(const char* text, const size_t length,
+float FontManager_calcLinePadding(const wchar_t* text, const size_t length,
                                   const TextAlignment alignment) {
   float padding = 0.0F;
 
@@ -164,4 +169,40 @@ void FontManager_unloadFontChars() {
 
 const Sprite* FontManager_getFontChatByCode(const u8& code) {
   return printable_ascii_chars_sprites[code];
+}
+
+// UTF-8
+std::wstring FontManager_utf8_to_wstring(const std::string& str) {
+  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+  return converter.from_bytes(str);
+}
+
+size_t FontManager_utf8len(char* s) {
+  size_t len = 0;
+  for (; *s; ++s)
+    if ((*s & 0xC0) != 0x80) ++len;
+  return len;
+}
+
+void FontManager_printText(const std::string& text,
+                           const FontOptions& options) {
+  std::wstring tempWstr = FontManager_utf8_to_wstring(text);
+  FontManager_printText(tempWstr.c_str(), tempWstr.length(), options);
+};
+
+void FontManager_printText(const std::string& text, const float& x,
+                           const float& y) {
+  std::wstring tempWstr = FontManager_utf8_to_wstring(text);
+  FontManager_printText(tempWstr.c_str(), tempWstr.size(),
+                        FontOptions(Vec2(x, y)));
+}
+
+void FontManager_printText(const std::wstring& text,
+                           const FontOptions& options) {
+  FontManager_printText(text.c_str(), text.length(), options);
+}
+
+void FontManager_printText(const std::wstring& text, const float& x,
+                           const float& y) {
+  FontManager_printText(text.c_str(), text.size(), FontOptions(Vec2(x, y)));
 }
