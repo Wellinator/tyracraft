@@ -1,3 +1,89 @@
+# v0.86.140-pre-alpha 12/08/2024
+
+- chore: updates version
+- chore: updates CHANGELOG
+- fix: char position over the label
+- fix: slot width in options menu
+- chore: remove commented code
+- feat: added extended ASCII support
+- chore: check triangle intersection before clipping
+- chore: added triangle vs frustum intersect
+- chore: remove near and far planes from clipping check
+- chore: remove mazecraft from world types
+- chore: fix character alignment
+- chore: control alpha blending
+- chore: apply back face culling before clipping
+- chore: fix close blocks update
+- chore: remove cam offset in first person mode
+- chore: separate transparent and solid clipped data
+- chore: fix clipping vertex data and UV mapping
+- chore: fix dynamic array growth
+- chore: initial frustum clipping algorithm in world space
+- chore: added clipping lib
+- chore: added camera position to chunk update
+- fix: block draw data index
+- chore: ajust the sfx volume
+- fix: remove pumpkin from spawn position
+- chore: set happy theme when level done
+- chore: play level done sfx
+- chore: added next level dialog
+- chore: implements minigame level reset
+- refactore: move files
+- chore: added mini game tab at create and load screens
+- chore: update mazecraft level params
+- fix: next level generation
+- fix: crash on loading next level
+- chore: added custom assets and loading next level screen
+- chore: added custom mazecraft playlist
+- fix: unloading a not loaded texture causing a crash
+- chore: implements save/load minigames
+- chore: apply mazecraft rules and initialization of gameplay
+- chore: apply mazecraft states for loading nad creating
+- chore: added states to load and create maze craft mini game
+- chore: added util methods for flaying and inventory
+- chore: added mini game screen
+- fix: comparison type
+- chore: added mini game info model
+- chore: added mini game file extension
+- chore: added gameMode to save file
+- chore: added mini game initial screen
+- chore: change happy theme lightinig
+- chore: added afterInit event
+- chore: added missing case to switch
+- chore: added MazePlayingState to game mode handler method
+- refactore: apply game mode to StateGamePlay
+- chore: added maze playing state
+- chore: added GameMode prop to NewGameOptions model
+- chore: implemented custom g_ticksCounter setters
+- chore: comment unused code
+- chore: added sky color set methods
+- refactore: moves GameMode enum to constants
+- (feat) Merge branch 'develop' into feature/mini-game/mazecraft
+- fix: wrong behaviour when placing double slab at the same block space
+- fix: wrong lighted faces with oriented blocks
+- chore: remove code if DEBUG_MODE is disabled
+- chore: added float type and remove comments
+- chore: update roadmap
+- refactore: apply DRY
+- fix: remove block when has no visible faces
+- (feat) Merge branch 'feat/chunk-update' into develop
+- fix: frame dropping in particle renderization
+- refactore: reuse add block method
+- chore: implement single block update in a chunk
+- chore: implements asyc draw data loading
+- refactore: prevent to rebuild the vertex data every call
+- fix: moon transparency
+- fix: item selection at inventory
+- fix: leaves transparency
+- fix: transparency issue due to drawing order
+- fix: slab top and bottom faces illumination
+- fix: skin transition speed by delta time chore: update base method signature
+- chore: explicit declaration
+- fix: alpha correction
+- fix: gravity after flying
+- chore: updates version
+- chore: updates CHANGELOG
+
 # v0.83.120-pre-alpha 07/03/2024
 
 - chore: update how chunks to load are sorted and calcuated
