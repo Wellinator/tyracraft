@@ -7,7 +7,6 @@
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/clipping_manager.hpp"
-// #include "3libs/re-clipper/clipper.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
