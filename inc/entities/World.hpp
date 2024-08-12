@@ -150,7 +150,11 @@ class World {
   };
 
   inline u8 canBuildChunk() {
+#ifdef DEBUG_MODE
     return (get_used_memory() >> 20) < MAX_SAFE_MEMORY_ALLOCATION;
+#else
+    return true;
+#endif  // end if DEBUG_MODE
   };
 
   inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };

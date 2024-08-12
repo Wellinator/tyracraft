@@ -14,7 +14,9 @@ TyraCraftGame::TyraCraftGame(Engine* t_engine)
     : camera(engine->renderer.core.getSettings()),
       stateManager(t_engine, &camera) {
   engine = t_engine;
+#ifdef DEBUG_MODE
   init_memory_manager();
+#endif
 }
 
 TyraCraftGame::~TyraCraftGame() {}

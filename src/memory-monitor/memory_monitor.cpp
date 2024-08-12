@@ -1,4 +1,6 @@
 
+#ifdef DEBUG_MODE
+
 #include <reent.h>
 #include <kernel.h>
 #include <malloc.h>
@@ -68,7 +70,6 @@ void free(void* ptr) {
 void init_memory_manager() {
   prog_mem.binary_size = (unsigned long)&_end - (unsigned long)&__start;
   prog_mem.stack_size = 0x20000;
-  
 }
 
 size_t get_binary_size() { return prog_mem.binary_size; }
@@ -77,3 +78,5 @@ size_t get_stack_size() { return prog_mem.stack_size; }
 size_t get_used_memory() {
   return prog_mem.stack_size + prog_mem.allocs_size + prog_mem.binary_size;
 }
+
+#endif //end if DEBUG_MODE
