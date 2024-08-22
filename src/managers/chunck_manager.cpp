@@ -58,17 +58,12 @@ void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
       }
     }
   }
-
-  if (isTimeToUpdateLight) {
-    isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
-    if (isTimeToUpdateLight) reloadLightDataAsync();
-  }
 }
 
 void ChunckManager::tick() {
   if (isTicksCounterAt(10)) {
-    isTimeToUpdateLight = chuncksToUpdateLight.empty() == false;
-    if (isTimeToUpdateLight) reloadLightDataAsync();
+    // Is Time To Update Light?
+    if (chuncksToUpdateLight.empty() == false) reloadLightDataAsync();
   }
 }
 

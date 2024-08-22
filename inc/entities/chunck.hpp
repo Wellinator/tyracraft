@@ -99,6 +99,10 @@ class Chunck {
   void removeBlockByLocalIndex(u16 index);
   void removeBlockByPosition(Vec4* position);
 
+  inline bool isPerformingAsyncTask(){
+    return _isPerformingAsyncTask;
+  };
+
   u8 containsBlock(Vec4* offset);
 
   CoreBBoxFrustum frustumCheck = CoreBBoxFrustum::OUTSIDE_FRUSTUM;
@@ -170,6 +174,7 @@ class Chunck {
   u8 _isMemoryReserved = false;
   u8 _loaderBatchCounter = 0;
   u8 _unloaderBatchCounter = 0;
+  u8 _isPerformingAsyncTask = 0;
 
   Vec4 camPositon = Vec4(0, 0, 0);
   s8 _distanceFromPlayerInChunks = -1;

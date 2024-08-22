@@ -194,8 +194,8 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
     // 0));
-    renderPartialBlockDrawData(t_renderer, false, stapip, t_blockManager, inVertices,
-                               inUVMap, inColors);
+    renderPartialBlockDrawData(t_renderer, false, stapip, t_blockManager,
+                               inVertices, inUVMap, inColors);
   }
 }
 
@@ -229,18 +229,15 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(0, 0,
     // 255));
-    renderPartialBlockDrawData(t_renderer, true, stapip, t_blockManager, inVertices,
-                               inUVMap, inColors);
+    renderPartialBlockDrawData(t_renderer, true, stapip, t_blockManager,
+                               inVertices, inUVMap, inColors);
   }
 }
 
-void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
-                                        u8 hasTransparency,
-                                        StaticPipeline* stapip,
-                                        BlockManager* t_blockManager,
-                                        std::vector<Vec4>& in_vertex,
-                                        std::vector<Vec4>& in_uv,
-                                        std::vector<Color>& in_colors) {
+void Chunck::renderPartialBlockDrawData(
+    Renderer* t_renderer, u8 hasTransparency, StaticPipeline* stapip,
+    BlockManager* t_blockManager, std::vector<Vec4>& in_vertex,
+    std::vector<Vec4>& in_uv, std::vector<Color>& in_colors) {
   StaPipTextureBag textureBag;
   StaPipInfoBag infoBag;
   StaPipColorBag colorBag;
@@ -317,6 +314,7 @@ void Chunck::clear() {
 }
 
 void Chunck::clearAsync() {
+  _isPerformingAsyncTask = true;
   size_t counter = 0;
   for (size_t i = _unloaderBatchCounter; i < blocks.size(); i++) {
     g_AABBTree->remove(blocks[i]->tree_index);
@@ -344,6 +342,7 @@ void Chunck::clearAsync() {
   _unloaderBatchCounter = 0;
 
   state = ChunkState::Clean;
+  _isPerformingAsyncTask = false;
 }
 
 // void Chunck::updateBlocks(const Vec4& playerPosition) {}
@@ -387,6 +386,8 @@ void Chunck::clearDrawDataWithoutShrink() {
 }
 
 void Chunck::loadDrawDataWithoutSorting() {
+  if (_isPerformingAsyncTask == true) return;
+  
   vertices.reserve(visibleFacesCount);
   verticesColors.reserve(visibleFacesCount);
   uvMap.reserve(visibleFacesCount);
@@ -439,6 +440,8 @@ void Chunck::loadDrawDataAsync() {
     _isMemoryReserved = true;
   }
 
+  _isPerformingAsyncTask = true;
+
   size_t counter = 0;
   for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
@@ -467,12 +470,15 @@ void Chunck::loadDrawDataAsync() {
   }
 
   _isDrawDataLoaded = true;
+  _isPerformingAsyncTask = false;
   _loaderBatchCounter = 0;
 }
 
 void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }
 
 void Chunck::reloadLightData() {
+  if (_isPerformingAsyncTask == true) return;
+
   verticesColors.clear();
   verticesColorsWithTransparency.clear();
 
