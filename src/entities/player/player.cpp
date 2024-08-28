@@ -337,11 +337,11 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
           Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      if (updatePosition(deltaTime, moveOnXOnly, 1)) return true;
+      if (updatePosition(deltaTime, moveOnXOnly, true)) return true;
 
       Vec4 moveOnZOnly =
           Vec4(currentPlayerPos.x, currentPlayerPos.y, nextPlayerPos.z);
-      if (updatePosition(deltaTime, moveOnZOnly, 1)) return true;
+      if (updatePosition(deltaTime, moveOnZOnly, true)) return true;
 
       return false;
     }
