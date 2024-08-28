@@ -57,11 +57,13 @@ void CreativePlayingState::tick() {
 void CreativePlayingState::render() {
   stateGamePlay->world->dayNightCycleManager.render();
   stateGamePlay->world->cloudsManager.render();
-  stateGamePlay->world->mobManager.render();
   stateGamePlay->world->renderOpaque();
-  stateGamePlay->world->renderTransparent();
-  // stateGamePlay->world->renderBlockDamageOverlay();
+  stateGamePlay->world->mobManager.render();
   stateGamePlay->player->render();
+
+  stateGamePlay->world->renderTransparent();
+  stateGamePlay->world->renderBlockDamageOverlay();
+
   stateGamePlay->world->particlesManager.render();
   renderCreativeUi();
 
