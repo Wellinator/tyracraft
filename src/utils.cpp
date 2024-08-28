@@ -125,6 +125,19 @@ void Utils::GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
   resultMin->set(BMin - aDimensions);
 }
 
+void Utils::GetMinkowskiDifference(const Vec4& AMin, const Vec4& AMax,
+                                   const Vec4& BMin, const Vec4& BMax,
+                                   Vec4* resultMin, Vec4* resultMax) {
+  const Vec4 ACenter = ((AMax - AMin) / 2) + AMin;
+  const Vec4 BCenter = ((BMax - BMin) / 2) + BMin;
+
+  const Vec4 center = ACenter - BCenter;
+  const float halfSize = AMin.distanceTo(ACenter) + BMin.distanceTo(BCenter);
+
+  resultMin->set(center - halfSize);
+  resultMax->set(center + halfSize);
+}
+
 Vec4 Utils::GetNormalFromHitPosition(const Vec4& intersection,
                                      const Vec4& boxMin, const Vec4& boxMax) {
   Vec4 normal = Vec4(0, 0, 0);
@@ -209,7 +222,7 @@ CoreBBoxFrustum Utils::FrustumTriangleIntersect(const Plane* frustumPlanes,
                                                 const Vec4& v0, const Vec4& v1,
                                                 const Vec4& v2) {
   // inside counters
-  u8 A, B, C;
+  u8 A = 0, B = 0, C = 0;
 
   for (u8 i = 0; i < 4; i++) {
     if (frustumPlanes[i].distanceTo(v0) >= 0) A++;
@@ -315,4 +328,104 @@ void Utils::inverseMatrix(M4x4* mOut, const M4x4* mIn) {
       "sqc2         $vf4, 0x30(%0) \n\t"
       :
       : "r"(mOut->data), "r"(mIn->data));
+}
+
+void Utils::CalculateOverlappingVolume(Vec4* AMin, Vec4* AMax, Vec4* BMin,
+                                       Vec4* BMax, Vec4* penetrationVector) {
+  // Reset the nenetration vec
+  penetrationVector->set(Vec4(0.0f, 0.0f, 0.0f));
+
+  // // Calculate the overlap on each axis
+  // float overlapX = std::min(AMax->x, BMax->x) - std::max(AMin->x, BMin->x);
+  // float overlapY = std::min(AMax->y, BMax->y) - std::max(AMin->y, BMin->y);
+  // float overlapZ = std::min(AMax->z, BMax->z) - std::max(AMin->z, BMin->z);
+
+  // // If there's no overlap on any axis, there is no collision
+  // if (overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) {
+  //   penetrationVector->set(Vec4(0.0f, 0.0f, 0.0f));
+  //   return false;  // No penetration
+  // }
+
+  float min_dist = fabsf(BMin->x);
+
+  penetrationVector->x = BMin->x;
+  penetrationVector->y = 0;
+  penetrationVector->z = 0;
+
+  // Check the X dimension
+  if (fabsf(BMax->x) < min_dist) {
+    min_dist = fabsf(BMax->x);
+    penetrationVector->x = BMax->x;
+  }
+
+  // // Check the Y dimension
+  // if (fabsf(BMin->y) < min_dist) {
+  //   min_dist = fabsf(BMin->y);
+  //   penetrationVector->x = 0;
+  //   penetrationVector->y = BMin->y;
+  //   penetrationVector->z = 0;
+  // }
+
+  // if (fabsf(BMax->y) < min_dist) {
+  //   min_dist = fabsf(BMax->y);
+  //   penetrationVector->x = 0;
+  //   penetrationVector->y = BMax->y;
+  //   penetrationVector->z = 0;
+  // }
+
+  // Check the Z dimension
+  if (fabsf(BMin->z) < min_dist) {
+    min_dist = fabsf(BMin->z);
+    penetrationVector->x = 0;
+    penetrationVector->y = 0;
+    penetrationVector->z = BMin->z;
+  }
+
+  if (fabsf(BMax->z) < min_dist) {
+    penetrationVector->x = 0;
+    penetrationVector->y = 0;
+    penetrationVector->z = BMax->z;
+  }
+
+  // return true;
+
+  // // Find the smallest overlap to determine the penetration direction
+  // if (overlapX < overlapY && overlapX < overlapZ) {
+  //   // Penetration is along the X-axis
+  //   penetrationVector->set(
+  //       Vec4(AMin->x < BMin->x ? overlapX : -overlapX, 0, 0));
+  // } else if (overlapY < overlapX && overlapY < overlapZ) {
+  //   // Penetration is along the Y-axis
+  //   penetrationVector->set(
+  //       Vec4(0, AMin->y < BMin->y ? overlapY : -overlapY, 0));
+  // } else {
+  //   // Penetration is along the Z-axis
+  //   penetrationVector->set(
+  //       Vec4(0, 0, AMin->z < BMin->z ? overlapZ : -overlapZ));
+  // }
+
+  // Determine the penetration vector by taking the minimum overlap on each axis
+  // if (overlapX < overlapY && overlapX < overlapZ) {
+  //   penetrationVector->x = AMin->x < BMin->x ? overlapX : -overlapX;
+  // }
+  // if (overlapY < overlapX && overlapY < overlapZ) {
+  //   penetrationVector->y = AMin->y < BMin->y ? overlapY : -overlapY;
+  // }
+  // if (overlapZ < overlapX && overlapZ < overlapY) {
+  //   penetrationVector->z = AMin->z < BMin->z ? overlapZ : -overlapZ;
+  // }
+
+  // If the overlap is similar on multiple axes, include them in the penetration
+  // vector
+  // if (penetrationVector->x == 0) {
+  //   penetrationVector->x = AMin->x < BMin->x ? overlapX : -overlapX;
+  // }
+  // if (penetrationVector->y == 0) {
+  //   penetrationVector->y = AMin->y < BMin->y ? overlapY : -overlapY;
+  // }
+  // if (penetrationVector->z == 0) {
+  //   penetrationVector->z = AMin->z < BMin->z ? overlapZ : -overlapZ;
+  // }
+
+  // return true;
 }

@@ -85,6 +85,9 @@ class Utils {
   static void GetMinkowskiSum(const Vec4& AMin, const Vec4& AMax,
                               const Vec4& BMin, const Vec4& BMax,
                               Vec4* resultMin, Vec4* resultMax);
+  static void GetMinkowskiDifference(const Vec4& AMin, const Vec4& AMax,
+                                     const Vec4& BMin, const Vec4& BMax,
+                                     Vec4* resultMin, Vec4* resultMax);
 
   static CoreBBoxFrustum FrustumAABBIntersect(const Plane* frustumPlanes,
                                               const BBox& AABB);
@@ -134,4 +137,7 @@ class Utils {
   static float Abs(const float x);
 
   static void inverseMatrix(M4x4* mOut, const M4x4* mIn);
+
+  static void CalculateOverlappingVolume(Vec4* AMin, Vec4* AMax, Vec4* BMin,
+                                         Vec4* BMax, Vec4* penetrationVector);
 };
