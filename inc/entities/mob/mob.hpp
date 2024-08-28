@@ -4,6 +4,7 @@
 #include "constants.hpp"
 #include "entities/entity.hpp"
 #include "entities/level.hpp"
+#include "3libs/bvh/bvh.h"
 #include <memory>
 
 using Tyra::DynamicMesh;
@@ -11,15 +12,23 @@ using Tyra::DynamicMesh;
 class Mob : public Entity {
  public:
   Mob(const MobCategory mobCategory, const MobType mobType)
-      : Entity(EntityType::Mob), category(mobCategory), type(mobType){};
+      : Entity(EntityType::Mob), category(mobCategory), type(mobType) {
+    t_near_entities = new std::vector<bvh::index_t>();
+  };
 
-  virtual ~Mob(){};
+  virtual ~Mob() {
+    t_near_entities->clear();
+    t_near_entities->shrink_to_fit();
+    delete t_near_entities;
+  };
 
   virtual void update(const float& deltaTime, const Vec4& movementDir,
                       LevelMap* t_terrain) = 0;
   virtual void render() = 0;
 
   virtual BBox getHitBox() const = 0;
+  virtual BBox getHitBox(Vec4* t_min = nullptr,
+                         Vec4* t_max = nullptr) const = 0;
 
   void setPosition(const Vec4& pos) {
     position.set(pos);
@@ -31,7 +40,7 @@ class Mob : public Entity {
   const MobType type;
 
   /** Mod id */
-  const uint32_t id = std::rand() % 999999;
+  const uint32_t id = rand() % 999999;
 
   /** Mob mesh data */
   DynamicMesh* mesh;
@@ -44,4 +53,5 @@ class Mob : public Entity {
 
   u8 shouldUnspawn = false;
   u8 isCollidable = true;
+  std::vector<bvh::index_t>* t_near_entities = nullptr;
 };

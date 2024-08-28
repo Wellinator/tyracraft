@@ -67,13 +67,8 @@ class Pig : public PassiveMob {
   Entity* underEntity = nullptr;
   Entity* overEntity = nullptr;
 
-  BBox getHitBox() const {
-    const auto rawAABB = mesh->getCurrentBoundingBox();
-    const auto Obb = rawAABB.getTransformed(mesh->getModelMatrix());
-    const auto aabb = BBox(Obb.vertices, Obb.getVertexCount());
-
-    return aabb;
-  };
+  BBox getHitBox() const { return getHitBox(nullptr, nullptr); };
+  BBox getHitBox(Vec4* t_min, Vec4* t_max) const;
 
   Renderer* t_renderer;
 
@@ -95,9 +90,9 @@ class Pig : public PassiveMob {
   bool isWalkingAnimationSet, isStandStillAnimationSet;
 
   // Forces values
-  float acceleration = 80.0F;
-  float speed = 0;
-  float maxSpeed = 20.0F;
+  const float acceleration = 80.0F;
+  const float maxSpeed = 20.0F;
+  float speed = 0.0F;
 
   void updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
                                            Vec4* minEntityPos,

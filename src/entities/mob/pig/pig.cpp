@@ -31,6 +31,7 @@ Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager,
   isStandStillAnimationSet = false;
 
   isOnGround = true;
+  isCollidable = true;
 }
 
 Pig::~Pig() {
@@ -72,20 +73,29 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     }
   }
 
+  isMoving = movementDir.length() > 0;
+
+  if (isMoving) {
+    // TODO: add direction
+    // Update mesh rotation; This routine do not change the hitbox
+    mesh->rotation.identity();
+    float revTheta =
+        Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
+    mesh->rotation.rotateY(revTheta);
+  }
+
   Vec4 min, max;
-  BBox currentBbox = getHitBox();
-  currentBbox.getMinMax(&min, &max);
+  BBox tempBBox = getHitBox(&min, &max);
 
   // Update updateStateInWater every 5 ticks
   // if (isTicksCounterAt(5)) updateStateInWater(t_terrain, &min, &max);
 
-  isMoving = movementDir.length() > 0;
-
   if (isMoving) {
     Vec4 nextPosition = getNextPosition(deltaTime, movementDir);
+
     if (nextPosition.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
       const bool hasChangedPosition =
-          updatePosition(deltaTime, nextPosition, &currentBbox, &min, &max);
+          updatePosition(deltaTime, nextPosition, &tempBBox, &min, &max);
 
       if (hasChangedPosition) {
         if (isWalkingAnimationSet)
@@ -136,15 +146,13 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
     }
   }
 
-  // TODO: add direction
-  mesh->rotation.identity();
-  float revTheta =
-      Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
-  mesh->rotation.rotateY(revTheta);
-
   updateTerrainHeightAtEntityPosition(position, &min, &max);
   const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
-  updateGravity(nextYPos, &currentBbox, &min, &max);
+  updateGravity(nextYPos, &tempBBox, &min, &max);
+
+  // Update entity bbox
+  delete bbox;
+  bbox = new BBox(tempBBox);
 
   mesh->getPosition()->set(position);
   mesh->update();
@@ -163,7 +171,7 @@ Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
     if (speed < _maxSpeed) speed = _maxSpeed;
   }
 
-  Vec4 _direction = direction * Vec4(1, 0, 1);
+  Vec4 _direction = Vec4(direction.x, 0.0F, direction.z);
   Vec4 result = _direction * (speed * deltaTime);
 
   if (_isOnWater) {
@@ -200,7 +208,7 @@ void Pig::updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
     return;
   }
 
-  const float enityHeight = Utils::Abs(bbox->getHeight());
+  const float enityHeight = Utils::Abs(DUBLE_BLOCK_SIZE * 0.9F);
 
   if (newPosition.y < terrainHeight.minHeight) {
     newPosition.y = terrainHeight.minHeight;
@@ -225,27 +233,53 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
   Vec4 rayOrigin = ((*entityMax - *entityMin) / 2) + *entityMin;
   Vec4 rayDir = (nextPosition - currentPos).getNormalized();
 
+  Ray ray;
   float finalHitDistance = -1.0f;
   float tempHitDistance = -1.0f;
   const float maxCollidableDistance = currentPos.distanceTo(nextPosition);
 
+  // Broad phase
+  // std::vector<index_t> ni;
+
   // Prepate the raycast
   const Vec4 segmentStart = rayOrigin;
-  const Vec4 segmentEnd = (rayDir * (maxCollidableDistance * 2)) + rayOrigin;
+  const Vec4 segmentEnd = (rayDir * (maxCollidableDistance)) + rayOrigin;
 
-  // Broad phase
-  std::vector<index_t> ni;
-  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
+  t_near_entities->clear();
+  g_AABBTree->intersectLine(segmentStart, segmentEnd, *t_near_entities);
+  t_near_entities->shrink_to_fit();
 
-  for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+  bvh::AABB tempAABB = bvh::AABB();
+  tempAABB.minx = entityMin->x;
+  tempAABB.miny = entityMin->y;
+  tempAABB.minz = entityMin->z;
+  tempAABB.maxx = entityMax->x;
+  tempAABB.maxy = entityMax->y;
+  tempAABB.maxz = entityMax->z;
+
+  // t_near_entities->clear();
+  // g_AABBTree->find_overlaps(tempAABB, *t_near_entities);
+  // t_near_entities->shrink_to_fit();
+
+  t_renderer->renderer3D.utility.drawLine(segmentStart, segmentEnd,
+                                          Color(255, 0, 0));
+
+  for (u16 i = 0; i < t_near_entities->size(); i++) {
+    Entity* entity =
+        reinterpret_cast<Entity*>(g_AABBTree->user_data((*t_near_entities)[i]));
+    if (!entity) {
+      TYRA_TRAP("Invalit entity!");
+      return false;
+    };
+
     if (!entity->isCollidable) continue;
 
     if (entityBB->getBottomFace().axisPosition >= entity->maxCorner.y ||
         entityBB->getTopFace().axisPosition < entity->minCorner.y)
       continue;
 
-    const Ray ray = Ray(rayOrigin, rayDir);
+    ray.origin.set(rayOrigin);
+    ray.direction.set(rayDir);
 
     Vec4 tempInflatedMin;
     Vec4 tempInflatedMax;
@@ -255,7 +289,7 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
 
     if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
       // Is horizontally collidable?
-      if (tempHitDistance > maxCollidableDistance) continue;
+      // if (tempHitDistance > maxCollidableDistance) continue;
 
       if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
         finalHitDistance = tempHitDistance;
@@ -265,7 +299,7 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
 
   // Will collide somewhere?
   if (finalHitDistance > -1.0f) {
-    const float timeToHit = finalHitDistance / this->speed;
+    const double timeToHit = finalHitDistance / speed;
 
     // Will collide this frame;
     if (timeToHit < deltaTime ||
@@ -274,21 +308,21 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
 
       // Try to move in separated axis;
       Vec4 moveOnXOnly = Vec4(nextPosition.x, currentPos.y, currentPos.z);
-      if (updatePosition(deltaTime, moveOnXOnly, entityBB, entityMin, entityMax,
-                         1))
-        return true;
-
       Vec4 moveOnZOnly = Vec4(currentPos.x, currentPos.y, nextPosition.z);
-      if (updatePosition(deltaTime, moveOnZOnly, entityBB, entityMin, entityMax,
-                         1))
-        return true;
 
-      return false;
+      return updatePosition(deltaTime, moveOnXOnly, entityBB, entityMin,
+                            entityMax, true) ||
+             updatePosition(deltaTime, moveOnZOnly, entityBB, entityMin,
+                            entityMax, true);
     }
   }
 
   // Apply new position;
   position.set(nextPosition);
+
+  // Update the aabb in the bvh tree
+  g_AABBTree->move(tree_index, tempAABB);
+
   return true;
 }
 
@@ -307,8 +341,10 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
   std::vector<int32_t> ni;
   g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
+  // TYRA_LOG("ni: ", (int)ni.size());
+
   for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    Entity* entity = reinterpret_cast<Entity*>(g_AABBTree->user_data(ni[i]));
     if (!entity->isCollidable) continue;
 
     // is under or above block
@@ -347,23 +383,10 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
 }
 
 void Pig::loadStaticBBox() {
-  const float width = DUBLE_BLOCK_SIZE * 0.7F;
-  const float depth = DUBLE_BLOCK_SIZE * 0.5F;
-  const float height = DUBLE_BLOCK_SIZE;
+  if (bbox) delete bbox;
 
-  Vec4 minCorner = Vec4(-width, 0, -depth);
-  Vec4 maxCorner = Vec4(width, height, depth);
-
-  Vec4 vertices[8] = {Vec4(minCorner),
-                      Vec4(maxCorner.x, minCorner.y, minCorner.z),
-                      Vec4(minCorner.x, maxCorner.y, minCorner.z),
-                      Vec4(minCorner.x, minCorner.y, maxCorner.z),
-                      Vec4(maxCorner),
-                      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
-                      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
-                      Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
-
-  bbox = new BBox(vertices, 8);
+  Vec4 minCorner, maxCorner;
+  bbox = new BBox(getHitBox(&minCorner, &maxCorner));
 
   bvh::AABB blockAABB = bvh::AABB();
   blockAABB.minx = minCorner.x;
@@ -374,6 +397,29 @@ void Pig::loadStaticBBox() {
   blockAABB.maxz = maxCorner.z;
   tree_index = g_AABBTree->insert(blockAABB, this);
 }
+
+BBox Pig::getHitBox(Vec4* t_min, Vec4* t_max) const {
+  // It's a sqr save value for Width, Depth and Height
+  const float size = DUBLE_BLOCK_SIZE * 0.9F;
+  const float halfSize = (DUBLE_BLOCK_SIZE * 0.9F) / 2;
+
+  Vec4 minCorner = Vec4(-halfSize, 0, -halfSize) + position;
+  Vec4 maxCorner = Vec4(halfSize, size, halfSize) + position;
+
+  if (t_min) t_min->set(minCorner);
+  if (t_max) t_max->set(maxCorner);
+
+  Vec4 vertices[8] = {Vec4(minCorner),
+                      Vec4(maxCorner.x, minCorner.y, minCorner.z),
+                      Vec4(minCorner.x, maxCorner.y, minCorner.z),
+                      Vec4(minCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner),
+                      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
+
+  return BBox(vertices, 8);
+};
 
 void Pig::jump() {
   velocity += lift;

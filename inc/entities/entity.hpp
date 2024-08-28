@@ -38,6 +38,7 @@ class Entity {
   Vec4 velocity = Vec4(0, 0, 0);
   Vec4 minCorner, maxCorner;
 
+  // Check for details https://minecraft.fandom.com/wiki/Hitbox
   BBox* bbox = nullptr;
 
   u8 isCollidable = false;

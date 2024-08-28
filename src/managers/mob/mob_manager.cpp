@@ -85,6 +85,20 @@ void MobManager::render() {
   for (size_t i = 0; i < mobs.size(); i++) {
     if (mobs[i] && !mobs[i]->shouldUnspawn) {
       dynpip.render(mobs[i]->mesh, &dynpipOptions);
+
+#ifdef DEBUG_MODE
+      t_renderer->renderer3D.utility.drawBBox(*mobs[i]->bbox, Color(0, 255, 0));
+
+      for (u16 j = 0; j < mobs[i]->t_near_entities->size(); j++) {
+        Entity* entity = reinterpret_cast<Entity*>(
+            g_AABBTree->user_data((*mobs[i]->t_near_entities)[j]));
+
+        if (entity->tree_index == mobs[i]->tree_index) continue;
+
+        t_renderer->renderer3D.utility.drawBBox(*entity->bbox,
+                                                Color(255, 0, 0));
+      }
+#endif
     }
   }
 }
