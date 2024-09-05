@@ -28,11 +28,11 @@ void WaterMeshBuilder_GenerateMesh(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain);
+                                   Level* pLevel);
 
 void WaterMeshBuilder_loadMeshData(Block* t_block,
                                    std::vector<Vec4>* t_vertices,
-                                   LevelMap* t_terrain);
+                                   Level* pLevel);
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -54,7 +54,7 @@ void WaterMeshBuilder_loadUVFaceData(const u8& index,
 void WaterMeshBuilder_loadLightData(Block* t_block,
                                     std::vector<Color>* t_vertices_colors,
                                     WorldLightModel* t_worldLightModel,
-                                    LevelMap* t_terrain);
+                                    Level* pLevel);
 
 void WaterMeshBuilder_loadLightFaceData(Color* faceColor,
                                         std::vector<Color>* t_vertices_colors);
@@ -65,4 +65,4 @@ void WaterMeshBuilder_loadLightFaceDataWithAO(
 bool WaterMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> WaterMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                      Block* block,
-                                                     LevelMap* t_terrain);
+                                                     Level* pLevel);

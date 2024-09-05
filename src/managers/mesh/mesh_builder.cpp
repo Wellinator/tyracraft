@@ -9,15 +9,15 @@
 #include "managers/block/vertex_block_data.hpp"
 
 std::map<Blocks,
-         std::function<void(
-             Block* t_block, std::vector<Vec4>* t_vertices,
-             std::vector<Color>* t_vertices_colors, std::vector<Vec4>* t_uv_map,
-             WorldLightModel* t_worldLightModel, LevelMap* t_terrain)>>
+         std::function<void(Block* t_block, std::vector<Vec4>* t_vertices,
+                            std::vector<Color>* t_vertices_colors,
+                            std::vector<Vec4>* t_uv_map,
+                            WorldLightModel* t_worldLightModel, Level* pLevel)>>
     builders;
 
 std::map<Blocks, std::function<void(
                      Block* t_block, std::vector<Color>* t_vertices_colors,
-                     WorldLightModel* t_worldLightModel, LevelMap* t_terrain)>>
+                     WorldLightModel* t_worldLightModel, Level* pLevel)>>
     light_builders;
 
 void MeshBuilder_RegisterBuilders() {
@@ -162,16 +162,15 @@ void MeshBuilder_UnregisterBuilders() {
 void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                            std::vector<Color>* t_vertices_colors,
                            std::vector<Vec4>* t_uv_map,
-                           WorldLightModel* t_worldLightModel,
-                           LevelMap* t_terrain) {
+                           WorldLightModel* t_worldLightModel, Level* pLevel) {
   builders[t_block->type](t_block, t_vertices, t_vertices_colors, t_uv_map,
-                          t_worldLightModel, t_terrain);
+                          t_worldLightModel, pLevel);
 }
 
 void MeshBuilder_BuildLightData(Block* t_block,
                                 std::vector<Color>* t_vertices_colors,
                                 WorldLightModel* t_worldLightModel,
-                                LevelMap* t_terrain) {
+                                Level* pLevel) {
   light_builders[t_block->type](t_block, t_vertices_colors, t_worldLightModel,
-                                t_terrain);
+                                pLevel);
 }

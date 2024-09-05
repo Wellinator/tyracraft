@@ -6,7 +6,7 @@ using Tyra::BBox;
 using Tyra::M4x4;
 using Tyra::McpipBlock;
 
-Block::Block(BlockInfo* blockInfo) : Entity(EntityType::Block) {
+Block::Block(BlockInfo* blockInfo) : Entity(nullptr, EntityType::Block) {
   type = static_cast<Blocks>(blockInfo->blockId);
   isBreakable = blockInfo->_isBreakable;
   isCollidable = blockInfo->_isCollidable;

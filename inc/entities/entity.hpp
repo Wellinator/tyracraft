@@ -1,6 +1,7 @@
 #pragma once
 
 #include "constants.hpp"
+#include "entities/level.hpp"
 #include <cstdint>
 #include <tyra>
 
@@ -9,23 +10,31 @@ using Tyra::Vec4;
 
 class Entity {
  public:
-  Entity(const EntityType type) : entity_type(type){};
-
-  Entity(const EntityType type, const Vec4 position, BBox* bbox)
-      : entity_type(type) {
-    this->position.set(position);
-    this->bbox = bbox;
-    this->bbox->getMinMax(&minCorner, &maxCorner);
+  Entity(Level* level, const EntityType type) : entity_type(type) {
+    pLevel = level;
   };
 
-  Entity(const EntityType type, const Vec4 position, BBox* bbox, const Vec4 min,
-         const Vec4 max)
-      : entity_type(type) {
-    this->position.set(position);
-    this->minCorner.set(min);
-    this->maxCorner.set(max);
-    this->bbox = bbox;
-  };
+  // Entity(Level* level, const EntityType type, const Vec4 position, BBox*
+  // bbox)
+  //     : entity_type(type) {
+  //   pLevel = level;
+  //   this->position.set(position);
+  //   this->bbox = bbox;
+  //   this->bbox->getMinMax(&minCorner, &maxCorner);
+  // };
+
+  // Entity(Level* level, const EntityType type, const Vec4 position, BBox*
+  // bbox,
+  //        const Vec4 min, const Vec4 max)
+  //     : entity_type(type) {
+  //   pLevel = level;
+  //   this->position.set(position);
+  //   this->minCorner.set(min);
+  //   this->maxCorner.set(max);
+  //   this->bbox = bbox;
+  // };
+
+  Level* pLevel;
 
   virtual ~Entity(){};
 

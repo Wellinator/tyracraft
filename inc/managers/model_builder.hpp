@@ -10,10 +10,10 @@
 using Tyra::M4x4;
 using Tyra::Vec4;
 
-void ModelBuilder_BuildModel(Block* t_block, LevelMap* t_terrain);
+void ModelBuilder_BuildModel(Block* t_block, Level* pLevel);
 
-void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain);
+void ModelBuilder_DefaultModel(Block* t_block, Level* pLevel);
 
 void ModelBuilder_NoRotationModel(Block* t_block);
 
-void ModelBuilder_TorchModel(Block* t_block, LevelMap* t_terrain);
+void ModelBuilder_TorchModel(Block* t_block, Level* pLevel);

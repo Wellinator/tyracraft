@@ -27,10 +27,10 @@ void LavaMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
-                                  LevelMap* t_terrain);
+                                  Level* pLevel);
 
 void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  LevelMap* t_terrain);
+                                  Level* pLevel);
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -50,7 +50,7 @@ void LavaMeshBuilder_loadUVFaceData(const u8& index,
 void LavaMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain);
+                                   Level* pLevel);
 
 void LavaMeshBuilder_loadLightFaceData(Color* faceColor,
                                        std::vector<Color>* t_vertices_colors);
@@ -61,4 +61,4 @@ void LavaMeshBuilder_loadLightFaceDataWithAO(
 bool LavaMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> LavaMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                     Block* block,
-                                                    LevelMap* t_terrain);
+                                                    Level* pLevel);

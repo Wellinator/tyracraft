@@ -6,7 +6,7 @@ StateLoadMazeCraft::StateLoadMazeCraft(Context* t_context,
     : GameState(t_context), saveFileFullPath(save_file_full_path) {
   worldOptions =
       SaveManager::GetNewGameOptionsFromSaveFile(save_file_full_path.c_str());
-  stateGamePlay = new StateGamePlay(context, GameMode::Maze );
+  stateGamePlay = new StateGamePlay(context, GameMode::Maze);
   init();
 }
 
@@ -23,8 +23,8 @@ void StateLoadMazeCraft::init() {
   this->BASE_HEIGHT = height - 120;
 
   // Background
-  std::string backgroundTex =
-      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/loading_background.png");
+  std::string backgroundTex = FileUtils::fromCwd(
+      "textures/gui/mini_game/mazecraft/loading_background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -33,8 +33,8 @@ void StateLoadMazeCraft::init() {
       ->addLink(background->id);
 
   // Loading slot
-  std::string loadingSlotTex =
-      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/empty_loading_bar.png");
+  std::string loadingSlotTex = FileUtils::fromCwd(
+      "textures/gui/mini_game/mazecraft/empty_loading_bar.png");
   loadingSlot = new Sprite;
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
@@ -106,12 +106,12 @@ void StateLoadMazeCraft::unload() {
 }
 
 void StateLoadMazeCraft::createEntities() {
-  this->stateGamePlay->world = new World(*worldOptions);
+  this->stateGamePlay->world = new World(*worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
   this->stateGamePlay->player = new Player(
-      &this->context->t_engine->renderer, this->context->t_soundManager,
-      &this->stateGamePlay->world->blockManager,
+      stateGamePlay->plevel, &this->context->t_engine->renderer,
+      this->context->t_soundManager, &this->stateGamePlay->world->blockManager,
       this->stateGamePlay->itemRepository,
       this->stateGamePlay->world->getWorldLightModel());
   this->stateGamePlay->ui = new Ui();

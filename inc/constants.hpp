@@ -353,9 +353,9 @@ enum class EntityType {
 
 enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
-enum class MobCategory { Passive, Neutral, Hostile };
+enum class MobCategory { Passive, Neutral, Hostile, Invalid };
 
-enum class MobType { Pig };
+enum class MobType { Pig, Invalid };
 
 enum class PaticleType { Block };
 

@@ -15,7 +15,7 @@
 #include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/chunck.hpp"
-#include "entities/mob/passiveMob.hpp"
+#include "entities/mob/mob.hpp"
 #include <tamtypes.h>
 #include <array>
 #include "managers/chunck_manager.hpp"
@@ -47,15 +47,14 @@ using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Pig 3D object class  */
-class Pig : public PassiveMob {
+class Pig : public Mob {
  public:
-  Pig(Renderer* t_renderer, SoundManager* t_soundManager,
+  Pig(Level* level, Renderer* t_renderer, SoundManager* t_soundManager,
       ChunckManager* t_chunkManager, Texture* pigTexture,
       DynamicMesh* baseMesh);
   ~Pig();
 
-  void update(const float& deltaTime, const Vec4& movementDir,
-              LevelMap* t_terrain);
+  void update(const float& deltaTime, const Vec4& movementDir);
   void render(){};
 
   inline Vec4* getPosition() { return mesh->getPosition(); };
@@ -70,6 +69,7 @@ class Pig : public PassiveMob {
   BBox getHitBox() const { return getHitBox(nullptr, nullptr); };
   BBox getHitBox(Vec4* t_min, Vec4* t_max) const;
 
+  Level* pLevel;
   Renderer* t_renderer;
 
   void setWalkingAnimation();
@@ -79,6 +79,13 @@ class Pig : public PassiveMob {
   void swim();
 
   bool isOnWater();
+
+  // Override
+  /** Mob category */
+  virtual MobCategory getCategory() override;
+
+  /** Mob type */
+  virtual MobType getType() override;
 
  private:
   Vec4 getNextPosition(const float& deltaTime, const Vec4& direction);
@@ -132,5 +139,5 @@ class Pig : public PassiveMob {
   std::vector<u32> walkSequence = {1, 2};
 
   u8 _isOnWater;
-  void updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max);
+  void updateStateInWater(Vec4* min, Vec4* max);
 };

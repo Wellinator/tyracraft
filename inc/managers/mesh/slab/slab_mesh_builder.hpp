@@ -25,10 +25,10 @@ void SlabMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
-                                  LevelMap* t_terrain);
+                                  Level* pLevel);
 
 void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  LevelMap* t_terrain);
+                                  Level* pLevel);
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadSideUVFaceData(const u8& index,
                                         std::vector<Vec4>* t_uv_map);
@@ -37,7 +37,7 @@ void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
 void SlabMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain);
+                                   Level* pLevel);
 
 /**
  * @brief Return an array with the correct face by rotation
@@ -46,8 +46,8 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
  * This is the sequence of the array: [ left, front, back, right]
  *
  */
-std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(
-    Block* t_block, LevelMap* t_terrain);
+std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(Block* t_block,
+                                                           Level* pLevel);
 
 void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
                                        std::vector<Color>* t_vertices_colors);
@@ -58,8 +58,8 @@ void SlabMeshBuilder_loadLightFaceDataWithAO(
 bool SlabMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> SlabMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                     Block* block,
-                                                    LevelMap* t_terrain);
+                                                    Level* pLevel);
 
 void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                                      FACE_SIDE faceSide, LevelMap* t_terrain,
+                                      FACE_SIDE faceSide, Level* pLevel,
                                       const float sunlightIntensity);

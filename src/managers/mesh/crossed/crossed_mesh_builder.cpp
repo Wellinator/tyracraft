@@ -7,11 +7,11 @@ void CrossedMeshBuilder_GenerateMesh(Block* t_block,
                                      std::vector<Color>* t_vertices_colors,
                                      std::vector<Vec4>* t_uv_map,
                                      WorldLightModel* t_worldLightModel,
-                                     LevelMap* t_terrain) {
+                                     Level* pLevel) {
   CrossedMeshBuilder_loadCrossedMeshData(t_block, t_vertices);
   CrossedMeshBuilder_loadCrossedUVData(t_block, t_uv_map);
   CrossedMeshBuilder_loadCroosedLightData(t_block, t_vertices_colors,
-                                          t_worldLightModel, t_terrain);
+                                          t_worldLightModel, pLevel);
 }
 
 void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
@@ -70,7 +70,7 @@ void CrossedMeshBuilder_loadUVFaceData(const u8& index,
 
 void CrossedMeshBuilder_loadCroosedLightData(
     Block* t_block, std::vector<Color>* t_vertices_colors,
-    WorldLightModel* t_worldLightModel, LevelMap* t_terrain) {
+    WorldLightModel* t_worldLightModel, Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
@@ -78,8 +78,7 @@ void CrossedMeshBuilder_loadCroosedLightData(
   // Face 1
   {
     Color faceColor = baseFaceColor;
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   t_terrain,
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -90,8 +89,7 @@ void CrossedMeshBuilder_loadCroosedLightData(
   // Face 2
   {
     Color faceColor = baseFaceColor;
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   t_terrain,
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;

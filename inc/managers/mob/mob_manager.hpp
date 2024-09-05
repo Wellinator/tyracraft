@@ -25,7 +25,7 @@ class MobManager {
   ~MobManager();
 
   void init(Renderer* renderer, SoundManager* t_soundManager,
-            WorldLightModel* t_worldLightModel, LevelMap* t_terrain,
+            WorldLightModel* t_worldLightModel, Level* level,
             ChunckManager* t_chunkManager);
   void update(const float& deltaTime);
   void tick();
@@ -46,7 +46,7 @@ class MobManager {
   SoundManager* t_soundManager = nullptr;
   ChunckManager* t_chunkManager = nullptr;
   WorldLightModel* t_worldLightModel = nullptr;
-  LevelMap* t_terrain = nullptr;
+  Level* pLevel = nullptr;
 
   // Mobs textures
   Texture* pigTexture = nullptr;

@@ -27,7 +27,7 @@ void CuboidMeshBuilder_GenerateMesh(Block* t_block,
                                     std::vector<Color>* t_vertices_colors,
                                     std::vector<Vec4>* t_uv_map,
                                     WorldLightModel* t_worldLightModel,
-                                    LevelMap* t_terrain);
+                                    Level* pLevel);
 
 void CuboidMeshBuilder_loadMeshData(Block* t_block,
                                     std::vector<Vec4>* t_vertices);
@@ -37,7 +37,7 @@ void CuboidMeshBuilder_loadUVFaceData(const u8& index,
 void CuboidMeshBuilder_loadLightData(Block* t_block,
                                      std::vector<Color>* t_vertices_colors,
                                      WorldLightModel* t_worldLightModel,
-                                     LevelMap* t_terrain);
+                                     Level* pLevel);
 
 /**
  * @brief Return an array with the correct face by rotation
@@ -46,8 +46,8 @@ void CuboidMeshBuilder_loadLightData(Block* t_block,
  * This is the sequence of the array: [ left, front, back, right]
  *
  */
-std::array<FACE_SIDE, 4> CuboidMeshBuilder_getFaceByRotation(
-    Block* t_block, LevelMap* t_terrain);
+std::array<FACE_SIDE, 4> CuboidMeshBuilder_getFaceByRotation(Block* t_block,
+                                                             Level* pLevel);
 
 void CuboidMeshBuilder_loadLightFaceData(Color* faceColor,
                                          std::vector<Color>* t_vertices_colors);
@@ -58,4 +58,4 @@ void CuboidMeshBuilder_loadLightFaceDataWithAO(
 bool CuboidMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> CuboidMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                       Block* block,
-                                                      LevelMap* t_terrain);
+                                                      Level* pLevel);

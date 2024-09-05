@@ -1,10 +1,8 @@
 #include "managers/mazecraft_generator.hpp"
 #include "managers/cross_craft_world_generator.hpp"
 
-void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
-                           mazegen::Config cfg) {
-  const auto level = CrossCraft_World_GetLevelPtr();
-
+void Mazecraft_GenerateMap(Level* pLevel, unsigned int seed, const u8 width,
+                           const u8 height, mazegen::Config cfg) {
   mazegen::PointSet constraints{{1, 1}, {width - 3, height - 3}};
 
   auto gen = mazegen::Generator();
@@ -15,8 +13,8 @@ void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
     TYRA_WARN(gen.get_warnings().c_str());
   }
 
-  for (uint16_t x = 0; x < level->map.length; x++) {
-    for (uint16_t z = 0; z < level->map.width; z++) {
+  for (uint16_t x = 0; x < pLevel->map.length; x++) {
+    for (uint16_t z = 0; z < pLevel->map.width; z++) {
       int region = gen.region_at(x, z);
 
       const auto isConstraints =
@@ -62,7 +60,7 @@ void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
           }
         }
 
-        SetBlockInMap(&level->map, x, y, z, block_type);
+        pLevel->SetBlockInMap(x, y, z, block_type);
       }
     }
   }
@@ -85,30 +83,26 @@ void Mazecraft_GenerateMap(unsigned int seed, const u8 width, const u8 height,
 
     const u8 isOakTree = rand() % 2 == 0;
 
-    if (isSpaceForTree(&level->map, fx, fy, fz, th)) {
+    if (isSpaceForTree(pLevel, fx, fy, fz, th)) {
       if (isOakTree) {
-        growOakTree(&level->map, fx, fy, fz, th);
+        growOakTree(pLevel, fx, fy, fz, th);
       } else {
-        growBirchTree(&level->map, fx, fy, fz, th);
+        growBirchTree(pLevel, fx, fy, fz, th);
       }
 
-      SetBlockInMap(&level->map, fx - 2, 2, fz,
-                    static_cast<uint8_t>(Blocks::TORCH));
-      SetBlockInMap(&level->map, fx + 2, 2, fz,
-                    static_cast<uint8_t>(Blocks::TORCH));
-      SetBlockInMap(&level->map, fx, 2, fz - 2,
-                    static_cast<uint8_t>(Blocks::TORCH));
-      SetBlockInMap(&level->map, fx, 2, fz + 2,
-                    static_cast<uint8_t>(Blocks::TORCH));
+      pLevel->SetBlockInMap(fx - 2, 2, fz, static_cast<uint8_t>(Blocks::TORCH));
+      pLevel->SetBlockInMap(fx + 2, 2, fz, static_cast<uint8_t>(Blocks::TORCH));
+      pLevel->SetBlockInMap(fx, 2, fz - 2, static_cast<uint8_t>(Blocks::TORCH));
+      pLevel->SetBlockInMap(fx, 2, fz + 2, static_cast<uint8_t>(Blocks::TORCH));
 
-      SetTorchOrientationDataToMap(&level->map, fx - 2, 2, fz,
-                                   BlockOrientation::Top);
-      SetTorchOrientationDataToMap(&level->map, fx + 2, 2, fz,
-                                   BlockOrientation::Top);
-      SetTorchOrientationDataToMap(&level->map, fx, 2, fz - 2,
-                                   BlockOrientation::Top);
-      SetTorchOrientationDataToMap(&level->map, fx, 2, fz + 2,
-                                   BlockOrientation::Top);
+      pLevel->SetTorchOrientationDataToMap(fx - 2, 2, fz,
+                                           BlockOrientation::Top);
+      pLevel->SetTorchOrientationDataToMap(fx + 2, 2, fz,
+                                           BlockOrientation::Top);
+      pLevel->SetTorchOrientationDataToMap(fx, 2, fz - 2,
+                                           BlockOrientation::Top);
+      pLevel->SetTorchOrientationDataToMap(fx, 2, fz + 2,
+                                           BlockOrientation::Top);
     }
   }
 }

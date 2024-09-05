@@ -33,8 +33,7 @@ void CreativePlayingState::update(const float& deltaTime) {
   if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
 
   stateGamePlay->player->update(deltaTime, playerMovementDirection,
-                                stateGamePlay->context->t_camera,
-                                stateGamePlay->world->terrain);
+                                stateGamePlay->context->t_camera);
 
   stateGamePlay->context->t_camera->setPosition(
       *stateGamePlay->player->mesh->getPosition());
@@ -48,7 +47,7 @@ void CreativePlayingState::update(const float& deltaTime) {
 void CreativePlayingState::tick() {
   stateGamePlay->world->tick(stateGamePlay->player,
                              stateGamePlay->context->t_camera);
-  stateGamePlay->player->tick(stateGamePlay->world->terrain);
+  stateGamePlay->player->tick();
   stateGamePlay->ui->update();
 
   if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();

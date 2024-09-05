@@ -28,7 +28,7 @@ class ChunckManager {
 
   inline std::vector<Chunck*>* getChuncks() { return &chuncks; };
 
-  void init(WorldLightModel* worldLightModel, LevelMap* terrain);
+  void init(WorldLightModel* worldLightModel, Level* Level);
   void update(const Plane* frustumPlanes, Vec4* camPos);
   void tick();
 
@@ -58,13 +58,12 @@ class ChunckManager {
 
  private:
   WorldLightModel* worldLightModel;
-  LevelMap* terrain;
+  Level* pLevel;
 
   std::queue<Chunck*> chuncksToUpdateLight;
   std::vector<Chunck*> chuncks;
   std::vector<Chunck*> visibleChunks;
 
-  LevelMap* map = nullptr;
   void generateChunks();
 
   void reloadLightDataAsync();

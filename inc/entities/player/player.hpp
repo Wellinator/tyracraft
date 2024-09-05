@@ -51,16 +51,17 @@ using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Player 3D object class  */
+
+// TODO: showld inherit Mob class instead Entity directly
 class Player : public Entity {
  public:
-  Player(Renderer* t_renderer, SoundManager* t_soundManager,
+  Player(Level* pLevel, Renderer* t_renderer, SoundManager* t_soundManager,
          BlockManager* t_blockManager, ItemRepository* t_itemRepository,
          WorldLightModel* t_worldLightModel);
   ~Player();
 
-  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera,
-              LevelMap* t_terrain);
-  void tick(LevelMap* t_terrain);
+  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera);
+  void tick();
   void render();
 
   void setRenderArmPip();
@@ -71,6 +72,8 @@ class Player : public Entity {
     this->isFlying = false;
     this->isOnGround = false;
   };
+
+  Level* pLevel;
 
   inline Vec4* getPosition() { return mesh->getPosition(); };
   bool isOnGround, isFlying, isBreaking, isPuting, isMoving, isRunning;
@@ -206,7 +209,7 @@ class Player : public Entity {
 
   u8 _isOnWater;
   u8 _isUnderWater;
-  void updateStateInWater(LevelMap* terrain);
+  void updateStateInWater();
 
   const float _minFov = 60.0F;
   const float _maxFov = _minFov + 10.0F;

@@ -21,10 +21,9 @@ ChunckManager::~ChunckManager() {
   visibleChunks.shrink_to_fit();
 }
 
-void ChunckManager::init(WorldLightModel* t_worldLightModel,
-                         LevelMap* t_terrain) {
+void ChunckManager::init(WorldLightModel* t_worldLightModel, Level* level) {
   worldLightModel = t_worldLightModel;
-  terrain = t_terrain;
+  pLevel = level;
   this->generateChunks();
 }
 
@@ -99,7 +98,7 @@ void ChunckManager::generateChunks() {
         Vec4 tempMin = Vec4(x, y, z);
         Vec4 tempMax = Vec4(x + CHUNCK_SIZE, y + CHUNCK_SIZE, z + CHUNCK_SIZE);
         Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
-        tempChunck->init(terrain, worldLightModel);
+        tempChunck->init(pLevel, worldLightModel);
         chuncks.emplace_back(tempChunck);
 
         tempId++;

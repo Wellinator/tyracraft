@@ -57,7 +57,7 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     gzwrite(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
 
     // World State
-    LevelMap* t_map = CrossCraft_World_GetMapPtr();
+    LevelMap* t_map = &state->plevel->map;
     gzwrite(save_file, &t_map->width, sizeof(t_map->width));
     gzwrite(save_file, &t_map->length, sizeof(t_map->length));
     gzwrite(save_file, &t_map->height, sizeof(t_map->height));
@@ -136,7 +136,8 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
     gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
 
     // World State
-    LevelMap* t_map = CrossCraft_World_GetMapPtr();
+    LevelMap* t_map = &state->plevel->map;
+
     gzread(save_file, &t_map->width, sizeof(t_map->width));
     gzread(save_file, &t_map->length, sizeof(t_map->length));
     gzread(save_file, &t_map->height, sizeof(t_map->height));

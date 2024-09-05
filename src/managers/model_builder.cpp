@@ -1,9 +1,9 @@
 #include "managers/model_builder.hpp"
 
-void ModelBuilder_BuildModel(Block* t_block, LevelMap* t_terrain) {
+void ModelBuilder_BuildModel(Block* t_block, Level* pLevel) {
   switch (t_block->type) {
     case Blocks::TORCH:
-      ModelBuilder_TorchModel(t_block, t_terrain);
+      ModelBuilder_TorchModel(t_block, pLevel);
       break;
 
     case Blocks::WATER_BLOCK:
@@ -12,17 +12,17 @@ void ModelBuilder_BuildModel(Block* t_block, LevelMap* t_terrain) {
       break;
 
     default:
-      ModelBuilder_DefaultModel(t_block, t_terrain);
+      ModelBuilder_DefaultModel(t_block, pLevel);
       break;
   }
 }
 
-void ModelBuilder_DefaultModel(Block* t_block, LevelMap* t_terrain) {
+void ModelBuilder_DefaultModel(Block* t_block, Level* pLevel) {
   Vec4 pos;
-  GetXYZFromPos(&t_block->offset, &pos);
+  pLevel->GetXYZFromPos(&t_block->offset, &pos);
 
   const auto orientation =
-      GetBlockOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      pLevel->GetBlockOrientationDataFromMap(pos.x, pos.y, pos.z);
 
   t_block->model.identity();
 
@@ -52,12 +52,12 @@ void ModelBuilder_NoRotationModel(Block* t_block) {
   t_block->model.translate(t_block->position);
 }
 
-void ModelBuilder_TorchModel(Block* t_block, LevelMap* t_terrain) {
+void ModelBuilder_TorchModel(Block* t_block, Level* pLevel) {
   Vec4 pos;
-  GetXYZFromPos(&t_block->offset, &pos);
+  pLevel->GetXYZFromPos(&t_block->offset, &pos);
 
   const auto orientation =
-      GetTorchOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      pLevel->GetTorchOrientationDataFromMap(pos.x, pos.y, pos.z);
 
   Vec4 offsetCorrection = Vec4(0, 0, 0);
   const float offsetH = BLOCK_SIZE * 0.70F;

@@ -13,7 +13,7 @@ class VertexBlockData {
 
   ~VertexBlockData();
 
-  static BBox* getRawBBoxByBlock(const Blocks block_type,
+  static BBox* getRawBBoxByBlock(Level* pLevel, const Blocks block_type,
                                  const u32 block_offset);
   static BBox* getTransformedRawBBoxByBlock(const Blocks block_type,
                                             const u32 block_offset,
@@ -32,7 +32,7 @@ class VertexBlockData {
    */
   static const Vec4* getTopSlabVertexData();
   static const Vec4* getBottomSlabVertexData();
-  static BBox* getSlabRawBBox(u32 block_offset);
+  static BBox* getSlabRawBBox(Level* pLevel, u32 block_offset);
 
   /**
    * @brief Provides 36 vertices of raw torch

@@ -41,6 +41,8 @@ StateGamePlay::~StateGamePlay() {
   delete this->player;
   TYRA_LOG("freeing itemRepository...");
   delete this->itemRepository;
+  TYRA_LOG("freeing level...");
+  delete plevel;
   TYRA_LOG("freeing completed!");
 
   CollisionManager_unloadTree();

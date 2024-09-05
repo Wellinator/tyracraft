@@ -37,85 +37,8 @@ void TorchHandItemMeshBuilder_loadLightData(
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
-  // const float MAX_LIGHT_VALUE = 15.0F;
-  // const float MIN_LIGHT_FACTOR = 0.25F;
-
-  {
+  for (size_t i = 0; i < 6; i++) {
     Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // TODO: calc light by user position
-    // // Apply sunlight and block light to face
-    // LightManager::ApplyLightToFace(&faceColor, t_block, t_terrain,
-    //                                t_worldLightModel->sunLightIntensity);
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
     TorchHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 

@@ -9,9 +9,7 @@ StateLoadNextLevelMazeCraft::StateLoadNextLevelMazeCraft(
   this->init();
 }
 
-StateLoadNextLevelMazeCraft::~StateLoadNextLevelMazeCraft() { 
-    this->unload(); 
-  }
+StateLoadNextLevelMazeCraft::~StateLoadNextLevelMazeCraft() { this->unload(); }
 
 void StateLoadNextLevelMazeCraft::init() {
   this->setBgColorBlack();
@@ -24,8 +22,8 @@ void StateLoadNextLevelMazeCraft::init() {
   this->BASE_HEIGHT = height - 120;
 
   // Background
-  std::string backgroundTex =
-      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/loading_background.png");
+  std::string backgroundTex = FileUtils::fromCwd(
+      "textures/gui/mini_game/mazecraft/loading_background.png");
   background = new Sprite;
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
@@ -34,8 +32,8 @@ void StateLoadNextLevelMazeCraft::init() {
       ->addLink(background->id);
 
   // Loading slot
-  std::string loadingSlotTex =
-      FileUtils::fromCwd("textures/gui/mini_game/mazecraft/empty_loading_bar.png");
+  std::string loadingSlotTex = FileUtils::fromCwd(
+      "textures/gui/mini_game/mazecraft/empty_loading_bar.png");
   loadingSlot = new Sprite;
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
@@ -102,12 +100,12 @@ void StateLoadNextLevelMazeCraft::unload() {
 }
 
 void StateLoadNextLevelMazeCraft::createEntities() {
-  this->stateGamePlay->world = new World(this->worldOptions);
+  this->stateGamePlay->world = new World(worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
   this->stateGamePlay->player = new Player(
-      &this->context->t_engine->renderer, this->context->t_soundManager,
-      &this->stateGamePlay->world->blockManager,
+      stateGamePlay->plevel, &this->context->t_engine->renderer,
+      this->context->t_soundManager, &this->stateGamePlay->world->blockManager,
       this->stateGamePlay->itemRepository,
       this->stateGamePlay->world->getWorldLightModel());
 

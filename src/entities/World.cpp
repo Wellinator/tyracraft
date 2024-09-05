@@ -25,11 +25,12 @@ using bvh::index_t;
 using Tyra::Color;
 using Tyra::M4x4;
 
-World::World(const NewGameOptions& options) {
+World::World(const NewGameOptions& options, Level* level) {
   seed = options.seed;
+  pLevel = level;
 
   printf("\n\n|-----------SEED---------|");
-  printf("\n|           %li         |\n", seed);
+  printf("\n%lu\n", seed);
   printf("|------------------------|\n\n");
 
   worldOptions = options;
@@ -62,13 +63,12 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   dayNightCycleManager.init(t_renderer);
   initWorldLightModel();
 
-  terrain = CrossCraft_World_GetMapPtr();
   blockManager.init(t_renderer, worldOptions.texturePack);
-  chunckManager.init(&worldLightModel, terrain);
+  chunckManager.init(&worldLightModel, pLevel);
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
-  mobManager.init(t_renderer, t_soundManager, &worldLightModel, terrain,
+  mobManager.init(t_renderer, t_soundManager, &worldLightModel, pLevel,
                   &chunckManager);
 };
 
@@ -138,7 +138,7 @@ void World::generate() {
       height = 128;
     }
 
-    Mazecraft_GenerateMap(level, width, height, cfg);
+    Mazecraft_GenerateMap(pLevel, level, width, height, cfg);
   } else {
     CrossCraft_World_GenerateMap(worldOptions.type);
   }
@@ -293,7 +293,7 @@ void World::removeBlockFromChunk(Block* blockToRemove) {
   if (!currentChunk) return;
 
   Vec4 offset;
-  GetXYZFromPos(&blockToRemove->offset, &offset);
+  pLevel->GetXYZFromPos(&blockToRemove->offset, &offset);
 
   currentChunk->removeBlock(blockToRemove);
   rebuildChunkFragment(currentChunk, &offset);
@@ -481,24 +481,24 @@ void World::updateLightModel() {
 }
 
 u8 World::isAirAtPosition(const u8 x, const u8 y, const u8 z) {
-  if (BoundCheckMap(terrain, x, y, z)) {
-    return GetBlockFromMap(terrain, x, y, z) == (u8)Blocks::AIR_BLOCK;
+  if (pLevel->BoundCheckMap(x, y, z)) {
+    return pLevel->GetBlockFromMap(x, y, z) == (u8)Blocks::AIR_BLOCK;
   }
   return false;
 }
 
 u8 World::isLiquidAtPosition(const u8 x, const u8 y, const u8 z) {
-  if (BoundCheckMap(terrain, x, y, z)) {
-    const auto b = GetBlockFromMap(terrain, x, y, z);
+  if (pLevel->BoundCheckMap(x, y, z)) {
+    const auto b = pLevel->GetBlockFromMap(x, y, z);
     return b == (u8)Blocks::WATER_BLOCK || b == (u8)Blocks::LAVA_BLOCK;
   }
   return false;
 }
 
 u8 World::isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z) {
-  if (BoundCheckMap(terrain, x, y, z)) {
+  if (pLevel->BoundCheckMap(x, y, z)) {
     const Blocks blockType =
-        static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z));
+        static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
 
     return (isTransparent(blockType) || blockType == Blocks::LAVA_BLOCK);
   } else {
@@ -537,8 +537,8 @@ u8 World::isRightFaceVisible(const Vec4* t_blockOffset) {
 }
 
 u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientation = GetBlockOrientationDataFromMap(
-      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const BlockOrientation orientation = pLevel->GetBlockOrientationDataFromMap(
+      t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
   u8 result = 0b000000;
 
@@ -583,10 +583,10 @@ u8 World::getBlockVisibleFaces(const Vec4* t_blockOffset) {
 }
 
 u8 World::getSlabVisibleFaces(const Vec4* t_blockOffset) {
-  const BlockOrientation orientationXZ = GetBlockOrientationDataFromMap(
-      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
-  const SlabOrientation orientationY = GetSlabOrientationDataFromMap(
-      terrain, t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const BlockOrientation orientationXZ = pLevel->GetBlockOrientationDataFromMap(
+      t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
+  const SlabOrientation orientationY = pLevel->GetSlabOrientationDataFromMap(
+      t_blockOffset->x, t_blockOffset->y, t_blockOffset->z);
 
   u8 result = 0b000000;
 
@@ -643,34 +643,34 @@ u8 World::getLeavesVisibleFaces(const Vec4* t_blockOffset) {
   const auto z = t_blockOffset->z;
 
   const auto bFront =
-      !BoundCheckMap(terrain, x, y, z - 1)
+      !pLevel->BoundCheckMap(x, y, z - 1)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z - 1));
 
   const auto bBlack =
-      !BoundCheckMap(terrain, x, y, z + 1)
+      !pLevel->BoundCheckMap(x, y, z + 1)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z + 1));
 
   const auto bRight =
-      !BoundCheckMap(terrain, x - 1, y, z)
+      !pLevel->BoundCheckMap(x - 1, y, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x - 1, y, z));
 
   const auto bLeft =
-      !BoundCheckMap(terrain, x + 1, y, z)
+      !pLevel->BoundCheckMap(x + 1, y, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x + 1, y, z));
 
   const auto bTop =
-      !BoundCheckMap(terrain, x, y + 1, z)
+      !pLevel->BoundCheckMap(x, y + 1, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y + 1, z));
 
   const auto bBottom =
-      !BoundCheckMap(terrain, x, y - 1, z)
+      !pLevel->BoundCheckMap(x, y - 1, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y - 1, z));
 
   // Front
   if (!(bFront == Blocks::OAK_LEAVES_BLOCK ||
@@ -714,37 +714,37 @@ u8 World::getLiquidBlockVisibleFaces(const Vec4* t_blockOffset) {
   const auto y = t_blockOffset->y;
   const auto z = t_blockOffset->z;
 
-  const u8 currentLevel = GetLiquidDataFromMap(terrain, x, y, z);
+  const u8 currentLevel = pLevel->GetLiquidDataFromMap(x, y, z);
 
   const auto bFront =
-      !BoundCheckMap(terrain, x, y, z - 1)
+      !pLevel->BoundCheckMap(x, y, z - 1)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z - 1));
 
   const auto bBlack =
-      !BoundCheckMap(terrain, x, y, z + 1)
+      !pLevel->BoundCheckMap(x, y, z + 1)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z + 1));
 
   const auto bRight =
-      !BoundCheckMap(terrain, x - 1, y, z)
+      !pLevel->BoundCheckMap(x - 1, y, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x - 1, y, z));
 
   const auto bLeft =
-      !BoundCheckMap(terrain, x + 1, y, z)
+      !pLevel->BoundCheckMap(x + 1, y, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x + 1, y, z));
 
   const auto bTop =
-      !BoundCheckMap(terrain, x, y + 1, z)
+      !pLevel->BoundCheckMap(x, y + 1, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y + 1, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y + 1, z));
 
   const auto bBottom =
-      !BoundCheckMap(terrain, x, y - 1, z)
+      !pLevel->BoundCheckMap(x, y - 1, z)
           ? Blocks::VOID
-          : static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
+          : static_cast<Blocks>(pLevel->GetBlockFromMap(x, y - 1, z));
 
   // Front
   if (bFront != Blocks::LAVA_BLOCK && bFront != Blocks::WATER_BLOCK &&
@@ -792,11 +792,9 @@ const Vec4 World::defineSpawnArea() {
     spawPos = Vec4(1, 3, 1) * DUBLE_BLOCK_SIZE;
   }
 
-  auto level = CrossCraft_World_GetLevelPtr();
-
-  level->map.spawnX = spawPos.x;
-  level->map.spawnY = spawPos.y;
-  level->map.spawnZ = spawPos.z;
+  pLevel->map.spawnX = spawPos.x;
+  pLevel->map.spawnY = spawPos.y;
+  pLevel->map.spawnZ = spawPos.z;
 
   return spawPos;
 }
@@ -810,7 +808,7 @@ const Vec4 World::calcSpawOffset(int bias) {
   Vec4 result;
 
   for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
-    u8 type = GetBlockFromMap(terrain, posX, posY, posZ);
+    u8 type = pLevel->GetBlockFromMap(posX, posY, posZ);
     if (type != (u8)Blocks::AIR_BLOCK && airBlockCounter >= 4) {
       found = true;
       result = Vec4(posX, posY + 2, posZ);
@@ -839,10 +837,10 @@ const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
   Vec4 tempResult;
 
   for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
-    u8 type = GetBlockFromMap(terrain, posX, posY, posZ);
+    u8 type = pLevel->GetBlockFromMap(posX, posY, posZ);
 
     if (type == (u8)Blocks::GRASS_BLOCK &&
-        GetSunLightFromMap(terrain, posX, posY + 1, posZ) == 15 &&
+        pLevel->GetSunLightFromMap(posX, posY + 1, posZ) == 15 &&
         airBlockCounter >= 3) {
       found = true;
       tempResult.set(posX, posY + 1, posZ);
@@ -885,10 +883,10 @@ void World::removeBlock(Block* blockToRemove) {
   particlesManager.createBlockParticleBatch(blockToRemove, 18);
 
   Vec4 offsetToRemove;
-  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
-  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
-  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
-                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
+  pLevel->GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+  pLevel->SetBlockInMapByIndex(blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  pLevel->SetLiquidDataToMap(offsetToRemove.x, offsetToRemove.y,
+                             offsetToRemove.z, (u8)LiquidLevel::Percent0);
 
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -907,10 +905,10 @@ void World::removeBlock(Block* blockToRemove) {
   const Vec4 upBlockOffset =
       Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
 
-  if (BoundCheckMap(terrain, upBlockOffset.x, upBlockOffset.y,
-                    upBlockOffset.z)) {
-    const Blocks b = static_cast<Blocks>(GetBlockFromMap(
-        terrain, upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+  if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
+                            upBlockOffset.z)) {
+    const Blocks b = static_cast<Blocks>(pLevel->GetBlockFromMap(
+        upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
 
     if (isVegetation(b) || b == Blocks::TORCH) {
       auto chunk = chunckManager.getChunkByBlockOffset(upBlockOffset);
@@ -922,10 +920,10 @@ void World::removeBlock(Block* blockToRemove) {
 
 void World::removeBlockSilently(Block* blockToRemove) {
   Vec4 offsetToRemove;
-  GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
-  SetBlockInMapByIndex(terrain, blockToRemove->index, (u8)Blocks::AIR_BLOCK);
-  SetLiquidDataToMap(terrain, offsetToRemove.x, offsetToRemove.y,
-                     offsetToRemove.z, (u8)LiquidLevel::Percent0);
+  pLevel->GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+  pLevel->SetBlockInMapByIndex(blockToRemove->index, (u8)Blocks::AIR_BLOCK);
+  pLevel->SetLiquidDataToMap(offsetToRemove.x, offsetToRemove.y,
+                             offsetToRemove.z, (u8)LiquidLevel::Percent0);
 
   // Update sunlight and block light at position
   removeLight(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -947,7 +945,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   PlacementDirection placementDirection = PlacementDirection::Top;
 
   Vec4 blockOffset;
-  GetXYZFromPos(&targetBlock->offset, &blockOffset);
+  pLevel->GetXYZFromPos(&targetBlock->offset, &blockOffset);
 
   // TODO: move to function
   // Front
@@ -983,7 +981,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   }
 
   // Placing block at invalid position
-  if (!BoundCheckMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z))
+  if (!pLevel->BoundCheckMap(blockOffset.x, blockOffset.y, blockOffset.z))
     return;
 
   t_player->playPutBlockAnimation();
@@ -1018,7 +1016,7 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
 void World::putTorchBlock(const PlacementDirection placementDirection,
                           const float cameraYaw, Vec4 blockOffset) {
   const Blocks blockTypeAtNewPosition = static_cast<Blocks>(
-      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
 
   const u8 canReplace = blockTypeAtNewPosition == Blocks::AIR_BLOCK;
 
@@ -1058,10 +1056,10 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
       }
     }
 
-    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                  static_cast<u8>(Blocks::TORCH));
-    SetTorchOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                 blockOffset.z, orientation);
+    pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
+                          static_cast<u8>(Blocks::TORCH));
+    pLevel->SetTorchOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                         blockOffset.z, orientation);
     checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
 
     const auto lightValue = blockManager.getBlockLightValue(Blocks::TORCH);
@@ -1079,10 +1077,11 @@ void World::putSlab(const Blocks& blockType,
                     Player* t_player, const float cameraYaw, Vec4 blockOffset,
                     Vec4 targetPos) {
   Vec4 originalOffset;
-  GetXYZFromPos(&targetBlock->offset, &originalOffset);
+  pLevel->GetXYZFromPos(&targetBlock->offset, &originalOffset);
 
-  const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(GetBlockFromMap(
-      terrain, originalOffset.x, originalOffset.y, originalOffset.z));
+  const Blocks blockTypeAtTargetPosition =
+      static_cast<Blocks>(pLevel->GetBlockFromMap(
+          originalOffset.x, originalOffset.y, originalOffset.z));
 
   const u8 isPlacingTwoSlabsAtTargetPosition =
       (u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
@@ -1091,8 +1090,9 @@ void World::putSlab(const Blocks& blockType,
   // Is placing two slabs at target position?
   // If so, fix the blockOffset;
   if (isPlacingTwoSlabsAtTargetPosition) {
-    const auto targetSlabHeightOrientation = GetSlabOrientationDataFromMap(
-        terrain, blockOffset.x, blockOffset.y, blockOffset.z);
+    const auto targetSlabHeightOrientation =
+        pLevel->GetSlabOrientationDataFromMap(blockOffset.x, blockOffset.y,
+                                              blockOffset.z);
 
     if (targetSlabHeightOrientation == SlabOrientation::Bottom &&
         blockOffset.y > originalOffset.y) {
@@ -1104,7 +1104,7 @@ void World::putSlab(const Blocks& blockType,
   }
 
   const Blocks blockTypeAtOffsetPosition = static_cast<Blocks>(
-      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
 
   // Is placing two slabs at offset position?
   if ((u8)blockTypeAtOffsetPosition >= (u8)Blocks::STONE_SLAB &&
@@ -1152,8 +1152,8 @@ void World::putSlab(const Blocks& blockType,
           break;
       }
 
-      ResetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                    blockOffset.z);
+      pLevel->ResetSlabOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                            blockOffset.z);
 
       // Calc block orientation
       BlockOrientation orientation;
@@ -1172,8 +1172,8 @@ void World::putSlab(const Blocks& blockType,
         orientation = BlockOrientation::East;
       }
 
-      SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                   blockOffset.z, orientation);
+      pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                           blockOffset.z, orientation);
 
       Chunck* chunk = chunckManager.getChunkByBlockOffset(blockOffset);
       Block* currentSlabAtOffsetPosition =
@@ -1197,7 +1197,8 @@ void World::putSlab(const Blocks& blockType,
   tempModel.translate(newBlockPos);
 
   BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-      blockType, GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+      pLevel, blockType,
+      pLevel->GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
   BBox tempBBox = rawBBox->getTransformed(tempModel);
   BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
 
@@ -1227,8 +1228,8 @@ void World::putSlab(const Blocks& blockType,
   const SlabOrientation slabOrientation = heightOffset > BLOCK_SIZE
                                               ? SlabOrientation::Top
                                               : SlabOrientation::Bottom;
-  SetSlabOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                              blockOffset.z, slabOrientation);
+  pLevel->SetSlabOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                      blockOffset.z, slabOrientation);
 
   const u8 canReplace = blockTypeAtOffsetPosition == Blocks::AIR_BLOCK ||
                         blockTypeAtOffsetPosition == Blocks::WATER_BLOCK ||
@@ -1239,8 +1240,8 @@ void World::putSlab(const Blocks& blockType,
                         blockTypeAtOffsetPosition == Blocks::GRASS;
 
   if (canReplace) {
-    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                  static_cast<u8>(blockType));
+    pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
+                          static_cast<u8>(blockType));
     checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
     removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
 
@@ -1271,7 +1272,8 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
   tempModel.translate(newBlockPos);
 
   BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-      blockToPlace, GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+      pLevel, blockToPlace,
+      pLevel->GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
   BBox tempBBox = rawBBox->getTransformed(tempModel);
   BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
 
@@ -1296,7 +1298,7 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
   }
 
   const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
-      GetBlockFromMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z));
+      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
   const Blocks oldTypeBlock = blockTypeAtTargetPosition;
 
   const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
@@ -1325,10 +1327,10 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
       orientation = BlockOrientation::East;
     }
 
-    SetBlockInMap(terrain, blockOffset.x, blockOffset.y, blockOffset.z,
-                  static_cast<u8>(blockToPlace));
-    SetBlockOrientationDataToMap(terrain, blockOffset.x, blockOffset.y,
-                                 blockOffset.z, orientation);
+    pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
+                          static_cast<u8>(blockToPlace));
+    pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                         blockOffset.z, orientation);
     checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
 
     const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
@@ -1579,7 +1581,7 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
 
 void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
   const u8 validOffset =
-      BoundCheckMap(terrain, moddedOffset->x, moddedOffset->y, moddedOffset->z);
+      pLevel->BoundCheckMap(moddedOffset->x, moddedOffset->y, moddedOffset->z);
   const u8 isInChunk =
       moddedOffset->collidesBox(t_chunck->minOffset, t_chunck->maxOffset);
 
@@ -1596,7 +1598,7 @@ void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
 
 void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
   Vec4 tempBlockOffset;
-  GetXYZFromPos(&t_block->offset, &tempBlockOffset);
+  pLevel->GetXYZFromPos(&t_block->offset, &tempBlockOffset);
 
   const Blocks block_type = static_cast<Blocks>(t_block->type);
   u8 visibleFaces;
@@ -1625,7 +1627,7 @@ void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
 void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
   u32 blockIndex = getIndexByOffset(offset->x, offset->y, offset->z);
 
-  const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
+  const Blocks block_type = static_cast<Blocks>(pLevel->map.blocks[blockIndex]);
 
   if (block_type != Blocks::AIR_BLOCK) {
     u8 visibleFaces;
@@ -1649,7 +1651,7 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
       if (blockInfo) {
         Block* block = new Block(blockInfo);
         block->index = blockIndex;
-        block->offset = GetPosFromXYZ(offset->x, offset->y, offset->z);
+        block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
         block->chunkId = t_chunck->id;
 
         if (block->isCrossed) {
@@ -1662,9 +1664,9 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
 
         block->position.set((*offset) * DUBLE_BLOCK_SIZE);
 
-        ModelBuilder_BuildModel(block, terrain);
-        BBox* rawBBox =
-            VertexBlockData::getRawBBoxByBlock(block->type, block->offset);
+        ModelBuilder_BuildModel(block, pLevel);
+        BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(pLevel, block->type,
+                                                           block->offset);
         BBox tempBBox = rawBBox->getTransformed(block->model);
 
         block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -1735,7 +1737,8 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     if (x >= t_chunck->maxOffset.x) break;
 
     u32 blockIndex = getIndexByOffset(x, y, z);
-    const Blocks block_type = static_cast<Blocks>(terrain->blocks[blockIndex]);
+    const Blocks block_type =
+        static_cast<Blocks>(pLevel->map.blocks[blockIndex]);
 
     if (block_type != Blocks::AIR_BLOCK) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
@@ -1763,8 +1766,8 @@ void World::buildChunkAsync(Chunck* t_chunck) {
         if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
-          block->offset = GetPosFromXYZ(tempBlockOffset.x, tempBlockOffset.y,
-                                        tempBlockOffset.z);
+          block->offset = pLevel->GetPosFromXYZ(
+              tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
           block->chunkId = t_chunck->id;
 
           if (block->isCrossed) {
@@ -1777,10 +1780,10 @@ void World::buildChunkAsync(Chunck* t_chunck) {
 
           block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
 
-          ModelBuilder_BuildModel(block, terrain);
+          ModelBuilder_BuildModel(block, pLevel);
 
-          BBox* rawBBox =
-              VertexBlockData::getRawBBoxByBlock(block->type, block->offset);
+          BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+              pLevel, block->type, block->offset);
           BBox tempBBox = rawBBox->getTransformed(block->model);
 
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -1900,7 +1903,7 @@ void World::buildTargetBlockDrawData() {
   _targetBlockUVMap.reserve(size);
 
   MeshBuilder_BuildMesh(targetBlock, &_targetBlockVertices, &_targetBlockColors,
-                        &_targetBlockUVMap, &worldLightModel, terrain);
+                        &_targetBlockUVMap, &worldLightModel, pLevel);
 
   const float highLight = 50.0f * worldLightModel.sunLightIntensity;
   for (size_t i = 0; i < size; i++) _targetBlockColors[i] += highLight;
@@ -1967,45 +1970,45 @@ void World::initWorldLightModel() {
 }
 
 void World::checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z) {
-  if (BoundCheckMap(terrain, x - 1, y, z)) {
-    Blocks nl = static_cast<Blocks>(GetBlockFromMap(terrain, x - 1, y, z));
-    u8 level = GetLiquidDataFromMap(terrain, x - 1, y, z);
+  if (pLevel->BoundCheckMap(x - 1, y, z)) {
+    Blocks nl = static_cast<Blocks>(pLevel->GetBlockFromMap(x - 1, y, z));
+    u8 level = pLevel->GetLiquidDataFromMap(x - 1, y, z);
 
     if (nl == Blocks::WATER_BLOCK || nl == Blocks::LAVA_BLOCK) {
       addLiquid(x - 1, y, z, (u8)nl, level);
     }
   }
 
-  if (BoundCheckMap(terrain, x + 1, y, z)) {
-    Blocks nr = static_cast<Blocks>(GetBlockFromMap(terrain, x + 1, y, z));
-    u8 level = GetLiquidDataFromMap(terrain, x + 1, y, z);
+  if (pLevel->BoundCheckMap(x + 1, y, z)) {
+    Blocks nr = static_cast<Blocks>(pLevel->GetBlockFromMap(x + 1, y, z));
+    u8 level = pLevel->GetLiquidDataFromMap(x + 1, y, z);
 
     if (nr == Blocks::WATER_BLOCK || nr == Blocks::LAVA_BLOCK) {
       addLiquid(x + 1, y, z, (u8)nr, level);
     }
   }
 
-  if (BoundCheckMap(terrain, x, y - 1, z)) {
-    Blocks nd = static_cast<Blocks>(GetBlockFromMap(terrain, x, y - 1, z));
-    u8 level = GetLiquidDataFromMap(terrain, x, y - 1, z);
+  if (pLevel->BoundCheckMap(x, y - 1, z)) {
+    Blocks nd = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y - 1, z));
+    u8 level = pLevel->GetLiquidDataFromMap(x, y - 1, z);
 
     if (nd == Blocks::WATER_BLOCK || nd == Blocks::LAVA_BLOCK) {
       addLiquid(x, y - 1, z, (u8)nd, level);
     }
   }
 
-  if (BoundCheckMap(terrain, x, y, z + 1)) {
-    Blocks nf = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z + 1));
-    u8 level = GetLiquidDataFromMap(terrain, x, y, z + 1);
+  if (pLevel->BoundCheckMap(x, y, z + 1)) {
+    Blocks nf = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z + 1));
+    u8 level = pLevel->GetLiquidDataFromMap(x, y, z + 1);
 
     if (nf == Blocks::WATER_BLOCK || nf == Blocks::LAVA_BLOCK) {
       addLiquid(x, y, z + 1, (u8)nf, level);
     }
   }
 
-  if (BoundCheckMap(terrain, x, y, z - 1)) {
-    Blocks nb = static_cast<Blocks>(GetBlockFromMap(terrain, x, y, z - 1));
-    u8 level = GetLiquidDataFromMap(terrain, x, y, z - 1);
+  if (pLevel->BoundCheckMap(x, y, z - 1)) {
+    Blocks nb = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z - 1));
+    u8 level = pLevel->GetLiquidDataFromMap(x, y, z - 1);
 
     if (nb == Blocks::WATER_BLOCK || nb == Blocks::LAVA_BLOCK) {
       addLiquid(x, y, z - 1, (u8)nb, level);
@@ -2024,10 +2027,10 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
       updateBlockLights();
     }
 
-    SetBlockInMap(terrain, x, y, z, type);
-    SetLiquidDataToMap(terrain, x, y, z, level);
+    pLevel->SetBlockInMap(x, y, z, type);
+    pLevel->SetLiquidDataToMap(x, y, z, level);
 
-    const auto prevDir = GetLiquidOrientationDataFromMap(terrain, x, y, z);
+    const auto prevDir = pLevel->GetLiquidOrientationDataFromMap(x, y, z);
 
     // Fix traversal orientation to linear
     // It two traversal flux encounter each other, it will become a linear flux
@@ -2035,25 +2038,25 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
          LiquidOrientation::NorthWest == prevDir) ||
         ((u8)LiquidOrientation::NorthWest == orientation &&
          LiquidOrientation::NorthEast == prevDir)) {
-      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::North);
+      pLevel->SetLiquidOrientationDataToMap(x, y, z, LiquidOrientation::North);
     } else if (((u8)LiquidOrientation::NorthEast == orientation &&
                 LiquidOrientation::SouthEast == prevDir) ||
                ((u8)LiquidOrientation::SouthEast == orientation &&
                 LiquidOrientation::NorthEast == prevDir)) {
-      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::East);
+      pLevel->SetLiquidOrientationDataToMap(x, y, z, LiquidOrientation::East);
     } else if (((u8)LiquidOrientation::SouthEast == orientation &&
                 LiquidOrientation::SouthWest == prevDir) ||
                ((u8)LiquidOrientation::SouthWest == orientation &&
                 LiquidOrientation::SouthEast == prevDir)) {
-      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::South);
+      pLevel->SetLiquidOrientationDataToMap(x, y, z, LiquidOrientation::South);
     } else if (((u8)LiquidOrientation::NorthWest == orientation &&
                 LiquidOrientation::SouthWest == prevDir) ||
                ((u8)LiquidOrientation::SouthWest == orientation &&
                 LiquidOrientation::NorthWest == prevDir)) {
-      SetLiquidOrientationDataToMap(terrain, x, y, z, LiquidOrientation::West);
+      pLevel->SetLiquidOrientationDataToMap(x, y, z, LiquidOrientation::West);
     } else {
-      SetLiquidOrientationDataToMap(
-          terrain, x, y, z, static_cast<LiquidOrientation>(orientation));
+      pLevel->SetLiquidOrientationDataToMap(
+          x, y, z, static_cast<LiquidOrientation>(orientation));
     }
 
     Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
@@ -2068,7 +2071,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level) {
 }
 
 void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type) {
-  u8 liquidLevel = GetLiquidDataFromMap(terrain, x, y, z);
+  u8 liquidLevel = pLevel->GetLiquidDataFromMap(x, y, z);
   removeLiquid(x, y, z, type, liquidLevel);
 }
 
@@ -2083,10 +2086,10 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
       updateBlockLights();
     }
 
-    SetLiquidDataToMap(terrain, x, y, z, level);
+    pLevel->SetLiquidDataToMap(x, y, z, level);
   } else {
-    SetBlockInMap(terrain, x, y, z, (u8)Blocks::AIR_BLOCK);
-    SetLiquidDataToMap(terrain, x, y, z, (u8)LiquidLevel::Percent0);
+    pLevel->SetBlockInMap(x, y, z, (u8)Blocks::AIR_BLOCK);
+    pLevel->SetLiquidDataToMap(x, y, z, (u8)LiquidLevel::Percent0);
   }
 
   Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
@@ -2097,38 +2100,37 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
 
 void World::initLiquidExpansion() {
   TYRA_LOG("Initiating water propagation...");
-  auto map = CrossCraft_World_GetMapPtr();
 
-  for (int x = 0; x < map->length; x++) {
-    for (int z = 0; z < map->width; z++) {
-      for (int y = map->height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+  for (int x = 0; x < pLevel->map.length; x++) {
+    for (int z = 0; z < pLevel->map.width; z++) {
+      for (int y = pLevel->map.height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
 
         if (b == Blocks::AIR_BLOCK) {
           auto liquidValue = LiquidLevel::Percent100;
 
-          if (BoundCheckMap(terrain, x - 1, y, z)) {
-            auto type = GetBlockFromMap(terrain, x - 1, y, z);
+          if (pLevel->BoundCheckMap(x - 1, y, z)) {
+            auto type = pLevel->GetBlockFromMap(x - 1, y, z);
             if (type == (u8)Blocks::WATER_BLOCK ||
                 type == (u8)Blocks::LAVA_BLOCK)
               addLiquid(x - 1, y, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x + 1, y, z)) {
-            auto type = GetBlockFromMap(terrain, x + 1, y, z);
+          } else if (pLevel->BoundCheckMap(x + 1, y, z)) {
+            auto type = pLevel->GetBlockFromMap(x + 1, y, z);
             if (type == (u8)Blocks::WATER_BLOCK ||
                 type == (u8)Blocks::LAVA_BLOCK)
               addLiquid(x + 1, y, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y - 1, z)) {
-            auto type = GetBlockFromMap(terrain, x, y - 1, z);
+          } else if (pLevel->BoundCheckMap(x, y - 1, z)) {
+            auto type = pLevel->GetBlockFromMap(x, y - 1, z);
             if (type == (u8)Blocks::WATER_BLOCK ||
                 type == (u8)Blocks::LAVA_BLOCK)
               addLiquid(x, y - 1, z, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y, z - 1)) {
-            auto type = GetBlockFromMap(terrain, x, y, z - 1);
+          } else if (pLevel->BoundCheckMap(x, y, z - 1)) {
+            auto type = pLevel->GetBlockFromMap(x, y, z - 1);
             if (type == (u8)Blocks::WATER_BLOCK ||
                 type == (u8)Blocks::LAVA_BLOCK)
               addLiquid(x, y, z - 1, type, liquidValue);
-          } else if (BoundCheckMap(terrain, x, y, z + 1)) {
-            auto type = GetBlockFromMap(terrain, x, y, z + 1);
+          } else if (pLevel->BoundCheckMap(x, y, z + 1)) {
+            auto type = pLevel->GetBlockFromMap(x, y, z + 1);
             if (type == (u8)Blocks::WATER_BLOCK ||
                 type == (u8)Blocks::LAVA_BLOCK)
               addLiquid(x, y, z + 1, type, liquidValue);
@@ -2174,32 +2176,32 @@ void World::propagateWaterRemovalQueue() {
 
       waterRemovalBfsQueue.pop();
 
-      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+      if (pLevel->BoundCheckMap(nx + 1, ny, nz) &&
+          pLevel->GetBlockFromMap(nx + 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
         floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::WATER_BLOCK,
                               liquidValue);
       }
 
-      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny, nz + 1) &&
+          pLevel->GetBlockFromMap(nx, ny, nz + 1) == (u8)Blocks::WATER_BLOCK) {
         floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::WATER_BLOCK,
                               liquidValue);
       }
 
-      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
+      if (pLevel->BoundCheckMap(nx - 1, ny, nz) &&
+          pLevel->GetBlockFromMap(nx - 1, ny, nz) == (u8)Blocks::WATER_BLOCK) {
         floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::WATER_BLOCK,
                               liquidValue);
       }
 
-      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny - 1, nz) &&
+          pLevel->GetBlockFromMap(nx, ny - 1, nz) == (u8)Blocks::WATER_BLOCK) {
         floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::WATER_BLOCK,
                               liquidValue);
       }
 
-      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny, nz - 1) &&
+          pLevel->GetBlockFromMap(nx, ny, nz - 1) == (u8)Blocks::WATER_BLOCK) {
         floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::WATER_BLOCK,
                               liquidValue);
       }
@@ -2235,32 +2237,32 @@ void World::propagateLavaRemovalQueue() {
 
       lavaRemovalBfsQueue.pop();
 
-      if (BoundCheckMap(terrain, nx + 1, ny, nz) &&
-          GetBlockFromMap(terrain, nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+      if (pLevel->BoundCheckMap(nx + 1, ny, nz) &&
+          pLevel->GetBlockFromMap(nx + 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
         floodFillLiquidRemove(nx + 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
                               nextLevel);
       }
 
-      if (BoundCheckMap(terrain, nx, ny, nz + 1) &&
-          GetBlockFromMap(terrain, nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny, nz + 1) &&
+          pLevel->GetBlockFromMap(nx, ny, nz + 1) == (u8)Blocks::LAVA_BLOCK) {
         floodFillLiquidRemove(nx, ny, nz + 1, (u8)Blocks::LAVA_BLOCK,
                               nextLevel);
       }
 
-      if (BoundCheckMap(terrain, nx - 1, ny, nz) &&
-          GetBlockFromMap(terrain, nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
+      if (pLevel->BoundCheckMap(nx - 1, ny, nz) &&
+          pLevel->GetBlockFromMap(nx - 1, ny, nz) == (u8)Blocks::LAVA_BLOCK) {
         floodFillLiquidRemove(nx - 1, ny, nz, (u8)Blocks::LAVA_BLOCK,
                               nextLevel);
       }
 
-      if (BoundCheckMap(terrain, nx, ny - 1, nz) &&
-          GetBlockFromMap(terrain, nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny - 1, nz) &&
+          pLevel->GetBlockFromMap(nx, ny - 1, nz) == (u8)Blocks::LAVA_BLOCK) {
         floodFillLiquidRemove(nx, ny - 1, nz, (u8)Blocks::LAVA_BLOCK,
                               nextLevel);
       }
 
-      if (BoundCheckMap(terrain, nx, ny, nz - 1) &&
-          GetBlockFromMap(terrain, nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
+      if (pLevel->BoundCheckMap(nx, ny, nz - 1) &&
+          pLevel->GetBlockFromMap(nx, ny, nz - 1) == (u8)Blocks::LAVA_BLOCK) {
         floodFillLiquidRemove(nx, ny, nz - 1, (u8)Blocks::LAVA_BLOCK,
                               nextLevel);
       }
@@ -2274,7 +2276,7 @@ void World::propagateLavaRemovalQueue() {
 
 void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
                                   u8 level) {
-  u8 neighborLevel = GetLiquidDataFromMap(terrain, x, y, z);
+  u8 neighborLevel = pLevel->GetLiquidDataFromMap(x, y, z);
 
   if (neighborLevel <= level + 1) {
     removeLiquid(x, y, z, type, level);
@@ -2285,7 +2287,7 @@ void World::floodFillLiquidRemove(uint16_t x, uint16_t y, uint16_t z, u8 type,
 
 void World::floodFillLiquidAdd(uint16_t x, uint16_t y, uint16_t z, u8 type,
                                u8 nextLevel, u8 orientation) {
-  if (GetLiquidDataFromMap(terrain, x, y, z) + 1 < nextLevel) {
+  if (pLevel->GetLiquidDataFromMap(x, y, z) + 1 < nextLevel) {
     addLiquid(x, y, z, type, nextLevel, orientation);
   }
 }
@@ -2459,22 +2461,14 @@ void World::updateChunksAffectedByLiquidPropagation() {
 }
 
 u8 World::canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z) {
-  if (!BoundCheckMap(terrain, x, y, z)) return false;
-  const u8 type = GetBlockFromMap(terrain, x, y, z);
+  if (!pLevel->BoundCheckMap(x, y, z)) return false;
+  const u8 type = pLevel->GetBlockFromMap(x, y, z);
   return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
          type == (u8)Blocks::POPPY_FLOWER || type == (u8)Blocks::TORCH ||
          type == (u8)Blocks::DANDELION_FLOWER;
 }
 
-// From CrossCraft
-std::queue<Node> lightBfsQueue;
-std::queue<Node> lightRemovalBfsQueue;
-
-// std::stack<Node> sunlightBfsQueue;
-std::queue<Node> sunlightBfsQueue;
-std::queue<Node> sunlightRemovalBfsQueue;
-
-void updateSunlight() {
+void World::updateSunlight() {
   if (sunlightRemovalBfsQueue.empty() == false) {
     propagateSunlightRemovalQueue();
   }
@@ -2484,10 +2478,9 @@ void updateSunlight() {
   }
 }
 
-void propagateSunLightAddBFSQueue() {
+void World::propagateSunLightAddBFSQueue() {
   while (!sunlightBfsQueue.empty()) {
     auto lightNode = sunlightBfsQueue.front();
-    auto map = CrossCraft_World_GetMapPtr();
 
     uint16_t nx = lightNode.x;
     uint16_t ny = lightNode.y;
@@ -2502,62 +2495,59 @@ void propagateSunLightAddBFSQueue() {
       continue;
     }
 
-    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz)) {
       floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz)) {
       floodFillSunlightAdd(nx, ny + 1, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1)) {
       floodFillSunlightAdd(nx, ny, nz + 1, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz)) {
       floodFillSunlightAdd(nx - 1, ny, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz)) {
       floodFillSunlightAdd(nx, ny - 1, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1)) {
       floodFillSunlightAdd(nx, ny, nz - 1, nextLightValue);
     }
   }
 }
 
-void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
-                          u8 nextLightValue) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+void World::floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                                 u8 nextLightValue) {
+  auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
 
   if (isTransparent(b)) {
-    if (GetSunLightFromMap(map, x, y, z) + 1 < nextLightValue) {
+    if (pLevel->GetSunLightFromMap(x, y, z) + 1 < nextLightValue) {
       addSunLight(x, y, z, nextLightValue);
     }
   }
 }
 
-void addSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+void World::addSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto lightLevel = pLevel->GetSunLightFromMap(x, y, z);
   addSunLight(x, y, z, lightLevel);
 }
 
-void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+void World::addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   if (lightLevel >= 0) {
-    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, lightLevel);
+    pLevel->SetSunLightInMap(x, y, z, lightLevel);
     sunlightBfsQueue.emplace(x, y, z, lightLevel);
   }
 }
 
-void propagateSunlightRemovalQueue() {
+void World::propagateSunlightRemovalQueue() {
   while (!sunlightRemovalBfsQueue.empty()) {
     // get the light value
     Node lightNode = sunlightRemovalBfsQueue.front();
-    auto map = CrossCraft_World_GetMapPtr();
 
     // get the index
     uint16_t nx = lightNode.x;
@@ -2567,36 +2557,35 @@ void propagateSunlightRemovalQueue() {
 
     sunlightRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz)) {
       floodFillSunlightRemove(nx + 1, ny, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz)) {
       floodFillSunlightRemove(nx, ny + 1, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1)) {
       floodFillSunlightRemove(nx, ny, nz + 1, lightValue);
     }
 
-    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz)) {
       floodFillSunlightRemove(nx - 1, ny, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz)) {
       floodFillSunlightRemove(nx, ny - 1, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1)) {
       floodFillSunlightRemove(nx, ny, nz - 1, lightValue);
     }
   }
 }
 
-void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
-                             u8 lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto neighborLevel = GetSunLightFromMap(map, x, y, z);
+void World::floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
+                                    u8 lightLevel) {
+  auto neighborLevel = pLevel->GetSunLightFromMap(x, y, z);
 
   if (neighborLevel != 0 && neighborLevel < lightLevel) {
     removeSunLight(x, y, z);
@@ -2605,40 +2594,36 @@ void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
   }
 }
 
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto lightLevel = GetSunLightFromMap(map, x, y, z);
+void World::removeSunLight(uint16_t x, uint16_t y, uint16_t z) {
+  auto lightLevel = pLevel->GetSunLightFromMap(x, y, z);
   removeSunLight(x, y, z, lightLevel);
 }
 
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+void World::removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   if (lightLevel > 0) {
     sunlightRemovalBfsQueue.emplace(x, y, z, lightLevel);
-    SetSunLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, 0);
+    pLevel->SetSunLightInMap(x, y, z, 0);
   }
 }
 
-void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
+void World::addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   if (lightLevel > 0) {
-    auto map = CrossCraft_World_GetMapPtr();
     lightBfsQueue.emplace(x, y, z, lightLevel);
-    SetBlockLightInMap(map, x, y, z, lightLevel);
+    pLevel->SetBlockLightInMap(x, y, z, lightLevel);
   }
 }
 
-void removeLight(uint16_t x, uint16_t y, uint16_t z) {
-  auto map = CrossCraft_World_GetMapPtr();
-  u8 lightLevel = GetBlockLightFromMap(map, x, y, z);
+void World::removeLight(uint16_t x, uint16_t y, uint16_t z) {
+  u8 lightLevel = pLevel->GetBlockLightFromMap(x, y, z);
   removeLight(x, y, z, lightLevel);
 }
 
-void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
+void World::removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   lightRemovalBfsQueue.emplace(x, y, z, lightLevel);
-  SetBlockLightInMap(map, x, y, z, 0);
+  pLevel->SetBlockLightInMap(x, y, z, 0);
 }
 
-void updateBlockLights() {
+void World::updateBlockLights() {
   if (lightRemovalBfsQueue.empty() == false) {
     propagateLightRemovalQueue();
   }
@@ -2648,11 +2633,10 @@ void updateBlockLights() {
   }
 }
 
-void propagateLightRemovalQueue() {
+void World::propagateLightRemovalQueue() {
   while (lightRemovalBfsQueue.empty() == false) {
     // get the light value
     Node lightNode = lightRemovalBfsQueue.front();
-    auto map = CrossCraft_World_GetMapPtr();
 
     // get the index
     uint16_t nx = lightNode.x;
@@ -2662,35 +2646,35 @@ void propagateLightRemovalQueue() {
 
     lightRemovalBfsQueue.pop();
 
-    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz)) {
       floodFillLightRemove(nx + 1, ny, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz)) {
       floodFillLightRemove(nx, ny + 1, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1)) {
       floodFillLightRemove(nx, ny, nz + 1, lightValue);
     }
 
-    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz)) {
       floodFillLightRemove(nx - 1, ny, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz)) {
       floodFillLightRemove(nx, ny - 1, nz, lightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1)) {
       floodFillLightRemove(nx, ny, nz - 1, lightValue);
     }
   }
 }
 
-void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto neighborLevel = GetBlockLightFromMap(map, x, y, z);
+void World::floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z,
+                                 u8 lightLevel) {
+  auto neighborLevel = pLevel->GetBlockLightFromMap(x, y, z);
 
   if (neighborLevel != 0 && neighborLevel < lightLevel) {
     removeLight(x, y, z);
@@ -2699,10 +2683,9 @@ void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel) {
   }
 }
 
-void propagateLightAddQueue() {
+void World::propagateLightAddQueue() {
   while (!lightBfsQueue.empty()) {
     auto lightNode = lightBfsQueue.front();
-    auto map = CrossCraft_World_GetMapPtr();
 
     uint16_t nx = lightNode.x;
     uint16_t ny = lightNode.y;
@@ -2717,43 +2700,43 @@ void propagateLightAddQueue() {
       continue;
     }
 
-    if (BoundCheckMap(map, nx + 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz)) {
       floodFillLightAdd(nx + 1, ny, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny + 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz)) {
       floodFillLightAdd(nx, ny + 1, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz + 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1)) {
       floodFillLightAdd(nx, ny, nz + 1, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx - 1, ny, nz)) {
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz)) {
       floodFillLightAdd(nx - 1, ny, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny - 1, nz)) {
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz)) {
       floodFillLightAdd(nx, ny - 1, nz, nextLightValue);
     }
 
-    if (BoundCheckMap(map, nx, ny, nz - 1)) {
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1)) {
       floodFillLightAdd(nx, ny, nz - 1, nextLightValue);
     }
   }
 }
 
-void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue) {
-  auto map = CrossCraft_World_GetMapPtr();
-  auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+void World::floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z,
+                              u8 nextLightValue) {
+  auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
   if (isTransparent(b)) {
-    if (GetBlockLightFromMap(map, x, y, z) < nextLightValue) {
+    if (pLevel->GetBlockLightFromMap(x, y, z) < nextLightValue) {
       addBlockLight(x, y, z, nextLightValue);
     }
   }
 }
 
-void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
+void World::checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
   removeSunLight(x + 1, y, z);
   removeSunLight(x - 1, y, z);
   removeSunLight(x, y + 1, z);
@@ -2765,20 +2748,19 @@ void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z) {
   return;
 }
 
-void initSunLight(uint32_t tick) {
+void World::initSunLight(uint32_t tick) {
   TYRA_LOG("Initiating SunLight...");
-  auto map = CrossCraft_World_GetMapPtr();
 
-  for (int x = 0; x < map->length; x++) {
-    for (int z = 0; z < map->width; z++) {
+  for (int x = 0; x < pLevel->map.length; x++) {
+    for (int z = 0; z < pLevel->map.width; z++) {
       u8 lv = 4;
       auto isDay = tick >= 0 && tick <= 12000;
       if (isDay) {
         lv = 15;
       }
 
-      for (int y = map->height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+      for (int y = pLevel->map.height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
         // TODO: refactor to getLightFilterByBlock function
         // Vegetation
         // (b >= 37 && b <= 40)
@@ -2806,7 +2788,7 @@ void initSunLight(uint32_t tick) {
           lv = 0;
         }
 
-        SetSunLightInMap(map, x, y, z, lv);
+        pLevel->SetSunLightInMap(x, y, z, lv);
         sunlightBfsQueue.emplace(x, y, z, lv);
         // printf("X: %d, Y: %d, Z: %d | b: %d | lv: %d \n", x, y, z, (u8)b,
         // lv);
@@ -2815,14 +2797,13 @@ void initSunLight(uint32_t tick) {
   }
 }
 
-void initBlockLight(BlockManager* blockManager) {
+void World::initBlockLight(BlockManager* blockManager) {
   TYRA_LOG("Initiating block Lights...");
-  auto map = CrossCraft_World_GetMapPtr();
 
-  for (int x = 0; x < map->length; x++) {
-    for (int z = 0; z < map->width; z++) {
-      for (int y = map->height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(GetBlockFromMap(map, x, y, z));
+  for (int x = 0; x < pLevel->map.length; x++) {
+    for (int z = 0; z < pLevel->map.width; z++) {
+      for (int y = pLevel->map.height - 1; y >= 0; y--) {
+        auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
         auto lightValue = blockManager->getBlockLightValue(b);
         if (lightValue > 0) {
           addBlockLight(x, y, z, lightValue);
@@ -2832,58 +2813,34 @@ void initBlockLight(BlockManager* blockManager) {
   }
 }
 
-void CrossCraft_World_Init(const uint32_t& seed) {
-  TYRA_LOG("Generating base level template");
-  srand(seed);
-
+void World::CrossCraft_World_Init(const uint32_t& seed) {
   CrossCraft_WorldGenerator_Init(rand());
-
-  const auto level = CrossCraft_World_GetLevelPtr();
-
-  level->map = {
-      .width = OVERWORLD_H_DISTANCE,
-      .length = OVERWORLD_H_DISTANCE,
-      .height = OVERWORLD_V_DISTANCE,
-
-      .spawnX = 128,
-      .spawnY = 59,
-      .spawnZ = 128,
-  };
-
-  // For some reason I need to clear the array garbage
-  // I was initialized with new key word, very weird!
-  for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
-    level->map.blocks[i] = 0;
-    level->map.lightData[i] = 0;
-    level->map.metaData[i] = 0;
-  }
-
-  TYRA_LOG("Generated base level template");
 }
 
-void CrossCraft_World_Deinit() { TYRA_LOG("Destroying the world"); }
+void World::CrossCraft_World_Deinit() { TYRA_LOG("Destroying the world"); }
 
 /**
  * @brief Generates the world
  * @TODO Offer a callback for world percentage
  */
-void CrossCraft_World_GenerateMap(WorldType worldType) {
-  const auto level = CrossCraft_World_GetLevelPtr();
+void World::CrossCraft_World_GenerateMap(WorldType worldType) {
+  TYRA_LOG("worldType: ", (int)worldType);
+
   switch (worldType) {
     case WORLD_TYPE_ORIGINAL:
-      CrossCraft_WorldGenerator_Generate_Original(&level->map);
+      CrossCraft_WorldGenerator_Generate_Original(pLevel);
       break;
     case WORLD_TYPE_FLAT:
-      CrossCraft_WorldGenerator_Generate_Flat(&level->map);
+      CrossCraft_WorldGenerator_Generate_Flat(pLevel);
       break;
     case WORLD_TYPE_ISLAND:
-      CrossCraft_WorldGenerator_Generate_Island(&level->map);
+      CrossCraft_WorldGenerator_Generate_Island(pLevel);
       break;
     case WORLD_TYPE_WOODS:
-      CrossCraft_WorldGenerator_Generate_Woods(&level->map);
+      CrossCraft_WorldGenerator_Generate_Woods(pLevel);
       break;
     case WORLD_TYPE_FLOATING:
-      CrossCraft_WorldGenerator_Generate_Floating(&level->map);
+      CrossCraft_WorldGenerator_Generate_Floating(pLevel);
       break;
     case WORLD_MINI_GAME_MAZECRAFT:
       break;

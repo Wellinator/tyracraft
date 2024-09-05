@@ -55,6 +55,7 @@ class StateGamePlay : public GameState {
   // Rotating skybox
   StaticMesh* menuSkybox;
 
+  Level* plevel;
   World* world;
   Ui* ui;
   Player* player;

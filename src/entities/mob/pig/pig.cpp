@@ -15,10 +15,11 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Renderer* t_renderer, SoundManager* t_soundManager,
+Pig::Pig(Level* level, Renderer* t_renderer, SoundManager* t_soundManager,
          ChunckManager* t_chunkManager, Texture* pigTexture,
          DynamicMesh* baseMesh)
-    : PassiveMob(MobType::Pig) {
+    : Mob(level) {
+  pLevel = level;
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
   this->t_chunkManager = t_chunkManager;
@@ -56,8 +57,7 @@ Pig::~Pig() {
 // Methods
 // ----
 
-void Pig::update(const float& deltaTime, const Vec4& movementDir,
-                 LevelMap* t_terrain) {
+void Pig::update(const float& deltaTime, const Vec4& movementDir) {
   u8 fullProcessing = true;
   if (currentChunck) {
     if (currentChunck->state != ChunkState::Loaded ||
@@ -87,8 +87,8 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir,
   Vec4 min, max;
   BBox tempBBox = getHitBox(&min, &max);
 
-  // Update updateStateInWater every 5 ticks
-  // if (isTicksCounterAt(5)) updateStateInWater(t_terrain, &min, &max);
+  // Update  State In Water every 5 ticks
+  if (isTicksCounterAt(5)) updateStateInWater(&min, &max);
 
   if (isMoving) {
     Vec4 nextPosition = getNextPosition(deltaTime, movementDir);
@@ -454,7 +454,7 @@ void Pig::unsetWalkingAnimation() {
   isWalkingAnimationSet = false;
 }
 
-void Pig::updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max) {
+void Pig::updateStateInWater(Vec4* min, Vec4* max) {
   Vec4 mid, top, bottom;
   mid = ((*max - *min) / 2) + *min;
 
@@ -462,7 +462,7 @@ void Pig::updateStateInWater(LevelMap* terrain, Vec4* min, Vec4* max) {
   top.set(mid.x, max->y + 6.0F, mid.z);
 
   auto blockBottom =
-      static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));
+      static_cast<Blocks>(pLevel->getBlockByWorldPosition(&bottom));
 
   _isOnWater = blockBottom == Blocks::WATER_BLOCK;
 }
@@ -524,3 +524,12 @@ void Pig::playDeathSfx() {
   t_soundManager->setSfxVolume(config._volume, ch);
   t_soundManager->playSfx(sound, ch);
 }
+
+// ----
+// Override
+// ----
+/** Mob category */
+MobCategory Pig::getCategory() { return MobCategory::Passive; }
+
+/** Mob type */
+MobType Pig::getType() { return MobType::Pig; }

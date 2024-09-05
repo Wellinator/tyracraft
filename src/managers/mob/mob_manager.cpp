@@ -32,13 +32,13 @@ MobManager::~MobManager() {
 };
 
 void MobManager::init(Renderer* renderer, SoundManager* t_soundManager,
-                      WorldLightModel* t_worldLightModel, LevelMap* t_terrain,
+                      WorldLightModel* t_worldLightModel, Level* level,
                       ChunckManager* t_chunkManager) {
   this->t_renderer = renderer;
   this->t_soundManager = t_soundManager;
   this->t_chunkManager = t_chunkManager;
   this->t_worldLightModel = t_worldLightModel;
-  this->t_terrain = t_terrain;
+  pLevel = level;
 
   _loadPigTexture();
   _loadPigMesh();
@@ -70,7 +70,7 @@ void MobManager::update(const float& deltaTime) {
       changeDirectionTimer += deltaTime;
     }
 
-    mobs[i]->update(deltaTime, mobs[i]->moviemntDirection, t_terrain);
+    mobs[i]->update(deltaTime, mobs[i]->moviemntDirection);
   }
 }
 
@@ -157,8 +157,8 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
 }
 
 Mob* MobManager::_createPig() {
-  Pig* mob = new Pig(t_renderer, t_soundManager, t_chunkManager, pigTexture,
-                     pigBaseMesh);
+  Pig* mob = new Pig(pLevel, t_renderer, t_soundManager, t_chunkManager,
+                     pigTexture, pigBaseMesh);
   mobs.push_back(mob);
   return mob;
 }

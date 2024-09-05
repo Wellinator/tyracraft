@@ -11,8 +11,7 @@ using Tyra::DynamicMesh;
 
 class Mob : public Entity {
  public:
-  Mob(const MobCategory mobCategory, const MobType mobType)
-      : Entity(EntityType::Mob), category(mobCategory), type(mobType) {
+  Mob(Level* level) : Entity(level, EntityType::Mob) {
     t_near_entities = new std::vector<bvh::index_t>();
   };
 
@@ -22,8 +21,7 @@ class Mob : public Entity {
     delete t_near_entities;
   };
 
-  virtual void update(const float& deltaTime, const Vec4& movementDir,
-                      LevelMap* t_terrain) = 0;
+  virtual void update(const float& deltaTime, const Vec4& movementDir) = 0;
   virtual void render() = 0;
 
   virtual BBox getHitBox() const = 0;
@@ -35,9 +33,17 @@ class Mob : public Entity {
     mesh->getPosition()->set(position);
   }
 
+  /** Mob category */
+  virtual MobCategory getCategory() {
+    TYRA_TRAP("getCategory() not implemented!");
+    return MobCategory::Invalid;
+  };
+
   /** Mob type */
-  const MobCategory category;
-  const MobType type;
+  virtual MobType getType() {
+    TYRA_TRAP("getType() not implemented!");
+    return MobType::Invalid;
+  };
 
   /** Mod id */
   const uint32_t id = rand() % 999999;

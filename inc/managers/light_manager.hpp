@@ -13,7 +13,7 @@ using Tyra::Vec4;
 
 class LightManager {
  public:
-  LightManager(LevelMap* t_terrain);
+  LightManager(Level* pLevel);
   ~LightManager();
 
   void init();
@@ -25,12 +25,11 @@ class LightManager {
   static float calcAOIntensity(u8 AOValue);
   static Color IntensifyColor(Color* color, const float intensity);
   static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                               FACE_SIDE faceSide, LevelMap* t_terrain,
+                               FACE_SIDE faceSide, Level* pLevel,
                                const float sunlightIntensity);
   static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                               LevelMap* t_terrain,
-                               const float sunlightIntensity);
+                               Level* pLevel, const float sunlightIntensity);
 
  private:
-  LevelMap* terrain = nullptr;
+  Level* pLevel = nullptr;
 };

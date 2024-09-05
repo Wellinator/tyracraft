@@ -6,20 +6,20 @@ void SlabMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
-                                  LevelMap* t_terrain) {
-  SlabMeshBuilder_loadMeshData(t_block, t_vertices, t_terrain);
+                                  Level* pLevel) {
+  SlabMeshBuilder_loadMeshData(t_block, t_vertices, pLevel);
   SlabMeshBuilder_loadUVData(t_block, t_uv_map);
   SlabMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
-                                t_terrain);
+                                pLevel);
 }
 
 void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  LevelMap* t_terrain) {
+                                  Level* pLevel) {
   int vert;
   Vec4 pos;
-  GetXYZFromPos(&t_block->offset, &pos);
+  pLevel->GetXYZFromPos(&t_block->offset, &pos);
   const SlabOrientation orientation =
-      GetSlabOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      pLevel->GetSlabOrientationDataFromMap(pos.x, pos.y, pos.z);
 
   Vec4* rawData;
   if (orientation == SlabOrientation::Top) {
@@ -137,15 +137,15 @@ void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
   t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
-std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(
-    Block* t_block, LevelMap* t_terrain) {
+std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(Block* t_block,
+                                                           Level* pLevel) {
   Vec4 tempBlockOffset;
   std::array<FACE_SIDE, 4> result = {};
 
-  GetXYZFromPos(&t_block->offset, &tempBlockOffset);
+  pLevel->GetXYZFromPos(&t_block->offset, &tempBlockOffset);
 
-  const BlockOrientation orientation = GetBlockOrientationDataFromMap(
-      t_terrain, tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
+  const BlockOrientation orientation = pLevel->GetBlockOrientationDataFromMap(
+      tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
 
   switch (orientation) {
     case BlockOrientation::North:
@@ -193,13 +193,13 @@ std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(
 void SlabMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain) {
+                                   Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
   const std::array<FACE_SIDE, 4> faceByRotation =
-      SlabMeshBuilder_getFaceByRotation(t_block, t_terrain);
+      SlabMeshBuilder_getFaceByRotation(t_block, pLevel);
 
   if (t_block->isTopFaceVisible()) {
     //   Top face 100% of the base color
@@ -207,14 +207,14 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::TOP, t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::TOP, t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -225,13 +225,13 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
-    auto faceNeightbors = SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::BOTTOM,
-                                                            t_block, t_terrain);
+    auto faceNeightbors =
+        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::BOTTOM, t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -242,13 +242,13 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[0],
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[0], t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[0], t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -259,13 +259,13 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[3],
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[3], t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[3], t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -276,13 +276,13 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[2],
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[2], t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[2], t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -293,13 +293,13 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     SlabMeshBuilder_ApplyLightToFace(&faceColor, t_block, faceByRotation[1],
-                                     t_terrain,
+                                     pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
 
     auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[1], t_block, t_terrain);
+        SlabMeshBuilder_getFaceNeightbors(faceByRotation[1], t_block, pLevel);
     SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
                                             t_vertices_colors);
   }
@@ -318,125 +318,125 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
  */
 std::array<u8, 8> SlabMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
                                                     Block* block,
-                                                    LevelMap* t_terrain) {
+                                                    Level* pLevel) {
   Vec4 pos;
-  GetXYZFromPos(&block->offset, &pos);
+  pLevel->GetXYZFromPos(&block->offset, &pos);
 
   auto result = std::array<u8, 8>();
 
   switch (faceSide) {
     case FACE_SIDE::TOP:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y + 1, pos.z + 1));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z + 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z - 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y + 1, pos.z - 1));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z - 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::BOTTOM:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y - 1, pos.z - 1));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z - 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z + 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y - 1, pos.z + 1));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z + 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z - 1));
       break;
 
     case FACE_SIDE::LEFT:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z - 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y, pos.z - 1));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z - 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z + 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y, pos.z + 1));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::RIGHT:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z + 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y, pos.z + 1));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z + 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z - 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y, pos.z - 1));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z - 1));
       break;
 
     case FACE_SIDE::BACK:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y + 1, pos.z + 1));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z + 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y, pos.z + 1));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z + 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y - 1, pos.z + 1));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z + 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y, pos.z + 1));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z + 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z + 1));
       break;
 
     case FACE_SIDE::FRONT:
       result[0] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y + 1, pos.z - 1));
       result[1] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y + 1, pos.z - 1));
       result[2] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y, pos.z - 1));
       result[3] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x - 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x - 1, pos.y - 1, pos.z - 1));
       result[4] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x, pos.y - 1, pos.z - 1));
       result[5] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y - 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y - 1, pos.z - 1));
       result[6] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y, pos.z - 1));
       result[7] = SlabMeshBuilder_isBlockOpaque(
-          GetBlockFromMap(t_terrain, pos.x + 1, pos.y + 1, pos.z - 1));
+          pLevel->GetBlockFromMap(pos.x + 1, pos.y + 1, pos.z - 1));
       break;
 
     default:
@@ -498,7 +498,7 @@ void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
 }
 
 void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                                      FACE_SIDE faceSide, LevelMap* t_terrain,
+                                      FACE_SIDE faceSide, Level* pLevel,
                                       const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
   const float MIN_LIGHT_FACTOR = 0.15F;
@@ -508,20 +508,18 @@ void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
   u8 lightLevel;
 
   Vec4 targetBlockOffset;
-  GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
-  const SlabOrientation orientation = GetSlabOrientationDataFromMap(
-      t_terrain, targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
+  pLevel->GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
+  const SlabOrientation orientation = pLevel->GetSlabOrientationDataFromMap(
+      targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
 
   switch (faceSide) {
     case FACE_SIDE::TOP:
       if (orientation == SlabOrientation::Top) {
-        lightData =
-            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                                targetBlockOffset.y + 1, targetBlockOffset.z);
+        lightData = pLevel->GetLightDataFromMap(
+            targetBlockOffset.x, targetBlockOffset.y + 1, targetBlockOffset.z);
       } else {
-        lightData =
-            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                                targetBlockOffset.y, targetBlockOffset.z);
+        lightData = pLevel->GetLightDataFromMap(
+            targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
       }
 
       sunLightLevel = ((lightData >> 4) & 0xF);
@@ -530,13 +528,11 @@ void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
 
     case FACE_SIDE::BOTTOM:
       if (orientation == SlabOrientation::Top) {
-        lightData =
-            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                                targetBlockOffset.y, targetBlockOffset.z);
+        lightData = pLevel->GetLightDataFromMap(
+            targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
       } else {
-        lightData =
-            GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                                targetBlockOffset.y - 1, targetBlockOffset.z);
+        lightData = pLevel->GetLightDataFromMap(
+            targetBlockOffset.x, targetBlockOffset.y - 1, targetBlockOffset.z);
       }
 
       sunLightLevel = ((lightData >> 4) & 0xF);
@@ -544,31 +540,29 @@ void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
       break;
 
     case FACE_SIDE::LEFT:
-      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x + 1,
-                                      targetBlockOffset.y, targetBlockOffset.z);
+      lightData = pLevel->GetLightDataFromMap(
+          targetBlockOffset.x + 1, targetBlockOffset.y, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::RIGHT:
-      lightData = GetLightDataFromMap(t_terrain, targetBlockOffset.x - 1,
-                                      targetBlockOffset.y, targetBlockOffset.z);
+      lightData = pLevel->GetLightDataFromMap(
+          targetBlockOffset.x - 1, targetBlockOffset.y, targetBlockOffset.z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BACK:
-      lightData =
-          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                              targetBlockOffset.y, targetBlockOffset.z + 1);
+      lightData = pLevel->GetLightDataFromMap(
+          targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z + 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::FRONT:
-      lightData =
-          GetLightDataFromMap(t_terrain, targetBlockOffset.x,
-                              targetBlockOffset.y, targetBlockOffset.z - 1);
+      lightData = pLevel->GetLightDataFromMap(
+          targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z - 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;

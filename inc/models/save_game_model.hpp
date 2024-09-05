@@ -9,11 +9,12 @@ using Tyra::Vec4;
 
 class SaveGameModel {
  public:
-  SaveGameModel(){};
+  SaveGameModel(){
+    
+  };
   ~SaveGameModel(){};
 
   NewGameOptions gameOptions;
-  Level worldLevel;
+  Level* pLevel;
   Vec4 playerPosition;
-  
 };

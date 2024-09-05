@@ -26,7 +26,7 @@ void TorchMeshBuilder_GenerateMesh(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain);
+                                   Level* pLevel);
 
 void TorchMeshBuilder_loadMeshData(Block* t_block,
                                    std::vector<Vec4>* t_vertices,
@@ -35,6 +35,6 @@ void TorchMeshBuilder_loadUVData(std::vector<Vec4>* t_uv_map);
 void TorchMeshBuilder_loadLightData(Block* t_block,
                                     std::vector<Color>* t_vertices_colors,
                                     WorldLightModel* t_worldLightModel,
-                                    LevelMap* t_terrain);
+                                    Level* pLevel);
 void TorchMeshBuilder_loadLightFaceData(Color* faceColor,
                                         std::vector<Color>* t_vertices_colors);

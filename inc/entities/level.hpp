@@ -9,7 +9,8 @@
 
 using Tyra::Vec4;
 
-typedef struct {
+class LevelMap {
+ public:
   uint16_t width;
   uint16_t length;
   uint16_t height;
@@ -19,74 +20,63 @@ typedef struct {
   uint8_t blocks[OVERWORLD_SIZE];
   uint8_t lightData[OVERWORLD_SIZE];
   uint8_t metaData[OVERWORLD_SIZE];
-} LevelMap;
+};
 
-typedef struct {
+class Level {
+ public:
   LevelMap map;
-} Level;
 
-/**
- * This method should ONLY be used by a client in single-player or a server for
- * internal use.
- * @return Returns a pointer to the level
- */
-Level* CrossCraft_World_GetLevelPtr();
-LevelMap* CrossCraft_World_GetMapPtr();
+  Level(int seed);
 
-uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
+  uint8_t getBlockByWorldPosition(Vec4* pos);
 
-void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y, uint32_t* z);
-void GetXYZFromPos(u32* pos, Vec4* t_Offset);
+  uint8_t GetMetaDataFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t SetMetaDataToMap(uint16_t x, uint16_t y, uint16_t z, uint8_t data);
 
-uint8_t getBlockByWorldPosition(LevelMap* map, Vec4* pos);
+  void SetLiquidOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                                     const LiquidOrientation orientation);
+  LiquidOrientation GetLiquidOrientationDataFromMap(uint16_t x, uint16_t y,
+                                                    uint16_t z);
 
-uint8_t GetMetaDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t SetMetaDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                         uint8_t data);
+  void SetTorchOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                                    const BlockOrientation orientation);
+  BlockOrientation GetTorchOrientationDataFromMap(uint16_t x, uint16_t y,
+                                                  uint16_t z);
 
-void SetLiquidOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                   uint16_t z,
-                                   const LiquidOrientation orientation);
-LiquidOrientation GetLiquidOrientationDataFromMap(LevelMap* map, uint16_t x,
-                                                 uint16_t y, uint16_t z);
+  void SetBlockOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                                    const BlockOrientation orientation);
+  BlockOrientation GetBlockOrientationDataFromMap(uint16_t x, uint16_t y,
+                                                  uint16_t z);
 
-void SetTorchOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                  uint16_t z,
-                                  const BlockOrientation orientation);
-BlockOrientation GetTorchOrientationDataFromMap(LevelMap* map, uint16_t x,
-                                                uint16_t y, uint16_t z);
+  void SetLiquidDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                          const u8 liquidLevel);
+  u8 GetLiquidDataFromMap(uint16_t x, uint16_t y, uint16_t z);
 
-void SetBlockOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                  uint16_t z,
-                                  const BlockOrientation orientation);
-BlockOrientation GetBlockOrientationDataFromMap(LevelMap* map, uint16_t x,
-                                                uint16_t y, uint16_t z);
+  void SetSlabOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                                   const SlabOrientation orientation);
+  void ResetSlabOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z);
+  SlabOrientation GetSlabOrientationDataFromMap(uint16_t x, uint16_t y,
+                                                uint16_t z);
 
-void SetLiquidDataToMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                        const u8 liquidLevel);
-u8 GetLiquidDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetLightDataFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetLightFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetBlockLightFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetSunLightFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetBlockFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetBlockFromMapByIndex(uint32_t index);
 
-void SetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                 uint16_t z, const SlabOrientation orientation);
-void ResetSlabOrientationDataToMap(LevelMap* map, uint16_t x, uint16_t y,
-                                   uint16_t z);
-SlabOrientation GetSlabOrientationDataFromMap(LevelMap* map, uint16_t x,
-                                              uint16_t y, uint16_t z);
+  uint8_t SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z);
 
-uint8_t GetLightDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t GetLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t GetBlockLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t GetSunLightFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t GetBlockFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
-uint8_t GetBlockFromMapByIndex(LevelMap* map, uint32_t index);
+  void SetBlockInMap(uint16_t x, uint16_t y, uint16_t z, uint8_t block);
+  void SetBlockInMapByIndex(uint32_t index, uint8_t block);
 
-void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                   uint8_t block);
-void SetBlockInMapByIndex(LevelMap* map, uint32_t index, uint8_t block);
+  void SetBlockLightInMap(uint16_t x, uint16_t y, uint16_t z, uint16_t light);
+  void SetSunLightInMap(uint16_t x, uint16_t y, uint16_t z, uint16_t light);
 
-void SetBlockLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                        uint16_t light);
-void SetSunLightInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z,
-                      uint16_t light);
+  bool BoundCheckMap(uint16_t x, uint16_t y, uint16_t z);
 
-bool BoundCheckMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z);
+  static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
+  static void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y,
+                            uint32_t* z);
+  static void GetXYZFromPos(u32* pos, Vec4* t_Offset);
+};

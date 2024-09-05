@@ -16,10 +16,12 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Player::Player(Renderer* t_renderer, SoundManager* t_soundManager,
-               BlockManager* t_blockManager, ItemRepository* t_itemRepository,
+Player::Player(Level* pLevel, Renderer* t_renderer,
+               SoundManager* t_soundManager, BlockManager* t_blockManager,
+               ItemRepository* t_itemRepository,
                WorldLightModel* t_worldLightModel)
-    : Entity(EntityType::Player) {
+    : Entity(pLevel, EntityType::Player) {
+  this->pLevel = pLevel;
   this->t_renderer = t_renderer;
   this->t_soundManager = t_soundManager;
   this->t_blockManager = t_blockManager;
@@ -80,7 +82,7 @@ Player::~Player() {
 // ----
 
 void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    Camera* t_camera, LevelMap* t_terrain) {
+                    Camera* t_camera) {
   isMoving = movementDir.length() > 0;
 
   if (isMoving) {
@@ -133,9 +135,9 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
   animate(t_camera->getCamType());
 }
 
-void Player::tick(LevelMap* t_terrain) {
+void Player::tick() {
   // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater(t_terrain);
+  if (isTicksCounterAt(5)) updateStateInWater();
 
   // Update base color after updating position
   updateItemColorByCurrentPosition();
@@ -690,7 +692,7 @@ void Player::loadPlayerTexture() {
       FileUtils::fromCwd(skinPath.c_str()));
 }
 
-void Player::updateStateInWater(LevelMap* terrain) {
+void Player::updateStateInWater() {
   Vec4 min, mid, max, top, bottom;
   BBox bbox = getHitBox();
   bbox.getMinMax(&min, &max);
@@ -700,8 +702,9 @@ void Player::updateStateInWater(LevelMap* terrain) {
   top.set(mid.x, max.y + 6.0F, mid.z);
 
   auto blockBottom =
-      static_cast<Blocks>(getBlockByWorldPosition(terrain, &bottom));
-  auto blockTop = static_cast<Blocks>(getBlockByWorldPosition(terrain, &top));
+      static_cast<Blocks>(pLevel->getBlockByWorldPosition(&bottom));
+
+  auto blockTop = static_cast<Blocks>(pLevel->getBlockByWorldPosition(&top));
 
   _isOnWater = blockBottom == Blocks::WATER_BLOCK;
   _isUnderWater = blockTop == Blocks::WATER_BLOCK;
@@ -742,14 +745,12 @@ void Player::updateFovBySpeed() {
 }
 
 void Player::updateItemColorByCurrentPosition() {
-  const auto level = CrossCraft_World_GetLevelPtr();
   const Vec4 pos = (*mesh->getPosition() / DUBLE_BLOCK_SIZE);
   const Vec4 offset = Vec4(std::floor(pos.x + 0.5f), std::floor(pos.y + 1),
                            std::floor(pos.z + 0.5f));
 
-  if (BoundCheckMap(&level->map, offset.x, offset.y, offset.z)) {
-    const int lvl =
-        GetLightDataFromMap(&level->map, offset.x, offset.y, offset.z);
+  if (pLevel->BoundCheckMap(offset.x, offset.y, offset.z)) {
+    const int lvl = pLevel->GetLightDataFromMap(offset.x, offset.y, offset.z);
     const float s_lvl = static_cast<float>((lvl >> 4) & 0xF) *
                         t_worldLightModel->sunLightIntensity;
     const float b_lvl = static_cast<float>(lvl & 0x0F);

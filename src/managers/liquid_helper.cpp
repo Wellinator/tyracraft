@@ -1,12 +1,12 @@
 #include "managers/liquid_helper.hpp"
 
-LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
+LiquidQuadMapModel LiquidHelper_getQuadMap(Level* pLevel,
                                            LiquidOrientation orientation,
                                            Vec4* offset, u8 liquid_type) {
   LiquidQuadMapModel result;
 
   const u8 currentLevel =
-      GetLiquidDataFromMap(t_terrain, offset->x, offset->y, offset->z);
+      pLevel->GetLiquidDataFromMap(offset->x, offset->y, offset->z);
 
   u8 left = currentLevel;
   u8 topLeft = currentLevel;
@@ -23,65 +23,63 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
   u8 SW = 0;
 
   // Left
-  if (BoundCheckMap(t_terrain, offset->x + 1, offset->y, offset->z) &&
-      GetBlockFromMap(t_terrain, offset->x + 1, offset->y, offset->z) ==
+  if (pLevel->BoundCheckMap(offset->x + 1, offset->y, offset->z) &&
+      pLevel->GetBlockFromMap(offset->x + 1, offset->y, offset->z) ==
           liquid_type) {
-    left = GetLiquidDataFromMap(t_terrain, offset->x + 1, offset->y, offset->z);
+    left = pLevel->GetLiquidDataFromMap(offset->x + 1, offset->y, offset->z);
   }
 
   // Top Left
-  if (BoundCheckMap(t_terrain, offset->x + 1, offset->y, offset->z + 1) &&
-      GetBlockFromMap(t_terrain, offset->x + 1, offset->y, offset->z + 1) ==
+  if (pLevel->BoundCheckMap(offset->x + 1, offset->y, offset->z + 1) &&
+      pLevel->GetBlockFromMap(offset->x + 1, offset->y, offset->z + 1) ==
           liquid_type) {
-    topLeft = GetLiquidDataFromMap(t_terrain, offset->x + 1, offset->y,
-                                   offset->z + 1);
+    topLeft =
+        pLevel->GetLiquidDataFromMap(offset->x + 1, offset->y, offset->z + 1);
   }
 
   // Top
-  if (BoundCheckMap(t_terrain, offset->x, offset->y, offset->z + 1) &&
-      GetBlockFromMap(t_terrain, offset->x, offset->y, offset->z + 1) ==
+  if (pLevel->BoundCheckMap(offset->x, offset->y, offset->z + 1) &&
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z + 1) ==
           liquid_type) {
-    top = GetLiquidDataFromMap(t_terrain, offset->x, offset->y, offset->z + 1);
+    top = pLevel->GetLiquidDataFromMap(offset->x, offset->y, offset->z + 1);
   }
 
   // Top right
-  if (BoundCheckMap(t_terrain, offset->x - 1, offset->y, offset->z + 1) &&
-      GetBlockFromMap(t_terrain, offset->x - 1, offset->y, offset->z + 1) ==
+  if (pLevel->BoundCheckMap(offset->x - 1, offset->y, offset->z + 1) &&
+      pLevel->GetBlockFromMap(offset->x - 1, offset->y, offset->z + 1) ==
           liquid_type) {
-    topRight = GetLiquidDataFromMap(t_terrain, offset->x - 1, offset->y,
-                                    offset->z + 1);
+    topRight =
+        pLevel->GetLiquidDataFromMap(offset->x - 1, offset->y, offset->z + 1);
   }
 
   // Right
-  if (BoundCheckMap(t_terrain, offset->x - 1, offset->y, offset->z) &&
-      GetBlockFromMap(t_terrain, offset->x - 1, offset->y, offset->z) ==
+  if (pLevel->BoundCheckMap(offset->x - 1, offset->y, offset->z) &&
+      pLevel->GetBlockFromMap(offset->x - 1, offset->y, offset->z) ==
           liquid_type) {
-    right =
-        GetLiquidDataFromMap(t_terrain, offset->x - 1, offset->y, offset->z);
+    right = pLevel->GetLiquidDataFromMap(offset->x - 1, offset->y, offset->z);
   }
 
   // Bottom right
-  if (BoundCheckMap(t_terrain, offset->x - 1, offset->y, offset->z - 1) &&
-      GetBlockFromMap(t_terrain, offset->x - 1, offset->y, offset->z - 1) ==
+  if (pLevel->BoundCheckMap(offset->x - 1, offset->y, offset->z - 1) &&
+      pLevel->GetBlockFromMap(offset->x - 1, offset->y, offset->z - 1) ==
           liquid_type) {
-    bottomRight = GetLiquidDataFromMap(t_terrain, offset->x - 1, offset->y,
-                                       offset->z - 1);
+    bottomRight =
+        pLevel->GetLiquidDataFromMap(offset->x - 1, offset->y, offset->z - 1);
   }
 
   // Bottom
-  if (BoundCheckMap(t_terrain, offset->x, offset->y, offset->z - 1) &&
-      GetBlockFromMap(t_terrain, offset->x, offset->y, offset->z - 1) ==
+  if (pLevel->BoundCheckMap(offset->x, offset->y, offset->z - 1) &&
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z - 1) ==
           liquid_type) {
-    bottom =
-        GetLiquidDataFromMap(t_terrain, offset->x, offset->y, offset->z - 1);
+    bottom = pLevel->GetLiquidDataFromMap(offset->x, offset->y, offset->z - 1);
   }
 
   // bottom Left
-  if (BoundCheckMap(t_terrain, offset->x + 1, offset->y, offset->z - 1) &&
-      GetBlockFromMap(t_terrain, offset->x + 1, offset->y, offset->z - 1) ==
+  if (pLevel->BoundCheckMap(offset->x + 1, offset->y, offset->z - 1) &&
+      pLevel->GetBlockFromMap(offset->x + 1, offset->y, offset->z - 1) ==
           liquid_type) {
-    bottomLeft = GetLiquidDataFromMap(t_terrain, offset->x + 1, offset->y,
-                                      offset->z - 1);
+    bottomLeft =
+        pLevel->GetLiquidDataFromMap(offset->x + 1, offset->y, offset->z - 1);
   }
 
   NW = std::max({currentLevel, left, topLeft, top});
@@ -105,7 +103,7 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(LevelMap* t_terrain,
   float topHeightOffset = 0.05F * DUBLE_BLOCK_SIZE;
 
   if (currentLevel == (u8)LiquidLevel::Percent100 &&
-      GetBlockFromMap(t_terrain, offset->x, offset->y + 1, offset->z) ==
+      pLevel->GetBlockFromMap(offset->x, offset->y + 1, offset->z) ==
           liquid_type) {
     topHeightOffset = 0;
   }

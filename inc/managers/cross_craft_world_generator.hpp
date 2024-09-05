@@ -11,12 +11,12 @@
 #include <tyra>
 
 void CrossCraft_WorldGenerator_Init(int32_t seed);
-void CrossCraft_WorldGenerator_Generate_Original(LevelMap* map);
-void CrossCraft_WorldGenerator_Generate_Flat(LevelMap* map);
-void CrossCraft_WorldGenerator_Generate_Woods(LevelMap* map);
-void CrossCraft_WorldGenerator_Generate_Island(LevelMap* map);;
-void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map);
+void CrossCraft_WorldGenerator_Generate_Original(Level* pLevel);
+void CrossCraft_WorldGenerator_Generate_Flat(Level* pLevel);
+void CrossCraft_WorldGenerator_Generate_Woods(Level* pLevel);
+void CrossCraft_WorldGenerator_Generate_Island(Level* pLevel);
+void CrossCraft_WorldGenerator_Generate_Floating(Level* pLevel);
 
-bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight);
-void growOakTree(LevelMap* map, int x, int y, int z, int treeHeight);
-void growBirchTree(LevelMap* map, int x, int y, int z, int treeHeight);
+bool isSpaceForTree(Level* pLevel, int x, int y, int z, int treeHeight);
+void growOakTree(Level* pLevel, int x, int y, int z, int treeHeight);
+void growBirchTree(Level* pLevel, int x, int y, int z, int treeHeight);

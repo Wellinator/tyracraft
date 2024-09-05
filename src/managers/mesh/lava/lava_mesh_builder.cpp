@@ -7,23 +7,23 @@ void LavaMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
-                                  LevelMap* t_terrain) {
-  LavaMeshBuilder_loadMeshData(t_block, t_vertices, t_terrain);
+                                  Level* pLevel) {
+  LavaMeshBuilder_loadMeshData(t_block, t_vertices, pLevel);
   LavaMeshBuilder_loadUVData(t_block, t_uv_map);
   LavaMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
-                                t_terrain);
+                                pLevel);
 }
 
 void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  LevelMap* t_terrain) {
+                                  Level* pLevel) {
   Vec4 pos;
-  GetXYZFromPos(&t_block->offset, &pos);
+  pLevel->GetXYZFromPos(&t_block->offset, &pos);
 
   const LiquidOrientation orientation =
-      GetLiquidOrientationDataFromMap(t_terrain, pos.x, pos.y, pos.z);
+      pLevel->GetLiquidOrientationDataFromMap(pos.x, pos.y, pos.z);
 
   const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
-      t_terrain, orientation, &pos, (u8)Blocks::LAVA_BLOCK);
+      pLevel, orientation, &pos, (u8)Blocks::LAVA_BLOCK);
 
   LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
                                       quadMap);
@@ -142,7 +142,7 @@ void LavaMeshBuilder_loadUVFaceData(const u8& index,
 void LavaMeshBuilder_loadLightData(Block* t_block,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
-                                   LevelMap* t_terrain) {
+                                   Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
@@ -152,8 +152,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP,
-                                   t_terrain,
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
@@ -168,7 +167,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   t_terrain,
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -181,8 +180,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT,
-                                   t_terrain,
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -196,7 +194,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   t_terrain,
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -209,8 +207,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK,
-                                   t_terrain,
+    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -224,7 +221,7 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   t_terrain,
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;

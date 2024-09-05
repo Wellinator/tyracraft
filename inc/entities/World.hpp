@@ -70,9 +70,10 @@ struct Node {
 
 class World {
  public:
-  World(const NewGameOptions& options);
+  World(const NewGameOptions& options, Level* level);
   ~World();
 
+  Level* pLevel;
   Renderer* t_renderer;
   SoundManager* t_soundManager;
   MobManager mobManager;
@@ -133,8 +134,6 @@ class World {
   void breakTargetBlock(const float& deltaTime);
   void breakTargetBlockInCreativeMode(const float& deltaTime);
   void stopBreakTargetBlock();
-
-  LevelMap* terrain;
 
   void setDrawDistace(const u8& drawDistanceInChunks);
   inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
@@ -208,7 +207,6 @@ class World {
     }
   };
 
-  // From terrain manager
   Ray ray;
   ItemRepository* t_itemRepository;
 
@@ -224,7 +222,8 @@ class World {
 
   inline u8 isCrossedBlock(Blocks block_type);
   inline u32 getIndexByOffset(int x, int y, int z) {
-    return (y * terrain->length * terrain->width) + (z * terrain->width) + x;
+    return (y * pLevel->map.length * pLevel->map.width) +
+           (z * pLevel->map.width) + x;
   }
 
   /**
@@ -290,58 +289,67 @@ class World {
     unloadScheduledChunks();
     loadScheduledChunks();
   }
+
+  bool inline isVegetation(Blocks block) {
+    return (u8)block >= (u8)Blocks::GRASS &&
+           (u8)block <= (u8)Blocks::DANDELION_FLOWER;
+  };
+
+  bool inline isTransparent(Blocks block) {
+    return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
+           block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
+           block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
+           block == Blocks::GLASS_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
+           block == Blocks::BIRCH_LEAVES_BLOCK ||
+
+           // If it's slab, it's visible;
+           ((u8)block >= (u8)Blocks::STONE_SLAB &&
+            (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
+  };
+
+  ///////////////////////////////////
+  // Based in Seed of Andromeda    //
+  ///////////////////////////////////
+  void initSunLight(uint32_t tick);
+  void addSunLight(uint16_t x, uint16_t y, uint16_t z);
+  void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
+  void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void updateSunlight();
+  void propagateSunLightAddBFSQueue();
+  void propagateSunlightRemovalQueue();
+  void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
+                            u8 nextLightValue);
+  void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
+                               u8 lightLevel);
+  void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
+
+  void initBlockLight(BlockManager* blockManager);
+  void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void updateBlockLights();
+
+  void removeLight(uint16_t x, uint16_t y, uint16_t z);
+  void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
+  void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
+  void propagateLightRemovalQueue();
+  void propagateLightAddQueue();
+
+  // FROM CrossCraft
+  // From CrossCraft
+  std::queue<Node> lightBfsQueue;
+  std::queue<Node> lightRemovalBfsQueue;
+
+  // std::stack<Node> sunlightBfsQueue;
+  std::queue<Node> sunlightBfsQueue;
+  std::queue<Node> sunlightRemovalBfsQueue;
+
+  void CrossCraft_World_Init(const uint32_t& seed);
+  void CrossCraft_World_Deinit();
+
+  /**
+   * @brief Generates the world
+   * @TODO Offer a callback for world percentage
+   */
+  void CrossCraft_World_GenerateMap(WorldType worldType);
 };
-
-bool inline isVegetation(Blocks block) {
-  return (u8)block >= (u8)Blocks::GRASS &&
-         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
-};
-
-bool inline isTransparent(Blocks block) {
-  return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
-         block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
-         block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
-         block == Blocks::GLASS_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
-         block == Blocks::BIRCH_LEAVES_BLOCK ||
-
-         // If it's slab, it's visible;
-         ((u8)block >= (u8)Blocks::STONE_SLAB &&
-          (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);
-};
-
-///////////////////////////////////
-// Based in Seed of Andromeda    //
-///////////////////////////////////
-void initSunLight(uint32_t tick);
-void addSunLight(uint16_t x, uint16_t y, uint16_t z);
-void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
-void removeSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void updateSunlight();
-void propagateSunLightAddBFSQueue();
-void propagateSunlightRemovalQueue();
-void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
-                          u8 nextLightValue);
-void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
-
-void initBlockLight(BlockManager* blockManager);
-void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void updateBlockLights();
-
-void removeLight(uint16_t x, uint16_t y, uint16_t z);
-void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z, u8 nextLightValue);
-void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
-void propagateLightRemovalQueue();
-void propagateLightAddQueue();
-
-// FROM CrossCraft
-void CrossCraft_World_Init(const uint32_t& seed);
-void CrossCraft_World_Deinit();
-
-/**
- * @brief Generates the world
- * @TODO Offer a callback for world percentage
- */
-void CrossCraft_World_GenerateMap(WorldType worldType);

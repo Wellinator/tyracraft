@@ -67,8 +67,7 @@ void MazePlayingState::update(const float& deltaTime) {
                                stateGamePlay->context->t_camera, deltaTime);
 
   stateGamePlay->player->update(deltaTime, playerMovementDirection,
-                                stateGamePlay->context->t_camera,
-                                stateGamePlay->world->terrain);
+                                stateGamePlay->context->t_camera);
 
   stateGamePlay->context->t_camera->setPosition(
       *stateGamePlay->player->mesh->getPosition());
@@ -82,7 +81,7 @@ void MazePlayingState::update(const float& deltaTime) {
 void MazePlayingState::tick() {
   stateGamePlay->world->tick(stateGamePlay->player,
                              stateGamePlay->context->t_camera);
-  stateGamePlay->player->tick(stateGamePlay->world->terrain);
+  stateGamePlay->player->tick();
   stateGamePlay->ui->update();
 
   if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();

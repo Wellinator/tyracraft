@@ -70,13 +70,13 @@ class Chunck {
   int visibleFacesCountWithTransparency = 0;
   u16 blocksCount = 0;
 
-  LevelMap* t_terrain;
+  Level* pLevel;
   WorldLightModel* t_worldLightModel;
 
   clock_t buildingTimeStart;
   double timeToBuild = 0;
 
-  void init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel);
+  void init(Level* pLevel, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip,
                 BlockManager* t_blockManager);
   void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip,
@@ -99,9 +99,7 @@ class Chunck {
   void removeBlockByLocalIndex(u16 index);
   void removeBlockByPosition(Vec4* position);
 
-  inline bool isPerformingAsyncTask(){
-    return _isPerformingAsyncTask;
-  };
+  inline bool isPerformingAsyncTask() { return _isPerformingAsyncTask; };
 
   u8 containsBlock(Vec4* offset);
 
@@ -152,8 +150,8 @@ class Chunck {
   Block* getBlockById(const u32 blockId);
 
   inline u32 getIndexByOffset(int x, int y, int z) {
-    return (y * t_terrain->length * t_terrain->width) + (z * t_terrain->width) +
-           x;
+    return (y * pLevel->map.length * pLevel->map.width) +
+           (z * pLevel->map.width) + x;
   }
 
   void updateSurroundingBlocks();

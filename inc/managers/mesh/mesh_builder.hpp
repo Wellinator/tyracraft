@@ -27,10 +27,9 @@ void MeshBuilder_UnregisterBuilders();
 void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
                            std::vector<Color>* t_vertices_colors,
                            std::vector<Vec4>* t_uv_map,
-                           WorldLightModel* t_worldLightModel,
-                           LevelMap* t_terrain);
+                           WorldLightModel* t_worldLightModel, Level* pLevel);
 
 void MeshBuilder_BuildLightData(Block* t_block,
                                 std::vector<Color>* t_vertices_colors,
                                 WorldLightModel* t_worldLightModel,
-                                LevelMap* t_terrain);
+                                Level* pLevel);

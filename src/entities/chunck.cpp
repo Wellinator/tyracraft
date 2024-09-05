@@ -39,8 +39,8 @@ Chunck::~Chunck() {
   delete bbox;
 };
 
-void Chunck::init(LevelMap* t_terrain, WorldLightModel* t_worldLightModel) {
-  this->t_terrain = t_terrain;
+void Chunck::init(Level* level, WorldLightModel* t_worldLightModel) {
+  pLevel = level;
   this->t_worldLightModel = t_worldLightModel;
 }
 
@@ -387,7 +387,7 @@ void Chunck::clearDrawDataWithoutShrink() {
 
 void Chunck::loadDrawDataWithoutSorting() {
   if (_isPerformingAsyncTask == true) return;
-  
+
   vertices.reserve(visibleFacesCount);
   verticesColors.reserve(visibleFacesCount);
   uvMap.reserve(visibleFacesCount);
@@ -400,9 +400,9 @@ void Chunck::loadDrawDataWithoutSorting() {
     if (blocks[i]->hasTransparency) {
       blocks[i]->drawDataIndex = verticesWithTransparency.size();
 
-      MeshBuilder_BuildMesh(
-          blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
-          &uvMapWithTransparency, t_worldLightModel, t_terrain);
+      MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
+                            &verticesColorsWithTransparency,
+                            &uvMapWithTransparency, t_worldLightModel, pLevel);
 
       blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
 
@@ -414,7 +414,7 @@ void Chunck::loadDrawDataWithoutSorting() {
       blocks[i]->drawDataIndex = vertices.size();
 
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
-                            t_worldLightModel, t_terrain);
+                            t_worldLightModel, pLevel);
 
       blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
 
@@ -447,16 +447,16 @@ void Chunck::loadDrawDataAsync() {
     if (blocks[i]->hasTransparency) {
       blocks[i]->drawDataIndex = verticesWithTransparency.size();
 
-      MeshBuilder_BuildMesh(
-          blocks[i], &verticesWithTransparency, &verticesColorsWithTransparency,
-          &uvMapWithTransparency, t_worldLightModel, t_terrain);
+      MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
+                            &verticesColorsWithTransparency,
+                            &uvMapWithTransparency, t_worldLightModel, pLevel);
 
       blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
     } else {
       blocks[i]->drawDataIndex = vertices.size();
 
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
-                            t_worldLightModel, t_terrain);
+                            t_worldLightModel, pLevel);
 
       blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
     }
@@ -485,10 +485,10 @@ void Chunck::reloadLightData() {
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency) {
       MeshBuilder_BuildLightData(blocks[i], &verticesColorsWithTransparency,
-                                 t_worldLightModel, t_terrain);
+                                 t_worldLightModel, pLevel);
     } else {
       MeshBuilder_BuildLightData(blocks[i], &verticesColors, t_worldLightModel,
-                                 t_terrain);
+                                 pLevel);
     }
   }
 }
@@ -513,7 +513,7 @@ Block* Chunck::getBlockByPosition(const Vec4* pos) {
 Block* Chunck::getBlockByOffset(const Vec4* offset) {
   for (size_t i = 0; i < blocks.size(); i++) {
     Vec4 _tempBlockOffset;
-    GetXYZFromPos(&blocks[i]->offset, &_tempBlockOffset);
+    pLevel->GetXYZFromPos(&blocks[i]->offset, &_tempBlockOffset);
 
     if (_tempBlockOffset.x == offset->x && _tempBlockOffset.y == offset->y &&
         _tempBlockOffset.z == offset->z)
@@ -540,7 +540,7 @@ void Chunck::removeBlock(Block* target) {
 
 void Chunck::removeBlockByOffset(u32 offset) {
   Vec4 _offsetVec;
-  GetXYZFromPos(&offset, &_offsetVec);
+  pLevel->GetXYZFromPos(&offset, &_offsetVec);
   Block* target = getBlockByOffset(&_offsetVec);
 
   if (target) removeBlock(target);

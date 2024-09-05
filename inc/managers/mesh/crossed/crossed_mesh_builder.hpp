@@ -26,7 +26,7 @@ void CrossedMeshBuilder_GenerateMesh(Block* t_block,
                                      std::vector<Color>* t_vertices_colors,
                                      std::vector<Vec4>* t_uv_map,
                                      WorldLightModel* t_worldLightModel,
-                                     LevelMap* t_terrain);
+                                     Level* pLevel);
 
 void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
                                             std::vector<Vec4>* t_vertices);
@@ -36,7 +36,7 @@ void CrossedMeshBuilder_loadUVFaceData(const u8& index,
                                        std::vector<Vec4>* t_uv_map);
 void CrossedMeshBuilder_loadCroosedLightData(
     Block* t_block, std::vector<Color>* t_vertices_colors,
-    WorldLightModel* t_worldLightModel, LevelMap* t_terrain);
+    WorldLightModel* t_worldLightModel, Level* pLevel);
 
 void CrossedMeshBuilder_loadLightFaceData(
     Color* faceColor, std::vector<Color>* t_vertices_colors);
