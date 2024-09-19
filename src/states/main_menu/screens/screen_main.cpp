@@ -26,6 +26,7 @@ void ScreenMain::update(const float& deltaTime) {
   handleInput();
   hightLightActiveOption();
   playerPreviewMesh->update();
+  if (shouldNavigate) navigate();
 }
 
 void ScreenMain::render() {
@@ -225,7 +226,7 @@ void ScreenMain::handleInput() {
   if (context->context->t_engine->pad.getClicked().Cross) {
     context->playClickSound();
     selectedOption = activeOption;
-    navigate();
+    shouldNavigate = true;
   }
 }
 
@@ -236,6 +237,8 @@ void ScreenMain::hightLightActiveOption() {
 }
 
 void ScreenMain::navigate() {
+  shouldNavigate = 0;
+
   if (selectedOption == ScreenMainOptions::None) return;
 
   if (selectedOption == ScreenMainOptions::PlayGame)

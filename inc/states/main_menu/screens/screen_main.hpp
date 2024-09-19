@@ -70,6 +70,8 @@ class ScreenMain : public ScreenBase {
   const float SLOT_HIGHT_OFFSET = 200;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
 
+  u8 shouldNavigate = 0;
+
   void hightLightActiveOption();
   void handleInput();
   void navigate();
