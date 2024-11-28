@@ -90,7 +90,7 @@ void ParticlesManager::updateParticles(const float deltaTime,
 
         for (u16 i = 0; i < ni.size(); i++) {
           Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-          if (!entity->isCollidable) continue;
+          if (!entity->collidable) continue;
 
           // Narrow Phase
           float hitDistance;
@@ -218,7 +218,7 @@ void ParticlesManager::createBlockParticle(Block* block) {
   const Vec4 scaleVec = Vec4(UVSscale, UVSscale, 1.0F, 0.0F);
 
   // Calc rand offset between row and col;
-  const u8 index = block->facesMapIndex[4];
+  const u8 index = block->getFacesMap()->data()[4];
   const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
   const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
 

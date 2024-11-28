@@ -13,7 +13,7 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->minOffset.set(minOffset);
   this->maxOffset.set(maxOffset);
   this->center.set((maxOffset + minOffset) / 2);
-  tempLoadingOffset.set(minOffset);
+  resetLoadingOffset();
 
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;
   const Vec4 tempMax = maxOffset * DUBLE_BLOCK_SIZE;
@@ -72,7 +72,7 @@ void Chunck::updateSurroundingBlocks() {
             Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
                                         &t_block->maxCorner) ==
                 CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
-          if (t_block->hasTransparency) {
+          if (t_block->hasTransparency()) {
             surroundingTransparentBlocks.push_back(t_block);
           } else {
             surroundingBlocks.push_back(t_block);
@@ -397,7 +397,7 @@ void Chunck::loadDrawDataWithoutSorting() {
   uvMapWithTransparency.reserve(visibleFacesCountWithTransparency);
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->hasTransparency) {
+    if (blocks[i]->hasTransparency()) {
       blocks[i]->drawDataIndex = verticesWithTransparency.size();
 
       MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
@@ -444,7 +444,7 @@ void Chunck::loadDrawDataAsync() {
 
   size_t counter = 0;
   for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
-    if (blocks[i]->hasTransparency) {
+    if (blocks[i]->hasTransparency()) {
       blocks[i]->drawDataIndex = verticesWithTransparency.size();
 
       MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
@@ -483,7 +483,7 @@ void Chunck::reloadLightData() {
   verticesColorsWithTransparency.clear();
 
   for (size_t i = 0; i < blocks.size(); i++) {
-    if (blocks[i]->hasTransparency) {
+    if (blocks[i]->hasTransparency()) {
       MeshBuilder_BuildLightData(blocks[i], &verticesColorsWithTransparency,
                                  t_worldLightModel, pLevel);
     } else {

@@ -104,7 +104,7 @@ SfxBlockModel* BlockManager::getStepSoundByBlockType(const Blocks& blockType) {
 // ref: https://minecraft.fandom.com/wiki/Breaking
 float BlockManager::getBlockBreakingTime(Block* targetBlock) {
   // TODO: apply in survival mode only
-  const auto baseSpeed = isBestTool(targetBlock->type) ? 1.5F : 5.0F;
+  const auto baseSpeed = isBestTool(targetBlock->getType()) ? 1.5F : 5.0F;
 
   const float baseBreakingTime = baseSpeed * targetBlock->getHardness();
   return baseBreakingTime;

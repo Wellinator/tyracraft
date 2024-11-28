@@ -117,7 +117,7 @@ class World {
                        const float cameraYaw, Vec4 blockOffset);
 
   inline const u8 validTargetBlock() {
-    return targetBlock != nullptr && targetBlock->isBreakable;
+    return targetBlock != nullptr && targetBlock->isBreakable();
   };
 
   void setSavedSpawnArea(Vec4 pos);

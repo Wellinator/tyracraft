@@ -32,7 +32,7 @@ Pig::Pig(Level* level, Renderer* t_renderer, SoundManager* t_soundManager,
   isStandStillAnimationSet = false;
 
   isOnGround = true;
-  isCollidable = true;
+  collidable = true;
 }
 
 Pig::~Pig() {
@@ -272,7 +272,7 @@ u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
       return false;
     };
 
-    if (!entity->isCollidable) continue;
+    if (!entity->collidable) continue;
 
     if (entityBB->getBottomFace().axisPosition >= entity->maxCorner.y ||
         entityBB->getTopFace().axisPosition < entity->minCorner.y)
@@ -345,7 +345,7 @@ void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = reinterpret_cast<Entity*>(g_AABBTree->user_data(ni[i]));
-    if (!entity->isCollidable) continue;
+    if (!entity->collidable) continue;
 
     // is under or above block
     if (minEntityPos->x <= entity->maxCorner.x &&

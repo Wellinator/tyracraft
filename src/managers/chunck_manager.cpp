@@ -160,12 +160,8 @@ void ChunckManager::reloadLightDataOfAllChunks() {
 
 const uint16_t ChunckManager::getChunkIdByPosition(
     const Vec4& chunkMinPosition) {
-  const Vec4 pos = chunkMinPosition / CHUNCK_SIZE;
-  const uint16_t row = pos.y;
-  const uint16_t column = pos.z * OVERWORLD_V_DISTANCE_IN_CHUNKS;
-  const uint16_t page = pos.x * OVERWORLD_PAGE_IN_CHUNKS;
-
-  return page + column + row;
+  const Vec4 offset = chunkMinPosition / CHUNCK_SIZE;
+  return getChunkIdByOffset(offset);
 }
 
 const uint16_t ChunckManager::getChunkIdByOffset(const Vec4& chunkMinOffset) {

@@ -77,23 +77,25 @@ void CuboidMeshBuilder_loadMeshData(Block* t_block,
 }
 
 void CuboidMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
+  u8* facesMap = t_block->getFacesMap()->data();
+
   if (t_block->isTopFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[0], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   }
   if (t_block->isBottomFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[1], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[1], t_uv_map);
   }
   if (t_block->isLeftFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[2], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[2], t_uv_map);
   }
   if (t_block->isRightFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[3], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[3], t_uv_map);
   }
   if (t_block->isBackFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[4], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[4], t_uv_map);
   }
   if (t_block->isFrontFaceVisible()) {
-    CuboidMeshBuilder_loadUVFaceData(t_block->facesMapIndex[5], t_uv_map);
+    CuboidMeshBuilder_loadUVFaceData(facesMap[5], t_uv_map);
   }
 }
 

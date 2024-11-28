@@ -186,8 +186,6 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   particlesManager.update(deltaTime, t_camera);
   cloudsManager.update(deltaTime);
 
-  dispatchChunkBatch();
-
   if (_updateDayNightCycle)
     dayNightCycleManager.update(deltaTime, &t_camera->position);
 
@@ -329,7 +327,7 @@ void World::scheduleChunksNeighbors(Chunck* origin_chunk,
       t_chunk->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
-        t_chunk->clear();
+        if (t_chunk->state != ChunkState::Clean) t_chunk->clear();
         buildChunk(t_chunk);
       } else if (t_chunk->state == ChunkState::Clean) {
         addChunkToLoadAsync(t_chunk);
@@ -899,7 +897,7 @@ void World::removeBlock(Block* blockToRemove) {
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
 
   removeBlockFromChunk(blockToRemove);
-  playDestroyBlockSound(blockToRemove->type);
+  playDestroyBlockSound(blockToRemove->getType());
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
@@ -1020,7 +1018,7 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
 
   const u8 canReplace = blockTypeAtNewPosition == Blocks::AIR_BLOCK;
 
-  if (targetBlock->type == Blocks::TORCH &&
+  if (targetBlock->getType() == Blocks::TORCH &&
       placementDirection == PlacementDirection::Top) {
     return;
   }
@@ -1029,7 +1027,7 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
     // Calc block orientation
     BlockOrientation orientation;
 
-    if (targetBlock->type == Blocks::TORCH) {
+    if (targetBlock->getType() == Blocks::TORCH) {
       orientation = BlockOrientation::Top;
     } else {
       // Torch orientation must be reverse of placement direction
@@ -1394,7 +1392,7 @@ void World::breakTargetBlock(const float& deltaTime) {
       }
 
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        playBreakingBlockSound(targetBlock->type);
+        playBreakingBlockSound(targetBlock->getType());
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;
@@ -1430,7 +1428,7 @@ void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
       }
 
       if (lastTimePlayedBreakingSfx > 0.3F) {
-        playBreakingBlockSound(targetBlock->type);
+        playBreakingBlockSound(targetBlock->getType());
         lastTimePlayedBreakingSfx = 0;
       } else {
         lastTimePlayedBreakingSfx += deltaTime;
@@ -1600,7 +1598,7 @@ void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
   Vec4 tempBlockOffset;
   pLevel->GetXYZFromPos(&t_block->offset, &tempBlockOffset);
 
-  const Blocks block_type = static_cast<Blocks>(t_block->type);
+  const Blocks block_type = t_block->getType();
   u8 visibleFaces;
 
   if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
@@ -1654,7 +1652,7 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
         block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
         block->chunkId = t_chunck->id;
 
-        if (block->isCrossed) {
+        if (block->isCrossed()) {
           block->visibleFaces = 0b111111;
           block->visibleFacesCount = 2;
         } else {
@@ -1665,8 +1663,8 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
         block->position.set((*offset) * DUBLE_BLOCK_SIZE);
 
         ModelBuilder_BuildModel(block, pLevel);
-        BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(pLevel, block->type,
-                                                           block->offset);
+        BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+            pLevel, block->getType(), block->offset);
         BBox tempBBox = rawBBox->getTransformed(block->model);
 
         block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -1740,6 +1738,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
     const Blocks block_type =
         static_cast<Blocks>(pLevel->map.blocks[blockIndex]);
 
+    batchCounter++;
     if (block_type != Blocks::AIR_BLOCK) {
       Vec4 tempBlockOffset = Vec4(x, y, z);
       u8 visibleFaces;
@@ -1759,8 +1758,6 @@ void World::buildChunkAsync(Chunck* t_chunck) {
 
       // Is any face vísible?
       if (visibleFaces > 0) {
-        batchCounter++;
-
         BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
 
         if (blockInfo) {
@@ -1770,7 +1767,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
               tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
           block->chunkId = t_chunck->id;
 
-          if (block->isCrossed) {
+          if (block->isCrossed()) {
             block->visibleFaces = 0b111111;
             block->visibleFacesCount = 2;
           } else {
@@ -1783,7 +1780,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
           ModelBuilder_BuildModel(block, pLevel);
 
           BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-              pLevel, block->type, block->offset);
+              pLevel, block->getType(), block->offset);
           BBox tempBBox = rawBBox->getTransformed(block->model);
 
           block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
@@ -1854,7 +1851,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
     if (entity->entity_type == EntityType::Block) {
       Block* block = (Block*)entity;
 
-      if (!block->isBreakable) continue;
+      if (!block->isBreakable()) continue;
 
       float distanceFromCurrentBlockToPlayer =
           baseOrigin.distanceTo(entity->position);

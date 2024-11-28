@@ -166,7 +166,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
         }
 
         // prevent to break the scenario
-        if (stateGamePlay->world->targetBlock->type != Blocks::TORCH) {
+        if (stateGamePlay->world->targetBlock->getType() != Blocks::TORCH) {
           return;
         }
 
@@ -229,7 +229,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
 u8 MazePlayingState::hasReachedTargetBlock() {
   return stateGamePlay->world->validTargetBlock() &&
-         stateGamePlay->world->targetBlock->type ==
+         stateGamePlay->world->targetBlock->getType() ==
              Blocks::JACK_O_LANTERN_BLOCK;
 }
 

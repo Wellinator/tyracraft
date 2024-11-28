@@ -8,7 +8,6 @@ class BlockInfo {
   /**
    * @brief Initialize BlockInfo
    * @param type Blocks enum block type
-   * @param isSingle bool apply the same texture in all faces
    *
    * Order: Top, Bottom, Left, Right, Back, Front
    * @param facesMap 6 length array of integers index
@@ -24,7 +23,6 @@ class BlockInfo {
             const bool& isCollidable = true, const bool& isCrossed = false) {
     blockId = (u8)type;
 
-    _isSingle = isSingle;
     _isBreakable = isBreakable;
     _isTransparent = isTransparent;
     _isCollidable = isCollidable;
@@ -32,12 +30,24 @@ class BlockInfo {
 
     _hardness = hardness;
 
-    u8 i = 0;
-    for (auto uv : facesMap) {
-      _facesMap[i] = uv;
-      i++;
+    if (facesMap.size() == 1) {
+      for (auto uv : facesMap) {
+        _facesMap[0] = uv;
+        _facesMap[1] = uv;
+        _facesMap[2] = uv;
+        _facesMap[3] = uv;
+        _facesMap[4] = uv;
+        _facesMap[5] = uv;
+      }
+    } else {
+      u8 i = 0;
+      for (auto uv : facesMap) {
+        _facesMap[i] = uv;
+        i++;
+      }
     }
   };
+  
   BlockInfo(){};
 
   ~BlockInfo(){};
@@ -46,7 +56,6 @@ class BlockInfo {
 
   u8 blockId;
 
-  u8 _isSingle;
   u8 _isBreakable;
   u8 _isCollidable;
   u8 _isTransparent;

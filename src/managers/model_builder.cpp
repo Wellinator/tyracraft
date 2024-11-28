@@ -1,7 +1,7 @@
 #include "managers/model_builder.hpp"
 
 void ModelBuilder_BuildModel(Block* t_block, Level* pLevel) {
-  switch (t_block->type) {
+  switch (t_block->getType()) {
     case Blocks::TORCH:
       ModelBuilder_TorchModel(t_block, pLevel);
       break;

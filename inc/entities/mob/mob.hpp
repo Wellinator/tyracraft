@@ -58,6 +58,6 @@ class Mob : public Entity {
   Vec4 moviemntDirection;
 
   u8 shouldUnspawn = false;
-  u8 isCollidable = true;
+  u8 collidable = true;
   std::vector<bvh::index_t>* t_near_entities = nullptr;
 };

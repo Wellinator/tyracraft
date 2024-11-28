@@ -103,23 +103,25 @@ void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
 }
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
+  u8* facesMap = t_block->getFacesMap()->data();
+
   if (t_block->isTopFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[0], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   }
   if (t_block->isBottomFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[1], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[1], t_uv_map);
   }
   if (t_block->isLeftFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[2], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[2], t_uv_map);
   }
   if (t_block->isRightFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[3], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[3], t_uv_map);
   }
   if (t_block->isBackFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[4], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[4], t_uv_map);
   }
   if (t_block->isFrontFaceVisible()) {
-    LavaMeshBuilder_loadUVFaceData(t_block->facesMapIndex[5], t_uv_map);
+    LavaMeshBuilder_loadUVFaceData(facesMap[5], t_uv_map);
   }
 }
 

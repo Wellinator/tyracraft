@@ -39,7 +39,7 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
   isOnGround = true;
   isFlying = false;
   isBreaking = false;
-  isCollidable = false;
+  collidable = false;
 
   dynpip.setRenderer(&this->t_renderer->core);
   modelDynpipOptions.antiAliasingEnabled = false;
@@ -98,7 +98,7 @@ void Player::update(const float& deltaTime, const Vec4& movementDir,
             playSwimSfx();
           } else if (isOnGround && underEntity &&
                      underEntity->entity_type == EntityType::Block) {
-            playWalkSfx(((Block*)underEntity)->type);
+            playWalkSfx(((Block*)underEntity)->getType());
           }
 
           setWalkingAnimation();
@@ -292,7 +292,7 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-    if (!entity->isCollidable) continue;
+    if (!entity->collidable) continue;
 
     if (playerBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
         playerBB.getTopFace().axisPosition < entity->minCorner.y)
@@ -374,7 +374,7 @@ void Player::updateTerrainHeightAtPlayerPosition(
 
   for (u16 i = 0; i < ni.size(); i++) {
     Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-    if (!entity->isCollidable) continue;
+    if (!entity->collidable) continue;
 
     // is under or above block
     if (minPlayer.x <= entity->maxCorner.x &&

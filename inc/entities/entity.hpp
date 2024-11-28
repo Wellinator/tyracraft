@@ -50,5 +50,5 @@ class Entity {
   // Check for details https://minecraft.fandom.com/wiki/Hitbox
   BBox* bbox = nullptr;
 
-  u8 isCollidable = false;
+  u8 collidable = false;
 };

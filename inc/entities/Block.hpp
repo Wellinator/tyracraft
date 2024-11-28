@@ -32,40 +32,45 @@ using Tyra::Vec4;
 
 class Block : public Entity {
  public:
-  Blocks type = Blocks::AIR_BLOCK;  // Init as air
-  u32 index;                        // Index at terrain;
-  u32 offset;                       // Terrain offset;
-  u16 chunkId;
+  BlockInfo* pBlockInfo = nullptr;
 
+  u32 index;   // Index at terrain;
+  u32 offset;  // Terrain offset;
+
+  u16 chunkId;
   u16 localIndex;
   u16 drawDataIndex;
-  u8 drawDataLength;
-
-  // Block state
-  u8 isTarget = false;
-  u8 hasTransparency = false;
-  u8 isBreakable = false;
-  u8 isCrossed = false;
-
-  float damage = 0;
 
   M4x4 model;
 
+  // Block state
+  u8 isTarget = false;
+  u8 drawDataLength;
   u8 visibleFaces = 0b000000;
   u8 visibleFacesCount = 0;
+
+  // Distance to hit point when isTarget is true;
+  float damage = 0;
+  float distance = 0.0f;
+
+  Vec4 hitPosition;
+  Color baseColor;
+
+  Block(BlockInfo* blockInfo);
+  ~Block();
+
+  Blocks getType();
+  float getHardness();
 
   /**
    * Order: Top, Bottom, Left, Right, Back, Front
    * @param facesMapIndex 6 length array of texture index
    */
-  std::array<u8, 6> facesMapIndex = {0, 0, 0, 0, 0, 0};
-
-  // Distance to hit point when isTarget is true;
-  float distance = 0.0f;
-  Vec4 hitPosition;
-
-  Block(BlockInfo* blockInfo);
-  ~Block();
+  std::array<u8, 6>* getFacesMap();
+  u8 isBreakable();
+  u8 isCollidable();
+  u8 hasTransparency();
+  u8 isCrossed();
 
   inline const bool isFrontFaceVisible() {
     return (visibleFaces & FRONT_VISIBLE) == FRONT_VISIBLE;
@@ -90,10 +95,6 @@ class Block : public Entity {
   inline const bool isBottomFaceVisible() {
     return (visibleFaces & BOTTOM_VISIBLE) == BOTTOM_VISIBLE;
   };
-
-  inline const float getHardness() { return hardness; }
-
-  Color baseColor;
 
  private:
   // Block props

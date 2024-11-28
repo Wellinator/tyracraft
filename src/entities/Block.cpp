@@ -7,20 +7,29 @@ using Tyra::M4x4;
 using Tyra::McpipBlock;
 
 Block::Block(BlockInfo* blockInfo) : Entity(nullptr, EntityType::Block) {
-  type = static_cast<Blocks>(blockInfo->blockId);
-  isBreakable = blockInfo->_isBreakable;
-  isCollidable = blockInfo->_isCollidable;
-  hasTransparency = blockInfo->_isTransparent;
-  isCrossed = blockInfo->_isCrossed;
-  hardness = blockInfo->_hardness;
-
-  for (size_t i = 0; i < 6; i++) {
-    facesMapIndex[i] = blockInfo->_isSingle ? blockInfo->_facesMap[0]
-                                            : blockInfo->_facesMap[i];
-  }
+  pBlockInfo = blockInfo;
+  collidable = pBlockInfo->_isCollidable;
 }
 
 Block::~Block() {
   if (bbox) delete bbox;
   bbox = nullptr;
 }
+
+Blocks Block::getType() { return static_cast<Blocks>(pBlockInfo->blockId); }
+
+float Block::getHardness() { return pBlockInfo->_hardness; }
+
+/**
+ * Order: Top, Bottom, Left, Right, Back, Front
+ * @param facesMapIndex 6 length array of texture index
+ */
+std::array<u8, 6>* Block::getFacesMap() { return &pBlockInfo->_facesMap; };
+
+u8 Block::isBreakable() { return pBlockInfo->_isBreakable; }
+
+u8 Block::isCollidable() { return pBlockInfo->_isCollidable; }
+
+u8 Block::hasTransparency() { return pBlockInfo->_isTransparent; }
+
+u8 Block::isCrossed() { return pBlockInfo->_isCrossed; }

@@ -85,23 +85,25 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 }
 
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
+  u8* facesMap = t_block->getFacesMap()->data();
+
   if (t_block->isTopFaceVisible()) {
-    SlabMeshBuilder_loadTopDownUVFaceData(t_block->facesMapIndex[0], t_uv_map);
+    SlabMeshBuilder_loadTopDownUVFaceData(facesMap[0], t_uv_map);
   }
   if (t_block->isBottomFaceVisible()) {
-    SlabMeshBuilder_loadTopDownUVFaceData(t_block->facesMapIndex[1], t_uv_map);
+    SlabMeshBuilder_loadTopDownUVFaceData(facesMap[1], t_uv_map);
   }
   if (t_block->isLeftFaceVisible()) {
-    SlabMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[2], t_uv_map);
+    SlabMeshBuilder_loadSideUVFaceData(facesMap[2], t_uv_map);
   }
   if (t_block->isRightFaceVisible()) {
-    SlabMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[3], t_uv_map);
+    SlabMeshBuilder_loadSideUVFaceData(facesMap[3], t_uv_map);
   }
   if (t_block->isBackFaceVisible()) {
-    SlabMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[4], t_uv_map);
+    SlabMeshBuilder_loadSideUVFaceData(facesMap[4], t_uv_map);
   }
   if (t_block->isFrontFaceVisible()) {
-    SlabMeshBuilder_loadSideUVFaceData(t_block->facesMapIndex[5], t_uv_map);
+    SlabMeshBuilder_loadSideUVFaceData(facesMap[5], t_uv_map);
   }
 }
 

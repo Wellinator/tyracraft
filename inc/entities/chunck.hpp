@@ -124,7 +124,7 @@ class Chunck {
     t_block->localIndex = blocks.size();
     blocks.emplace_back(t_block);
 
-    if (t_block->hasTransparency) {
+    if (t_block->hasTransparency()) {
       visibleFacesCountWithTransparency +=
           t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
     } else {
