@@ -34,9 +34,9 @@ class Particle {
  public:
   float _elapsedTime = 0;
   float _lifeTime = 0;
-  Vec4 _velocity;
-  Vec4 _position;
-  Vec4 _direction;
+  Vec4 _velocity = Vec4(0.0F);
+  Vec4 _position = Vec4(0.0F);
+  Vec4 _direction = Vec4(0.0F);
   Vec4 uv[6] = {};
   Vec4 vertex[6] = {};
 };

@@ -9,6 +9,7 @@
 #include "managers/clipping_manager.hpp"
 #include "managers/particle/particle_manager.hpp"
 #include "managers/particle/flame_particle.hpp"
+#include "managers/particle/smoke_particle.hpp"
 #include "managers/tick_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
@@ -63,7 +64,12 @@ void Chunck::tick() {
     if (emitParticles) {
       // TODO: Move to method
       if (blocks[i]->getType() == Blocks::TORCH) {
-        if (Utils::Probability(0.1F)) {
+        if (Utils::Probability(0.008F)) {
+          // Creates smoke particle
+          SmokeParticle* sp = new SmokeParticle(blocks[i]);
+          ParticlesManager::EmitParticle(sp);
+
+          // Creates Flame particle
           Particle* currentParticle =
               ParticlesManager::GetParticleById(blocks[i]->index);
 

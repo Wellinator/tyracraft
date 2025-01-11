@@ -154,18 +154,10 @@ void ParticlesManager::render() {
     StaPipTextureBag textureBag;
     textureBag.coordinates = p->uv;
 
-    switch (p->type) {
-      case PaticleType::Block:
-        textureBag.texture = blocksTexture;
-        break;
-
-      case PaticleType::Flame:
-        textureBag.texture = particlesTexture;
-        break;
-
-      default:
-        TYRA_TRAP("Invalid particle type at setting texture!");
-        break;
+    if (p->type == PaticleType::Block) {
+      textureBag.texture = blocksTexture;
+    } else {
+      textureBag.texture = particlesTexture;
     }
 
     StaPipInfoBag infoBag;
