@@ -286,6 +286,7 @@ void World::reloadWorldArea(const Vec4& position) {
   }
 }
 
+// TODO: move to chunk manager
 void World::removeBlockFromChunk(Block* blockToRemove) {
   Chunck* currentChunk = chunckManager.getChunkById(blockToRemove->chunkId);
   if (!currentChunk) return;
@@ -1649,6 +1650,7 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
       if (blockInfo) {
         Block* block = new Block(blockInfo);
         block->index = blockIndex;
+        block->pLevel = pLevel;
         block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
         block->chunkId = t_chunck->id;
 
@@ -1763,6 +1765,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
         if (blockInfo) {
           Block* block = new Block(blockInfo);
           block->index = blockIndex;
+          block->pLevel = pLevel;
           block->offset = pLevel->GetPosFromXYZ(
               tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
           block->chunkId = t_chunck->id;

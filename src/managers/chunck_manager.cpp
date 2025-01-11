@@ -64,6 +64,10 @@ void ChunckManager::tick() {
     // Is Time To Update Light?
     if (chuncksToUpdateLight.empty() == false) reloadLightDataAsync();
   }
+  
+  for (size_t i = 0; i < chuncks.size(); i++) {
+    chuncks[i]->tick();
+  }
 }
 
 void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,

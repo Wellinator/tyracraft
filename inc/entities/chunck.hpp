@@ -82,6 +82,7 @@ class Chunck {
   void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip,
                                BlockManager* t_blockManager);
   void update(const Plane* frustumPlanes);
+  void tick();
   void clear();
   void clearAsync();
 

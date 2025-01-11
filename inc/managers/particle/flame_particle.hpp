@@ -1,0 +1,12 @@
+#pragma once
+
+#include "entities/Block.hpp"
+#include "particle.hpp"
+
+class FlameParticle : public Particle {
+ public:
+  const float START_SIZE = 3.0F;
+
+  FlameParticle(Block* pBlock);
+  void update(const float deltaTime, const Vec4* camPos);
+};

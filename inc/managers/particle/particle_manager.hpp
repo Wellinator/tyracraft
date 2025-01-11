@@ -3,6 +3,9 @@
 #include "constants.hpp"
 #include "camera.hpp"
 #include "entities/Block.hpp"
+#include "particle.hpp"
+#include "block_particle.hpp"
+#include "flame_particle.hpp"
 #include <tyra>
 #include <math.h>
 #include <vector>
@@ -20,31 +23,6 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-class Particle {
- public:
-  PaticleType type;
-
-  int id = 0;
-
-  u8 billboarded = true;
-  u8 expired = false;
-  u8 collidable = false;
-  u8 col;
-  u8 row;
-
-  M4x4 model, translation, rotation, scale;
-
-  float _elapsedTime = 0;
-  float _lifeTime = 0;
-  Vec4 _velocity;
-  Vec4 _position;
-  Vec4 _direction;
-
-  Color* t_color = nullptr;
-  Vec4 uv[6] = {};
-  Vec4 vertex[6] = {};
-};
-
 class ParticlesManager {
  public:
   ParticlesManager();
@@ -54,30 +32,27 @@ class ParticlesManager {
             const std::string& texturePack);
   void update(const float deltaTime, Camera* t_camera);
   void tick();
-
   void render();
-  void renderBlocksParticles();
-
-  void createBlockParticle(Block* block);
-  void createBlockParticleBatch(Block* block, const u16 size);
 
   Texture* getParticlesTexture();
 
-  inline uint16_t getParticlesCounter() { return particles.size(); };
+  static std::vector<Particle*> Particles;
+
+  uint16_t aliveParticlesCounter = 0;
+  inline uint16_t getParticlesCounter() {
+    return ParticlesManager::Particles.size();
+  };
+
+  static Particle* GetParticleById(const u32 id);
+  static void EmitParticle(Particle* particle);
+
+  void createBlockParticle(Block* pBlock);
+  void createBlockParticleBatch(Block* pBlock, const u16 size);
 
  private:
   Vec4 camPos;
-  const float particleSpeed = 65.0F;
 
   u8 particlesHasChanged = false;
-
-  const u8 DRAW_DATA_COUNT = 6;
-  Vec4* rawData = new Vec4[DRAW_DATA_COUNT]{
-      Vec4(1.0F, -1.0F, -1.0),  Vec4(-1.0F, 1.0F, -1.0),
-      Vec4(-1.0F, -1.0F, -1.0), Vec4(1.0F, -1.0F, -1.0),
-      Vec4(1.0F, 1.0F, -1.0),   Vec4(-1.0F, 1.0F, -1.0)};
-
-  std::vector<Particle> particles;
 
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;
@@ -91,6 +66,7 @@ class ParticlesManager {
 
   void updateParticles(const float deltaTime, const Vec4* camPos);
   void destroyExpiredParticles();
+  void destroyAllParticles();
 
   void loadParticlesTexture(const std::string& texturePack);
 };

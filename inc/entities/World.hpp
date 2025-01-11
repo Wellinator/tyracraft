@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "managers/chunck_manager.hpp"
 #include "managers/clouds_manager.hpp"
-#include "managers/particle_manager.hpp"
+#include "managers/particle/particle_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/day_night_cycle_manager.hpp"

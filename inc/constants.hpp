@@ -357,7 +357,7 @@ enum class MobCategory { Passive, Neutral, Hostile, Invalid };
 
 enum class MobType { Pig, Invalid };
 
-enum class PaticleType { Block };
+enum class PaticleType { Block, Flame };
 
 #define HOT_INVENTORY_SIZE 9
 

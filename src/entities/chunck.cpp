@@ -7,6 +7,9 @@
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/clipping_manager.hpp"
+#include "managers/particle/particle_manager.hpp"
+#include "managers/particle/flame_particle.hpp"
+#include "managers/tick_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -50,6 +53,32 @@ void Chunck::update(const Plane* frustumPlanes) {
   if (isDrawDataLoaded() && frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
       _distanceFromPlayerInChunks > -1 && _distanceFromPlayerInChunks < 3) {
     updateSurroundingBlocks();
+  }
+}
+
+void Chunck::tick() {
+  u8 emitParticles = this->_distanceFromPlayerInChunks <= 3;
+
+  for (size_t i = 0; i < blocks.size(); i++) {
+    if (emitParticles) {
+      // TODO: Move to method
+      if (blocks[i]->getType() == Blocks::TORCH) {
+        if (Utils::Probability(0.1F)) {
+          Particle* currentParticle =
+              ParticlesManager::GetParticleById(blocks[i]->index);
+
+          if (currentParticle) {
+            currentParticle->renew();
+            return;
+          }
+
+          // Emit a flame particle
+          FlameParticle* p = new FlameParticle(blocks[i]);
+          p->id = blocks[i]->index;
+          ParticlesManager::EmitParticle(p);
+        }
+      }
+    }
   }
 }
 
