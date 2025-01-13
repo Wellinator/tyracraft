@@ -10,7 +10,8 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   billboarded = true;
 
   // Define life time
-  _lifeTime = TICK * 10;
+  // This will influence how high the particles will go
+  _lifeTime = TICK * 17;
 
   // Define if is collidable
   collidable = false;
