@@ -9,6 +9,7 @@
 #include "entities/Block.hpp"
 #include "camera.hpp"
 #include "managers/state_manager.hpp"
+#include "managers/notification/notification_manager.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
 
 namespace TyraCraft {
@@ -20,6 +21,8 @@ class TyraCraftGame : public Tyra::Game {
 
   void init();
   void loop();
+
+  NotificationManager notificationManger;
 
  private:
   Camera camera;

@@ -4,6 +4,7 @@
 #include "states/game_play/states/creative/creative_audio_listener.hpp"
 #include "managers/font/font_manager.hpp"
 #include "managers/font/font_options.hpp"
+#include "managers/language_manager.hpp"
 #include "managers/tick_manager.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/inventory.hpp"
@@ -57,4 +58,11 @@ class CreativePlayingState : public PlayingStateBase {
   Vec4 playerMovementDirection;
 
   inline const u8 isInventoryOpened();
+
+  const std::string Message_Saved_Successfully =
+      g_language_repository["state_game_menu"]["saved_successfully"]
+          .get<std::string>();
+  const std::string Message_Progress_Has_Been_Saved =
+      g_language_repository["state_game_menu"]["progress_saved"]
+          .get<std::string>();
 };

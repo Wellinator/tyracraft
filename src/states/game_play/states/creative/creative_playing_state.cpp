@@ -1,6 +1,7 @@
 #include "states/game_play/states/creative/creative_playing_state.hpp"
 #include "managers/save_manager.hpp"
 #include "managers/settings_manager.hpp"
+#include "managers/notification/notification_manager.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
 
@@ -356,4 +357,7 @@ void CreativePlayingState::saveProgress() {
       SAVE_FILE_EXTENSION);
   SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
   TYRA_LOG("Saving at: ", saveFileName.c_str());
+
+  NotificationManager* instance = NotificationManager::getInstance();
+  instance->notify(Message_Saved_Successfully, Message_Progress_Has_Been_Saved);
 }

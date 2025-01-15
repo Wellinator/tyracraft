@@ -12,6 +12,7 @@ using namespace Tyra;
 
 TyraCraftGame::TyraCraftGame(Engine* t_engine)
     : camera(engine->renderer.core.getSettings()),
+      notificationManger(&t_engine->renderer),
       stateManager(t_engine, &camera) {
   engine = t_engine;
 #ifdef DEBUG_MODE
@@ -32,10 +33,14 @@ void TyraCraftGame::init() {
 
 void TyraCraftGame::loop() {
   const float dt = 1 / static_cast<float>(engine->info.getFps());
+
+  notificationManger.update(dt);
   stateManager.update(dt);
 
   engine->renderer.beginFrame(camera.getCameraInfo());
   stateManager.render();
+  notificationManger.render();
+
   engine->renderer.endFrame();
 }
 

@@ -140,4 +140,19 @@ class Utils {
 
   static void CalculateOverlappingVolume(Vec4* AMin, Vec4* AMax, Vec4* BMin,
                                          Vec4* BMax, Vec4* penetrationVector);
+
+  template <typename ContainerType>
+  static void SwapAndPopAtIndex(ContainerType& container, size_t index) {
+    // ensure that we're not attempting to access out of the bounds of the
+    // container.
+    assert(index < container.size());
+
+    // Swap the element with the back element, except in the case when we're the
+    // last element.
+    if (index + 1 != container.size())
+      std::swap(container[index], container.back());
+
+    // Pop the back of the container, deleting our old element.
+    container.pop_back();
+  }
 };
