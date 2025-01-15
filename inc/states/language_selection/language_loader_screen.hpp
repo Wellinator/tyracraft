@@ -45,7 +45,7 @@ class StateLanguageLoaderScreen : public GameState {
     std::ifstream langInfo(FileUtils::fromCwd(savedLangPath));
     if (langInfo.is_open()) {
       nlohmann::json language = nlohmann::json::parse(langInfo);
-      LanguageManager_SetLanguage(language);
+      LanguageManager::getInstance()->loadLanguage(&language);
       langInfo.close();
     }
   };

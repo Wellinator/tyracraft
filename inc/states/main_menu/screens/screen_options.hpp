@@ -51,47 +51,22 @@ class ScreenOptions : public ScreenBase {
   const float SLOT_HIGHT_OFFSET = 30;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
 
-  const std::string Label_UseVsync =
-      g_language_repository["options_menu"]["use_vsync"].get<std::string>();
-  const std::string Label_ReverseCameraY =
-      g_language_repository["options_menu"]["reverse_camera_y"]
-          .get<std::string>();
-  const std::string Label_CamSensitivityH =
-      g_language_repository["options_menu"]["sensitivity_camera"]
-          .get<std::string>() +
-      " " + std::string(" H: ");
-  const std::string Label_CamSensitivityV =
-      g_language_repository["options_menu"]["sensitivity_camera"]
-          .get<std::string>() +
-      " " + std::string(" V: ");
-  const std::string Label_Language =
-      g_language_repository["options_menu"]["language"].get<std::string>();
+  const std::string Label_UseVsync          = LanguageManager::Translate("/options_menu/use_vsync");
+  const std::string Label_ReverseCameraY    = LanguageManager::Translate("/options_menu/reverse_camera_y");
+  const std::string Label_CamSensitivityH   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "  H: ";
+  const std::string Label_CamSensitivityV   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "   V: ";
+  const std::string Label_Language          = LanguageManager::Translate("/options_menu/language");
+  const std::string Label_DeadZone          = LanguageManager::Translate("/options_menu/deadzone");
 
-  const std::string Label_DeadZone =
-      g_language_repository["options_menu"]["deadzone"].get<std::string>();
+  const std::string Label_LStickH           = LanguageManager::Translate("/gui/l_stick") + " " + Label_DeadZone + " H: ";
+  const std::string Label_LStickV           = LanguageManager::Translate("/gui/l_stick") + " " + Label_DeadZone + " V: ";
+  const std::string Label_RStickH           = LanguageManager::Translate("/gui/r_stick") + " " + Label_DeadZone + " H: ";
+  const std::string Label_RStickV           = LanguageManager::Translate("/gui/r_stick") + " " + Label_DeadZone + " V: ";
 
-  const std::string Label_LStickH =
-      g_language_repository["gui"]["l_stick"].get<std::string>() + " " +
-      Label_DeadZone + std::string(" H: ");
-  const std::string Label_LStickV =
-      g_language_repository["gui"]["l_stick"].get<std::string>() + " " +
-      Label_DeadZone + std::string(" V: ");
-  const std::string Label_RStickH =
-      g_language_repository["gui"]["r_stick"].get<std::string>() + " " +
-      Label_DeadZone + std::string(" H: ");
-  const std::string Label_RStickV =
-      g_language_repository["gui"]["r_stick"].get<std::string>() + " " +
-      Label_DeadZone + std::string(" V: ");
-
-  const std::string Label_Save =
-      g_language_repository["state_game_menu"]["save_and_quit"]
-          .get<std::string>();
-  const std::string Label_Back =
-      g_language_repository["gui"]["back"].get<std::string>();
-  const std::string Label_On =
-      g_language_repository["gui"]["on"].get<std::string>();
-  const std::string Label_Off =
-      g_language_repository["gui"]["off"].get<std::string>();
+  const std::string Label_Save              = LanguageManager::Translate("/state_game_menu/save_and_quit");
+  const std::string Label_Back              = LanguageManager::Translate("/gui/back");
+  const std::string Label_On                = LanguageManager::Translate("/gui/on");
+  const std::string Label_Off               = LanguageManager::Translate("/gui/off");
 
   void hightLightActiveOption();
   void handleInput();

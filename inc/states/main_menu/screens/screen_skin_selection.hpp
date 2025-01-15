@@ -68,14 +68,10 @@ class ScreenSkinSelection : public ScreenBase {
   const float slotWidth = 246.0F;
   const float slotHeight = 32.0F;
 
-  const std::string Label_Select =
-      g_language_repository["gui"]["select"].get<std::string>();
-  const std::string Label_Prev =
-      g_language_repository["gui"]["prev"].get<std::string>();
-  const std::string Label_Next =
-      g_language_repository["gui"]["next"].get<std::string>();
-  const std::string Label_Back =
-      g_language_repository["gui"]["back"].get<std::string>();
+  const std::string Label_Select    = LanguageManager::Translate("/gui/select");
+  const std::string Label_Prev      = LanguageManager::Translate("/gui/prev");
+  const std::string Label_Next      = LanguageManager::Translate("/gui/next");
+  const std::string Label_Back      = LanguageManager::Translate("/gui/back");
 
   std::vector<SkinInfoModel> skins;
   SkinInfoModel selectedSkin;

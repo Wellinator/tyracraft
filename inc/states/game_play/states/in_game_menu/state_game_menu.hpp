@@ -60,50 +60,24 @@ class StateGameMenu : public PlayingStateBase {
 
   // Gui
   const std::string Label_Overwtire =
-      g_language_repository["gui"]["overwrite"].get<std::string>();
-  const std::string Label_Quit =
-      g_language_repository["gui"]["quit"].get<std::string>();
-  const std::string Label_Save =
-      g_language_repository["gui"]["save"].get<std::string>();
-  const std::string Label_Select =
-      g_language_repository["gui"]["select"].get<std::string>();
-  const std::string Label_Cancel =
-      g_language_repository["gui"]["cancel"].get<std::string>();
+      LanguageManager::Translate("/gui/overwrite");
+
+  const std::string Label_Quit = LanguageManager::Translate("/gui/quit");
+  const std::string Label_Save = LanguageManager::Translate("/gui/save");
+  const std::string Label_Select = LanguageManager::Translate("/gui/select");
+  const std::string Label_Cancel = LanguageManager::Translate("/gui/cancel");
 
   // Dialogs
-  const std::string Label_DrawDistance =
-      g_language_repository["state_game_menu"]["draw_distance"]
-          .get<std::string>();
-  const std::string Label_GameMenu =
-      g_language_repository["state_game_menu"]["game_menu"].get<std::string>();
-  const std::string Label_BackToGame =
-      g_language_repository["state_game_menu"]["back_to_game"]
-          .get<std::string>();
-  const std::string Label_OverwriteGameAsk =
-      g_language_repository["state_game_menu"]["overwrite_save_game_ask"]
-          .get<std::string>();
-  const std::string Label_LocalSaveWillBeOverWriten =
-      g_language_repository["state_game_menu"]
-                           ["a_local_save_will_be_overwriten"]
-                               .get<std::string>();
-  const std::string Label_DoYouWantToContinue =
-      g_language_repository["state_game_menu"]["do_you_want_to_continue_ask"]
-          .get<std::string>();
-  const std::string Label_PreviousSaveErrorMessagePart1 =
-      g_language_repository["state_game_menu"]
-                           ["previous_save_error_message_part1"]
-                               .get<std::string>();
-  const std::string Label_PreviousSaveErrorMessagePart2 =
-      g_language_repository["state_game_menu"]
-                           ["previous_save_error_message_part2"]
-                               .get<std::string>();
-  const std::string Label_AreYouSure =
-      g_language_repository["state_game_menu"]["are_you_sure_ask"]
-          .get<std::string>();
-  const std::string Label_AllUnsavedProgressWillBeLost =
-      g_language_repository["state_game_menu"]
-                           ["all_unsaved_progress_will_be_lost"]
-                               .get<std::string>();
+  const std::string Label_DrawDistance                      = LanguageManager::Translate("/state_game_menu/draw_distance");
+  const std::string Label_GameMenu                          = LanguageManager::Translate("/state_game_menu/game_menu");
+  const std::string Label_BackToGame                        = LanguageManager::Translate("/state_game_menu/back_to_game");
+  const std::string Label_OverwriteGameAsk                  = LanguageManager::Translate("/state_game_menu/overwrite_save_game_ask");
+  const std::string Label_LocalSaveWillBeOverWriten         = LanguageManager::Translate("/state_game_menu/a_local_save_will_be_overwriten");
+  const std::string Label_DoYouWantToContinue               = LanguageManager::Translate("/state_game_menu/do_you_want_to_continue_ask");
+  const std::string Label_PreviousSaveErrorMessagePart1     = LanguageManager::Translate("/state_game_menu/previous_save_error_message_part1");
+  const std::string Label_PreviousSaveErrorMessagePart2     = LanguageManager::Translate("/state_game_menu/previous_save_error_message_part2");
+  const std::string Label_AreYouSure                        = LanguageManager::Translate("/state_game_menu/are_you_sure_ask");
+  const std::string Label_AllUnsavedProgressWillBeLost      = LanguageManager::Translate("/state_game_menu/all_unsaved_progress_will_be_lost");
 
   void hightLightActiveOption();
   void navigate();

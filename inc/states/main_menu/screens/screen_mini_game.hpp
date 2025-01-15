@@ -105,69 +105,28 @@ class ScreenMiniGame : public ScreenBase {
   u8 displayPreviousSavePresent = false;
   u8 displayProgressReseted = false;
 
-  const std::string Label_Load =
-      g_language_repository["gui"]["load"].get<std::string>();
-  const std::string Label_Create =
-      g_language_repository["gui"]["create"].get<std::string>();
-  const std::string Label_Mini =
-      g_language_repository["gui"]["mini"].get<std::string>();
-  const std::string Label_Confirm =
-      g_language_repository["gui"]["confirm"].get<std::string>();
-  //   const std::string Label_Cancel =
-  //       g_language_repository["gui"]["cancel"].get<std::string>();
-  const std::string Label_Select =
-      g_language_repository["gui"]["select"].get<std::string>();
-  const std::string Label_Bksp =
-      g_language_repository["gui"]["bksp"].get<std::string>();
-  const std::string Label_Prev =
-      g_language_repository["gui"]["prev"].get<std::string>();
-  const std::string Label_Next =
-      g_language_repository["gui"]["next"].get<std::string>();
-  const std::string Label_Back =
-      g_language_repository["gui"]["back"].get<std::string>();
-  const std::string Label_Edit =
-      g_language_repository["gui"]["edit"].get<std::string>();
-  const std::string Label_Random =
-      g_language_repository["gui"]["random"].get<std::string>();
-
-  const std::string Label_NewGame =
-      g_language_repository["minigame"]["common"]["new_game"]
-          .get<std::string>();
-  const std::string Label_Continue =
-      g_language_repository["minigame"]["common"]["continue"]
-          .get<std::string>();
-  const std::string Label_ResetProgress =
-      g_language_repository["minigame"]["common"]["reset_progress"]
-          .get<std::string>();
-  const std::string Label_Ops =
-      g_language_repository["common"]["ops_exclamation"].get<std::string>();
-  const std::string Label_Success =
-      g_language_repository["common"]["success_exclamation"].get<std::string>();
-
-  const std::string Label_MiniGame =
-      g_language_repository["minigame"]["common"]["mini_games"]
-          .get<std::string>();
-
-  const std::string Label_PreviousSaveDeletedSuccessPart1 =
-      g_language_repository["minigame"]["common"]
-                           ["minigame_previous_save_deleted_part1"]
-                               .get<std::string>();
-  const std::string Label_PreviousSaveDeletedSuccessPart2 =
-      g_language_repository["minigame"]["common"]
-                           ["minigame_previous_save_deleted_part2"]
-                               .get<std::string>();
-  const std::string Label_PreviousSavePresentErrorPart1 =
-      g_language_repository["minigame"]["common"]
-                           ["minigame_previous_save_error_part1"]
-                               .get<std::string>();
-  const std::string Label_PreviousSavePresentErrorPart2 =
-      g_language_repository["minigame"]["common"]
-                           ["minigame_previous_save_error_part2"]
-                               .get<std::string>();
-  const std::string Label_PreviousSavePresentErrorPart3 =
-      g_language_repository["minigame"]["common"]
-                           ["minigame_previous_save_error_part3"]
-                               .get<std::string>();
+  const std::string Label_Load                                  = LanguageManager::Translate("/gui/load");
+  const std::string Label_Create                                = LanguageManager::Translate("/gui/create");
+  const std::string Label_Mini                                  = LanguageManager::Translate("/gui/mini");
+  const std::string Label_Confirm                               = LanguageManager::Translate("/gui/confirm");
+  const std::string Label_Select                                = LanguageManager::Translate("/gui/select");
+  const std::string Label_Bksp                                  = LanguageManager::Translate("/gui/bksp");
+  const std::string Label_Prev                                  = LanguageManager::Translate("/gui/prev");
+  const std::string Label_Next                                  = LanguageManager::Translate("/gui/next");
+  const std::string Label_Back                                  = LanguageManager::Translate("/gui/back");
+  const std::string Label_Edit                                  = LanguageManager::Translate("/gui/edit");
+  const std::string Label_Random                                = LanguageManager::Translate("/gui/random");
+  const std::string Label_NewGame                               = LanguageManager::Translate("/minigame/common/new_game");
+  const std::string Label_Continue                              = LanguageManager::Translate("/minigame/common/continue");
+  const std::string Label_ResetProgress                         = LanguageManager::Translate("/minigame/common/reset_progress");
+  const std::string Label_Ops                                   = LanguageManager::Translate("/common/ops_exclamation");
+  const std::string Label_Success                               = LanguageManager::Translate("/common/success_exclamation");
+  const std::string Label_MiniGame                              = LanguageManager::Translate("/minigame/common/mini_games");
+  const std::string Label_PreviousSaveDeletedSuccessPart1       = LanguageManager::Translate("/minigame/common/minigame_previous_save_deleted_part1");
+  const std::string Label_PreviousSaveDeletedSuccessPart2       = LanguageManager::Translate("/minigame/common/minigame_previous_save_deleted_part2");
+  const std::string Label_PreviousSavePresentErrorPart1         = LanguageManager::Translate("/minigame/common/minigame_previous_save_error_part1");
+  const std::string Label_PreviousSavePresentErrorPart2         = LanguageManager::Translate("/minigame/common/minigame_previous_save_error_part2");
+  const std::string Label_PreviousSavePresentErrorPart3         = LanguageManager::Translate("/minigame/common/minigame_previous_save_error_part3");
 
   std::vector<MiniGameInfoModel*> miniGames;
   MiniGameInfoModel* selectedMiniGame = nullptr;

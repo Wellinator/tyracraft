@@ -35,11 +35,11 @@ class MazecraftLevelInit : public PlayingStateBase {
   Sprite overlay;
   Sprite btnCross;
 
-  const std::string Label_Level = g_language_repository["minigame"]["common"]["level"].get<std::string>();
-  const std::string Label_WelcomeText1Part1 = g_language_repository["minigame"]["mazecraft"]["welcome_text_part1"].get<std::string>();
-  const std::string Label_WelcomeText1Part2 = g_language_repository["minigame"]["mazecraft"]["welcome_text_part2"].get<std::string>();
-  const std::string Label_WelcomeText1Part3 = g_language_repository["minigame"]["mazecraft"]["welcome_text_part3"].get<std::string>();
-  const std::string Label_WelcomeText1Part4 = g_language_repository["minigame"]["mazecraft"]["welcome_text_part4"].get<std::string>();
+  const std::string Label_Level             = LanguageManager::Translate("/minigame/common/level");
+  const std::string Label_WelcomeText1Part1 = LanguageManager::Translate("/minigame/mazecraft/welcome_text_part1");
+  const std::string Label_WelcomeText1Part2 = LanguageManager::Translate("/minigame/mazecraft/welcome_text_part2");
+  const std::string Label_WelcomeText1Part3 = LanguageManager::Translate("/minigame/mazecraft/welcome_text_part3");
+  const std::string Label_WelcomeText1Part4 = LanguageManager::Translate("/minigame/mazecraft/welcome_text_part4");
 
   void unloadTextures();
 };

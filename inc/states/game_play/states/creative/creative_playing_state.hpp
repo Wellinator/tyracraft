@@ -6,6 +6,7 @@
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/language_manager.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/inventory.hpp"
 #include <tamtypes.h>
@@ -59,10 +60,6 @@ class CreativePlayingState : public PlayingStateBase {
 
   inline const u8 isInventoryOpened();
 
-  const std::string Message_Saved_Successfully =
-      g_language_repository["state_game_menu"]["saved_successfully"]
-          .get<std::string>();
-  const std::string Message_Progress_Has_Been_Saved =
-      g_language_repository["state_game_menu"]["progress_saved"]
-          .get<std::string>();
+  std::string Message_Saved_Successfully      = LanguageManager::Translate("/state_game_menu/saved_successfully");
+  std::string Message_Progress_Has_Been_Saved = LanguageManager::Translate("/state_game_menu/progress_saved");
 };

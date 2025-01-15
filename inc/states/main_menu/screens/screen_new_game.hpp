@@ -106,68 +106,33 @@ class ScreenNewGame : public ScreenBase {
   u8 editingIndexWorldName = 0;
   u8 needToChangeWorldName = 0;
 
-  const std::string Label_Load =
-      g_language_repository["gui"]["load"].get<std::string>();
-  const std::string Label_Create =
-      g_language_repository["gui"]["create"].get<std::string>();
-  const std::string Label_Mini =
-      g_language_repository["gui"]["mini"].get<std::string>();
-  const std::string Label_Confirm =
-      g_language_repository["gui"]["confirm"].get<std::string>();
-  const std::string Label_Cancel =
-      g_language_repository["gui"]["cancel"].get<std::string>();
-  const std::string Label_Select =
-      g_language_repository["gui"]["select"].get<std::string>();
-  const std::string Label_Bksp =
-      g_language_repository["gui"]["bksp"].get<std::string>();
-  const std::string Label_Prev =
-      g_language_repository["gui"]["prev"].get<std::string>();
-  const std::string Label_Next =
-      g_language_repository["gui"]["next"].get<std::string>();
-  const std::string Label_Back =
-      g_language_repository["gui"]["back"].get<std::string>();
-  const std::string Label_Edit =
-      g_language_repository["gui"]["edit"].get<std::string>();
-  const std::string Label_Random =
-      g_language_repository["gui"]["random"].get<std::string>();
+  const std::string Label_Load      = LanguageManager::Translate("/gui/load");
+  const std::string Label_Create    = LanguageManager::Translate("/gui/create");
+  const std::string Label_Mini      = LanguageManager::Translate("/gui/mini");
+  const std::string Label_Confirm   = LanguageManager::Translate("/gui/confirm");
+  const std::string Label_Cancel    = LanguageManager::Translate("/gui/cancel");
+  const std::string Label_Select    = LanguageManager::Translate("/gui/select");
+  const std::string Label_Bksp      = LanguageManager::Translate("/gui/bksp");
+  const std::string Label_Prev      = LanguageManager::Translate("/gui/prev");
+  const std::string Label_Next      = LanguageManager::Translate("/gui/next");
+  const std::string Label_Back      = LanguageManager::Translate("/gui/back");
+  const std::string Label_Edit      = LanguageManager::Translate("/gui/edit");
+  const std::string Label_Random    = LanguageManager::Translate("/gui/random");
 
-  const std::string Label_By =
-      g_language_repository["common"]["by"].get<std::string>();
-  const std::string Label_Seed =
-      g_language_repository["common"]["seed"].get<std::string>();
-  const std::string Label_Ops =
-      g_language_repository["common"]["ops_exclamation"].get<std::string>();
+  const std::string Label_By    = LanguageManager::Translate("/common/by");
+  const std::string Label_Seed  = LanguageManager::Translate("/common/seed");
+  const std::string Label_Ops   = LanguageManager::Translate("/common/ops_exclamation");
 
-  const std::string Label_TexturePack =
-      g_language_repository["screen_new_game"]["texture_packs"]
-          .get<std::string>();
-  const std::string Label_CreateNewWorld =
-      g_language_repository["screen_new_game"]["create_new_world"]
-          .get<std::string>();
-  const std::string Label_WorldTypeOriginal =
-      g_language_repository["screen_new_game"]["world_type_original"]
-          .get<std::string>();
-  const std::string Label_WorldTypeFlat =
-      g_language_repository["screen_new_game"]["world_type_flat"]
-          .get<std::string>();
-  const std::string Label_WorldTypeIsland =
-      g_language_repository["screen_new_game"]["world_type_island"]
-          .get<std::string>();
-  const std::string Label_WorldTypeWoods =
-      g_language_repository["screen_new_game"]["world_type_woods"]
-          .get<std::string>();
-  const std::string Label_WorldTypeFloating =
-      g_language_repository["screen_new_game"]["world_type_floating"]
-          .get<std::string>();
-  const std::string Label_WorldNameErrorPart1 =
-      g_language_repository["screen_new_game"]["world_name_exists_error_part1"]
-          .get<std::string>();
-  const std::string Label_WorldNameErrorPart2 =
-      g_language_repository["screen_new_game"]["world_name_exists_error_part2"]
-          .get<std::string>();
-  const std::string Label_WorldNameErrorPart3 =
-      g_language_repository["screen_new_game"]["world_name_exists_error_part3"]
-          .get<std::string>();
+  const std::string Label_TexturePack           = LanguageManager::Translate("/screen_new_game/texture_packs");
+  const std::string Label_CreateNewWorld        = LanguageManager::Translate("/screen_new_game/create_new_world");
+  const std::string Label_WorldTypeOriginal     = LanguageManager::Translate("/screen_new_game/world_type_original");
+  const std::string Label_WorldTypeFlat         = LanguageManager::Translate("/screen_new_game/world_type_flat");
+  const std::string Label_WorldTypeIsland       = LanguageManager::Translate("/screen_new_game/world_type_island");
+  const std::string Label_WorldTypeWoods        = LanguageManager::Translate("/screen_new_game/world_type_woods");
+  const std::string Label_WorldTypeFloating     = LanguageManager::Translate("/screen_new_game/world_type_floating");
+  const std::string Label_WorldNameErrorPart1   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part1");
+  const std::string Label_WorldNameErrorPart2   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part2");
+  const std::string Label_WorldNameErrorPart3   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part3");
 
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;

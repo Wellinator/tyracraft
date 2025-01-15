@@ -76,14 +76,9 @@ class ScreenMain : public ScreenBase {
   void handleInput();
   void navigate();
 
-  const std::string Label_PlayGame =
-      g_language_repository["main_menu"]["play_game"].get<std::string>();
-  const std::string Label_Options =
-      g_language_repository["main_menu"]["options"].get<std::string>();
-  const std::string Label_HowToPlay =
-      g_language_repository["main_menu"]["how_to_play"].get<std::string>();
-  const std::string Label_About =
-      g_language_repository["main_menu"]["about"].get<std::string>();
-  const std::string Label_Select =
-      g_language_repository["gui"]["select"].get<std::string>();
+  const std::string Label_PlayGame      = LanguageManager::Translate("/main_menu/play_game");
+  const std::string Label_Options       = LanguageManager::Translate("/main_menu/options");
+  const std::string Label_HowToPlay     = LanguageManager::Translate("/main_menu/how_to_play");
+  const std::string Label_About         = LanguageManager::Translate("/main_menu/about");
+  const std::string Label_Select        = LanguageManager::Translate("/gui/select");
 };

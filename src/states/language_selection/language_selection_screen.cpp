@@ -157,7 +157,7 @@ void StateLanguageSelectionScreen::selectLanguage() {
   std::ifstream langInfo(FileUtils::fromCwd(selectedLanguage->path));
   if (langInfo.is_open()) {
     json language = json::parse(langInfo);
-    LanguageManager_SetLanguage(language);
+    LanguageManager::getInstance()->loadLanguage(&language);
 
     g_settings.language = selectedLanguage->code;
     SettingsManager::Save();

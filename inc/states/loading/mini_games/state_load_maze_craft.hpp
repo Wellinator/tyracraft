@@ -64,25 +64,13 @@ class StateLoadMazeCraft : public GameState {
   FontOptions progressLabelOptions =
       FontOptions(Vec2(120.0F, 448.0F - 125.F), Color(200, 200, 200), 0.75F);
 
-  const std::string Label_Loading =
-      g_language_repository["loading_screen"]["loading"].get<std::string>();
-  const std::string Label_CreatingEntities =
-      g_language_repository["loading_screen"]["creating_entities"]
-          .get<std::string>();
-  const std::string Label_LoadingItemsRepo =
-      g_language_repository["loading_screen"]["loading_items_repository"]
-          .get<std::string>();
-  const std::string Label_LoadingUI =
-      g_language_repository["loading_screen"]["loading_ui"].get<std::string>();
-  const std::string Label_LoadingWorld =
-      g_language_repository["loading_screen"]["loading_world"]
-          .get<std::string>();
-  const std::string Label_LoadingPlayer =
-      g_language_repository["loading_screen"]["loading_player"]
-          .get<std::string>();
-  const std::string Label_LoadingSave =
-      g_language_repository["loading_screen"]["loading_save"]
-          .get<std::string>();
+  const std::string Label_Loading           = LanguageManager::Translate("/loading_screen/loading");
+  const std::string Label_CreatingEntities  = LanguageManager::Translate("/loading_screen/creating_entities");
+  const std::string Label_LoadingItemsRepo  = LanguageManager::Translate("/loading_screen/loading_items_repository");
+  const std::string Label_LoadingUI         = LanguageManager::Translate("/loading_screen/loading_ui");
+  const std::string Label_LoadingWorld      = LanguageManager::Translate("/loading_screen/loading_world");
+  const std::string Label_LoadingPlayer     = LanguageManager::Translate("/loading_screen/loading_player");
+  const std::string Label_LoadingSave       = LanguageManager::Translate("/loading_screen/loading_save");
 
   void setPercent(float completed);
   void setBgColorBlack();

@@ -69,18 +69,12 @@ class ScreenLoadGame : public ScreenBase {
   std::vector<SaveInfoModel*> savedGamesList;
   SaveInfoModel* selectedSavedGame = nullptr;
 
-  const std::string Label_Load =
-      g_language_repository["gui"]["load"].get<std::string>();
-  const std::string Label_Create =
-      g_language_repository["gui"]["create"].get<std::string>();
-  const std::string Label_Mini =
-      g_language_repository["gui"]["mini"].get<std::string>();
-  const std::string Label_Prev =
-      g_language_repository["gui"]["prev"].get<std::string>();
-  const std::string Label_Next =
-      g_language_repository["gui"]["next"].get<std::string>();
-  const std::string Label_Back =
-      g_language_repository["gui"]["back"].get<std::string>();
+  const std::string Label_Load      = LanguageManager::Translate("/gui/load");
+  const std::string Label_Create    = LanguageManager::Translate("/gui/create");
+  const std::string Label_Mini      = LanguageManager::Translate("/gui/mini");
+  const std::string Label_Prev      = LanguageManager::Translate("/gui/prev");
+  const std::string Label_Next      = LanguageManager::Translate("/gui/next");
+  const std::string Label_Back      = LanguageManager::Translate("/gui/back");
 
   void handleInput();
   void handleOptionsSelection();

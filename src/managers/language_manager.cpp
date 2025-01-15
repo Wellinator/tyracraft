@@ -1,17 +1,23 @@
 #include "managers/language_manager.hpp"
 
-/**
- * @brief Definition of global json language
- *
- */
-nlohmann::json g_language_repository(nlohmann::json::value_t::object);
+LanguageManager::LanguageManager() {
+  _langDictionary = nlohmann::json::value_t::object;
+}
 
-void LanguageManager_SetLanguage(nlohmann::json language) {
-  g_language_repository = nlohmann::json(language);
+LanguageManager::~LanguageManager() {}
+
+void LanguageManager::loadLanguage(nlohmann::json* pLanguage) {
+  _langDictionary = nlohmann::json(*pLanguage);
+  _langDictionary.flatten();
+
   TYRA_LOG("Language defined successfully!");
 }
 
-void LanguageManager_UnsetLanguage() {
-  g_language_repository.clear();
-  g_language_repository = nlohmann::json(nullptr);
+void LanguageManager::unloadLanguage() {
+  _langDictionary.clear();
+  _langDictionary = nlohmann::json(nullptr);
+}
+
+std::string LanguageManager::translate(const char* key) {
+  return _langDictionary[nlohmann::json::json_pointer(key)].get<std::string>();
 }

@@ -8,6 +8,7 @@
 #include "entities/chunck.hpp"
 #include "entities/Block.hpp"
 #include "camera.hpp"
+#include "managers/language_manager.hpp"
 #include "managers/state_manager.hpp"
 #include "managers/notification/notification_manager.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
@@ -22,6 +23,7 @@ class TyraCraftGame : public Tyra::Game {
   void init();
   void loop();
 
+  LanguageManager languageManager;
   NotificationManager notificationManger;
   FontManager fontManager;
 
