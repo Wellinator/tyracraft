@@ -1,6 +1,7 @@
 #include "entities/player/player.hpp"
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/block_manager.hpp"
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
 #include "managers/settings_manager.hpp"
@@ -17,12 +18,11 @@ using Tyra::Renderer3D;
 // ----
 
 Player::Player(Level* pLevel, Renderer* t_renderer,
-               BlockManager* t_blockManager, ItemRepository* t_itemRepository,
+               ItemRepository* t_itemRepository,
                WorldLightModel* t_worldLightModel)
     : Entity(pLevel, EntityType::Player) {
   this->pLevel = pLevel;
   this->t_renderer = t_renderer;
-  this->t_blockManager = t_blockManager;
   this->t_itemRepository = t_itemRepository;
   this->t_worldLightModel = t_worldLightModel;
 
@@ -501,7 +501,7 @@ void Player::loadStaticBBox() {
 
 void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
-      this->t_blockManager->getStepSoundByBlockType(blockType);
+      BlockManager::getInstance()->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
     SoundManager* pSoundManager = SoundManager::getInstance();
     const int ch = pSoundManager->getAvailableChannel();

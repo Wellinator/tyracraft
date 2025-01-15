@@ -239,11 +239,11 @@ void World::tick(Player* t_player, Camera* t_camera) {
 }
 
 void World::renderOpaque() {
-  chunckManager.rendererOpaque(t_renderer, &stapip, &blockManager);
+  chunckManager.rendererOpaque(t_renderer, &stapip);
 };
 
 void World::renderTransparent() {
-  chunckManager.rendererTransparent(t_renderer, &stapip, &blockManager);
+  chunckManager.rendererTransparent(t_renderer, &stapip);
 };
 
 void World::buildInitialPosition() {

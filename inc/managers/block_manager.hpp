@@ -5,6 +5,7 @@
 #include <renderer/renderer.hpp>
 #include <renderer/3d/mesh/mesh.hpp>
 #include <renderer/core/texture/models/texture.hpp>
+#include "singleton.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
@@ -27,7 +28,7 @@ using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Texture;
 
-class BlockManager {
+class BlockManager : public Singleton<BlockManager> {
  public:
   BlockManager();
   ~BlockManager();

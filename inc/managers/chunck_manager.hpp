@@ -34,12 +34,9 @@ class ChunckManager {
 
   inline u8 isChunkVisible(Chunck* chunk) { return chunk->isVisible(); };
 
-  void renderer(Renderer* t_renderer, StaticPipeline* stapip,
-                BlockManager* t_blockManager);
-  void rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip,
-                      BlockManager* t_blockManager);
-  void rendererTransparent(Renderer* t_renderer, StaticPipeline* stapip,
-                           BlockManager* t_blockManager);
+  void renderer(Renderer* t_renderer, StaticPipeline* stapip);
+  void rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip);
+  void rendererTransparent(Renderer* t_renderer, StaticPipeline* stapip);
   void clearAllChunks();
 
   void enqueueChunksToReloadLight();

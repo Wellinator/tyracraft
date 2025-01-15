@@ -5,6 +5,7 @@
 #include "entities/Block.hpp"
 #include "managers/block/block_info_repository.hpp"
 #include "managers/mesh/handled_item_mesh_builder.hpp"
+#include "managers/block_manager.hpp"
 
 PlayerRenderArmPip::PlayerRenderArmPip(Player* t_player)
     : PlayerRenderPip(t_player) {
@@ -110,7 +111,7 @@ void PlayerRenderArmPip::loadItemDrawData() {
   } else {
     Item* t_item = t_player->t_itemRepository->getItemById(activeItemType);
     BlockInfo* tempInfo =
-        t_player->t_blockManager->getBlockInfoByType(t_item->blockId);
+        BlockManager::getInstance()->getBlockInfoByType(t_item->blockId);
 
     if (tempInfo) {
       Block block = Block(tempInfo);
@@ -160,7 +161,7 @@ void PlayerRenderArmPip::loadItemDrawData() {
       HandledItemMeshBuilder_BuildMesh(t_item, &block, &vertices, nullptr,
                                        &uvMap, t_player->t_worldLightModel);
 
-      textureBag.texture = t_player->t_blockManager->getBlocksTexture();
+      textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
       textureBag.coordinates = uvMap.data();
 
       infoBag.model = &rawMatrix;

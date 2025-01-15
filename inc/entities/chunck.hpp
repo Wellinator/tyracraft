@@ -7,7 +7,6 @@
 #include <algorithm>
 #include "entities/Block.hpp"
 #include "constants.hpp"
-#include "managers/block_manager.hpp"
 #include "utils.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include "renderer/3d/bbox/bbox.hpp"
@@ -77,10 +76,8 @@ class Chunck {
   double timeToBuild = 0;
 
   void init(Level* pLevel, WorldLightModel* t_worldLightModel);
-  void renderer(Renderer* t_renderer, StaticPipeline* stapip,
-                BlockManager* t_blockManager);
-  void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip,
-                               BlockManager* t_blockManager);
+  void renderer(Renderer* t_renderer, StaticPipeline* stapip);
+  void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip);
   void update(const Plane* frustumPlanes);
   void tick();
   void clear();
@@ -183,16 +180,13 @@ class Chunck {
   std::vector<Block*> surroundingTransparentBlocks;
   Plane* frustumPlanes = nullptr;
 
-  void renderSolidPartialBlocks(Renderer* t_renderer, StaticPipeline* stapip,
-                                BlockManager* t_blockManager);
+  void renderSolidPartialBlocks(Renderer* t_renderer, StaticPipeline* stapip);
 
   void renderTransparentPartialBlocks(Renderer* t_renderer,
-                                      StaticPipeline* stapip,
-                                      BlockManager* t_blockManager);
+                                      StaticPipeline* stapip);
 
   void renderPartialBlockDrawData(Renderer* t_renderer, u8 hasTransparency,
                                   StaticPipeline* stapip,
-                                  BlockManager* t_blockManager,
                                   std::vector<Vec4>& in_vertex,
                                   std::vector<Vec4>& in_uv,
                                   std::vector<Color>& in_colors);

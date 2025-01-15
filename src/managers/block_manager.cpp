@@ -9,7 +9,7 @@ using Tyra::MinecraftPipeline;
 using Tyra::Renderer;
 using Tyra::Vec4;
 
-BlockManager::BlockManager() {}
+BlockManager::BlockManager() : Singleton<BlockManager>() {}
 
 BlockManager::~BlockManager() {
   delete this->t_BlockInfoRepository;

@@ -11,6 +11,7 @@
 #include "managers/particle/flame_particle.hpp"
 #include "managers/particle/smoke_particle.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/block_manager.hpp"
 
 Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -118,8 +119,7 @@ void Chunck::updateSurroundingBlocks() {
   }
 }
 
-void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
-                      BlockManager* t_blockManager) {
+void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (isDrawDataLoaded()) {
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
@@ -127,7 +127,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     StaPipBag bag;
 
     textureBag.coordinates = uvMap.data();
-    textureBag.texture = t_blockManager->getBlocksTexture();
+    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -154,14 +154,13 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip,
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
     if (surroundingBlocks.size() > 0) {
-      renderSolidPartialBlocks(t_renderer, stapip, t_blockManager);
+      renderSolidPartialBlocks(t_renderer, stapip);
     }
   }
 };
 
 void Chunck::rendererTransparentData(Renderer* t_renderer,
-                                     StaticPipeline* stapip,
-                                     BlockManager* t_blockManager) {
+                                     StaticPipeline* stapip) {
   if (isDrawDataLoaded()) {
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
@@ -169,7 +168,7 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     StaPipBag bag;
 
     textureBag.coordinates = uvMapWithTransparency.data();
-    textureBag.texture = t_blockManager->getBlocksTexture();
+    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
@@ -196,14 +195,13 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
     if (surroundingTransparentBlocks.size() > 0) {
-      renderTransparentPartialBlocks(t_renderer, stapip, t_blockManager);
+      renderTransparentPartialBlocks(t_renderer, stapip);
     }
   }
 };
 
 void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
-                                      StaticPipeline* stapip,
-                                      BlockManager* t_blockManager) {
+                                      StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingBlocks.size(); i++) {
     Block* t_block = surroundingBlocks[i];
     const auto start = t_block->drawDataIndex;
@@ -229,14 +227,13 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
     // 0));
-    renderPartialBlockDrawData(t_renderer, false, stapip, t_blockManager,
-                               inVertices, inUVMap, inColors);
+    renderPartialBlockDrawData(t_renderer, false, stapip, inVertices, inUVMap,
+                               inColors);
   }
 }
 
 void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
-                                            StaticPipeline* stapip,
-                                            BlockManager* t_blockManager) {
+                                            StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
     Block* t_block = surroundingTransparentBlocks[i];
     const auto start = t_block->drawDataIndex;
@@ -264,15 +261,17 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
 
     // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(0, 0,
     // 255));
-    renderPartialBlockDrawData(t_renderer, true, stapip, t_blockManager,
-                               inVertices, inUVMap, inColors);
+    renderPartialBlockDrawData(t_renderer, true, stapip, inVertices, inUVMap,
+                               inColors);
   }
 }
 
-void Chunck::renderPartialBlockDrawData(
-    Renderer* t_renderer, u8 hasTransparency, StaticPipeline* stapip,
-    BlockManager* t_blockManager, std::vector<Vec4>& in_vertex,
-    std::vector<Vec4>& in_uv, std::vector<Color>& in_colors) {
+void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
+                                        u8 hasTransparency,
+                                        StaticPipeline* stapip,
+                                        std::vector<Vec4>& in_vertex,
+                                        std::vector<Vec4>& in_uv,
+                                        std::vector<Color>& in_colors) {
   StaPipTextureBag textureBag;
   StaPipInfoBag infoBag;
   StaPipColorBag colorBag;
@@ -293,7 +292,7 @@ void Chunck::renderPartialBlockDrawData(
   if (generatedVertexCounter == 0) return;
 
   textureBag.coordinates = outUVMap.data();
-  textureBag.texture = t_blockManager->getBlocksTexture();
+  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
 
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;

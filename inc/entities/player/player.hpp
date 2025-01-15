@@ -16,7 +16,6 @@
 #include "entities/entity.hpp"
 #include <tamtypes.h>
 #include "managers/items_repository.hpp"
-#include "managers/block_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "managers/items_repository.hpp"
 #include "loaders/3d/md2_loader/md2_loader.hpp"
@@ -46,6 +45,7 @@ using Tyra::PadButtons;
 using Tyra::Ray;
 using Tyra::Renderer;
 using Tyra::StaticPipeline;
+using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
@@ -55,8 +55,8 @@ using Tyra::Vec4;
 // TODO: showld inherit Mob class instead Entity directly
 class Player : public Entity {
  public:
-  Player(Level* pLevel, Renderer* t_renderer, BlockManager* t_blockManager,
-         ItemRepository* t_itemRepository, WorldLightModel* t_worldLightModel);
+  Player(Level* pLevel, Renderer* t_renderer, ItemRepository* t_itemRepository,
+         WorldLightModel* t_worldLightModel);
   ~Player();
 
   void update(const float& deltaTime, const Vec4& movementDir,
@@ -140,7 +140,6 @@ class Player : public Entity {
 
   inline Texture* getPlayerTexture() { return playerTexture; };
 
-  BlockManager* t_blockManager;
   ItemRepository* t_itemRepository;
   WorldLightModel* t_worldLightModel;
 

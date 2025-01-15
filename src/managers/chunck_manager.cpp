@@ -64,33 +64,29 @@ void ChunckManager::tick() {
     // Is Time To Update Light?
     if (chuncksToUpdateLight.empty() == false) reloadLightDataAsync();
   }
-  
+
   for (size_t i = 0; i < chuncks.size(); i++) {
     chuncks[i]->tick();
   }
 }
 
-void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip,
-                             BlockManager* t_blockManager) {
+void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
-    visibleChunks[i]->renderer(t_renderer, stapip, t_blockManager);
+    visibleChunks[i]->renderer(t_renderer, stapip);
   for (u16 i = 0; i < visibleChunks.size(); i++)
-    visibleChunks[i]->rendererTransparentData(t_renderer, stapip,
-                                              t_blockManager);
+    visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
 }
 
-void ChunckManager::rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip,
-                                   BlockManager* t_blockManager) {
+void ChunckManager::rendererOpaque(Renderer* t_renderer,
+                                   StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
-    visibleChunks[i]->renderer(t_renderer, stapip, t_blockManager);
+    visibleChunks[i]->renderer(t_renderer, stapip);
 }
 
 void ChunckManager::rendererTransparent(Renderer* t_renderer,
-                                        StaticPipeline* stapip,
-                                        BlockManager* t_blockManager) {
+                                        StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
-    visibleChunks[i]->rendererTransparentData(t_renderer, stapip,
-                                              t_blockManager);
+    visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
 }
 
 void ChunckManager::generateChunks() {

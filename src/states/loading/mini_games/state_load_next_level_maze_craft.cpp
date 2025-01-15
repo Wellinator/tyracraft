@@ -105,7 +105,6 @@ void StateLoadNextLevelMazeCraft::createEntities() {
 
   this->stateGamePlay->player =
       new Player(stateGamePlay->plevel, &this->context->t_engine->renderer,
-                 &this->stateGamePlay->world->blockManager,
                  this->stateGamePlay->itemRepository,
                  this->stateGamePlay->world->getWorldLightModel());
 
