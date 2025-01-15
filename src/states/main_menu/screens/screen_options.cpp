@@ -21,6 +21,7 @@ void ScreenOptions::update(const float& deltaTime) {
 }
 
 void ScreenOptions::render() {
+  FontManager& fm = FontManager::getInstanceRef();
   t_renderer->renderer2D.render(background);
 
   t_renderer->renderer2D.render(raw_slot[0]);
@@ -50,8 +51,7 @@ void ScreenOptions::render() {
                               : Tyra::Color(255, 255, 255));
 
     std::string _state = tempSettings.vsync ? Label_On : Label_Off;
-    FontManager_printText(Label_UseVsync + std::string(": ") + _state,
-                          fontOptions);
+    fm.printText(Label_UseVsync + std::string(": ") + _state, fontOptions);
   }
 
   // Camera
@@ -65,8 +65,8 @@ void ScreenOptions::render() {
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
     std::string _state = tempSettings.invert_cam_y ? Label_On : Label_Off;
-    FontManager_printText(Label_ReverseCameraY + std::string(": ") + _state,
-                          fontOptions);
+    fm.printText(Label_ReverseCameraY + std::string(": ") + _state,
+                 fontOptions);
   }
   {
     baseY += 40;
@@ -79,7 +79,7 @@ void ScreenOptions::render() {
                               : Tyra::Color(255, 255, 255));
 
     std::string _state = std::to_string(tempSettings.cam_h_sensitivity);
-    FontManager_printText(Label_CamSensitivityH + _state, fontOptions);
+    fm.printText(Label_CamSensitivityH + _state, fontOptions);
   }
   {
     baseY += 40;
@@ -92,7 +92,7 @@ void ScreenOptions::render() {
                               : Tyra::Color(255, 255, 255));
 
     std::string _state = std::to_string(tempSettings.cam_v_sensitivity);
-    FontManager_printText(Label_CamSensitivityV + _state, fontOptions);
+    fm.printText(Label_CamSensitivityV + _state, fontOptions);
   }
 
   // Language
@@ -105,7 +105,7 @@ void ScreenOptions::render() {
     fontOptions.color.set(activeOption == OptionsScreenOptions::ChangeLanguage
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText(Label_Language, fontOptions);
+    fm.printText(Label_Language, fontOptions);
   }
 
   // LStickH
@@ -122,7 +122,7 @@ void ScreenOptions::render() {
     std::string _value = std::to_string(tempSettings.l_stick_H);
     std::string _state = _value.substr(0, _value.find(".") + 3);
 
-    FontManager_printText(Label_LStickH + _state, fontOptions);
+    fm.printText(Label_LStickH + _state, fontOptions);
   }
 
   // LStickV
@@ -138,7 +138,7 @@ void ScreenOptions::render() {
 
     std::string _value = std::to_string(tempSettings.l_stick_V);
     std::string _state = _value.substr(0, _value.find(".") + 3);
-    FontManager_printText(Label_LStickV + _state, fontOptions);
+    fm.printText(Label_LStickV + _state, fontOptions);
   }
 
   // RStickH
@@ -154,7 +154,7 @@ void ScreenOptions::render() {
 
     std::string _value = std::to_string(tempSettings.r_stick_H);
     std::string _state = _value.substr(0, _value.find(".") + 3);
-    FontManager_printText(Label_RStickH + _state, fontOptions);
+    fm.printText(Label_RStickH + _state, fontOptions);
   }
 
   // RStickV
@@ -170,14 +170,14 @@ void ScreenOptions::render() {
 
     std::string _value = std::to_string(tempSettings.r_stick_V);
     std::string _state = _value.substr(0, _value.find(".") + 3);
-    FontManager_printText(Label_RStickV + _state, fontOptions);
+    fm.printText(Label_RStickV + _state, fontOptions);
   }
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Save, 35, 407);
+  fm.printText(Label_Save, 35, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Back, 235, 407);
+  fm.printText(Label_Back, 235, 407);
 }
 
 void ScreenOptions::init() {

@@ -5,6 +5,7 @@
 
 ScreenAbout::ScreenAbout(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
+  pFontManager = FontManager::getInstance();
   BASE_WIDTH = (t_renderer->core.getSettings().getWidth() / 2) - 10;
   this->init();
 }
@@ -90,20 +91,20 @@ void ScreenAbout::renderAboutText1() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText(Label_Text1Part1, fontOptions);
+  pFontManager->printText(Label_Text1Part1, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part2, fontOptions);
+  pFontManager->printText(Label_Text1Part2, fontOptions);
   fontOptions.position.y += 20;
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part3, fontOptions);
+  pFontManager->printText(Label_Text1Part3, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part4, fontOptions);
+  pFontManager->printText(Label_Text1Part4, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part5, fontOptions);
+  pFontManager->printText(Label_Text1Part5, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part6, fontOptions);
+  pFontManager->printText(Label_Text1Part6, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text1Part7, fontOptions);
+  pFontManager->printText(Label_Text1Part7, fontOptions);
 
   if (alpha == 0) hasShowedText1 = 1;
 }
@@ -120,23 +121,23 @@ void ScreenAbout::renderAboutText2() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText(Label_Text2Part1, fontOptions);
+  pFontManager->printText(Label_Text2Part1, fontOptions);
 
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text2Part2, fontOptions);
+  pFontManager->printText(Label_Text2Part2, fontOptions);
 
   fontOptions.color.r = 252;
   fontOptions.color.g = 219;
   fontOptions.color.b = 3;
 
   fontOptions.position.y += 60;
-  FontManager_printText("Wellinator, h4570, Wolf3s, LochGames, VORTEX, ",
-                        fontOptions);
+  pFontManager->printText("Wellinator, h4570, Wolf3s, LochGames, VORTEX, ",
+                          fontOptions);
   fontOptions.position.y += 25;
-  FontManager_printText("ApenasNeutrico, Hack, MayconTp, N4RDO, RegenStudio,",
-                        fontOptions);
+  pFontManager->printText("ApenasNeutrico, Hack, MayconTp, N4RDO, RegenStudio,",
+                          fontOptions);
   fontOptions.position.y += 25;
-  FontManager_printText("Rocketmanba04, TheTripolino, Vijo96.", fontOptions);
+  pFontManager->printText("Rocketmanba04, TheTripolino, Vijo96.", fontOptions);
 
   if (alpha == 0) hasShowedText2 = 1;
 }
@@ -153,24 +154,24 @@ void ScreenAbout::renderAboutText3() {
   fontOptions.color.a = alpha;
 
   fontOptions.position.y = BASE_HEIGHT;
-  FontManager_printText(Label_Text3Part1, fontOptions);
+  pFontManager->printText(Label_Text3Part1, fontOptions);
 
   fontOptions.position.y += 20;
-  FontManager_printText(Label_Text3Part2, fontOptions);
+  pFontManager->printText(Label_Text3Part2, fontOptions);
 
   fontOptions.color.r = 252;
   fontOptions.color.g = 219;
   fontOptions.color.b = 3;
 
   fontOptions.position.y += 40;
-  FontManager_printText(Label_Text3Part3, fontOptions);
+  pFontManager->printText(Label_Text3Part3, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("https://discord.gg/E2hQAt4Dft", fontOptions);
+  pFontManager->printText("https://discord.gg/E2hQAt4Dft", fontOptions);
 
   fontOptions.position.y += 40;
-  FontManager_printText(Label_Text3Part4, fontOptions);
+  pFontManager->printText(Label_Text3Part4, fontOptions);
   fontOptions.position.y += 20;
-  FontManager_printText("https://youtube.com/@TyraCraft", fontOptions);
+  pFontManager->printText("https://youtube.com/@TyraCraft", fontOptions);
 
   if (alpha == 0) hasShowedText3 = 1;
 }

@@ -20,6 +20,7 @@ class ScreenAbout : public ScreenBase {
 
  private:
   Renderer* t_renderer;
+  FontManager* pFontManager;
   Sprite about_background;
   Sprite textBack;
   Sprite btnTriangle;

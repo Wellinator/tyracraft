@@ -1,6 +1,7 @@
 #pragma once
 #include "states/game_state.hpp"
 #include "managers/sound_manager.hpp"
+#include "managers/font/font_manager.hpp"
 #include "camera.hpp"
 #include <tyra>
 
@@ -18,6 +19,7 @@ class Context {
   void setState(GameState* newState);
 
   SoundManager soundManager;
+  FontManager* pFontManager;
   Camera* t_camera = nullptr;
   Engine* t_engine = nullptr;
 

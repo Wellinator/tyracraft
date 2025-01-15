@@ -40,29 +40,30 @@ void StateWelcome::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   stateGamePlay->getPreviousState()->render();
   t_renderer->renderer2D.render(overlay);
+  FontManager& fm = FontManager::getInstanceRef();
 
   FontOptions titleOption;
   titleOption.position.set(halfWidth - 20, 110);
   titleOption.alignment = TextAlignment::Center;
   titleOption.scale = 1.4F;
-  FontManager_printText(Label_WelcomeText1Part1, titleOption);
+  fm.printText(Label_WelcomeText1Part1, titleOption);
 
   FontOptions textOption;
   textOption.position.set(halfWidth - 10, 185);
   textOption.alignment = TextAlignment::Center;
   textOption.scale = 0.8F;
-  FontManager_printText(Label_WelcomeText1Part2, textOption);
+  fm.printText(Label_WelcomeText1Part2, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part3, textOption);
+  fm.printText(Label_WelcomeText1Part3, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part4, textOption);
+  fm.printText(Label_WelcomeText1Part4, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part5, textOption);
+  fm.printText(Label_WelcomeText1Part5, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part6, textOption);
+  fm.printText(Label_WelcomeText1Part6, textOption);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_WelcomeText1Part7, 40, 407);
+  fm.printText(Label_WelcomeText1Part7, 40, 407);
 }
 
 void StateWelcome::handleInput(const float& deltaTime) {

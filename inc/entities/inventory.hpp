@@ -54,6 +54,8 @@ class Inventory {
   Sprite itemframe;
   Sprite scroller;
 
+  FontManager* pFontManager;
+
   // It gets some error if don't get initialized
   std::array<Sprite*, SIZE> slots_prites = {
       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,

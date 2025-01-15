@@ -4,6 +4,7 @@
 Notification::Notification(Renderer* t_renderer, Texture* t_Texture) {
   pRenderer = t_renderer;
   pTexture = t_Texture;
+  pFontManager = FontManager::getInstance();
 
   init();
 };
@@ -108,13 +109,13 @@ void Notification::render() {
 
   // Texts
   Vec2 titlePos = Vec2(position.x + padding, position.y + padding);
-  FontManager_printText(title, FontOptions(titlePos, Color(0x5A, 0x2B, 0x5A),
-                                           0.8F, TextAlignment::Left));
+  pFontManager->printText(title, FontOptions(titlePos, Color(0x5A, 0x2B, 0x5A),
+                                              0.8F, TextAlignment::Left));
 
   const float boddyOffset = 22.0f;
   Vec2 messagePos = titlePos;
   messagePos.y += boddyOffset;
 
-  FontManager_printText(message, FontOptions(messagePos, Color(0, 0, 0), 0.8F,
-                                             TextAlignment::Left));
+  pFontManager->printText(message, FontOptions(messagePos, Color(0, 0, 0),
+                                                0.8F, TextAlignment::Left));
 }

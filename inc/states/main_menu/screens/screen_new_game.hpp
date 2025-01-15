@@ -2,6 +2,7 @@
 #include "states/main_menu/screens/screen_base.hpp"
 #include "models/new_game_model.hpp"
 #include "models/texture_pack_info_model.hpp"
+#include "managers/font/font_manager.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include <tamtypes.h>
@@ -43,6 +44,7 @@ class ScreenNewGame : public ScreenBase {
 
  private:
   Renderer* t_renderer;
+  FontManager* pFontManager;
 
   Sprite backgroundNewGame;
   Sprite tab2;
@@ -108,7 +110,7 @@ class ScreenNewGame : public ScreenBase {
       g_language_repository["gui"]["load"].get<std::string>();
   const std::string Label_Create =
       g_language_repository["gui"]["create"].get<std::string>();
-      const std::string Label_Mini =
+  const std::string Label_Mini =
       g_language_repository["gui"]["mini"].get<std::string>();
   const std::string Label_Confirm =
       g_language_repository["gui"]["confirm"].get<std::string>();

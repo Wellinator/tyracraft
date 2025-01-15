@@ -30,6 +30,8 @@ void ScreenMain::update(const float& deltaTime) {
 }
 
 void ScreenMain::render() {
+  FontManager& fm = FontManager::getInstanceRef();
+
   t_renderer->renderer2D.render(raw_slot[0]);
   t_renderer->renderer2D.render(raw_slot[1]);
   t_renderer->renderer2D.render(raw_slot[2]);
@@ -56,7 +58,7 @@ void ScreenMain::render() {
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    FontManager_printText(Label_PlayGame, fontOptions);
+    fm.printText(Label_PlayGame, fontOptions);
   }
 
   // Options
@@ -69,7 +71,7 @@ void ScreenMain::render() {
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    FontManager_printText(Label_Options, fontOptions);
+    fm.printText(Label_Options, fontOptions);
   }
 
   // How To Play
@@ -81,7 +83,7 @@ void ScreenMain::render() {
     fontOptions.color.set(activeOption == ScreenMainOptions::HowToPlay
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText(Label_HowToPlay, fontOptions);
+    fm.printText(Label_HowToPlay, fontOptions);
   }
 
   // About
@@ -93,11 +95,11 @@ void ScreenMain::render() {
     fontOptions.color.set(activeOption == ScreenMainOptions::About
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText(Label_About, fontOptions);
+    fm.printText(Label_About, fontOptions);
   }
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Select, 35, 407);
+  fm.printText(Label_Select, 35, 407);
 
   // Draw player skin
   t_renderer->renderer3D.usePipeline(&dynpip);
@@ -113,7 +115,7 @@ void ScreenMain::render() {
     fontOptions.color.set(activeOption == ScreenMainOptions::SkinSelection
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
-    FontManager_printText(g_settings.skin, fontOptions);
+    fm.printText(g_settings.skin, fontOptions);
   }
 }
 

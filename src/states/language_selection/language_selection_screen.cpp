@@ -64,6 +64,7 @@ void StateLanguageSelectionScreen::update(const float& deltaTime) {
 };
 
 void StateLanguageSelectionScreen::render() {
+  FontManager& fm = FontManager::getInstanceRef();
   t_renderer->renderer2D.render(background);
 
   if (selectedLanguage != nullptr) {
@@ -71,20 +72,20 @@ void StateLanguageSelectionScreen::render() {
     t_renderer->renderer2D.render(selectedLanguage->icon);
     t_renderer->renderer2D.render(arrowRight);
 
-    FontManager_printText(
+    fm.printText(
         selectedLanguage->title.c_str(),
         FontOptions(Vec2(256, 325), infoColor, 1.0F, TextAlignment::Center));
-    FontManager_printText(
+    fm.printText(
         (std::string("Author: ").append(selectedLanguage->author)),
         FontOptions(Vec2(256, 365), infoColor, 0.7F, TextAlignment::Center));
 
-    FontManager_printText(
+    fm.printText(
         (std::string("Revisor: ").append(selectedLanguage->revision)),
         FontOptions(Vec2(256, 380), infoColor, 0.7F, TextAlignment::Center));
   }
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(selectedLanguage->selectLabel, 35, 407);
+  fm.printText(selectedLanguage->selectLabel, 35, 407);
 };
 
 void StateLanguageSelectionScreen::unloadTextures() {

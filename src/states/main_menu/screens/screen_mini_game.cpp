@@ -1,10 +1,12 @@
 #include "states/main_menu/screens/screen_mini_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "managers/save_manager.hpp"
+#include "managers/font/font_manager.hpp"
 
 ScreenMiniGame::ScreenMiniGame(StateMainMenu* t_context)
     : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
+  pFontManager = FontManager::getInstance();
   this->init();
 }
 
@@ -51,60 +53,60 @@ void ScreenMiniGame::render() {
 
   this->renderSelectedOptions();
 
-  FontManager_printText(
+  pFontManager->printText(
       Label_Load, FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
-  FontManager_printText(
+  pFontManager->printText(
       Label_Create, FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
-  FontManager_printText(
+  pFontManager->printText(
       Label_Mini, FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
 
   Color infoColor = Color(70, 70, 70);
-  FontManager_printText(Label_MiniGame,
-                        FontOptions(Vec2(185, 157), infoColor, 0.8F));
+  pFontManager->printText(Label_MiniGame,
+                          FontOptions(Vec2(185, 157), infoColor, 0.8F));
 
   if (selectedMiniGame) {
     this->t_renderer->renderer2D.render(selectedMiniGame->icon);
-    FontManager_printText(selectedMiniGame->title.c_str(),
-                          FontOptions(Vec2(185.0f, 185.0f), infoColor, 0.8F));
+    pFontManager->printText(selectedMiniGame->title.c_str(),
+                            FontOptions(Vec2(185.0f, 185.0f), infoColor, 0.8F));
   }
 
   FontOptions options;
   options.position = Vec2(242, 220);
   options.alignment = TextAlignment::Center;
-  FontManager_printText(Label_NewGame, options);
+  pFontManager->printText(Label_NewGame, options);
 
   options.position = Vec2(242, 258);
   options.alignment = TextAlignment::Center;
-  FontManager_printText(Label_Continue, options);
+  pFontManager->printText(Label_Continue, options);
 
   options.alignment = TextAlignment::Center;
   options.position.set(248, 295);
-  FontManager_printText(Label_ResetProgress, options);
+  pFontManager->printText(Label_ResetProgress, options);
 
   // switch (this->model.type) {
   //   case WorldType::WORLD_TYPE_ORIGINAL:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeOriginal, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeOriginal, worldTypeOptions);
   //     break;
   //   case WorldType::WORLD_TYPE_FLAT:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeFlat, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeFlat, worldTypeOptions);
   //     break;
   //   case WorldType::WORLD_TYPE_ISLAND:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeIsland, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeIsland, worldTypeOptions);
   //     break;
   //   case WorldType::WORLD_TYPE_WOODS:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeWoods, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeWoods, worldTypeOptions);
   //     break;
   //   case WorldType::WORLD_TYPE_FLOATING:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeFloating, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeFloating, worldTypeOptions);
   //     break;
   //   case WorldType::WORLD_MINI_GAME_MAZECRAFT:
   //     worldTypeOptions.position.set(248, 295);
-  //     FontManager_printText(Label_WorldTypeMazecraft, worldTypeOptions);
+  //     pFontManager->printText(Label_WorldTypeMazecraft, worldTypeOptions);
   //     break;
 
   //   default:
@@ -116,15 +118,15 @@ void ScreenMiniGame::render() {
     this->t_renderer->renderer2D.render(btnDpadRight);
     this->t_renderer->renderer2D.render(btnTriangleTexturePack);
 
-    FontManager_printText(Label_Prev, 35, 407);
-    FontManager_printText(Label_Next, 160, 407);
-    FontManager_printText(Label_Back, 280, 407);
+    pFontManager->printText(Label_Prev, 35, 407);
+    pFontManager->printText(Label_Next, 160, 407);
+    pFontManager->printText(Label_Back, 280, 407);
   } else {
     this->t_renderer->renderer2D.render(btnTriangle);
     this->t_renderer->renderer2D.render(btnCross);
 
-    FontManager_printText(Label_Select, 35, 407);
-    FontManager_printText(Label_Back, 160, 407);
+    pFontManager->printText(Label_Select, 35, 407);
+    pFontManager->printText(Label_Back, 160, 407);
   }
 
   if (displayPreviousSavePresent) {
@@ -507,20 +509,20 @@ void ScreenMiniGame::renderPreviousSavePresentDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_Ops, titleOptions);
+  pFontManager->printText(Label_Ops, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_PreviousSavePresentErrorPart1, dialogueOptions);
+  pFontManager->printText(Label_PreviousSavePresentErrorPart1, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_PreviousSavePresentErrorPart2, dialogueOptions);
+  pFontManager->printText(Label_PreviousSavePresentErrorPart2, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_PreviousSavePresentErrorPart3, dialogueOptions);
+  pFontManager->printText(Label_PreviousSavePresentErrorPart3, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Confirm, 40, 407);
+  pFontManager->printText(Label_Confirm, 40, 407);
 }
 
 void ScreenMiniGame::renderProgressResetedDialog() {
@@ -531,16 +533,18 @@ void ScreenMiniGame::renderProgressResetedDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_Success, titleOptions);
+  pFontManager->printText(Label_Success, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_PreviousSaveDeletedSuccessPart1, dialogueOptions);
+  pFontManager->printText(Label_PreviousSaveDeletedSuccessPart1,
+                          dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_PreviousSaveDeletedSuccessPart2, dialogueOptions);
+  pFontManager->printText(Label_PreviousSaveDeletedSuccessPart2,
+                          dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Confirm, 40, 407);
+  pFontManager->printText(Label_Confirm, 40, 407);
 }

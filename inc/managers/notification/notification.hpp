@@ -1,5 +1,6 @@
 #pragma once
 #include <tamtypes.h>
+#include "managers/font/font_manager.hpp"
 #include "tyra"
 
 using Tyra::Color;
@@ -71,6 +72,7 @@ class Notification {
   const float margin = 10.0F;
   const float iconOffset = 25.0F;
 
+  FontManager* pFontManager;
   Renderer* pRenderer;
   Texture* pTexture;
   Sprite bgSprite;

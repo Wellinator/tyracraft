@@ -244,21 +244,22 @@ void CreativePlayingState::renderCreativeUi() {
 }
 
 void CreativePlayingState::drawDegubInfo() {
+  FontManager& fm = FontManager::getInstanceRef();
+
   // Draw seed
   std::string seed = std::string("Seed: ").append(
       std::to_string(stateGamePlay->world->getSeed()));
-  FontManager_printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
+  fm.printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
   std::string fps = std::string("FPS: ").append(
       std::to_string(stateGamePlay->context->t_engine->info.getFps()));
-  FontManager_printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
+  fm.printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   // Draw ticks
   std::string ticks =
       std::string("Ticks: ").append(std::to_string(g_ticksCounter));
-  FontManager_printText(ticks,
-                        FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
+  fm.printText(ticks, FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
   // Draw Player Position
   const Vec4 pos = *stateGamePlay->player->getPosition();
   std::string playerPosition =
@@ -269,49 +270,46 @@ void CreativePlayingState::drawDegubInfo() {
           .append(std::to_string(static_cast<int>(pos.y / DUBLE_BLOCK_SIZE)))
           .append("   Z: ")
           .append(std::to_string(static_cast<int>(pos.z / DUBLE_BLOCK_SIZE)));
-  FontManager_printText(playerPosition,
-                        FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
+  fm.printText(playerPosition,
+               FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
 
   // Draw chunks info
   std::string chunksToLoad =
       std::string("Chunks to load: ")
           .append(std::to_string(
               static_cast<int>(stateGamePlay->world->getChunksToLoadCount())));
-  FontManager_printText(chunksToLoad,
-                        FontOptions(Vec2(5.0f, 85.0f), Color(255), 0.8F));
+  fm.printText(chunksToLoad, FontOptions(Vec2(5.0f, 85.0f), Color(255), 0.8F));
 
   std::string chunksToUnload =
       std::string("Chunks to unload: ")
           .append(std::to_string(static_cast<int>(
               stateGamePlay->world->getChunksToUnloadCount())));
-  FontManager_printText(chunksToUnload,
-                        FontOptions(Vec2(5.0f, 100.0f), Color(255), 0.8F));
+  fm.printText(chunksToUnload,
+               FontOptions(Vec2(5.0f, 100.0f), Color(255), 0.8F));
 
   std::string chunksToUpdateLight =
       std::string("Chunks to update light: ")
           .append(std::to_string(static_cast<int>(
               stateGamePlay->world->getChuncksToUpdateLightCount())));
-  FontManager_printText(chunksToUpdateLight,
-                        FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
+  fm.printText(chunksToUpdateLight,
+               FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
 
   // Draw particles counter
   std::string particle_counter =
       std::string("Particles alive: ")
           .append(std::to_string(
               stateGamePlay->world->particlesManager.getParticlesCounter()));
-  FontManager_printText(particle_counter,
-                        FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
+  fm.printText(particle_counter,
+               FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
   // Draw tick avg
   std::string tick_avg =
       std::string("Tick avg speed")
           .append(std::to_string(tickManager.getTickTimeAverage()));
-  FontManager_printText(tick_avg,
-                        FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
+  fm.printText(tick_avg, FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
 
   // Draw version
   std::string version = std::string("Version: ").append(VERSION);
-  FontManager_printText(version,
-                        FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
+  fm.printText(version, FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {

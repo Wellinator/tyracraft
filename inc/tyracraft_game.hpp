@@ -23,6 +23,7 @@ class TyraCraftGame : public Tyra::Game {
   void loop();
 
   NotificationManager notificationManger;
+  FontManager fontManager;
 
  private:
   Camera camera;

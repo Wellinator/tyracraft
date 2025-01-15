@@ -7,6 +7,7 @@
 Context::Context(Engine* t_engine, Camera* t_camera) : soundManager(t_engine) {
   this->t_engine = t_engine;
   this->t_camera = t_camera;
+  pFontManager = FontManager::getInstance();
 }
 
 Context::~Context() { delete state; }
@@ -20,12 +21,13 @@ void Context::render() {
   // Draw FPS:
   std::string fps =
       std::string("FPS: ").append(std::to_string(t_engine->info.getFps()));
-  FontManager_printText(fps, FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
+  pFontManager->printText(fps,
+                           FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.8F));
 
   std::string memory = std::string("RAM: ").append(
       std::to_string(static_cast<float>(get_used_memory() / 1024)));
-  FontManager_printText(memory,
-                        FontOptions(Vec2(100.0f, 20.0f), Color(255), 0.8F));
+  pFontManager->printText(memory,
+                           FontOptions(Vec2(100.0f, 20.0f), Color(255), 0.8F));
 #endif
 }
 

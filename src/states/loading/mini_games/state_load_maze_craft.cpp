@@ -88,7 +88,7 @@ void StateLoadMazeCraft::render() {
   this->context->t_engine->renderer.renderer2D.render(loadingSlot);
   this->context->t_engine->renderer.renderer2D.render(loadingprogress);
 
-  FontManager_printText(progressLabel, progressLabelOptions);
+  FontManager::getInstance()->printText(progressLabel, progressLabelOptions);
 }
 
 void StateLoadMazeCraft::unload() {

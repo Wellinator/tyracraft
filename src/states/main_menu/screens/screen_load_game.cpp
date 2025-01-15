@@ -126,6 +126,8 @@ void ScreenLoadGame::init() {
 void ScreenLoadGame::update(const float& deltaTime) { handleInput(); }
 
 void ScreenLoadGame::render() {
+  FontManager& fm = FontManager::getInstanceRef();
+
   t_renderer->renderer2D.render(backgroundLoadGame);
   t_renderer->renderer2D.render(tab1);
   t_renderer->renderer2D.render(toggleBtnOff);
@@ -135,15 +137,15 @@ void ScreenLoadGame::render() {
   renderSelectedOptions();
 
   // Color infoColor = Color(70, 70, 70);
-  FontManager_printText(
-      Label_Load, FontOptions(Vec2(140, 128), Color(250, 250, 250), 0.9F));
-  FontManager_printText(
-      Label_Create, FontOptions(Vec2(220, 128), Color(180, 180, 180), 0.9F));
-  FontManager_printText(
-      Label_Mini, FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
+  fm.printText(Label_Load,
+               FontOptions(Vec2(140, 128), Color(250, 250, 250), 0.9F));
+  fm.printText(Label_Create,
+               FontOptions(Vec2(220, 128), Color(180, 180, 180), 0.9F));
+  fm.printText(Label_Mini,
+               FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
 
-  FontManager_printText("USB", 130.0F, 160.0F);
-  FontManager_printText("MC", 210.0F, 160.0F);
+  fm.printText("USB", 130.0F, 160.0F);
+  fm.printText("MC", 210.0F, 160.0F);
 
   FontOptions currentSaveFontOptions = FontOptions();
   currentSaveFontOptions.alignment = TextAlignment::Right;
@@ -151,7 +153,7 @@ void ScreenLoadGame::render() {
   std::string infoString =
       std::to_string(totalOfSaves > 0 ? currentSaveIndex + 1 : 0) + " / " +
       std::to_string(totalOfSaves);
-  FontManager_printText(infoString, currentSaveFontOptions);
+  fm.printText(infoString, currentSaveFontOptions);
 
   // Render saves slots
   const float iconOffsetY = 196.0F;
@@ -178,27 +180,26 @@ void ScreenLoadGame::render() {
       selectedSaveOverlay.position.y = iconYPosition - 4;
       t_renderer->renderer2D.render(selectedSaveOverlay);
 
-      FontManager_printText(
-          item->name.c_str(),
-          FontOptions(Vec2(173.0F, iconYPosition), Color(255, 255, 0)));
+      fm.printText(item->name.c_str(), FontOptions(Vec2(173.0F, iconYPosition),
+                                                   Color(255, 255, 0)));
     } else {
-      FontManager_printText(item->name.c_str(), 173.0F, iconYPosition);
+      fm.printText(item->name.c_str(), 173.0F, iconYPosition);
     }
 
     t_renderer->renderer2D.render(item->icon);
   }
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Back, 140, 407);
+  fm.printText(Label_Back, 140, 407);
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Load, 35, 407);
+  fm.printText(Label_Load, 35, 407);
   t_renderer->renderer2D.render(btnDpadUp);
-  FontManager_printText(Label_Next, 225, 407);
+  fm.printText(Label_Next, 225, 407);
   t_renderer->renderer2D.render(btnDpadDown);
-  FontManager_printText(Label_Prev, 320, 407);
+  fm.printText(Label_Prev, 320, 407);
 
   // t_renderer->renderer2D.render(btnSelect);
-  // FontManager_printText("Origin", 425, 407);
+  // fm.printText("Origin", 425, 407);
 }
 
 void ScreenLoadGame::handleInput() { handleOptionsSelection(); }

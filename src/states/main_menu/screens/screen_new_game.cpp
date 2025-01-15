@@ -5,6 +5,7 @@
 
 ScreenNewGame::ScreenNewGame(StateMainMenu* t_context) : ScreenBase(t_context) {
   this->t_renderer = &t_context->context->t_engine->renderer;
+  pFontManager = FontManager::getInstance();
   this->inputSeed = getSeed();
   this->init();
 }
@@ -52,24 +53,25 @@ void ScreenNewGame::render() {
 
   this->renderSelectedOptions();
 
-  FontManager_printText(
+  pFontManager->printText(
       Label_Load, FontOptions(Vec2(140, 128), Color(180, 180, 180), 0.9F));
-  FontManager_printText(
+  pFontManager->printText(
       Label_Create, FontOptions(Vec2(220, 128), Color(250, 250, 250), 0.9F));
-  FontManager_printText(
+  pFontManager->printText(
       Label_Mini, FontOptions(Vec2(310, 128), Color(250, 250, 250), 0.9F));
 
   Color infoColor = Color(70, 70, 70);
-  FontManager_printText(Label_TexturePack,
-                        FontOptions(Vec2(185, 157), infoColor, 0.8F));
-  FontManager_printText(Label_By, FontOptions(Vec2(185, 187), infoColor, 0.8F));
+  pFontManager->printText(Label_TexturePack,
+                           FontOptions(Vec2(185, 157), infoColor, 0.8F));
+  pFontManager->printText(Label_By,
+                           FontOptions(Vec2(185, 187), infoColor, 0.8F));
 
   if (selectedTexturePack) {
     this->t_renderer->renderer2D.render(selectedTexturePack->icon);
-    FontManager_printText(selectedTexturePack->title.c_str(),
-                          FontOptions(Vec2(185, 172), infoColor, 0.8F));
-    FontManager_printText(selectedTexturePack->author.c_str(),
-                          FontOptions(Vec2(230, 187), infoColor, 0.8F));
+    pFontManager->printText(selectedTexturePack->title.c_str(),
+                             FontOptions(Vec2(185, 172), infoColor, 0.8F));
+    pFontManager->printText(selectedTexturePack->author.c_str(),
+                             FontOptions(Vec2(230, 187), infoColor, 0.8F));
   }
 
   if (isEditingWorldName) {
@@ -78,16 +80,16 @@ void ScreenNewGame::render() {
     options.color = Color(168, 160, 50);
 
     if (fpsCounter < 25) {
-      FontManager_printText(this->tempWorldName.c_str(), options);
+      pFontManager->printText(this->tempWorldName.c_str(), options);
     } else {
-      FontManager_printText(this->tempWorldNameMask.c_str(), options);
+      pFontManager->printText(this->tempWorldNameMask.c_str(), options);
     }
 
   } else {
     FontOptions options;
     options.position = Vec2(242, 220);
     options.alignment = TextAlignment::Center;
-    FontManager_printText(inputWorldName, options);
+    pFontManager->printText(inputWorldName, options);
   }
 
   if (isEditingSeed) {
@@ -96,16 +98,16 @@ void ScreenNewGame::render() {
     options.color = Color(168, 160, 50);
 
     if (fpsCounter < 25) {
-      FontManager_printText(this->tempSeed.c_str(), options);
+      pFontManager->printText(this->tempSeed.c_str(), options);
     } else {
-      FontManager_printText(this->tempSeedMask.c_str(), options);
+      pFontManager->printText(this->tempSeedMask.c_str(), options);
     }
 
   } else {
     FontOptions options;
     options.position = Vec2(242, 258);
     options.alignment = TextAlignment::Center;
-    FontManager_printText(Label_Seed + inputSeed, options);
+    pFontManager->printText(Label_Seed + inputSeed, options);
   }
 
   FontOptions worldTypeOptions;
@@ -114,70 +116,70 @@ void ScreenNewGame::render() {
   switch (this->model.type) {
     case WorldType::WORLD_TYPE_ORIGINAL:
       worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeOriginal, worldTypeOptions);
+      pFontManager->printText(Label_WorldTypeOriginal, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_FLAT:
       worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeFlat, worldTypeOptions);
+      pFontManager->printText(Label_WorldTypeFlat, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_ISLAND:
       worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeIsland, worldTypeOptions);
+      pFontManager->printText(Label_WorldTypeIsland, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_WOODS:
       worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeWoods, worldTypeOptions);
+      pFontManager->printText(Label_WorldTypeWoods, worldTypeOptions);
       break;
     case WorldType::WORLD_TYPE_FLOATING:
       worldTypeOptions.position.set(248, 295);
-      FontManager_printText(Label_WorldTypeFloating, worldTypeOptions);
+      pFontManager->printText(Label_WorldTypeFloating, worldTypeOptions);
       break;
 
     default:
       break;
   }
 
-  FontManager_printText(Label_CreateNewWorld, 145, 332);
+  pFontManager->printText(Label_CreateNewWorld, 145, 332);
 
   if (isEditingSeed) {
     this->t_renderer->renderer2D.render(btnTriangle);
     this->t_renderer->renderer2D.render(btnCross);
 
-    FontManager_printText(Label_Confirm, 35, 407);
-    FontManager_printText(Label_Cancel, 160, 407);
+    pFontManager->printText(Label_Confirm, 35, 407);
+    pFontManager->printText(Label_Cancel, 160, 407);
   } else if (isEditingWorldName) {
     this->t_renderer->renderer2D.render(btnCross);
     this->t_renderer->renderer2D.render(btnTriangle);
     this->t_renderer->renderer2D.render(btnSquare);
     this->t_renderer->renderer2D.render(btnStart);
 
-    FontManager_printText(Label_Select, 35, 407);
-    FontManager_printText(Label_Cancel, 160, 407);
-    FontManager_printText(Label_Bksp, 285, 407);
-    FontManager_printText(Label_Confirm, 405, 407);
+    pFontManager->printText(Label_Select, 35, 407);
+    pFontManager->printText(Label_Cancel, 160, 407);
+    pFontManager->printText(Label_Bksp, 285, 407);
+    pFontManager->printText(Label_Confirm, 405, 407);
   } else {
     if (activeOption == ScreenNewGameOptions::TexturePack) {
       this->t_renderer->renderer2D.render(btnDpadLeft);
       this->t_renderer->renderer2D.render(btnDpadRight);
       this->t_renderer->renderer2D.render(btnTriangleTexturePack);
 
-      FontManager_printText(Label_Prev, 35, 407);
-      FontManager_printText(Label_Next, 160, 407);
-      FontManager_printText(Label_Back, 280, 407);
+      pFontManager->printText(Label_Prev, 35, 407);
+      pFontManager->printText(Label_Next, 160, 407);
+      pFontManager->printText(Label_Back, 280, 407);
     } else {
       this->t_renderer->renderer2D.render(btnTriangle);
       this->t_renderer->renderer2D.render(btnCross);
 
       if (activeOption == ScreenNewGameOptions::Seed) {
-        FontManager_printText(Label_Edit, 35, 407);
-        FontManager_printText(Label_Random, 280, 407);
+        pFontManager->printText(Label_Edit, 35, 407);
+        pFontManager->printText(Label_Random, 280, 407);
         this->t_renderer->renderer2D.render(btnCircle);
       } else if (activeOption == ScreenNewGameOptions::WorldName) {
-        FontManager_printText(Label_Edit, 35, 407);
+        pFontManager->printText(Label_Edit, 35, 407);
       } else {
-        FontManager_printText(Label_Select, 35, 407);
+        pFontManager->printText(Label_Select, 35, 407);
       }
-      FontManager_printText(Label_Back, 160, 407);
+      pFontManager->printText(Label_Back, 160, 407);
     }
   }
 
@@ -427,7 +429,7 @@ void ScreenNewGame::handleOptionsSelection() {
 
 void ScreenNewGame::handleSeedInput() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
-  auto validChars = NumericValidChars;
+  auto validChars = FontManager::getInstance()->NumericValidChars;
   std::size_t found = validChars.find(tempSeed[editingIndex]);
   u8 currentCharIndex = found != std::string::npos ? found : 0;
 
@@ -461,7 +463,8 @@ void ScreenNewGame::handleSeedInput() {
 
 void ScreenNewGame::handleWorldNameInput() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
-  auto validChars = SpecialValidChars + AlphanumericValidChars;
+  auto validChars = FontManager::getInstance()->SpecialValidChars +
+                    FontManager::getInstance()->AlphanumericValidChars;
   std::size_t found = validChars.find(tempWorldName[editingIndexWorldName]);
   u8 currentCharIndex = found != std::string::npos ? found : 0;
 
@@ -698,18 +701,18 @@ void ScreenNewGame::renderWorldNameDialog() {
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_Ops, titleOptions);
+  pFontManager->printText(Label_Ops, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 180);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_WorldNameErrorPart1, dialogueOptions);
+  pFontManager->printText(Label_WorldNameErrorPart1, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_WorldNameErrorPart2, dialogueOptions);
+  pFontManager->printText(Label_WorldNameErrorPart2, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_WorldNameErrorPart3, dialogueOptions);
+  pFontManager->printText(Label_WorldNameErrorPart3, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Confirm, 40, 407);
+  pFontManager->printText(Label_Confirm, 40, 407);
 }

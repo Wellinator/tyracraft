@@ -28,15 +28,17 @@ void ScreenSkinSelection::update(const float& deltaTime) {
 }
 
 void ScreenSkinSelection::render() {
+  FontManager& fm = FontManager::getInstanceRef();
+
   t_renderer->renderer3D.usePipeline(&dynpip);
   for (size_t i = 0; i < models.size(); i++)
     dynpip.render(models[i].get(), &dynpipOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Select, 35, 407);
+  fm.printText(Label_Select, 35, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Back, 160, 407);
+  fm.printText(Label_Back, 160, 407);
 
   if (!isMoving) {
     t_renderer->renderer2D.render(arrowLeft);
@@ -48,7 +50,7 @@ void ScreenSkinSelection::render() {
     fontOptions.alignment = TextAlignment::Center;
     fontOptions.color.set(Tyra::Color(255, 255, 255));
 
-    FontManager_printText(selectedSkin.name, fontOptions);
+    fm.printText(selectedSkin.name, fontOptions);
   }
 }
 
@@ -207,7 +209,7 @@ void ScreenSkinSelection::loadModels() {
 
   auto data = ObjLoader::load(
       FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
-  data.get()->loadNormals = false; 
+  data.get()->loadNormals = false;
   baseMesh = std::make_unique<DynamicMesh>(data.get());
 
   for (size_t i = 0; i < models.size(); i++) {

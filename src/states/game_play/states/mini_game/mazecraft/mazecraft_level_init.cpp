@@ -40,12 +40,13 @@ void MazecraftLevelInit::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   stateGamePlay->getPreviousState()->render();
   t_renderer->renderer2D.render(overlay);
+  FontManager& fm = FontManager::getInstanceRef();
 
   FontOptions titleOption;
   titleOption.position.set(halfWidth - 20, 110);
   titleOption.alignment = TextAlignment::Center;
   titleOption.scale = 1.6F;
-  FontManager_printText(
+  fm.printText(
       Label_Level + std::string(" ") +
           std::to_string(stateGamePlay->world->getWorldOptions()->seed),
       titleOption);
@@ -54,14 +55,14 @@ void MazecraftLevelInit::render() {
   textOption.position.set(halfWidth - 10, 185);
   textOption.alignment = TextAlignment::Center;
   textOption.scale = 0.8F;
-  FontManager_printText(Label_WelcomeText1Part1, textOption);
+  fm.printText(Label_WelcomeText1Part1, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part2, textOption);
+  fm.printText(Label_WelcomeText1Part2, textOption);
   textOption.position.y += 20;
-  FontManager_printText(Label_WelcomeText1Part3, textOption);
+  fm.printText(Label_WelcomeText1Part3, textOption);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_WelcomeText1Part4, 40, 407);
+  fm.printText(Label_WelcomeText1Part4, 40, 407);
 }
 
 void MazecraftLevelInit::handleInput(const float& deltaTime) {

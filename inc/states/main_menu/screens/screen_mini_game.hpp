@@ -4,6 +4,7 @@
 #include "models/new_game_model.hpp"
 #include "models/save_info_model.hpp"
 #include "models/mini_game_info_model.hpp"
+#include "managers/font/font_manager.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include <tamtypes.h>
@@ -45,6 +46,7 @@ class ScreenMiniGame : public ScreenBase {
 
  private:
   Renderer* t_renderer;
+  FontManager* pFontManager;
 
   Sprite backgroundNewGame;
   Sprite tab3;

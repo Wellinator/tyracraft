@@ -30,7 +30,7 @@ class Singleton {
     ms_singleton = 0;
   }
 
-  static T& gerInstaceRef() {
+  static T& getInstanceRef() {
     assert(ms_singleton);
     return *ms_singleton;
   }

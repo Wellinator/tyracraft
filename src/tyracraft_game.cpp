@@ -12,6 +12,7 @@ using namespace Tyra;
 
 TyraCraftGame::TyraCraftGame(Engine* t_engine)
     : camera(engine->renderer.core.getSettings()),
+      fontManager(&t_engine->renderer),
       notificationManger(&t_engine->renderer),
       stateManager(t_engine, &camera) {
   engine = t_engine;
@@ -27,8 +28,6 @@ void TyraCraftGame::init() {
   checkNeededDirectories();
 
   engine->renderer.core.setFrameLimit(g_settings.vsync);
-
-  FontManager_init(&engine->renderer);
 }
 
 void TyraCraftGame::loop() {

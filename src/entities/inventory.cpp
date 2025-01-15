@@ -5,7 +5,7 @@
 Inventory::Inventory(Renderer* renderer, ItemRepository* itemRepository) {
   t_renderer = renderer;
   t_itemRepository = itemRepository;
-
+  pFontManager = FontManager::getInstance();
   init();
 }
 
@@ -157,9 +157,9 @@ void Inventory::render() {
 
   // Texts
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText("Select Item", 35, 407);
+  pFontManager->printText("Select Item", 35, 407);
   t_renderer->renderer2D.render(btnCircle);
-  FontManager_printText("Exit", 210, 407);
+  pFontManager->printText("Exit", 210, 407);
 }
 
 void Inventory::moveSelectorUp() {

@@ -106,6 +106,7 @@ void StateGameMenu::update(const float& deltaTime) {
 void StateGameMenu::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
+  FontManager& fm = FontManager::getInstanceRef();
 
   t_renderer->renderer2D.render(background);
 
@@ -115,7 +116,7 @@ void StateGameMenu::render() {
 
   if (activeOption == GameMenuOptions::DrawDistance)
     drawDistanceLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_DrawDistance, drawDistanceLabel);
+  fm.printText(Label_DrawDistance, drawDistanceLabel);
   t_renderer->renderer2D.render(horizontalScrollArea);
   t_renderer->renderer2D.render(horizontalScrollHandler);
 
@@ -124,21 +125,21 @@ void StateGameMenu::render() {
   if (activeOption != GameMenuOptions::DrawDistance)
     t_renderer->renderer2D.render(active_slot);
 
-  FontManager_printText(Label_GameMenu, halfWidth - 64, halfHeight - 200);
+  fm.printText(Label_GameMenu, halfWidth - 64, halfHeight - 200);
 
   FontOptions saveGameLabel;
   saveGameLabel.position.set(246, 240 + 3);
   saveGameLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::SaveGame)
     saveGameLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_Save, saveGameLabel);
+  fm.printText(Label_Save, saveGameLabel);
 
   FontOptions quitToTitleLabel;
   quitToTitleLabel.position.set(246, 240 + 43);
   quitToTitleLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::Quit)
     quitToTitleLabel.color.set(128, 128, 0);
-  FontManager_printText(Label_Quit, quitToTitleLabel);
+  fm.printText(Label_Quit, quitToTitleLabel);
 
   if (needSaveOverwriteConfirmation) {
     renderSaveOverwritingDialog();
@@ -146,9 +147,9 @@ void StateGameMenu::render() {
     renderQuitWithoutSavingDialog();
   } else {
     t_renderer->renderer2D.render(btnCross);
-    FontManager_printText(Label_Select, 40, 407);
+    fm.printText(Label_Select, 40, 407);
     t_renderer->renderer2D.render(btnStart);
-    FontManager_printText(Label_BackToGame, 205, 407);
+    fm.printText(Label_BackToGame, 205, 407);
   }
 }
 
@@ -299,49 +300,51 @@ void StateGameMenu::updateDrawDistanceScroll() {
 void StateGameMenu::renderSaveOverwritingDialog() {
   t_renderer->renderer2D.render(overlay);
   t_renderer->renderer2D.render(dialogWindow);
+  FontManager& fm = FontManager::getInstanceRef();
 
   FontOptions titleOptions = FontOptions();
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_OverwriteGameAsk, titleOptions);
+  fm.printText(Label_OverwriteGameAsk, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 190);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_LocalSaveWillBeOverWriten, dialogueOptions);
+  fm.printText(Label_LocalSaveWillBeOverWriten, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
+  fm.printText(Label_DoYouWantToContinue, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Overwtire, 40, 407);
+  fm.printText(Label_Overwtire, 40, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Cancel, 205, 407);
+  fm.printText(Label_Cancel, 205, 407);
 }
 
 void StateGameMenu::renderQuitWithoutSavingDialog() {
   t_renderer->renderer2D.render(overlay);
   t_renderer->renderer2D.render(dialogWindow);
+  FontManager& fm = FontManager::getInstanceRef();
 
   FontOptions titleOptions = FontOptions();
   titleOptions.position = Vec2(246, 135);
   titleOptions.scale = 0.9F;
   titleOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_AreYouSure, titleOptions);
+  fm.printText(Label_AreYouSure, titleOptions);
 
   FontOptions dialogueOptions = FontOptions();
   dialogueOptions.position = Vec2(246, 190);
   dialogueOptions.scale = 0.6F;
   dialogueOptions.alignment = TextAlignment::Center;
-  FontManager_printText(Label_AllUnsavedProgressWillBeLost, dialogueOptions);
+  fm.printText(Label_AllUnsavedProgressWillBeLost, dialogueOptions);
   dialogueOptions.position.y += 15;
-  FontManager_printText(Label_DoYouWantToContinue, dialogueOptions);
+  fm.printText(Label_DoYouWantToContinue, dialogueOptions);
 
   t_renderer->renderer2D.render(btnCross);
-  FontManager_printText(Label_Quit, 40, 407);
+  fm.printText(Label_Quit, 40, 407);
 
   t_renderer->renderer2D.render(btnTriangle);
-  FontManager_printText(Label_Cancel, 205, 407);
+  fm.printText(Label_Cancel, 205, 407);
 }
