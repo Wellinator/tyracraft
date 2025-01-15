@@ -84,9 +84,9 @@ void StateWelcome::unloadTextures() {
 }
 
 void StateWelcome::playClickSound() {
-  const s8 ch =
-      this->stateGamePlay->context->t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+
+  const s8 ch = pSoundManager->getAvailableChannel();
   this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
-  this->stateGamePlay->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                                        SoundFX::WoodClick, ch);
+  pSoundManager->playSfx(SoundFxCategory::Random, SoundFX::WoodClick, ch);
 }

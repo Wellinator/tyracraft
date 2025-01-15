@@ -24,9 +24,8 @@ class MobManager {
   MobManager();
   ~MobManager();
 
-  void init(Renderer* renderer, SoundManager* t_soundManager,
-            WorldLightModel* t_worldLightModel, Level* level,
-            ChunckManager* t_chunkManager);
+  void init(Renderer* renderer, WorldLightModel* t_worldLightModel,
+            Level* level, ChunckManager* t_chunkManager);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -43,7 +42,6 @@ class MobManager {
   float changeDirectionLimit = 0;
 
   Renderer* t_renderer = nullptr;
-  SoundManager* t_soundManager = nullptr;
   ChunckManager* t_chunkManager = nullptr;
   WorldLightModel* t_worldLightModel = nullptr;
   Level* pLevel = nullptr;

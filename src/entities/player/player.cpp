@@ -17,13 +17,11 @@ using Tyra::Renderer3D;
 // ----
 
 Player::Player(Level* pLevel, Renderer* t_renderer,
-               SoundManager* t_soundManager, BlockManager* t_blockManager,
-               ItemRepository* t_itemRepository,
+               BlockManager* t_blockManager, ItemRepository* t_itemRepository,
                WorldLightModel* t_worldLightModel)
     : Entity(pLevel, EntityType::Player) {
   this->pLevel = pLevel;
   this->t_renderer = t_renderer;
-  this->t_soundManager = t_soundManager;
   this->t_blockManager = t_blockManager;
   this->t_itemRepository = t_itemRepository;
   this->t_worldLightModel = t_worldLightModel;
@@ -505,12 +503,14 @@ void Player::playWalkSfx(const Blocks& blockType) {
   SfxBlockModel* blockSfxModel =
       this->t_blockManager->getStepSoundByBlockType(blockType);
   if (blockSfxModel) {
-    const int ch = t_soundManager->getAvailableChannel();
-    SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+    SoundManager* pSoundManager = SoundManager::getInstance();
+    const int ch = pSoundManager->getAvailableChannel();
+    SfxLibrarySound* sound = pSoundManager->getSound(blockSfxModel);
+
     auto config = SfxConfig::getStepSoundConfig(blockType);
     sound->_sound->pitch = config->_pitch;
-    t_soundManager->setSfxVolume(config->_volume, ch);
-    t_soundManager->playSfx(sound, ch);
+    pSoundManager->setSfxVolume(config->_volume, ch);
+    pSoundManager->playSfx(sound, ch);
     delete config;
   }
 }
@@ -518,22 +518,25 @@ void Player::playWalkSfx(const Blocks& blockType) {
 // Pitch values from
 // https://minecraft.fandom.com/wiki/Water#cite_note-bugMC-177092-7
 void Player::playSwimSfx() {
-  const int ch = t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  const int ch = pSoundManager->getAvailableChannel();
+
   auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
       static_cast<u8>(SoundFX::Swim1), static_cast<u8>(SoundFX::Swim4)));
-
   const u8 randPich = Tyra::Math::randomi(60, 140);
   const u8 volume = 30;
 
   SfxLibrarySound* sound =
-      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+      pSoundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+
   sound->_sound->pitch = randPich;
-  t_soundManager->setSfxVolume(volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 void Player::playSplashSfx() {
-  const int ch = t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  const int ch = pSoundManager->getAvailableChannel();
   auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
       static_cast<u8>(SoundFX::Splash), static_cast<u8>(SoundFX::Splash2)));
 
@@ -541,10 +544,10 @@ void Player::playSplashSfx() {
   const u8 volume = 60;
 
   SfxLibrarySound* sound =
-      t_soundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+      pSoundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
   sound->_sound->pitch = randPich;
-  t_soundManager->setSfxVolume(volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 void Player::toggleFlying() {

@@ -1,7 +1,7 @@
 #include "managers/sound_manager.hpp"
 #include "utils.hpp"
 
-SoundManager::SoundManager(Engine* t_engine) {
+SoundManager::SoundManager(Engine* t_engine) : Singleton<SoundManager>() {
   this->t_engine = t_engine;
   this->soundLibrary = new SfxLibrary(&t_engine->audio);
 }

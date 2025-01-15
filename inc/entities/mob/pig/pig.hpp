@@ -49,9 +49,8 @@ using Tyra::Vec4;
 /** Pig 3D object class  */
 class Pig : public Mob {
  public:
-  Pig(Level* level, Renderer* t_renderer, SoundManager* t_soundManager,
-      ChunckManager* t_chunkManager, Texture* pigTexture,
-      DynamicMesh* baseMesh);
+  Pig(Level* level, Renderer* t_renderer, ChunckManager* t_chunkManager,
+      Texture* pigTexture, DynamicMesh* baseMesh);
   ~Pig();
 
   void update(const float& deltaTime, const Vec4& movementDir);
@@ -90,7 +89,6 @@ class Pig : public Mob {
  private:
   Vec4 getNextPosition(const float& deltaTime, const Vec4& direction);
 
-  SoundManager* t_soundManager;
   ChunckManager* t_chunkManager;
   Audio* t_audio;
 

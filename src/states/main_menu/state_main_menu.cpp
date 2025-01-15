@@ -163,10 +163,11 @@ void StateMainMenu::loadSavedMiniGame(GameMode gameMode,
 }
 
 void StateMainMenu::playClickSound() {
+  SoundManager* pSoundManager = SoundManager::getInstance();
+
   this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
-  this->context->t_soundManager->playSfx(SoundFxCategory::Random,
-                                         SoundFX::WoodClick, MENU_SFX_CH);
-  Tyra::Threading::switchThread();
+  pSoundManager->playSfx(SoundFxCategory::Random, SoundFX::WoodClick,
+                         MENU_SFX_CH);
 }
 
 void StateMainMenu::loadMenuSong() {

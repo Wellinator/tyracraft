@@ -75,7 +75,6 @@ class World {
 
   Level* pLevel;
   Renderer* t_renderer;
-  SoundManager* t_soundManager;
   MobManager mobManager;
   BlockManager blockManager;
   ChunckManager chunckManager;
@@ -83,8 +82,7 @@ class World {
   ParticlesManager particlesManager;
   DayNightCycleManager dayNightCycleManager;
 
-  void init(Renderer* t_renderer, ItemRepository* itemRepository,
-            SoundManager* t_soundManager);
+  void init(Renderer* t_renderer, ItemRepository* itemRepository);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
   void tick(Player* t_player, Camera* t_camera);
   void renderOpaque();

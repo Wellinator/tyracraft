@@ -55,12 +55,12 @@ using Tyra::Vec4;
 // TODO: showld inherit Mob class instead Entity directly
 class Player : public Entity {
  public:
-  Player(Level* pLevel, Renderer* t_renderer, SoundManager* t_soundManager,
-         BlockManager* t_blockManager, ItemRepository* t_itemRepository,
-         WorldLightModel* t_worldLightModel);
+  Player(Level* pLevel, Renderer* t_renderer, BlockManager* t_blockManager,
+         ItemRepository* t_itemRepository, WorldLightModel* t_worldLightModel);
   ~Player();
 
-  void update(const float& deltaTime, const Vec4& movementDir, Camera* t_camera);
+  void update(const float& deltaTime, const Vec4& movementDir,
+              Camera* t_camera);
   void tick();
   void render();
 
@@ -147,7 +147,6 @@ class Player : public Entity {
   inline Color* getBaseColorAtPlayerPos() { return &_baseColorAtPlayerPos; };
 
  private:
-  SoundManager* t_soundManager;
   StaticPipeline stpip;
   Vec4 getNextPosition(const float& deltaTime, const Vec4& sensibility,
                        const Vec4& camDir);

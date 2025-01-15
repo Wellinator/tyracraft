@@ -15,13 +15,11 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Level* level, Renderer* t_renderer, SoundManager* t_soundManager,
-         ChunckManager* t_chunkManager, Texture* pigTexture,
-         DynamicMesh* baseMesh)
+Pig::Pig(Level* level, Renderer* t_renderer, ChunckManager* t_chunkManager,
+         Texture* pigTexture, DynamicMesh* baseMesh)
     : Mob(level) {
   pLevel = level;
   this->t_renderer = t_renderer;
-  this->t_soundManager = t_soundManager;
   this->t_chunkManager = t_chunkManager;
   this->texture = pigTexture;
 
@@ -478,16 +476,17 @@ void Pig::playStepSfx() {
   const auto index = Tyra::Math::randomi(0, 4);
   SoundFX stepSfx = availableStepSounds[index];
 
-  int ch = t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  int ch = pSoundManager->getAvailableChannel();
   SfxLibrarySound* sound =
-      t_soundManager->getSound(SoundFxCategory::Mob, stepSfx);
+      pSoundManager->getSound(SoundFxCategory::Mob, stepSfx);
 
   SfxConfigModel config;
   config._volume = 15;
   config._pitch = 100;
 
-  t_soundManager->setSfxVolume(config._volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(config._volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 void Pig::playSaySfx() {
@@ -500,29 +499,31 @@ void Pig::playSaySfx() {
   const auto index = Tyra::Math::randomi(0, 2);
   SoundFX saySfx = availableSaySounds[index];
 
-  int ch = t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  int ch = pSoundManager->getAvailableChannel();
   SfxLibrarySound* sound =
-      t_soundManager->getSound(SoundFxCategory::Mob, saySfx);
+      pSoundManager->getSound(SoundFxCategory::Mob, saySfx);
 
   SfxConfigModel config;
   config._volume = 100;
   config._pitch = Tyra::Math::randomi(80, 120);
 
-  t_soundManager->setSfxVolume(config._volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(config._volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 void Pig::playDeathSfx() {
-  int ch = t_soundManager->getAvailableChannel();
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  int ch = pSoundManager->getAvailableChannel();
   SfxLibrarySound* sound =
-      t_soundManager->getSound(SoundFxCategory::Mob, SoundFX::PigDeath);
+      pSoundManager->getSound(SoundFxCategory::Mob, SoundFX::PigDeath);
 
   SfxConfigModel config;
   config._volume = 100;
   config._pitch = Tyra::Math::randomi(80, 120);
 
-  t_soundManager->setSfxVolume(config._volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(config._volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 // ----

@@ -31,11 +31,9 @@ MobManager::~MobManager() {
   mobs.shrink_to_fit();
 };
 
-void MobManager::init(Renderer* renderer, SoundManager* t_soundManager,
-                      WorldLightModel* t_worldLightModel, Level* level,
-                      ChunckManager* t_chunkManager) {
+void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
+                      Level* level, ChunckManager* t_chunkManager) {
   this->t_renderer = renderer;
-  this->t_soundManager = t_soundManager;
   this->t_chunkManager = t_chunkManager;
   this->t_worldLightModel = t_worldLightModel;
   pLevel = level;
@@ -157,8 +155,8 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
 }
 
 Mob* MobManager::_createPig() {
-  Pig* mob = new Pig(pLevel, t_renderer, t_soundManager, t_chunkManager,
-                     pigTexture, pigBaseMesh);
+  Pig* mob =
+      new Pig(pLevel, t_renderer, t_chunkManager, pigTexture, pigBaseMesh);
   mobs.push_back(mob);
   return mob;
 }

@@ -105,11 +105,11 @@ void StateLoadingGame::createEntities() {
       new World(this->worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
-  this->stateGamePlay->player = new Player(
-      stateGamePlay->plevel, &this->context->t_engine->renderer,
-      this->context->t_soundManager, &this->stateGamePlay->world->blockManager,
-      this->stateGamePlay->itemRepository,
-      this->stateGamePlay->world->getWorldLightModel());
+  this->stateGamePlay->player =
+      new Player(stateGamePlay->plevel, &this->context->t_engine->renderer,
+                 &this->stateGamePlay->world->blockManager,
+                 this->stateGamePlay->itemRepository,
+                 this->stateGamePlay->world->getWorldLightModel());
 
   this->stateGamePlay->ui = new Ui();
   setPercent(25.0F);
@@ -136,8 +136,7 @@ void StateLoadingGame::initUI() {
 
 void StateLoadingGame::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
-                                   this->stateGamePlay->itemRepository,
-                                   this->context->t_soundManager);
+                                   this->stateGamePlay->itemRepository);
   this->stateGamePlay->world->generate();
   this->stateGamePlay->world->generateLight();
   this->stateGamePlay->world->propagateLiquids();

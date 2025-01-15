@@ -50,14 +50,12 @@ World::~World() {
   MeshBuilder_UnregisterBuilders();
 }
 
-void World::init(Renderer* renderer, ItemRepository* itemRepository,
-                 SoundManager* t_soundManager) {
+void World::init(Renderer* renderer, ItemRepository* itemRepository) {
   // Set renders
   t_renderer = renderer;
   stapip.setRenderer(&t_renderer->core);
 
   // Set soundManager ref
-  this->t_soundManager = t_soundManager;
 
   // Init light stuff
   dayNightCycleManager.init(t_renderer);
@@ -68,8 +66,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository,
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
-  mobManager.init(t_renderer, t_soundManager, &worldLightModel, pLevel,
-                  &chunckManager);
+  mobManager.init(t_renderer, &worldLightModel, pLevel, &chunckManager);
 };
 
 void World::generate() {
@@ -1446,12 +1443,14 @@ void World::playPutBlockSound(const Blocks& blockType) {
     SfxBlockModel* blockSfxModel =
         blockManager.getDigSoundByBlockType(blockType);
     if (blockSfxModel) {
-      const int ch = t_soundManager->getAvailableChannel();
-      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      SoundManager* pSoundManager = SoundManager::getInstance();
+
+      const int ch = pSoundManager->getAvailableChannel();
+      SfxLibrarySound* sound = pSoundManager->getSound(blockSfxModel);
       auto config = SfxConfig::getPlaceSoundConfig(blockType);
       sound->_sound->pitch = config->_pitch;
-      t_soundManager->setSfxVolume(config->_volume, ch);
-      t_soundManager->playSfx(sound, ch);
+      pSoundManager->setSfxVolume(config->_volume, ch);
+      pSoundManager->playSfx(sound, ch);
       delete config;
     }
   }
@@ -1463,12 +1462,13 @@ void World::playDestroyBlockSound(const Blocks& blockType) {
         blockManager.getBrokenSoundByBlockType(blockType);
 
     if (blockSfxModel) {
-      const int ch = t_soundManager->getAvailableChannel();
-      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      SoundManager* pSoundManager = SoundManager::getInstance();
+      const int ch = pSoundManager->getAvailableChannel();
+      SfxLibrarySound* sound = pSoundManager->getSound(blockSfxModel);
       auto config = SfxConfig::getBrokenSoundConfig(blockType);
       sound->_sound->pitch = config->_pitch;
-      t_soundManager->setSfxVolume(config->_volume, ch);
-      t_soundManager->playSfx(sound, ch);
+      pSoundManager->setSfxVolume(config->_volume, ch);
+      pSoundManager->playSfx(sound, ch);
       delete config;
     }
   }
@@ -1480,12 +1480,13 @@ void World::playBreakingBlockSound(const Blocks& blockType) {
         blockManager.getDigSoundByBlockType(blockType);
 
     if (blockSfxModel) {
-      const int ch = t_soundManager->getAvailableChannel();
-      SfxLibrarySound* sound = t_soundManager->getSound(blockSfxModel);
+      SoundManager* pSoundManager = SoundManager::getInstance();
+      const int ch = pSoundManager->getAvailableChannel();
+      SfxLibrarySound* sound = pSoundManager->getSound(blockSfxModel);
       auto config = SfxConfig::getBreakingSoundConfig(blockType);
       sound->_sound->pitch = config->_pitch;
-      t_soundManager->setSfxVolume(config->_volume, ch);
-      t_soundManager->playSfx(sound, ch);
+      pSoundManager->setSfxVolume(config->_volume, ch);
+      pSoundManager->playSfx(sound, ch);
       delete config;
     }
   }
@@ -1495,15 +1496,16 @@ void World::playFlowingWaterSound() {
   SfxBlockModel waterSfxModel = SfxBlockModel(
       Blocks::WATER_BLOCK, SoundFxCategory::Liquid, SoundFX::Water);
 
-  const int ch = t_soundManager->getAvailableChannel();
-  SfxLibrarySound* sound = t_soundManager->getSound(&waterSfxModel);
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  const int ch = pSoundManager->getAvailableChannel();
+  SfxLibrarySound* sound = pSoundManager->getSound(&waterSfxModel);
 
   const u8 pitch = Tyra::Math::randomi(50, 150);
   const u8 volume = Tyra::Math::randomi(75, 100);
 
   sound->_sound->pitch = pitch;
-  t_soundManager->setSfxVolume(volume, ch);
-  t_soundManager->playSfx(sound, ch);
+  pSoundManager->setSfxVolume(volume, ch);
+  pSoundManager->playSfx(sound, ch);
 }
 
 u8 World::isCrossedBlock(Blocks block_type) {

@@ -17,8 +17,8 @@ class Context {
   void render();
   void setState(GameState* newState);
 
+  SoundManager soundManager;
   Camera* t_camera = nullptr;
-  SoundManager* t_soundManager = nullptr;
   Engine* t_engine = nullptr;
 
  private:

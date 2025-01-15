@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include <audsrv.h>
 #include "tyra"
+#include "singleton.hpp"
 #include "constants.hpp"
 #include "entities/sfx_library.hpp"
 #include "models/sfx_block_model.hpp"
@@ -11,7 +12,7 @@ using Tyra::Audio;
 using Tyra::Engine;
 using Tyra::Math;
 
-class SoundManager {
+class SoundManager : public Singleton<SoundManager> {
  public:
   SoundManager(Engine* t_engine);
   ~SoundManager();

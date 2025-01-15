@@ -4,16 +4,12 @@
 #include <managers/font/font_options.hpp>
 #include "memory-monitor/memory_monitor.hpp"
 
-Context::Context(Engine* t_engine, Camera* t_camera) {
+Context::Context(Engine* t_engine, Camera* t_camera) : soundManager(t_engine) {
   this->t_engine = t_engine;
   this->t_camera = t_camera;
-  t_soundManager = new SoundManager(t_engine);
 }
 
-Context::~Context() {
-  delete state;
-  delete t_soundManager;
-}
+Context::~Context() { delete state; }
 
 void Context::update(const float& deltaTime) { state->update(deltaTime); }
 
