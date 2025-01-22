@@ -5,8 +5,17 @@
 #include "utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iostream>
+#include <time.h>
+#include <deque>
 
 namespace TyraCraft {
+
+clock_t begin = clock();
+float fixedDeltaTime = 0.016f;
+float accumulator = 0;
+std::deque<float> dq = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
 using namespace Tyra;
 
@@ -31,7 +40,18 @@ void TyraCraftGame::init() {
 }
 
 void TyraCraftGame::loop() {
-  const float dt = 1 / static_cast<float>(engine->info.getFps());
+  using namespace std;
+
+  clock_t end = clock();
+  const float tempDt = float(end - begin) / double(CLOCKS_PER_SEC);
+  begin = end;
+
+  // Calc AVG
+  dq.push_front(tempDt);
+  dq.pop_back();
+
+  float sum = std::accumulate(dq.begin(), dq.end(), 0.0f);
+  const float dt = sum / 10.0f;
 
   notificationManger.update(dt);
   stateManager.update(dt);
@@ -39,8 +59,9 @@ void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
   stateManager.render();
   notificationManger.render();
-
   engine->renderer.endFrame();
+
+  // cout << "dt: " << tempDt << " dt(avg): " << dt << endl;
 }
 
 void TyraCraftGame::loadSavedSettings() {
