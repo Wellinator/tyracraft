@@ -13,7 +13,7 @@ TaskManager::TaskManager() : Singleton<TaskManager>() {
   dispatcherThread.stack = dispatcher_stack;
   dispatcherThread.stack_size = 8 * 1024;
   dispatcherThread.gp_reg = &_gp;
-  dispatcherThread.initial_priority = 0x00;
+  dispatcherThread.initial_priority = 0x10;
 
   dispatcherThreadId = CreateThread(&dispatcherThread);
   TYRA_ASSERT(dispatcherThreadId > -1,
