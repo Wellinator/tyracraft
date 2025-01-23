@@ -44,7 +44,9 @@ class StateSplashScreen : public GameState {
 
   Sprite tyracraft;
   Sprite tyra;
-  u8 alpha = 1;
+  float alpha = 1.0f;
+  float timeout = 0.0f;
+  u8 wait = 0;
   u8 isFading = 0;
   u8 hasShowedTyraCraft = 0;
   u8 hasShowedTyra = 0;

@@ -35,13 +35,31 @@ void StateSplashScreen::init() {
 
 void StateSplashScreen::update(const float& deltaTime) {
   if (hasFinished()) this->nextState();
-  this->alpha = isFading ? alpha - 1 : alpha + 1;
 
-  if (alpha == 128) {
-    sleep(2);
+  if (wait) {
+    timeout += deltaTime;
+    if (timeout >= 1.5f) {
+      wait = false;
+      timeout = 0;
+    }
+  }
+
+  const double speed = 45 * deltaTime;
+  alpha += isFading ? -speed : speed;
+
+  if (alpha > 128) {
     isFading = 1;
-  } else if (alpha == 0) {
+    alpha = 128.0f;
+    wait = true;
+  } else if (alpha < 0) {
     isFading = 0;
+    alpha = 0.0f;
+
+    if (!hasShowedTyra) {
+      hasShowedTyra = true;
+    } else if (!hasShowedTyraCraft) {
+      hasShowedTyraCraft = true;
+    }
   }
 };
 
@@ -60,13 +78,11 @@ void StateSplashScreen::render() {
 void StateSplashScreen::renderTyraSplash() {
   this->tyra.color.a = alpha;
   this->context->t_engine->renderer.renderer2D.render(tyra);
-  if (alpha == 0) hasShowedTyra = 1;
 }
 
 void StateSplashScreen::renderTyraCraftSplash() {
   this->tyracraft.color.a = alpha;
   this->context->t_engine->renderer.renderer2D.render(tyracraft);
-  if (alpha == 0) hasShowedTyraCraft = 1;
 }
 
 void StateSplashScreen::setBgColorBlack(Renderer* renderer) {
