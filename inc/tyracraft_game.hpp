@@ -8,6 +8,7 @@
 #include "entities/chunck.hpp"
 #include "entities/Block.hpp"
 #include "camera.hpp"
+#include "timer.hpp"
 #include "managers/language_manager.hpp"
 #include "managers/state_manager.hpp"
 #include "managers/notification/notification_manager.hpp"
@@ -27,7 +28,7 @@ class TyraCraftGame : public Tyra::Game {
   LanguageManager languageManager;
   NotificationManager notificationManger;
   FontManager fontManager;
-  TaskManager taskManager;
+  Timer timer;
 
  private:
   Camera camera;

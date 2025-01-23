@@ -373,9 +373,10 @@ enum class PaticleType { Block, Flame, Smoke };
 
 #define CENTER_WORLD_POS (MAX_WORLD_POS + MIN_WORLD_POS) / 2
 
-#define MAX_FRAME_MS 0.016667F  // Comes from 1 / 60;
-#define FIXED_FRAME_MS 0.016667F
-#define FIXED_30_FRAME_MS 0.0344F  // Comes from 1 / 29;
+#define FIXED_15_FRAME_MS 0.06666666667F
+#define FIXED_30_FRAME_MS 0.03333333334F
+#define FIXED_60_FRAME_MS 0.01666666667F
+#define FIXED_120_FRAME_MS 0.00833333334F
 
 #define MAX_ADPCM_CH 23
 
