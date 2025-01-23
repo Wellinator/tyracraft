@@ -25,7 +25,6 @@ ScreenMain::~ScreenMain() {
 void ScreenMain::update(const float& deltaTime) {
   handleInput();
   hightLightActiveOption();
-  playerPreviewMesh->update();
   if (shouldNavigate) navigate();
 }
 
@@ -103,6 +102,7 @@ void ScreenMain::render() {
 
   // Draw player skin
   t_renderer->renderer3D.usePipeline(&dynpip);
+  playerPreviewMesh->update();
   dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
 
   // Draw player name

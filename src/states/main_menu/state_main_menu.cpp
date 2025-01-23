@@ -65,7 +65,7 @@ void StateMainMenu::update(const float& deltaTime) {
   this->context->t_camera->setPosition(*menuSkybox->getPosition());
   this->context->t_camera->update();
 
-  this->menuSkybox->rotation.rotateY(0.0001F);
+  this->menuSkybox->rotation.rotateY(0.001F * deltaTime);
 
   // Update current screen state
   this->screen->update(deltaTime);
