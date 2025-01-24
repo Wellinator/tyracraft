@@ -1,6 +1,6 @@
 #include "entities/level.hpp"
 
-Level::Level(int seed) {
+Level::Level(int seed) : Singleton<Level>() {
   TYRA_LOG("Generating base level template");
   srand(seed);
 

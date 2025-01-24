@@ -1,6 +1,7 @@
 #pragma once
 
 #include <constants.hpp>
+#include "singleton.hpp"
 #include <stdint.h>
 #include <stdbool.h>
 #include <array>
@@ -22,7 +23,7 @@ class LevelMap {
   uint8_t metaData[OVERWORLD_SIZE];
 };
 
-class Level {
+class Level : public Singleton<Level> {
  public:
   LevelMap map;
 
