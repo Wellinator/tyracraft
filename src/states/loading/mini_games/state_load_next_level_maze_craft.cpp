@@ -100,6 +100,7 @@ void StateLoadNextLevelMazeCraft::unload() {
 }
 
 void StateLoadNextLevelMazeCraft::createEntities() {
+  this->stateGamePlay->plevel = new Level(worldOptions.seed);
   this->stateGamePlay->world = new World(worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
