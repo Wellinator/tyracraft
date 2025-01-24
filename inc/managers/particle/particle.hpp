@@ -28,8 +28,8 @@ class Particle {
   u8 collidable = false;
   Color* t_color = nullptr;
 
-  static const u8 DRAW_DATA_COUNT;
-  static const Vec4* rawData;
+  static const u8 DRAW_DATA_COUNT = 6;
+  static const Vec4 rawData[DRAW_DATA_COUNT];
 
  public:
   float _elapsedTime = 0;
