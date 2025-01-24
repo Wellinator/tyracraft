@@ -357,5 +357,6 @@ void CreativePlayingState::saveProgress() {
   TYRA_LOG("Saving at: ", saveFileName.c_str());
 
   NotificationManager* instance = NotificationManager::getInstance();
-  instance->notify(Message_Saved_Successfully, Message_Progress_Has_Been_Saved);
+  instance->notify(Message_Saved_Successfully.c_str(),
+                   Message_Progress_Has_Been_Saved.c_str());
 }

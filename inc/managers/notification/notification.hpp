@@ -49,7 +49,7 @@ class Notification {
   NotificationType type = NotificationType::Default;
 
   // Time to fadeout in milliseconds
-  float timeout = 3.0F;
+  float timeout = 5.0F;
 
   std::string title;
   std::string message;
@@ -72,7 +72,6 @@ class Notification {
   const float margin = 10.0F;
   const float iconOffset = 25.0F;
 
-  FontManager* pFontManager;
   Renderer* pRenderer;
   Texture* pTexture;
   Sprite bgSprite;
