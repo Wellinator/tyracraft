@@ -43,6 +43,14 @@ void TyraCraftGame::loop() {
   engine->renderer.beginFrame(camera.getCameraInfo());
   stateManager.render();
   notificationManger.render();
+
+  // // Draw FPS:
+  // double FPSavg = 1.0f / timer.getDeltaTimeAvg();
+  // std::stringstream stream;
+  // stream << "FPS: " << std::fixed << std::setprecision(2) << FPSavg;
+  // fontManager.printText(stream.str(),
+  //                       FontOptions(Vec2(10.0f, 10.0f), Color(255), 0.9F));
+
   engine->renderer.endFrame();
 }
 
