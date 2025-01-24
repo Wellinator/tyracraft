@@ -10,10 +10,6 @@ ParticlesManager::ParticlesManager() {}
 
 ParticlesManager::~ParticlesManager() {
   t_renderer->getTextureRepository().free(particlesTexture->id);
-
-  // Deleting a static data from Particle class
-  delete[] Particle::rawData;
-
   destroyAllParticles();
 }
 
