@@ -75,53 +75,36 @@ void World::generate() {
 
     mazegen::Config cfg;
     cfg.CONSTRAIN_HALL_ONLY = false;
+    cfg.EXTRA_CONNECTION_CHANCE = 0.12;
 
     u8 width, height;
 
     // setup level
-    if (level < 10) {
+    if (level < 2) {
       cfg.DEADEND_CHANCE = 0.1;
       cfg.WIGGLE_CHANCE = 0.1;
 
       width = 16;
       height = 16;
-    } else if (level < 20) {
-      cfg.DEADEND_CHANCE = 0.15;
-      cfg.WIGGLE_CHANCE = 0.15;
-
-      width = 16;
-      height = 16;
-    } else if (level < 30) {
-      cfg.DEADEND_CHANCE = 0.2;
-      cfg.WIGGLE_CHANCE = 0.2;
-
-      width = 24;
-      height = 24;
-    } else if (level < 40) {
-      cfg.DEADEND_CHANCE = 0.2;
-      cfg.WIGGLE_CHANCE = 0.2;
+    } else if (level < 5) {
+      cfg.DEADEND_CHANCE = 0.20;
+      cfg.WIGGLE_CHANCE = 0.20;
 
       width = 32;
       height = 32;
-    } else if (level < 50) {
-      cfg.DEADEND_CHANCE = 0.3;
-      cfg.WIGGLE_CHANCE = 0.3;
-
-      width = 40;
-      height = 40;
-    } else if (level < 60) {
+    } else if (level < 10) {
       cfg.DEADEND_CHANCE = 0.3;
       cfg.WIGGLE_CHANCE = 0.3;
 
       width = 48;
       height = 48;
-    } else if (level < 70) {
+    } else if (level < 15) {
       cfg.DEADEND_CHANCE = 0.35f;
       cfg.WIGGLE_CHANCE = 0.35f;
 
       width = 56;
       height = 56;
-    } else if (level < 80) {
+    } else if (level < 20) {
       cfg.DEADEND_CHANCE = 0.4f;
       cfg.WIGGLE_CHANCE = 0.4f;
 
