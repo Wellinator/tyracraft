@@ -1,4 +1,5 @@
 #include "managers/save_manager.hpp"
+#include "entities/level.hpp"
 
 void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   gzFile save_file = gzopen(fullPath, "wb");
@@ -7,7 +8,7 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     const int save_version = 1;
 
     // Save version
-    gzwrite(save_file, &save_version, sizeof(int) * 1);
+    gzwrite(save_file, &save_version, sizeof(int));
 
     // World seed
     gzwrite(save_file, &state->world->getWorldOptions()->seed,
@@ -57,7 +58,7 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     gzwrite(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
 
     // World State
-    LevelMap* t_map = &state->plevel->map;
+    LevelMap* t_map = &Level::getInstance()->map;
     gzwrite(save_file, &t_map->width, sizeof(t_map->width));
     gzwrite(save_file, &t_map->length, sizeof(t_map->length));
     gzwrite(save_file, &t_map->height, sizeof(t_map->height));
@@ -123,6 +124,7 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
     Vec4 playerPos;
     gzread(save_file, &playerPos, sizeof(Vec4));
     state->player->getPosition()->set(playerPos);
+    state->world->setSavedSpawnArea(playerPos);
 
     // TODO: add hot inventory state to save file;
 
@@ -137,15 +139,12 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
 
     // World State
     LevelMap* t_map = &state->plevel->map;
-
     gzread(save_file, &t_map->width, sizeof(t_map->width));
     gzread(save_file, &t_map->length, sizeof(t_map->length));
     gzread(save_file, &t_map->height, sizeof(t_map->height));
     gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
     gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
     gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-    state->world->setSavedSpawnArea(*state->player->getPosition());
 
     uint32_t worldSize = 0;
     gzread(save_file, &worldSize, sizeof(worldSize));

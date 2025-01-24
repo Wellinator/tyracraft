@@ -106,6 +106,7 @@ void StateLoadMazeCraft::unload() {
 }
 
 void StateLoadMazeCraft::createEntities() {
+  this->stateGamePlay->plevel = new Level(worldOptions->seed);
   this->stateGamePlay->world = new World(*worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 

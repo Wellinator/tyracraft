@@ -106,6 +106,7 @@ void StateLoadingSavedGame::unload() {
 }
 
 void StateLoadingSavedGame::createEntities() {
+  this->stateGamePlay->plevel = new Level(worldOptions->seed);
   this->stateGamePlay->world = new World(*worldOptions, stateGamePlay->plevel);
   this->stateGamePlay->itemRepository = new ItemRepository();
 
