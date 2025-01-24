@@ -175,8 +175,6 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        &t_camera->lookPos);
 
-  dispatchChunkBatch();
-
   mobManager.update(deltaTime);
   updateTargetBlock(t_camera, t_player);
 };
@@ -379,7 +377,7 @@ void World::unloadScheduledChunks() {
     Chunck* chunk = tempChuncksToUnLoad.front();
 
     if (chunk->state != ChunkState::Clean) {
-      return chunk->clearAsync();
+      return chunk->clear();
     } else {
       tempChuncksToUnLoad.pop_front();
       if (tempChuncksToUnLoad.size() == 0) {
