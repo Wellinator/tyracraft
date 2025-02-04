@@ -16,9 +16,12 @@ Block::~Block() {
   bbox = nullptr;
 }
 
-Blocks Block::getType() { return static_cast<Blocks>(pBlockInfo->blockId); }
+Blocks Block::getType() {
+  return pBlockInfo ? static_cast<Blocks>(pBlockInfo->blockId)
+                    : Blocks::AIR_BLOCK;
+}
 
-float Block::getHardness() { return pBlockInfo->_hardness; }
+float Block::getHardness() { return pBlockInfo && pBlockInfo->_hardness; }
 
 /**
  * Order: Top, Bottom, Left, Right, Back, Front
@@ -26,10 +29,10 @@ float Block::getHardness() { return pBlockInfo->_hardness; }
  */
 std::array<u8, 6>* Block::getFacesMap() { return &pBlockInfo->_facesMap; };
 
-u8 Block::isBreakable() { return pBlockInfo->_isBreakable; }
+u8 Block::isBreakable() { return pBlockInfo && pBlockInfo->_isBreakable; }
 
-u8 Block::isCollidable() { return pBlockInfo->_isCollidable; }
+u8 Block::isCollidable() { return pBlockInfo && pBlockInfo->_isCollidable; }
 
-u8 Block::hasTransparency() { return pBlockInfo->_isTransparent; }
+u8 Block::hasTransparency() { return pBlockInfo && pBlockInfo->_isTransparent; }
 
-u8 Block::isCrossed() { return pBlockInfo->_isCrossed; }
+u8 Block::isCrossed() { return pBlockInfo && pBlockInfo->_isCrossed; }
