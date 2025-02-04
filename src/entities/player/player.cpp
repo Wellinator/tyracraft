@@ -251,20 +251,20 @@ void Player::onMoved() {
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime) {
   const Vec4 upDir = -GRAVITY;
-  this->fly(deltaTime, terrainHeight, upDir);
+  this->fly(deltaTime, terrainHeight, upDir.getNormalized());
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime) {
   const Vec4 downDir = GRAVITY;
-  this->fly(deltaTime, terrainHeight, downDir);
+  this->fly(deltaTime, terrainHeight, downDir.getNormalized());
 }
 
 /** Fly in given direction */
 void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
-  Vec4 newPos = _targetPosition + (direction * deltaTime);
+  Vec4 newPos = _targetPosition + (direction * maxSpeed * deltaTime);
   const float playerHeight = Utils::Abs(bbox->getHeight());
 
   // Is player inside world bbox?
