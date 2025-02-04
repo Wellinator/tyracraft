@@ -56,11 +56,11 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   _prevPosition.set(_position);
   _targetPosition.set(_position);
 
-  const float color = Tyra::Math::randomi(35, 150);
-  t_color = new Color(color, color, color);
+  const float colorRGB = Tyra::Math::randomi(35, 150);
+  color.set(colorRGB, colorRGB, colorRGB);
 };
 
-SmokeParticle::~SmokeParticle() { delete t_color; }
+SmokeParticle::~SmokeParticle() { return; }
 
 void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   // Reset lerp state

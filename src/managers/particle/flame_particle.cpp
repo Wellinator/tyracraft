@@ -59,7 +59,7 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   uv[4] = Vec4(xMin, yMin, 1.0F, 0.0F);
   uv[5] = Vec4(xMax, yMin, 1.0F, 0.0F);
 
-  t_color = &pBlock->baseColor;
+  color.set(pBlock->baseColor);
 };
 
 void FlameParticle::fixedUpdate(const float fixedDeltaTime) { return; }

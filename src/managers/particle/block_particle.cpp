@@ -47,7 +47,7 @@ BlockParticle::BlockParticle(Block* pBlock) : Particle(PaticleType::Block) {
   uv[4] = Vec4(xMin, yMin, 1.0F, 0.0F) * scaleVec;
   uv[5] = Vec4(xMax, yMin, 1.0F, 0.0F) * scaleVec;
 
-  t_color = &pBlock->baseColor;
+  color.set(pBlock->baseColor);
 };
 
 void BlockParticle::fixedUpdate(const float fixedDeltaTime) {

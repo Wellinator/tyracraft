@@ -27,7 +27,7 @@ class Particle {
   u8 billboarded = true;
   u8 expired = false;
   u8 collidable = false;
-  Color* t_color = nullptr;
+  Color color;
 
   static const u8 DRAW_DATA_COUNT = 6;
   static const Vec4 rawData[DRAW_DATA_COUNT];

@@ -132,8 +132,7 @@ void ParticlesManager::render() {
 
     if (p->expired) continue;
 
-    M4x4 rawMatrix;
-    rawMatrix.identity();
+    M4x4 rawMatrix = M4x4::Identity;
 
     StaPipTextureBag textureBag;
     textureBag.coordinates = p->uv;
@@ -149,7 +148,7 @@ void ParticlesManager::render() {
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
 
     StaPipColorBag colorBag;
-    colorBag.single = p->t_color;
+    colorBag.single = &p->color;
 
     StaPipBag bag;
     bag.count = Particle::DRAW_DATA_COUNT;
