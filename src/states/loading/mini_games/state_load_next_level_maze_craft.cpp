@@ -154,12 +154,12 @@ void StateLoadNextLevelMazeCraft::initPlayer() {
   TYRA_LOG("Initiating player...");
 
   TYRA_LOG("Setting player position...");
-  this->stateGamePlay->player->mesh->getPosition()->set(
+  this->stateGamePlay->player->setPosition(
       this->stateGamePlay->world->getGlobalSpawnArea());
 
   TYRA_LOG("Setting player spawn area...");
   this->stateGamePlay->player->spawnArea.set(
-      this->stateGamePlay->world->getLocalSpawnArea());
+      this->stateGamePlay->world->getGlobalSpawnArea());
   this->stateGamePlay->context->t_camera->setFirstPerson();
 
   setPercent(100.0F);

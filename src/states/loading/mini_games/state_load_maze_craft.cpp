@@ -156,7 +156,7 @@ void StateLoadMazeCraft::loadSavedData() {
 }
 
 void StateLoadMazeCraft::initPlayer() {
-  this->stateGamePlay->player->mesh->getPosition()->set(
+  this->stateGamePlay->player->setPosition(
       this->stateGamePlay->world->getGlobalSpawnArea());
   this->stateGamePlay->player->spawnArea.set(
       this->stateGamePlay->world->getLocalSpawnArea());
