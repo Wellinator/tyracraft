@@ -766,9 +766,11 @@ const Vec4 World::defineSpawnArea() {
   Vec4 spawPos;
 
   if (worldOptions.type != WorldType::WORLD_MINI_GAME_MAZECRAFT) {
+    TYRA_LOG("Defining spawn area for normal world");
     spawPos = calcSpawOffset();
   } else {
-    spawPos = Vec4(1, 3, 1) * DUBLE_BLOCK_SIZE;
+    TYRA_LOG("Defining spawn area for mazecraft");
+    spawPos = Vec4(1.1f, 3.5f, 1.1f) * DUBLE_BLOCK_SIZE;
   }
 
   pLevel->map.spawnX = spawPos.x;
