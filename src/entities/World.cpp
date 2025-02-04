@@ -879,8 +879,8 @@ void World::removeBlock(Block* blockToRemove) {
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
 
-  removeBlockFromChunk(blockToRemove);
   playDestroyBlockSound(blockToRemove->getType());
+  removeBlockFromChunk(blockToRemove);
 
   // Remove up block if it's is vegetation
   const Vec4 upBlockOffset =
@@ -1352,8 +1352,6 @@ void World::stopBreakTargetBlock() {
 }
 
 void World::breakTargetBlock(const float& deltaTime) {
-  if (targetBlock == nullptr) return;
-
   if (_isBreakingBlock) {
     breaking_time_pessed += deltaTime;
     const auto breakingTime = blockManager.getBlockBreakingTime(targetBlock);
@@ -1381,15 +1379,15 @@ void World::breakTargetBlock(const float& deltaTime) {
         lastTimePlayedBreakingSfx += deltaTime;
       }
     }
-  } else {
-    breaking_time_pessed = 0;
-    _isBreakingBlock = true;
+
+    return;
   }
+
+  breaking_time_pessed = 0;
+  _isBreakingBlock = true;
 }
 
 void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
-  if (targetBlock == nullptr) return;
-
   if (_isBreakingBlock) {
     breaking_time_pessed += deltaTime;
     const auto breakingTime = BREAKING_TIME_IN_CREATIVE_MODE;
@@ -1417,10 +1415,12 @@ void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
         lastTimePlayedBreakingSfx += deltaTime;
       }
     }
-  } else {
-    breaking_time_pessed = 0;
-    _isBreakingBlock = true;
+
+    return;
   }
+
+  breaking_time_pessed = 0;
+  _isBreakingBlock = true;
 }
 
 void World::playPutBlockSound(const Blocks& blockType) {
@@ -1837,7 +1837,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
   g_AABBTree->intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
 
   for (u16 b = 0; b < ni.size(); b++) {
-    Entity* entity = (Entity*)g_AABBTree->user_data(ni[b]);
+    Entity* entity = static_cast<Entity*>(g_AABBTree->user_data(ni[b]));
     if (entity->entity_type == EntityType::Block) {
       Block* block = (Block*)entity;
 
@@ -1926,13 +1926,8 @@ void World::updateBlockDamage() {
 
 void World::clearTargetBlockDrawData() {
   _targetBlockVertices.clear();
-  _targetBlockVertices.shrink_to_fit();
-
   _targetBlockColors.clear();
-  _targetBlockColors.shrink_to_fit();
-
   _targetBlockUVMap.clear();
-  _targetBlockUVMap.shrink_to_fit();
 }
 
 void World::setDrawDistace(const u8& drawDistanceInChunks) {
