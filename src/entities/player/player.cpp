@@ -205,7 +205,7 @@ void Player::updateYPosition(const float nextYPos) {
   if (resultY + bbox->getHeight() > worldMaxHeight ||
       resultY < worldMinHeight) {
     // Maybe has died, teleport to spaw area
-    TYRA_LOG("\nReseting player position to:\n");
+    spawnArea.print("Reseting player position to:");
     position.set(spawnArea);
     _prevPosition.set(position);
     _targetPosition.set(position);
