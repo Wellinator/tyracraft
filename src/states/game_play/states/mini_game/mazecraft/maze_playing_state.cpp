@@ -43,11 +43,21 @@ void MazePlayingState::afterInit() {
   stateGamePlay->player->fillInventoryWithItem(ItemId::torch);
   stateGamePlay->player->updateHandledItem();
   stateGamePlay->player->unFly();
+
+  stateGamePlay->world->setDrawDistace(MAX_DRAW_DISTANCE);
+}
+
+void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
+  stateGamePlay->world->fixedUpdate(
+      stateGamePlay->player, stateGamePlay->context->t_camera, fixedDeltaTime);
+
+  stateGamePlay->player->fixedUpdate(fixedDeltaTime, playerMovementDirection,
+                                     stateGamePlay->context->t_camera);
 }
 
 void MazePlayingState::update(const float& deltaTime) {
   if (deltaTime <= 0.0F) return;
-  // elapsedTimeInSec += deltaTime;
+  elapsedTimeInSec += deltaTime;
   tickManager.update(deltaTime);
 
   if (shouldRenderLevelDoneDialog) {
@@ -69,7 +79,7 @@ void MazePlayingState::update(const float& deltaTime) {
   stateGamePlay->player->update(deltaTime, stateGamePlay->context->t_camera);
 
   stateGamePlay->context->t_camera->setPosition(
-      *stateGamePlay->player->mesh->getPosition());
+      stateGamePlay->player->position);
   stateGamePlay->context->t_camera->setLookDirectionByPad(
       &stateGamePlay->context->t_engine->pad, deltaTime);
 
@@ -89,11 +99,13 @@ void MazePlayingState::tick() {
 void MazePlayingState::render() {
   stateGamePlay->world->dayNightCycleManager.render();
   stateGamePlay->world->cloudsManager.render();
-  stateGamePlay->world->mobManager.render();
   stateGamePlay->world->renderOpaque();
+  stateGamePlay->world->mobManager.render();
+  stateGamePlay->player->render();
+
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
-  stateGamePlay->player->render();
+
   stateGamePlay->world->particlesManager.render();
   renderMazeUi();
 
@@ -144,15 +156,11 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
     const auto _v = (lJoyPad.v - 128.0F) / 128.0F;
     playerMovementDirection =
         Vec4(Utils::Abs(_h) > g_settings.l_stick_H ? _h : 0.0F, 0.0F,
-             Utils::Abs(_v) > g_settings.l_stick_V ? _v : 0.0F);
+             Utils::Abs(_v) > g_settings.l_stick_V ? _v : 0.0F)
+            .getNormalized();
 
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);
-
-    // if (clicked.L1)
-    //   stateGamePlay->player->moveSelectorToTheLeft();
-    // else if (clicked.R1)
-    //   stateGamePlay->player->moveSelectorToTheRight();
 
     if (pressed.L2) {
       if (stateGamePlay->world->validTargetBlock()) {
@@ -203,18 +211,15 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
     if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
-      // if (clicked.DpadUp)
-      //   stateGamePlay->player->selectNextItem();
-      // else if (clicked.DpadDown)
-      //   stateGamePlay->player->selectPreviousItem();
     }
 
+    // Temp for debug
     // else if (stateGamePlay->player->isFlying) {
-    // if (pressed.DpadUp) {
-    //   stateGamePlay->player->flyUp(deltaTime);
-    // } else if (pressed.DpadDown) {
-    //   stateGamePlay->player->flyDown(deltaTime);
-    // }
+    //   if (pressed.DpadUp) {
+    //     stateGamePlay->player->flyUp(deltaTime);
+    //   } else if (pressed.DpadDown) {
+    //     stateGamePlay->player->flyDown(deltaTime);
+    //   }
     // }
 
     // if (clicked.Cross) {
@@ -223,6 +228,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
     //   }
     //   elapsedTimeInSec = 0.0F;
     // }
+    // Temp for debug
   }
 }
 
@@ -263,12 +269,7 @@ void MazePlayingState::setDarkTheme() {
 
 void MazePlayingState::navigate() {}
 
-void MazePlayingState::renderMazeUi() {
-  stateGamePlay->ui->renderCrosshair();
-
-  // Do not render invetory, it just contains torch
-  // stateGamePlay->ui->renderInventory();
-}
+void MazePlayingState::renderMazeUi() { stateGamePlay->ui->renderCrosshair(); }
 
 void MazePlayingState::drawDegubInfo() {
   FontManager& fm = FontManager::getInstanceRef();

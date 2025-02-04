@@ -23,6 +23,7 @@ class MazePlayingState : public PlayingStateBase {
   void init();
   void afterInit();
   void handleAction(MenuAction action);
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -63,7 +64,7 @@ class MazePlayingState : public PlayingStateBase {
 
   MazeAudioListener mazeAudioListener;
   u32 audioListenerId;
-  // float elapsedTimeInSec;
+  float elapsedTimeInSec;
   TickManager tickManager;
 
   Vec4 playerMovementDirection;

@@ -125,7 +125,8 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
     const auto _v = (lJoyPad.v - 128.0F) / 128.0F;
     playerMovementDirection =
         Vec4(Utils::Abs(_h) > g_settings.l_stick_H ? _h : 0.0F, 0.0F,
-             Utils::Abs(_v) > g_settings.l_stick_V ? _v : 0.0F);
+             Utils::Abs(_v) > g_settings.l_stick_V ? _v : 0.0F)
+            .getNormalized();
 
     // Set running state
     stateGamePlay->player->setRunning((bool)pressed.Square);
