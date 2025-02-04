@@ -64,7 +64,7 @@ SmokeParticle::~SmokeParticle() { delete t_color; }
 
 void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   // Reset lerp state
-  _prevPosition.set(_position);
+  _prevPosition.set(_targetPosition);
 
   // Update position without gravity
   const float particleSpeed = 45.0F;
@@ -72,7 +72,7 @@ void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   _velocity += _direction * instantSpeed;
 
   // Define next position based on velocity
-  const auto nextPosition = _position + (_velocity * fixedDeltaTime);
+  const auto nextPosition = _targetPosition + (_velocity * fixedDeltaTime);
   _targetPosition.set(nextPosition);
 
   // Updates smoke UV based on lifeTime
