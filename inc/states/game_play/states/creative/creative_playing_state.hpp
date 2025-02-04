@@ -25,6 +25,7 @@ class CreativePlayingState : public PlayingStateBase {
   void init();
   void afterInit(){};
   void handleAction(MenuAction action);
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -60,6 +61,8 @@ class CreativePlayingState : public PlayingStateBase {
 
   inline const u8 isInventoryOpened();
 
-  std::string Message_Saved_Successfully      = LanguageManager::Translate("/state_game_menu/saved_successfully");
-  std::string Message_Progress_Has_Been_Saved = LanguageManager::Translate("/state_game_menu/progress_saved");
+  std::string Message_Saved_Successfully =
+      LanguageManager::Translate("/state_game_menu/saved_successfully");
+  std::string Message_Progress_Has_Been_Saved =
+      LanguageManager::Translate("/state_game_menu/progress_saved");
 };

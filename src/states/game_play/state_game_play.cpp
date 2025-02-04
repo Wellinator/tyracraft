@@ -77,6 +77,10 @@ void StateGamePlay::afterInit() {
   this->state->afterInit();
 }
 
+void StateGamePlay::fixedUpdate(const float& fixedDeltaTime) {
+  this->state->fixedUpdate(fixedDeltaTime);
+}
+
 void StateGamePlay::update(const float& deltaTime) {
   this->handleInput();
   this->state->update(deltaTime);

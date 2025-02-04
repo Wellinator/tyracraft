@@ -11,9 +11,9 @@ namespace TyraCraft {
 using namespace Tyra;
 
 TyraCraftGame::TyraCraftGame(Engine* t_engine)
-    : camera(engine->renderer.core.getSettings()),
+    : notificationManger(&t_engine->renderer),
       fontManager(&t_engine->renderer),
-      notificationManger(&t_engine->renderer),
+      camera(engine->renderer.core.getSettings()),
       stateManager(t_engine, &camera) {
   engine = t_engine;
 #ifdef DEBUG_MODE
@@ -33,25 +33,37 @@ void TyraCraftGame::init() {
 void TyraCraftGame::loop() {
   timer.update();
 
+  if (timer.updateFrame()) {
+    stateManager.fixedUpdate(timer.getFixedDeltaTime());
+  }
+
   const double smoothedDeltaTime = timer.getDeltaTimeAvg();
-  notificationManger.update(smoothedDeltaTime);
   stateManager.update(smoothedDeltaTime);
+  notificationManger.update(smoothedDeltaTime);
 
   // Control render calls
-  if (timer.skipFrame()) return;
+  if (timer.renderFrame()) {
+    engine->renderer.beginFrame(camera.getCameraInfo());
+    stateManager.render();
+    notificationManger.render();
 
-  engine->renderer.beginFrame(camera.getCameraInfo());
-  stateManager.render();
-  notificationManger.render();
+    // Draw FPS:
+    std::stringstream stream;
+    stream << "FPS(avg): " << std::fixed << std::setprecision(2)
+           << 1.0f / smoothedDeltaTime;
+    fontManager.printText(stream.str(),
+                          FontOptions(Vec2(10.0f, 10.0f), Color(255), 0.9F));
+    stream.str("");
+    stream.clear();
 
-  // // Draw FPS:
-  // double FPSavg = 1.0f / timer.getDeltaTimeAvg();
-  // std::stringstream stream;
-  // stream << "FPS: " << std::fixed << std::setprecision(2) << FPSavg;
-  // fontManager.printText(stream.str(),
-  //                       FontOptions(Vec2(10.0f, 10.0f), Color(255), 0.9F));
+    stream << "Physics: " << std::fixed << std::setprecision(2)
+           << timer.getPhysicsUpdateMs() << "ms Render: " << std::fixed
+           << std::setprecision(2) << timer.getRenderMs() << "ms";
+    fontManager.printText(stream.str(),
+                          FontOptions(Vec2(10.0f, 30.0f), Color(255), 0.9F));
 
-  engine->renderer.endFrame();
+    engine->renderer.endFrame();
+  }
 }
 
 void TyraCraftGame::loadSavedSettings() {

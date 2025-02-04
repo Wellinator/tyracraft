@@ -39,6 +39,7 @@ class StateGamePlay : public GameState {
 
   void init();
   void afterInit();
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void render();
 

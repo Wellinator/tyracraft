@@ -160,23 +160,25 @@ void World::setSavedSpawnArea(Vec4 pos) {
   lastPlayerPosition.set(worldSpawnArea);
 }
 
+void World::fixedUpdate(Player* t_player, Camera* t_camera,
+                        const float fixedDeltaTime) {
+  particlesManager.fixedUpdate(fixedDeltaTime);
+
+  cloudsManager.update(fixedDeltaTime);
+  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
+                       &t_camera->lookPos);
+  if (_updateDayNightCycle)
+    dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
+  if (affectedChunksIdByLiquidPropagation.size() > 0)
+    updateChunksAffectedByLiquidPropagation();
+  updateTargetBlock(t_camera, t_player);
+};
+
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   dispatchChunkBatch();
 
   particlesManager.update(deltaTime, t_camera);
-  cloudsManager.update(deltaTime);
-
-  if (_updateDayNightCycle)
-    dayNightCycleManager.update(deltaTime, &t_camera->position);
-
-  if (affectedChunksIdByLiquidPropagation.size() > 0)
-    updateChunksAffectedByLiquidPropagation();
-
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       &t_camera->lookPos);
-
   mobManager.update(deltaTime);
-  updateTargetBlock(t_camera, t_player);
 };
 
 // Tick based logics
@@ -857,7 +859,7 @@ const bool World::getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
 
 void World::removeBlock(Block* blockToRemove) {
   // Generate amount of particles right begore block gets destroyed
-  particlesManager.createBlockParticleBatch(blockToRemove, 18);
+  particlesManager.createBlockParticleBatch(blockToRemove, 48);
 
   Vec4 offsetToRemove;
   pLevel->GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);

@@ -45,13 +45,7 @@ void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
           if (!chuncks[i]->isDrawDataLoaded()) {
             chuncks[i]->loadDrawDataWithoutSorting();
           }
-        } else {
-          if (chuncks[i]->isDrawDataLoaded()) {
-            chuncks[i]->clearDrawData();
-          }
-        }
 
-        if (chuncks[i]->isDrawDataLoaded()) {
           visibleChunks.emplace_back(chuncks[i]);
         }
       }

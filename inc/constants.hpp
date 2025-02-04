@@ -56,8 +56,8 @@
 
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
-#define UNLOAD_CHUNK_BATCH 48
-#define LOAD_CHUNK_BATCH 48
+#define UNLOAD_CHUNK_BATCH 32
+#define LOAD_CHUNK_BATCH 32
 
 // Texture atlas info
 #define MAX_TEX_COLS 16

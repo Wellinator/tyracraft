@@ -8,6 +8,7 @@ class GameState {
   virtual ~GameState(){};
   virtual void init() = 0;
   virtual void afterInit() = 0;
+  virtual void fixedUpdate(const float& deltaTime){};
   virtual void update(const float& deltaTime) = 0;
   virtual void render() = 0;
 

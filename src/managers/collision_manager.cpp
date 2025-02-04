@@ -8,7 +8,7 @@ AABBTree* g_AABBTree = nullptr;
 
 void CollisionManager_initTree() {
   g_AABBTree = new AABBTree();
-  g_AABBTree->growth = 8.0f;
+  g_AABBTree->growth = 1.5f;
 };
 
 void CollisionManager_unloadTree() {

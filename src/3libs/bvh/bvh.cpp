@@ -711,7 +711,7 @@ void AABBTree::intersectLine(const Vec4 p1, const Vec4 p2,
   std::vector<index_t> stack;
   stack.reserve(128);
   if (_root != invalid_index) {
-    stack.push_back(_root);
+    stack.emplace_back(_root);
   }
   while (!stack.empty()) {
     // pop one node
@@ -721,12 +721,12 @@ void AABBTree::intersectLine(const Vec4 p1, const Vec4 p2,
     // if the ray and aabb overlap
     if (n.aabb.intersectLine(p1, p2, n.aabb)) {
       if (n.is_leaf()) {
-        overlaps.push_back(ni);
+        overlaps.emplace_back(ni);
       } else {
         assert(n.child[0] != invalid_index);
         assert(n.child[1] != invalid_index);
         stack.back() = n.child[0];
-        stack.push_back(n.child[1]);
+        stack.emplace_back(n.child[1]);
         continue;
       }
     }

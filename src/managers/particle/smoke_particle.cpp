@@ -3,6 +3,7 @@
 #include "managers/particle/smoke_particle.hpp"
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
+#include "timer.hpp"
 
 using Tyra::Color;
 
@@ -31,20 +32,20 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
 
   switch (orientation) {
     case BlockOrientation::North:
-      offsetCorrection.set(0.0F, offsetVAtSide, offsetH);
+      offsetCorrection.set(0.0F, offsetVAtSide, offsetH, 1.0f);
       break;
     case BlockOrientation::South:
-      offsetCorrection.set(0.0F, offsetVAtSide, -offsetH);
+      offsetCorrection.set(0.0F, offsetVAtSide, -offsetH, 1.0f);
       break;
     case BlockOrientation::West:
-      offsetCorrection.set(offsetH, offsetVAtSide, 0.0F);
+      offsetCorrection.set(offsetH, offsetVAtSide, 0.0F, 1.0f);
       break;
     case BlockOrientation::East:
-      offsetCorrection.set(-offsetH, offsetVAtSide, 0.0F);
+      offsetCorrection.set(-offsetH, offsetVAtSide, 0.0F, 1.0f);
       break;
     case BlockOrientation::Top:
     default:
-      offsetCorrection.set(0.0F, offsetVOnTop, 0.0F);
+      offsetCorrection.set(0.0F, offsetVOnTop, 0.0F, 1.0f);
       break;
   }
 
@@ -52,6 +53,8 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   Vec4 center =
       pBlock->minCorner + ((pBlock->maxCorner - pBlock->minCorner) / 2);
   _position = center + offsetCorrection;
+  _prevPosition.set(_position);
+  _targetPosition.set(_position);
 
   const float color = Tyra::Math::randomi(35, 150);
   t_color = new Color(color, color, color);
@@ -59,13 +62,18 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
 
 SmokeParticle::~SmokeParticle() { delete t_color; }
 
-void SmokeParticle::update(const float deltaTime, const Vec4* camPos) {
-  _elapsedTime += deltaTime;
+void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
+  // Reset lerp state
+  _prevPosition.set(_position);
 
-  if (_elapsedTime > _lifeTime) {
-    expired = true;
-    return;
-  }
+  // Update position without gravity
+  const float particleSpeed = 45.0F;
+  const float instantSpeed = particleSpeed * fixedDeltaTime;
+  _velocity += _direction * instantSpeed;
+
+  // Define next position based on velocity
+  const auto nextPosition = _position + (_velocity * fixedDeltaTime);
+  _targetPosition.set(nextPosition);
 
   // Updates smoke UV based on lifeTime
   const u8 tempStage = getStage();
@@ -73,20 +81,20 @@ void SmokeParticle::update(const float deltaTime, const Vec4* camPos) {
     stageIndex = tempStage;
     updateUV(stageIndex);
   }
+}
 
-  M4x4 model, translation, scale;
+void SmokeParticle::update(const float deltaTime, const Vec4* camPos) {
+  _elapsedTime += deltaTime;
+  if (_elapsedTime > _lifeTime) {
+    expired = true;
+    return;
+  }
 
-  // Update position without gravity
-  const float particleSpeed = 45.0F;
-  const float instantSpeed = particleSpeed * deltaTime;
-  _velocity += _direction * instantSpeed;
+  _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-  // // Define next position based on velocity
-  const auto nextPosition = _position + (_velocity * deltaTime);
-  _position = nextPosition;
+  M4x4 model, scale;
 
-  // Set new scale based on lifetime
-
+  // Set scale
   scale.identity();
   scale.scaleX(size);
   scale.scaleY(size);

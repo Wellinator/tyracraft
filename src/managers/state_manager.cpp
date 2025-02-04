@@ -3,10 +3,13 @@
 StateManager::StateManager(Engine* t_engine, Camera* t_camera) {
   this->context = new Context(t_engine, t_camera);
   this->context->setState(new StateSplashScreen(this->context));
-
 }
 
 StateManager::~StateManager() { delete this->context; }
+
+void StateManager::fixedUpdate(const float& fixedDeltaTime) {
+  this->context->fixedUpdate(fixedDeltaTime);
+}
 
 void StateManager::update(const float& deltaTime) {
   this->context->update(deltaTime);

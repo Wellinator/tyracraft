@@ -30,6 +30,7 @@ class ParticlesManager {
 
   void init(Renderer* renderer, Texture* t_blocksTexture,
             const std::string& texturePack);
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float deltaTime, Camera* t_camera);
   void tick();
   void render();
@@ -64,7 +65,6 @@ class ParticlesManager {
   std::vector<Vec4> vertex;
   std::vector<Vec4> uv;
 
-  void updateParticles(const float deltaTime, const Vec4* camPos);
   void destroyExpiredParticles();
   void destroyAllParticles();
 

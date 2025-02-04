@@ -66,8 +66,7 @@ void MazePlayingState::update(const float& deltaTime) {
   stateGamePlay->world->update(stateGamePlay->player,
                                stateGamePlay->context->t_camera, deltaTime);
 
-  stateGamePlay->player->update(deltaTime, playerMovementDirection,
-                                stateGamePlay->context->t_camera);
+  stateGamePlay->player->update(deltaTime, stateGamePlay->context->t_camera);
 
   stateGamePlay->context->t_camera->setPosition(
       *stateGamePlay->player->mesh->getPosition());

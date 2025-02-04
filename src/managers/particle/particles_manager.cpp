@@ -31,40 +31,32 @@ void ParticlesManager::loadParticlesTexture(const std::string& texturePack) {
 
 Texture* ParticlesManager::getParticlesTexture() { return particlesTexture; }
 
-void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
-  updateParticles(deltaTime, &t_camera->position);
-};
-
-void ParticlesManager::tick() { destroyExpiredParticles(); }
-
-void ParticlesManager::updateParticles(const float deltaTime,
-                                       const Vec4* camPos) {
-  // colors.clear();
-  // vertex.clear();
-  // uv.clear();
-
-  aliveParticlesCounter = ParticlesManager::Particles.size();
-
-  for (size_t i = 0; i < ParticlesManager::Particles.size(); i++) {
+void ParticlesManager::fixedUpdate(const float& fixedDeltaTime) {
+  auto counter = ParticlesManager::Particles.size();
+  for (size_t i = 0; i < counter; i++) {
     Particle* p = ParticlesManager::Particles[i];
 
     // Prevent to update an expired particle
-    if (p->expired == true) {
+    if (p->expired) continue;
+    p->fixedUpdate(fixedDeltaTime);
+  }
+};
+
+void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
+  aliveParticlesCounter = ParticlesManager::Particles.size();
+  for (size_t i = 0; i < ParticlesManager::Particles.size(); i++) {
+    Particle* p = ParticlesManager::Particles[i];
+    // Prevent to update an expired particle
+    if (p->expired) {
       particlesHasChanged = true;
       aliveParticlesCounter--;
       continue;
     }
-
-    p->update(deltaTime, camPos);
-
-    // if (particle.isAllive()) {
-    //   colors.insert(colors.end(), 6, *particle.t_color);
-    //   vertex.insert(vertex.end(), std::begin(particle.vertex),
-    //                 std::end(particle.vertex));
-    //   uv.insert(uv.end(), std::begin(particle.uv), std::end(particle.uv));
-    // }
+    p->update(deltaTime, &t_camera->position);
   }
 };
+
+void ParticlesManager::tick() { destroyExpiredParticles(); }
 
 void ParticlesManager::destroyExpiredParticles() {
   if (particlesHasChanged) {
@@ -79,10 +71,6 @@ void ParticlesManager::destroyExpiredParticles() {
 
     part.shrink_to_fit();
     particlesHasChanged = false;
-
-    // colors.shrink_to_fit();
-    // vertex.shrink_to_fit();
-    // uv.shrink_to_fit();
   }
 }
 

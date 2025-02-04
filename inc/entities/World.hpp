@@ -83,6 +83,8 @@ class World {
   DayNightCycleManager dayNightCycleManager;
 
   void init(Renderer* t_renderer, ItemRepository* itemRepository);
+  void fixedUpdate(Player* t_player, Camera* t_camera,
+                   const float fixedDeltaTime);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
   void tick(Player* t_player, Camera* t_camera);
   void renderOpaque();

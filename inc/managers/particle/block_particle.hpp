@@ -4,6 +4,7 @@
 #include "managers/particle/particle.hpp"
 #include "managers/collision_manager.hpp"
 #include "utils.hpp"
+#include "timer.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -13,13 +14,14 @@ using bvh::index_t;
 class BlockParticle : public Particle {
  public:
   const float _scale = Tyra::Math::randomf(0.5F, 1.0F);
+  Vec4 _prevPosition = Vec4(0.0F), _targetPosition = Vec4(0.0F);
 
   BlockParticle(Block* pBlock) : Particle(PaticleType::Block) {
     // Define life time
-    _lifeTime = Tyra::Math::randomf(0.3F, 0.7F);
+    _lifeTime = Tyra::Math::randomf(0.6F, 1.0F);
 
     // Define if is collidable
-    collidable = Utils::Probability(0.1);
+    collidable = Utils::Probability(0.8);
 
     // Set particle initial velocity
     // Initiate with a random value from 5 to 15 to lift it on spawn
@@ -37,7 +39,8 @@ class BlockParticle : public Particle {
                        pBlock->position.z + (Tyra::Math::randomf(-4.5F, 4.5F)));
       _direction = _position - pBlock->position;
     }
-
+    _prevPosition.set(_position);
+    _targetPosition.set(_position);
     _direction.normalize();
 
     const float UVSscale = 1.0F / 16.0F;
@@ -63,99 +66,98 @@ class BlockParticle : public Particle {
     t_color = &pBlock->baseColor;
   };
 
-  void update(const float deltaTime, const Vec4* camPos) {
-    M4x4 model, translation, rotation, scale;
-    const auto PARTICLE_GRAVITY = GRAVITY * 0.9F * deltaTime;
-    const float particleSpeed = 65.0F;
-    const float instantSpeed = particleSpeed * deltaTime;
+  void fixedUpdate(const float fixedDeltaTime) {
+    // Reset lerp state
+    _prevPosition.set(_position);
 
+    const auto PARTICLE_GRAVITY = GRAVITY * 0.9F * fixedDeltaTime;
+    const float particleSpeed = 65.0F;
+    const float instantSpeed = particleSpeed * fixedDeltaTime;
+
+    // Update position
+    _velocity += _direction * instantSpeed;
+
+    // Reduce gravity to 85%, it was too huge for particles
+    _velocity += PARTICLE_GRAVITY;
+
+    // Define next position based on velocity
+    const auto nextPosition = _position + (_velocity * fixedDeltaTime);
+
+    if (collidable) {
+      float closestHitDistance = -1.0f;
+      const float maxCollidableDistance = _position.distanceTo(nextPosition);
+      u8 willCollide = false;
+      Vec4 finalHitPosition;
+
+      // Broad phase
+      const Vec4 segmentStart = _position;
+      const Vec4 segmentEnd = nextPosition;
+
+      std::vector<index_t> ni;
+      g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
+
+      Ray ray = Ray(_position, _direction);
+
+      for (u16 i = 0; i < ni.size(); i++) {
+        Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+        if (!entity->collidable) continue;
+
+        // Narrow Phase
+        float hitDistance;
+        if (ray.intersectBox(entity->minCorner, entity->maxCorner,
+                             &hitDistance) &&
+            hitDistance < maxCollidableDistance) {
+          if (closestHitDistance == -1.0F || hitDistance < closestHitDistance) {
+            closestHitDistance = hitDistance;
+            willCollide = true;
+            finalHitPosition.set(ray.at(hitDistance));
+          }
+        }
+      }
+
+      if (willCollide) {
+        _targetPosition.set(finalHitPosition);
+        _direction = -_direction;
+      } else {
+        _targetPosition = nextPosition;
+      }
+    } else {
+      _targetPosition = nextPosition;
+    }
+  }
+
+  void update(const float deltaTime, const Vec4* camPos) {
     _elapsedTime += deltaTime;
 
     if (_elapsedTime > _lifeTime) {
       expired = true;
-    } else {
-      // Update position
-      _velocity += _direction * instantSpeed;
+      return;
+    }
 
-      // Reduce gravity to 85%, it was too huge for particles
-      _velocity += PARTICLE_GRAVITY;
+    M4x4 model, scale;
+    model.identity();
 
-      // Define next position based on velocity
-      const auto nextPosition = _position + (_velocity * deltaTime);
+    _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-      if (collidable) {
-        float closestHitDistance = -1.0f;
-        const float maxCollidableDistance = _position.distanceTo(nextPosition);
-        u8 willCollide = false;
-        Vec4 finalHitPosition;
+    // Set scale matrix
+    scale.identity();
+    scale.scaleX(_scale);
+    scale.scaleY(_scale);
 
-        // Broad phase
-        const Vec4 segmentStart = _position;
-        const Vec4 segmentEnd = nextPosition;
+    /**
+     * Apply billboard rotation to particle of type equals to
+     * PaticleType::Block
+     */
+    M4x4 result;
+    M4x4 temp;
+    M4x4::lookAt(&temp, _position, *camPos);
+    Utils::inverseMatrix(&result, &temp);
 
-        std::vector<index_t> ni;
-        g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
+    // Set particle model. M = R * S;
+    model = result * scale;
 
-        Ray ray = Ray(_position, _direction);
-
-        for (u16 i = 0; i < ni.size(); i++) {
-          Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-          if (!entity->collidable) continue;
-
-          // Narrow Phase
-          float hitDistance;
-          if (ray.intersectBox(entity->minCorner, entity->maxCorner,
-                               &hitDistance) &&
-              hitDistance < maxCollidableDistance) {
-            if (closestHitDistance == -1.0F ||
-                hitDistance < closestHitDistance) {
-              closestHitDistance = hitDistance;
-              willCollide = true;
-              finalHitPosition.set(ray.at(hitDistance));
-            }
-          }
-        }
-
-        if (willCollide) {
-          _position.set(finalHitPosition);
-          _direction = -_direction;
-        } else {
-          _position = nextPosition;
-        }
-      } else {
-        _position = nextPosition;
-      }
-
-      // Set scale matrix
-      scale.identity();
-      scale.scaleX(_scale);
-      scale.scaleY(_scale);
-
-      /**
-       * Apply billboard rotation to particle of type equals to
-       * PaticleType::Block
-       */
-      M4x4 result;
-      M4x4 temp;
-      M4x4::lookAt(&temp, _position, *camPos);
-      Utils::inverseMatrix(&result, &temp);
-
-      // Set particle model. M = R * S;
-      model = result * scale;
-
-      // else {
-      //   // Set particle position
-      //   translation.identity();
-      //   reinterpret_cast<Vec4*>(&translation.data[3 * 4])->set(_position);
-
-      //   // Set particle model. M = T * R * S;
-      //   // model = translation * rotation * scale;
-      //   model = translation * scale;
-      // }
-
-      for (size_t j = 0; j < Particle::DRAW_DATA_COUNT; j++) {
-        vertex[j] = model * Particle::rawData[j];
-      }
+    for (size_t j = 0; j < Particle::DRAW_DATA_COUNT; j++) {
+      vertex[j] = model * Particle::rawData[j];
     }
   };
 };

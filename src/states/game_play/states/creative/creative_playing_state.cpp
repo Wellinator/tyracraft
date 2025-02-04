@@ -21,6 +21,16 @@ void CreativePlayingState::init() {
   tickManager.onTick = [this]() { tick(); };
 }
 
+void CreativePlayingState::fixedUpdate(const float& fixedDeltaTime) {
+  stateGamePlay->world->fixedUpdate(
+      stateGamePlay->player, stateGamePlay->context->t_camera, fixedDeltaTime);
+
+  if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
+
+  stateGamePlay->player->fixedUpdate(fixedDeltaTime, playerMovementDirection,
+                                     stateGamePlay->context->t_camera);
+}
+
 void CreativePlayingState::update(const float& deltaTime) {
   if (deltaTime <= 0.0F) return;
   elapsedTimeInSec += deltaTime;
@@ -30,14 +40,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   stateGamePlay->world->update(stateGamePlay->player,
                                stateGamePlay->context->t_camera, deltaTime);
-
-  if (isInventoryOpened()) playerMovementDirection = Vec4(0.0F);
-
-  stateGamePlay->player->update(deltaTime, playerMovementDirection,
-                                stateGamePlay->context->t_camera);
-
+  stateGamePlay->player->update(deltaTime, stateGamePlay->context->t_camera);
   stateGamePlay->context->t_camera->setPosition(
-      *stateGamePlay->player->mesh->getPosition());
+      stateGamePlay->player->position);
   stateGamePlay->context->t_camera->setLookDirectionByPad(
       &stateGamePlay->context->t_engine->pad, deltaTime);
 

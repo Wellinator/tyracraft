@@ -14,6 +14,7 @@ class Context {
   Context(Engine* t_engine, Camera* t_camera);
   ~Context();
 
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void render();
   void setState(GameState* newState);

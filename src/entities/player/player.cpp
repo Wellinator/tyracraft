@@ -6,6 +6,7 @@
 #include "3libs/bvh/bvh.h"
 #include "managers/settings_manager.hpp"
 #include "utils.hpp"
+#include "timer.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -49,7 +50,6 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
 
   // TODO: refactor to handled item, temp stuff...
   // this->handledItem->init(t_renderer);
-
   stpip.setRenderer(&t_renderer->core);
 
   // Set render pip
@@ -79,55 +79,60 @@ Player::~Player() {
 // Methods
 // ----
 
-void Player::update(const float& deltaTime, const Vec4& movementDir,
-                    Camera* t_camera) {
-  isMoving = movementDir.length() > 0;
+void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
+                         Camera* t_camera) {
+  // Reset lerp state
+  // set new prev to old target
+  _prevPosition.set(_targetPosition);
 
-  if (isMoving) {
-    Vec4 nextPlayerPos = getNextPosition(
-        deltaTime, movementDir, t_camera->unitCirclePosition.getNormalized());
+  if (movementDir.length()) {
+    // Update player speed
+    const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
+    const float _maxAcc = isRunning ? runningAcceleration : acceleration;
 
-    if (nextPlayerPos.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-      const bool hasChangedPosition = updatePosition(deltaTime, nextPlayerPos);
-
-      if (hasChangedPosition) {
-        if (lastTimePlayedWalkSfx > 0.35) {
-          if (isOnWater() || isUnderWater()) {
-            playSwimSfx();
-          } else if (isOnGround && underEntity &&
-                     underEntity->entity_type == EntityType::Block) {
-            playWalkSfx(((Block*)underEntity)->getType());
-          }
-
-          setWalkingAnimation();
-          lastTimePlayedWalkSfx = 0.0F;
-        } else {
-          lastTimePlayedWalkSfx += deltaTime;
-        }
-      }
+    // Accelerate speed until mach max
+    if (speed < _maxSpeed) {
+      speed += _maxAcc * fixedDeltaTime;
+    } else if (speed > _maxSpeed) {
+      // Deaccelerate speed to new max
+      speed = _maxSpeed;
+      // speed -= _maxAcc * fixedDeltaTime;
+      // if (speed < _maxSpeed) speed = _maxSpeed;
     }
   } else {
     // Deaccelerate player speed
     if (speed > 0) {
-      speed -= acceleration * deltaTime;
+      speed -= acceleration * fixedDeltaTime;
     } else if (speed < 0) {
       speed = 0;
     }
     unsetWalkingAnimation();
   }
 
-  updateFovBySpeed();
+  const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
+  updateTerrainHeightAtPlayerPosition(nextYPos);
+  if (!isFlying) updateYPosition(nextYPos);
 
+  Vec4 nextXZPos =
+      getNextXZPosition(fixedDeltaTime, movementDir,
+                        t_camera->unitCirclePosition.getNormalized());
+  const u8 moved = updateXZPosition(fixedDeltaTime, nextXZPos);
+  if (moved) onMoved();
+
+  // TODO: move to player render pip
   if (t_camera->getCamType() != CamType::FirstPerson) {
     mesh.get()->rotation.identity();
     float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
                                     t_camera->unitCirclePosition.z);
     mesh->rotation.rotateY(theta);
   }
+}
 
-  const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
-  updateTerrainHeightAtPlayerPosition(nextYPos);
-  if (!isFlying) updateGravity(nextYPos);
+void Player::update(const float& deltaTime, Camera* t_camera) {
+  position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
+  mesh->getPosition()->set(position);
+
+  updateFovBySpeed();
 
   renderPip->update(deltaTime, t_camera);
   animate(t_camera->getCamType());
@@ -143,40 +148,43 @@ void Player::tick() {
 
 void Player::render() { renderPip->render(t_renderer); }
 
-Vec4 Player::getNextPosition(const float& deltaTime, const Vec4& sensibility,
-                             const Vec4& camDir) {
-  const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
-  const float _maxAcc = isRunning ? runningAcceleration : acceleration;
+const BBox Player::getHitBox() {
+  M4x4 translation = M4x4::Identity;
+  translation.translate(_targetPosition);
+  return bbox->getTransformed(translation);
+};
 
-  // Accelerate speed until mach max
-  if (speed < _maxSpeed) {
-    speed += _maxAcc * deltaTime;
-  } else if (speed > _maxSpeed) {
-    // Deaccelerate speed to new max
-    speed -= _maxAcc * deltaTime;
-    if (speed < _maxSpeed) speed = _maxSpeed;
-  }
+const BBox Player::getHitBox(const M4x4& model) {
+  return bbox->getTransformed(model);
+};
 
+Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
+                               const Vec4& camDir) {
   Vec4 direction =
       Vec4((camDir.x * -sensibility.z) + (camDir.z * -sensibility.x), 0.0F,
            (camDir.z * -sensibility.z) + (camDir.x * sensibility.x))
           .getNormalized();
 
-  Vec4 result = direction * (speed * sensibility.length() * deltaTime);
+  Vec4 newVelocity = direction * (speed * sensibility.length()) * deltaTime;
+  velocity.x = newVelocity.x;
+  velocity.z = newVelocity.z;
 
   if (_isUnderWater || _isOnWater) {
-    result *= IN_WATER_FRICTION;
+    velocity.x *= IN_WATER_FRICTION;
+    velocity.z *= IN_WATER_FRICTION;
   }
 
-  return result + *mesh->getPosition();
+  Vec4 result = _targetPosition + Vec4(velocity.x, 0.0f, velocity.z);
+
+  return result.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS) ? result
+                                                          : _targetPosition;
 }
 
-Vec4 Player::getNextVrticalPosition(const float& deltaTime) {
-  // Accelerate the velocity: velocity += gravConst * deltaTime
+float Player::getNextVrticalPosition(const float& deltaTime) {
   if (isFlying) {
-    return *mesh->getPosition();
+    return _targetPosition.y;
   } else {
-    velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+    velocity.y += GRAVITY.y * deltaTime;
   }
 
   if (_isUnderWater) {
@@ -185,22 +193,23 @@ Vec4 Player::getNextVrticalPosition(const float& deltaTime) {
     velocity.y *= GRAVITY_ON_WATER_FACTOR;
   }
 
-  // Increase the position by velocity
-  Vec4 nextVerticalPosition = *mesh->getPosition() + (velocity * deltaTime);
-  return nextVerticalPosition;
+  return _targetPosition.y + (velocity.y * deltaTime);
 }
 
 /** Update player position by gravity and update index of current block */
-void Player::updateGravity(const Vec4 nextVerticalPosition) {
-  Vec4 newPosition = nextVerticalPosition;
+void Player::updateYPosition(const float nextYPos) {
+  float resultY = nextYPos;
   const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
   const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
 
-  if (newPosition.y + bbox->getHeight() > worldMaxHeight ||
-      newPosition.y < worldMinHeight) {
+  if (resultY + bbox->getHeight() > worldMaxHeight ||
+      resultY < worldMinHeight) {
     // Maybe has died, teleport to spaw area
     TYRA_LOG("\nReseting player position to:\n");
-    mesh->getPosition()->set(spawnArea);
+    position.set(spawnArea);
+    _prevPosition.set(position);
+    _targetPosition.set(position);
+
     velocity = Vec4(0.0f, 0.0f, 0.0f);
     return;
   }
@@ -208,29 +217,46 @@ void Player::updateGravity(const Vec4 nextVerticalPosition) {
   const float playerHeight = Utils::Abs(bbox->getHeight());
   const float heightLimit = terrainHeight.maxHeight - playerHeight;
 
-  if (newPosition.y < terrainHeight.minHeight) {
-    newPosition.y = terrainHeight.minHeight;
+  if (resultY < terrainHeight.minHeight) {
+    resultY = terrainHeight.minHeight;
     velocity.y = 0.0f;
     isOnGround = true;
-  } else if (newPosition.y >= heightLimit) {
-    newPosition.y = heightLimit;
+  } else if (resultY >= heightLimit) {
+    resultY = heightLimit;
     velocity.y = -velocity.y;
     isOnGround = false;
   }
 
   // Finally updates gravity after checks
-  mesh->getPosition()->set(newPosition);
+  _targetPosition.y = resultY;
+}
+
+void Player::onMoved() {
+  if (lastTimePlayedWalkSfx > 0.35) {
+    if (isOnWater() || isUnderWater()) {
+      playSwimSfx();
+    } else if (isOnGround && underEntity &&
+               underEntity->entity_type == EntityType::Block) {
+      playWalkSfx(((Block*)underEntity)->getType());
+    }
+
+    setWalkingAnimation();
+    lastTimePlayedWalkSfx = 0.0F;
+  } else {
+    lastTimePlayedWalkSfx +=
+        TyraCraft::Timer::getInstance()->getFixedDeltaTime();
+  }
 }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime) {
-  const Vec4 upDir = -GRAVITY * 0.35F;
+  const Vec4 upDir = -GRAVITY;
   this->fly(deltaTime, terrainHeight, upDir);
 }
 
 /** Fly in down direction */
 void Player::flyDown(const float& deltaTime) {
-  const Vec4 downDir = GRAVITY * 0.35F;
+  const Vec4 downDir = GRAVITY;
   this->fly(deltaTime, terrainHeight, downDir);
 }
 
@@ -238,65 +264,79 @@ void Player::flyDown(const float& deltaTime) {
 void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
-  Vec4 newYPosition = *mesh->getPosition() + (direction * deltaTime);
+  Vec4 newPos = _targetPosition + (direction * deltaTime);
   const float playerHeight = Utils::Abs(bbox->getHeight());
 
   // Is player inside world bbox?
-  if (newYPosition.y + playerHeight >=
-          (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
-      newYPosition.y < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
+  if (newPos.y + playerHeight >= (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
+      newPos.y < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
     return;
   } else {
-    if (newYPosition.y < terrainHeight.minHeight) {
-      newYPosition.y = terrainHeight.minHeight;
+    if (newPos.y < terrainHeight.minHeight) {
+      newPos.y = terrainHeight.minHeight;
       this->isOnGround = true;
       this->isFlying = false;
     }
 
-    if (newYPosition.y + playerHeight > terrainHeight.maxHeight) {
-      newYPosition.y = terrainHeight.maxHeight - playerHeight - 1.0F;
+    if (newPos.y + playerHeight > terrainHeight.maxHeight) {
+      newPos.y = terrainHeight.maxHeight - playerHeight - 1.0F;
     }
 
-    mesh->getPosition()->set(newYPosition);
+    _targetPosition.set(newPos);
   }
 }
 
-u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
-                          u8 isColliding) {
-  Vec4 currentPlayerPos = *this->mesh->getPosition();
-  Vec4 playerMin;
-  Vec4 playerMax;
+u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
+                            u8 isColliding) {
+  const float maxCollidableDistance = _targetPosition.distanceTo(nextPlayerPos);
+  const Vec4 positionDiff = nextPlayerPos - _targetPosition;
+  const Vec4 direction = positionDiff.getNormalized();
+
+  float shortestDistance = -1.0f;
+  float tempHitDistance = -1.0f;
+  u8 autoJump = false;
+
+  // Broad phase
+  // Temp custom model expanded by player volocity
+  M4x4 model = M4x4::Identity;
+  Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
+                         std::abs(positionDiff.z));
+  Vec4 scaleFraction = (deltaScale / hitBoxDimensions);
+  model.scale(scaleFraction + Vec4(1.0F, 1.0F, 1.0F));
+  model.translate(_targetPosition + (positionDiff * hitBoxDimensions));
+
+  Vec4 _min, _max;
+  BBox tempBBox = getHitBox(model);
+  tempBBox.getMinMax(&_min, &_max);
+
+  bvh::AABB _aabb;
+  _aabb.minx = _min.x;
+  _aabb.miny = _min.y;
+  _aabb.minz = _min.z;
+  _aabb.maxx = _max.x;
+  _aabb.maxy = _max.y;
+  _aabb.maxz = _max.z;
+
+  std::vector<index_t> ni;
+  g_AABBTree->find_overlaps(_aabb, ni);
+
+  // Narrow phase
+  Vec4 playerMin, playerMax;
   BBox playerBB = getHitBox();
   playerBB.getMinMax(&playerMin, &playerMax);
 
-  u8 canJump = false;
-
-  // Set ray props
-  Vec4 rayOrigin = ((playerMax - playerMin) / 2) + playerMin;
-  Vec4 rayDir = (nextPlayerPos - currentPlayerPos).getNormalized();
-
-  float finalHitDistance = -1.0f;
-  float tempHitDistance = -1.0f;
-  const float maxCollidableDistance =
-      currentPlayerPos.distanceTo(nextPlayerPos);
+  const Vec4 origin = ((playerMax - playerMin) / 2) + playerMin;
 
   // Prepate the raycast
-  const Vec4 segmentStart = rayOrigin;
-  const Vec4 segmentEnd = (rayDir * (maxCollidableDistance * 2)) + rayOrigin;
-
-  // Broad phase
-  std::vector<index_t> ni;
-  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
+  const Ray ray = Ray(origin, direction);
 
   for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
+    Entity* entity = static_cast<Entity*>(g_AABBTree->user_data(ni[i]));
     if (!entity->collidable) continue;
 
     if (playerBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
         playerBB.getTopFace().axisPosition < entity->minCorner.y)
       continue;
-
-    const Ray ray = Ray(rayOrigin, rayDir);
 
     Vec4 tempInflatedMin;
     Vec4 tempInflatedMax;
@@ -308,47 +348,47 @@ u8 Player::updatePosition(const float& deltaTime, const Vec4& nextPlayerPos,
       // Is horizontally collidable?
       if (tempHitDistance > maxCollidableDistance) continue;
 
-      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
-        finalHitDistance = tempHitDistance;
-        canJump = entity->maxCorner.y > playerMin.y &&
-                  (entity->maxCorner.y - playerMin.y <= BLOCK_SIZE);
+      if (shortestDistance == -1.0f || tempHitDistance < shortestDistance) {
+        shortestDistance = tempHitDistance;
+        autoJump = entity->maxCorner.y > playerMin.y &&
+                   (entity->maxCorner.y - playerMin.y <= BLOCK_SIZE);
       }
     }
   }
 
   // Will collide somewhere?
-  if (finalHitDistance > -1.0f) {
-    const float timeToHit = finalHitDistance / this->speed;
+  if (shortestDistance > -1.0f) {
+    const float timeToHit = shortestDistance / speed;
 
     // Will collide this frame;
     if (timeToHit < deltaTime ||
-        finalHitDistance <
-            this->mesh->getPosition()->distanceTo(nextPlayerPos)) {
+        shortestDistance < _prevPosition.distanceTo(nextPlayerPos)) {
       if (isColliding) {
         return false;
       }
 
       // Check if can jump
-      if (canJump && isOnGround) {
+      if (autoJump && isOnGround) {
         jumpQuickly();
         return true;
       }
 
       // Try to move in separated axis;
       Vec4 moveOnXOnly =
-          Vec4(nextPlayerPos.x, currentPlayerPos.y, currentPlayerPos.z);
-      if (updatePosition(deltaTime, moveOnXOnly, true)) return true;
+          Vec4(nextPlayerPos.x, _targetPosition.y, _targetPosition.z);
+      if (updateXZPosition(deltaTime, moveOnXOnly, true)) return true;
 
       Vec4 moveOnZOnly =
-          Vec4(currentPlayerPos.x, currentPlayerPos.y, nextPlayerPos.z);
-      if (updatePosition(deltaTime, moveOnZOnly, true)) return true;
+          Vec4(_targetPosition.x, _targetPosition.y, nextPlayerPos.z);
+      if (updateXZPosition(deltaTime, moveOnZOnly, true)) return true;
 
       return false;
     }
   }
 
   // Apply new position;
-  mesh->getPosition()->set(nextPlayerPos);
+  _targetPosition.x = nextPlayerPos.x;
+  _targetPosition.z = nextPlayerPos.z;
   return true;
 }
 
@@ -364,8 +404,8 @@ void Player::updateTerrainHeightAtPlayerPosition(
 
   // Prepate the raycast
   const Vec4 offset = Vec4(0, 40, 0);
-  const Vec4 segmentStart = maxPlayer + offset;
-  const Vec4 segmentEnd = nextVrticalPosition - offset;
+  Vec4 segmentStart = maxPlayer + offset;
+  Vec4 segmentEnd = minPlayer - offset;
 
   std::vector<int32_t> ni;
   g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
@@ -471,12 +511,9 @@ void Player::loadMesh() {
 }
 
 void Player::loadStaticBBox() {
-  const float width = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
-  const float depth = (DUBLE_BLOCK_SIZE * 0.4F) / 2;
-  const float height = DUBLE_BLOCK_SIZE * 1.8F;
-
-  Vec4 minCorner = Vec4(-width, 0, -depth);
-  Vec4 maxCorner = Vec4(width, height, depth);
+  Vec4 minCorner = Vec4(-hitBoxDimensions.x, 0, -hitBoxDimensions.z);
+  Vec4 maxCorner =
+      Vec4(hitBoxDimensions.x, hitBoxDimensions.y, hitBoxDimensions.z);
 
   Vec4 vertices[8] = {Vec4(minCorner),
                       Vec4(maxCorner.x, minCorner.y, minCorner.z),
@@ -748,7 +785,7 @@ void Player::updateFovBySpeed() {
 }
 
 void Player::updateItemColorByCurrentPosition() {
-  const Vec4 pos = (*mesh->getPosition() / DUBLE_BLOCK_SIZE);
+  const Vec4 pos = (position / DUBLE_BLOCK_SIZE);
   const Vec4 offset = Vec4(std::floor(pos.x + 0.5f), std::floor(pos.y + 1),
                            std::floor(pos.z + 0.5f));
 

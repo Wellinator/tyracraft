@@ -15,6 +15,7 @@ class Particle {
   u8 isAllive() { return !expired; }
 
   // Vituals
+  virtual void fixedUpdate(const float fixedDeltaTime) = 0;
   virtual void update(const float deltaTime, const Vec4* camPos) = 0;
   void virtual renew() {
     _elapsedTime = 0;

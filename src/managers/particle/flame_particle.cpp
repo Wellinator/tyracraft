@@ -12,10 +12,6 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   // Define if is collidable
   collidable = false;
 
-  // Check if the torch is oriented and fix position
-  //   M4x4 rotation;
-  //   rotation.identity();
-
   Vec4 pos, offsetCorrection = Vec4(0, 0, 0);
   pBlock->pLevel->GetXYZFromPos(&pBlock->offset, &pos);
   const BlockOrientation orientation =
@@ -66,11 +62,9 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   t_color = &pBlock->baseColor;
 };
 
-void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
-  // const auto PARTICLE_GRAVITY = -GRAVITY * 0.3F * deltaTime;
-  // const float particleSpeed = 10.0F;
-  // const float instantSpeed = particleSpeed * deltaTime;
+void FlameParticle::fixedUpdate(const float fixedDeltaTime) { return; }
 
+void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
   _elapsedTime += deltaTime;
 
   if (_elapsedTime > _lifeTime) {
@@ -79,15 +73,6 @@ void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
   }
 
   M4x4 model, translation, scale;
-  // // Reduce gravity to 85%, it was too huge for particles
-  // _velocity += PARTICLE_GRAVITY;
-
-  // // Define next position based on velocity
-  // const auto nextPosition = _position + (_velocity * deltaTime);
-
-  // _position = nextPosition;
-
-  // Set new scale based on lifetime
 
   float _scale = START_SIZE * (1.0F - (_elapsedTime / _lifeTime));
   scale.identity();
@@ -105,16 +90,6 @@ void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
 
   // Set particle model. M = R * S;
   model = result * scale;
-
-  // else {
-  //   // Set particle position
-  //   translation.identity();
-  //   reinterpret_cast<Vec4*>(&translation.data[3 * 4])->set(_position);
-
-  //   // Set particle model. M = T * R * S;
-  //   // model = translation * rotation * scale;
-  //   model = translation * scale;
-  // }
 
   size_t size = Particle::DRAW_DATA_COUNT;
   const Vec4* data = Particle::rawData;

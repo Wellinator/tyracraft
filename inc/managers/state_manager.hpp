@@ -12,6 +12,7 @@ class StateManager {
   StateManager(Engine* t_engine, Camera* t_camera);
   ~StateManager();
 
+  void fixedUpdate(const float& deltaTime);
   void update(const float& deltaTime);
   void render();
 

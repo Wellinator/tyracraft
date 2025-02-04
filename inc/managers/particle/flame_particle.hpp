@@ -8,5 +8,6 @@ class FlameParticle : public Particle {
   const float START_SIZE = 3.0F;
 
   FlameParticle(Block* pBlock);
+  void fixedUpdate(const float fixedDeltaTime);
   void update(const float deltaTime, const Vec4* camPos);
 };

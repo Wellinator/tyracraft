@@ -155,7 +155,7 @@ void StateLoadingGame::initPlayer() {
   TYRA_LOG("Initiating player...");
 
   TYRA_LOG("Setting player position...");
-  this->stateGamePlay->player->mesh->getPosition()->set(
+  this->stateGamePlay->player->setPosition(
       this->stateGamePlay->world->getGlobalSpawnArea());
 
   TYRA_LOG("Setting player spawn area...");
