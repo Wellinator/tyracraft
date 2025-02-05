@@ -202,6 +202,7 @@ class Player : public Entity {
 
   float lastTimePlayedWalkSfx = 0.0F;
   void onMoved();
+  void onStopMoving();
   void playWalkSfx(const Blocks& blockType);
   void playSwimSfx();
   void playSplashSfx();

@@ -85,7 +85,16 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
   // set new prev to old target
   _prevPosition.set(_targetPosition);
 
-  if (movementDir.length()) {
+  // Vertical collision and movement
+  const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
+  updateTerrainHeightAtPlayerPosition(nextYPos);
+  if (!isFlying) updateYPosition(nextYPos);
+
+  isMoving = movementDir.length();
+  // Horizontal collision and movement
+  if (isMoving) {
+    onMoved();
+
     // Update player speed
     const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
     const float _maxAcc = isRunning ? runningAcceleration : acceleration;
@@ -96,28 +105,22 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
     } else if (speed > _maxSpeed) {
       // Deaccelerate speed to new max
       speed = _maxSpeed;
-      // speed -= _maxAcc * fixedDeltaTime;
-      // if (speed < _maxSpeed) speed = _maxSpeed;
     }
+
+    Vec4 nextXZPos =
+        getNextXZPosition(fixedDeltaTime, movementDir,
+                          t_camera->unitCirclePosition.getNormalized());
+    updateXZPosition(fixedDeltaTime, nextXZPos);
   } else {
+    onStopMoving();
+
     // Deaccelerate player speed
     if (speed > 0) {
       speed -= acceleration * fixedDeltaTime;
     } else if (speed < 0) {
       speed = 0;
     }
-    unsetWalkingAnimation();
   }
-
-  const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
-  updateTerrainHeightAtPlayerPosition(nextYPos);
-  if (!isFlying) updateYPosition(nextYPos);
-
-  Vec4 nextXZPos =
-      getNextXZPosition(fixedDeltaTime, movementDir,
-                        t_camera->unitCirclePosition.getNormalized());
-  const u8 moved = updateXZPosition(fixedDeltaTime, nextXZPos);
-  if (moved) onMoved();
 
   // TODO: move to player render pip
   if (t_camera->getCamType() != CamType::FirstPerson) {
@@ -232,7 +235,7 @@ void Player::updateYPosition(const float nextYPos) {
 }
 
 void Player::onMoved() {
-  if (lastTimePlayedWalkSfx > 0.35) {
+  if (lastTimePlayedWalkSfx > 0.35f) {
     if (isOnWater() || isUnderWater()) {
       playSwimSfx();
     } else if (isOnGround && underEntity &&
@@ -247,6 +250,8 @@ void Player::onMoved() {
         TyraCraft::Timer::getInstance()->getFixedDeltaTime();
   }
 }
+
+void Player::onStopMoving() { unsetWalkingAnimation(); }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime) {
