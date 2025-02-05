@@ -1358,6 +1358,7 @@ void World::breakTargetBlock(const float& deltaTime) {
     if (breaking_time_pessed >= breakingTime) {
       // Remove block;
       removeBlock(targetBlock);
+      targetBlock = nullptr;
 
       // Target block has changed, reseting the pressed time;
       breaking_time_pessed = 0;
@@ -1394,6 +1395,7 @@ void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
     if (breaking_time_pessed >= breakingTime) {
       // Remove block;
       removeBlock(targetBlock);
+      targetBlock = nullptr;
 
       // Target block has changed, reseting the pressed time;
       breaking_time_pessed = 0;
@@ -1864,7 +1866,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
     }
   }
 
-  if (hitedABlock) {
+  if (hitedABlock && tempTargetBlock) {
     targetBlock = tempTargetBlock;
     targetBlock->isTarget = true;
     targetBlock->distance = tempTargetDistance;
