@@ -2,11 +2,13 @@
 #include "managers/save_manager.hpp"
 #include "managers/settings_manager.hpp"
 #include "managers/notification/notification_manager.hpp"
+#include "managers/post-fx/post_fx_manager.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
-    : PlayingStateBase(t_context) {}
+    : PlayingStateBase(t_context),
+      postFxManager(t_context->context->t_engine) {}
 
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -65,11 +67,16 @@ void CreativePlayingState::render() {
   stateGamePlay->world->renderOpaque();
   stateGamePlay->world->mobManager.render();
   stateGamePlay->player->render();
+  stateGamePlay->world->particlesManager.render();
 
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  stateGamePlay->world->particlesManager.render();
+  // PostFX stuff
+  PostFxManager::getInstance()->render();
+
+  stateGamePlay->world->renderOpaque();
+
   renderCreativeUi();
 
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();

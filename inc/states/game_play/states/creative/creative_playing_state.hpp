@@ -3,6 +3,7 @@
 #include "states/game_play/states/playing_state_base.hpp"
 #include "states/game_play/states/creative/creative_audio_listener.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/post-fx/post_fx_manager.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include "managers/tick_manager.hpp"
@@ -51,6 +52,8 @@ class CreativePlayingState : public PlayingStateBase {
    *
    */
   void printMemoryInfoToLog();
+
+  PostFxManager postFxManager;
 
   CreativeAudioListener creativeAudioListener;
   u32 audioListenerId;
