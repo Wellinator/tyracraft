@@ -19,12 +19,10 @@ PostFxManager::~PostFxManager(){};
 
 void PostFxManager::render() {
   // Set GS settings
-  qword_t packets[5] ALIGNED(64);
+  qword_t packets[20] ALIGNED(64);
   qword_t* q = packets;
 
   q = draw_disable_tests(q, 0, &pEngine->renderer.core.gs.zBuffer);
-
-  q = draw_pixel_alpha_control(q, DRAW_DISABLE);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_wait_fast();
@@ -35,7 +33,7 @@ void PostFxManager::render() {
   // Reset GS old settings
   q = packets;
 
-  PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+  PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
   q++;
 
   // Alpha Blending
@@ -45,31 +43,12 @@ void PostFxManager::render() {
               GS_REG_ALPHA_1);
   q++;
 
-  PACK_GIFTAG(q, GS_SET_PABE(DRAW_ENABLE), GS_REG_PABE);
-  q++;
-
-  // Reenable ztest
-  PACK_GIFTAG(
-      q,
-      GS_SET_TEST(DRAW_ENABLE, ATEST_METHOD_NOTEQUAL, 0x00,
-                  ATEST_KEEP_FRAMEBUFFER, DRAW_DISABLE, DRAW_DISABLE,
-                  DRAW_ENABLE, pEngine->renderer.core.gs.zBuffer.method),
-      GS_REG_TEST);
-  q++;
-
-  // Setup whole texture clamping
-  // texwrap_t wrap;
-  // wrap.horizontal = WRAP_CLAMP;
-  // wrap.vertical = WRAP_CLAMP;
-  // wrap.minu = wrap.maxu = 0;
-  // wrap.minv = wrap.maxv = 0;
-
-  // Texture wrapping/clamping
   PACK_GIFTAG(q, GS_SET_CLAMP(WRAP_CLAMP, WRAP_CLAMP, 0, 0, 0, 0),
-              GS_REG_CLAMP);
+              GS_REG_CLAMP_1);
   q++;
-  PACK_GIFTAG(q, GS_SET_TEXA(0x80, ALPHA_EXPAND_NORMAL, 0x80), GS_REG_TEXA);
-  q++;
+
+  q = draw_texture_expand_alpha(q, 0x80, ALPHA_EXPAND_NORMAL, 0x80);
+  q = draw_enable_tests(q, 0, &pEngine->renderer.core.gs.zBuffer);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_wait_fast();
@@ -106,9 +85,9 @@ void PostFxManager::init() {
   minOffset = std::max(0, minOffset);
   maxOffset = std::min(length - 1, maxOffset);
 
+
   // Calculate step size for linear increment
   float step = maxValue / (maxOffset - minOffset);
-
   // Fill linear values within the offset range
   for (int i = minOffset; i <= maxOffset; ++i) {
     float value = (i - minOffset) * step;
@@ -116,7 +95,7 @@ void PostFxManager::init() {
         asInteger ? std::round(value) : std::round(value * 10000.0) / 10000.0;
   }
 
-  // // Fill exponential values within the offset range
+  // Fill exponential values within the offset range
   // for (int i = minOffset; i <= maxOffset; ++i) {
   //   float normalizedIndex =
   //       static_cast<float>(i - minOffset) / (maxOffset - minOffset);
@@ -182,8 +161,8 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
                                           // transmission, local-to-local...
       q++;
 
-      pal_addr = pEngine->renderer.core.texture.useTexture(palette)
-                     .core->address;
+      pal_addr =
+          pEngine->renderer.core.texture.useTexture(palette).core->address;
 
       dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
       dma_channel_fast_waits(DMA_CHANNEL_GIF);
@@ -202,11 +181,8 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
                                        uint32_t blockX, uint32_t blockY,
                                        uint32_t source_addr, uint32_t width,
                                        uint32_t height, uint32_t pal_addr) {
-  const u8 ctx = pEngine->renderer.core.gs.getDrawContext();
   const framebuffer_t buf_frame =
       pEngine->renderer.core.gs.getCurrentFrameData();
-
-  uint64_t frameAddress = buf_frame.address >> 6;
 
   // For the BLUE and ALPHA channels, we need to offset our 'U's by 8 texels
   const uint32_t horz_block_offset =
@@ -221,7 +197,7 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   qword_t packets[500] ALIGNED(64);
   qword_t* q = packets;
 
-  PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+  PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
   q++;
 
   PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
@@ -264,9 +240,9 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   }
 
   PACK_GIFTAG(q,
-              GS_SET_FRAME(frameAddress, buf_frame.width >> 6, buf_frame.psm,
-                           frame_mask),
-              GS_REG_FRAME_1 + ctx);
+              GS_SET_FRAME(buf_frame.address >> 11, buf_frame.width >> 6,
+                           buf_frame.psm, frame_mask),
+              GS_REG_FRAME_1);
   q++;
 
   PACK_GIFTAG(
@@ -341,7 +317,6 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   FlushCache(0);
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_wait_fast();
-
   q = packets;
 
   PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
@@ -352,9 +327,9 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   q++;
 
   PACK_GIFTAG(q,
-              GS_SET_FRAME(frameAddress, buf_frame.width >> 6, buf_frame.psm,
-                           buf_frame.mask),
-              GS_REG_FRAME_1 + ctx);
+              GS_SET_FRAME(buf_frame.address >> 11, buf_frame.width >> 6,
+                           buf_frame.psm, buf_frame.mask),
+              GS_REG_FRAME_1);
   q++;
 
   PACK_GIFTAG(q,
@@ -377,10 +352,10 @@ void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
 }
 
 void PostFxManager::renderFog() {
-  Color tlc = Color(200.0f, 100.0f, 100.0f, 80);
-  Color trc = Color(200.0f, 100.0f, 100.0f, 80);
-  Color blc = Color(200.0f, 100.0f, 100.0f, 80);
-  Color brc = Color(200.0f, 100.0f, 100.0f, 80);
+  Color tlc = Color(200.0f, 200.0f, 200.0f, 128);
+  Color trc = Color(200.0f, 200.0f, 200.0f, 128);
+  Color blc = Color(200.0f, 200.0f, 200.0f, 128);
+  Color brc = Color(200.0f, 200.0f, 200.0f, 128);
 
   uint64_t width = settings.getWidth(), height = settings.getHeight();
 
