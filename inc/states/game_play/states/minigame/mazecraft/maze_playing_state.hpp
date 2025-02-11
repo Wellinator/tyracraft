@@ -3,6 +3,7 @@
 #include "states/game_play/states/playing_state_base.hpp"
 #include "states/game_play/states/minigame/mazecraft/maze_audio_listener.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/post-fx/post_fx_manager.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/tick_manager.hpp"
 #include "models/terrain_height_model.hpp"
@@ -49,8 +50,10 @@ class MazePlayingState : public PlayingStateBase {
   double _nextLevelCounter = 5.0f;
   void renderCountDown();
 
-  const std::string Label_LevelDone           = LanguageManager::Translate("/minigame/common/level_done_exclamation");
-  const std::string Label_LoadingNextLevelIn  = LanguageManager::Translate("/minigame/common/loading_next_level_in");
+  const std::string Label_LevelDone =
+      LanguageManager::Translate("/minigame/common/level_done_exclamation");
+  const std::string Label_LoadingNextLevelIn =
+      LanguageManager::Translate("/minigame/common/loading_next_level_in");
 
   inline const u8 isSongPlaying() {
     return mazeAudioListener.t_song->isPlaying();
@@ -61,6 +64,8 @@ class MazePlayingState : public PlayingStateBase {
    *
    */
   void printMemoryInfoToLog();
+
+  PostFxManager postFxManager;
 
   MazeAudioListener mazeAudioListener;
   u32 audioListenerId;

@@ -62,6 +62,7 @@ void CreativePlayingState::tick() {
 }
 
 void CreativePlayingState::render() {
+  // General 3D sftuff
   stateGamePlay->world->dayNightCycleManager.render();
   stateGamePlay->world->cloudsManager.render();
   stateGamePlay->world->renderOpaque();
@@ -69,14 +70,14 @@ void CreativePlayingState::render() {
   stateGamePlay->player->render();
   stateGamePlay->world->particlesManager.render();
 
+  // General 3D sftuff with transparency
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  // PostFX stuff
-  PostFxManager::getInstance()->render();
+  // PostFX
+  postFxManager.render();
 
-  stateGamePlay->world->renderOpaque();
-
+  // General 2D sftuff
   renderCreativeUi();
 
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();

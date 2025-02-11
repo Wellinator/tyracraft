@@ -5,7 +5,8 @@
 #include "utils.hpp"
 
 MazePlayingState::MazePlayingState(StateGamePlay* t_context)
-    : PlayingStateBase(t_context) {}
+    : PlayingStateBase(t_context),
+      postFxManager(t_context->context->t_engine) {}
 
 MazePlayingState::~MazePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -97,16 +98,22 @@ void MazePlayingState::tick() {
 }
 
 void MazePlayingState::render() {
+  // General 3D sftuff
   stateGamePlay->world->dayNightCycleManager.render();
   stateGamePlay->world->cloudsManager.render();
   stateGamePlay->world->renderOpaque();
   stateGamePlay->world->mobManager.render();
+  stateGamePlay->world->particlesManager.render();
   stateGamePlay->player->render();
 
+  // General 3D sftuff with transparency
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  stateGamePlay->world->particlesManager.render();
+  // PostFX
+  postFxManager.render();
+
+  // General 2D sftuff
   renderMazeUi();
 
   if (g_debug_mode) drawDegubInfo();
