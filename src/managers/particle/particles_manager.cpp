@@ -146,6 +146,7 @@ void ParticlesManager::render() {
     StaPipInfoBag infoBag;
     infoBag.model = &rawMatrix;
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+    infoBag.blendingEnabled = true;
 
     StaPipColorBag colorBag;
     colorBag.single = &p->color;
