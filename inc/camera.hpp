@@ -12,6 +12,7 @@
 
 #include <tyra>
 #include "constants.hpp"
+#include "singleton.hpp"
 #include <tamtypes.h>
 #include <utils.hpp>
 #include <fastmath.h>
@@ -24,12 +25,12 @@ using Tyra::RendererSettings;
 enum class CamType { FirstPerson, ThirdPerson, ThirdPersonInverted };
 
 /** 3D camera which follow by 3D object. Can be rotated via pad */
-class Camera {
+class Camera : public Singleton<Camera> {
  public:
   Camera(const RendererSettings& t_screen);
   ~Camera();
 
-  Vec4 position, lookPos, unitCirclePosition, camShake;
+  Vec4 position, looksAt, unitCirclePosition, camShake;
 
   float pitch, yaw;
   float hitDistance;
@@ -44,7 +45,7 @@ class Camera {
   void setThirdPerson();
   void setThirdPersonInverted();
 
-  CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &lookPos); }
+  CameraInfo3D getCameraInfo() { return CameraInfo3D(&position, &looksAt); }
 
   inline const CamType getCamType() const { return camera_type; }
   inline float getCamY() { return CAMERA_Y; };

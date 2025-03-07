@@ -30,7 +30,7 @@ using Tyra::Vec4;
 // Constructors/Destructors
 // ----
 
-Camera::Camera(const RendererSettings& t_screen) {}
+Camera::Camera(const RendererSettings& t_screen) : Singleton<Camera>() {}
 
 Camera::~Camera() {}
 
@@ -52,7 +52,7 @@ void Camera::update() {
 
   unitCirclePosition.normalize();
 
-  lookPos.set(unitCirclePosition + position);
+  looksAt.set(unitCirclePosition + position);
 }
 
 void Camera::update(const float& deltaTime, const u8 isWalking) {
@@ -77,7 +77,7 @@ void Camera::update(const float& deltaTime, const u8 isWalking) {
     camera_time = 0;
   }
 
-  lookPos.set(unitCirclePosition + position);
+  looksAt.set(unitCirclePosition + position);
 }
 
 // TODO: refactore method signature to receive the position directly
