@@ -8,13 +8,13 @@
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 #include "models/block_info_model.hpp"
 
-#define FRONT_VISIBLE 0b100000
-#define BACK_VISIBLE 0b010000
-#define LEFT_VISIBLE 0b001000
-#define RIGHT_VISIBLE 0b000100
-#define TOP_VISIBLE 0b000010
-#define BOTTOM_VISIBLE 0b000001
-#define HIDDEN_BLOCK 0b000000
+#define FRONT_VISIBLE   0b100000
+#define BACK_VISIBLE    0b010000
+#define LEFT_VISIBLE    0b001000
+#define RIGHT_VISIBLE   0b000100
+#define TOP_VISIBLE     0b000010
+#define BOTTOM_VISIBLE  0b000001
+#define HIDDEN_BLOCK    0b000000
 
 enum class FACE_SIDE { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
