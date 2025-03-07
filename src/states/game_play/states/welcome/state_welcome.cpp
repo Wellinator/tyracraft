@@ -39,6 +39,7 @@ void StateWelcome::update(const float& deltaTime) {
 void StateWelcome::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   stateGamePlay->getPreviousState()->render();
+
   t_renderer->renderer2D.render(overlay);
   FontManager& fm = FontManager::getInstanceRef();
 
@@ -72,7 +73,7 @@ void StateWelcome::handleInput(const float& deltaTime) {
 
   if (clicked.Cross) {
     this->playClickSound();
-    this->stateGamePlay->backToGame();
+    this->stateGamePlay->hideWelcomeMessage();
   }
 }
 

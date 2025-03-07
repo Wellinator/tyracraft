@@ -71,7 +71,7 @@ void MazecraftLevelInit::handleInput(const float& deltaTime) {
 
   if (clicked.Cross) {
     this->playClickSound();
-    this->stateGamePlay->backToGame();
+    this->stateGamePlay->hideWelcomeMessage();
   }
 }
 
@@ -89,4 +89,4 @@ void MazecraftLevelInit::playClickSound() {
   const s8 ch = pSoundManager->getAvailableChannel();
   this->stateGamePlay->context->t_engine->audio.adpcm.setVolume(60, ch);
   pSoundManager->playSfx(SoundFxCategory::Random, SoundFX::WoodClick, ch);
-}
+} 
