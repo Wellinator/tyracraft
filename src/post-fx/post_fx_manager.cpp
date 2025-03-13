@@ -8,27 +8,26 @@ using Tyra::RendererCoreTextureBuffers;
 using Tyra::Texture;
 using Tyra::TextureBuilderData;
 
-PostFxManager::PostFxManager(Engine* t_engine)
-    : Singleton<PostFxManager>(),
-      settings(t_engine->renderer.core.getSettings()) {
-  pEngine = t_engine;
+PostFxManager::PostFxManager(Renderer* renderer)
+    : Singleton<PostFxManager>(), settings(renderer->core.getSettings()) {
+  pRenderer = renderer;
   init();
 };
 
 PostFxManager::~PostFxManager(){};
 
-void PostFxManager::render() {
+void PostFxManager::render(Color fogColor) {
   // Set GS settings
   qword_t packets[20] ALIGNED(64);
   qword_t* q = packets;
 
-  q = draw_disable_tests(q, 0, &pEngine->renderer.core.gs.zBuffer);
+  q = draw_disable_tests(q, 0, &pRenderer->core.gs.zBuffer);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_wait_fast();
 
   // Apply the post effects
-  renderFog();
+  renderFog(fogColor);
 
   // Reset GS old settings
   q = packets;
@@ -47,11 +46,48 @@ void PostFxManager::render() {
               GS_REG_CLAMP_1);
   q++;
 
+  q = draw_enable_tests(q, 0, &pRenderer->core.gs.zBuffer);
+
   q = draw_texture_expand_alpha(q, 0x80, ALPHA_EXPAND_NORMAL, 0x80);
-  q = draw_enable_tests(q, 0, &pEngine->renderer.core.gs.zBuffer);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_wait_fast();
+}
+
+uint32_t getPatternValue(uint32_t N) {
+  // uint32_t mod = N % 3;
+  // if (mod == 1) {
+  //   return N + 1;
+  // } else if (mod == 2) {
+  //   return N - 1;
+  // } else {
+  //   return N;
+  // }
+  const int r = N % 3;
+  return N + (r == 1 ? 1 : (r == 2 ? -1 : 0));
+}
+
+double easeInOut(double x, double maxInput, double offset = 0.1,
+                 double steepness = 15.0) {
+  // Optional: clamp x to the range [0, maxInput]
+  x = std::max(std::min(x, maxInput), 0.0);
+
+  // Normalize input to [0,1]
+  double t = x / maxInput;
+
+  // Compute the logistic (sigmoid) function value
+  double logistic = 1.0 / (1.0 + std::exp(-steepness * (t - offset)));
+
+  // Determine the logistic values at the endpoints for normalization:
+  // at t = 0:
+  double logistic0 = 1.0 / (1.0 + std::exp(steepness * offset));
+  // at t = 1:
+  double logistic1 = 1.0 / (1.0 + std::exp(-steepness * (1.0 - offset)));
+
+  // Normalize so that logistic0 maps to 0 and logistic1 maps to 1
+  double normalized = (logistic - logistic0) / (logistic1 - logistic0);
+
+  return normalized * 128.0;
 }
 
 void PostFxManager::init() {
@@ -60,12 +96,12 @@ void PostFxManager::init() {
   pDepthTempBuffer.width = 64;
   pDepthTempBuffer.height = 32;
   pDepthTempBuffer.bpp = Tyra::TextureBpp::bpp32;
-  pDepthTempBuffer.data = new u8[64 * 32 * 4];
+  pDepthTempBuffer.data = new u8[64 * 32 * 4]{0};
   pDepthTempBuffer.gsComponents = TEXTURE_COMPONENTS_RGBA;
 
   pDepthBufferTexture = new Texture(&pDepthTempBuffer);
-  pEngine->renderer.core.texture.repository.add(pDepthBufferTexture);
-  pEngine->renderer.core.texture.useTexture(pDepthBufferTexture);
+  pRenderer->core.texture.repository.add(pDepthBufferTexture);
+  pRenderer->core.texture.useTexture(pDepthBufferTexture);
 
   // Create FOG color pallet
   TextureBuilderData pColorPaletteRaster;
@@ -73,56 +109,114 @@ void PostFxManager::init() {
   pColorPaletteRaster.height = 16;
   pColorPaletteRaster.bpp = Tyra::TextureBpp::bpp32;
   pColorPaletteRaster.gsComponents = TEXTURE_COMPONENTS_RGBA;
-  pColorPaletteRaster.data = new u8[16 * 16 * 4];
+  pColorPaletteRaster.data = new u8[16 * 16 * 4]{0};
 
-  int length = 1024;
-  float maxValue = 128;
-  int minOffset = 0;
-  int maxOffset = 32;
-  bool asInteger = true;
-
-  // Clamp offsets within bounds
-  minOffset = std::max(0, minOffset);
-  maxOffset = std::min(length - 1, maxOffset);
-
-
-  // Calculate step size for linear increment
-  float step = maxValue / (maxOffset - minOffset);
-  // Fill linear values within the offset range
-  for (int i = minOffset; i <= maxOffset; ++i) {
-    float value = (i - minOffset) * step;
-    pColorPaletteRaster.data[i] =
-        asInteger ? std::round(value) : std::round(value * 10000.0) / 10000.0;
+  for (int i = 0; i < 1024; i++) {
+    pColorPaletteRaster.data[i] = 128;
   }
 
-  // Fill exponential values within the offset range
-  // for (int i = minOffset; i <= maxOffset; ++i) {
-  //   float normalizedIndex =
-  //       static_cast<float>(i - minOffset) / (maxOffset - minOffset);
-  //   float value =
-  //       maxValue * std::pow(normalizedIndex, 2);  // Exponential growth
-  //   pColorPaletteRaster.data[i] =
-  //       asInteger ? std::round(value) : std::round(value * 10000.0) /
-  //       10000.0;
+  // u8* pallet = pColorPaletteRaster.data;
+  // for (int i = 0; i < 256; i++) {
+  //   const int targetIndex = getPatternValue(i) * 4;
+  //   const u8 value = std::min(128, int((i * 3) + 1));
+
+  //   pallet[targetIndex + 0] = value;
+  //   pallet[targetIndex + 1] = value;
+  //   pallet[targetIndex + 2] = value;
+  //   pallet[targetIndex + 3] = value;
+
+  //   printf("[%lu] = %i\n", getPatternValue(i), value);
   // }
 
-  // Set maxValue for indices after maxOffset
-  for (int i = maxOffset + 1; i < length; ++i) {
-    pColorPaletteRaster.data[i] =
-        asInteger ? maxValue : std::round(maxValue * 10000.0) / 10000.0;
-  }
+  // const u8 blockLength = 8;
+  // const uint32_t maxValue = 128;
+  // uint32_t* pallet = reinterpret_cast<uint32_t*>(pColorPaletteRaster.data);
+
+  // for (uint32_t i = 0; i <= 5; i++) {
+  //   const uint32_t offset = getPatternValue(i) * blockLength;
+  //   TYRA_LOG("offset: ", offset);
+
+  //   for (u8 j = 0; j < 8; j++) {
+  //     const uint32_t index = offset + j;
+
+  //     TYRA_LOG("index: ", index);
+
+  //     // const uint32_t value = std::round(easeInOut(i, 255, 0.08f, 40));
+  //     // const uint32_t value = std::floor(std::exp2(std::pow(i, 0.5f)
+  //     * 1.5f));
+  //     // const uint32_t value = std::floor(std::exp2(index * 0.35f));
+
+  //     const uint32_t value = index * 2;
+
+  //     if (index < 256) pallet[index] = std::min(value, maxValue) << 24;
+  //   }
+  // }
 
   pFogTexture = new Texture(&pColorPaletteRaster);
-  pEngine->renderer.core.texture.repository.add(pFogTexture);
-  pEngine->renderer.core.texture.useTexture(pFogTexture);
+  pRenderer->core.texture.repository.add(pFogTexture);
+  pRenderer->core.texture.useTexture(pFogTexture);
+
+  uint8_t fog_scale[18] = {0, 1, 2, 3, 10, 7, 3, 2, 1,
+                           1, 0, 0, 0, 0,  0, 0, 0, 0};
+  scaleDepthMask(pFogTexture, 1, fog_scale);
 };
+
+void PostFxManager::updateDebugPallet() {
+  uint32_t* pallet = reinterpret_cast<uint32_t*>(pFogTexture->core->data);
+  uint32_t i = 1;
+
+  pallet[0] = (i) << 24;
+  pallet[1] = (i += 4) << 24;
+  pallet[2] = (i += 4) << 24;
+  pallet[3] = (i += 4) << 24;
+  pallet[4] = (i += 4) << 24;
+  pallet[5] = (i += 4) << 24;
+  pallet[6] = (i += 4) << 24;
+  pallet[7] = (i += 4) << 24;
+
+  pallet[16] = (i += 3) << 24;
+  pallet[17] = (i += 3) << 24;
+  pallet[18] = (i += 3) << 24;
+  pallet[19] = (i += 3) << 24;
+  pallet[20] = (i += 3) << 24;
+  pallet[21] = (i += 3) << 24;
+  pallet[22] = (i += 3) << 24;
+  pallet[23] = (i += 3) << 24;
+
+  pallet[8] = (i += 2) << 24;
+  pallet[9] = (i += 2) << 24;
+  pallet[10] = (i += 2) << 24;
+  pallet[11] = (i += 2) << 24;
+  pallet[12] = (i += 2) << 24;
+  pallet[13] = (i += 2) << 24;
+  pallet[14] = (i += 2) << 24;
+  pallet[15] = (i += 2) << 24;
+
+  pallet[24] = (i += 1) << 24;
+  pallet[25] = (i += 1) << 24;
+  pallet[26] = (i += 1) << 24;
+  pallet[27] = (i += 1) << 24;
+  pallet[28] = (i += 1) << 24;
+  pallet[29] = (i += 1) << 24;
+  pallet[30] = (i += 1) << 24;
+  pallet[31] = (i += 1) << 24;
+
+  printf("debugPalletIndex: %i, old value: %li\n", debugPalletIndex,
+         pallet[debugPalletIndex] >> 24);
+  pallet[debugPalletIndex] = 1 << 24;
+
+  pRenderer->core.texture.updateTextureInfo(pFogTexture);
+
+  debugPalletIndex++;
+  debugPalletIndex %= 24;
+}
 
 void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
                                     Texture* palette) {
   uint32_t width = settings.getWidth(), height = settings.getHeight();
-  uint32_t zbufferAddr = pEngine->renderer.core.gs.zBuffer.address;
+  uint32_t zbufferAddr = pRenderer->core.gs.zBuffer.address;
   RendererCoreTextureBuffers texBuffer =
-      pEngine->renderer.core.texture.useTexture(palette);
+      pRenderer->core.texture.useTexture(palette);
 
   uint32_t pal_addr = texBuffer.core->address;
 
@@ -132,8 +226,7 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
   for (y = 0; y < height; y += 32) {
     for (x = 0; x < width; x += 64) {
       uint32_t buf_addr =
-          pEngine->renderer.core.texture.useTexture(pDepthBufferTexture)
-              .core->address;
+          pRenderer->core.texture.useTexture(pDepthBufferTexture).core->address;
 
       qword_t packets[5] ALIGNED(64);
       qword_t* q = packets;
@@ -161,8 +254,7 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
                                           // transmission, local-to-local...
       q++;
 
-      pal_addr =
-          pEngine->renderer.core.texture.useTexture(palette).core->address;
+      pal_addr = pRenderer->core.texture.useTexture(palette).core->address;
 
       dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
       dma_channel_fast_waits(DMA_CHANNEL_GIF);
@@ -181,8 +273,7 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
                                        uint32_t blockX, uint32_t blockY,
                                        uint32_t source_addr, uint32_t width,
                                        uint32_t height, uint32_t pal_addr) {
-  const framebuffer_t buf_frame =
-      pEngine->renderer.core.gs.getCurrentFrameData();
+  const framebuffer_t buf_frame = pRenderer->core.gs.getCurrentFrameData();
 
   // For the BLUE and ALPHA channels, we need to offset our 'U's by 8 texels
   const uint32_t horz_block_offset =
@@ -351,11 +442,45 @@ void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
   if (h > (1 << *th)) (*th)++;
 }
 
-void PostFxManager::renderFog() {
-  Color tlc = Color(200.0f, 200.0f, 200.0f, 128);
-  Color trc = Color(200.0f, 200.0f, 200.0f, 128);
-  Color blc = Color(200.0f, 200.0f, 200.0f, 128);
-  Color brc = Color(200.0f, 200.0f, 200.0f, 128);
+void PostFxManager::scaleDepthMask(Texture* palette, uint8_t initial_value,
+                                   uint8_t factors[16]) {
+  int i, j, k = initial_value;
+
+  static const uint8_t factor_order[18][2] = {
+      {0, 3},   {4, 7},   {16, 19},   {20, 23},   {8, 15},    {24, 31},
+      {40, 47}, {32, 39}, {48, 55},   {34, 71},   {56, 63},   {72, 79},
+      {88, 95}, {80, 87}, {112, 119}, {104, 111}, {120, 127}, {136, 143}};
+
+  uint32_t* pal_rgba = reinterpret_cast<uint32_t*>(palette->core->data);
+
+  printf("pallet: \n");
+
+  for (j = 0; j < 16; j++) {
+    // k = initial_value;
+
+    for (i = factor_order[j][0]; i <= factor_order[j][1]; i++) {
+      pal_rgba[i] = (k << 24) | (k << 16) | (k << 8) | k;  // RGBA
+
+      printf("%i,", k);
+
+      if (k < 128 || factors[j] >= 128)
+      // if (k <= 128)
+      {
+        k += factors[j];
+      } else if (k != 128) {
+        k = 128;
+      }
+    }
+  }
+
+  pRenderer->core.texture.updateTextureInfo(palette);
+}
+
+void PostFxManager::renderFog(Color fogColor) {
+  Color tlc = fogColor;
+  Color trc = fogColor;
+  Color blc = fogColor;
+  Color brc = fogColor;
 
   uint64_t width = settings.getWidth(), height = settings.getHeight();
 
@@ -405,8 +530,7 @@ void PostFxManager::renderFog() {
     q++;
 
     // XYZ2
-    PACK_GIFTAG(q, (uint64_t)(0 << 4) | (uint64_t)(0 << 4) << 32,
-                (uint64_t)(1));
+    PACK_GIFTAG(q, GIF_SET_XYZ(0, 0, 0), 1);
     q++;
 
     // TRC
@@ -416,8 +540,7 @@ void PostFxManager::renderFog() {
     q++;
 
     // XYZ2
-    PACK_GIFTAG(q, (uint64_t)((((width << 4)) | (((uint64_t)(0 << 4)) << 32))),
-                (uint64_t)(1));
+    PACK_GIFTAG(q, GIF_SET_XYZ(ftoi4(width), 0, 0), 1);
     q++;
   }
 
@@ -430,8 +553,7 @@ void PostFxManager::renderFog() {
     q++;
 
     // XYZ2
-    PACK_GIFTAG(q, (uint64_t)((((0 << 4)) | ((uint64_t)(height << 4) << 32))),
-                (uint64_t)(1));
+    PACK_GIFTAG(q, GIF_SET_XYZ(0, 0, ftoi4(height)), 1);
     q++;
 
     // BRC
@@ -441,9 +563,7 @@ void PostFxManager::renderFog() {
     q++;
 
     // XYZ2
-    PACK_GIFTAG(q,
-                (uint64_t)((((width << 4)) | ((uint64_t)(height << 4) << 32))),
-                (uint64_t)(1));
+    PACK_GIFTAG(q, GIF_SET_XYZ(ftoi4(width), 0, ftoi4(height)), 1);
     q++;
   }
 

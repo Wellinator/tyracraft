@@ -93,21 +93,52 @@ void Chunck::updateSurroundingBlocks() {
   surroundingBlocks.clear();
   surroundingTransparentBlocks.clear();
 
+  u8 offsetRange = 2;
   Vec4 tempOffset = camPositon / DUBLE_BLOCK_SIZE;
   Vec4 camOffset = Vec4(std::lrint(tempOffset.x), std::lrint(tempOffset.y),
                         std::lrint(tempOffset.z));
 
-  for (s8 _x = -2; _x <= 2; _x++) {
-    for (s8 _y = -1; _y <= 1; _y++) {
-      for (s8 _z = -2; _z <= 2; _z++) {
-        Vec4 _bOffset = camOffset + Vec4(_x, _y, _z);
-        u32 blockIndex = getIndexByOffset(_bOffset.x, _bOffset.y, _bOffset.z);
-        Block* t_block = getBlockById(blockIndex);
+  for (s8 _x = -offsetRange; _x <= offsetRange; _x++) {
+    for (s8 _y = -offsetRange; _y <= offsetRange; _y++) {
+      for (s8 _z = -offsetRange; _z <= offsetRange; _z++) {
+        Vec4 offset = camOffset + Vec4(_x, _y, _z);
+        u32 blockIndex = getIndexByOffset(offset.x, offset.y, offset.z);
 
-        if (t_block &&
-            Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
+        Block* t_block = nullptr;
+
+        // Is the block in this chunk?
+        if (containsBlock(&offset)) {
+          t_block = getBlockById(blockIndex);
+        } else {
+          // Check if the block is in boundaries
+          const u8 isInWorld = offset.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS);
+          if (isInWorld) {
+            // Find the chunk neighbor that contains the block
+            Chunck* targetChunk = nullptr;
+
+            if (offset.x < minOffset.x - 1)
+              targetChunk = rightNeighbor;
+            else if (offset.x > maxOffset.x)
+              targetChunk = leftNeighbor;
+            else if (offset.y < minOffset.y - 1)
+              targetChunk = bottomNeighbor;
+            else if (offset.y > maxOffset.y)
+              targetChunk = topNeighbor;
+            else if (offset.z < minOffset.z - 1)
+              targetChunk = frontNeighbor;
+            else
+              targetChunk = backNeighbor;
+
+            if (targetChunk) t_block = targetChunk->getBlockById(blockIndex);
+          }
+          continue;
+        }
+
+        if (!t_block) continue;
+
+        if (Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
                                         &t_block->maxCorner) ==
-                CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
+            CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
           if (t_block->hasTransparency()) {
             surroundingTransparentBlocks.push_back(t_block);
           } else {
@@ -131,7 +162,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 
     infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
     infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = false;
+    infoBag.blendingEnabled = true;
     infoBag.antiAliasingEnabled = false;
     infoBag.fullClipChecks = false;
     infoBag.frustumCulling =
@@ -285,7 +316,7 @@ void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
   outUVMap.reserve(in_vertex.size());
   outColors.reserve(in_vertex.size());
 
-  u8 generatedVertexCounter =
+  int generatedVertexCounter =
       ClippingManager_ClipMesh(in_vertex, in_uv, in_colors, outVertices,
                                outUVMap, outColors, t_renderer, camPositon);
 
@@ -296,7 +327,7 @@ void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
 
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = hasTransparency;
+  infoBag.blendingEnabled = true;
   infoBag.antiAliasingEnabled = false;
 
   infoBag.fullClipChecks = false;

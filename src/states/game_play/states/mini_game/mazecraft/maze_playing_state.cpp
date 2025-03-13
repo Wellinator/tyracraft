@@ -6,7 +6,7 @@
 
 MazePlayingState::MazePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
-      postFxManager(t_context->context->t_engine) {}
+      postFxManager(&t_context->context->t_engine->renderer) {}
 
 MazePlayingState::~MazePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -111,7 +111,8 @@ void MazePlayingState::render() {
   stateGamePlay->world->renderBlockDamageOverlay();
 
   // PostFX
-  postFxManager.render();
+  // postFxManager.render(
+  //     stateGamePlay->world->dayNightCycleManager.getSkyColor());
 
   // General 2D sftuff
   renderMazeUi();

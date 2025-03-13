@@ -28,6 +28,7 @@ void PlayerRenderArmPip::update(const float& deltaTime, Camera* t_camera) {
 };
 
 void PlayerRenderArmPip::render(Renderer* t_render) {
+  t_render->renderer3D.usePipeline(stapip);
   const ItemId itemId = this->t_player->getSelectedInventoryItemType();
 
   switch (itemId) {
@@ -51,15 +52,11 @@ void PlayerRenderArmPip::render(Renderer* t_render) {
 }
 
 void PlayerRenderArmPip::renderArm(Renderer* t_render) {
-  t_render->renderer3D.usePipeline(stapip);
   stapip.core.render(&bag);
 }
 
 void PlayerRenderArmPip::renderItem(Renderer* t_render) {
-  if (bag.count > 0) {
-    t_render->renderer3D.usePipeline(stapip);
-    stapip.core.render(&bag);
-  }
+  if (bag.count > 0) stapip.core.render(&bag);
 }
 
 void PlayerRenderArmPip::loadItemDrawData() {

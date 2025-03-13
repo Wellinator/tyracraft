@@ -166,7 +166,7 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
 
   cloudsManager.update(fixedDeltaTime);
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       &t_camera->lookPos);
+                       &t_camera->looksAt);
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
   if (affectedChunksIdByLiquidPropagation.size() > 0)
@@ -249,7 +249,7 @@ void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   if (delta > HALF_CHUNCK_SIZE) {
     lastPlayerPosition.set(currentPlayerPos);
     Chunck* currentChunck =
-        chunckManager.getChunckByWorldPosition(t_camera->lookPos);
+        chunckManager.getChunckByWorldPosition(t_camera->looksAt);
 
     if (currentChunck && t_player->currentChunckId != currentChunck->id) {
       t_player->currentChunckId = currentChunck->id;
@@ -1504,12 +1504,14 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   if (g_debug_mode) t_chunck->buildingTimeStart = clock();
 
   std::vector<Chunck*> affected_chunks;
+  affected_chunks.reserve(5);
   affected_chunks.emplace_back(t_chunck);
 
   Vec4 bottom = *moddedOffset + DOWN_VEC;
   if (t_chunck->containsBlock(&bottom)) {
     addOrupdateBlockInChunk(t_chunck, &bottom);
-  } else if (t_chunck->bottomNeighbor) {
+  } else if (t_chunck->bottomNeighbor &&
+             t_chunck->bottomNeighbor->containsBlock(&bottom)) {
     addOrupdateBlockInChunk(t_chunck->bottomNeighbor, &bottom);
     affected_chunks.emplace_back(t_chunck->bottomNeighbor);
   }
@@ -1517,7 +1519,8 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   Vec4 top = *moddedOffset + UP_VEC;
   if (t_chunck->containsBlock(&top)) {
     addOrupdateBlockInChunk(t_chunck, &top);
-  } else if (t_chunck->topNeighbor) {
+  } else if (t_chunck->topNeighbor &&
+             t_chunck->topNeighbor->containsBlock(&top)) {
     addOrupdateBlockInChunk(t_chunck->topNeighbor, &top);
     affected_chunks.emplace_back(t_chunck->topNeighbor);
   }
@@ -1525,7 +1528,8 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   Vec4 right = *moddedOffset + RIGHT_VEC;
   if (t_chunck->containsBlock(&right)) {
     addOrupdateBlockInChunk(t_chunck, &right);
-  } else if (t_chunck->rightNeighbor) {
+  } else if (t_chunck->rightNeighbor &&
+             t_chunck->rightNeighbor->containsBlock(&right)) {
     addOrupdateBlockInChunk(t_chunck->rightNeighbor, &right);
     affected_chunks.emplace_back(t_chunck->rightNeighbor);
   }
@@ -1533,7 +1537,8 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   Vec4 left = *moddedOffset + LEFT_VEC;
   if (t_chunck->containsBlock(&left)) {
     addOrupdateBlockInChunk(t_chunck, &left);
-  } else if (t_chunck->leftNeighbor) {
+  } else if (t_chunck->leftNeighbor &&
+             t_chunck->leftNeighbor->containsBlock(&left)) {
     addOrupdateBlockInChunk(t_chunck->leftNeighbor, &left);
     affected_chunks.emplace_back(t_chunck->leftNeighbor);
   }
@@ -1541,7 +1546,8 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   Vec4 front = *moddedOffset + FRONT_VEC;
   if (t_chunck->containsBlock(&front)) {
     addOrupdateBlockInChunk(t_chunck, &front);
-  } else if (t_chunck->frontNeighbor) {
+  } else if (t_chunck->frontNeighbor &&
+             t_chunck->frontNeighbor->containsBlock(&front)) {
     addOrupdateBlockInChunk(t_chunck->frontNeighbor, &front);
     affected_chunks.emplace_back(t_chunck->frontNeighbor);
   }
@@ -1549,7 +1555,8 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   Vec4 back = *moddedOffset + BACK_VEC;
   if (t_chunck->containsBlock(&back)) {
     addOrupdateBlockInChunk(t_chunck, &back);
-  } else if (t_chunck->backNeighbor) {
+  } else if (t_chunck->backNeighbor &&
+             t_chunck->backNeighbor->containsBlock(&back)) {
     addOrupdateBlockInChunk(t_chunck->backNeighbor, &back);
     affected_chunks.emplace_back(t_chunck->backNeighbor);
   }
@@ -1568,19 +1575,12 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
 }
 
 void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
-  const u8 validOffset =
-      pLevel->BoundCheckMap(moddedOffset->x, moddedOffset->y, moddedOffset->z);
-  const u8 isInChunk =
-      moddedOffset->collidesBox(t_chunck->minOffset, t_chunck->maxOffset);
+  Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
 
-  if (validOffset && isInChunk) {
-    Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
-
-    if (t_block) {
-      updateOrRemoveBlockInChunk(t_chunck, t_block);
-    } else {
-      addBlockToChunk(t_chunck, moddedOffset);
-    }
+  if (t_block) {
+    updateOrRemoveBlockInChunk(t_chunck, t_block);
+  } else {
+    addBlockToChunk(t_chunck, moddedOffset);
   }
 }
 
@@ -1609,6 +1609,7 @@ void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
     rebuildChunkFragment(t_chunck, &tempBlockOffset);
   } else if (visibleFaces != t_block->visibleFaces) {
     t_block->visibleFaces = visibleFaces;
+    t_block->visibleFacesCount = Utils::countSetBits(visibleFaces);
   }
 }
 

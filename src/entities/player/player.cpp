@@ -135,7 +135,7 @@ void Player::update(const float& deltaTime, Camera* t_camera) {
   position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
   mesh->getPosition()->set(position);
 
-  updateFovBySpeed();
+  // updateFovBySpeed();
 
   renderPip->update(deltaTime, t_camera);
   animate(t_camera->getCamType());

@@ -8,7 +8,7 @@
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
-      postFxManager(t_context->context->t_engine) {}
+      postFxManager(&t_context->context->t_engine->renderer) {}
 
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -67,29 +67,35 @@ void CreativePlayingState::render() {
   stateGamePlay->world->cloudsManager.render();
   stateGamePlay->world->renderOpaque();
   stateGamePlay->world->mobManager.render();
-  stateGamePlay->player->render();
   stateGamePlay->world->particlesManager.render();
+  stateGamePlay->player->render();
 
   // General 3D sftuff with transparency
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
   // PostFX
-  postFxManager.render();
+  // postFxManager.render(
+  //     stateGamePlay->world->dayNightCycleManager.getSkyColor());
 
   // General 2D sftuff
   renderCreativeUi();
 
-  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
   if (g_debug_mode) drawDegubInfo();
+  if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+  const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
 
   if (clicked.Select) g_debug_mode = !g_debug_mode;
   if (g_debug_mode) {
     if (clicked.Circle) printMemoryInfoToLog();
+
+    if (pressed.Square && clicked.DpadUp) {
+      postFxManager.updateDebugPallet();
+    }
 
     // List loaded textures and VRAM
     if (clicked.Triangle) {

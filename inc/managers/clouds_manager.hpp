@@ -35,17 +35,14 @@ class CloudsManager {
   Color tempColor;
 
   const u8 DRAW_DATA_COUNT = 6;
-  Vec4 vertices[6] = {
-      Vec4(-1.0F, 1.0F, -1.0f), Vec4(1.0F, 1.0F, 1.0f),  Vec4(1.0F, 1.0F, -1.0f),
-      Vec4(-1.0F, 1.0F, -1.0f), Vec4(-1.0F, 1.0F, 1.0f), Vec4(1.0F, 1.0F, 1.0f),
-  };
-
-  Vec4 uvMap[6];
+  Vec4 vertices[6] = {};
+  Vec4 uvMap[6] = {};
 
   StaticPipeline stapip;
   Renderer* t_renderer = nullptr;
   Texture* cloudsTex = nullptr;
 
+  void calcVertices();
   void calcUVMapping();
   void updateCloudsPosition();
 

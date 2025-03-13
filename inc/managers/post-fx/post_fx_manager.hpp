@@ -2,7 +2,9 @@
 #include "tyra"
 #include "singleton.hpp"
 
+using Tyra::Color;
 using Tyra::Engine;
+using Tyra::Renderer;
 using Tyra::RendererSettings;
 using Tyra::Texture;
 using Tyra::TextureBuilderData;
@@ -16,24 +18,28 @@ typedef enum {
 
 class PostFxManager : public Singleton<PostFxManager> {
  public:
-  PostFxManager(Engine* t_engine);
+  PostFxManager(Renderer* renderer);
   ~PostFxManager();
 
-  void render();
+  void render(Color fogColor = Color(150, 150, 150));
+  void updateDebugPallet();
 
  private:
+  int debugPalletIndex = 0;
   constexpr static float gsCenter = 4096.0F;
   constexpr static float screenCenter = gsCenter / 2.0F;
 
-  Engine* pEngine = nullptr;
+  Renderer* pRenderer = nullptr;
   const RendererSettings& settings;
 
   Texture* pFogTexture;
   Texture* pDepthBufferTexture;
 
   void init();
-  void renderFog();
+  void renderFog(Color fogColor);
   void copyDepthBuffer(ColourChannels channelIn, Texture* palette);
+  void scaleDepthMask(Texture* palette, uint8_t initial_value,
+                      uint8_t factors[16]);
   void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
                           uint32_t blockX, uint32_t blockY, uint32_t source,
                           uint32_t width, uint32_t height,

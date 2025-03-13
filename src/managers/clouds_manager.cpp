@@ -1,8 +1,14 @@
 #include "managers/clouds_manager.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/clipping_manager.hpp"
+#include "math3d.h"
+#include "camera.hpp"
 
-CloudsManager::CloudsManager() { calcUVMapping(); }
+CloudsManager::CloudsManager() {
+  calcVertices();
+  calcUVMapping();
+}
 
 CloudsManager::~CloudsManager() {
   t_renderer->getTextureRepository().free(cloudsTex->id);
@@ -15,6 +21,24 @@ void CloudsManager::init(Renderer* renderer,
   stapip.setRenderer(&renderer->core);
   cloudsTex = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("/textures/environment/clouds.png"));
+}
+
+void CloudsManager::calcVertices() {
+  Vec4 rawVertices[6]{
+      Vec4(-1.0F, 1.0F, -1.0f), Vec4(1.0F, 1.0F, 1.0f),
+      Vec4(1.0F, 1.0F, -1.0f),  Vec4(-1.0F, 1.0F, -1.0f),
+      Vec4(-1.0F, 1.0F, 1.0f),  Vec4(1.0F, 1.0F, 1.0f),
+  };
+
+  M4x4 model;
+  model.identity();
+  model.scaleX(3000.0F);
+  model.scaleZ(3000.0F);
+  model.translateY(MAX_WORLD_POS.y - 100.0f);
+
+  for (size_t i = 0; i < DRAW_DATA_COUNT; i++) {
+    vertices[i] = model * rawVertices[i];
+  }
 }
 
 void CloudsManager::calcUVMapping() {
@@ -53,10 +77,6 @@ void CloudsManager::render() {
   M4x4 rawMatrix;
   rawMatrix.identity();
 
-  rawMatrix.scaleX(3000.0F);
-  rawMatrix.scaleZ(3000.0F);
-  rawMatrix.translateY(MAX_WORLD_POS.y - 100.0f);
-
   StaPipTextureBag textureBag;
   textureBag.texture = cloudsTex;
   textureBag.coordinates = uvMap;
@@ -64,8 +84,8 @@ void CloudsManager::render() {
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.fullClipChecks = true;
   infoBag.blendingEnabled = true;
+  infoBag.fullClipChecks = true;
   infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
       PipelineInfoBagFrustumCulling_Precise;
 
