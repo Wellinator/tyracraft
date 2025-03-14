@@ -164,6 +164,9 @@ class World {
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
   Vec4 lastPlayerPosition;
+  int currentChunkId = -1;
+  float playerDeltaDistance = 0.0f;
+
   NewGameOptions worldOptions = NewGameOptions();
 
   std::deque<Chunck*> tempChuncksToLoad;

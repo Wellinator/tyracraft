@@ -18,6 +18,7 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->minOffset.set(minOffset);
   this->maxOffset.set(maxOffset);
   this->center.set((maxOffset + minOffset) / 2);
+  this->scaledCenterOffset.set(center * DUBLE_BLOCK_SIZE);
   resetLoadingOffset();
 
   const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;
@@ -540,6 +541,65 @@ void Chunck::loadDrawDataAsync() {
 }
 
 void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }
+
+void Chunck::sortTransParentDrawData(const Vec4& cameraPos) {
+  std::vector<Vec4>& vert = verticesWithTransparency;
+  std::vector<Color>& col = verticesColorsWithTransparency;
+  std::vector<Vec4>& uv = uvMapWithTransparency;
+
+  const size_t numTriangles = vert.size() / 3;
+  if (vert.size() % 3 != 0) return;  // Error: Invalid data
+
+  std::vector<size_t> indices(numTriangles);
+  std::vector<float> distSq(numTriangles);
+  const Vec4 scaledCam = cameraPos * 3.0f;  // Precompute scaled camera position
+
+  // Precompute squared distances for each triangle
+  for (size_t i = 0; i < numTriangles; ++i) {
+    const size_t base = 3 * i;
+    const Vec4 sum = vert[base] + vert[base + 1] + vert[base + 2];
+    const Vec4 diff = sum - scaledCam;  // Equivalent to centroid comparison
+    distSq[i] = diff.dot3(diff);
+    indices[i] = i;
+  }
+
+  // Sort indices by ascending distance (front-to-back)
+  std::sort(indices.begin(), indices.end(),
+            [&](size_t a, size_t b) { return distSq[a] > distSq[b]; });
+
+  // Build sorted triangle array
+  std::vector<Vec4> sortedVert;
+  std::vector<Color> sortedCol;
+  std::vector<Vec4> sortedUV;
+
+  sortedVert.reserve(vert.size());
+  sortedCol.reserve(vert.size());
+  sortedUV.reserve(vert.size());
+
+  for (size_t idx : indices) {
+    const size_t base = 3 * idx;
+    const size_t p1 = base;
+    const size_t p2 = base + 1;
+    const size_t p3 = base + 2;
+
+    sortedVert.push_back(vert[p1]);
+    sortedVert.push_back(vert[p2]);
+    sortedVert.push_back(vert[p3]);
+
+    sortedCol.push_back(col[p1]);
+    sortedCol.push_back(col[p2]);
+    sortedCol.push_back(col[p3]);
+
+    sortedUV.push_back(uv[p1]);
+    sortedUV.push_back(uv[p2]);
+    sortedUV.push_back(uv[p3]);
+  }
+
+  // Replace original data
+  verticesWithTransparency = std::move(sortedVert);
+  verticesColorsWithTransparency = std::move(sortedCol);
+  uvMapWithTransparency = std::move(sortedUV);
+}
 
 void Chunck::reloadLightData() {
   if (_isPerformingAsyncTask == true) return;

@@ -175,6 +175,9 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
 };
 
 void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
+  playerDeltaDistance = lastPlayerPosition.distanceTo(t_player->position);
+  lastPlayerPosition.set(t_player->position);
+
   dispatchChunkBatch();
 
   particlesManager.update(deltaTime, t_camera);
@@ -218,6 +221,10 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateChunkByPlayerPosition(t_player, t_camera);
   }
 
+  if (isTicksCounterAt(20) && playerDeltaDistance > DUBLE_BLOCK_SIZE) {
+    chunckManager.sortDrawDataFromCamPos(t_camera->position);
+  }
+
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 }
 
@@ -243,18 +250,12 @@ void World::buildInitialPosition() {
 void World::resetWorldData() { chunckManager.clearAllChunks(); }
 
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
-  Vec4 currentPlayerPos = *t_player->getPosition();
-  float delta = lastPlayerPosition.distanceTo(currentPlayerPos) / CHUNCK_SIZE;
+  Chunck* currentChunck =
+      chunckManager.getChunckByWorldPosition(t_camera->looksAt);
 
-  if (delta > HALF_CHUNCK_SIZE) {
-    lastPlayerPosition.set(currentPlayerPos);
-    Chunck* currentChunck =
-        chunckManager.getChunckByWorldPosition(t_camera->looksAt);
-
-    if (currentChunck && t_player->currentChunckId != currentChunck->id) {
-      t_player->currentChunckId = currentChunck->id;
-      scheduleChunksNeighbors(currentChunck, currentPlayerPos);
-    }
+  if (currentChunck && t_player->currentChunckId != currentChunck->id) {
+    t_player->currentChunckId = currentChunck->id;
+    scheduleChunksNeighbors(currentChunck, t_player->position);
   }
 }
 
@@ -319,6 +320,7 @@ void World::scheduleChunksNeighbors(Chunck* origin_chunk,
   }
 
   origin_chunk->setDistanceFromPlayerInChunks(0);
+  chunckManager.updateLoadedChunks();
 
   if (!force_loading && !tempChuncksToLoad.empty())
     sortChunksToLoad(currentPlayerPos);
@@ -339,6 +341,7 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 void World::loadScheduledChunks() {
   if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
     Chunck* chunk = tempChuncksToLoad.front();
+
     if (chunk->state == ChunkState::PreLoaded) {
       if (!chunk->isDrawDataLoaded()) return chunk->loadDrawDataAsync();
 
@@ -367,6 +370,7 @@ void World::loadScheduledChunks() {
       tempChuncksToLoad.pop_front();
       if (tempChuncksToLoad.size() == 0) {
         tempChuncksToLoad.shrink_to_fit();
+        chunckManager.updateLoadedChunks();
       }
     } else if (chunk->state != ChunkState::Loaded) {
       return buildChunkAsync(chunk);

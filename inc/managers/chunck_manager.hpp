@@ -5,7 +5,6 @@
 #include <debug/debug.hpp>
 #include "constants.hpp"
 #include "entities/chunck.hpp"
-#include "entities/player/player.hpp"
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -42,6 +41,8 @@ class ChunckManager {
   void enqueueChunksToReloadLight();
   void reloadLightData();
   void reloadLightDataOfAllChunks();
+  void updateLoadedChunks();
+  void sortDrawDataFromCamPos(const Vec4& cameraPos);
 
   size_t getChuncksToUpdateLightCount() { return chuncksToUpdateLight.size(); };
 
@@ -59,6 +60,7 @@ class ChunckManager {
 
   std::queue<Chunck*> chuncksToUpdateLight;
   std::vector<Chunck*> chuncks;
+  std::vector<Chunck*> loadedChunks;
   std::vector<Chunck*> visibleChunks;
 
   void generateChunks();

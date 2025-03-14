@@ -52,9 +52,10 @@ class Chunck {
   Vec4 tempLoadingOffset = Vec4();
   Vec4 minOffset = Vec4();
   Vec4 maxOffset = Vec4();
+  Vec4 center = Vec4();
   Vec4 scaledMinOffset = Vec4();
   Vec4 scaledMaxOffset = Vec4();
-  Vec4 center = Vec4();
+  Vec4 scaledCenterOffset = Vec4();
   BBox* bbox;
 
   // Neighborhoods references;
@@ -86,6 +87,8 @@ class Chunck {
   void loadDrawData();
   void loadDrawDataAsync();
   void loadDrawDataWithoutSorting();
+  void sortTransParentDrawData(const Vec4& cameraPos);
+
   void reloadLightData();
   void clearDrawData();
   void clearDrawDataWithoutShrink();

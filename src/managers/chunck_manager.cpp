@@ -19,6 +19,9 @@ ChunckManager::~ChunckManager() {
 
   visibleChunks.clear();
   visibleChunks.shrink_to_fit();
+
+  loadedChunks.clear();
+  loadedChunks.shrink_to_fit();
 }
 
 void ChunckManager::init(WorldLightModel* t_worldLightModel, Level* level) {
@@ -31,23 +34,37 @@ void ChunckManager::clearAllChunks() {
   for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
 }
 
+void ChunckManager::updateLoadedChunks() {
+  loadedChunks.clear();
+
+  for (u16 i = 0; i < chuncks.size(); i++) {
+    if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
+      loadedChunks.emplace_back(chuncks[i]);
+    }
+  }
+
+  std::sort(loadedChunks.begin(), loadedChunks.end(), [](Chunck* a, Chunck* b) {
+    return a->getDistanceFromPlayerInChunks() >
+           b->getDistanceFromPlayerInChunks();
+  });
+}
+
 void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   visibleChunks.clear();
 
   // TODO: refactore to fast index by offset
-  for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
-      if (chuncks[i]->state == ChunkState::Loaded) {
-        chuncks[i]->setCamPosition(camPos);
-        chuncks[i]->update(frustumPlanes);
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    Chunck* chk = loadedChunks[i];
+    if (chk->state == ChunkState::Loaded) {
+      chk->setCamPosition(camPos);
+      chk->update(frustumPlanes);
 
-        if (chuncks[i]->isVisible()) {
-          if (!chuncks[i]->isDrawDataLoaded()) {
-            chuncks[i]->loadDrawDataWithoutSorting();
-          }
-
-          visibleChunks.emplace_back(chuncks[i]);
+      if (chk->isVisible()) {
+        if (!chk->isDrawDataLoaded()) {
+          chk->loadDrawDataWithoutSorting();
         }
+
+        visibleChunks.emplace_back(chk);
       }
     }
   }
@@ -150,6 +167,12 @@ void ChunckManager::reloadLightDataOfAllChunks() {
     chuncks[i]->reloadLightData();
   }
   clearLightDataQueue();
+}
+
+void ChunckManager::sortDrawDataFromCamPos(const Vec4& cameraPos) {
+  for (size_t i = 0; i < visibleChunks.size(); i++) {
+    visibleChunks[i]->sortTransParentDrawData(cameraPos);
+  }
 }
 
 const uint16_t ChunckManager::getChunkIdByPosition(
