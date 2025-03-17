@@ -163,6 +163,7 @@ void World::setSavedSpawnArea(Vec4 pos) {
 void World::fixedUpdate(Player* t_player, Camera* t_camera,
                         const float fixedDeltaTime) {
   particlesManager.fixedUpdate(fixedDeltaTime);
+  mobManager.fixedUpdate(fixedDeltaTime);
 
   cloudsManager.update(fixedDeltaTime);
   chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
@@ -355,7 +356,7 @@ void World::loadScheduledChunks() {
       }
 
       // TODO: implement callback 'afterLoadChunk'
-      const u8 shouldSpawnMobInChunk = Utils::Probability(0.0075f);
+      const u8 shouldSpawnMobInChunk = Utils::Probability(0.1);
 
       // TODO: move to chunk randon tick
       // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;

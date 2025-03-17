@@ -87,7 +87,7 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
 
   // Vertical collision and movement
   const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
-  updateTerrainHeightAtPlayerPosition(nextYPos);
+  updateTerrainHeightAtEntityPosition();
   if (!isFlying) updateYPosition(nextYPos);
 
   isMoving = movementDir.length();
@@ -151,16 +151,6 @@ void Player::tick() {
 
 void Player::render() { renderPip->render(t_renderer); }
 
-const BBox Player::getHitBox() {
-  M4x4 translation = M4x4::Identity;
-  translation.translate(_targetPosition);
-  return bbox->getTransformed(translation);
-};
-
-const BBox Player::getHitBox(const M4x4& model) {
-  return bbox->getTransformed(model);
-};
-
 Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
                                const Vec4& camDir) {
   Vec4 direction =
@@ -199,40 +189,13 @@ float Player::getNextVrticalPosition(const float& deltaTime) {
   return _targetPosition.y + (velocity.y * deltaTime);
 }
 
-/** Update player position by gravity and update index of current block */
-void Player::updateYPosition(const float nextYPos) {
-  float resultY = nextYPos;
-  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
-  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
+const float Player::getHeight() { return Utils::Abs(bbox->getHeight()); }
 
-  if (resultY + bbox->getHeight() > worldMaxHeight ||
-      resultY < worldMinHeight) {
-    // Maybe has died, teleport to spaw area
-    spawnArea.print("Reseting player position to:");
-    position.set(spawnArea);
-    _prevPosition.set(position);
-    _targetPosition.set(position);
-
-    velocity = Vec4(0.0f, 0.0f, 0.0f);
-    return;
-  }
-
-  const float playerHeight = Utils::Abs(bbox->getHeight());
-  const float heightLimit = terrainHeight.maxHeight - playerHeight;
-
-  if (resultY < terrainHeight.minHeight) {
-    resultY = terrainHeight.minHeight;
-    velocity.y = 0.0f;
-    isOnGround = true;
-  } else if (resultY >= heightLimit) {
-    resultY = heightLimit;
-    velocity.y = -velocity.y;
-    isOnGround = false;
-  }
-
-  // Finally updates gravity after checks
-  _targetPosition.y = resultY;
-}
+void Player::resolveOutOfWorldBoundaries() {
+  spawnArea.print("Reseting player position to:");
+  velocity = Vec4(0.0f, 0.0f, 0.0f);
+  setPosition(spawnArea);
+};
 
 void Player::onMoved() {
   if (lastTimePlayedWalkSfx > 0.35f) {
@@ -395,48 +358,6 @@ u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
   _targetPosition.x = nextPlayerPos.x;
   _targetPosition.z = nextPlayerPos.z;
   return true;
-}
-
-void Player::updateTerrainHeightAtPlayerPosition(
-    const Vec4 nextVrticalPosition) {
-  BBox playerBB = this->getHitBox();
-  Vec4 minPlayer, maxPlayer;
-  playerBB.getMinMax(&minPlayer, &maxPlayer);
-
-  terrainHeight.reset();
-  underEntity = nullptr;
-  overEntity = nullptr;
-
-  // Prepate the raycast
-  const Vec4 offset = Vec4(0, 40, 0);
-  Vec4 segmentStart = maxPlayer + offset;
-  Vec4 segmentEnd = minPlayer - offset;
-
-  std::vector<int32_t> ni;
-  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
-
-  for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-    if (!entity->collidable) continue;
-
-    // is under or above block
-    if (minPlayer.x <= entity->maxCorner.x &&
-        maxPlayer.x >= entity->minCorner.x &&
-        minPlayer.z <= entity->maxCorner.z &&
-        maxPlayer.z >= entity->minCorner.z) {
-      const float minHeight = entity->maxCorner.y;
-      if (minPlayer.y >= minHeight && minHeight > terrainHeight.minHeight) {
-        terrainHeight.minHeight = minHeight;
-        underEntity = entity;
-      }
-
-      const float maxHeight = entity->minCorner.y;
-      if (maxPlayer.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
-        terrainHeight.maxHeight = maxHeight;
-        overEntity = entity;
-      }
-    }
-  }
 }
 
 /**

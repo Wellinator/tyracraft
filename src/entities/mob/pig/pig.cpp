@@ -3,6 +3,7 @@
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
+#include "timer.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -55,8 +56,16 @@ Pig::~Pig() {
 // Methods
 // ----
 
-void Pig::update(const float& deltaTime, const Vec4& movementDir) {
-  u8 fullProcessing = true;
+void Pig::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir) {
+  // Reset lerp state
+  // set new prev to old target
+  _prevPosition.set(_targetPosition);
+
+  // Vertical collision and movement
+  const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
+  updateTerrainHeightAtEntityPosition();
+  updateYPosition(nextYPos);
+
   if (currentChunck) {
     if (currentChunck->state != ChunkState::Loaded ||
         currentChunck->getDistanceFromPlayerInChunks() > 6) {
@@ -71,299 +80,198 @@ void Pig::update(const float& deltaTime, const Vec4& movementDir) {
     }
   }
 
-  isMoving = movementDir.length() > 0;
-
+  isMoving = movementDir.length();
   if (isMoving) {
+    onMoved();
+
     // TODO: add direction
     // Update mesh rotation; This routine do not change the hitbox
     mesh->rotation.identity();
     float revTheta =
         Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
     mesh->rotation.rotateY(revTheta);
-  }
 
-  Vec4 min, max;
-  BBox tempBBox = getHitBox(&min, &max);
-
-  // Update  State In Water every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater(&min, &max);
-
-  if (isMoving) {
-    Vec4 nextPosition = getNextPosition(deltaTime, movementDir);
-
-    if (nextPosition.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS)) {
-      const bool hasChangedPosition =
-          updatePosition(deltaTime, nextPosition, &tempBBox, &min, &max);
-
-      if (hasChangedPosition) {
-        if (isWalkingAnimationSet)
-          updateWalkingAnimationSpeed();
-        else
-          setWalkingAnimation();
-
-        // TODO:
-        // if (isOnWater()) {
-        // playSwimSfx();
-        // }
-
-        if (fullProcessing) {
-          if (canPlayStepSfx()) {
-            playStepSfx();
-            lastTimePlayedStepSfx = 0.0F;
-            stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);
-          } else {
-            lastTimePlayedStepSfx += deltaTime;
-          }
-        }
-
-        currentChunck = t_chunkManager->getChunckByWorldPosition(nextPosition);
-      } else if (isWalkingAnimationSet) {
-        unsetWalkingAnimation();
-      }
+    // Accelerate speed until mach max
+    const float _maxSpeed = maxSpeed;
+    const float _maxAcc = acceleration;
+    if (speed < _maxSpeed) {
+      speed += _maxAcc * fixedDeltaTime;
+    } else if (speed > _maxSpeed) {
+      // Deaccelerate speed to new max
+      speed -= _maxAcc * fixedDeltaTime;
+      if (speed < _maxSpeed) speed = _maxSpeed;
     }
+
+    Vec4 nextXZPos = getNextXZPosition(fixedDeltaTime, movementDir);
+    updateXZPosition(fixedDeltaTime, nextXZPos);
   } else {
+    onStopMoving();
+
     // Deaccelerate entity speed
     if (speed > 0) {
-      speed -= acceleration * deltaTime;
+      speed -= acceleration * fixedDeltaTime;
     } else if (speed < 0) {
       speed = 0;
     }
-
-    if (isWalkingAnimationSet) {
-      unsetWalkingAnimation();
-    }
   }
 
-  if (fullProcessing) {
-    if (canPlaySaySfx()) {
-      playSaySfx();
-      lastTimePlayedSaySfx = 0;
-      saySfxLimit = Tyra::Math::randomf(5.0f, 20.0f);
-    } else {
-      lastTimePlayedSaySfx += deltaTime;
-    }
-  }
-
-  updateTerrainHeightAtEntityPosition(position, &min, &max);
-  const Vec4 nextYPos = getNextVrticalPosition(deltaTime);
-  updateGravity(nextYPos, &tempBBox, &min, &max);
-
-  // Update entity bbox
-  delete bbox;
-  bbox = new BBox(tempBBox);
-
-  mesh->getPosition()->set(position);
   mesh->update();
 }
 
-Vec4 Pig::getNextPosition(const float& deltaTime, const Vec4& direction) {
-  const float _maxSpeed = maxSpeed;
-  const float _maxAcc = acceleration;
+void Pig::update(const float& deltaTime) {
+  position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-  // Accelerate speed until mach max
-  if (speed < _maxSpeed) {
-    speed += _maxAcc * deltaTime;
-  } else if (speed > _maxSpeed) {
-    // Deaccelerate speed to new max
-    speed -= _maxAcc * deltaTime;
-    if (speed < _maxSpeed) speed = _maxSpeed;
-  }
-
-  Vec4 _direction = Vec4(direction.x, 0.0F, direction.z);
-  Vec4 result = _direction * (speed * deltaTime);
-
-  if (_isOnWater) {
-    result *= IN_WATER_FRICTION;
-  }
-
-  return result + position;
+  mesh->getPosition()->set(position);
 }
 
-Vec4 Pig::getNextVrticalPosition(const float& deltaTime) {
-  // Accelerate the velocity: velocity += gravConst * deltaTime
-  velocity += Vec4(velocity.x, GRAVITY.y * deltaTime, velocity.z);
+void Pig::tick() {
+  // Update updateStateInWater every 5 ticks
+  if (isTicksCounterAt(5)) updateStateInWater();
+}
 
-  if (_isOnWater) {
+float Pig::getNextVrticalPosition(const float& deltaTime) {
+  velocity.y += GRAVITY.y * deltaTime;
+
+  if (_isUnderWater) {
+    velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
+  } else if (_isOnWater) {
     velocity.y *= GRAVITY_ON_WATER_FACTOR;
   }
 
-  // Increase the position by velocity
-  Vec4 nextVerticalPosition = position + (velocity * deltaTime);
-  return nextVerticalPosition;
+  return _targetPosition.y + (velocity.y * deltaTime);
 }
 
-/** Update entity position by gravity and update index of current block */
-void Pig::updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
-                        Vec4* entityMin, Vec4* entityMax) {
-  Vec4 newPosition = nextVerticalPosition;
+Vec4 Pig::getNextXZPosition(const float& deltaTime, const Vec4& movementDir) {
+  Vec4 direction = Vec4(movementDir.x, 0.0F, movementDir.z).getNormalized();
+  Vec4 newVelocity = direction * (speed * deltaTime);
 
-  const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
-  const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
+  velocity.x = newVelocity.x;
+  velocity.z = newVelocity.z;
 
-  if (entityMin->y > worldMaxHeight || entityMax->y < worldMinHeight) {
-    velocity = Vec4(0.0f, 0.0f, 0.0f);
-    shouldUnspawn = true;
-    return;
+  if (_isUnderWater || _isOnWater) {
+    velocity.x *= IN_WATER_FRICTION;
+    velocity.z *= IN_WATER_FRICTION;
   }
 
-  const float enityHeight = Utils::Abs(DUBLE_BLOCK_SIZE * 0.9F);
+  Vec4 result = _targetPosition + Vec4(velocity.x, 0.0f, velocity.z);
 
-  if (newPosition.y < terrainHeight.minHeight) {
-    newPosition.y = terrainHeight.minHeight;
-    velocity = Vec4(0.0f, 0.0f, 0.0f);
-    isOnGround = true;
-  } else if (newPosition.y + enityHeight >= terrainHeight.maxHeight) {
-    newPosition.y = terrainHeight.maxHeight;
-    velocity = -velocity;
-    isOnGround = false;
-  }
-
-  // Finally updates gravity after checks
-  position.set(newPosition);
+  return result.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS) ? result
+                                                          : _targetPosition;
 }
 
-u8 Pig::updatePosition(const float& deltaTime, const Vec4& nextPosition,
-                       BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
-                       u8 isColliding) {
-  Vec4 currentPos = position;
+u8 Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
+                         u8 isColliding) {
+  const float maxCollidableDistance = _targetPosition.distanceTo(nextPosition);
+  const Vec4 positionDiff = nextPosition - _targetPosition;
+  const Vec4 direction = positionDiff.getNormalized();
 
-  // Set ray props
-  Vec4 rayOrigin = ((*entityMax - *entityMin) / 2) + *entityMin;
-  Vec4 rayDir = (nextPosition - currentPos).getNormalized();
-
-  Ray ray;
-  float finalHitDistance = -1.0f;
+  float shortestDistance = -1.0f;
   float tempHitDistance = -1.0f;
-  const float maxCollidableDistance = currentPos.distanceTo(nextPosition);
+  u8 autoJump = false;
 
   // Broad phase
-  // std::vector<index_t> ni;
+  // Temp custom model expanded by entity volocity
+  M4x4 model = M4x4::Identity;
+  Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
+                         std::abs(positionDiff.z));
+  Vec4 scaleFraction = (deltaScale / hitBoxDimensions);
+  model.scale(scaleFraction + Vec4(1.0F, 1.0F, 1.0F));
+  model.translate(_targetPosition + (positionDiff * hitBoxDimensions));
+
+  Vec4 _min, _max;
+  BBox tempBBox = getHitBox(model);
+  tempBBox.getMinMax(&_min, &_max);
+
+  bvh::AABB _aabb;
+  _aabb.minx = _min.x;
+  _aabb.miny = _min.y;
+  _aabb.minz = _min.z;
+  _aabb.maxx = _max.x;
+  _aabb.maxy = _max.y;
+  _aabb.maxz = _max.z;
+
+  std::vector<index_t> ni;
+  g_AABBTree->find_overlaps(_aabb, ni);
+
+  // Narrow phase
+  Vec4 entityMin, entityMax;
+  BBox entityBB = getHitBox();
+  entityBB.getMinMax(&entityMin, &entityMax);
+
+  const Vec4 origin = ((entityMax - entityMin) / 2) + entityMin;
 
   // Prepate the raycast
-  const Vec4 segmentStart = rayOrigin;
-  const Vec4 segmentEnd = (rayDir * (maxCollidableDistance)) + rayOrigin;
+  const Ray ray = Ray(origin, direction);
 
-  t_near_entities->clear();
-  g_AABBTree->intersectLine(segmentStart, segmentEnd, *t_near_entities);
-  t_near_entities->shrink_to_fit();
-
-  bvh::AABB tempAABB = bvh::AABB();
-  tempAABB.minx = entityMin->x;
-  tempAABB.miny = entityMin->y;
-  tempAABB.minz = entityMin->z;
-  tempAABB.maxx = entityMax->x;
-  tempAABB.maxy = entityMax->y;
-  tempAABB.maxz = entityMax->z;
-
-  // t_near_entities->clear();
-  // g_AABBTree->find_overlaps(tempAABB, *t_near_entities);
-  // t_near_entities->shrink_to_fit();
-
-  t_renderer->renderer3D.utility.drawLine(segmentStart, segmentEnd,
-                                          Color(255, 0, 0));
-
-  for (u16 i = 0; i < t_near_entities->size(); i++) {
-    Entity* entity =
-        reinterpret_cast<Entity*>(g_AABBTree->user_data((*t_near_entities)[i]));
-    if (!entity) {
-      TYRA_TRAP("Invalit entity!");
-      return false;
-    };
-
+  for (u16 i = 0; i < ni.size(); i++) {
+    Entity* entity = static_cast<Entity*>(g_AABBTree->user_data(ni[i]));
     if (!entity->collidable) continue;
 
-    if (entityBB->getBottomFace().axisPosition >= entity->maxCorner.y ||
-        entityBB->getTopFace().axisPosition < entity->minCorner.y)
+    if (entityBB.getBottomFace().axisPosition >= entity->maxCorner.y ||
+        entityBB.getTopFace().axisPosition < entity->minCorner.y)
       continue;
-
-    ray.origin.set(rayOrigin);
-    ray.direction.set(rayDir);
 
     Vec4 tempInflatedMin;
     Vec4 tempInflatedMax;
-    Utils::GetMinkowskiSum(*entityMin, *entityMax, entity->minCorner,
+    Utils::GetMinkowskiSum(entityMin, entityMax, entity->minCorner,
                            entity->maxCorner, &tempInflatedMin,
                            &tempInflatedMax);
 
     if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
       // Is horizontally collidable?
-      // if (tempHitDistance > maxCollidableDistance) continue;
+      if (tempHitDistance > maxCollidableDistance) continue;
 
-      if (finalHitDistance == -1.0f || tempHitDistance < finalHitDistance) {
-        finalHitDistance = tempHitDistance;
+      if (shortestDistance == -1.0f || tempHitDistance < shortestDistance) {
+        shortestDistance = tempHitDistance;
+        autoJump = entity->maxCorner.y > entityMin.y &&
+                   (entity->maxCorner.y - entityMin.y <= BLOCK_SIZE);
       }
     }
   }
 
   // Will collide somewhere?
-  if (finalHitDistance > -1.0f) {
-    const double timeToHit = finalHitDistance / speed;
+  if (shortestDistance > -1.0f) {
+    const float timeToHit = shortestDistance / speed;
 
     // Will collide this frame;
     if (timeToHit < deltaTime ||
-        finalHitDistance < position.distanceTo(nextPosition)) {
-      if (isColliding) return false;
+        shortestDistance < _prevPosition.distanceTo(nextPosition)) {
+      if (isColliding) {
+        return false;
+      }
+
+      // Check if can jump
+      if (autoJump && isOnGround) {
+        jumpQuickly();
+        return true;
+      }
 
       // Try to move in separated axis;
-      Vec4 moveOnXOnly = Vec4(nextPosition.x, currentPos.y, currentPos.z);
-      Vec4 moveOnZOnly = Vec4(currentPos.x, currentPos.y, nextPosition.z);
+      Vec4 moveOnXOnly =
+          Vec4(nextPosition.x, _targetPosition.y, _targetPosition.z);
+      if (updateXZPosition(deltaTime, moveOnXOnly, true)) return true;
 
-      return updatePosition(deltaTime, moveOnXOnly, entityBB, entityMin,
-                            entityMax, true) ||
-             updatePosition(deltaTime, moveOnZOnly, entityBB, entityMin,
-                            entityMax, true);
+      Vec4 moveOnZOnly =
+          Vec4(_targetPosition.x, _targetPosition.y, nextPosition.z);
+      if (updateXZPosition(deltaTime, moveOnZOnly, true)) return true;
+
+      return false;
     }
   }
 
   // Apply new position;
-  position.set(nextPosition);
-
-  // Update the aabb in the bvh tree
-  g_AABBTree->move(tree_index, tempAABB);
-
+  _targetPosition.x = nextPosition.x;
+  _targetPosition.z = nextPosition.z;
   return true;
 }
 
-void Pig::updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
-                                              Vec4* minEntityPos,
-                                              Vec4* maxEntityPos) {
-  terrainHeight.reset();
-  underEntity = nullptr;
-  overEntity = nullptr;
+void Pig::resolveOutOfWorldBoundaries() {
+  velocity = Vec4(0.0f, 0.0f, 0.0f);
+  shouldUnspawn = true;
+  return;
+};
 
-  // Prepate the raycast
-  const Vec4 offset = Vec4(0, 40, 0);
-  const Vec4 segmentStart = *maxEntityPos + offset;
-  const Vec4 segmentEnd = *minEntityPos - offset;
-
-  std::vector<int32_t> ni;
-  g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
-
-  // TYRA_LOG("ni: ", (int)ni.size());
-
-  for (u16 i = 0; i < ni.size(); i++) {
-    Entity* entity = reinterpret_cast<Entity*>(g_AABBTree->user_data(ni[i]));
-    if (!entity->collidable) continue;
-
-    // is under or above block
-    if (minEntityPos->x <= entity->maxCorner.x &&
-        maxEntityPos->x >= entity->minCorner.x &&
-        minEntityPos->z <= entity->maxCorner.z &&
-        maxEntityPos->z >= entity->minCorner.z) {
-      const float minHeight = entity->maxCorner.y;
-      if (minEntityPos->y >= minHeight && minHeight > terrainHeight.minHeight) {
-        terrainHeight.minHeight = minHeight;
-        underEntity = entity;
-      }
-
-      const float maxHeight = entity->minCorner.y;
-      if (maxEntityPos->y < maxHeight && maxHeight < terrainHeight.maxHeight) {
-        terrainHeight.maxHeight = maxHeight;
-        overEntity = entity;
-      }
-    }
-  }
-}
+const float Pig::getHeight() { return DUBLE_BLOCK_SIZE * 0.9F; }
 
 void Pig::loadMesh(DynamicMesh* baseMesh) {
   mesh = new DynamicMesh(*baseMesh);
@@ -383,8 +291,20 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
 void Pig::loadStaticBBox() {
   if (bbox) delete bbox;
 
-  Vec4 minCorner, maxCorner;
-  bbox = new BBox(getHitBox(&minCorner, &maxCorner));
+  const float size = DUBLE_BLOCK_SIZE * 0.9F;
+  const float halfSize = (DUBLE_BLOCK_SIZE * 0.9F) / 2;
+  Vec4 minCorner = Vec4(-halfSize, 0, -halfSize) + position;
+  Vec4 maxCorner = Vec4(halfSize, size, halfSize) + position;
+
+  Vec4 vertices[8] = {Vec4(minCorner),
+                      Vec4(maxCorner.x, minCorner.y, minCorner.z),
+                      Vec4(minCorner.x, maxCorner.y, minCorner.z),
+                      Vec4(minCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner),
+                      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
+                      Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
+  bbox = new BBox(vertices, 8);
 
   bvh::AABB blockAABB = bvh::AABB();
   blockAABB.minx = minCorner.x;
@@ -396,31 +316,13 @@ void Pig::loadStaticBBox() {
   tree_index = g_AABBTree->insert(blockAABB, this);
 }
 
-BBox Pig::getHitBox(Vec4* t_min, Vec4* t_max) const {
-  // It's a sqr save value for Width, Depth and Height
-  const float size = DUBLE_BLOCK_SIZE * 0.9F;
-  const float halfSize = (DUBLE_BLOCK_SIZE * 0.9F) / 2;
-
-  Vec4 minCorner = Vec4(-halfSize, 0, -halfSize) + position;
-  Vec4 maxCorner = Vec4(halfSize, size, halfSize) + position;
-
-  if (t_min) t_min->set(minCorner);
-  if (t_max) t_max->set(maxCorner);
-
-  Vec4 vertices[8] = {Vec4(minCorner),
-                      Vec4(maxCorner.x, minCorner.y, minCorner.z),
-                      Vec4(minCorner.x, maxCorner.y, minCorner.z),
-                      Vec4(minCorner.x, minCorner.y, maxCorner.z),
-                      Vec4(maxCorner),
-                      Vec4(minCorner.x, maxCorner.y, maxCorner.z),
-                      Vec4(maxCorner.x, minCorner.y, maxCorner.z),
-                      Vec4(maxCorner.x, maxCorner.y, minCorner.z)};
-
-  return BBox(vertices, 8);
-};
-
 void Pig::jump() {
   velocity += lift;
+  isOnGround = false;
+}
+
+void Pig::jumpQuickly() {
+  velocity += lift * 0.75f;
   isOnGround = false;
 }
 
@@ -436,36 +338,54 @@ void Pig::swim() {
 }
 
 void Pig::setWalkingAnimation() {
-  mesh->animation.setSequence(walkSequence);
-  mesh->animation.speed = 0.3f / speed;
   mesh->animation.loop = true;
+  mesh->animation.setSequence(walkSequence);
   isWalkingAnimationSet = true;
 }
 
 void Pig::updateWalkingAnimationSpeed() {
-  mesh->animation.speed = 0.3f / speed;
+  mesh->animation.speed = TyraCraft::Timer::getInstance()->getFixedDeltaTime() *
+                          (ANIMATION_SPEED_FACT * speed);
 }
 
 void Pig::unsetWalkingAnimation() {
+  if (!isWalkingAnimationSet) return;
+
   mesh->animation.setSequence(standStillSequence);
   mesh->animation.loop = false;
   isWalkingAnimationSet = false;
 }
 
-void Pig::updateStateInWater(Vec4* min, Vec4* max) {
-  Vec4 mid, top, bottom;
-  mid = ((*max - *min) / 2) + *min;
+void Pig::updateStateInWater() {
+  Vec4 min, mid, max, top, bottom;
+  BBox currentBBox = getHitBox();
+  currentBBox.getMinMax(&min, &max);
 
-  bottom.set(mid.x, min->y, mid.z);
-  top.set(mid.x, max->y + 6.0F, mid.z);
+  // mid = ((max - min) / 2) + min;
+  mid = currentBBox.getCenter();
+
+  bottom.set(mid.x, min.y, mid.z);
+  top.set(mid.x, max.y + 6.0F, mid.z);
 
   auto blockBottom =
       static_cast<Blocks>(pLevel->getBlockByWorldPosition(&bottom));
+  auto blockTop = static_cast<Blocks>(pLevel->getBlockByWorldPosition(&top));
 
   _isOnWater = blockBottom == Blocks::WATER_BLOCK;
+  _isUnderWater = blockTop == Blocks::WATER_BLOCK;
+
+  if (!isSubmerged && _isUnderWater) {
+    isSubmerged = true;
+    playSplashSfx();
+  } else if (isSubmerged && !_isUnderWater) {
+    isSubmerged = false;
+    playSplashSfx();
+  }
 }
 
 bool Pig::isOnWater() { return _isOnWater; }
+
+bool Pig::isUnderWater() { return _isUnderWater; }
 
 void Pig::playStepSfx() {
   const std::array<SoundFX, 5> availableStepSounds = {
@@ -525,6 +445,62 @@ void Pig::playDeathSfx() {
   pSoundManager->setSfxVolume(config._volume, ch);
   pSoundManager->playSfx(sound, ch);
 }
+
+void Pig::playSwimSfx() {
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  const int ch = pSoundManager->getAvailableChannel();
+
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Swim1), static_cast<u8>(SoundFX::Swim4)));
+  const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 30;
+
+  SfxLibrarySound* sound =
+      pSoundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+
+  sound->_sound->pitch = randPich;
+  pSoundManager->setSfxVolume(volume, ch);
+  pSoundManager->playSfx(sound, ch);
+}
+
+void Pig::playSplashSfx() {
+  SoundManager* pSoundManager = SoundManager::getInstance();
+  const int ch = pSoundManager->getAvailableChannel();
+  auto randSwimSfx = static_cast<SoundFX>(Tyra::Math::randomi(
+      static_cast<u8>(SoundFX::Splash), static_cast<u8>(SoundFX::Splash2)));
+
+  const u8 randPich = Tyra::Math::randomi(60, 140);
+  const u8 volume = 60;
+
+  SfxLibrarySound* sound =
+      pSoundManager->getSound(SoundFxCategory::Liquid, randSwimSfx);
+  sound->_sound->pitch = randPich;
+  pSoundManager->setSfxVolume(volume, ch);
+  pSoundManager->playSfx(sound, ch);
+}
+
+void Pig::onMoved() {
+  if (fullProcessing) {
+    if (lastTimePlayedStepSfx > stepSfxLimit) {
+      if (isOnWater() || isUnderWater()) {
+        playSwimSfx();
+      } else if (canPlayStepSfx()) {
+        playStepSfx();
+        lastTimePlayedStepSfx = 0.0F;
+        stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);
+      }
+
+      if (!isWalkingAnimationSet) setWalkingAnimation();
+      updateWalkingAnimationSpeed();
+
+    } else {
+      lastTimePlayedStepSfx +=
+          TyraCraft::Timer::getInstance()->getFixedDeltaTime();
+    }
+  }
+}
+
+void Pig::onStopMoving() { unsetWalkingAnimation(); }
 
 // ----
 // Override

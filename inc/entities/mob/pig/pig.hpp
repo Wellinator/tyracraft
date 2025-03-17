@@ -53,45 +53,48 @@ class Pig : public Mob {
       Texture* pigTexture, DynamicMesh* baseMesh);
   ~Pig();
 
-  void update(const float& deltaTime, const Vec4& movementDir);
+  // Override Mob
+  void fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir);
+  void update(const float& deltaTime);
   void render(){};
 
-  inline Vec4* getPosition() { return mesh->getPosition(); };
-  bool isOnGround, isMoving;
-
-  Chunck* currentChunck = nullptr;
-
-  // Phisycs variables
-  Entity* underEntity = nullptr;
-  Entity* overEntity = nullptr;
-
-  BBox getHitBox() const { return getHitBox(nullptr, nullptr); };
-  BBox getHitBox(Vec4* t_min, Vec4* t_max) const;
-
-  Level* pLevel;
   Renderer* t_renderer;
+  Chunck* currentChunck = nullptr;
+  Level* pLevel;
 
   void setWalkingAnimation();
   void updateWalkingAnimationSpeed();
   void unsetWalkingAnimation();
   void jump();
+  void jumpQuickly();
   void swim();
-
   bool isOnWater();
+  bool isUnderWater();
 
-  // Override
+  // Override Mob
   /** Mob category */
   virtual MobCategory getCategory() override;
 
   /** Mob type */
   virtual MobType getType() override;
 
+  // Override Entity
+  void tick() override;
+  const float getHeight() override;
+  void resolveOutOfWorldBoundaries() override;
+
+  void onMoved();
+  void onStopMoving();
+
  private:
-  Vec4 getNextPosition(const float& deltaTime, const Vec4& direction);
+  Vec4 getNextXZPosition(const float& deltaTime, const Vec4& movementDir);
+  u8 updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
+                      u8 isColliding = 0);
 
   ChunckManager* t_chunkManager;
   Audio* t_audio;
 
+  bool isSubmerged = false;
   bool isWalkingAnimationSet, isStandStillAnimationSet;
 
   // Forces values
@@ -99,10 +102,9 @@ class Pig : public Mob {
   const float maxSpeed = 20.0F;
   float speed = 0.0F;
 
-  void updateTerrainHeightAtEntityPosition(const Vec4 nextVrticalPosition,
-                                           Vec4* minEntityPos,
-                                           Vec4* maxEntityPos);
-  TerrainHeightModel terrainHeight;
+  const Vec4 hitBoxDimensions =
+      Vec4((DUBLE_BLOCK_SIZE * 0.9F) / 2, DUBLE_BLOCK_SIZE * 0.9F,
+           (DUBLE_BLOCK_SIZE * 0.9F) / 2);
 
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
@@ -111,9 +113,7 @@ class Pig : public Mob {
   void loadMesh(DynamicMesh* baseMesh);
   void loadStaticBBox();
   void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  Vec4 getNextVrticalPosition(const float& deltaTime);
-  void updateGravity(const Vec4 nextVerticalPosition, BBox* bbox,
-                     Vec4* entityMin, Vec4* entityMax);
+  float getNextVrticalPosition(const float& deltaTime);
   u8 updatePosition(const float& deltaTime, const Vec4& nextPosition,
                     BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
                     u8 isColliding = 0);
@@ -126,16 +126,19 @@ class Pig : public Mob {
   void playStepSfx();
   void playSaySfx();
   void playDeathSfx();
-  inline const u8 canPlayStepSfx() {
-    return lastTimePlayedStepSfx > stepSfxLimit;
-  }
+  void playSwimSfx();
+  void playSplashSfx();
+
   inline const u8 canPlaySaySfx() { return lastTimePlayedSaySfx > saySfxLimit; }
+  inline const u8 canPlayStepSfx() {
+    return isOnGround && underEntity &&
+           underEntity->entity_type == EntityType::Block;
+  }
 
   // Animations
-  float baseAnimationSpeed = 0.35F;
+  const float ANIMATION_SPEED_FACT = 0.2f;
   std::vector<u32> standStillSequence = {0};
   std::vector<u32> walkSequence = {1, 2};
 
-  u8 _isOnWater;
-  void updateStateInWater(Vec4* min, Vec4* max);
+  void updateStateInWater();
 };

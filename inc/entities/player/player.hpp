@@ -21,7 +21,6 @@
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
-#include "models/terrain_height_model.hpp"
 #include "entities/chunck.hpp"
 #include "entities/player/player_render_pip.hpp"
 #include "entities/player/player_render_arm_pip.hpp"
@@ -62,7 +61,7 @@ class Player : public Entity {
   void fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
                    Camera* t_camera);
   void update(const float& deltaTime, Camera* t_camera);
-  void tick();
+  void tick() override;
   void render();
 
   void setRenderArmPip();
@@ -77,6 +76,7 @@ class Player : public Entity {
   Level* pLevel;
 
   inline Vec4* getPosition() { return &position; };
+  
   void setPosition(const Vec4& pos) {
     position.set(pos);
     mesh->getPosition()->set(position);
@@ -85,7 +85,7 @@ class Player : public Entity {
     _targetPosition.set(position);
   };
 
-  bool isOnGround, isFlying, isBreaking, isPuting, isMoving, isRunning;
+  bool isFlying, isBreaking, isPuting, isRunning;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
@@ -102,8 +102,10 @@ class Player : public Entity {
 
   // Phisycs variables
   Ray ray;
-  Entity* underEntity = nullptr;
-  Entity* overEntity = nullptr;
+
+  // Override Entity
+  const float getHeight() override;
+  void resolveOutOfWorldBoundaries() override;
 
   // Inventory
   u8 inventoryHasChanged = 1;
@@ -120,8 +122,6 @@ class Player : public Entity {
   const Vec4 hitBoxDimensions =
       Vec4((DUBLE_BLOCK_SIZE * 0.4F) / 2, DUBLE_BLOCK_SIZE * 1.8F,
            (DUBLE_BLOCK_SIZE * 0.4F) / 2);
-  const BBox getHitBox();
-  const BBox getHitBox(const M4x4& model);
 
   DynPipOptions modelDynpipOptions;
   DynamicPipeline dynpip;
@@ -169,13 +169,9 @@ class Player : public Entity {
   float acceleration = 140.0F;
   float speed = 0;
   float maxSpeed = 60.0F;
-  Vec4 _prevPosition = Vec4(0.0F), _targetPosition = Vec4(0.0F);
 
   float runningAcceleration = 170.0F;
   float runningMaxSpeed = 100.0F;
-
-  void updateTerrainHeightAtPlayerPosition(const Vec4 nextVrticalPosition);
-  TerrainHeightModel terrainHeight;
 
   // Phisycs values
   Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
@@ -190,7 +186,6 @@ class Player : public Entity {
            const Vec4& direction);
   u8 updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
                       u8 isColliding = 0);
-  void updateYPosition(const float nextVerticalPosition);
 
   // Inventory
 
@@ -219,8 +214,6 @@ class Player : public Entity {
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
 
-  u8 _isOnWater;
-  u8 _isUnderWater;
   void updateStateInWater();
 
   const float _minFov = 60.0F;

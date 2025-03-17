@@ -26,6 +26,7 @@ class MobManager {
 
   void init(Renderer* renderer, WorldLightModel* t_worldLightModel,
             Level* level, ChunckManager* t_chunkManager);
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void tick();
   void render();
@@ -34,7 +35,8 @@ class MobManager {
   Mob* spawnMobAtPosition(const MobType type, const Vec4& position);
   void unspawnMob(const uint32_t id);
 
-  static const u8 MAX_MOBS_LIMIT = 3;
+  // TODO: should be test to check PS2 limits
+  static const u8 MAX_MOBS_LIMIT = 10;
 
  private:
   // TODO: move to mob AI

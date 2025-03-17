@@ -21,17 +21,20 @@ class Mob : public Entity {
     delete t_near_entities;
   };
 
-  virtual void update(const float& deltaTime, const Vec4& movementDir) = 0;
+  // TODO: Replace the movementDir param by pathFinder
+  virtual void fixedUpdate(const float& fixedDeltaTime,
+                           const Vec4& movementDir) = 0;
+  virtual void update(const float& deltaTime) = 0;
   virtual void render() = 0;
 
-  virtual BBox getHitBox() const = 0;
-  virtual BBox getHitBox(Vec4* t_min = nullptr,
-                         Vec4* t_max = nullptr) const = 0;
-
-  void setPosition(const Vec4& pos) {
+  virtual inline Vec4* getPosition() { return &position; };
+  virtual void setPosition(const Vec4& pos) {
     position.set(pos);
     mesh->getPosition()->set(position);
-  }
+
+    _prevPosition.set(position);
+    _targetPosition.set(position);
+  };
 
   /** Mob category */
   virtual MobCategory getCategory() {
@@ -57,6 +60,7 @@ class Mob : public Entity {
   /** Temp last moviment dir */
   Vec4 moviemntDirection;
 
+  u8 fullProcessing = true;
   u8 shouldUnspawn = false;
   u8 collidable = true;
   std::vector<bvh::index_t>* t_near_entities = nullptr;

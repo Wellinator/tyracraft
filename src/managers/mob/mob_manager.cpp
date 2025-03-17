@@ -44,13 +44,8 @@ void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
   dynpip.setRenderer(&this->t_renderer->core);
 }
 
-void MobManager::update(const float& deltaTime) {
+void MobManager::fixedUpdate(const float& fixedDeltaTime) {
   for (size_t i = 0; i < mobs.size(); i++) {
-    if (mobs[i]->shouldUnspawn) {
-      _mobsHasChanged = true;
-      continue;
-    }
-
     const auto isTimeToChangeDir = changeDirectionTimer > changeDirectionLimit;
     if (isTimeToChangeDir) {
       const u8 shouldChangeDirection = Utils::Probability(0.7);
@@ -65,14 +60,27 @@ void MobManager::update(const float& deltaTime) {
       changeDirectionTimer = 0;
       changeDirectionLimit = Tyra::Math::randomf(2, 3);
     } else {
-      changeDirectionTimer += deltaTime;
+      changeDirectionTimer += fixedDeltaTime;
     }
 
-    mobs[i]->update(deltaTime, mobs[i]->moviemntDirection);
+    mobs[i]->fixedUpdate(fixedDeltaTime, mobs[i]->moviemntDirection);
+  }
+}
+
+void MobManager::update(const float& deltaTime) {
+  for (size_t i = 0; i < mobs.size(); i++) {
+    if (mobs[i]->shouldUnspawn) {
+      _mobsHasChanged = true;
+      continue;
+    }
+
+    mobs[i]->update(deltaTime);
   }
 }
 
 void MobManager::tick() {
+  for (size_t i = 0; i < mobs.size(); i++) mobs[i]->tick();
+
   if (_mobsHasChanged && isTicksCounterAt(15)) {
     _destroyUnspownedMobs();
   }
@@ -85,7 +93,8 @@ void MobManager::render() {
       dynpip.render(mobs[i]->mesh, &dynpipOptions);
 
 #ifdef DEBUG_MODE
-      t_renderer->renderer3D.utility.drawBBox(*mobs[i]->bbox, Color(0, 255, 0));
+      auto currentBBox = mobs[i]->getHitBox();
+      t_renderer->renderer3D.utility.drawBBox(currentBBox, Color(0, 255, 0));
 
       for (u16 j = 0; j < mobs[i]->t_near_entities->size(); j++) {
         Entity* entity = reinterpret_cast<Entity*>(
@@ -93,7 +102,7 @@ void MobManager::render() {
 
         if (entity->tree_index == mobs[i]->tree_index) continue;
 
-        t_renderer->renderer3D.utility.drawBBox(*entity->bbox,
+        t_renderer->renderer3D.utility.drawBBox(entity->getHitBox(),
                                                 Color(255, 0, 0));
       }
 #endif
@@ -143,6 +152,8 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
   if (mobs.size() >= MAX_MOBS_LIMIT) {
     return nullptr;
   }
+
+  position.print("Spawning Pig at: ");
 
   switch (type) {
     case MobType::Pig:
