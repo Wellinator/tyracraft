@@ -7,7 +7,7 @@ using Tyra::M4x4;
 using Tyra::Plane;
 using Tyra::Vec4;
 
-ChunckManager::ChunckManager() {}
+ChunckManager::ChunckManager() : Singleton<ChunckManager>() {}
 
 ChunckManager::~ChunckManager() {
   for (u16 i = 0; i < chuncks.size(); i++) {
@@ -243,4 +243,22 @@ Chunck* ChunckManager::getChunkByBlockOffset(const Vec4& offset) {
                       CHUNCK_SIZE;
 
   return getChunkByPosition(tempChunkMin);
+}
+
+int ChunckManager::getHeightAtOffset(const Vec4& offset) {
+  int y = pLevel->map.height - 1;
+
+  while (y >= 0) {
+    if (pLevel->GetBlockFromMap(offset.x, y - 1, offset.z) !=
+        (int)Blocks::AIR_BLOCK)
+      return y;
+    y--;
+  }
+
+  return 0;
+}
+
+float ChunckManager::getHeightAtPosition(const Vec4& position) {
+  const Vec4 offset = pLevel->worldPosToOffset(position);
+  return getHeightAtOffset(offset) * DUBLE_BLOCK_SIZE;
 }

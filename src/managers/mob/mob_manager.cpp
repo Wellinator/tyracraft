@@ -46,24 +46,8 @@ void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
 
 void MobManager::fixedUpdate(const float& fixedDeltaTime) {
   for (size_t i = 0; i < mobs.size(); i++) {
-    const auto isTimeToChangeDir = changeDirectionTimer > changeDirectionLimit;
-    if (isTimeToChangeDir) {
-      const u8 shouldChangeDirection = Utils::Probability(0.7);
-      if (shouldChangeDirection) {
-        const Vec4 start = mobs[i]->moviemntDirection;
-        const Vec4 end = _getMobMoviementDirection(mobs[i]);
-
-        Vec4::setLerp(&mobs[i]->moviemntDirection, start, end, 0.1f);
-        mobs[i]->moviemntDirection.normalize();
-      }
-
-      changeDirectionTimer = 0;
-      changeDirectionLimit = Tyra::Math::randomf(2, 3);
-    } else {
-      changeDirectionTimer += fixedDeltaTime;
-    }
-
-    mobs[i]->fixedUpdate(fixedDeltaTime, mobs[i]->moviemntDirection);
+    if (mobs[i]->shouldUnspawn) continue;
+    mobs[i]->fixedUpdate(fixedDeltaTime);
   }
 }
 
@@ -89,24 +73,45 @@ void MobManager::tick() {
 void MobManager::render() {
   t_renderer->renderer3D.usePipeline(&dynpip);
   for (size_t i = 0; i < mobs.size(); i++) {
-    if (mobs[i] && !mobs[i]->shouldUnspawn) {
-      dynpip.render(mobs[i]->mesh, &dynpipOptions);
+    if (mobs[i]->shouldUnspawn) continue;
+    dynpip.render(mobs[i]->mesh.get(), &dynpipOptions);
 
 #ifdef DEBUG_MODE
-      auto currentBBox = mobs[i]->getHitBox();
-      t_renderer->renderer3D.utility.drawBBox(currentBBox, Color(0, 255, 0));
+    auto currentBBox = mobs[i]->getHitBox();
+    t_renderer->renderer3D.utility.drawBBox(currentBBox, Color(200, 20, 200));
 
-      for (u16 j = 0; j < mobs[i]->t_near_entities->size(); j++) {
-        Entity* entity = reinterpret_cast<Entity*>(
-            g_AABBTree->user_data((*mobs[i]->t_near_entities)[j]));
+    if (mobs[i]->currentPath != nullptr) {
+      auto& waypoints = mobs[i]->currentPath->waypoints;
 
-        if (entity->tree_index == mobs[i]->tree_index) continue;
+      // Start Red
+      const Vec4 start = waypoints[0];
+      t_renderer->renderer3D.utility.drawBox(start, 0.5f, Color(200, 0, 0));
 
-        t_renderer->renderer3D.utility.drawBBox(entity->getHitBox(),
-                                                Color(255, 0, 0));
+      //  Cursor Blue
+      for (size_t j = 1; j < waypoints.size() - 1; j++) {
+        const Vec4 p = waypoints[j];
+        t_renderer->renderer3D.utility.drawBox(p, 0.5f, Color(50, 50, 200));
       }
-#endif
+
+      // Goal Green
+      const Vec4 goal = waypoints[waypoints.size() - 1];
+      t_renderer->renderer3D.utility.drawBox(goal, 0.5f, Color(0, 200, 0));
     }
+
+    // Current Yellow
+    t_renderer->renderer3D.utility.drawBox(mobs[i]->position, 0.5f,
+                                           Color(200, 200, 50));
+
+    for (u16 j = 0; j < mobs[i]->t_near_entities->size(); j++) {
+      Entity* entity = reinterpret_cast<Entity*>(
+          g_AABBTree->user_data((*mobs[i]->t_near_entities)[j]));
+
+      if (entity->tree_index == mobs[i]->tree_index) continue;
+
+      t_renderer->renderer3D.utility.drawBBox(entity->getHitBox(),
+                                              Color(255, 0, 0));
+    }
+#endif
   }
 }
 
@@ -149,14 +154,13 @@ Mob* MobManager::spawnMob(const MobType type) {
 }
 
 Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
-  if (mobs.size() >= MAX_MOBS_LIMIT) {
+  if (mobs.size() > MAX_MOBS_LIMIT) {
     return nullptr;
   }
 
-  position.print("Spawning Pig at: ");
-
   switch (type) {
     case MobType::Pig:
+      position.print("Spawning Pig at: ");
       return _createPigAtPosition(position);
 
     default:
@@ -168,7 +172,7 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
 Mob* MobManager::_createPig() {
   Pig* mob =
       new Pig(pLevel, t_renderer, t_chunkManager, pigTexture, pigBaseMesh);
-  mobs.push_back(mob);
+  mobs.emplace_back(mob);
   return mob;
 }
 

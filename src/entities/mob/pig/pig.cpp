@@ -40,8 +40,8 @@ Pig::~Pig() {
 
   g_AABBTree->remove(tree_index);
 
-  for (size_t i = 0; i < mesh->materials.size(); i++)
-    texture->removeLinkById(mesh->materials[i]->id);
+  for (size_t i = 0; i < mesh.get()->materials.size(); i++)
+    texture->removeLinkById(mesh.get()->materials[i]->id);
 
   delete bbox;
 
@@ -56,72 +56,33 @@ Pig::~Pig() {
 // Methods
 // ----
 
-void Pig::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir) {
+void Pig::fixedUpdate(const float& fixedDeltaTime) {
   // Reset lerp state
   // set new prev to old target
   _prevPosition.set(_targetPosition);
+
+  Chunck* chk = t_chunkManager->getChunckByWorldPosition(position);
+  if (chk != nullptr) {
+    if (chk->state != ChunkState::Loaded ||
+        chk->getDistanceFromPlayerInChunks() > 6) {
+      shouldUnspawn = true;
+      return;
+    }
+  }
+
+  Mob::fixedUpdate(fixedDeltaTime);
 
   // Vertical collision and movement
   const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
   updateTerrainHeightAtEntityPosition();
   updateYPosition(nextYPos);
 
-  if (currentChunck) {
-    if (currentChunck->state != ChunkState::Loaded ||
-        currentChunck->getDistanceFromPlayerInChunks() > 6) {
-      shouldUnspawn = true;
-      return;
-    } else if (currentChunck->getDistanceFromPlayerInChunks() > 3) {
-      // Too faraway, no updates
-      return;
-    } else if (currentChunck->getDistanceFromPlayerInChunks() == 3) {
-      // no sounds and larger ticks updates
-      fullProcessing = false;
-    }
-  }
-
-  isMoving = movementDir.length();
-  if (isMoving) {
-    onMoved();
-
-    // TODO: add direction
-    // Update mesh rotation; This routine do not change the hitbox
-    mesh->rotation.identity();
-    float revTheta =
-        Utils::reverseAngle(Tyra::Math::atan2(movementDir.x, movementDir.z));
-    mesh->rotation.rotateY(revTheta);
-
-    // Accelerate speed until mach max
-    const float _maxSpeed = maxSpeed;
-    const float _maxAcc = acceleration;
-    if (speed < _maxSpeed) {
-      speed += _maxAcc * fixedDeltaTime;
-    } else if (speed > _maxSpeed) {
-      // Deaccelerate speed to new max
-      speed -= _maxAcc * fixedDeltaTime;
-      if (speed < _maxSpeed) speed = _maxSpeed;
-    }
-
-    Vec4 nextXZPos = getNextXZPosition(fixedDeltaTime, movementDir);
-    updateXZPosition(fixedDeltaTime, nextXZPos);
-  } else {
-    onStopMoving();
-
-    // Deaccelerate entity speed
-    if (speed > 0) {
-      speed -= acceleration * fixedDeltaTime;
-    } else if (speed < 0) {
-      speed = 0;
-    }
-  }
-
-  mesh->update();
+  mesh.get()->update();
 }
 
 void Pig::update(const float& deltaTime) {
   position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
-
-  mesh->getPosition()->set(position);
+  mesh.get()->getPosition()->set(position);
 }
 
 void Pig::tick() {
@@ -129,8 +90,8 @@ void Pig::tick() {
   if (isTicksCounterAt(5)) updateStateInWater();
 }
 
-float Pig::getNextVrticalPosition(const float& deltaTime) {
-  velocity.y += GRAVITY.y * deltaTime;
+float Pig::getNextVrticalPosition(const float& fixedDeltaTime) {
+  velocity.y += GRAVITY.y * fixedDeltaTime;
 
   if (_isUnderWater) {
     velocity.y *= GRAVITY_UNDER_WATER_FACTOR;
@@ -138,25 +99,25 @@ float Pig::getNextVrticalPosition(const float& deltaTime) {
     velocity.y *= GRAVITY_ON_WATER_FACTOR;
   }
 
-  return _targetPosition.y + (velocity.y * deltaTime);
+  return _targetPosition.y + (velocity.y * fixedDeltaTime);
 }
 
-Vec4 Pig::getNextXZPosition(const float& deltaTime, const Vec4& movementDir) {
-  Vec4 direction = Vec4(movementDir.x, 0.0F, movementDir.z).getNormalized();
-  Vec4 newVelocity = direction * (speed * deltaTime);
+Vec4 Pig::getNextXZPosition(const float& fixedDeltaTime, const Vec4& target) {
+  float step = speed * fixedDeltaTime;
+  if (_isUnderWater || _isOnWater) step *= IN_WATER_FRICTION;
 
-  velocity.x = newVelocity.x;
-  velocity.z = newVelocity.z;
+  Vec4 distance = target - _targetPosition;
+  Vec4 dir = distance.getNormalized();
 
-  if (_isUnderWater || _isOnWater) {
-    velocity.x *= IN_WATER_FRICTION;
-    velocity.z *= IN_WATER_FRICTION;
-  }
+  Vec4 delta = Vec4(dir.x, 0.0F, dir.z) * step;
+  velocity.x = delta.x;
+  velocity.z = delta.z;
 
-  Vec4 result = _targetPosition + Vec4(velocity.x, 0.0f, velocity.z);
+  const float length = distance.length();
 
-  return result.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS) ? result
-                                                          : _targetPosition;
+  // Avoid overshooting
+  if (length == 0.0f || step * step >= length) return target;
+  return _targetPosition + delta;
 }
 
 u8 Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
@@ -274,25 +235,24 @@ void Pig::resolveOutOfWorldBoundaries() {
 const float Pig::getHeight() { return DUBLE_BLOCK_SIZE * 0.9F; }
 
 void Pig::loadMesh(DynamicMesh* baseMesh) {
-  mesh = new DynamicMesh(*baseMesh);
-  mesh->rotation.identity();
-  mesh->scale.identity();
-  // mesh->scale.scaleX(0.85F);
+  mesh = std::make_unique<DynamicMesh>(*baseMesh);
+  mesh.get()->rotation.identity();
+  mesh.get()->scale.identity();
 
-  auto& materials = mesh->materials;
+  auto& materials = mesh.get()->materials;
   for (size_t i = 0; i < materials.size(); i++)
     texture->addLink(materials[i]->id);
 
-  mesh->animation.setSequence(standStillSequence);
-  mesh->animation.loop = false;
-  mesh->animation.speed = 0;
+  mesh.get()->animation.setSequence(standStillSequence);
+  mesh.get()->animation.loop = false;
+  mesh.get()->animation.speed = 0;
 }
 
 void Pig::loadStaticBBox() {
   if (bbox) delete bbox;
 
   const float size = DUBLE_BLOCK_SIZE * 0.9F;
-  const float halfSize = (DUBLE_BLOCK_SIZE * 0.9F) / 2;
+  const float halfSize = size / 2;
   Vec4 minCorner = Vec4(-halfSize, 0, -halfSize) + position;
   Vec4 maxCorner = Vec4(halfSize, size, halfSize) + position;
 
@@ -338,21 +298,22 @@ void Pig::swim() {
 }
 
 void Pig::setWalkingAnimation() {
-  mesh->animation.loop = true;
-  mesh->animation.setSequence(walkSequence);
+  mesh.get()->animation.loop = true;
+  mesh.get()->animation.setSequence(walkSequence);
   isWalkingAnimationSet = true;
 }
 
 void Pig::updateWalkingAnimationSpeed() {
-  mesh->animation.speed = TyraCraft::Timer::getInstance()->getFixedDeltaTime() *
-                          (ANIMATION_SPEED_FACT * speed);
+  mesh.get()->animation.speed =
+      TyraCraft::Timer::getInstance()->getFixedDeltaTime() *
+      (ANIMATION_SPEED_FACT * speed);
 }
 
 void Pig::unsetWalkingAnimation() {
   if (!isWalkingAnimationSet) return;
 
-  mesh->animation.setSequence(standStillSequence);
-  mesh->animation.loop = false;
+  mesh.get()->animation.setSequence(standStillSequence);
+  mesh.get()->animation.loop = false;
   isWalkingAnimationSet = false;
 }
 
@@ -480,23 +441,21 @@ void Pig::playSplashSfx() {
 }
 
 void Pig::onMoved() {
-  if (fullProcessing) {
-    if (lastTimePlayedStepSfx > stepSfxLimit) {
-      if (isOnWater() || isUnderWater()) {
-        playSwimSfx();
-      } else if (canPlayStepSfx()) {
-        playStepSfx();
-        lastTimePlayedStepSfx = 0.0F;
-        stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);
-      }
-
-      if (!isWalkingAnimationSet) setWalkingAnimation();
-      updateWalkingAnimationSpeed();
-
-    } else {
-      lastTimePlayedStepSfx +=
-          TyraCraft::Timer::getInstance()->getFixedDeltaTime();
+  if (lastTimePlayedStepSfx > stepSfxLimit) {
+    if (isOnWater() || isUnderWater()) {
+      playSwimSfx();
+    } else if (canPlayStepSfx()) {
+      playStepSfx();
+      lastTimePlayedStepSfx = 0.0F;
+      stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);
     }
+
+    if (!isWalkingAnimationSet) setWalkingAnimation();
+    updateWalkingAnimationSpeed();
+
+  } else {
+    lastTimePlayedStepSfx +=
+        TyraCraft::Timer::getInstance()->getFixedDeltaTime();
   }
 }
 

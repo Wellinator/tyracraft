@@ -68,6 +68,9 @@ class Entity {
     Vec4 minEntity, maxEntity;
     entityBB.getMinMax(&minEntity, &maxEntity);
 
+    // Padding used to fix the position offset
+    const float EPSLON = 0.0001f;
+
     terrainHeight.reset();
     underEntity = nullptr;
     overEntity = nullptr;
@@ -89,13 +92,13 @@ class Entity {
           maxEntity.x >= entity->minCorner.x &&
           minEntity.z <= entity->maxCorner.z &&
           maxEntity.z >= entity->minCorner.z) {
-        const float minHeight = entity->maxCorner.y;
+        const float minHeight = entity->maxCorner.y + EPSLON;
         if (minEntity.y >= minHeight && minHeight > terrainHeight.minHeight) {
           terrainHeight.minHeight = minHeight;
           underEntity = entity;
         }
 
-        const float maxHeight = entity->minCorner.y;
+        const float maxHeight = entity->minCorner.y - EPSLON;
         if (maxEntity.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
           terrainHeight.maxHeight = maxHeight;
           overEntity = entity;

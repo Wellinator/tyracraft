@@ -94,7 +94,8 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
     if (clicked.Circle) printMemoryInfoToLog();
 
     if (pressed.Square && clicked.DpadUp) {
-      postFxManager.updateDebugPallet();
+      stateGamePlay->world->mobManager.spawnMobAtPosition(
+          MobType::Pig, stateGamePlay->player->position);
     }
 
     // List loaded textures and VRAM
@@ -281,15 +282,15 @@ void CreativePlayingState::drawDegubInfo() {
       std::string("Ticks: ").append(std::to_string(g_ticksCounter));
   fm.printText(ticks, FontOptions(Vec2(5.0f, 45.0f), Color(255), 0.8F));
   // Draw Player Position
-  const Vec4 pos = *stateGamePlay->player->getPosition();
-  std::string playerPosition =
-      std::string("Player Position ")
-          .append(" X: ")
-          .append(std::to_string(static_cast<int>(pos.x / DUBLE_BLOCK_SIZE)))
-          .append("   Y: ")
-          .append(std::to_string(static_cast<int>(pos.y / DUBLE_BLOCK_SIZE)))
-          .append("   Z: ")
-          .append(std::to_string(static_cast<int>(pos.z / DUBLE_BLOCK_SIZE)));
+  const Vec4 playerOffset = stateGamePlay->world->pLevel->worldPosToOffset(
+      *stateGamePlay->player->getPosition());
+  std::string playerPosition = std::string("Player Position ")
+                                   .append(" X: ")
+                                   .append(std::to_string((int)playerOffset.x))
+                                   .append("   Y: ")
+                                   .append(std::to_string((int)playerOffset.y))
+                                   .append("   Z: ")
+                                   .append(std::to_string((int)playerOffset.z));
   fm.printText(playerPosition,
                FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
 

@@ -36,6 +36,12 @@ using Tyra::Mesh;
 using Tyra::Plane;
 using Tyra::Vec4;
 
+struct EqualVect4 {
+  bool operator()(const Vec4& a, const Vec4& b) const {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+  }
+};
+
 struct UtilDirectory {
   UtilDirectory(dirent* dt) {
     isDir = S_ISDIR(dt->d_stat.st_mode);

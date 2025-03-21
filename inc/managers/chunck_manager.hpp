@@ -13,6 +13,7 @@
 #include <queue>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
+#include "singleton.hpp"
 
 using Tyra::M4x4;
 using Tyra::Plane;
@@ -20,7 +21,7 @@ using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-class ChunckManager {
+class ChunckManager : public Singleton<ChunckManager> {
  public:
   ChunckManager();
   ~ChunckManager();
@@ -53,6 +54,10 @@ class ChunckManager {
   Chunck* getChunckByWorldPosition(const Vec4& pos);
   Vec4 getChunkPosById(const uint16_t& id);
   void getChunkPosById(const uint16_t& id, Vec4* result);
+
+  // TODO: implement to heightmap
+  int getHeightAtOffset(const Vec4& offset);
+  float getHeightAtPosition(const Vec4& position);
 
  private:
   WorldLightModel* worldLightModel;

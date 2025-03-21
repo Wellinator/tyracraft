@@ -4,6 +4,8 @@
 #include "constants.hpp"
 #include "entities/entity.hpp"
 #include "entities/level.hpp"
+#include "entities/mob/AI/path_result.hpp"
+#include "entities/mob/AI/mob_state.hpp"
 #include "3libs/bvh/bvh.h"
 #include <memory>
 
@@ -11,26 +13,24 @@ using Tyra::DynamicMesh;
 
 class Mob : public Entity {
  public:
-  Mob(Level* level) : Entity(level, EntityType::Mob) {
-    t_near_entities = new std::vector<bvh::index_t>();
-  };
+  Mob(Level* level);
+  virtual ~Mob();
 
-  virtual ~Mob() {
-    t_near_entities->clear();
-    t_near_entities->shrink_to_fit();
-    delete t_near_entities;
-  };
-
-  // TODO: Replace the movementDir param by pathFinder
-  virtual void fixedUpdate(const float& fixedDeltaTime,
-                           const Vec4& movementDir) = 0;
-  virtual void update(const float& deltaTime) = 0;
+  virtual void fixedUpdate(const float& fixedDeltaTime);
+  virtual void update(const float& deltaTime);
   virtual void render() = 0;
+
+  virtual void onMoved() = 0;
+  virtual void onStopMoving() = 0;
+  virtual Vec4 getNextXZPosition(const float& fixedDeltaTime,
+                                 const Vec4& target) = 0;
+  virtual u8 updateXZPosition(const float& fixedDeltaTime,
+                              const Vec4& nextPosition, u8 isColliding = 0) = 0;
 
   virtual inline Vec4* getPosition() { return &position; };
   virtual void setPosition(const Vec4& pos) {
     position.set(pos);
-    mesh->getPosition()->set(position);
+    mesh.get()->getPosition()->set(position);
 
     _prevPosition.set(position);
     _targetPosition.set(position);
@@ -52,16 +52,18 @@ class Mob : public Entity {
   const uint32_t id = rand() % 999999;
 
   /** Mob mesh data */
-  DynamicMesh* mesh;
+  std::unique_ptr<DynamicMesh> mesh;
 
   Vec4 spawnPosition;
-
-  // TODO: move to mob AI
-  /** Temp last moviment dir */
-  Vec4 moviemntDirection;
+  Vec4 lookAt;
 
   u8 fullProcessing = true;
   u8 shouldUnspawn = false;
   u8 collidable = true;
   std::vector<bvh::index_t>* t_near_entities = nullptr;
+
+  // AI
+  MobState* currentState;
+  std::unique_ptr<PathResult> currentPath;
+  bool advancePath(const float& fixedDeltaTime, bool faceRoute = true);
 };

@@ -355,18 +355,18 @@ void World::loadScheduledChunks() {
                chunk->timeToBuild);
       }
 
-      // TODO: implement callback 'afterLoadChunk'
-      const u8 shouldSpawnMobInChunk = Utils::Probability(0.1);
+      // // TODO: implement callback 'afterLoadChunk'
+      // const u8 shouldSpawnMobInChunk = Utils::Probability(0.1);
 
       // TODO: move to chunk randon tick
       // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
 
-      if (shouldSpawnMobInChunk) {
-        Vec4 _spawnPosition;
-        if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-          mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
-        }
-      }
+      // if (shouldSpawnMobInChunk) {
+      //   Vec4 _spawnPosition;
+      //   if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+      //     mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+      //   }
+      // }
 
       tempChuncksToLoad.pop_front();
       if (tempChuncksToLoad.size() == 0) {

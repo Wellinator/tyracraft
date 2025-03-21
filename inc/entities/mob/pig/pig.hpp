@@ -54,12 +54,11 @@ class Pig : public Mob {
   ~Pig();
 
   // Override Mob
-  void fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir);
+  void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void render(){};
 
   Renderer* t_renderer;
-  Chunck* currentChunck = nullptr;
   Level* pLevel;
 
   void setWalkingAnimation();
@@ -86,9 +85,8 @@ class Pig : public Mob {
   void onMoved();
   void onStopMoving();
 
- private:
-  Vec4 getNextXZPosition(const float& deltaTime, const Vec4& movementDir);
-  u8 updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
+  Vec4 getNextXZPosition(const float& fixedDeltaTime, const Vec4& target);
+  u8 updateXZPosition(const float& fixedDeltaTime, const Vec4& nextPosition,
                       u8 isColliding = 0);
 
   ChunckManager* t_chunkManager;
@@ -100,7 +98,7 @@ class Pig : public Mob {
   // Forces values
   const float acceleration = 80.0F;
   const float maxSpeed = 20.0F;
-  float speed = 0.0F;
+  float speed = 25.0F;
 
   const Vec4 hitBoxDimensions =
       Vec4((DUBLE_BLOCK_SIZE * 0.9F) / 2, DUBLE_BLOCK_SIZE * 0.9F,
@@ -112,11 +110,7 @@ class Pig : public Mob {
 
   void loadMesh(DynamicMesh* baseMesh);
   void loadStaticBBox();
-  void getMinMax(const Mesh& t_mesh, Vec4& t_min, Vec4& t_max);
-  float getNextVrticalPosition(const float& deltaTime);
-  u8 updatePosition(const float& deltaTime, const Vec4& nextPosition,
-                    BBox* entityBB, Vec4* entityMin, Vec4* entityMax,
-                    u8 isColliding = 0);
+  float getNextVrticalPosition(const float& fixedDeltaTime);
 
   // Sound control timers;
   float stepSfxLimit = 0.25f;

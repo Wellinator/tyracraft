@@ -239,11 +239,20 @@ bool Level::BoundCheckMap(uint16_t x, uint16_t y, uint16_t z) {
   return (x < map.length && y < map.height && z < map.width);
 }
 
-uint8_t Level::getBlockByWorldPosition(Vec4* pos) {
+uint8_t Level::getBlockByWorldPosition(const Vec4* pos) {
   Vec4 result = *pos / (DUBLE_BLOCK_SIZE);
   auto x = static_cast<uint16_t>(result.x);
   auto y = static_cast<uint16_t>(result.y);
   auto z = static_cast<uint16_t>(result.z);
 
   return BoundCheckMap(x, y, z) ? GetBlockFromMap(x, y, z) : 0;
+}
+
+Vec4 Level::worldPosToOffset(const Vec4& pos) {
+  Vec4 offset = pos / DUBLE_BLOCK_SIZE;
+  return Vec4(std::ceil(offset.x), std::ceil(offset.y), std::ceil(offset.z));
+}
+
+Vec4 Level::roundToBlockCenter(const Vec4& pos) {
+  return worldPosToOffset(pos) * DUBLE_BLOCK_SIZE;
 }
