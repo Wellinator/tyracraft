@@ -101,16 +101,6 @@ void MobManager::render() {
     // Current Yellow
     t_renderer->renderer3D.utility.drawBox(mobs[i]->position, 0.5f,
                                            Color(200, 200, 50));
-
-    for (u16 j = 0; j < mobs[i]->t_near_entities->size(); j++) {
-      Entity* entity = reinterpret_cast<Entity*>(
-          g_AABBTree->user_data((*mobs[i]->t_near_entities)[j]));
-
-      if (entity->tree_index == mobs[i]->tree_index) continue;
-
-      t_renderer->renderer3D.utility.drawBBox(entity->getHitBox(),
-                                              Color(255, 0, 0));
-    }
 #endif
   }
 }

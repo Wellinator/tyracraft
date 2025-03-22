@@ -84,7 +84,7 @@ bool AStarPathFinder::FindPath(const Vec4& start, const Vec4& goal,
   parents[startHash] = start;
   costs[startHash] = start.distanceTo(goal);
 
-  while (openset.count() > 0) {
+  while (openset.count() > 0 && openset.count() < IterationsLimit) {
     const Vec4 current = openset.dequeue();
 
     if (current.x == goal.x && current.y == goal.y && current.z == goal.z) {
@@ -95,12 +95,44 @@ bool AStarPathFinder::FindPath(const Vec4& start, const Vec4& goal,
     int hashCurrent = HashOffset(current);
     closedset.insert(hashCurrent);
 
+    // Horizontal check; Y is at the same entity Y value;
     for (size_t i = 0; i < 8; i++) {
       Vec4 next = GetNeighbors(current, i);
-
-      if (closedset.count(HashOffset(next))) continue;
-
       int hashNext = HashOffset(next);
+
+      // If next is equal to current, next is invalid. Try vertical check;
+      if (closedset.count(hashNext) || hashNext == hashCurrent) {
+        // For i < 4, it's perpendicular only check
+        if (i < 4) {
+          const Vec4 invalidNext = current + neighbors[i];
+          const Vec4 upperOffset = current + UP_VEC;
+          const Vec4 nextUpper = invalidNext + UP_VEC;
+
+          // If upperOffset is valid, it can jump up;
+          if (CanOccupyVoxel(upperOffset) && !CanOccupyVoxel(invalidNext)) {
+            // Check if the nextUpper is valid;
+            if (CanOccupyVoxel(nextUpper)) {
+              int hashNextUpper = HashOffset(nextUpper);
+              if (closedset.count(hashNextUpper)) continue;
+
+              const int multiplier = 2.0f * std::abs(nextUpper.y - current.y);
+              int cost =
+                  (int)(costs[hashCurrent] + current.distanceTo(nextUpper)) *
+                  multiplier;
+
+              if (!costs[hashNextUpper] || cost < costs[hashNextUpper]) {
+                costs[hashNextUpper] = cost;
+                float priority = cost + nextUpper.distanceTo(goal);
+                openset.enqueue(nextUpper, priority);
+                parents[hashNextUpper] = current;
+              }
+            }
+          }
+        }
+
+        continue;
+      };
+
       int cost = (int)(costs[hashCurrent] + current.distanceTo(next));
 
       if (!costs[hashNext] || cost < costs[hashNext]) {

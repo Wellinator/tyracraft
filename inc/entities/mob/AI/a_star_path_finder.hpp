@@ -23,6 +23,8 @@ class AStarPathFinder {
  private:
   Level* pLevel = Level::getInstance();
 
+  const int IterationsLimit = 100;
+
   int HashVec(const Vec4* vec) {
     int result = ftoi4(vec->x);
     result = (result * 397) ^ ftoi4(vec->y);

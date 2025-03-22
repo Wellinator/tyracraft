@@ -14,7 +14,7 @@ void StateResolver::SetState(Mob* pMob, MobStateType targetStateType) {
 
     default:
       pMob->currentState =
-          new IdleState(MobStateType::Wander, Tyra::Math::randomi(3, 15));
+          new IdleState(MobStateType::Wander, Tyra::Math::randomi(1, 5));
 
       break;
   }

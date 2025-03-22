@@ -20,12 +20,14 @@ class Mob : public Entity {
   virtual void update(const float& deltaTime);
   virtual void render() = 0;
 
+  virtual void jump();
   virtual void onMoved() = 0;
   virtual void onStopMoving() = 0;
   virtual Vec4 getNextXZPosition(const float& fixedDeltaTime,
                                  const Vec4& target) = 0;
-  virtual u8 updateXZPosition(const float& fixedDeltaTime,
-                              const Vec4& nextPosition, u8 isColliding = 0) = 0;
+  virtual bool updateXZPosition(const float& fixedDeltaTime,
+                                const Vec4& nextPosition,
+                                u8 isColliding = 0) = 0;
 
   virtual inline Vec4* getPosition() { return &position; };
   virtual void setPosition(const Vec4& pos) {
@@ -60,10 +62,13 @@ class Mob : public Entity {
   u8 fullProcessing = true;
   u8 shouldUnspawn = false;
   u8 collidable = true;
-  std::vector<bvh::index_t>* t_near_entities = nullptr;
 
   // AI
   MobState* currentState;
   std::unique_ptr<PathResult> currentPath;
   bool advancePath(const float& fixedDeltaTime, bool faceRoute = true);
+
+ protected:
+  // Phisycs values
+  const Vec4 lift = Vec4(0.0f, 120.0F, 0.0f);
 };

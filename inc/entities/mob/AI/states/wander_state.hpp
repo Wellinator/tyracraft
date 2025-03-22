@@ -13,12 +13,16 @@ class StateResolver;
 
 class WanderState : public MobState {
  public:
-  int distance = CHUNCK_SIZE * 2;
+  int distance = CHUNCK_SIZE;
   AStarPathFinder pathFinder;
 
   void update(Mob* pMob, const float& fixedDeltaTime) {
+    timerCounter += fixedDeltaTime;
+
     if (pMob->currentPath) {
-      if (pMob->advancePath(fixedDeltaTime)) {
+      if (pMob->advancePath(fixedDeltaTime) || timerCounter >= LIMIT_TO_GOAL) {
+        timerCounter = 0.0f;
+
         // Free the current path
         pMob->currentPath.reset();
 
@@ -34,13 +38,17 @@ class WanderState : public MobState {
       Vec4 posOffset = Vec4(randX, 0, randZ);
       Vec4 offsetTarget = offsetStart + posOffset;
 
-      // TODO: implement target height
-      // offsetTarget.y = pChunkManager->getHeightAtOffset(offsetTarget);
+      ChunckManager* pChunkManager = ChunckManager::getInstance();
+      offsetTarget.y = pChunkManager->getHeightAtOffset(offsetTarget);
 
       if (pLevel->BoundCheckMap(offsetTarget.x, offsetTarget.y,
                                 offsetTarget.z)) {
+#ifdef DEBUG_MODE
+        offsetStart.print("From: ");
+        offsetTarget.print("To: ");
+#endif
+
         // Prevent to move to an unloaded chunk
-        ChunckManager* pChunkManager = ChunckManager::getInstance();
         const Chunck* chk = pChunkManager->getChunkByBlockOffset(offsetTarget);
         if (chk && chk->state == ChunkState::Loaded) {
           pMob->currentPath.reset(new PathResult());
@@ -52,4 +60,9 @@ class WanderState : public MobState {
       }
     }
   };
+
+ private:
+  //  Limit in seconds to reach the goal
+  float timerCounter = 0.0f;
+  const float LIMIT_TO_GOAL = 15.0f;
 };

@@ -64,7 +64,6 @@ class Pig : public Mob {
   void setWalkingAnimation();
   void updateWalkingAnimationSpeed();
   void unsetWalkingAnimation();
-  void jump();
   void jumpQuickly();
   void swim();
   bool isOnWater();
@@ -86,8 +85,8 @@ class Pig : public Mob {
   void onStopMoving();
 
   Vec4 getNextXZPosition(const float& fixedDeltaTime, const Vec4& target);
-  u8 updateXZPosition(const float& fixedDeltaTime, const Vec4& nextPosition,
-                      u8 isColliding = 0);
+  bool updateXZPosition(const float& fixedDeltaTime, const Vec4& nextPosition,
+                        u8 isColliding = 0);
 
   ChunckManager* t_chunkManager;
   Audio* t_audio;
@@ -104,8 +103,6 @@ class Pig : public Mob {
       Vec4((DUBLE_BLOCK_SIZE * 0.9F) / 2, DUBLE_BLOCK_SIZE * 0.9F,
            (DUBLE_BLOCK_SIZE * 0.9F) / 2);
 
-  // Phisycs values
-  Vec4 lift = Vec4(0.0f, 125.0F, 0.0f);
   Texture* texture;
 
   void loadMesh(DynamicMesh* baseMesh);

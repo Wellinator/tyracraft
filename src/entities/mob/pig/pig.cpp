@@ -120,8 +120,8 @@ Vec4 Pig::getNextXZPosition(const float& fixedDeltaTime, const Vec4& target) {
   return _targetPosition + delta;
 }
 
-u8 Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
-                         u8 isColliding) {
+bool Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
+                           u8 isColliding) {
   const float maxCollidableDistance = _targetPosition.distanceTo(nextPosition);
   const Vec4 positionDiff = nextPosition - _targetPosition;
   const Vec4 direction = positionDiff.getNormalized();
@@ -208,22 +208,25 @@ u8 Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
       }
 
       // Try to move in separated axis;
-      Vec4 moveOnXOnly =
-          Vec4(nextPosition.x, _targetPosition.y, _targetPosition.z);
-      if (updateXZPosition(deltaTime, moveOnXOnly, true)) return true;
-
-      Vec4 moveOnZOnly =
-          Vec4(_targetPosition.x, _targetPosition.y, nextPosition.z);
-      if (updateXZPosition(deltaTime, moveOnZOnly, true)) return true;
-
-      return false;
+      return updateXZPosition(
+                 deltaTime,
+                 Vec4(nextPosition.x, _targetPosition.y, _targetPosition.z),
+                 true) ||
+             updateXZPosition(
+                 deltaTime,
+                 Vec4(_targetPosition.x, _targetPosition.y, nextPosition.z),
+                 true);
     }
   }
 
-  // Apply new position;
-  _targetPosition.x = nextPosition.x;
-  _targetPosition.z = nextPosition.z;
-  return true;
+  if (_targetPosition.distanceTo(nextPosition) > 0.0f) {
+    // Apply new position;
+    _targetPosition.x = nextPosition.x;
+    _targetPosition.z = nextPosition.z;
+    return true;
+  }
+
+  return false;
 }
 
 void Pig::resolveOutOfWorldBoundaries() {
@@ -274,11 +277,6 @@ void Pig::loadStaticBBox() {
   blockAABB.maxy = maxCorner.y;
   blockAABB.maxz = maxCorner.z;
   tree_index = g_AABBTree->insert(blockAABB, this);
-}
-
-void Pig::jump() {
-  velocity += lift;
-  isOnGround = false;
 }
 
 void Pig::jumpQuickly() {

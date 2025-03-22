@@ -3,15 +3,10 @@
 #include "utils.hpp"
 
 Mob::Mob(Level* level) : Entity(level, EntityType::Mob) {
-  t_near_entities = new std::vector<bvh::index_t>();
   currentState = new WanderState();
 };
 
-Mob::~Mob() {
-  t_near_entities->clear();
-  t_near_entities->shrink_to_fit();
-  delete t_near_entities;
-};
+Mob::~Mob(){};
 
 void Mob::fixedUpdate(const float& fixedDeltaTime) {
   if (currentState != nullptr) {
@@ -20,6 +15,11 @@ void Mob::fixedUpdate(const float& fixedDeltaTime) {
 }
 
 void Mob::update(const float& deltaTime) {}
+
+void Mob::jump() {
+  velocity += lift;
+  isOnGround = false;
+}
 
 bool Mob::advancePath(const float& fixedDeltaTime, bool faceRoute) {
   onMoved();
@@ -36,17 +36,23 @@ bool Mob::advancePath(const float& fixedDeltaTime, bool faceRoute) {
 
   // TODO: lookAt
 
+  // Try to move horizontally;
   Vec4 nextXZPos = getNextXZPosition(fixedDeltaTime, target);
-  updateXZPosition(fixedDeltaTime, nextXZPos);
+  const bool hasMovedHorizontally = updateXZPosition(fixedDeltaTime, nextXZPos);
+  if (hasMovedHorizontally) {
+    if (position.distanceTo(target) <= 0.15f) {
+      currentPath->currentIndex++;
 
-  if (position.distanceTo(target) <= 0.15f) {
-    currentPath->currentIndex++;
-
-    // If it was the the final step, return true.
-    if (currentPath->currentIndex >= currentPath->waypoints.size()) {
-      onStopMoving();
-      return true;
+      // If it was the the final step, return true.
+      if (currentPath->currentIndex >= currentPath->waypoints.size()) {
+        onStopMoving();
+        return true;
+      }
     }
+  } else {
+    // If couldn't move horizontaly and target is higher than current position,
+    // try to jump;
+    if (target.y > position.y && isOnGround) jump();
   }
 
   return false;
