@@ -9,6 +9,7 @@
 #include "singleton.hpp"
 #include "path_result.hpp"
 #include "draw_types.h"
+#include "managers/chunck_manager.hpp"
 
 using Tyra::Vec4;
 
@@ -21,9 +22,10 @@ class AStarPathFinder {
   bool FindPath(const Vec4& start, const Vec4& goal, PathResult* result);
 
  private:
+  ChunckManager* pChunkManager = ChunckManager::getInstance();
   Level* pLevel = Level::getInstance();
 
-  const int IterationsLimit = 100;
+  const size_t IterationsLimit = 100;
 
   int HashVec(const Vec4* vec) {
     int result = ftoi4(vec->x);

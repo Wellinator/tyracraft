@@ -133,13 +133,37 @@ bool AStarPathFinder::FindPath(const Vec4& start, const Vec4& goal,
         continue;
       };
 
-      int cost = (int)(costs[hashCurrent] + current.distanceTo(next));
+      // If lowerNext is valid and higher than 3 blocks, it's valid;
+      const int heightAtNext = pChunkManager->getHeightAtOffset(next);
+      const int deltaY = std::abs(current.y - heightAtNext);
 
-      if (!costs[hashNext] || cost < costs[hashNext]) {
-        costs[hashNext] = cost;
-        float priority = cost + next.distanceTo(goal);
-        openset.enqueue(next, priority);
-        parents[hashNext] = current;
+      // If deltaY is greater or equal than 3, too high, not a valid path;
+      if (deltaY >= 3) continue;
+
+      // If deltaY is 0, it's a flat ground;
+      if (deltaY == 0) {
+        int cost = (int)(costs[hashCurrent] + current.distanceTo(next));
+        if (!costs[hashNext] || cost < costs[hashNext]) {
+          costs[hashNext] = cost;
+          float priority = cost + next.distanceTo(goal);
+          openset.enqueue(next, priority);
+          parents[hashNext] = current;
+        }
+      } else {  // If deltaY is not 0, it's a slope;
+        const Vec4 lowerNext = Vec4(next.x, heightAtNext, next.z);
+        const int hashLowerNext = HashOffset(lowerNext);
+        if (closedset.count(hashLowerNext)) continue;
+
+        const int multiplier = 2.0f * deltaY;
+        int cost = (int)(costs[hashCurrent] + current.distanceTo(lowerNext)) *
+                   multiplier;
+
+        if (!costs[hashLowerNext] || cost < costs[hashLowerNext]) {
+          costs[hashLowerNext] = cost;
+          float priority = cost + lowerNext.distanceTo(goal);
+          openset.enqueue(lowerNext, priority);
+          parents[hashLowerNext] = current;
+        }
       }
     }
   }
