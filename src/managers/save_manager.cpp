@@ -1,14 +1,14 @@
 #include "managers/save_manager.hpp"
 #include "entities/level.hpp"
 
+const int SaveManager::CurrentSaveVersion = 2;
+
 void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   gzFile save_file = gzopen(fullPath, "wb");
 
   if (save_file != nullptr) {
-    const int save_version = 1;
-
     // Save version
-    gzwrite(save_file, &save_version, sizeof(int));
+    gzwrite(save_file, &SaveManager::CurrentSaveVersion, sizeof(int));
 
     // World seed
     gzwrite(save_file, &state->world->getWorldOptions()->seed,
@@ -90,71 +90,162 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
     gzread(save_file, &version, sizeof(int));
     TYRA_LOG("VERSION: ", version);
 
-    NewGameOptions* gameOptions = state->world->getWorldOptions();
-
-    // World seed
-    gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
-
-    // Game mode
-    gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
-
-    // World name
-    uint16_t worldNameSize;
-    gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-    gameOptions->name.resize(worldNameSize / sizeof(char));
-    gzread(save_file, gameOptions->name.data(), worldNameSize);
-
-    // World draw distance
-    gzread(save_file, &gameOptions->drawDistance, sizeof(u8));
-
-    // World initial time
-    gzread(save_file, &gameOptions->initialTime, sizeof(float));
-
-    // World type
-    uint8_t worldType;
-    gzread(save_file, &worldType, sizeof(uint8_t));
-    gameOptions->type = static_cast<WorldType>(worldType);
-
-    // Texture Pack
-    uint16_t texturePackSize = 0;
-    gzread(save_file, &texturePackSize, sizeof(texturePackSize));
-    gameOptions->texturePack.resize(texturePackSize / sizeof(char));
-    gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
-
-    // Player position
-    Vec4 playerPos;
-    gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
-    state->player->setPosition(Vec4(playerPos.xyzw));
-    state->world->setSavedSpawnArea(playerPos);
-
-    // TODO: add hot inventory state to save file;
-
-    // Camera direction
-    gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
-    gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
-
-    // Tick State
-    gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
-    gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
-    gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
-
-    // World State
-    LevelMap* t_map = &state->plevel->map;
-    gzread(save_file, &t_map->width, sizeof(t_map->width));
-    gzread(save_file, &t_map->length, sizeof(t_map->length));
-    gzread(save_file, &t_map->height, sizeof(t_map->height));
-    gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
-    gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
-    gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-    uint32_t worldSize = 0;
-    gzread(save_file, &worldSize, sizeof(worldSize));
-    gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
-    gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
-    gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+    if (version == 1) {
+      SaveManager::LoadSavedGameV1(state, save_file);
+    } else if (version == 2) {
+      SaveManager::LoadSavedGameV2(state, save_file);
+    }
 
     gzclose(save_file);
   }
+}
+
+void SaveManager::LoadSavedGameV1(StateGamePlay* state,
+                                  const gzFile& save_file) {
+  gzrewind(save_file);
+
+  // Save Version
+  int version = 0;
+  gzread(save_file, &version, sizeof(int));
+
+  NewGameOptions* gameOptions = state->world->getWorldOptions();
+
+  // World seed
+  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
+
+  // Game mode
+  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
+
+  // World name
+  uint16_t worldNameSize;
+  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
+  gameOptions->name.resize(worldNameSize / sizeof(char));
+  gzread(save_file, gameOptions->name.data(), worldNameSize);
+
+  // World draw distance
+  gzread(save_file, &gameOptions->drawDistance, sizeof(u8));
+
+  // World initial time
+  gzread(save_file, &gameOptions->initialTime, sizeof(float));
+
+  // World type
+  uint8_t worldType;
+  gzread(save_file, &worldType, sizeof(uint8_t));
+  gameOptions->type = static_cast<WorldType>(worldType);
+
+  // Texture Pack
+  uint16_t texturePackSize = 0;
+  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
+  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
+  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
+
+  // Player position
+  Vec4 playerPos;
+  gzread(save_file, &playerPos, sizeof(Vec4));
+
+  // PATCH: Fix for v1 save files that missed the w component
+  playerPos.w = 1.0f;
+
+  state->player->setPosition(Vec4(playerPos));
+  state->world->setSavedSpawnArea(playerPos);
+
+  // TODO: add hot inventory state to save file;
+
+  // Camera direction
+  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
+  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
+
+  // Tick State
+  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
+  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
+  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
+
+  // World State
+  LevelMap* t_map = &state->plevel->map;
+  gzread(save_file, &t_map->width, sizeof(t_map->width));
+  gzread(save_file, &t_map->length, sizeof(t_map->length));
+  gzread(save_file, &t_map->height, sizeof(t_map->height));
+  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
+  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
+  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
+
+  uint32_t worldSize = 0;
+  gzread(save_file, &worldSize, sizeof(worldSize));
+  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
+  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
+  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+}
+
+void SaveManager::LoadSavedGameV2(StateGamePlay* state,
+                                  const gzFile& save_file) {
+  gzrewind(save_file);
+
+  // Save Version
+  int version = 0;
+  gzread(save_file, &version, sizeof(int));
+
+  NewGameOptions* gameOptions = state->world->getWorldOptions();
+
+  // World seed
+  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
+
+  // Game mode
+  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
+
+  // World name
+  uint16_t worldNameSize;
+  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
+  gameOptions->name.resize(worldNameSize / sizeof(char));
+  gzread(save_file, gameOptions->name.data(), worldNameSize);
+
+  // World draw distance
+  gzread(save_file, &gameOptions->drawDistance, sizeof(u8));
+
+  // World initial time
+  gzread(save_file, &gameOptions->initialTime, sizeof(float));
+
+  // World type
+  uint8_t worldType;
+  gzread(save_file, &worldType, sizeof(uint8_t));
+  gameOptions->type = static_cast<WorldType>(worldType);
+
+  // Texture Pack
+  uint16_t texturePackSize = 0;
+  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
+  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
+  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
+
+  // Player position
+  Vec4 playerPos;
+  gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
+  state->player->setPosition(Vec4(playerPos.xyzw));
+  state->world->setSavedSpawnArea(playerPos);
+
+  // TODO: add hot inventory state to save file;
+
+  // Camera direction
+  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
+  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
+
+  // Tick State
+  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
+  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
+  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
+
+  // World State
+  LevelMap* t_map = &state->plevel->map;
+  gzread(save_file, &t_map->width, sizeof(t_map->width));
+  gzread(save_file, &t_map->length, sizeof(t_map->length));
+  gzread(save_file, &t_map->height, sizeof(t_map->height));
+  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
+  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
+  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
+
+  uint32_t worldSize = 0;
+  gzread(save_file, &worldSize, sizeof(worldSize));
+  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
+  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
+  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
 }
 
 NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
@@ -169,7 +260,6 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     // Save Version
     int version = 0;
     gzread(save_file, &version, sizeof(int));
-    TYRA_LOG("VERSION: ", version);
 
     // World seed
     gzread(save_file, &model->seed, sizeof(uint32_t));
@@ -214,15 +304,14 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
     gzrewind(save_file);
 
     // Set Version
-    u8 version;
+    int version;
     gzread(save_file, &version, sizeof(int));
 
-    if (version != 1) {
+    if (version == 0) {
       target->version = 0;
       target->name = std::string(FileUtils::getFilenameWithoutExtension(
           FileUtils::getFilenameFromPath(fullPath)));
-
-    } else {
+    } else if (version == 1 || version == 2) {
       target->version = version;
 
       // World seed

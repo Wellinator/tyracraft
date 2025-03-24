@@ -22,6 +22,8 @@ class SaveManager {
   static void SaveGame(StateGamePlay* state, const char* fullPath);
 
   static void LoadSavedGame(StateGamePlay* state, const char* fullPath);
+  static void LoadSavedGameV1(StateGamePlay* state, const gzFile& save_file);
+  static void LoadSavedGameV2(StateGamePlay* state, const gzFile& save_file);
 
   static NewGameOptions* GetNewGameOptionsFromSaveFile(const char* fullPath);
 
@@ -30,4 +32,6 @@ class SaveManager {
   static bool CheckIfSaveExist(const char* fullPath);
 
   static int DeleteSave(const char* fullPath);
+
+  static const int CurrentSaveVersion;
 };
