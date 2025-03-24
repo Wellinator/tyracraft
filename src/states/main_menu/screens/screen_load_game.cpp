@@ -1,6 +1,7 @@
 #include "states/main_menu/screens/screen_load_game.hpp"
 #include "states/main_menu/screens/screen_mini_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
+#include "managers/notification/notification_manager.hpp"
 #include "managers/save_manager.hpp"
 
 ScreenLoadGame::ScreenLoadGame(StateMainMenu* t_context)
@@ -351,4 +352,7 @@ void ScreenLoadGame::loadSelectedSave() {
   if (selectedSavedGame && selectedSavedGame->valid) {
     return context->loadSavedGame(selectedSavedGame->path);
   }
+
+  NotificationManager* instance = NotificationManager::getInstance();
+  instance->notify(Label_Error.c_str(), Label_InvalidSaveFile.c_str());
 }
