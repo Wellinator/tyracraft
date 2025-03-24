@@ -5,7 +5,7 @@ BlockParticle::BlockParticle(Block* pBlock) : Particle(PaticleType::Block) {
   _lifeTime = Tyra::Math::randomf(0.6F, 1.0F);
 
   // Define if is collidable
-  collidable = Utils::Probability(0.8);
+  collidable = Utils::Probability(0.5);
 
   // Set particle initial velocity
   // Initiate with a random value from 5 to 15 to lift it on spawn
