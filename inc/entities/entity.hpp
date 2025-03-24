@@ -28,8 +28,8 @@ class Entity {
 
   const EntityType entity_type;
 
-  Vec4 position = Vec4(0, 0, 0), _prevPosition = Vec4(0.0F),
-       _targetPosition = Vec4(0.0F);
+  Vec4 position = Vec4(0, 0, 0), _prevPosition = Vec4(0, 0, 0),
+       _targetPosition = Vec4(0, 0, 0);
 
   Vec4 velocity = Vec4(0, 0, 0);
   Vec4 minCorner, maxCorner;

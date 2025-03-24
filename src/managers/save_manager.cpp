@@ -44,7 +44,8 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
             texturePackSize);
 
     // Player position
-    gzwrite(save_file, state->player->getPosition(), sizeof(Vec4));
+    Vec4 playerPos = state->player->position;
+    gzwrite(save_file, &playerPos.xyzw, sizeof(float) * 4);
 
     // TODO: add hot inventory state to save file;
 
@@ -122,8 +123,8 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
 
     // Player position
     Vec4 playerPos;
-    gzread(save_file, &playerPos, sizeof(Vec4));
-    state->player->getPosition()->set(playerPos);
+    gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
+    state->player->setPosition(Vec4(playerPos.xyzw));
     state->world->setSavedSpawnArea(playerPos);
 
     // TODO: add hot inventory state to save file;
