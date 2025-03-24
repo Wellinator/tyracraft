@@ -4,29 +4,38 @@
 
 namespace TyraCraft {
 
-double Timer::stateLerp = 0.0f;
+float Timer::stateLerp = 0.0f;
 
 void Timer::update() {
   // Calc real delta time
   clock_t end = clock();
-  realDeltaTime = double(end - begin) / double(CLOCKS_PER_SEC);
+  realDeltaTime = float(end - begin) / float(CLOCKS_PER_SEC);
   begin = end;
 
+  // Track the number of timer iterations per second
+  iteratorAcc += realDeltaTime;
+  tempTimerIterationsCounter++;
+  if (iteratorAcc >= 1.0f) {
+    iteratorAcc = 0.0f;
+    timerIterationsCounter = tempTimerIterationsCounter;
+    tempTimerIterationsCounter = 0;
+  }
+
   // Calc delta time average
-  dtDeque.push_back(realDeltaTime);
   dtDeque.pop_front();
-  double sum = std::accumulate(dtDeque.begin(), dtDeque.end(), 0.0f);
+  dtDeque.push_back(realDeltaTime);
+  float sum = std::accumulate(dtDeque.begin(), dtDeque.end(), 0.0f);
   avgDeltaTime = sum / 10.0f;
 
   // Update physics accumulator
   physicsAcc += realDeltaTime;
   _timeToUpdate = physicsAcc >= targetUpdateFrame;
   if (_timeToUpdate) {
-    physicsAcc -= targetUpdateFrame;
+    physicsAcc = 0.0f;  //-= targetUpdateFrame;
 
     // Calc delta time to fixed update
     clock_t physicsEnd = clock();
-    physicsMs = double(physicsEnd - physicsBegin) / double(CLOCKS_PER_SEC);
+    physicsMs = float(physicsEnd - physicsBegin) / float(CLOCKS_PER_SEC);
     physicsBegin = physicsEnd;
   }
 
@@ -34,11 +43,11 @@ void Timer::update() {
   renderAcc += realDeltaTime;
   _timeToRender = renderAcc >= targetRenderFrame;
   if (_timeToRender) {
-    renderAcc -= targetRenderFrame;
+    renderAcc = 0.0f;  //-= targetRenderFrame;
 
     // Calc delta time to render update
     clock_t renderEnd = clock();
-    renderMs = double(renderEnd - renderBegin) / double(CLOCKS_PER_SEC);
+    renderMs = float(renderEnd - renderBegin) / float(CLOCKS_PER_SEC);
     renderBegin = renderEnd;
   }
 

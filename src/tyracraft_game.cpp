@@ -49,8 +49,8 @@ void TyraCraftGame::loop() {
 
     // Draw FPS:
     std::stringstream stream;
-    stream << "FPS(avg): " << std::fixed << std::setprecision(2)
-           << 1.0f / smoothedDeltaTime;
+    stream << "FPS: " << std::fixed << std::setprecision(2)
+           << timer.getUpdateTime();
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(10.0f, 10.0f), Color(255), 0.9F));
     stream.str("");
@@ -61,7 +61,6 @@ void TyraCraftGame::loop() {
            << std::setprecision(2) << timer.getRenderMs() << "ms";
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(10.0f, 30.0f), Color(255), 0.9F));
-
     engine->renderer.endFrame();
   }
 }
