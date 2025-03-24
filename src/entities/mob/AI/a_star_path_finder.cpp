@@ -137,8 +137,8 @@ bool AStarPathFinder::FindPath(const Vec4& start, const Vec4& goal,
       const int heightAtNext = pChunkManager->getHeightAtOffset(next);
       const int deltaY = std::abs(current.y - heightAtNext);
 
-      // If deltaY is greater or equal than 3, too high, not a valid path;
-      if (deltaY >= 3) continue;
+      // If deltaY is greater than 3, too high, not a valid path;
+      if (deltaY > 3) continue;
 
       // If deltaY is 0, it's a flat ground;
       if (deltaY == 0) {
