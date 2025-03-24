@@ -232,25 +232,25 @@ void Player::flyDown(const float& deltaTime) {
 void Player::fly(const float& deltaTime,
                  const TerrainHeightModel& terrainHeight,
                  const Vec4& direction) {
-  Vec4 newPos = _targetPosition + (direction * maxSpeed * deltaTime);
+  float newYPos = _targetPosition.y + (direction.y * maxSpeed * deltaTime);
   const float playerHeight = Utils::Abs(bbox->getHeight());
 
   // Is player inside world bbox?
-  if (newPos.y + playerHeight >= (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
-      newPos.y < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
+  if (newYPos + playerHeight >= (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
+      newYPos < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
     return;
   } else {
-    if (newPos.y < terrainHeight.minHeight) {
-      newPos.y = terrainHeight.minHeight;
+    if (newYPos < terrainHeight.minHeight) {
+      newYPos = terrainHeight.minHeight;
       this->isOnGround = true;
       this->isFlying = false;
     }
 
-    if (newPos.y + playerHeight > terrainHeight.maxHeight) {
-      newPos.y = terrainHeight.maxHeight - playerHeight - 1.0F;
+    if (newYPos + playerHeight > terrainHeight.maxHeight) {
+      newYPos = terrainHeight.maxHeight - playerHeight - 1.0F;
     }
 
-    _targetPosition.set(newPos);
+    _targetPosition.y = newYPos;
   }
 }
 
