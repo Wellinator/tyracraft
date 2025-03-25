@@ -62,11 +62,11 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
   initWorldLightModel();
 
   blockManager.init(t_renderer, worldOptions.texturePack);
-  chunckManager.init(&worldLightModel, pLevel);
+  chunkManager.init(&worldLightModel, pLevel);
   cloudsManager.init(t_renderer, &worldLightModel);
   particlesManager.init(t_renderer, blockManager.getBlocksTexture(),
                         worldOptions.texturePack);
-  mobManager.init(t_renderer, &worldLightModel, pLevel, &chunckManager);
+  mobManager.init(t_renderer, &worldLightModel, pLevel, &chunkManager);
 };
 
 void World::generate() {
@@ -133,7 +133,7 @@ void World::generateLight() {
 
   updateSunlight();
   updateBlockLights();
-  chunckManager.reloadLightDataOfAllChunks();
+  chunkManager.reloadLightDataOfAllChunks();
 }
 
 void World::propagateLiquids() {
@@ -166,7 +166,7 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
   mobManager.fixedUpdate(fixedDeltaTime);
 
   cloudsManager.update(fixedDeltaTime);
-  chunckManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
+  chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                        &t_camera->looksAt);
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
@@ -188,7 +188,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 // Tick based logics
 void World::tick(Player* t_player, Camera* t_camera) {
   particlesManager.tick();
-  chunckManager.tick();
+  chunkManager.tick();
   mobManager.tick();
   cloudsManager.tick();
 
@@ -206,7 +206,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateLightModel();
     updateSunlight();
     updateBlockLights();
-    chunckManager.enqueueChunksToReloadLight();
+    chunkManager.enqueueChunksToReloadLight();
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
@@ -222,55 +222,55 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateChunkByPlayerPosition(t_player, t_camera);
   }
 
-  if (isTicksCounterAt(20) && playerDeltaDistance > DUBLE_BLOCK_SIZE) {
-    chunckManager.sortDrawDataFromCamPos(t_camera->position);
+  if (isTicksCounterAt(20) && playerDeltaDistance > DOUBLE_BLOCK_SIZE) {
+    chunkManager.sortDrawDataFromCamPos(t_camera->position);
   }
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 }
 
 void World::renderOpaque() {
-  chunckManager.rendererOpaque(t_renderer, &stapip);
+  chunkManager.rendererOpaque(t_renderer, &stapip);
 };
 
 void World::renderTransparent() {
-  chunckManager.rendererTransparent(t_renderer, &stapip);
+  chunkManager.rendererTransparent(t_renderer, &stapip);
 };
 
 void World::buildInitialPosition() {
   TYRA_LOG("building initial position...");
-  Chunck* initialChunck =
-      chunckManager.getChunckByWorldPosition(worldSpawnArea);
-  if (initialChunck != nullptr) {
-    initialChunck->clear();
-    buildChunk(initialChunck);
-    scheduleChunksNeighbors(initialChunck, lastPlayerPosition, true);
+  Chunk* initialChunk =
+      chunkManager.getChunkByWorldPosition(worldSpawnArea);
+  if (initialChunk != nullptr) {
+    initialChunk->clear();
+    buildChunk(initialChunk);
+    scheduleChunksNeighbors(initialChunk, lastPlayerPosition, true);
   }
 };
 
-void World::resetWorldData() { chunckManager.clearAllChunks(); }
+void World::resetWorldData() { chunkManager.clearAllChunks(); }
 
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
-  Chunck* currentChunck =
-      chunckManager.getChunckByWorldPosition(t_camera->looksAt);
+  Chunk* currentChunk =
+      chunkManager.getChunkByWorldPosition(t_camera->looksAt);
 
-  if (currentChunck && t_player->currentChunckId != currentChunck->id) {
-    t_player->currentChunckId = currentChunck->id;
-    scheduleChunksNeighbors(currentChunck, t_player->position);
+  if (currentChunk && t_player->currentChunkId != currentChunk->id) {
+    t_player->currentChunkId = currentChunk->id;
+    scheduleChunksNeighbors(currentChunk, t_player->position);
   }
 }
 
 void World::reloadWorldArea(const Vec4& position) {
-  Chunck* currentChunck = chunckManager.getChunckByWorldPosition(position);
-  if (currentChunck) {
-    buildChunk(currentChunck);
-    scheduleChunksNeighbors(currentChunck, position, true);
+  Chunk* currentChunk = chunkManager.getChunkByWorldPosition(position);
+  if (currentChunk) {
+    buildChunk(currentChunk);
+    scheduleChunksNeighbors(currentChunk, position, true);
   }
 }
 
 // TODO: move to chunk manager
 void World::removeBlockFromChunk(Block* blockToRemove) {
-  Chunck* currentChunk = chunckManager.getChunkById(blockToRemove->chunkId);
+  Chunk* currentChunk = chunkManager.getChunkById(blockToRemove->chunkId);
   if (!currentChunk) return;
 
   Vec4 offset;
@@ -281,23 +281,23 @@ void World::removeBlockFromChunk(Block* blockToRemove) {
 }
 
 void World::updateNeighBorsChunksByAddedBlock(Vec4* offset) {
-  Chunck* currentChunk = chunckManager.getChunkByBlockOffset(*offset);
+  Chunk* currentChunk = chunkManager.getChunkByBlockOffset(*offset);
   if (!currentChunk) return;
 
   addBlockToChunk(currentChunk, offset);
   rebuildChunkFragment(currentChunk, offset);
 }
 
-void World::scheduleChunksNeighbors(Chunck* origin_chunk,
+void World::scheduleChunksNeighbors(Chunk* origin_chunk,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
 
-  auto chuncks = chunckManager.getChuncks();
-  for (u16 i = 0; i < chuncks->size(); i++) {
-    auto t_chunk = (*chuncks)[i];
+  auto chunks = chunkManager.getChunks();
+  for (u16 i = 0; i < chunks->size(); i++) {
+    auto t_chunk = (*chunks)[i];
     const s8 distance =
-        floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNCK_SIZE) +
+        floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNK_SIZE) +
         1;
 
     if (distance > worldOptions.drawDistance) {
@@ -321,27 +321,27 @@ void World::scheduleChunksNeighbors(Chunck* origin_chunk,
   }
 
   origin_chunk->setDistanceFromPlayerInChunks(0);
-  chunckManager.updateLoadedChunks();
+  chunkManager.updateLoadedChunks();
 
-  if (!force_loading && !tempChuncksToLoad.empty())
+  if (!force_loading && !tempChunksToLoad.empty())
     sortChunksToLoad(currentPlayerPos);
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
-  std::sort(tempChuncksToLoad.begin(), tempChuncksToLoad.end(),
-            [currentPlayerPos](const Chunck* a, const Chunck* b) {
+  std::sort(tempChunksToLoad.begin(), tempChunksToLoad.end(),
+            [currentPlayerPos](const Chunk* a, const Chunk* b) {
               auto distanceA =
-                  ((a->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+                  ((a->center * DOUBLE_BLOCK_SIZE) - currentPlayerPos).length();
               auto distanceB =
-                  ((b->center * DUBLE_BLOCK_SIZE) - currentPlayerPos).length();
+                  ((b->center * DOUBLE_BLOCK_SIZE) - currentPlayerPos).length();
 
               return distanceA < distanceB;
             });
 }
 
 void World::loadScheduledChunks() {
-  if (tempChuncksToLoad.size() > 0 && canBuildChunk()) {
-    Chunck* chunk = tempChuncksToLoad.front();
+  if (tempChunksToLoad.size() > 0 && canBuildChunk()) {
+    Chunk* chunk = tempChunksToLoad.front();
 
     if (chunk->state == ChunkState::PreLoaded) {
       if (!chunk->isDrawDataLoaded()) return chunk->loadDrawDataAsync();
@@ -368,10 +368,10 @@ void World::loadScheduledChunks() {
       //   }
       // }
 
-      tempChuncksToLoad.pop_front();
-      if (tempChuncksToLoad.size() == 0) {
-        tempChuncksToLoad.shrink_to_fit();
-        chunckManager.updateLoadedChunks();
+      tempChunksToLoad.pop_front();
+      if (tempChunksToLoad.size() == 0) {
+        tempChunksToLoad.shrink_to_fit();
+        chunkManager.updateLoadedChunks();
       }
     } else if (chunk->state != ChunkState::Loaded) {
       return buildChunkAsync(chunk);
@@ -380,15 +380,15 @@ void World::loadScheduledChunks() {
 }
 
 void World::unloadScheduledChunks() {
-  if (tempChuncksToUnLoad.size() > 0) {
-    Chunck* chunk = tempChuncksToUnLoad.front();
+  if (tempChunksToUnLoad.size() > 0) {
+    Chunk* chunk = tempChunksToUnLoad.front();
 
     if (chunk->state != ChunkState::Clean) {
       return chunk->clear();
     } else {
-      tempChuncksToUnLoad.pop_front();
-      if (tempChuncksToUnLoad.size() == 0) {
-        tempChuncksToUnLoad.shrink_to_fit();
+      tempChunksToUnLoad.pop_front();
+      if (tempChunksToUnLoad.size() == 0) {
+        tempChunksToUnLoad.shrink_to_fit();
       }
     }
   }
@@ -431,30 +431,30 @@ void World::renderBlockDamageOverlay() {
   stapip.core.render(&bag);
 }
 
-void World::addChunkToLoadAsync(Chunck* t_chunck) {
+void World::addChunkToLoadAsync(Chunk* t_chunk) {
   // Avoid being duplicated;
-  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
-    if (tempChuncksToLoad[i]->id == t_chunck->id) return;
+  for (size_t i = 0; i < tempChunksToLoad.size(); i++)
+    if (tempChunksToLoad[i]->id == t_chunk->id) return;
 
   // Avoid unload and load the same chunk at the same time
-  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
-    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
+    if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
 
-  t_chunck->state = ChunkState::Loading;
-  tempChuncksToLoad.push_front(t_chunck);
+  t_chunk->state = ChunkState::Loading;
+  tempChunksToLoad.push_front(t_chunk);
 }
 
-void World::addChunkToUnloadAsync(Chunck* t_chunck) {
+void World::addChunkToUnloadAsync(Chunk* t_chunk) {
   // Avoid being duplicated;
-  for (size_t i = 0; i < tempChuncksToUnLoad.size(); i++)
-    if (tempChuncksToUnLoad[i]->id == t_chunck->id) return;
+  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
+    if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
 
   // Avoid unload and load the same chunk at the same time
-  for (size_t i = 0; i < tempChuncksToLoad.size(); i++)
-    if (tempChuncksToLoad[i]->id == t_chunck->id)
-      tempChuncksToLoad.erase(tempChuncksToLoad.begin() + i);
+  for (size_t i = 0; i < tempChunksToLoad.size(); i++)
+    if (tempChunksToLoad[i]->id == t_chunk->id)
+      tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
 
-  tempChuncksToUnLoad.push_front(t_chunck);
+  tempChunksToUnLoad.push_front(t_chunk);
 }
 
 void World::updateLightModel() {
@@ -775,7 +775,7 @@ const Vec4 World::defineSpawnArea() {
     spawPos = calcSpawOffset();
   } else {
     TYRA_LOG("Defining spawn area for mazecraft");
-    spawPos = Vec4(1.1f, 3.5f, 1.1f) * DUBLE_BLOCK_SIZE;
+    spawPos = Vec4(1.1f, 3.5f, 1.1f) * DOUBLE_BLOCK_SIZE;
   }
 
   pLevel->map.spawnX = spawPos.x;
@@ -808,7 +808,7 @@ const Vec4 World::calcSpawOffset(int bias) {
   }
 
   if (found)
-    return result * DUBLE_BLOCK_SIZE;
+    return result * DOUBLE_BLOCK_SIZE;
   else
     return calcSpawOffset(bias + 1);
 }
@@ -840,7 +840,7 @@ const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
   }
 
   if (found) {
-    result->set(tempResult * DUBLE_BLOCK_SIZE);
+    result->set(tempResult * DOUBLE_BLOCK_SIZE);
     return found;
   } else {
     const auto hasOverZisedX = tempResult.x >= maxOffset.x;
@@ -858,7 +858,7 @@ const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
   }
 }
 
-const bool World::getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
+const bool World::getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                                  Vec4* result) {
   return calcSpawOffsetOfChunk(result, targetChunk->minOffset,
                                targetChunk->maxOffset);
@@ -879,7 +879,7 @@ void World::removeBlock(Block* blockToRemove) {
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   updateSunlight();
   updateBlockLights();
-  chunckManager.reloadLightData();
+  chunkManager.reloadLightData();
 
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -897,7 +897,7 @@ void World::removeBlock(Block* blockToRemove) {
         upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
 
     if (isVegetation(b) || b == Blocks::TORCH) {
-      auto chunk = chunckManager.getChunkByBlockOffset(upBlockOffset);
+      auto chunk = chunkManager.getChunkByBlockOffset(upBlockOffset);
       Block* upperBlock = chunk->getBlockByOffset(&upBlockOffset);
       if (upperBlock) removeBlock(upperBlock);
     }
@@ -916,7 +916,7 @@ void World::removeBlockSilently(Block* blockToRemove) {
   checkSunLightAt(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
   updateSunlight();
   updateBlockLights();
-  chunckManager.reloadLightData();
+  chunkManager.reloadLightData();
 
   // Update liquid at position
   checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
@@ -1054,7 +1054,7 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
     updateSunlight();
     updateBlockLights();
 
-    chunckManager.reloadLightData();
+    chunkManager.reloadLightData();
   }
 }
 
@@ -1161,7 +1161,7 @@ void World::putSlab(const Blocks& blockType,
       pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
                                            blockOffset.z, orientation);
 
-      Chunck* chunk = chunckManager.getChunkByBlockOffset(blockOffset);
+      Chunk* chunk = chunkManager.getChunkByBlockOffset(blockOffset);
       Block* currentSlabAtOffsetPosition =
           chunk->getBlockByOffset(&blockOffset);
 
@@ -1174,7 +1174,7 @@ void World::putSlab(const Blocks& blockType,
   }
 
   // Prevent to put a block at the player position;
-  Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
+  Vec4 newBlockPos = blockOffset * DOUBLE_BLOCK_SIZE;
   M4x4 tempModel = M4x4();
   tempModel.identity();
   tempModel.scaleX(BLOCK_SIZE);
@@ -1209,7 +1209,7 @@ void World::putSlab(const Blocks& blockType,
   }
 
   const float heightOffset =
-      std::fmod(targetPos.y - BLOCK_SIZE, DUBLE_BLOCK_SIZE);
+      std::fmod(targetPos.y - BLOCK_SIZE, DOUBLE_BLOCK_SIZE);
 
   const SlabOrientation slabOrientation = heightOffset > BLOCK_SIZE
                                               ? SlabOrientation::Top
@@ -1234,7 +1234,7 @@ void World::putSlab(const Blocks& blockType,
     updateSunlight();
     updateBlockLights();
 
-    chunckManager.reloadLightData();
+    chunkManager.reloadLightData();
 
     const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
 
@@ -1249,7 +1249,7 @@ void World::putSlab(const Blocks& blockType,
 
 void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
                             const float cameraYaw, Vec4 blockOffset) {
-  Vec4 newBlockPos = blockOffset * DUBLE_BLOCK_SIZE;
+  Vec4 newBlockPos = blockOffset * DOUBLE_BLOCK_SIZE;
 
   // Prevent to put a block at the player position;
   M4x4 tempModel = M4x4();
@@ -1329,7 +1329,7 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
     updateSunlight();
     updateBlockLights();
 
-    chunckManager.reloadLightData();
+    chunkManager.reloadLightData();
 
     const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
                                blockToPlace == Blocks::LAVA_BLOCK;
@@ -1505,65 +1505,65 @@ u8 World::isCrossedBlock(Blocks block_type) {
          block_type == Blocks::DANDELION_FLOWER || block_type == Blocks::GRASS;
 }
 
-void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
-  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
+void World::rebuildChunkFragment(Chunk* t_chunk, Vec4* moddedOffset) {
+  if (g_debug_mode) t_chunk->buildingTimeStart = clock();
 
-  std::vector<Chunck*> affected_chunks;
+  std::vector<Chunk*> affected_chunks;
   affected_chunks.reserve(5);
-  affected_chunks.emplace_back(t_chunck);
+  affected_chunks.emplace_back(t_chunk);
 
   Vec4 bottom = *moddedOffset + DOWN_VEC;
-  if (t_chunck->containsBlock(&bottom)) {
-    addOrupdateBlockInChunk(t_chunck, &bottom);
-  } else if (t_chunck->bottomNeighbor &&
-             t_chunck->bottomNeighbor->containsBlock(&bottom)) {
-    addOrupdateBlockInChunk(t_chunck->bottomNeighbor, &bottom);
-    affected_chunks.emplace_back(t_chunck->bottomNeighbor);
+  if (t_chunk->containsBlock(&bottom)) {
+    addOrupdateBlockInChunk(t_chunk, &bottom);
+  } else if (t_chunk->bottomNeighbor &&
+             t_chunk->bottomNeighbor->containsBlock(&bottom)) {
+    addOrupdateBlockInChunk(t_chunk->bottomNeighbor, &bottom);
+    affected_chunks.emplace_back(t_chunk->bottomNeighbor);
   }
 
   Vec4 top = *moddedOffset + UP_VEC;
-  if (t_chunck->containsBlock(&top)) {
-    addOrupdateBlockInChunk(t_chunck, &top);
-  } else if (t_chunck->topNeighbor &&
-             t_chunck->topNeighbor->containsBlock(&top)) {
-    addOrupdateBlockInChunk(t_chunck->topNeighbor, &top);
-    affected_chunks.emplace_back(t_chunck->topNeighbor);
+  if (t_chunk->containsBlock(&top)) {
+    addOrupdateBlockInChunk(t_chunk, &top);
+  } else if (t_chunk->topNeighbor &&
+             t_chunk->topNeighbor->containsBlock(&top)) {
+    addOrupdateBlockInChunk(t_chunk->topNeighbor, &top);
+    affected_chunks.emplace_back(t_chunk->topNeighbor);
   }
 
   Vec4 right = *moddedOffset + RIGHT_VEC;
-  if (t_chunck->containsBlock(&right)) {
-    addOrupdateBlockInChunk(t_chunck, &right);
-  } else if (t_chunck->rightNeighbor &&
-             t_chunck->rightNeighbor->containsBlock(&right)) {
-    addOrupdateBlockInChunk(t_chunck->rightNeighbor, &right);
-    affected_chunks.emplace_back(t_chunck->rightNeighbor);
+  if (t_chunk->containsBlock(&right)) {
+    addOrupdateBlockInChunk(t_chunk, &right);
+  } else if (t_chunk->rightNeighbor &&
+             t_chunk->rightNeighbor->containsBlock(&right)) {
+    addOrupdateBlockInChunk(t_chunk->rightNeighbor, &right);
+    affected_chunks.emplace_back(t_chunk->rightNeighbor);
   }
 
   Vec4 left = *moddedOffset + LEFT_VEC;
-  if (t_chunck->containsBlock(&left)) {
-    addOrupdateBlockInChunk(t_chunck, &left);
-  } else if (t_chunck->leftNeighbor &&
-             t_chunck->leftNeighbor->containsBlock(&left)) {
-    addOrupdateBlockInChunk(t_chunck->leftNeighbor, &left);
-    affected_chunks.emplace_back(t_chunck->leftNeighbor);
+  if (t_chunk->containsBlock(&left)) {
+    addOrupdateBlockInChunk(t_chunk, &left);
+  } else if (t_chunk->leftNeighbor &&
+             t_chunk->leftNeighbor->containsBlock(&left)) {
+    addOrupdateBlockInChunk(t_chunk->leftNeighbor, &left);
+    affected_chunks.emplace_back(t_chunk->leftNeighbor);
   }
 
   Vec4 front = *moddedOffset + FRONT_VEC;
-  if (t_chunck->containsBlock(&front)) {
-    addOrupdateBlockInChunk(t_chunck, &front);
-  } else if (t_chunck->frontNeighbor &&
-             t_chunck->frontNeighbor->containsBlock(&front)) {
-    addOrupdateBlockInChunk(t_chunck->frontNeighbor, &front);
-    affected_chunks.emplace_back(t_chunck->frontNeighbor);
+  if (t_chunk->containsBlock(&front)) {
+    addOrupdateBlockInChunk(t_chunk, &front);
+  } else if (t_chunk->frontNeighbor &&
+             t_chunk->frontNeighbor->containsBlock(&front)) {
+    addOrupdateBlockInChunk(t_chunk->frontNeighbor, &front);
+    affected_chunks.emplace_back(t_chunk->frontNeighbor);
   }
 
   Vec4 back = *moddedOffset + BACK_VEC;
-  if (t_chunck->containsBlock(&back)) {
-    addOrupdateBlockInChunk(t_chunck, &back);
-  } else if (t_chunck->backNeighbor &&
-             t_chunck->backNeighbor->containsBlock(&back)) {
-    addOrupdateBlockInChunk(t_chunck->backNeighbor, &back);
-    affected_chunks.emplace_back(t_chunck->backNeighbor);
+  if (t_chunk->containsBlock(&back)) {
+    addOrupdateBlockInChunk(t_chunk, &back);
+  } else if (t_chunk->backNeighbor &&
+             t_chunk->backNeighbor->containsBlock(&back)) {
+    addOrupdateBlockInChunk(t_chunk->backNeighbor, &back);
+    affected_chunks.emplace_back(t_chunk->backNeighbor);
   }
 
   for (size_t i = 0; i < affected_chunks.size(); i++) {
@@ -1572,24 +1572,24 @@ void World::rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset) {
   }
 
   if (g_debug_mode) {
-    t_chunck->timeToBuild =
-        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
-    printf("Time to sync build chunk fragment %i: %f\n", t_chunck->id,
-           t_chunck->timeToBuild);
+    t_chunk->timeToBuild =
+        ((float)(clock() - t_chunk->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk fragment %i: %f\n", t_chunk->id,
+           t_chunk->timeToBuild);
   }
 }
 
-void World::addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset) {
-  Block* t_block = t_chunck->getBlockByOffset(moddedOffset);
+void World::addOrupdateBlockInChunk(Chunk* t_chunk, Vec4* moddedOffset) {
+  Block* t_block = t_chunk->getBlockByOffset(moddedOffset);
 
   if (t_block) {
-    updateOrRemoveBlockInChunk(t_chunck, t_block);
+    updateOrRemoveBlockInChunk(t_chunk, t_block);
   } else {
-    addBlockToChunk(t_chunck, moddedOffset);
+    addBlockToChunk(t_chunk, moddedOffset);
   }
 }
 
-void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
+void World::updateOrRemoveBlockInChunk(Chunk* t_chunk, Block* t_block) {
   Vec4 tempBlockOffset;
   pLevel->GetXYZFromPos(&t_block->offset, &tempBlockOffset);
 
@@ -1610,15 +1610,15 @@ void World::updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block) {
 
   // Check if visible faces changed
   if (visibleFaces == 0) {
-    t_chunck->removeBlock(t_block);
-    rebuildChunkFragment(t_chunck, &tempBlockOffset);
+    t_chunk->removeBlock(t_block);
+    rebuildChunkFragment(t_chunk, &tempBlockOffset);
   } else if (visibleFaces != t_block->visibleFaces) {
     t_block->visibleFaces = visibleFaces;
     t_block->visibleFacesCount = Utils::countSetBits(visibleFaces);
   }
 }
 
-void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
+void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
   u32 blockIndex = getIndexByOffset(offset->x, offset->y, offset->z);
 
   const Blocks block_type = static_cast<Blocks>(pLevel->map.blocks[blockIndex]);
@@ -1647,7 +1647,7 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
         block->index = blockIndex;
         block->pLevel = pLevel;
         block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
-        block->chunkId = t_chunck->id;
+        block->chunkId = t_chunk->id;
 
         if (block->isCrossed()) {
           block->visibleFaces = 0b111111;
@@ -1657,7 +1657,7 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
           block->visibleFacesCount = Utils::countSetBits(visibleFaces);
         }
 
-        block->position.set((*offset) * DUBLE_BLOCK_SIZE);
+        block->position.set((*offset) * DOUBLE_BLOCK_SIZE);
 
         ModelBuilder_BuildModel(block, pLevel);
         BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
@@ -1679,57 +1679,57 @@ void World::addBlockToChunk(Chunck* t_chunck, Vec4* offset) {
 
         delete rawBBox;
 
-        t_chunck->addBlock(block);
+        t_chunk->addBlock(block);
       }
     }
   }
 }
 
 // TODO: move to chunk builder
-void World::buildChunk(Chunck* t_chunck) {
+void World::buildChunk(Chunk* t_chunk) {
   if (!canBuildChunk()) return;
-  if (g_debug_mode) t_chunck->buildingTimeStart = clock();
+  if (g_debug_mode) t_chunk->buildingTimeStart = clock();
 
-  t_chunck->preAllocateMemory();
+  t_chunk->preAllocateMemory();
 
-  for (size_t x = t_chunck->minOffset.x; x < t_chunck->maxOffset.x; x++) {
-    for (size_t z = t_chunck->minOffset.z; z < t_chunck->maxOffset.z; z++) {
-      for (size_t y = t_chunck->minOffset.y; y < t_chunck->maxOffset.y; y++) {
+  for (size_t x = t_chunk->minOffset.x; x < t_chunk->maxOffset.x; x++) {
+    for (size_t z = t_chunk->minOffset.z; z < t_chunk->maxOffset.z; z++) {
+      for (size_t y = t_chunk->minOffset.y; y < t_chunk->maxOffset.y; y++) {
         Vec4 tempBlockOffset = Vec4(x, y, z);
-        addBlockToChunk(t_chunck, &tempBlockOffset);
+        addBlockToChunk(t_chunk, &tempBlockOffset);
       }
     }
   }
 
-  t_chunck->freeUnusedMemory();
-  t_chunck->state = ChunkState::Loaded;
+  t_chunk->freeUnusedMemory();
+  t_chunk->state = ChunkState::Loaded;
 
   if (g_debug_mode) {
-    t_chunck->timeToBuild =
-        ((float)(clock() - t_chunck->buildingTimeStart)) / CLOCKS_PER_SEC;
-    printf("Time to sync build chunk %i: %f\n", t_chunck->id,
-           t_chunck->timeToBuild);
+    t_chunk->timeToBuild =
+        ((float)(clock() - t_chunk->buildingTimeStart)) / CLOCKS_PER_SEC;
+    printf("Time to sync build chunk %i: %f\n", t_chunk->id,
+           t_chunk->timeToBuild);
   }
 }
 
-void World::buildChunkAsync(Chunck* t_chunck) {
+void World::buildChunkAsync(Chunk* t_chunk) {
   if (g_debug_mode) {
-    if (t_chunck->state == ChunkState::Clean) {
-      t_chunck->buildingTimeStart = clock();
+    if (t_chunk->state == ChunkState::Clean) {
+      t_chunk->buildingTimeStart = clock();
     }
   }
 
   uint16_t batchCounter = 0;
-  uint16_t x = t_chunck->tempLoadingOffset.x;
-  uint16_t y = t_chunck->tempLoadingOffset.y;
-  uint16_t z = t_chunck->tempLoadingOffset.z;
+  uint16_t x = t_chunk->tempLoadingOffset.x;
+  uint16_t y = t_chunk->tempLoadingOffset.y;
+  uint16_t z = t_chunk->tempLoadingOffset.z;
 
-  if (!t_chunck->isPreAllocated()) t_chunck->preAllocateMemory();
+  if (!t_chunk->isPreAllocated()) t_chunk->preAllocateMemory();
 
   while (batchCounter < LOAD_CHUNK_BATCH) {
-    t_chunck->state = ChunkState::Loading;
+    t_chunk->state = ChunkState::Loading;
 
-    if (x >= t_chunck->maxOffset.x) break;
+    if (x >= t_chunk->maxOffset.x) break;
 
     u32 blockIndex = getIndexByOffset(x, y, z);
     const Blocks block_type =
@@ -1763,7 +1763,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
           block->pLevel = pLevel;
           block->offset = pLevel->GetPosFromXYZ(
               tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
-          block->chunkId = t_chunck->id;
+          block->chunkId = t_chunk->id;
 
           if (block->isCrossed()) {
             block->visibleFaces = 0b111111;
@@ -1773,7 +1773,7 @@ void World::buildChunkAsync(Chunck* t_chunck) {
             block->visibleFacesCount = Utils::countSetBits(visibleFaces);
           }
 
-          block->position.set(tempBlockOffset * DUBLE_BLOCK_SIZE);
+          block->position.set(tempBlockOffset * DOUBLE_BLOCK_SIZE);
 
           ModelBuilder_BuildModel(block, pLevel);
 
@@ -1796,29 +1796,29 @@ void World::buildChunkAsync(Chunck* t_chunck) {
           blockAABB.maxz = block->maxCorner.z;
           block->tree_index = g_AABBTree->insert(blockAABB, block);
 
-          t_chunck->addBlock(block);
+          t_chunk->addBlock(block);
         }
       }
     }
 
     y++;
-    if (y >= t_chunck->maxOffset.y) {
-      y = t_chunck->minOffset.y;
+    if (y >= t_chunk->maxOffset.y) {
+      y = t_chunk->minOffset.y;
       z++;
     }
-    if (z >= t_chunck->maxOffset.z) {
-      z = t_chunck->minOffset.z;
+    if (z >= t_chunk->maxOffset.z) {
+      z = t_chunk->minOffset.z;
       x++;
     }
   }
 
   if (batchCounter >= LOAD_CHUNK_BATCH) {
-    t_chunck->tempLoadingOffset.set(x, y, z);
+    t_chunk->tempLoadingOffset.set(x, y, z);
     return;
   }
 
-  t_chunck->state = ChunkState::PreLoaded;
-  t_chunck->freeUnusedMemory();
+  t_chunk->state = ChunkState::PreLoaded;
+  t_chunk->freeUnusedMemory();
 }
 
 void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
@@ -1942,11 +1942,11 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
   if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;
-    Chunck* currentChunck =
-        chunckManager.getChunckByWorldPosition(lastPlayerPosition);
-    TYRA_ASSERT(currentChunck, "Invalid chunk pointer");
-    if (currentChunck) {
-      scheduleChunksNeighbors(currentChunck, lastPlayerPosition, true);
+    Chunk* currentChunk =
+        chunkManager.getChunkByWorldPosition(lastPlayerPosition);
+    TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
+    if (currentChunk) {
+      scheduleChunksNeighbors(currentChunk, lastPlayerPosition, true);
       targetBlock = nullptr;
     }
   }
@@ -2049,7 +2049,7 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
           x, y, z, static_cast<LiquidOrientation>(orientation));
     }
 
-    Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
+    Chunk* moddedChunk = chunkManager.getChunkByBlockOffset(Vec4(x, y, z));
     if (moddedChunk && moddedChunk->isDrawDataLoaded()) {
       affectedChunksIdByLiquidPropagation.insert(moddedChunk);
     }
@@ -2082,7 +2082,7 @@ void World::removeLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type,
     pLevel->SetLiquidDataToMap(x, y, z, (u8)LiquidLevel::Percent0);
   }
 
-  Chunck* moddedChunk = chunckManager.getChunkByBlockOffset(Vec4(x, y, z));
+  Chunk* moddedChunk = chunkManager.getChunkByBlockOffset(Vec4(x, y, z));
   if (moddedChunk) {
     affectedChunksIdByLiquidPropagation.insert(moddedChunk);
   }
@@ -2439,8 +2439,8 @@ const s8 World::getNextLavaLevel(const s8 currentLevel) {
 }
 
 void World::updateChunksAffectedByLiquidPropagation() {
-  for (auto chunckPtr : affectedChunksIdByLiquidPropagation) {
-    Chunck* moddedChunk = chunckPtr;
+  for (auto chunkPtr : affectedChunksIdByLiquidPropagation) {
+    Chunk* moddedChunk = chunkPtr;
     if (moddedChunk) {
       moddedChunk->clear();
       buildChunk(moddedChunk);

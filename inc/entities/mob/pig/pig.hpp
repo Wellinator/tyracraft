@@ -14,15 +14,15 @@
 #include <memory>
 #include "constants.hpp"
 #include "entities/Block.hpp"
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include "entities/mob/mob.hpp"
 #include <tamtypes.h>
 #include <array>
-#include "managers/chunck_manager.hpp"
+#include "managers/chunk_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "entities/items/materials.hpp"
 #include "models/terrain_height_model.hpp"
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include "entities/sfx_config.hpp"
 #include "models/sfx_config_model.hpp"
 #include "entities/level.hpp"
@@ -49,7 +49,7 @@ using Tyra::Vec4;
 /** Pig 3D object class  */
 class Pig : public Mob {
  public:
-  Pig(Level* level, Renderer* t_renderer, ChunckManager* t_chunkManager,
+  Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
       Texture* pigTexture, DynamicMesh* baseMesh);
   ~Pig();
 
@@ -88,7 +88,7 @@ class Pig : public Mob {
   bool updateXZPosition(const float& fixedDeltaTime, const Vec4& nextPosition,
                         u8 isColliding = 0);
 
-  ChunckManager* t_chunkManager;
+  ChunkManager* t_chunkManager;
   Audio* t_audio;
 
   bool isSubmerged = false;
@@ -100,8 +100,8 @@ class Pig : public Mob {
   float speed = 25.0F;
 
   const Vec4 hitBoxDimensions =
-      Vec4((DUBLE_BLOCK_SIZE * 0.9F) / 2, DUBLE_BLOCK_SIZE * 0.9F,
-           (DUBLE_BLOCK_SIZE * 0.9F) / 2);
+      Vec4((DOUBLE_BLOCK_SIZE * 0.9F) / 2, DOUBLE_BLOCK_SIZE * 0.9F,
+           (DOUBLE_BLOCK_SIZE * 0.9F) / 2);
 
   Texture* texture;
 

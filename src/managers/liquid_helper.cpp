@@ -100,7 +100,7 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(Level* pLevel,
   }
 
   // Fix offset height if its upper block is liquid
-  float topHeightOffset = 0.05F * DUBLE_BLOCK_SIZE;
+  float topHeightOffset = 0.05F * DOUBLE_BLOCK_SIZE;
 
   if (currentLevel == (u8)LiquidLevel::Percent100 &&
       pLevel->GetBlockFromMap(offset->x, offset->y + 1, offset->z) ==
@@ -119,19 +119,19 @@ LiquidQuadMapModel LiquidHelper_getQuadMap(Level* pLevel,
 float LiquidHelper_getWaterHeightByVolume(u8 liquid_volume) {
   switch (liquid_volume) {
     case (u8)LiquidLevel::Percent100:
-      return DUBLE_BLOCK_SIZE - (1.0F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (1.0F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent75:
-      return DUBLE_BLOCK_SIZE - (0.75F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.75F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent62:
-      return DUBLE_BLOCK_SIZE - (0.625F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.625F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent50:
-      return DUBLE_BLOCK_SIZE - (0.50F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.50F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent37:
-      return DUBLE_BLOCK_SIZE - (0.375F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.375F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent25:
-      return DUBLE_BLOCK_SIZE - (0.25F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.25F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent12:
-      return DUBLE_BLOCK_SIZE - (0.125F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.125F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent0:
       return 0;
 
@@ -144,18 +144,18 @@ float LiquidHelper_getWaterHeightByVolume(u8 liquid_volume) {
 float LiquidHelper_getLavaHeightByVolume(u8 liquid_volume) {
   switch (liquid_volume) {
     case (u8)LiquidLevel::Percent100:
-      return DUBLE_BLOCK_SIZE - (1.0F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (1.0F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent75:
-      return DUBLE_BLOCK_SIZE - (0.75F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.75F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent50:
-      return DUBLE_BLOCK_SIZE - (0.50F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.50F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent25:
-      return DUBLE_BLOCK_SIZE - (0.25F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.25F * DOUBLE_BLOCK_SIZE);
     case (u8)LiquidLevel::Percent0:
-      return DUBLE_BLOCK_SIZE - (0.125F * DUBLE_BLOCK_SIZE);
+      return DOUBLE_BLOCK_SIZE - (0.125F * DOUBLE_BLOCK_SIZE);
 
     default:
       TYRA_WARN("WARNING! got invalid lava level: ", liquid_volume);
-      return DUBLE_BLOCK_SIZE;
+      return DOUBLE_BLOCK_SIZE;
   }
 }

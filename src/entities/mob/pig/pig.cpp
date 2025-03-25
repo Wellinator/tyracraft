@@ -16,7 +16,7 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Level* level, Renderer* t_renderer, ChunckManager* t_chunkManager,
+Pig::Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
          Texture* pigTexture, DynamicMesh* baseMesh)
     : Mob(level) {
   pLevel = level;
@@ -61,7 +61,7 @@ void Pig::fixedUpdate(const float& fixedDeltaTime) {
   // set new prev to old target
   _prevPosition.set(_targetPosition);
 
-  Chunck* chk = t_chunkManager->getChunckByWorldPosition(position);
+  Chunk* chk = t_chunkManager->getChunkByWorldPosition(position);
   if (chk != nullptr) {
     if (chk->state != ChunkState::Loaded ||
         chk->getDistanceFromPlayerInChunks() > 6) {
@@ -235,7 +235,7 @@ void Pig::resolveOutOfWorldBoundaries() {
   return;
 };
 
-const float Pig::getHeight() { return DUBLE_BLOCK_SIZE * 0.9F; }
+const float Pig::getHeight() { return DOUBLE_BLOCK_SIZE * 0.9F; }
 
 void Pig::loadMesh(DynamicMesh* baseMesh) {
   mesh = std::make_unique<DynamicMesh>(*baseMesh);
@@ -254,7 +254,7 @@ void Pig::loadMesh(DynamicMesh* baseMesh) {
 void Pig::loadStaticBBox() {
   if (bbox) delete bbox;
 
-  const float size = DUBLE_BLOCK_SIZE * 0.9F;
+  const float size = DOUBLE_BLOCK_SIZE * 0.9F;
   const float halfSize = size / 2;
   Vec4 minCorner = Vec4(-halfSize, 0, -halfSize) + position;
   Vec4 maxCorner = Vec4(halfSize, size, halfSize) + position;

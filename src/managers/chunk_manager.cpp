@@ -1,4 +1,4 @@
-#include "managers/chunck_manager.hpp"
+#include "managers/chunk_manager.hpp"
 #include "managers/tick_manager.hpp"
 #include "math/plane.hpp"
 #include <algorithm>
@@ -7,15 +7,15 @@ using Tyra::M4x4;
 using Tyra::Plane;
 using Tyra::Vec4;
 
-ChunckManager::ChunckManager() : Singleton<ChunckManager>() {}
+ChunkManager::ChunkManager() : Singleton<ChunkManager>() {}
 
-ChunckManager::~ChunckManager() {
-  for (u16 i = 0; i < chuncks.size(); i++) {
-    delete chuncks[i];
-    chuncks[i] = NULL;
+ChunkManager::~ChunkManager() {
+  for (u16 i = 0; i < chunks.size(); i++) {
+    delete chunks[i];
+    chunks[i] = NULL;
   }
-  chuncks.clear();
-  chuncks.shrink_to_fit();
+  chunks.clear();
+  chunks.shrink_to_fit();
 
   visibleChunks.clear();
   visibleChunks.shrink_to_fit();
@@ -24,37 +24,37 @@ ChunckManager::~ChunckManager() {
   loadedChunks.shrink_to_fit();
 }
 
-void ChunckManager::init(WorldLightModel* t_worldLightModel, Level* level) {
+void ChunkManager::init(WorldLightModel* t_worldLightModel, Level* level) {
   worldLightModel = t_worldLightModel;
   pLevel = level;
   this->generateChunks();
 }
 
-void ChunckManager::clearAllChunks() {
-  for (u16 i = 0; i < chuncks.size(); i++) chuncks[i]->clear();
+void ChunkManager::clearAllChunks() {
+  for (u16 i = 0; i < chunks.size(); i++) chunks[i]->clear();
 }
 
-void ChunckManager::updateLoadedChunks() {
+void ChunkManager::updateLoadedChunks() {
   loadedChunks.clear();
 
-  for (u16 i = 0; i < chuncks.size(); i++) {
-    if (chuncks[i]->getDistanceFromPlayerInChunks() > -1) {
-      loadedChunks.emplace_back(chuncks[i]);
+  for (u16 i = 0; i < chunks.size(); i++) {
+    if (chunks[i]->getDistanceFromPlayerInChunks() > -1) {
+      loadedChunks.emplace_back(chunks[i]);
     }
   }
 
-  std::sort(loadedChunks.begin(), loadedChunks.end(), [](Chunck* a, Chunck* b) {
+  std::sort(loadedChunks.begin(), loadedChunks.end(), [](Chunk* a, Chunk* b) {
     return a->getDistanceFromPlayerInChunks() >
            b->getDistanceFromPlayerInChunks();
   });
 }
 
-void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
+void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   visibleChunks.clear();
 
   // TODO: refactore to fast index by offset
   for (size_t i = 0; i < loadedChunks.size(); i++) {
-    Chunck* chk = loadedChunks[i];
+    Chunk* chk = loadedChunks[i];
     if (chk->state == ChunkState::Loaded) {
       chk->setCamPosition(camPos);
       chk->update(frustumPlanes);
@@ -70,47 +70,47 @@ void ChunckManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   }
 }
 
-void ChunckManager::tick() {
+void ChunkManager::tick() {
   if (isTicksCounterAt(10)) {
     // Is Time To Update Light?
-    if (chuncksToUpdateLight.empty() == false) reloadLightDataAsync();
+    if (chunksToUpdateLight.empty() == false) reloadLightDataAsync();
   }
 
-  for (size_t i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->tick();
+  for (size_t i = 0; i < chunks.size(); i++) {
+    chunks[i]->tick();
   }
 }
 
-void ChunckManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->renderer(t_renderer, stapip);
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
 }
 
-void ChunckManager::rendererOpaque(Renderer* t_renderer,
+void ChunkManager::rendererOpaque(Renderer* t_renderer,
                                    StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->renderer(t_renderer, stapip);
 }
 
-void ChunckManager::rendererTransparent(Renderer* t_renderer,
+void ChunkManager::rendererTransparent(Renderer* t_renderer,
                                         StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
 }
 
-void ChunckManager::generateChunks() {
+void ChunkManager::generateChunks() {
   u16 tempId = 0;
 
-  for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNCK_SIZE) {
-    for (size_t z = 0; z < OVERWORLD_MAX_DISTANCE; z += CHUNCK_SIZE) {
-      for (size_t y = 0; y < OVERWORLD_MAX_HEIGH; y += CHUNCK_SIZE) {
+  for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNK_SIZE) {
+    for (size_t z = 0; z < OVERWORLD_MAX_DISTANCE; z += CHUNK_SIZE) {
+      for (size_t y = 0; y < OVERWORLD_MAX_HEIGH; y += CHUNK_SIZE) {
         Vec4 tempMin = Vec4(x, y, z);
-        Vec4 tempMax = Vec4(x + CHUNCK_SIZE, y + CHUNCK_SIZE, z + CHUNCK_SIZE);
-        Chunck* tempChunck = new Chunck(tempMin, tempMax, tempId);
-        tempChunck->init(pLevel, worldLightModel);
-        chuncks.emplace_back(tempChunck);
+        Vec4 tempMax = Vec4(x + CHUNK_SIZE, y + CHUNK_SIZE, z + CHUNK_SIZE);
+        Chunk* tempChunk = new Chunk(tempMin, tempMax, tempId);
+        tempChunk->init(pLevel, worldLightModel);
+        chunks.emplace_back(tempChunk);
 
         tempId++;
       }
@@ -121,7 +121,7 @@ void ChunckManager::generateChunks() {
   for (size_t x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
     for (size_t z = 0; z < OVERWORLD_H_DISTANCE_IN_CHUNKS; z++) {
       for (size_t y = 0; y < OVERWORLD_V_DISTANCE_IN_CHUNKS; y++) {
-        auto origin = chuncks[tempId++];
+        auto origin = chunks[tempId++];
 
         origin->topNeighbor = getChunkByOffset(Vec4(x, y + 1, z));
         origin->bottomNeighbor = getChunkByOffset(Vec4(x, y - 1, z));
@@ -134,26 +134,26 @@ void ChunckManager::generateChunks() {
   }
 };
 
-Chunck* ChunckManager::getChunkById(const u16& id) {
-  if (id < chuncks.size()) return chuncks[id];
+Chunk* ChunkManager::getChunkById(const u16& id) {
+  if (id < chunks.size()) return chunks[id];
   return nullptr;
 };
 
-void ChunckManager::enqueueChunksToReloadLight() {
+void ChunkManager::enqueueChunksToReloadLight() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     if (visibleChunks[i]->isDrawDataLoaded())
-      chuncksToUpdateLight.push(visibleChunks[i]);
+      chunksToUpdateLight.push(visibleChunks[i]);
   }
 }
 
-void ChunckManager::reloadLightDataAsync() {
-  auto chunk = chuncksToUpdateLight.front();
+void ChunkManager::reloadLightDataAsync() {
+  auto chunk = chunksToUpdateLight.front();
   chunk->reloadLightData();
-  chuncksToUpdateLight.pop();
+  chunksToUpdateLight.pop();
   return;
 }
 
-void ChunckManager::reloadLightData() {
+void ChunkManager::reloadLightData() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     visibleChunks[i]->reloadLightData();
   }
@@ -162,26 +162,26 @@ void ChunckManager::reloadLightData() {
 
 // Needed to initiate light in all chunks. The visibleChunks will be available
 // after the first update...
-void ChunckManager::reloadLightDataOfAllChunks() {
-  for (size_t i = 0; i < chuncks.size(); i++) {
-    chuncks[i]->reloadLightData();
+void ChunkManager::reloadLightDataOfAllChunks() {
+  for (size_t i = 0; i < chunks.size(); i++) {
+    chunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
 
-void ChunckManager::sortDrawDataFromCamPos(const Vec4& cameraPos) {
+void ChunkManager::sortDrawDataFromCamPos(const Vec4& cameraPos) {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     visibleChunks[i]->sortTransParentDrawData(cameraPos);
   }
 }
 
-const uint16_t ChunckManager::getChunkIdByPosition(
+const uint16_t ChunkManager::getChunkIdByPosition(
     const Vec4& chunkMinPosition) {
-  const Vec4 offset = chunkMinPosition / CHUNCK_SIZE;
+  const Vec4 offset = chunkMinPosition / CHUNK_SIZE;
   return getChunkIdByOffset(offset);
 }
 
-const uint16_t ChunckManager::getChunkIdByOffset(const Vec4& chunkMinOffset) {
+const uint16_t ChunkManager::getChunkIdByOffset(const Vec4& chunkMinOffset) {
   const Vec4 pos = chunkMinOffset;
   const uint16_t row = pos.y;
   const uint16_t column = pos.z * OVERWORLD_V_DISTANCE_IN_CHUNKS;
@@ -190,62 +190,62 @@ const uint16_t ChunckManager::getChunkIdByOffset(const Vec4& chunkMinOffset) {
   return page + column + row;
 }
 
-Vec4 ChunckManager::getChunkPosById(const uint16_t& id) {
+Vec4 ChunkManager::getChunkPosById(const uint16_t& id) {
   const int x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS);
   const int z = static_cast<int>((id - (x * OVERWORLD_PAGE_IN_CHUNKS)) /
                                  OVERWORLD_V_DISTANCE_IN_CHUNKS);
   const int y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS);
 
-  return Vec4(x, y, z) * CHUNCK_SIZE;
+  return Vec4(x, y, z) * CHUNK_SIZE;
 }
 
-void ChunckManager::getChunkPosById(const uint16_t& id, Vec4* result) {
-  result->x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS) * CHUNCK_SIZE;
+void ChunkManager::getChunkPosById(const uint16_t& id, Vec4* result) {
+  result->x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS) * CHUNK_SIZE;
   result->z = static_cast<int>((id - (result->x * OVERWORLD_PAGE_IN_CHUNKS)) /
                                OVERWORLD_V_DISTANCE_IN_CHUNKS) *
-              CHUNCK_SIZE;
-  result->y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS) * CHUNCK_SIZE;
+              CHUNK_SIZE;
+  result->y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS) * CHUNK_SIZE;
 }
 
-Chunck* ChunckManager::getChunkByPosition(const Vec4& chunkMinPosition) {
+Chunk* ChunkManager::getChunkByPosition(const Vec4& chunkMinPosition) {
   const uint16_t id = getChunkIdByPosition(chunkMinPosition);
 
-  if (id < chuncks.size()) {
-    return chuncks[id];
+  if (id < chunks.size()) {
+    return chunks[id];
   } else {
     return nullptr;
   }
 }
 
-Chunck* ChunckManager::getChunkByOffset(const Vec4& chunkMinOffset) {
+Chunk* ChunkManager::getChunkByOffset(const Vec4& chunkMinOffset) {
   const uint16_t id = getChunkIdByOffset(chunkMinOffset);
 
-  if (id < chuncks.size()) {
-    return chuncks[id];
+  if (id < chunks.size()) {
+    return chunks[id];
   } else {
     return nullptr;
   }
 }
 
-Chunck* ChunckManager::getChunckByWorldPosition(const Vec4& pos) {
-  Vec4 offset = (pos / DUBLE_BLOCK_SIZE) / CHUNCK_SIZE;
+Chunk* ChunkManager::getChunkByWorldPosition(const Vec4& pos) {
+  Vec4 offset = (pos / DOUBLE_BLOCK_SIZE) / CHUNK_SIZE;
   Vec4 tempChunkMin =
       Vec4(std::floor(offset.x), std::floor(offset.y), std::floor(offset.z)) *
-      CHUNCK_SIZE;
+      CHUNK_SIZE;
 
   return getChunkByPosition(tempChunkMin);
 }
 
-Chunck* ChunckManager::getChunkByBlockOffset(const Vec4& offset) {
-  Vec4 _offset = offset / CHUNCK_SIZE;
+Chunk* ChunkManager::getChunkByBlockOffset(const Vec4& offset) {
+  Vec4 _offset = offset / CHUNK_SIZE;
   Vec4 tempChunkMin = Vec4(std::floor(_offset.x), std::floor(_offset.y),
                            std::floor(_offset.z)) *
-                      CHUNCK_SIZE;
+                      CHUNK_SIZE;
 
   return getChunkByPosition(tempChunkMin);
 }
 
-int ChunckManager::getHeightAtOffset(const Vec4& offset) {
+int ChunkManager::getHeightAtOffset(const Vec4& offset) {
   int y = pLevel->map.height - 1;
 
   while (y >= 0) {
@@ -258,7 +258,7 @@ int ChunckManager::getHeightAtOffset(const Vec4& offset) {
   return 0;
 }
 
-float ChunckManager::getHeightAtPosition(const Vec4& position) {
+float ChunkManager::getHeightAtPosition(const Vec4& position) {
   const Vec4 offset = pLevel->worldPosToOffset(position);
-  return getHeightAtOffset(offset) * DUBLE_BLOCK_SIZE;
+  return getHeightAtOffset(offset) * DOUBLE_BLOCK_SIZE;
 }

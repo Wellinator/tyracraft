@@ -249,7 +249,7 @@ u8 MazePlayingState::hasReachedTargetBlock() {
 void MazePlayingState::setHappyTheme() {
   stateGamePlay->world->dayNightCycleManager.resetSkyColor();
   tickManager.setDayMid();
-  stateGamePlay->world->chunckManager.reloadLightDataOfAllChunks();
+  stateGamePlay->world->chunkManager.reloadLightDataOfAllChunks();
 }
 
 void MazePlayingState::setDarkTheme() {
@@ -301,11 +301,11 @@ void MazePlayingState::drawDegubInfo() {
   std::string playerPosition =
       std::string("Player Position ")
           .append(" X: ")
-          .append(std::to_string(static_cast<int>(pos.x / DUBLE_BLOCK_SIZE)))
+          .append(std::to_string(static_cast<int>(pos.x / DOUBLE_BLOCK_SIZE)))
           .append("   Y: ")
-          .append(std::to_string(static_cast<int>(pos.y / DUBLE_BLOCK_SIZE)))
+          .append(std::to_string(static_cast<int>(pos.y / DOUBLE_BLOCK_SIZE)))
           .append("   Z: ")
-          .append(std::to_string(static_cast<int>(pos.z / DUBLE_BLOCK_SIZE)));
+          .append(std::to_string(static_cast<int>(pos.z / DOUBLE_BLOCK_SIZE)));
   fm.printText(playerPosition,
                FontOptions(Vec2(5.0f, 65.0f), Color(255), 0.8F));
 
@@ -326,7 +326,7 @@ void MazePlayingState::drawDegubInfo() {
   std::string chunksToUpdateLight =
       std::string("Chunks to update light: ")
           .append(std::to_string(static_cast<int>(
-              stateGamePlay->world->getChuncksToUpdateLightCount())));
+              stateGamePlay->world->getChunksToUpdateLightCount())));
   fm.printText(chunksToUpdateLight,
                FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
 

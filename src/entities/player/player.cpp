@@ -236,8 +236,8 @@ void Player::fly(const float& deltaTime,
   const float playerHeight = Utils::Abs(bbox->getHeight());
 
   // Is player inside world bbox?
-  if (newYPos + playerHeight >= (OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE) ||
-      newYPos < (OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE)) {
+  if (newYPos + playerHeight >= (OVERWORLD_MAX_HEIGH * DOUBLE_BLOCK_SIZE) ||
+      newYPos < (OVERWORLD_MIN_HEIGH * DOUBLE_BLOCK_SIZE)) {
     return;
   } else {
     if (newYPos < terrainHeight.minHeight) {
@@ -711,7 +711,7 @@ void Player::updateFovBySpeed() {
 }
 
 void Player::updateItemColorByCurrentPosition() {
-  const Vec4 pos = (position / DUBLE_BLOCK_SIZE);
+  const Vec4 pos = (position / DOUBLE_BLOCK_SIZE);
   const Vec4 offset = Vec4(std::floor(pos.x + 0.5f), std::floor(pos.y + 1),
                            std::floor(pos.z + 0.5f));
 

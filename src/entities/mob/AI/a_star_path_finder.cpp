@@ -17,11 +17,11 @@ void AStarPathFinder::TracePath(const Vec4& start, const Vec4& goal,
   while (current.x != start.x || current.y != start.y || current.z != start.z) {
     current = (*parents)[HashOffset(current)];
 
-    fixedWorldPos = ((current - FixHeight) * DUBLE_BLOCK_SIZE);
+    fixedWorldPos = ((current - FixHeight) * DOUBLE_BLOCK_SIZE);
     list->emplace(list->begin(), fixedWorldPos);
   }
 
-  fixedWorldPos = ((goal - FixHeight) * DUBLE_BLOCK_SIZE);
+  fixedWorldPos = ((goal - FixHeight) * DOUBLE_BLOCK_SIZE);
   list->emplace_back(fixedWorldPos);
 
 #ifdef DEBUG_MODE

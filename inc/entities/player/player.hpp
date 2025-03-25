@@ -21,7 +21,7 @@
 #include "loaders/3d/md2_loader/md2_loader.hpp"
 #include "entities/items/materials.hpp"
 #include "entities/items/tools/axe/axe.hpp"
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include "entities/player/player_render_pip.hpp"
 #include "entities/player/player_render_arm_pip.hpp"
 #include "entities/player/player_render_body_pip.hpp"
@@ -98,7 +98,7 @@ class Player : public Entity {
   std::unique_ptr<DynamicMesh> mesh;
 
   Vec4 spawnArea;
-  u16 currentChunckId = 0;
+  u16 currentChunkId = 0;
 
   // Phisycs variables
   Ray ray;
@@ -120,8 +120,8 @@ class Player : public Entity {
   inline ItemId* getInventoryData() { return inventory; };
 
   const Vec4 hitBoxDimensions =
-      Vec4((DUBLE_BLOCK_SIZE * 0.4F) / 2, DUBLE_BLOCK_SIZE * 1.8F,
-           (DUBLE_BLOCK_SIZE * 0.4F) / 2);
+      Vec4((DOUBLE_BLOCK_SIZE * 0.4F) / 2, DOUBLE_BLOCK_SIZE * 1.8F,
+           (DOUBLE_BLOCK_SIZE * 0.4F) / 2);
 
   DynPipOptions modelDynpipOptions;
   DynamicPipeline dynpip;

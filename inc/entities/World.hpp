@@ -5,7 +5,7 @@
 #include <time/timer.hpp>
 #include <pad/pad.hpp>
 #include <renderer/renderer.hpp>
-#include "chunck.hpp"
+#include "chunk.hpp"
 #include "entities/player/player.hpp"
 #include "entities/Block.hpp"
 #include "managers/items_repository.hpp"
@@ -16,7 +16,7 @@
 #include <queue>
 #include <deque>
 #include <algorithm>
-#include "managers/chunck_manager.hpp"
+#include "managers/chunk_manager.hpp"
 #include "managers/clouds_manager.hpp"
 #include "managers/particle/particle_manager.hpp"
 #include "managers/block_manager.hpp"
@@ -77,7 +77,7 @@ class World {
   Renderer* t_renderer;
   MobManager mobManager;
   BlockManager blockManager;
-  ChunckManager chunckManager;
+  ChunkManager chunkManager;
   CloudsManager cloudsManager;
   ParticlesManager particlesManager;
   DayNightCycleManager dayNightCycleManager;
@@ -123,12 +123,12 @@ class World {
   void setSavedSpawnArea(Vec4 pos);
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
-  void buildChunk(Chunck* t_chunck);
-  void buildChunkAsync(Chunck* t_chunck);
-  void rebuildChunkFragment(Chunck* t_chunck, Vec4* moddedOffset);
-  void addOrupdateBlockInChunk(Chunck* t_chunck, Vec4* moddedOffset);
-  void updateOrRemoveBlockInChunk(Chunck* t_chunck, Block* t_block);
-  void addBlockToChunk(Chunck* t_chunck, Vec4* offset);
+  void buildChunk(Chunk* t_chunk);
+  void buildChunkAsync(Chunk* t_chunk);
+  void rebuildChunkFragment(Chunk* t_chunk, Vec4* moddedOffset);
+  void addOrupdateBlockInChunk(Chunk* t_chunk, Vec4* moddedOffset);
+  void updateOrRemoveBlockInChunk(Chunk* t_chunk, Block* t_block);
+  void addBlockToChunk(Chunk* t_chunk, Vec4* offset);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
@@ -142,10 +142,10 @@ class World {
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
 
-  inline size_t getChunksToLoadCount() { return tempChuncksToLoad.size(); };
-  inline size_t getChunksToUnloadCount() { return tempChuncksToUnLoad.size(); };
-  inline size_t getChuncksToUpdateLightCount() {
-    return chunckManager.getChuncksToUpdateLightCount();
+  inline size_t getChunksToLoadCount() { return tempChunksToLoad.size(); };
+  inline size_t getChunksToUnloadCount() { return tempChunksToUnLoad.size(); };
+  inline size_t getChunksToUpdateLightCount() {
+    return chunkManager.getChunksToUpdateLightCount();
   };
 
   inline u8 canBuildChunk() {
@@ -169,27 +169,27 @@ class World {
 
   NewGameOptions worldOptions = NewGameOptions();
 
-  std::deque<Chunck*> tempChuncksToLoad;
-  std::deque<Chunck*> tempChuncksToUnLoad;
+  std::deque<Chunk*> tempChunksToLoad;
+  std::deque<Chunk*> tempChunksToUnLoad;
 
   u8 _updateDayNightCycle = true;
 
   WorldLightModel worldLightModel;
 
   void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
-  void scheduleChunksNeighbors(Chunck* t_chunck, const Vec4 currentPlayerPos,
+  void scheduleChunksNeighbors(Chunk* t_chunk, const Vec4 currentPlayerPos,
                                u8 force_loading = 0);
   void loadScheduledChunks();
   void unloadScheduledChunks();
   void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
   void removeBlockFromChunk(Block* blockToRemove);
   void updateNeighBorsChunksByAddedBlock(Vec4* offset);
-  void addChunkToLoadAsync(Chunck* t_chunck);
-  void addChunkToUnloadAsync(Chunck* t_chunck);
+  void addChunkToLoadAsync(Chunk* t_chunk);
+  void addChunkToUnloadAsync(Chunk* t_chunk);
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 
-  const bool getOptimalSpawnPositionInChunk(const Chunck* targetChunk,
+  const bool getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                             Vec4* result);
   const bool calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
                                    const Vec4& maxOffset, uint16_t bias = 0);
@@ -265,7 +265,7 @@ class World {
   std::queue<Node> waterRemovalBfsQueue = {};
   std::queue<Node> lavaBfsQueue = {};
   std::queue<Node> lavaRemovalBfsQueue = {};
-  std::unordered_set<Chunck*> affectedChunksIdByLiquidPropagation;
+  std::unordered_set<Chunk*> affectedChunksIdByLiquidPropagation;
 
   void initLiquidExpansion();
   void checkLiquidPropagation(uint16_t x, uint16_t y, uint16_t z);

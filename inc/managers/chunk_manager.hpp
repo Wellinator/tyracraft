@@ -4,7 +4,7 @@
 
 #include <debug/debug.hpp>
 #include "constants.hpp"
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -21,18 +21,18 @@ using Tyra::Renderer;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-class ChunckManager : public Singleton<ChunckManager> {
+class ChunkManager : public Singleton<ChunkManager> {
  public:
-  ChunckManager();
-  ~ChunckManager();
+  ChunkManager();
+  ~ChunkManager();
 
-  inline std::vector<Chunck*>* getChuncks() { return &chuncks; };
+  inline std::vector<Chunk*>* getChunks() { return &chunks; };
 
   void init(WorldLightModel* worldLightModel, Level* Level);
   void update(const Plane* frustumPlanes, Vec4* camPos);
   void tick();
 
-  inline u8 isChunkVisible(Chunck* chunk) { return chunk->isVisible(); };
+  inline u8 isChunkVisible(Chunk* chunk) { return chunk->isVisible(); };
 
   void renderer(Renderer* t_renderer, StaticPipeline* stapip);
   void rendererOpaque(Renderer* t_renderer, StaticPipeline* stapip);
@@ -45,13 +45,13 @@ class ChunckManager : public Singleton<ChunckManager> {
   void updateLoadedChunks();
   void sortDrawDataFromCamPos(const Vec4& cameraPos);
 
-  size_t getChuncksToUpdateLightCount() { return chuncksToUpdateLight.size(); };
+  size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 
-  Chunck* getChunkById(const u16& id);
-  Chunck* getChunkByBlockOffset(const Vec4& offset);
-  Chunck* getChunkByPosition(const Vec4& chunkMinPosition);
-  Chunck* getChunkByOffset(const Vec4& chunkMinOffset);
-  Chunck* getChunckByWorldPosition(const Vec4& pos);
+  Chunk* getChunkById(const u16& id);
+  Chunk* getChunkByBlockOffset(const Vec4& offset);
+  Chunk* getChunkByPosition(const Vec4& chunkMinPosition);
+  Chunk* getChunkByOffset(const Vec4& chunkMinOffset);
+  Chunk* getChunkByWorldPosition(const Vec4& pos);
   Vec4 getChunkPosById(const uint16_t& id);
   void getChunkPosById(const uint16_t& id, Vec4* result);
 
@@ -63,16 +63,16 @@ class ChunckManager : public Singleton<ChunckManager> {
   WorldLightModel* worldLightModel;
   Level* pLevel;
 
-  std::queue<Chunck*> chuncksToUpdateLight;
-  std::vector<Chunck*> chuncks;
-  std::vector<Chunck*> loadedChunks;
-  std::vector<Chunck*> visibleChunks;
+  std::queue<Chunk*> chunksToUpdateLight;
+  std::vector<Chunk*> chunks;
+  std::vector<Chunk*> loadedChunks;
+  std::vector<Chunk*> visibleChunks;
 
   void generateChunks();
 
   void reloadLightDataAsync();
   void clearLightDataQueue() {
-    while (!chuncksToUpdateLight.empty()) chuncksToUpdateLight.pop();
+    while (!chunksToUpdateLight.empty()) chunksToUpdateLight.pop();
   };
 
   const uint16_t getChunkIdByPosition(const Vec4& chunkMinPosition);

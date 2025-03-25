@@ -110,8 +110,8 @@ class Entity {
   /** Update entity position by gravity and update index of current block */
   virtual void updateYPosition(const float nextYPos) {
     float resultY = nextYPos;
-    const float worldMinHeight = OVERWORLD_MIN_HEIGH * DUBLE_BLOCK_SIZE;
-    const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DUBLE_BLOCK_SIZE;
+    const float worldMinHeight = OVERWORLD_MIN_HEIGH * DOUBLE_BLOCK_SIZE;
+    const float worldMaxHeight = OVERWORLD_MAX_HEIGH * DOUBLE_BLOCK_SIZE;
     const float enityHeight = getHeight();
 
     if (nextYPos + enityHeight > worldMaxHeight || nextYPos < worldMinHeight) {

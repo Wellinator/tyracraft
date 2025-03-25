@@ -5,7 +5,7 @@
 #include <debug/debug.hpp>
 #include <tamtypes.h>
 #include "renderer/3d/mesh/mesh.hpp"
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include "entities/Block.hpp"
 #include "camera.hpp"
 #include "timer.hpp"

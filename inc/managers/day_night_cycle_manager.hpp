@@ -65,7 +65,7 @@ class DayNightCycleManager {
   void updateIntensityByAngle();
   inline const float getLightScaleFromAngle() { return _intensity; };
 
-  const float distance = HALF_OVERWORLD_H_DISTANCE * DUBLE_BLOCK_SIZE;
+  const float distance = HALF_OVERWORLD_H_DISTANCE * DOUBLE_BLOCK_SIZE;
   Vec4 center = CENTER_WORLD_POS;
 
   float lerp = 0.0f;

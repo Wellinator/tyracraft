@@ -311,7 +311,7 @@ void CreativePlayingState::drawDegubInfo() {
   std::string chunksToUpdateLight =
       std::string("Chunks to update light: ")
           .append(std::to_string(static_cast<int>(
-              stateGamePlay->world->getChuncksToUpdateLightCount())));
+              stateGamePlay->world->getChunksToUpdateLightCount())));
   fm.printText(chunksToUpdateLight,
                FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "chunck.hpp"
+#include "chunk.hpp"
 #include "managers/mob/mob_manager.hpp"
 
 class SpawnRule {
@@ -13,10 +13,10 @@ class SpawnRule {
   /**
    * @brief Spawn mob after chunk generation
    */
-  virtual void GenerateMobs(Chunck* pChunk, MobManager* pMobManager){};
+  virtual void GenerateMobs(Chunk* pChunk, MobManager* pMobManager){};
 
   /**
    * @brief Spawn mob
    */
-  virtual void SpawnMobs(Chunck* pChunk, MobManager* pMobManager){};
+  virtual void SpawnMobs(Chunk* pChunk, MobManager* pMobManager){};
 };

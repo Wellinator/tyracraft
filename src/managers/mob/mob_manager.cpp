@@ -32,7 +32,7 @@ MobManager::~MobManager() {
 };
 
 void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
-                      Level* level, ChunckManager* t_chunkManager) {
+                      Level* level, ChunkManager* t_chunkManager) {
   this->t_renderer = renderer;
   this->t_chunkManager = t_chunkManager;
   this->t_worldLightModel = t_worldLightModel;

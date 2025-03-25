@@ -8,7 +8,7 @@ using Tyra::Vec4;
 
 class PathResult {
  public:
-  PathResult() { waypoints.reserve(CHUNCK_SIZE * 2); }
+  PathResult() { waypoints.reserve(CHUNK_SIZE * 2); }
 
   size_t currentIndex = 0;
   std::vector<Vec4> waypoints = {};

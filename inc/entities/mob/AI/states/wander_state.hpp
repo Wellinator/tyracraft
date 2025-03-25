@@ -5,15 +5,15 @@
 #include "entities/mob/AI/a_star_path_finder.hpp"
 #include "entities/entity.hpp"
 #include "entities/level.hpp"
-#include "entities/chunck.hpp"
-#include "managers/chunck_manager.hpp"
+#include "entities/chunk.hpp"
+#include "managers/chunk_manager.hpp"
 #include <memory>
 
 class StateResolver;
 
 class WanderState : public MobState {
  public:
-  int distance = CHUNCK_SIZE;
+  int distance = CHUNK_SIZE;
   AStarPathFinder pathFinder;
 
   void update(Mob* pMob, const float& fixedDeltaTime) {
@@ -38,7 +38,7 @@ class WanderState : public MobState {
       Vec4 posOffset = Vec4(randX, 0, randZ);
       Vec4 offsetTarget = offsetStart + posOffset;
 
-      ChunckManager* pChunkManager = ChunckManager::getInstance();
+      ChunkManager* pChunkManager = ChunkManager::getInstance();
       offsetTarget.y = pChunkManager->getHeightAtOffset(offsetTarget);
 
       if (pLevel->BoundCheckMap(offsetTarget.x, offsetTarget.y,
@@ -49,7 +49,7 @@ class WanderState : public MobState {
 #endif
 
         // Prevent to move to an unloaded chunk
-        const Chunck* chk = pChunkManager->getChunkByBlockOffset(offsetTarget);
+        const Chunk* chk = pChunkManager->getChunkByBlockOffset(offsetTarget);
         if (chk && chk->state == ChunkState::Loaded) {
           pMob->currentPath.reset(new PathResult());
           if (!pathFinder.FindPath(offsetStart, offsetTarget,

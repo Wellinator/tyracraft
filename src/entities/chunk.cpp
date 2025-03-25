@@ -1,4 +1,4 @@
-#include "entities/chunck.hpp"
+#include "entities/chunk.hpp"
 #include <vector>
 #include <functional>
 #include <iterator>
@@ -13,16 +13,16 @@
 #include "managers/tick_manager.hpp"
 #include "managers/block_manager.hpp"
 
-Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
+Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
   this->minOffset.set(minOffset);
   this->maxOffset.set(maxOffset);
   this->center.set((maxOffset + minOffset) / 2);
-  this->scaledCenterOffset.set(center * DUBLE_BLOCK_SIZE);
+  this->scaledCenterOffset.set(center * DOUBLE_BLOCK_SIZE);
   resetLoadingOffset();
 
-  const Vec4 tempMin = minOffset * DUBLE_BLOCK_SIZE;
-  const Vec4 tempMax = maxOffset * DUBLE_BLOCK_SIZE;
+  const Vec4 tempMin = minOffset * DOUBLE_BLOCK_SIZE;
+  const Vec4 tempMax = maxOffset * DOUBLE_BLOCK_SIZE;
   scaledMinOffset.set(tempMin);
   scaledMaxOffset.set(tempMax);
 
@@ -40,17 +40,17 @@ Chunck::Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->bbox = new BBox(_vertices, count);
 };
 
-Chunck::~Chunck() {
+Chunk::~Chunk() {
   clear();
   delete bbox;
 };
 
-void Chunck::init(Level* level, WorldLightModel* t_worldLightModel) {
+void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
   pLevel = level;
   this->t_worldLightModel = t_worldLightModel;
 }
 
-void Chunck::update(const Plane* frustumPlanes) {
+void Chunk::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
 
   if (isDrawDataLoaded() && frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
@@ -59,7 +59,7 @@ void Chunck::update(const Plane* frustumPlanes) {
   }
 }
 
-void Chunck::tick() {
+void Chunk::tick() {
   u8 emitParticles = this->_distanceFromPlayerInChunks <= 3;
 
   for (size_t i = 0; i < blocks.size(); i++) {
@@ -90,12 +90,12 @@ void Chunck::tick() {
   }
 }
 
-void Chunck::updateSurroundingBlocks() {
+void Chunk::updateSurroundingBlocks() {
   surroundingBlocks.clear();
   surroundingTransparentBlocks.clear();
 
   u8 offsetRange = 2;
-  Vec4 tempOffset = camPositon / DUBLE_BLOCK_SIZE;
+  Vec4 tempOffset = camPositon / DOUBLE_BLOCK_SIZE;
   Vec4 camOffset = Vec4(std::lrint(tempOffset.x), std::lrint(tempOffset.y),
                         std::lrint(tempOffset.z));
 
@@ -115,7 +115,7 @@ void Chunck::updateSurroundingBlocks() {
           const u8 isInWorld = offset.collidesBox(MIN_WORLD_POS, MAX_WORLD_POS);
           if (isInWorld) {
             // Find the chunk neighbor that contains the block
-            Chunck* targetChunk = nullptr;
+            Chunk* targetChunk = nullptr;
 
             if (offset.x < minOffset.x - 1)
               targetChunk = rightNeighbor;
@@ -151,7 +151,7 @@ void Chunck::updateSurroundingBlocks() {
   }
 }
 
-void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (isDrawDataLoaded()) {
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
@@ -191,7 +191,7 @@ void Chunck::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   }
 };
 
-void Chunck::rendererTransparentData(Renderer* t_renderer,
+void Chunk::rendererTransparentData(Renderer* t_renderer,
                                      StaticPipeline* stapip) {
   if (isDrawDataLoaded()) {
     StaPipTextureBag textureBag;
@@ -232,7 +232,7 @@ void Chunck::rendererTransparentData(Renderer* t_renderer,
   }
 };
 
-void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
+void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
                                       StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingBlocks.size(); i++) {
     Block* t_block = surroundingBlocks[i];
@@ -264,7 +264,7 @@ void Chunck::renderSolidPartialBlocks(Renderer* t_renderer,
   }
 }
 
-void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
+void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
                                             StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
     Block* t_block = surroundingTransparentBlocks[i];
@@ -298,7 +298,7 @@ void Chunck::renderTransparentPartialBlocks(Renderer* t_renderer,
   }
 }
 
-void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
+void Chunk::renderPartialBlockDrawData(Renderer* t_renderer,
                                         u8 hasTransparency,
                                         StaticPipeline* stapip,
                                         std::vector<Vec4>& in_vertex,
@@ -351,7 +351,7 @@ void Chunck::renderPartialBlockDrawData(Renderer* t_renderer,
   stapip->core.render(&bag);
 }
 
-void Chunck::clear() {
+void Chunk::clear() {
   clearDrawData();
 
   visibleFacesCount = 0;
@@ -379,7 +379,7 @@ void Chunck::clear() {
   this->state = ChunkState::Clean;
 }
 
-void Chunck::clearAsync() {
+void Chunk::clearAsync() {
   _isPerformingAsyncTask = true;
   size_t counter = 0;
   for (size_t i = _unloaderBatchCounter; i < blocks.size(); i++) {
@@ -411,9 +411,9 @@ void Chunck::clearAsync() {
   _isPerformingAsyncTask = false;
 }
 
-// void Chunck::updateBlocks(const Vec4& playerPosition) {}
+// void Chunk::updateBlocks(const Vec4& playerPosition) {}
 
-void Chunck::clearDrawData() {
+void Chunk::clearDrawData() {
   vertices.clear();
   vertices.shrink_to_fit();
   verticesColors.clear();
@@ -439,7 +439,7 @@ void Chunck::clearDrawData() {
   _unloaderBatchCounter = 0;
 }
 
-void Chunck::clearDrawDataWithoutShrink() {
+void Chunk::clearDrawDataWithoutShrink() {
   vertices.clear();
   verticesColors.clear();
   uvMap.clear();
@@ -451,7 +451,7 @@ void Chunck::clearDrawDataWithoutShrink() {
   _isDrawDataLoaded = false;
 }
 
-void Chunck::loadDrawDataWithoutSorting() {
+void Chunk::loadDrawDataWithoutSorting() {
   if (_isPerformingAsyncTask == true) return;
 
   vertices.reserve(visibleFacesCount);
@@ -493,7 +493,7 @@ void Chunck::loadDrawDataWithoutSorting() {
   _isDrawDataLoaded = true;
 }
 
-void Chunck::loadDrawDataAsync() {
+void Chunk::loadDrawDataAsync() {
   if (_isMemoryReserved == false) {
     vertices.reserve(visibleFacesCount);
     verticesColors.reserve(visibleFacesCount);
@@ -540,9 +540,9 @@ void Chunck::loadDrawDataAsync() {
   _loaderBatchCounter = 0;
 }
 
-void Chunck::loadDrawData() { loadDrawDataWithoutSorting(); }
+void Chunk::loadDrawData() { loadDrawDataWithoutSorting(); }
 
-void Chunck::sortTransParentDrawData(const Vec4& cameraPos) {
+void Chunk::sortTransParentDrawData(const Vec4& cameraPos) {
   std::vector<Vec4>& vert = verticesWithTransparency;
   std::vector<Color>& col = verticesColorsWithTransparency;
   std::vector<Vec4>& uv = uvMapWithTransparency;
@@ -601,7 +601,7 @@ void Chunck::sortTransParentDrawData(const Vec4& cameraPos) {
   uvMapWithTransparency = std::move(sortedUV);
 }
 
-void Chunck::reloadLightData() {
+void Chunk::reloadLightData() {
   if (_isPerformingAsyncTask == true) return;
 
   verticesColors.clear();
@@ -620,13 +620,13 @@ void Chunck::reloadLightData() {
 
 // TODO: move to a block builder
 
-void Chunck::updateFrustumCheck(const Plane* frustumPlanes) {
+void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {
   this->frustumPlanes = (Plane*)frustumPlanes;
   this->frustumCheck = Utils::FrustumAABBIntersect(
       frustumPlanes, &scaledMinOffset, &scaledMaxOffset);
 }
 
-Block* Chunck::getBlockByPosition(const Vec4* pos) {
+Block* Chunk::getBlockByPosition(const Vec4* pos) {
   for (size_t i = 0; i < blocks.size(); i++) {
     const auto bPos = blocks[i]->position;
     if (bPos.x == pos->x && bPos.y == pos->y && bPos.z == pos->z)
@@ -635,7 +635,7 @@ Block* Chunck::getBlockByPosition(const Vec4* pos) {
   return nullptr;
 }
 
-Block* Chunck::getBlockByOffset(const Vec4* offset) {
+Block* Chunk::getBlockByOffset(const Vec4* offset) {
   for (size_t i = 0; i < blocks.size(); i++) {
     Vec4 _tempBlockOffset;
     pLevel->GetXYZFromPos(&blocks[i]->offset, &_tempBlockOffset);
@@ -647,14 +647,14 @@ Block* Chunck::getBlockByOffset(const Vec4* offset) {
   return nullptr;
 }
 
-Block* Chunck::getBlockById(const u32 blockId) {
+Block* Chunk::getBlockById(const u32 blockId) {
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->index == blockId) return blocks[i];
   }
   return nullptr;
 }
 
-void Chunck::removeBlock(Block* target) {
+void Chunk::removeBlock(Block* target) {
   blocks.erase(
       std::remove_if(blocks.begin(), blocks.end(),
                      [target](Block* b) { return b->index == target->index; }),
@@ -663,7 +663,7 @@ void Chunck::removeBlock(Block* target) {
   delete target;
 }
 
-void Chunck::removeBlockByOffset(u32 offset) {
+void Chunk::removeBlockByOffset(u32 offset) {
   Vec4 _offsetVec;
   pLevel->GetXYZFromPos(&offset, &_offsetVec);
   Block* target = getBlockByOffset(&_offsetVec);
@@ -671,24 +671,24 @@ void Chunck::removeBlockByOffset(u32 offset) {
   if (target) removeBlock(target);
 }
 
-void Chunck::removeBlockByOffset(Vec4* offset) {
+void Chunk::removeBlockByOffset(Vec4* offset) {
   Block* target = getBlockByOffset(offset);
   if (target) removeBlock(target);
 }
 
-void Chunck::removeBlockByLocalIndex(u16 index) {
+void Chunk::removeBlockByLocalIndex(u16 index) {
   TYRA_ASSERT(index < blocks.size(), "Invalid block index!");
 
   Block* target = blocks[index];
   if (target) removeBlock(target);
 }
 
-void Chunck::removeBlockByPosition(Vec4* position) {
+void Chunk::removeBlockByPosition(Vec4* position) {
   Block* target = getBlockByPosition(position);
   if (target) removeBlock(target);
 }
 
-u8 Chunck::containsBlock(Vec4* offset) {
+u8 Chunk::containsBlock(Vec4* offset) {
   return offset->x >= minOffset.x && offset->x < maxOffset.x &&
          offset->y >= minOffset.y && offset->y < maxOffset.y &&
          offset->z >= minOffset.z && offset->z < maxOffset.z;

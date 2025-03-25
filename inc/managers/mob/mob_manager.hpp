@@ -6,7 +6,7 @@
 #include "models/world_light_model.hpp"
 #include "entities/mob/mob.hpp"
 #include "entities/level.hpp"
-#include "managers/chunck_manager.hpp"
+#include "managers/chunk_manager.hpp"
 #include "managers/sound_manager.hpp"
 #include "3libs/FastNoiseLite/ModdedFastNoiseLite.h"
 
@@ -25,7 +25,7 @@ class MobManager {
   ~MobManager();
 
   void init(Renderer* renderer, WorldLightModel* t_worldLightModel,
-            Level* level, ChunckManager* t_chunkManager);
+            Level* level, ChunkManager* t_chunkManager);
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void tick();
@@ -44,7 +44,7 @@ class MobManager {
   float changeDirectionLimit = 0;
 
   Renderer* t_renderer = nullptr;
-  ChunckManager* t_chunkManager = nullptr;
+  ChunkManager* t_chunkManager = nullptr;
   WorldLightModel* t_worldLightModel = nullptr;
   Level* pLevel = nullptr;
 

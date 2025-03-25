@@ -38,10 +38,10 @@ using Tyra::Vec4;
 
 enum class ChunkState { PreLoaded, Loaded, Loading, Clean };
 
-class Chunck {
+class Chunk {
  public:
-  Chunck(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
-  ~Chunck();
+  Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
+  ~Chunk();
 
   u16 id = 0;
 
@@ -59,12 +59,12 @@ class Chunck {
   BBox* bbox;
 
   // Neighborhoods references;
-  Chunck* frontNeighbor = nullptr;
-  Chunck* backNeighbor = nullptr;
-  Chunck* leftNeighbor = nullptr;
-  Chunck* rightNeighbor = nullptr;
-  Chunck* topNeighbor = nullptr;
-  Chunck* bottomNeighbor = nullptr;
+  Chunk* frontNeighbor = nullptr;
+  Chunk* backNeighbor = nullptr;
+  Chunk* leftNeighbor = nullptr;
+  Chunk* rightNeighbor = nullptr;
+  Chunk* topNeighbor = nullptr;
+  Chunk* bottomNeighbor = nullptr;
 
   int visibleFacesCount = 0;
   int visibleFacesCountWithTransparency = 0;
@@ -135,7 +135,7 @@ class Chunck {
   };
 
   inline void preAllocateMemory() {
-    blocks.reserve(CHUNCK_LENGTH);
+    blocks.reserve(CHUNK_LENGTH);
     _isPreAllocated = true;
   };
 

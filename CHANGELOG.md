@@ -164,7 +164,7 @@
 - refactore: added neightbor chunks references
 - refactore: removes unused prop
 - feat: implements memory check for safe loading
-- feat: unload draw data of hidden chuncks
+- feat: unload draw data of hidden chunks
 - refactore: reduce memory usage
 - fix: clear aabb tree after unloading world
 - fix: comparing different types
@@ -182,9 +182,9 @@
 - feat: implements entity class
 - fix: particles creation time
 - feat: implements particles collision
-- refactore: remove direct chunck access at collision test refactore: move terrain height update from world to player class fix: collision    slyding in X and Z axis feat: apply aabb tree to collisions tests
+- refactore: remove direct chunk access at collision test refactore: move terrain height update from world to player class fix: collision    slyding in X and Z axis feat: apply aabb tree to collisions tests
 - refactore: remove unused nearby chunks
-- refactore: remove chuncks access in collision tests
+- refactore: remove chunks access in collision tests
 - fix: copy by const reference
 - fix: target block detection
 - refactore: apply aabb tree to collision check refactore: separate camera and target blocks update
@@ -988,16 +988,16 @@
 - fix: mcPip model matrix
 - feat: limit checks by frame counter
 - feat(WIP): chunk culling
-- fat: create chunck bbox
+- fat: create chunk bbox
 - fix: breaking changes from tyraV2 update
 - fix: dynamic chunk loading
 - fix: OVERWORLD size
-- feat: implements basic chunck management
+- feat: implements basic chunk management
 - refactor: move block manager to world class
-- feat: implements basic chunck manager
+- feat: implements basic chunk manager
 - refactor: spaw area deffinition to world class
-- feat: add multiples chuncks
-- feat: add chunck info constants
+- feat: add multiples chunks
+- feat: add chunk info constants
 - fix: water generation
 - fix: gravity control
 - refactor: gravity system with terrain height
@@ -1027,7 +1027,7 @@
 - refactor: migrate block render to MinecraftPipeline
 - temp: reset block matrices
 - refactor: changes method name getBlockTypeByOffset
-- temp: increase chunck size
+- temp: increase chunk size
 - fix: selected slot position
 - fix: sprites positions
 - fix: move ambient light control to world class
@@ -1057,7 +1057,7 @@
 - chore: update blocks textures
 - chore: update splash screen sprites size
 - temp: show free ram
-- fix: moemory leak on clean chunck
+- fix: moemory leak on clean chunk
 - refactor: update block position to get set method
 - feat: add m4x4 at blocks
 - chore: update color for test
@@ -1076,10 +1076,10 @@
 - fix: sprite height
 - refactor: apply const to params
 - refactor: remove unused methods
-- feat: apply mcPip to chunck render; refact: changes Block\*_ to Block_ at chunck;
+- feat: apply mcPip to chunk render; refact: changes Block\*_ to Block_ at chunk;
 - fix: texture_atlas loading
 - remove: delete individual textures
-- refactor: chunck renderer and updates to use Tyra:MinecraftPipeline
+- refactor: chunk renderer and updates to use Tyra:MinecraftPipeline
 - feat: implements getBlocksTexture
 - refactor: update block constructor
 - refactor: BlockTexOffset to BlockInfo
@@ -1100,7 +1100,7 @@
 - chore: add vscode config by h4570
 - Merge branch 'master' into develop
 - chore: remove Zone.Identifier fiels
-- feat: increase chunck size and anable fake FOG
+- feat: increase chunk size and anable fake FOG
 - refactor: apply manhattan distance to increase performace
 - fix: remove print function and disable v-sync
 - refactor: improve update pipeline with pre loaded data
@@ -1112,7 +1112,7 @@
 - fix: oak lieves material texture
 - feat: add OAK leaves and log blocks
 - feat: enable ramdon seeds
-- fix: reduce chunck and encrease jump height
+- fix: reduce chunk and encrease jump height
 - fix: increase lift
 - fix: set all dealocated pointers to NULL
 - fix: prevent putting block at player position
@@ -1120,7 +1120,7 @@
 - chore: add TODO with pseudo algorithm to prevent tunneling
 - refactor: changes forces values to 3d vectors
 - fix: ajust gravity and lift values
-- fix: null blocks pointers references on chunck update.
+- fix: null blocks pointers references on chunk update.
 - fix: apply NULL check
 - refactor: improvements on updates cycles
 - feat: implements time based movements
@@ -1161,13 +1161,13 @@
 - fix: grid lines on splash screen
 - fix: move back to old renderer method to avoid freezing
 - refactor: collision check to improve accuracy and performance
-- refactor: improves chunck generation
-- temp: changes the chunck size
+- refactor: improves chunk generation
+- temp: changes the chunk size
 - refactor: remove unecessary verification on isBlockHidden
 - refactor: world edges verification
-- feat: adds CHUNCK_DISTANCE constant
+- feat: adds CHUNK_DISTANCE constant
 - refactor: improves sanitize method
-- feat: implements chunck cliping
+- feat: implements chunk cliping
 - feat: generate blocks data for bioms
 - feat: increase world height
 - refactor: improves trrain generation
@@ -1184,13 +1184,13 @@
 - refactor: change makefile preferences source
 - fix: define spawn area
 - temp: allow symbols in the bin
-- refactor: reduce looping on update chunck
+- refactor: reduce looping on update chunk
 - Update README.md
 - refactor: update target block and improvements
 - fix: player height and gravity
 - refactor: update terrain generation params
 - feat: implements spawn area
-- temp: change chunck size
+- temp: change chunk size
 - fix: decrease debounce for game mode change
 - temp: add todo
 - feat: implements basic game mode control
@@ -1199,13 +1199,13 @@
 - refactor: improve block removement
 - fix: FOG calculation
 - refactor: improvees remove block method
-- refactor: reimplement chunck with blocks with pre calculated indexes
+- refactor: reimplement chunk with blocks with pre calculated indexes
 - temp: hide player
 - feat: add block util properties
 - refactor: move player mesh control
-- feat: implements chunck cache
+- feat: implements chunk cache
 - refactor: change noise lib
-- refactor: improve rendering and fix memory leak on rebuild chunck
+- refactor: improve rendering and fix memory leak on rebuild chunk
 - fix: FOG wiht multiples materials and var type
 - fix: texture link when multiples mesh materials
 - fix: grass block glich
@@ -1250,7 +1250,7 @@
 - feat: add tyracraft splash screen assets
 - refactor: separate functions calls
 - feat: add block properties
-- fix: chunck renderer call
+- fix: chunk renderer call
 - feat: implements basic block intersection
 - feat: adds MAX_RANGE_PICKER constant
 - fix: reduce memory usage
@@ -1268,11 +1268,11 @@
 - chore: add basic README
 - refactor: move block controllers to block manager
 - feat: implements fog by distance
-- feat: increase chunck size
+- feat: increase chunk size
 - feat: iplements FOG formulars
 - feat: increase player speed
 - fix: clear temp variable to prevent memory leak
-- feat: changes chunck render limit
+- feat: changes chunk render limit
 - fix: ajust simplex noise values and sacale
 - feat: implements UI and add crosshair
 - feat: reduce world size
@@ -1284,28 +1284,28 @@
 - refactor: replace Node by Block
 - fix: remove PRINT_LOG
 - feat: implements random world generation by seed
-- fix: change the checking order to improve chunck building
-- feat: implements chunck optimization and adds water block
-- refactor: tarrain generation and chunck building
+- fix: change the checking order to improve chunk building
+- feat: implements chunk optimization and adds water block
+- refactor: tarrain generation and chunk building
 - fix: checking order
-- fix: momory leak on clear chunck
+- fix: momory leak on clear chunk
 - feat: add more blocks
 - chore: update gitignore
-- feat: improve chunck render and terrain generation
+- feat: improve chunk render and terrain generation
 - feat: implements basic procedural terrain generatrion
 - chore: remove TODOs
-- Merge branch 'dynamic-chunck-render' into master
+- Merge branch 'dynamic-chunk-render' into master
 - feat: improve chunk update
 - fix: set player to the center of the world
 - refactor: change class restrictions
 - fix: remove printf
-- feat: center the World and Chunck
+- feat: center the World and Chunk
 - fix: resize skybox
-- feat: update chunck by player position
+- feat: update chunk by player position
 - feat: implements basic terrain optimization
 - feat: apply block drawing control
-- feat: increase chunck size
-- feat: implements chunck render
+- feat: increase chunk size
+- feat: implements chunk render
 - delete: remove map class
 - feat: configure base block
 - temp: first render of chunk with glich
@@ -1314,16 +1314,16 @@
 - :refactor: modify TerrainGenerator to TerrainManager
 - feat: creates constants file
 - feat: create world base
-- fix: replace player after resize chunck
-- feat: implements block clip and resize chunck
-- feat: add y axis to chunck
+- fix: replace player after resize chunk
+- feat: implements block clip and resize chunk
+- feat: add y axis to chunk
 - temp: disable player render
 - fix: apply player moves correction
 - feat: load skybox
-- fix: reduce chunck size
+- fix: reduce chunk size
 - feat: update player position
 - refeactor: update methods signatures
-- feat: implements basic chunck
+- feat: implements basic chunk
 - temp: load 2 block hard coded
 - temp: disable gavity for test
 - fix: bug fixes
@@ -1331,8 +1331,8 @@
 - feat: init player
 - feat: implements basic player
 - feat: implements util
-- temp: changes chunck to one layer
+- temp: changes chunk to one layer
 - fix: update speed value and disable back face culling
 - fix: change initial position
-- fix: change chunck size to 10
+- fix: change chunk size to 10
 - chore: initial commit

@@ -23,29 +23,29 @@
 #define OVERWORLD_SIZE \
   (OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)
 
-// Define static chunk size CHUNCK_SIZE x CHUNCK_SIZE x OVERWORLD_V_DISTANCE
-#define CHUNCK_SIZE 8
-#define CHUNCK_LENGTH (CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE)
-#define HALF_CHUNCK_SIZE (CHUNCK_SIZE / 2)
+// Define static chunk size CHUNK_SIZE x CHUNK_SIZE x OVERWORLD_V_DISTANCE
+#define CHUNK_SIZE 8
+#define CHUNK_LENGTH (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
+#define HALF_CHUNK_SIZE (CHUNK_SIZE / 2)
 #define BLOCK_SIZE 8.0F
-#define DUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
+#define DOUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define HALF_BLOCK_SIZE (BLOCK_SIZE / 2.0F)
-#define CHUNCK_DISTANCE (HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE)
-#define HALF_CHUNCK_SIZE_SCALED HALF_CHUNCK_SIZE * DUBLE_BLOCK_SIZE
+#define CHUNK_DISTANCE (HALF_CHUNK_SIZE * DOUBLE_BLOCK_SIZE)
+#define HALF_CHUNK_SIZE_SCALED HALF_CHUNK_SIZE* DOUBLE_BLOCK_SIZE
 
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
   (OVERWORLD_V_DISTANCE /              \
-   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+   CHUNK_SIZE)  // Total vertical overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS \
   (OVERWORLD_H_DISTANCE /              \
-   CHUNCK_SIZE)  // Total horizontal overworld distance in chunks;
+   CHUNK_SIZE)  // Total horizontal overworld distance in chunks;
 #define OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD \
   (OVERWORLD_H_DISTANCE_IN_CHUNKS *         \
    OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Total horizontal overworld distance in
                                     // chunks squared;
 #define OVERWORLD_V_DISTANCE_IN_CHUNKS \
   (OVERWORLD_V_DISTANCE /              \
-   CHUNCK_SIZE)  // Total vertical overworld distance in chunks;
+   CHUNK_SIZE)  // Total vertical overworld distance in chunks;
 #define OVERWORLD_PAGE_IN_CHUNKS    \
   (OVERWORLD_V_DISTANCE_IN_CHUNKS * \
    OVERWORLD_H_DISTANCE_IN_CHUNKS)  // Overworld V * H distance in
@@ -152,7 +152,7 @@ enum class Blocks {
 #define THIRD_PERSON_CAM 2
 
 #define MAX_RANGE_PICKER \
-  (DUBLE_BLOCK_SIZE * 6.0F)  // How far the player can pick a block
+  (DOUBLE_BLOCK_SIZE * 6.0F)  // How far the player can pick a block
 
 // Game states
 #define MAIN_MENU 0
@@ -362,15 +362,15 @@ enum class PaticleType { Block, Flame, Smoke };
 
 #define HOT_INVENTORY_SIZE 9
 
-#define MIN_WORLD_POS                            \
-  Vec4(OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE, \
-       OVERWORLD_MIN_HEIGH* DUBLE_BLOCK_SIZE,    \
-       OVERWORLD_MIN_DISTANCE* DUBLE_BLOCK_SIZE)
+#define MIN_WORLD_POS                             \
+  Vec4(OVERWORLD_MIN_DISTANCE* DOUBLE_BLOCK_SIZE, \
+       OVERWORLD_MIN_HEIGH* DOUBLE_BLOCK_SIZE,    \
+       OVERWORLD_MIN_DISTANCE* DOUBLE_BLOCK_SIZE)
 
-#define MAX_WORLD_POS                                   \
-  Vec4((OVERWORLD_MAX_DISTANCE - 1) * DUBLE_BLOCK_SIZE, \
-       (OVERWORLD_MAX_HEIGH - 1) * DUBLE_BLOCK_SIZE,    \
-       (OVERWORLD_MAX_DISTANCE - 1) * DUBLE_BLOCK_SIZE)
+#define MAX_WORLD_POS                                    \
+  Vec4((OVERWORLD_MAX_DISTANCE - 1) * DOUBLE_BLOCK_SIZE, \
+       (OVERWORLD_MAX_HEIGH - 1) * DOUBLE_BLOCK_SIZE,    \
+       (OVERWORLD_MAX_DISTANCE - 1) * DOUBLE_BLOCK_SIZE)
 
 #define CENTER_WORLD_POS (MAX_WORLD_POS + MIN_WORLD_POS) / 2
 

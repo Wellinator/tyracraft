@@ -4,7 +4,7 @@
 #include "entities/mob/AI/states/state_resolver.hpp"
 #include "entities/mob/AI/a_star_path_finder.hpp"
 #include "entities/entity.hpp"
-#include "managers/chunck_manager.hpp"
+#include "managers/chunk_manager.hpp"
 
 class StateResolver;
 
