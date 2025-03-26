@@ -34,7 +34,6 @@ void CreativePlayingState::fixedUpdate(const float& fixedDeltaTime) {
 }
 
 void CreativePlayingState::update(const float& deltaTime) {
-  if (deltaTime <= 0.0F) return;
   elapsedTimeInSec += deltaTime;
   tickManager.update(deltaTime);
 
@@ -89,7 +88,11 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
   const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
 
-  if (clicked.Select) g_debug_mode = !g_debug_mode;
+  if (clicked.Select) {
+    g_debug_mode = !g_debug_mode;
+    TYRA_LOG("Debug mode: ", g_debug_mode ? "ON" : "OFF");
+  }
+
   if (g_debug_mode) {
     if (clicked.Circle) printMemoryInfoToLog();
 
