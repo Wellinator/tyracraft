@@ -16,6 +16,8 @@ OBJEXT      := o
 
 #Flags, Libraries and Includes
 CFLAGS      := -Og
+# CFLAGS      := -G0 -DDEBUG_MODE #Used for debug mode
+
 # LINKFLAGS	:= --only-keep-debug
 LIB         := -ltyra
 LIBDIRS     := -L$(ENGINEDIR)/bin
