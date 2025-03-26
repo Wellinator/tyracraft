@@ -1663,6 +1663,7 @@ void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
         BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
             pLevel, block->getType(), block->offset);
         BBox tempBBox = rawBBox->getTransformed(block->model);
+        delete rawBBox;
 
         block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
         block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
@@ -1676,8 +1677,6 @@ void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
         blockAABB.maxy = block->maxCorner.y;
         blockAABB.maxz = block->maxCorner.z;
         block->tree_index = g_AABBTree->insert(blockAABB, block);
-
-        delete rawBBox;
 
         t_chunk->addBlock(block);
       }
