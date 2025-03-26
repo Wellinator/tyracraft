@@ -14,21 +14,19 @@ namespace TyraCraft {
 class Timer : public Singleton<Timer> {
  public:
   void update();
+  bool renderFrame();
+  bool updateFrame();
 
   inline u32 getUpdateTime() { return timerIterationsCounter; };
   inline float getDeltaTime() { return realDeltaTime; };
   inline float getFixedDeltaTime() { return targetUpdateFrame; };
   inline float getDeltaTimeAvg() { return avgDeltaTime; };
-  inline bool renderFrame() { return _timeToRender; };
-  inline bool updateFrame() { return _timeToUpdate; };
-
   const float getRenderMs() { return renderMs * 1000; };
   const float getPhysicsUpdateMs() { return physicsMs * 1000; };
 
   static float stateLerp;
 
  private:
-  u8 _timeToRender = false, _timeToUpdate = false;
   clock_t begin = clock();
 
   float targetRenderFrame = FIXED_60_FRAME_MS,
@@ -37,8 +35,8 @@ class Timer : public Singleton<Timer> {
   float iteratorAcc = 0.0f;
   u32 timerIterationsCounter = 0, tempTimerIterationsCounter = 0;
 
-  float renderAcc = targetRenderFrame;
-  float physicsAcc = targetUpdateFrame;
+  float renderAcc = targetRenderFrame / 2.0f;
+  float physicsAcc = targetUpdateFrame / 2.0f;
 
   clock_t renderEnd, renderBegin = clock();
   float renderMs = 0.0f;

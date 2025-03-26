@@ -27,34 +27,47 @@ void Timer::update() {
   float sum = std::accumulate(dtDeque.begin(), dtDeque.end(), 0.0f);
   avgDeltaTime = sum / 10.0f;
 
-  // Update physics accumulator
   physicsAcc += realDeltaTime;
-  _timeToUpdate = physicsAcc >= targetUpdateFrame;
-  if (_timeToUpdate) {
-    physicsAcc = 0.0f;  //-= targetUpdateFrame;
-
-    // Calc delta time to fixed update
-    clock_t physicsEnd = clock();
-    physicsMs = float(physicsEnd - physicsBegin) / float(CLOCKS_PER_SEC);
-    physicsBegin = physicsEnd;
-  }
-
-  // Update render accumulator
   renderAcc += realDeltaTime;
-  _timeToRender = renderAcc >= targetRenderFrame;
-  if (_timeToRender) {
-    renderAcc = 0.0f;  //-= targetRenderFrame;
-
-    // Calc delta time to render update
-    clock_t renderEnd = clock();
-    renderMs = float(renderEnd - renderBegin) / float(CLOCKS_PER_SEC);
-    renderBegin = renderEnd;
-  }
 
   Timer::stateLerp = physicsAcc / targetUpdateFrame;
 
   // using namespace std;
   // cout << "dt: " << realDeltaTime << " dt(avg): " << avgDeltaTime << endl;
 }
+
+// Calc delta time to fixed update
+bool Timer::updateFrame() {
+  const bool result = physicsAcc >= targetUpdateFrame;
+  if (result) {
+    physicsAcc -= targetUpdateFrame;
+    clock_t physicsEnd = clock();
+    physicsMs = float(physicsEnd - physicsBegin) / float(CLOCKS_PER_SEC);
+    physicsBegin = physicsEnd;
+
+    // Skip frames if the physics accumulator is too high
+    if (static_cast<int>(physicsAcc / targetUpdateFrame) > 2) {
+      physicsAcc = targetUpdateFrame / 2.0f;
+    }
+  }
+  return result;
+};
+
+// Calc delta time to render update
+bool Timer::renderFrame() {
+  const bool result = renderAcc >= targetRenderFrame;
+  if (result) {
+    renderAcc -= targetRenderFrame;
+    clock_t renderEnd = clock();
+    renderMs = float(renderEnd - renderBegin) / float(CLOCKS_PER_SEC);
+    renderBegin = renderEnd;
+
+    // Skip frames if the render accumulator is too high
+    if (static_cast<int>(renderAcc / targetRenderFrame) > 2) {
+      renderAcc = targetRenderFrame / 2.0f;
+    }
+  }
+  return result;
+};
 
 }  // namespace TyraCraft
