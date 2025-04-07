@@ -167,7 +167,7 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
 
   cloudsManager.update(fixedDeltaTime);
   chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                       &t_camera->looksAt);
+                      &t_camera->looksAt);
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
   if (affectedChunksIdByLiquidPropagation.size() > 0)
@@ -239,8 +239,7 @@ void World::renderTransparent() {
 
 void World::buildInitialPosition() {
   TYRA_LOG("building initial position...");
-  Chunk* initialChunk =
-      chunkManager.getChunkByWorldPosition(worldSpawnArea);
+  Chunk* initialChunk = chunkManager.getChunkByWorldPosition(worldSpawnArea);
   if (initialChunk != nullptr) {
     initialChunk->clear();
     buildChunk(initialChunk);
@@ -251,8 +250,7 @@ void World::buildInitialPosition() {
 void World::resetWorldData() { chunkManager.clearAllChunks(); }
 
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
-  Chunk* currentChunk =
-      chunkManager.getChunkByWorldPosition(t_camera->looksAt);
+  Chunk* currentChunk = chunkManager.getChunkByWorldPosition(t_camera->looksAt);
 
   if (currentChunk && t_player->currentChunkId != currentChunk->id) {
     t_player->currentChunkId = currentChunk->id;
@@ -356,17 +354,17 @@ void World::loadScheduledChunks() {
       }
 
       // // TODO: implement callback 'afterLoadChunk'
-      // const u8 shouldSpawnMobInChunk = Utils::Probability(0.1);
+      const u8 shouldSpawnMobInChunk = Utils::Probability(0.01);
 
       // TODO: move to chunk randon tick
-      // const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
+      const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
 
-      // if (shouldSpawnMobInChunk) {
-      //   Vec4 _spawnPosition;
-      //   if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-      //     mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
-      //   }
-      // }
+      if (shouldSpawnMobInChunk && isInSpawnZone) {
+        Vec4 _spawnPosition;
+        if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+          mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+        }
+      }
 
       tempChunksToLoad.pop_front();
       if (tempChunksToLoad.size() == 0) {
