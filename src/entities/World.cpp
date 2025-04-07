@@ -223,7 +223,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
   }
 
   if (isTicksCounterAt(20) && playerDeltaDistance > DOUBLE_BLOCK_SIZE) {
-    chunkManager.sortDrawDataFromCamPos(t_camera->position);
+    // chunkManager.sortDrawDataFromCamPos(t_camera->position);
   }
 
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
