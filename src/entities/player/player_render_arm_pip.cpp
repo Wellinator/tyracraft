@@ -14,7 +14,16 @@ PlayerRenderArmPip::PlayerRenderArmPip(Player* t_player)
 
 PlayerRenderArmPip::~PlayerRenderArmPip() { unloadItemDrawData(); };
 
+
+// changed structure & fixed showing up new block in inventory
 void PlayerRenderArmPip::update(const float& deltaTime, Camera* t_camera) {
+  ItemId currentItem = t_player->getSelectedInventoryItemType();
+
+  if (currentItem != lastSelectedItem) {
+    loadItemDrawData();
+    lastSelectedItem = currentItem;
+  }
+
   colorBag.single = t_player->getBaseColorAtPlayerPos();
 
   if (is_playing_break_animation || t_player->isBreaking) {

@@ -8,6 +8,12 @@ using Tyra::Renderer;
 class Player;
 
 class PlayerRenderPip {
+
+  // remember last picked item
+  protected:
+  ItemId lastSelectedItem = ItemId::empty; 
+
+  
  public:
   PlayerRenderPip(Player* t_player) { this->t_player = t_player; };
 
