@@ -338,7 +338,7 @@ void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
 }
 
 void World::loadScheduledChunks() {
-  if (tempChunksToLoad.size() > 0 && canBuildChunk()) {
+  if (tempChunksToLoad.size() > 0) {
     Chunk* chunk = tempChunksToLoad.front();
 
     if (chunk->state == ChunkState::PreLoaded) {
@@ -784,6 +784,11 @@ const Vec4 World::defineSpawnArea() {
 }
 
 const Vec4 World::calcSpawOffset(int bias) {
+  if (bias >= CHUNK_LENGTH) {
+    TYRA_LOG("Cannot find spawn position, returning default");
+    return Vec4(0, 0, 0) * DOUBLE_BLOCK_SIZE;
+  }
+
   bool found = false;
   u8 airBlockCounter = 0;
   // Pick a X and Z coordinates based on the seed;
@@ -813,6 +818,11 @@ const Vec4 World::calcSpawOffset(int bias) {
 
 const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
                                         const Vec4& maxOffset, uint16_t bias) {
+  if (bias >= CHUNK_LENGTH) {
+    TYRA_LOG("Cannot find spawn position, returning default");
+    return false;
+  }
+
   bool found = false;
   u8 airBlockCounter = 0;
   // Pick a X and Z coordinates based on the min offset;
