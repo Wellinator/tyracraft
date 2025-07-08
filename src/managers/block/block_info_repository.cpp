@@ -14,7 +14,7 @@ BlockInfo* BlockInfoRepository::getBlockInfo(const Blocks& blockType) {
 
 const u8 BlockInfoRepository::isBlockTransparent(const Blocks& blockType) {
   const BlockInfo* textureInfo = getBlockInfo(blockType);
-  if (textureInfo) return textureInfo->_isTransparent;
+  if (textureInfo) return textureInfo->isTransparent();
 
   TYRA_WARN("isBlockTransparent: Block texture info not found. BlockType -> ",
             std::to_string((u8)blockType).c_str(), " Was it registered?");

@@ -113,8 +113,8 @@ void PlayerRenderArmPip::loadItemDrawData() {
     if (tempInfo) {
       Block block = Block(tempInfo);
 
-      block.visibleFaces = 0b111111;
-      block.visibleFacesCount = 6;
+      block.setVisibleFaces(0b111111);
+      block.setVisibleFacesCount(6);
 
       block.model.identity();
 

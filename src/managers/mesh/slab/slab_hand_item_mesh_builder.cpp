@@ -240,7 +240,7 @@ void SlabHandItemMeshBuilder_loadLightData(
     SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->visibleFacesCount;
+  blockColorAverage /= t_block->getVisibleFacesCount();
   t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
                          blockColorAverage.z);
 }

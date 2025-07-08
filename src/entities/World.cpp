@@ -268,7 +268,7 @@ void World::reloadWorldArea(const Vec4& position) {
 
 // TODO: move to chunk manager
 void World::removeBlockFromChunk(Block* blockToRemove) {
-  Chunk* currentChunk = chunkManager.getChunkById(blockToRemove->chunkId);
+  Chunk* currentChunk = chunkManager.getChunkById(blockToRemove->packed.chunkId);
   if (!currentChunk) return;
 
   Vec4 offset;
@@ -1620,9 +1620,9 @@ void World::updateOrRemoveBlockInChunk(Chunk* t_chunk, Block* t_block) {
   if (visibleFaces == 0) {
     t_chunk->removeBlock(t_block);
     rebuildChunkFragment(t_chunk, &tempBlockOffset);
-  } else if (visibleFaces != t_block->visibleFaces) {
-    t_block->visibleFaces = visibleFaces;
-    t_block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+  } else if (visibleFaces != t_block->packed.visibleFaces) {
+    t_block->packed.visibleFaces = visibleFaces;
+    t_block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
   }
 }
 
@@ -1655,14 +1655,14 @@ void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
         block->index = blockIndex;
         block->pLevel = pLevel;
         block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
-        block->chunkId = t_chunk->id;
+        block->packed.chunkId = t_chunk->id;
 
         if (block->isCrossed()) {
-          block->visibleFaces = 0b111111;
-          block->visibleFacesCount = 2;
+          block->packed.visibleFaces = 0b111111;
+          block->packed.visibleFacesCount = 2;
         } else {
-          block->visibleFaces = visibleFaces;
-          block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+          block->packed.visibleFaces = visibleFaces;
+          block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
         }
 
         block->position.set((*offset) * DOUBLE_BLOCK_SIZE);
@@ -1770,14 +1770,14 @@ void World::buildChunkAsync(Chunk* t_chunk) {
           block->pLevel = pLevel;
           block->offset = pLevel->GetPosFromXYZ(
               tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
-          block->chunkId = t_chunk->id;
+          block->packed.chunkId = t_chunk->id;
 
           if (block->isCrossed()) {
-            block->visibleFaces = 0b111111;
-            block->visibleFacesCount = 2;
+            block->packed.visibleFaces = 0b111111;
+            block->packed.visibleFacesCount = 2;
           } else {
-            block->visibleFaces = visibleFaces;
-            block->visibleFacesCount = Utils::countSetBits(visibleFaces);
+            block->packed.visibleFaces = visibleFaces;
+            block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
           }
 
           block->position.set(tempBlockOffset * DOUBLE_BLOCK_SIZE);
@@ -1862,7 +1862,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
           baseOrigin.distanceTo(entity->position);
 
       // Reset block state
-      block->isTarget = false;
+      block->packed.isTarget = false;
       block->distance = -1.0f;
 
       float intersectionPoint;
@@ -1881,9 +1881,9 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
 
   if (hitedABlock && tempTargetBlock) {
     targetBlock = tempTargetBlock;
-    targetBlock->isTarget = true;
+    targetBlock->packed.isTarget = true;
     targetBlock->distance = tempTargetDistance;
-    targetBlock->hitPosition.set(ray.at(tempTargetDistance));
+    targetBlock->setHitPosition(ray.at(tempTargetDistance));
 
     if (targetBlock->index != _lastTargetBlockId) {
       breaking_time_pessed = 0;
@@ -1898,7 +1898,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
 void World::buildTargetBlockDrawData() {
   TYRA_ASSERT(targetBlock != nullptr, "No target block to build draw data!");
 
-  const u8 size = targetBlock->visibleFacesCount * VertexBlockData::FACES_COUNT;
+  const u8 size = targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
 
   _targetBlockVertices.reserve(size);
   _targetBlockColors.reserve(size);
@@ -1918,7 +1918,7 @@ void World::updateBlockDamage() {
   const u8 U = floor(targetBlock->damage / 10);
   const float _scale = 1.0F / 16.0F;
   const Vec4 UVScale = Vec4(_scale, _scale, 1.0F, 0.0F);
-  const u8 size = targetBlock->visibleFacesCount * VertexBlockData::FACES_COUNT;
+  const u8 size = targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
 
   u8 idx = 0;
   const u8 faces = size / 6;

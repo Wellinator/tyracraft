@@ -236,8 +236,8 @@ void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
                                       StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingBlocks.size(); i++) {
     Block* t_block = surroundingBlocks[i];
-    const auto start = t_block->drawDataIndex;
-    const auto end = (t_block->drawDataIndex + t_block->drawDataLength);
+    const auto start = t_block->packed.drawDataIndex;
+    const auto end = (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
 
     //------------------------
     // Temp clipped draw data
@@ -246,9 +246,9 @@ void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
     std::vector<Vec4> inUVMap;
     std::vector<Color> inColors;
 
-    inVertices.reserve(t_block->drawDataLength);
-    inUVMap.reserve(t_block->drawDataLength);
-    inColors.reserve(t_block->drawDataLength);
+    inVertices.reserve(t_block->packed.drawDataLength);
+    inUVMap.reserve(t_block->packed.drawDataLength);
+    inColors.reserve(t_block->packed.drawDataLength);
 
     std::copy(vertices.begin() + start, vertices.begin() + end,
               std::back_inserter(inVertices));
@@ -268,8 +268,8 @@ void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
                                             StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
     Block* t_block = surroundingTransparentBlocks[i];
-    const auto start = t_block->drawDataIndex;
-    const auto end = (t_block->drawDataIndex + t_block->drawDataLength);
+    const auto start = t_block->packed.drawDataIndex;
+    const auto end = (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
 
     //------------------------
     // Temp clipped draw data
@@ -278,9 +278,9 @@ void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
     std::vector<Vec4> inUVMap;
     std::vector<Color> inColors;
 
-    inVertices.reserve(t_block->drawDataLength);
-    inUVMap.reserve(t_block->drawDataLength);
-    inColors.reserve(t_block->drawDataLength);
+    inVertices.reserve(t_block->packed.drawDataLength);
+    inUVMap.reserve(t_block->packed.drawDataLength);
+    inColors.reserve(t_block->packed.drawDataLength);
 
     std::copy(verticesWithTransparency.begin() + start,
               verticesWithTransparency.begin() + end,
@@ -464,29 +464,29 @@ void Chunk::loadDrawDataWithoutSorting() {
 
   for (size_t i = 0; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency()) {
-      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+      blocks[i]->packed.drawDataIndex = verticesWithTransparency.size();
 
       MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
                             &verticesColorsWithTransparency,
                             &uvMapWithTransparency, t_worldLightModel, pLevel);
 
-      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
 
       // printf("Transparent Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
-      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
+      //        blocks[i]->packed.drawDataIndex, blocks[i]->packed.drawDataLength);
 
     } else {
-      blocks[i]->drawDataIndex = vertices.size();
+      blocks[i]->packed.drawDataIndex = vertices.size();
 
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, pLevel);
 
-      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
 
       // printf("Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
-      //        blocks[i]->drawDataIndex, blocks[i]->drawDataLength);
+      //        blocks[i]->packed.drawDataIndex, blocks[i]->packed.drawDataLength);
     }
   }
 
@@ -511,20 +511,20 @@ void Chunk::loadDrawDataAsync() {
   size_t counter = 0;
   for (size_t i = _loaderBatchCounter; i < blocks.size(); i++) {
     if (blocks[i]->hasTransparency()) {
-      blocks[i]->drawDataIndex = verticesWithTransparency.size();
+      blocks[i]->packed.drawDataIndex = verticesWithTransparency.size();
 
       MeshBuilder_BuildMesh(blocks[i], &verticesWithTransparency,
                             &verticesColorsWithTransparency,
                             &uvMapWithTransparency, t_worldLightModel, pLevel);
 
-      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
     } else {
-      blocks[i]->drawDataIndex = vertices.size();
+      blocks[i]->packed.drawDataIndex = vertices.size();
 
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, pLevel);
 
-      blocks[i]->drawDataLength = blocks[i]->visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
     }
 
     if (counter >= LOAD_CHUNK_BATCH) {

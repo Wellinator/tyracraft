@@ -231,7 +231,7 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->visibleFacesCount;
+  blockColorAverage /= t_block->getVisibleFacesCount();
   t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
                          blockColorAverage.z);
 }

@@ -11,12 +11,12 @@ BlockParticle::BlockParticle(Block* pBlock) : Particle(PaticleType::Block) {
   // Initiate with a random value from 5 to 15 to lift it on spawn
   _velocity.y = Tyra::Math::randomf(5.0F, 15.0F);
 
-  if (pBlock->isTarget) {
+  if (pBlock->getIsTarget()) {
     _position =
-        Vec4(pBlock->hitPosition.x + (Tyra::Math::randomf(-8.0F, 8.0F)),
-             pBlock->hitPosition.y + (Tyra::Math::randomf(-8.0F, 8.0F)),
-             pBlock->hitPosition.z + (Tyra::Math::randomf(-8.0F, 8.0F)));
-    _direction = _position - pBlock->hitPosition;
+        Vec4(pBlock->getHitPosition().x + (Tyra::Math::randomf(-8.0F, 8.0F)),
+             pBlock->getHitPosition().y + (Tyra::Math::randomf(-8.0F, 8.0F)),
+             pBlock->getHitPosition().z + (Tyra::Math::randomf(-8.0F, 8.0F)));
+    _direction = _position - pBlock->getHitPosition();
   } else {
     _position = Vec4(pBlock->position.x + (Tyra::Math::randomf(-4.5F, 4.5F)),
                      pBlock->position.y + (Tyra::Math::randomf(-4.5F, 4.5F)),

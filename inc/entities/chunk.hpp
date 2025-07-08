@@ -122,15 +122,15 @@ class Chunk {
 
   // Block controllers
   inline void addBlock(Block* t_block) {
-    t_block->localIndex = blocks.size();
+    t_block->setLocalIndex(blocks.size());
     blocks.emplace_back(t_block);
 
     if (t_block->hasTransparency()) {
       visibleFacesCountWithTransparency +=
-          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+          t_block->getVisibleFacesCount() * VertexBlockData::FACES_COUNT;
     } else {
       visibleFacesCount +=
-          t_block->visibleFacesCount * VertexBlockData::FACES_COUNT;
+          t_block->getVisibleFacesCount() * VertexBlockData::FACES_COUNT;
     }
   };
 

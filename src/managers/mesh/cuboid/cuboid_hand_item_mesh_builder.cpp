@@ -221,7 +221,7 @@ void CuboidHandItemMeshBuilder_loadLightData(
     CuboidHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->visibleFacesCount;
+  blockColorAverage /= t_block->packed.visibleFacesCount;
   t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
                          blockColorAverage.z);
 }
