@@ -1,40 +1,45 @@
 #include "managers/model_builder.hpp"
 
-void ModelBuilder_BuildModel(Block* t_block, Level* pLevel) {
-  switch (t_block->getType()) {
+M4x4 ModelBuilder_BuildModel(Vec4* offset) {
+  Level* pLevel = Level::getInstance();
+  const Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+
+  switch (block_type) {
     case Blocks::TORCH:
-      ModelBuilder_TorchModel(t_block, pLevel);
+      return ModelBuilder_TorchModel(offset);
       break;
 
     case Blocks::WATER_BLOCK:
     case Blocks::LAVA_BLOCK:
-      ModelBuilder_NoRotationModel(t_block);
+      return ModelBuilder_NoRotationModel(offset);
       break;
 
     default:
-      ModelBuilder_DefaultModel(t_block, pLevel);
+      return ModelBuilder_DefaultModel(offset);
       break;
   }
 }
 
-void ModelBuilder_DefaultModel(Block* t_block, Level* pLevel) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&t_block->offset, &pos);
+M4x4 ModelBuilder_DefaultModel(Vec4* offset) {
+  Level* pLevel = Level::getInstance();
+  Vec4 position = pLevel->offsetToWorldPos(offset);
+
+  M4x4 model;
+  model.identity();
 
   const auto orientation =
-      pLevel->GetBlockOrientationDataFromMap(pos.x, pos.y, pos.z);
-
-  t_block->model.identity();
+      pLevel->GetBlockOrientationDataFromMap(offset->x, offset->y, offset->z);
 
   switch (orientation) {
     case BlockOrientation::North:
-      t_block->model.rotateY(_90DEGINRAD);
+      model.rotateY(_90DEGINRAD);
       break;
     case BlockOrientation::South:
-      t_block->model.rotateY(_270DEGINRAD);
+      model.rotateY(_270DEGINRAD);
       break;
     case BlockOrientation::West:
-      t_block->model.rotateY(_180DEGINRAD);
+      model.rotateY(_180DEGINRAD);
       break;
     case BlockOrientation::East:
     case BlockOrientation::Top:
@@ -42,44 +47,50 @@ void ModelBuilder_DefaultModel(Block* t_block, Level* pLevel) {
       break;
   }
 
-  t_block->model.scale(BLOCK_SIZE);
-  t_block->model.translate(t_block->position);
+  model.scale(BLOCK_SIZE);
+  model.translate(position);
+  return model;
 }
 
-void ModelBuilder_NoRotationModel(Block* t_block) {
-  t_block->model.identity();
-  t_block->model.scale(BLOCK_SIZE);
-  t_block->model.translate(t_block->position);
+M4x4 ModelBuilder_NoRotationModel(Vec4* offset) {
+  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
+
+  M4x4 model;
+  model.identity();
+
+  model.scale(BLOCK_SIZE);
+  model.translate(position);
+  return model;
 }
 
-void ModelBuilder_TorchModel(Block* t_block, Level* pLevel) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&t_block->offset, &pos);
-
-  const auto orientation =
-      pLevel->GetTorchOrientationDataFromMap(pos.x, pos.y, pos.z);
+M4x4 ModelBuilder_TorchModel(Vec4* offset) {
+  Level* pLevel = Level::getInstance();
+  Vec4 position = pLevel->offsetToWorldPos(offset);
 
   Vec4 offsetCorrection = Vec4(0, 0, 0);
   const float offsetH = BLOCK_SIZE * 0.70F;
   const float offsetV = BLOCK_SIZE * 0.30F;
 
-  t_block->model.identity();
+  M4x4 model;
+  model.identity();
 
+  const auto orientation =
+      pLevel->GetTorchOrientationDataFromMap(offset->x, offset->y, offset->z);
   if (BlockOrientation::Top != orientation) {
     const float _20DEGINRAD = 20 * Tyra::Math::ANG2RAD;
-    t_block->model.rotateZ(_20DEGINRAD);
+    model.rotateZ(_20DEGINRAD);
 
     switch (orientation) {
       case BlockOrientation::North:
-        t_block->model.rotateY(_90DEGINRAD);
+        model.rotateY(_90DEGINRAD);
         offsetCorrection.set(0, offsetV, -offsetH);
         break;
       case BlockOrientation::South:
-        t_block->model.rotateY(_270DEGINRAD);
+        model.rotateY(_270DEGINRAD);
         offsetCorrection.set(0, offsetV, offsetH);
         break;
       case BlockOrientation::West:
-        t_block->model.rotateY(_180DEGINRAD);
+        model.rotateY(_180DEGINRAD);
         offsetCorrection.set(-offsetH, offsetV, 0);
         break;
       case BlockOrientation::East:
@@ -90,6 +101,7 @@ void ModelBuilder_TorchModel(Block* t_block, Level* pLevel) {
     }
   }
 
-  t_block->model.scale(BLOCK_SIZE);
-  t_block->model.translate(t_block->position + offsetCorrection);
+  model.scale(BLOCK_SIZE);
+  model.translate(position + offsetCorrection);
+  return model;
 }

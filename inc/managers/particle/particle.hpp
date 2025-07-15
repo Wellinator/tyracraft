@@ -9,7 +9,7 @@ using Tyra::Vec4;
 
 class Particle {
  public:
-  Particle(const PaticleType& _type) : type(_type){};
+  Particle(const ParticleType& _type) : type(_type){};
   virtual ~Particle(){};
 
   u8 isAllive() { return !expired; }
@@ -22,7 +22,7 @@ class Particle {
     expired = false;
   }
 
-  const PaticleType type;
+  const ParticleType type;
   u32 id = 0;
   u8 billboarded = true;
   u8 expired = false;

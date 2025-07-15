@@ -12,7 +12,7 @@ class SmokeParticle : public Particle {
   const float size = 3.0F;
   float _elapsedFrameTime = 0;
 
-  SmokeParticle(Block* pBlock);
+  SmokeParticle(Vec4* offset);
   ~SmokeParticle();
 
   void fixedUpdate(const float fixedDeltaTime);

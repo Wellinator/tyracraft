@@ -1,6 +1,6 @@
 #include "managers/particle/block_particle.hpp"
 
-BlockParticle::BlockParticle(Block* pBlock) : Particle(PaticleType::Block) {
+BlockParticle::BlockParticle(Block* pBlock) : Particle(ParticleType::Block) {
   // Define life time
   _lifeTime = Tyra::Math::randomf(0.6F, 1.0F);
 

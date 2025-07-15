@@ -2,8 +2,10 @@
 #include "managers/particle/flame_particle.hpp"
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/model_builder.hpp"
+#include "managers/block/vertex_block_data.hpp"
 
-FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
+FlameParticle::FlameParticle(Vec4* offset) : Particle(ParticleType::Flame) {
   billboarded = true;
 
   // Define life time
@@ -12,10 +14,11 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   // Define if is collidable
   collidable = false;
 
-  Vec4 pos, offsetCorrection = Vec4(0, 0, 0);
-  pBlock->pLevel->GetXYZFromPos(&pBlock->offset, &pos);
+  Level* pLevel = Level::getInstance();
+
+  Vec4 offsetCorrection = Vec4(0, 0, 0);
   const BlockOrientation orientation =
-      pBlock->pLevel->GetTorchOrientationDataFromMap(pos.x, pos.y, pos.z);
+      pLevel->GetTorchOrientationDataFromMap(offset->x, offset->y, offset->z);
 
   const float offsetH = BLOCK_SIZE * 0.25F;
   const float offsetVAtSide = BLOCK_SIZE * 0.670F;
@@ -41,8 +44,17 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   }
 
   // Set position by top of the torch
-  Vec4 center =
-      pBlock->minCorner + ((pBlock->maxCorner - pBlock->minCorner) / 2);
+  Vec4 min, max;
+
+  BBox* rawBBox = VertexBlockData::getTorchRawBBox();
+  rawBBox->getMinMax(&min, &max);
+  delete rawBBox;
+
+  M4x4 model = ModelBuilder_TorchModel(offset);
+  min = model * min;
+  max = model * max;
+
+  Vec4 center = min + ((max - min) / 2);
   _position = center + offsetCorrection;
 
   // TODO: apply correct flame UV and move to static property
@@ -59,7 +71,9 @@ FlameParticle::FlameParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   uv[4] = Vec4(xMin, yMin, 1.0F, 0.0F);
   uv[5] = Vec4(xMax, yMin, 1.0F, 0.0F);
 
-  color.set(pBlock->baseColor);
+  // TODO: refactor lightmanager to use block offset instead block reference
+  // and get color in realtime based on block position
+  color = Color(120, 120, 120);
 };
 
 void FlameParticle::fixedUpdate(const float fixedDeltaTime) { return; }

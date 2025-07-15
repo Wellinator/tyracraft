@@ -32,6 +32,8 @@ class Level : public Singleton<Level> {
   uint8_t getBlockByWorldPosition(const Vec4* pos);
   Vec4 roundToBlockCenter(const Vec4& pos);
   Vec4 worldPosToOffset(const Vec4& pos);
+  Vec4 offsetToWorldPos(const Vec4& offset);
+  Vec4 offsetToWorldPos(const Vec4* offset);
 
   uint8_t GetMetaDataFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t SetMetaDataToMap(uint16_t x, uint16_t y, uint16_t z, uint8_t data);

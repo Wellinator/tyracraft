@@ -60,34 +60,45 @@ void Chunk::update(const Plane* frustumPlanes) {
 }
 
 void Chunk::tick() {
+  for (int i = 0; i < randomTickSpeed; i++) {
+    tickRandomBlock();
+  }
+}
+
+void Chunk::tickRandomBlock() {
+  Vec4 blockToTick = Vec4(Tyra::Math::randomi(minOffset.x, maxOffset.x),
+                          Tyra::Math::randomi(minOffset.y, maxOffset.y),
+                          Tyra::Math::randomi(minOffset.z, maxOffset.z));
+  u8 blockType =
+      pLevel->GetBlockFromMap(blockToTick.x, blockToTick.y, blockToTick.z);
+
   u8 emitParticles = this->_distanceFromPlayerInChunks <= 3;
+  if (emitParticles) {
+    u32 blockID =
+        pLevel->GetPosFromXYZ(blockToTick.x, blockToTick.y, blockToTick.z);
 
-  for (size_t i = 0; i < blocks.size(); i++) {
-    if (emitParticles) {
-      // TODO: Move to method
-      if (blocks[i]->getType() == Blocks::TORCH) {
-        if (Utils::Probability(0.008F)) {
-          // Creates smoke particle
-          SmokeParticle* sp = new SmokeParticle(blocks[i]);
-          ParticlesManager::EmitParticle(sp);
+    if (blockType == static_cast<u8>(Blocks::TORCH)) {
+      // Creates smoke particle
+      SmokeParticle* sp = new SmokeParticle(&blockToTick);
+      ParticlesManager::EmitParticle(sp);
 
-          // Creates Flame particle
-          Particle* currentParticle =
-              ParticlesManager::GetParticleById(blocks[i]->index);
+      // Creates Flame particle
+      Particle* currentParticle = ParticlesManager::GetParticleById(blockID);
 
-          if (currentParticle) {
-            currentParticle->renew();
-            return;
-          }
-
-          // Emit a flame particle
-          FlameParticle* p = new FlameParticle(blocks[i]);
-          p->id = blocks[i]->index;
-          ParticlesManager::EmitParticle(p);
-        }
+      if (currentParticle) {
+        currentParticle->renew();
+        return;
       }
+
+      // Emit a flame particle
+      FlameParticle* p = new FlameParticle(&blockToTick);
+      p->id = blockID;
+      ParticlesManager::EmitParticle(p);
     }
   }
+
+  // Todo: add grass block spread
+  // Based on https://minecraft.fandom.com/wiki/Grass_Block#Spread
 }
 
 void Chunk::updateSurroundingBlocks() {
@@ -192,7 +203,7 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
-                                     StaticPipeline* stapip) {
+                                    StaticPipeline* stapip) {
   if (isDrawDataLoaded()) {
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
@@ -233,11 +244,12 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
 };
 
 void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
-                                      StaticPipeline* stapip) {
+                                     StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingBlocks.size(); i++) {
     Block* t_block = surroundingBlocks[i];
     const auto start = t_block->packed.drawDataIndex;
-    const auto end = (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
+    const auto end =
+        (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
 
     //------------------------
     // Temp clipped draw data
@@ -265,11 +277,12 @@ void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
 }
 
 void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
-                                            StaticPipeline* stapip) {
+                                           StaticPipeline* stapip) {
   for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
     Block* t_block = surroundingTransparentBlocks[i];
     const auto start = t_block->packed.drawDataIndex;
-    const auto end = (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
+    const auto end =
+        (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
 
     //------------------------
     // Temp clipped draw data
@@ -298,12 +311,11 @@ void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
   }
 }
 
-void Chunk::renderPartialBlockDrawData(Renderer* t_renderer,
-                                        u8 hasTransparency,
-                                        StaticPipeline* stapip,
-                                        std::vector<Vec4>& in_vertex,
-                                        std::vector<Vec4>& in_uv,
-                                        std::vector<Color>& in_colors) {
+void Chunk::renderPartialBlockDrawData(Renderer* t_renderer, u8 hasTransparency,
+                                       StaticPipeline* stapip,
+                                       std::vector<Vec4>& in_vertex,
+                                       std::vector<Vec4>& in_uv,
+                                       std::vector<Color>& in_colors) {
   StaPipTextureBag textureBag;
   StaPipInfoBag infoBag;
   StaPipColorBag colorBag;
@@ -470,11 +482,13 @@ void Chunk::loadDrawDataWithoutSorting() {
                             &verticesColorsWithTransparency,
                             &uvMapWithTransparency, t_worldLightModel, pLevel);
 
-      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength =
+          blocks[i]->packed.visibleFacesCount * 6;
 
       // printf("Transparent Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
-      //        blocks[i]->packed.drawDataIndex, blocks[i]->packed.drawDataLength);
+      //        blocks[i]->packed.drawDataIndex,
+      //        blocks[i]->packed.drawDataLength);
 
     } else {
       blocks[i]->packed.drawDataIndex = vertices.size();
@@ -482,11 +496,13 @@ void Chunk::loadDrawDataWithoutSorting() {
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, pLevel);
 
-      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength =
+          blocks[i]->packed.visibleFacesCount * 6;
 
       // printf("Block %i\n", (int)i);
       // printf("drawDataIndex %i | drawDataLength %i \n\n",
-      //        blocks[i]->packed.drawDataIndex, blocks[i]->packed.drawDataLength);
+      //        blocks[i]->packed.drawDataIndex,
+      //        blocks[i]->packed.drawDataLength);
     }
   }
 
@@ -517,14 +533,16 @@ void Chunk::loadDrawDataAsync() {
                             &verticesColorsWithTransparency,
                             &uvMapWithTransparency, t_worldLightModel, pLevel);
 
-      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength =
+          blocks[i]->packed.visibleFacesCount * 6;
     } else {
       blocks[i]->packed.drawDataIndex = vertices.size();
 
       MeshBuilder_BuildMesh(blocks[i], &vertices, &verticesColors, &uvMap,
                             t_worldLightModel, pLevel);
 
-      blocks[i]->packed.drawDataLength = blocks[i]->packed.visibleFacesCount * 6;
+      blocks[i]->packed.drawDataLength =
+          blocks[i]->packed.visibleFacesCount * 6;
     }
 
     if (counter >= LOAD_CHUNK_BATCH) {

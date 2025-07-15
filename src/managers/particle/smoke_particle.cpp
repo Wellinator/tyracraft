@@ -4,10 +4,12 @@
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
 #include "timer.hpp"
+#include "managers/model_builder.hpp"
+#include "managers/block/vertex_block_data.hpp"
 
 using Tyra::Color;
 
-SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
+SmokeParticle::SmokeParticle(Vec4* offset) : Particle(ParticleType::Smoke) {
   billboarded = true;
 
   // Define life time
@@ -21,10 +23,10 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   _direction = Vec4(0.0F, 1.0F, 0.0F);
 
   // Check if the torch is oriented and fix position
-  Vec4 pos, offsetCorrection = Vec4(0, 0, 0);
-  pBlock->pLevel->GetXYZFromPos(&pBlock->offset, &pos);
+  Level* pLevel = Level::getInstance();
+  Vec4 offsetCorrection = Vec4(0, 0, 0);
   const BlockOrientation orientation =
-      pBlock->pLevel->GetTorchOrientationDataFromMap(pos.x, pos.y, pos.z);
+      pLevel->GetTorchOrientationDataFromMap(offset->x, offset->y, offset->z);
 
   const float offsetH = BLOCK_SIZE * 0.25F;
   const float offsetVAtSide = BLOCK_SIZE * 0.75F;
@@ -50,8 +52,18 @@ SmokeParticle::SmokeParticle(Block* pBlock) : Particle(PaticleType::Flame) {
   }
 
   // Set position by top of the torch
-  Vec4 center =
-      pBlock->minCorner + ((pBlock->maxCorner - pBlock->minCorner) / 2);
+  Vec4 min, max;
+
+  BBox* rawBBox = VertexBlockData::getTorchRawBBox();
+  rawBBox->getMinMax(&min, &max);
+  delete rawBBox;
+
+  M4x4 model = ModelBuilder_TorchModel(offset);
+  min = model * min;
+  max = model * max;
+
+  // Set position in the middle of the bounding box
+  Vec4 center = min + ((max - min) / 2);
   _position = center + offsetCorrection;
   _prevPosition.set(_position);
   _targetPosition.set(_position);

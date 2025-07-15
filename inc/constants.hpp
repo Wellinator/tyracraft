@@ -258,6 +258,7 @@ enum class ItemId {
 
 #define WATER_PROPAGATION_PER_TICKS 5
 #define LAVA_PROPAGATION_PER_TICKS 10
+#define DEFAULT_TICK_SPEED 1
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -358,7 +359,7 @@ enum class MobCategory { Passive, Neutral, Hostile, Invalid };
 
 enum class MobType { Pig, Invalid };
 
-enum class PaticleType { Block, Flame, Smoke };
+enum class ParticleType { Block, Flame, Smoke };
 
 #define HOT_INVENTORY_SIZE 9
 

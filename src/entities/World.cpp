@@ -1672,7 +1672,7 @@ void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
 
       block->position.set((*offset) * DOUBLE_BLOCK_SIZE);
 
-      ModelBuilder_BuildModel(block, pLevel);
+      block->model = ModelBuilder_BuildModel(offset);
       BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
           pLevel, block->getType(), block->offset);
       BBox tempBBox = rawBBox->getTransformed(block->model);
@@ -1789,8 +1789,7 @@ void World::buildChunkAsync(Chunk* t_chunk) {
         }
 
         block->position.set(tempBlockOffset * DOUBLE_BLOCK_SIZE);
-
-        ModelBuilder_BuildModel(block, pLevel);
+        block->model = ModelBuilder_BuildModel(&tempBlockOffset);
 
         BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
             pLevel, block->getType(), block->offset);

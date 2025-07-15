@@ -124,7 +124,7 @@ class Chunk {
   inline void addBlock(Block* t_block) {
     t_block->setLocalIndex(blocks.size());
     blocks.emplace_back(t_block);
-
+ 
     if (t_block->hasTransparency()) {
       visibleFacesCountWithTransparency +=
           t_block->getVisibleFacesCount() * VertexBlockData::FACES_COUNT;
@@ -166,6 +166,9 @@ class Chunk {
   std::vector<Vec4> verticesWithTransparency;
   std::vector<Color> verticesColorsWithTransparency;
   std::vector<Vec4> uvMapWithTransparency;
+
+  int randomTickSpeed = DEFAULT_TICK_SPEED;
+  void tickRandomBlock();
 
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 

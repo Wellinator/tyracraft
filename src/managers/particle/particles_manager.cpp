@@ -137,7 +137,7 @@ void ParticlesManager::render() {
     StaPipTextureBag textureBag;
     textureBag.coordinates = p->uv;
 
-    if (p->type == PaticleType::Block) {
+    if (p->type == ParticleType::Block) {
       textureBag.texture = blocksTexture;
     } else {
       textureBag.texture = particlesTexture;

@@ -253,6 +253,14 @@ Vec4 Level::worldPosToOffset(const Vec4& pos) {
   return Vec4(std::ceil(offset.x), std::ceil(offset.y), std::ceil(offset.z));
 }
 
+Vec4 Level::offsetToWorldPos(const Vec4* offset) {
+  return (*offset) * DOUBLE_BLOCK_SIZE;
+}
+
+Vec4 Level::offsetToWorldPos(const Vec4& offset) {
+  return offset * DOUBLE_BLOCK_SIZE;
+}
+
 Vec4 Level::roundToBlockCenter(const Vec4& pos) {
   return worldPosToOffset(pos) * DOUBLE_BLOCK_SIZE;
 }
