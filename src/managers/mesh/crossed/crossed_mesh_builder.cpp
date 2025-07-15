@@ -48,7 +48,7 @@ void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
 
 void CrossedMeshBuilder_loadCrossedUVData(Block* t_block,
                                           std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap()->data();
+  u8* facesMap = t_block->getFacesMap().data();
   CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
 }

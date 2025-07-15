@@ -6,7 +6,6 @@
 #include "constants.hpp"
 #include "entities/entity.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
-#include "models/block_info_model.hpp"
 
 #define FRONT_VISIBLE 0b100000
 #define BACK_VISIBLE 0b010000
@@ -33,8 +32,11 @@ using Tyra::Vec4;
  */
 
 class Block : public Entity {
+ protected:
+  Block();
+
  public:
-  BlockInfo* pBlockInfo = nullptr;
+  virtual ~Block();
 
   // Core block data - keep these first for cache efficiency
   u32 index;   // Index at terrain;
@@ -78,21 +80,17 @@ class Block : public Entity {
   // Color can be compressed to 32-bit RGBA if needed
   Color baseColor;
 
-  Block(BlockInfo* blockInfo);
-  ~Block();
-
-  Blocks getType();
-  float getHardness();
-
-  /**
+    /**
    * Order: Top, Bottom, Left, Right, Back, Front
    * @param facesMapIndex 6 length array of texture index
    */
-  std::array<u8, 6>* getFacesMap();
-  u8 isBreakable();
-  u8 isCollidable();
-  u8 hasTransparency();
-  u8 isCrossed();
+  virtual std::array<u8, 6> getFacesMap() = 0;
+  virtual u8 isBreakable() = 0;
+  virtual u8 isCollidable() = 0;
+  virtual u8 hasTransparency() = 0;
+  virtual u8 isCrossed() = 0;
+  virtual Blocks getType() = 0;
+  virtual float getHardness() = 0;
 
   // Accessors for packed data
   inline u16 getChunkId() const { return packed.chunkId; }

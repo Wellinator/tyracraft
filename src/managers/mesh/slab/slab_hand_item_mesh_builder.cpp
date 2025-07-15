@@ -80,7 +80,7 @@ void SlabHandItemMeshBuilder_loadMeshData(Block* t_block,
 
 void SlabHandItemMeshBuilder_loadUVData(Block* t_block,
                                         std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap()->data();
+  u8* facesMap = t_block->getFacesMap().data();
 
   if (t_block->isTopFaceVisible()) {
     SlabHandItemMeshBuilder_loadTopDownUVFaceData(facesMap[0], t_uv_map);

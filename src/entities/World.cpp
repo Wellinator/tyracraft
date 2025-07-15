@@ -268,7 +268,8 @@ void World::reloadWorldArea(const Vec4& position) {
 
 // TODO: move to chunk manager
 void World::removeBlockFromChunk(Block* blockToRemove) {
-  Chunk* currentChunk = chunkManager.getChunkById(blockToRemove->packed.chunkId);
+  Chunk* currentChunk =
+      chunkManager.getChunkById(blockToRemove->packed.chunkId);
   if (!currentChunk) return;
 
   Vec4 offset;
@@ -1648,46 +1649,49 @@ void World::addBlockToChunk(Chunk* t_chunk, Vec4* offset) {
 
     // Have any face visible?
     if (visibleFaces > 0) {
-      BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
-
-      if (blockInfo) {
-        Block* block = new Block(blockInfo);
-        block->index = blockIndex;
-        block->pLevel = pLevel;
-        block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
-        block->packed.chunkId = t_chunk->id;
-
-        if (block->isCrossed()) {
-          block->packed.visibleFaces = 0b111111;
-          block->packed.visibleFacesCount = 2;
-        } else {
-          block->packed.visibleFaces = visibleFaces;
-          block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
-        }
-
-        block->position.set((*offset) * DOUBLE_BLOCK_SIZE);
-
-        ModelBuilder_BuildModel(block, pLevel);
-        BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-            pLevel, block->getType(), block->offset);
-        BBox tempBBox = rawBBox->getTransformed(block->model);
-        delete rawBBox;
-
-        block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
-        block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-        // Add data to AABBTree
-        bvh::AABB blockAABB = bvh::AABB();
-        blockAABB.minx = block->minCorner.x;
-        blockAABB.miny = block->minCorner.y;
-        blockAABB.minz = block->minCorner.z;
-        blockAABB.maxx = block->maxCorner.x;
-        blockAABB.maxy = block->maxCorner.y;
-        blockAABB.maxz = block->maxCorner.z;
-        block->tree_index = g_AABBTree->insert(blockAABB, block);
-
-        t_chunk->addBlock(block);
+      Block* block =
+          StaticBlockRepository::getInstance()->createBlock(block_type);
+      if (!block) {
+        TYRA_ERROR("Block template not found for type ",
+                   static_cast<int>(block_type));
+        return;
       }
+
+      block->index = blockIndex;
+      block->pLevel = pLevel;
+      block->offset = pLevel->GetPosFromXYZ(offset->x, offset->y, offset->z);
+      block->packed.chunkId = t_chunk->id;
+
+      if (block->isCrossed()) {
+        block->packed.visibleFaces = 0b111111;
+        block->packed.visibleFacesCount = 2;
+      } else {
+        block->packed.visibleFaces = visibleFaces;
+        block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
+      }
+
+      block->position.set((*offset) * DOUBLE_BLOCK_SIZE);
+
+      ModelBuilder_BuildModel(block, pLevel);
+      BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+          pLevel, block->getType(), block->offset);
+      BBox tempBBox = rawBBox->getTransformed(block->model);
+      delete rawBBox;
+
+      block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+      block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
+      // Add data to AABBTree
+      bvh::AABB blockAABB = bvh::AABB();
+      blockAABB.minx = block->minCorner.x;
+      blockAABB.miny = block->minCorner.y;
+      blockAABB.minz = block->minCorner.z;
+      blockAABB.maxx = block->maxCorner.x;
+      blockAABB.maxy = block->maxCorner.y;
+      blockAABB.maxz = block->maxCorner.z;
+      block->tree_index = g_AABBTree->insert(blockAABB, block);
+
+      t_chunk->addBlock(block);
     }
   }
 }
@@ -1762,49 +1766,52 @@ void World::buildChunkAsync(Chunk* t_chunk) {
 
       // Is any face vísible?
       if (visibleFaces > 0) {
-        BlockInfo* blockInfo = blockManager.getBlockInfoByType(block_type);
-
-        if (blockInfo) {
-          Block* block = new Block(blockInfo);
-          block->index = blockIndex;
-          block->pLevel = pLevel;
-          block->offset = pLevel->GetPosFromXYZ(
-              tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
-          block->packed.chunkId = t_chunk->id;
-
-          if (block->isCrossed()) {
-            block->packed.visibleFaces = 0b111111;
-            block->packed.visibleFacesCount = 2;
-          } else {
-            block->packed.visibleFaces = visibleFaces;
-            block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
-          }
-
-          block->position.set(tempBlockOffset * DOUBLE_BLOCK_SIZE);
-
-          ModelBuilder_BuildModel(block, pLevel);
-
-          BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-              pLevel, block->getType(), block->offset);
-          BBox tempBBox = rawBBox->getTransformed(block->model);
-
-          block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
-          block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
-
-          delete rawBBox;
-
-          // Add data to AABBTree
-          bvh::AABB blockAABB = bvh::AABB();
-          blockAABB.minx = block->minCorner.x;
-          blockAABB.miny = block->minCorner.y;
-          blockAABB.minz = block->minCorner.z;
-          blockAABB.maxx = block->maxCorner.x;
-          blockAABB.maxy = block->maxCorner.y;
-          blockAABB.maxz = block->maxCorner.z;
-          block->tree_index = g_AABBTree->insert(blockAABB, block);
-
-          t_chunk->addBlock(block);
+        Block* block =
+            StaticBlockRepository::getInstance()->createBlock(block_type);
+        if (!block) {
+          TYRA_ERROR("Block template not found for type ",
+                     static_cast<int>(block_type));
+          return;
         }
+
+        block->index = blockIndex;
+        block->pLevel = pLevel;
+        block->offset = pLevel->GetPosFromXYZ(
+            tempBlockOffset.x, tempBlockOffset.y, tempBlockOffset.z);
+        block->packed.chunkId = t_chunk->id;
+
+        if (block->isCrossed()) {
+          block->packed.visibleFaces = 0b111111;
+          block->packed.visibleFacesCount = 2;
+        } else {
+          block->packed.visibleFaces = visibleFaces;
+          block->packed.visibleFacesCount = Utils::countSetBits(visibleFaces);
+        }
+
+        block->position.set(tempBlockOffset * DOUBLE_BLOCK_SIZE);
+
+        ModelBuilder_BuildModel(block, pLevel);
+
+        BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
+            pLevel, block->getType(), block->offset);
+        BBox tempBBox = rawBBox->getTransformed(block->model);
+
+        block->bbox = new BBox(tempBBox.vertices, tempBBox.getVertexCount());
+        block->bbox->getMinMax(&block->minCorner, &block->maxCorner);
+
+        delete rawBBox;
+
+        // Add data to AABBTree
+        bvh::AABB blockAABB = bvh::AABB();
+        blockAABB.minx = block->minCorner.x;
+        blockAABB.miny = block->minCorner.y;
+        blockAABB.minz = block->minCorner.z;
+        blockAABB.maxx = block->maxCorner.x;
+        blockAABB.maxy = block->maxCorner.y;
+        blockAABB.maxz = block->maxCorner.z;
+        block->tree_index = g_AABBTree->insert(blockAABB, block);
+
+        t_chunk->addBlock(block);
       }
     }
 
@@ -1898,7 +1905,8 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
 void World::buildTargetBlockDrawData() {
   TYRA_ASSERT(targetBlock != nullptr, "No target block to build draw data!");
 
-  const u8 size = targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
+  const u8 size =
+      targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
 
   _targetBlockVertices.reserve(size);
   _targetBlockColors.reserve(size);
@@ -1918,7 +1926,8 @@ void World::updateBlockDamage() {
   const u8 U = floor(targetBlock->damage / 10);
   const float _scale = 1.0F / 16.0F;
   const Vec4 UVScale = Vec4(_scale, _scale, 1.0F, 0.0F);
-  const u8 size = targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
+  const u8 size =
+      targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
 
   u8 idx = 0;
   const u8 faces = size / 6;
@@ -1946,6 +1955,8 @@ void World::clearTargetBlockDrawData() {
 }
 
 void World::setDrawDistace(const u8& drawDistanceInChunks) {
+  TYRA_LOG("Setting draw distance to ", static_cast<int>(drawDistanceInChunks),
+           " chunks");
   if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;

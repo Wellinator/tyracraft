@@ -103,7 +103,7 @@ void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
 }
 
 void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap()->data();
+  u8* facesMap = t_block->getFacesMap().data();
 
   if (t_block->isTopFaceVisible()) {
     LavaMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);

@@ -21,6 +21,7 @@ using Tyra::RendererSettings;
 
 StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
     : GameState(context), _gameMode(gameMode) {
+  StaticBlockRepository::getInstance()->initializeBlocks();
   this->handleGameMode(gameMode);
   this->init();
 }

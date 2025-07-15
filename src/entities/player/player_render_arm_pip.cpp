@@ -107,80 +107,75 @@ void PlayerRenderArmPip::loadItemDrawData() {
 
   } else {
     Item* t_item = t_player->t_itemRepository->getItemById(activeItemType);
-    BlockInfo* tempInfo =
-        BlockManager::getInstance()->getBlockInfoByType(t_item->blockId);
+    Block* pBlock =
+        StaticBlockRepository::getInstance()->createBlock(t_item->blockId);
 
-    if (tempInfo) {
-      Block block = Block(tempInfo);
+    pBlock->setVisibleFaces(0b111111);
+    pBlock->setVisibleFacesCount(6);
 
-      block.setVisibleFaces(0b111111);
-      block.setVisibleFacesCount(6);
+    pBlock->model.identity();
 
-      block.model.identity();
+    if (activeItemType == ItemId::torch) {
+      scale = torchScale;
+      rotation.set(torchRot);
+      translation.set(torchPos);
 
-      if (activeItemType == ItemId::torch) {
-        scale = torchScale;
-        rotation.set(torchRot);
-        translation.set(torchPos);
+      // set animation settings
+      breaking_start_rot.set(torchRot);
+      breaking_end_rot.set(torchRot + breaking_animation_rot_offset);
+      breaking_start_pos.set(torchPos);
+      breaking_end_pos.set(torchPos + breaking_animation_pos_offset);
 
-        // set animation settings
-        breaking_start_rot.set(torchRot);
-        breaking_end_rot.set(torchRot + breaking_animation_rot_offset);
-        breaking_start_pos.set(torchPos);
-        breaking_end_pos.set(torchPos + breaking_animation_pos_offset);
+      puting_start_rot.set(torchRot);
+      puting_end_rot.set(torchRot + puting_animation_rot_offset);
+      puting_start_pos.set(torchPos);
+      puting_end_pos.set(torchPos + puting_animation_pos_offset);
+    } else {
+      scale = blockScale;
+      rotation.set(blockRot);
+      translation.set(blockPos);
 
-        puting_start_rot.set(torchRot);
-        puting_end_rot.set(torchRot + puting_animation_rot_offset);
-        puting_start_pos.set(torchPos);
-        puting_end_pos.set(torchPos + puting_animation_pos_offset);
-      } else {
-        scale = blockScale;
-        rotation.set(blockRot);
-        translation.set(blockPos);
+      // set animation settings
+      breaking_start_rot.set(blockRot);
+      breaking_end_rot.set(blockRot + breaking_animation_rot_offset);
+      breaking_start_pos.set(blockPos);
+      breaking_end_pos.set(blockPos + breaking_animation_pos_offset);
 
-        // set animation settings
-        breaking_start_rot.set(blockRot);
-        breaking_end_rot.set(blockRot + breaking_animation_rot_offset);
-        breaking_start_pos.set(blockPos);
-        breaking_end_pos.set(blockPos + breaking_animation_pos_offset);
-
-        puting_start_rot.set(blockRot);
-        puting_end_rot.set(blockRot + puting_animation_rot_offset);
-        puting_start_pos.set(blockPos);
-        puting_end_pos.set(blockPos + puting_animation_pos_offset);
-      }
-
-      rawMatrix.identity();
-      rawMatrix.rotate(rotation);
-      rawMatrix.scale(scale);
-      rawMatrix.translate(translation);
-
-      HandledItemMeshBuilder_BuildMesh(t_item, &block, &vertices, nullptr,
-                                       &uvMap, t_player->t_worldLightModel);
-
-      textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
-      textureBag.coordinates = uvMap.data();
-
-      infoBag.model = &rawMatrix;
-
-      infoBag.transformationType = Tyra::PipelineTransformationType::TyraMP;
-      infoBag.textureMappingType =
-          Tyra::PipelineTextureMappingType::TyraNearest;
-      infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-      infoBag.blendingEnabled = true;
-      infoBag.antiAliasingEnabled = false;
-      infoBag.fullClipChecks = false;
-      infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
-          PipelineInfoBagFrustumCulling_None;
-
-      colorBag.single = t_player->getBaseColorAtPlayerPos();
-
-      bag.count = vertices.size();
-      bag.vertices = vertices.data();
-      bag.color = &colorBag;
-      bag.info = &infoBag;
-      bag.texture = &textureBag;
+      puting_start_rot.set(blockRot);
+      puting_end_rot.set(blockRot + puting_animation_rot_offset);
+      puting_start_pos.set(blockPos);
+      puting_end_pos.set(blockPos + puting_animation_pos_offset);
     }
+
+    rawMatrix.identity();
+    rawMatrix.rotate(rotation);
+    rawMatrix.scale(scale);
+    rawMatrix.translate(translation);
+
+    HandledItemMeshBuilder_BuildMesh(t_item, pBlock, &vertices, nullptr, &uvMap,
+                                     t_player->t_worldLightModel);
+
+    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
+    textureBag.coordinates = uvMap.data();
+
+    infoBag.model = &rawMatrix;
+
+    infoBag.transformationType = Tyra::PipelineTransformationType::TyraMP;
+    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+    infoBag.blendingEnabled = true;
+    infoBag.antiAliasingEnabled = false;
+    infoBag.fullClipChecks = false;
+    infoBag.frustumCulling =
+        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+    colorBag.single = t_player->getBaseColorAtPlayerPos();
+
+    bag.count = vertices.size();
+    bag.vertices = vertices.data();
+    bag.color = &colorBag;
+    bag.info = &infoBag;
+    bag.texture = &textureBag;
   }
 };
 

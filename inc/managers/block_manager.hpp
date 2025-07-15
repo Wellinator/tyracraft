@@ -17,8 +17,7 @@
 #include "managers/block/sound/block_dig_sfx_repository.hpp"
 #include "managers/block/sound/block_broken_sfx_repository.hpp"
 #include "managers/block/sound/block_step_sfx_repository.hpp"
-#include "managers/block/block_info_repository.hpp"
-#include "models/block_info_model.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
 #include <tyra>
 
 using Tyra::Audio;
@@ -34,7 +33,13 @@ class BlockManager : public Singleton<BlockManager> {
   ~BlockManager();
   void init(Renderer* t_renderer, const std::string& texturePack);
 
-  BlockInfo* getBlockInfoByType(const Blocks& blockType);
+  Block* getBlockTemplateByType(const Blocks& blockType);
+
+  // Legacy compatibility method - to be removed after all code is updated
+  Block* getBlockInfoByType(const Blocks& blockType) {
+    return getBlockTemplateByType(blockType);
+  }
+
   const u8 isBlockTransparent(const Blocks& blockType);
   const u8 isBlockOriented(const Blocks& blockType);
 
@@ -61,7 +66,6 @@ class BlockManager : public Singleton<BlockManager> {
   Texture* blocksTexAtlas;
   Texture* blocksTexAtlasLowRes;
   Renderer* t_renderer;
-  BlockInfoRepository* t_BlockInfoRepository;
 
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;
 };

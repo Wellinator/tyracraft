@@ -12,8 +12,6 @@ using Tyra::Vec4;
 BlockManager::BlockManager() : Singleton<BlockManager>() {}
 
 BlockManager::~BlockManager() {
-  delete this->t_BlockInfoRepository;
-
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlasLowRes->id);
 
@@ -27,7 +25,6 @@ BlockManager::~BlockManager() {
 
 void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
-  this->t_BlockInfoRepository = new BlockInfoRepository();
   this->loadBlocksTextures(texturePack);
   this->loadBlocksTexturesLowRes(texturePack);
   this->registerBlockSoundsEffects();
@@ -57,12 +54,14 @@ void BlockManager::registerBlockSoundsEffects() {
   this->blockSfxRepositories.push_back(new BlockStepSfxRepository());
 }
 
-BlockInfo* BlockManager::getBlockInfoByType(const Blocks& blockType) {
-  return this->t_BlockInfoRepository->getBlockInfo(blockType);
+Block* BlockManager::getBlockTemplateByType(const Blocks& blockType) {
+  return StaticBlockRepository::getInstance()->getBlockTemplate(blockType);
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
-  return this->t_BlockInfoRepository->isBlockTransparent(blockType);
+  return StaticBlockRepository::getInstance()->isBlockTransparent(blockType)
+             ? 1
+             : 0;
 }
 
 const u8 BlockManager::isBlockOriented(const Blocks& blockType) {

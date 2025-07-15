@@ -85,7 +85,7 @@ void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
 }
 
 void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap()->data();
+  u8* facesMap = t_block->getFacesMap().data();
 
   if (t_block->isTopFaceVisible()) {
     SlabMeshBuilder_loadTopDownUVFaceData(facesMap[0], t_uv_map);
