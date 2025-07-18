@@ -17,62 +17,10 @@ void SlabHandItemMeshBuilder_GenerateMesh(Block* t_block,
 
 void SlabHandItemMeshBuilder_loadMeshData(Block* t_block,
                                           std::vector<Vec4>* t_vertices) {
-  int vert;
   const Vec4* rawData = VertexBlockData::getBottomSlabVertexData();
 
-  if (t_block->isTopFaceVisible()) {
-    vert = 0;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isBottomFaceVisible()) {
-    vert = 6;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isLeftFaceVisible()) {
-    vert = 12;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isRightFaceVisible()) {
-    vert = 18;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isBackFaceVisible()) {
-    vert = 24;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-  }
-  if (t_block->isFrontFaceVisible()) {
-    vert = 30;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+  for (size_t i = 0; i < VertexBlockData::VETEX_COUNT; i++) {
+    t_vertices->emplace_back(t_block->model * rawData[i]);
   }
 
   delete rawData;
@@ -139,106 +87,25 @@ void SlabHandItemMeshBuilder_loadLightData(
     WorldLightModel* t_worldLightModel) {
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 blockColorAverage = Vec4(0.0F);
-  Vec4 tempColor;
+  Color faceColor;
 
-  // const float MAX_LIGHT_VALUE = 15.0F;
-  // const float MIN_LIGHT_FACTOR = 0.25F;
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  {
-    //   Top face 100% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  {
-    //   Top face 50% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
-
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
-
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
-
-    // TODO: calc light by user position
-    // const float sunLightFactor =
-    //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
-    //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
-
-    // Vec4::copy(&tempColor, faceColor.rgba);
-    // blockColorAverage += tempColor;
-
-    SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
+  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+  SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
   blockColorAverage /= t_block->getVisibleFacesCount();
   t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,

@@ -21,22 +21,23 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void CrossedMeshBuilder_GenerateMesh(Block* t_block,
+void CrossedMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                      std::vector<Vec4>* t_vertices,
                                      std::vector<Color>* t_vertices_colors,
                                      std::vector<Vec4>* t_uv_map,
                                      WorldLightModel* t_worldLightModel,
                                      Level* pLevel);
 
-void CrossedMeshBuilder_loadCrossedMeshData(Block* t_block,
+void CrossedMeshBuilder_loadCrossedMeshData(const Vec4* offset,
                                             std::vector<Vec4>* t_vertices);
-void CrossedMeshBuilder_loadCrossedUVData(Block* t_block,
+void CrossedMeshBuilder_loadCrossedUVData(const Vec4* offset,
                                           std::vector<Vec4>* t_uv_map);
 void CrossedMeshBuilder_loadUVFaceData(const u8& index,
                                        std::vector<Vec4>* t_uv_map);
-void CrossedMeshBuilder_loadCroosedLightData(
-    Block* t_block, std::vector<Color>* t_vertices_colors,
-    WorldLightModel* t_worldLightModel, Level* pLevel);
+void CrossedMeshBuilder_loadCrossedLightData(
+    const Vec4* offset, const u8 visibleFaces,
+    std::vector<Color>* t_vertices_colors, WorldLightModel* t_worldLightModel,
+    Level* pLevel);
 
 void CrossedMeshBuilder_loadLightFaceData(
     Color* faceColor, std::vector<Color>* t_vertices_colors);

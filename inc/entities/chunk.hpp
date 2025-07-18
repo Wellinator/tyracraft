@@ -36,7 +36,7 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-enum class ChunkState { PreLoaded, Loaded, Loading, Clean };
+enum class ChunkState { Loaded, Clean };
 
 class Chunk {
  public:
@@ -46,8 +46,7 @@ class Chunk {
   u16 id = 0;
 
   ChunkState state = ChunkState::Clean;
-
-  std::vector<Block*> blocks;
+  const bool isLoaded() const { return state == ChunkState::Loaded; }
 
   Vec4 tempLoadingOffset = Vec4();
   Vec4 minOffset = Vec4();
@@ -57,18 +56,6 @@ class Chunk {
   Vec4 scaledMaxOffset = Vec4();
   Vec4 scaledCenterOffset = Vec4();
   BBox* bbox;
-
-  // Neighborhoods references;
-  Chunk* frontNeighbor = nullptr;
-  Chunk* backNeighbor = nullptr;
-  Chunk* leftNeighbor = nullptr;
-  Chunk* rightNeighbor = nullptr;
-  Chunk* topNeighbor = nullptr;
-  Chunk* bottomNeighbor = nullptr;
-
-  int visibleFacesCount = 0;
-  int visibleFacesCountWithTransparency = 0;
-  u16 blocksCount = 0;
 
   Level* pLevel;
   WorldLightModel* t_worldLightModel;
@@ -82,25 +69,12 @@ class Chunk {
   void update(const Plane* frustumPlanes);
   void tick();
   void clear();
-  void clearAsync();
-
-  void loadDrawData();
-  void loadDrawDataAsync();
-  void loadDrawDataWithoutSorting();
-  void sortTransParentDrawData(const Vec4& cameraPos);
+  void build();
+  void rebuild();
 
   void reloadLightData();
   void clearDrawData();
   void clearDrawDataWithoutShrink();
-  inline const u8 isDrawDataLoaded() { return _isDrawDataLoaded; };
-
-  void removeBlock(Block* target);
-  void removeBlockByOffset(u32 offset);
-  void removeBlockByOffset(Vec4* offset);
-  void removeBlockByLocalIndex(u16 index);
-  void removeBlockByPosition(Vec4* position);
-
-  inline bool isPerformingAsyncTask() { return _isPerformingAsyncTask; };
 
   u8 containsBlock(Vec4* offset);
 
@@ -119,36 +93,6 @@ class Chunk {
   };
 
   inline void setCamPosition(Vec4* pos) { this->camPositon.set(*pos); };
-
-  // Block controllers
-  inline void addBlock(Block* t_block) {
-    t_block->setLocalIndex(blocks.size());
-    blocks.emplace_back(t_block);
- 
-    if (t_block->hasTransparency()) {
-      visibleFacesCountWithTransparency +=
-          t_block->getVisibleFacesCount() * VertexBlockData::FACES_COUNT;
-    } else {
-      visibleFacesCount +=
-          t_block->getVisibleFacesCount() * VertexBlockData::FACES_COUNT;
-    }
-  };
-
-  inline void preAllocateMemory() {
-    blocks.reserve(CHUNK_LENGTH);
-    _isPreAllocated = true;
-  };
-
-  inline void freeUnusedMemory() {
-    blocks.shrink_to_fit();
-    _isPreAllocated = false;
-  };
-
-  inline u8 isPreAllocated() { return _isPreAllocated; };
-
-  Block* getBlockByPosition(const Vec4* pos);
-  Block* getBlockByOffset(const Vec4* offset);
-  Block* getBlockById(const u32 blockId);
 
   inline u32 getIndexByOffset(int x, int y, int z) {
     return (y * pLevel->map.length * pLevel->map.width) +
@@ -172,16 +116,10 @@ class Chunk {
 
   inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
-  u8 _isDrawDataLoaded = false;
-  u8 _isMemoryReserved = false;
-  u8 _loaderBatchCounter = 0;
-  u8 _unloaderBatchCounter = 0;
-  u8 _isPerformingAsyncTask = 0;
-
   Vec4 camPositon = Vec4(0, 0, 0);
   s8 _distanceFromPlayerInChunks = -1;
-  bool _isPreAllocated = false;
 
+  // Refactore the clipped blocks for not using blocks array
   std::vector<Block*> surroundingBlocks;
   std::vector<Block*> surroundingTransparentBlocks;
   Plane* frustumPlanes = nullptr;

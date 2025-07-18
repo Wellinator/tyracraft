@@ -17,6 +17,15 @@
 
 enum class FACE_SIDE { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
+enum class BlockFace {
+  FRONT = FRONT_VISIBLE,
+  BACK = BACK_VISIBLE,
+  LEFT = LEFT_VISIBLE,
+  RIGHT = RIGHT_VISIBLE,
+  TOP = TOP_VISIBLE,
+  BOTTOM = BOTTOM_VISIBLE
+};
+
 using Tyra::Color;
 using Tyra::M4x4;
 using Tyra::Vec4;
@@ -80,7 +89,7 @@ class Block : public Entity {
   // Color can be compressed to 32-bit RGBA if needed
   Color baseColor;
 
-    /**
+  /**
    * Order: Top, Bottom, Left, Right, Back, Front
    * @param facesMapIndex 6 length array of texture index
    */

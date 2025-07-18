@@ -3,7 +3,6 @@
 #include "managers/block/vertex_block_data.hpp"
 #include "models/block_info_model.hpp"
 #include "entities/Block.hpp"
-#include "managers/block/block_info_repository.hpp"
 #include "managers/mesh/handled_item_mesh_builder.hpp"
 #include "managers/block_manager.hpp"
 

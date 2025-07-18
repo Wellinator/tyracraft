@@ -23,14 +23,15 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void LavaMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
+void LavaMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
                                   Level* pLevel);
 
-void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  Level* pLevel);
+void LavaMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices, Level* pLevel);
 
 /**
  * https://minecraft.fandom.com/wiki/Water
@@ -39,15 +40,17 @@ void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
  * 3	blocks	0.5-0.75
  * 4	blocks	0.25-0.5
  */
-void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
+void LavaMeshBuilder_loadMeshDataByLevel(const Vec4* offset,
+                                         const u8 visibleFaces,
                                          std::vector<Vec4>* t_vertices,
                                          const LiquidOrientation orientation,
                                          const LiquidQuadMapModel quadMap);
 
-void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
+void LavaMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                std::vector<Vec4>* t_uv_map, Level* pLevel);
 void LavaMeshBuilder_loadUVFaceData(const u8& index,
                                     std::vector<Vec4>* t_uv_map);
-void LavaMeshBuilder_loadLightData(Block* t_block,
+void LavaMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel);

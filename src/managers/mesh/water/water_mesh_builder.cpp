@@ -3,34 +3,36 @@
 #include "managers/block/vertex_block_data.hpp"
 #include "models/liquid_quad_map_model.hpp"
 #include "managers/liquid_helper.hpp"
+#include "managers/model_builder.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
+#include "utils.hpp"
 
-void WaterMeshBuilder_GenerateMesh(Block* t_block,
+void WaterMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel) {
-  WaterMeshBuilder_loadMeshData(t_block, t_vertices, pLevel);
-  WaterMeshBuilder_loadUVData(t_block, t_uv_map);
-  WaterMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
-                                 pLevel);
+  WaterMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices, pLevel);
+  WaterMeshBuilder_loadUVData(offset, visibleFaces, t_uv_map, pLevel);
+  WaterMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
+                                 t_worldLightModel, pLevel);
 }
 
-void WaterMeshBuilder_loadMeshData(Block* t_block,
+void WaterMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    Level* pLevel) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&t_block->offset, &pos);
-
   const LiquidOrientation orientation =
-      pLevel->GetLiquidOrientationDataFromMap(pos.x, pos.y, pos.z);
+      pLevel->GetLiquidOrientationDataFromMap(offset->x, offset->y, offset->z);
   const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
-      pLevel, orientation, &pos, (u8)Blocks::WATER_BLOCK);
+      pLevel, orientation, const_cast<Vec4*>(offset), (u8)Blocks::WATER_BLOCK);
 
-  WaterMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, quadMap);
+  WaterMeshBuilder_loadMeshDataByLevel(offset, visibleFaces, t_vertices,
+                                       quadMap);
 }
 
-void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
+void WaterMeshBuilder_loadMeshDataByLevel(const Vec4* offset,
+                                          const u8 visibleFaces,
                                           std::vector<Vec4>* t_vertices,
                                           const LiquidQuadMapModel quadMap) {
   u8 vert = 0;
@@ -41,86 +43,93 @@ void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
   Vec4 modelSE = Vec4(0.0F, quadMap.SE, 0.0F);
   Vec4 modelSW = Vec4(0.0F, quadMap.SW, 0.0F);
 
-  if (t_block->isTopFaceVisible()) {
+  M4x4 model = ModelBuilder_NoRotationModel(const_cast<Vec4*>(offset));
+
+  if (visibleFaces & (int)BlockFace::TOP) {
     vert = 0;
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
   }
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     vert = 6;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
   }
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     vert = 12;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
   }
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     vert = 18;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
   }
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     vert = 24;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
   }
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     vert = 30;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
   }
 }
 
-void WaterMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap().data();
+void WaterMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                 std::vector<Vec4>* t_uv_map, Level* pLevel) {
+  const Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+  Block* blockTemplate =
+      StaticBlockRepository::getInstance()->getBlockTemplate(block_type);
+  u8* facesMap = blockTemplate->getFacesMap().data();
 
-  if (t_block->isTopFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::TOP) {
     WaterMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   }
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     WaterMeshBuilder_loadUVFaceData(facesMap[1], t_uv_map);
   }
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     WaterMeshBuilder_loadUVFaceData(facesMap[2], t_uv_map);
   }
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     WaterMeshBuilder_loadUVFaceData(facesMap[3], t_uv_map);
   }
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     WaterMeshBuilder_loadUVFaceData(facesMap[4], t_uv_map);
   }
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     WaterMeshBuilder_loadUVFaceData(facesMap[5], t_uv_map);
   }
 }
@@ -141,7 +150,7 @@ void WaterMeshBuilder_loadUVFaceData(const u8& index,
   t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
-void WaterMeshBuilder_loadLightData(Block* t_block,
+void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Color>* t_vertices_colors,
                                     WorldLightModel* t_worldLightModel,
                                     Level* pLevel) {
@@ -149,12 +158,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
-  if (t_block->isTopFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::TOP) {
     //   Top face 100% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
@@ -163,13 +173,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::BOTTOM) {
     //   Top face 50% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::BOTTOM, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -177,12 +187,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::LEFT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::LEFT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -190,13 +201,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::RIGHT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::RIGHT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -204,12 +215,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::BACK) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::BACK, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -217,13 +229,13 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)FACE_SIDE::FRONT) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::FRONT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -231,9 +243,10 @@ void WaterMeshBuilder_loadLightData(Block* t_block,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->getVisibleFacesCount();
-  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-                         blockColorAverage.z);
+  const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
+  blockColorAverage /= visibleFacesCount;
+  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
+  //                        blockColorAverage.z);
 }
 
 void WaterMeshBuilder_loadLightFaceData(Color* faceColor,

@@ -21,20 +21,19 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void TorchMeshBuilder_GenerateMesh(Block* t_block,
+void TorchMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel);
 
-void TorchMeshBuilder_loadMeshData(Block* t_block,
-                                   std::vector<Vec4>* t_vertices,
-                                   const BlockOrientation orientation);
+void TorchMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
+                                   std::vector<Vec4>* t_vertices);
 void TorchMeshBuilder_loadUVData(std::vector<Vec4>* t_uv_map);
-void TorchMeshBuilder_loadLightData(Block* t_block,
-                                    std::vector<Color>* t_vertices_colors,
-                                    WorldLightModel* t_worldLightModel,
-                                    Level* pLevel);
+void TorchMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
+                                   std::vector<Color>* t_vertices_colors,
+                                   WorldLightModel* t_worldLightModel,
+                                   Level* pLevel);
 void TorchMeshBuilder_loadLightFaceData(Color* faceColor,
                                         std::vector<Color>* t_vertices_colors);

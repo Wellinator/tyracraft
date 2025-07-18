@@ -24,12 +24,13 @@ using Tyra::Vec4;
 void MeshBuilder_RegisterBuilders();
 void MeshBuilder_UnregisterBuilders();
 
-void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
+void MeshBuilder_BuildMesh(const Vec4* offset, const u8 visibleFaces,
+                           std::vector<Vec4>* t_vertices,
                            std::vector<Color>* t_vertices_colors,
                            std::vector<Vec4>* t_uv_map,
                            WorldLightModel* t_worldLightModel, Level* pLevel);
 
-void MeshBuilder_BuildLightData(Block* t_block,
+void MeshBuilder_BuildLightData(const Vec4* offset, const u8 visibleFaces,
                                 std::vector<Color>* t_vertices_colors,
                                 WorldLightModel* t_worldLightModel,
                                 Level* pLevel);

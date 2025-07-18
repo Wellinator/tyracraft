@@ -59,6 +59,8 @@ Block* BlockManager::getBlockTemplateByType(const Blocks& blockType) {
 }
 
 const u8 BlockManager::isBlockTransparent(const Blocks& blockType) {
+  if (blockType == Blocks::VOID) return 0;
+  if (blockType == Blocks::AIR_BLOCK) return 1;
   return StaticBlockRepository::getInstance()->isBlockTransparent(blockType)
              ? 1
              : 0;

@@ -1,31 +1,28 @@
 #include "managers/mesh/torch/torch_mesh_builder.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "managers/model_builder.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
+#include "utils.hpp"
 
-void TorchMeshBuilder_GenerateMesh(Block* t_block,
+void TorchMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&t_block->offset, &pos);
-
-  const BlockOrientation orientation =
-      pLevel->GetTorchOrientationDataFromMap(pos.x, pos.y, pos.z);
-
-  TorchMeshBuilder_loadMeshData(t_block, t_vertices, orientation);
+  TorchMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices);
   TorchMeshBuilder_loadUVData(t_uv_map);
-  TorchMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
-                                 pLevel);
+  TorchMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
+                                 t_worldLightModel, pLevel);
 }
 
-void TorchMeshBuilder_loadMeshData(Block* t_block,
-                                   std::vector<Vec4>* t_vertices,
-                                   const BlockOrientation orientation) {
+void TorchMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
+                                   std::vector<Vec4>* t_vertices) {
+  M4x4 model = ModelBuilder_TorchModel(const_cast<Vec4*>(offset));
+
   for (size_t i = 0; i < VertexBlockData::VETEX_COUNT; i++) {
-    t_vertices->emplace_back(t_block->model *
-                             VertexBlockData::torchVertexData[i]);
+    t_vertices->emplace_back(model * VertexBlockData::torchVertexData[i]);
   }
 }
 
@@ -39,7 +36,7 @@ void TorchMeshBuilder_loadUVData(std::vector<Vec4>* t_uv_map) {
   delete UVData;
 }
 
-void TorchMeshBuilder_loadLightData(Block* t_block,
+void TorchMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Color>* t_vertices_colors,
                                     WorldLightModel* t_worldLightModel,
                                     Level* pLevel) {
@@ -51,7 +48,8 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = baseFaceColor;
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
@@ -64,7 +62,8 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = baseFaceColor;
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -75,19 +74,8 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
   {
     Color faceColor = baseFaceColor;
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
-    TorchMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-  }
-
-  {
-    Color faceColor = baseFaceColor;
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -99,7 +87,8 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = baseFaceColor;
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -111,7 +100,8 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
     Color faceColor = baseFaceColor;
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -119,9 +109,22 @@ void TorchMeshBuilder_loadLightData(Block* t_block,
     TorchMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->getVisibleFacesCount();
-  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-                         blockColorAverage.z);
+  {
+    Color faceColor = baseFaceColor;
+
+    // Apply sunlight and block light to face
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   pLevel,
+                                   t_worldLightModel->sunLightIntensity);
+    Vec4::copy(&tempColor, faceColor.rgba);
+    blockColorAverage += tempColor;
+
+    TorchMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+  }
+
+  blockColorAverage /= Utils::countSetBits(visibleFaces);
+  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
+  //                        blockColorAverage.z);
 }
 
 void TorchMeshBuilder_loadLightFaceData(Color* faceColor,

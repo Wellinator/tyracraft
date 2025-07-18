@@ -24,11 +24,11 @@ class LightManager {
   static u8 getVertexAO(bool side1, bool corner, bool side2);
   static float calcAOIntensity(u8 AOValue);
   static Color IntensifyColor(Color* color, const float intensity);
-  static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
+  static void ApplyLightToFace(Color* baseColor, Vec4* offset,
                                FACE_SIDE faceSide, Level* pLevel,
                                const float sunlightIntensity);
-  static void ApplyLightToFace(Color* baseColor, Block* targetBlock,
-                               Level* pLevel, const float sunlightIntensity);
+  static void ApplyLightToFace(Color* baseColor, Vec4* offset, Level* pLevel,
+                               const float sunlightIntensity);
 
  private:
   Level* pLevel = nullptr;

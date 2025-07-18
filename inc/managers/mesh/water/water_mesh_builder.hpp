@@ -23,14 +23,14 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void WaterMeshBuilder_GenerateMesh(Block* t_block,
+void WaterMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel);
 
-void WaterMeshBuilder_loadMeshData(Block* t_block,
+void WaterMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Vec4>* t_vertices,
                                    Level* pLevel);
 
@@ -44,14 +44,16 @@ void WaterMeshBuilder_loadMeshData(Block* t_block,
  * 6	blocks	0.25-0.375
  * 7	blocks	0.125-0.25
  */
-void WaterMeshBuilder_loadMeshDataByLevel(Block* t_block,
+void WaterMeshBuilder_loadMeshDataByLevel(const Vec4* offset,
+                                          const u8 visibleFaces,
                                           std::vector<Vec4>* t_vertices,
                                           const LiquidQuadMapModel quadMap);
 
-void WaterMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
+void WaterMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                 std::vector<Vec4>* t_uv_map, Level* pLevel);
 void WaterMeshBuilder_loadUVFaceData(const u8& index,
                                      std::vector<Vec4>* t_uv_map);
-void WaterMeshBuilder_loadLightData(Block* t_block,
+void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Color>* t_vertices_colors,
                                     WorldLightModel* t_worldLightModel,
                                     Level* pLevel);
@@ -64,5 +66,5 @@ void WaterMeshBuilder_loadLightFaceDataWithAO(
 
 bool WaterMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> WaterMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
-                                                     Block* block,
+                                                     const Vec4* offset,
                                                      Level* pLevel);

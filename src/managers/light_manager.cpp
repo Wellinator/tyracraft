@@ -66,7 +66,7 @@ Color LightManager::IntensifyColor(Color* color, const float intensity) {
                color->a);
 }
 
-void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
+void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
                                     FACE_SIDE faceSide, Level* pLevel,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
@@ -76,48 +76,45 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
   u8 sunLightLevel;
   u8 lightLevel;
 
-  Vec4 targetBlockOffset;
-  pLevel->GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
-
   switch (faceSide) {
     case FACE_SIDE::TOP:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x, targetBlockOffset.y + 1, targetBlockOffset.z);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x, offset->y + 1, offset->z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BOTTOM:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x, targetBlockOffset.y - 1, targetBlockOffset.z);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x, offset->y - 1, offset->z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::LEFT:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x + 1, targetBlockOffset.y, targetBlockOffset.z);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x + 1, offset->y, offset->z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::RIGHT:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x - 1, targetBlockOffset.y, targetBlockOffset.z);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x - 1, offset->y, offset->z);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::BACK:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z + 1);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x, offset->y, offset->z + 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
 
     case FACE_SIDE::FRONT:
-      lightData = pLevel->GetLightDataFromMap(
-          targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z - 1);
+      lightData =
+          pLevel->GetLightDataFromMap(offset->x, offset->y, offset->z - 1);
       sunLightLevel = ((lightData >> 4) & 0xF);
       lightLevel = lightData & 0x0F;
       break;
@@ -144,17 +141,13 @@ void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
   // printf("SunlightIntensity: %f\n", sunlightIntensity);
 }
 
-void LightManager::ApplyLightToFace(Color* baseColor, Block* targetBlock,
+void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
                                     Level* pLevel,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
   const float MIN_LIGHT_FACTOR = 0.15F;
 
-  Vec4 targetBlockOffset;
-  pLevel->GetXYZFromPos(&targetBlock->offset, &targetBlockOffset);
-
-  u8 lightData = pLevel->GetLightDataFromMap(
-      targetBlockOffset.x, targetBlockOffset.y, targetBlockOffset.z);
+  u8 lightData = pLevel->GetLightDataFromMap(offset->x, offset->y, offset->z);
   u8 sunLightLevel = ((lightData >> 4) & 0xF);
   u8 lightLevel = lightData & 0x0F;
 

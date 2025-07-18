@@ -35,11 +35,6 @@ class BlockManager : public Singleton<BlockManager> {
 
   Block* getBlockTemplateByType(const Blocks& blockType);
 
-  // Legacy compatibility method - to be removed after all code is updated
-  Block* getBlockInfoByType(const Blocks& blockType) {
-    return getBlockTemplateByType(blockType);
-  }
-
   const u8 isBlockTransparent(const Blocks& blockType);
   const u8 isBlockOriented(const Blocks& blockType);
 

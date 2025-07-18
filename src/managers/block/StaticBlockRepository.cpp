@@ -152,9 +152,10 @@ void StaticBlockRepository::initializeBlocks() {
 
 Block* StaticBlockRepository::getBlockTemplate(Blocks blockType) {
   size_t index = static_cast<size_t>(blockType);
-  if (index >= blockTemplates.size()) {
-    return nullptr;
-  }
+  TYRA_ASSERT(index > static_cast<size_t>(Blocks::AIR_BLOCK) &&
+                  index < static_cast<size_t>(Blocks::TOTAL_OF_BLOCKS),
+              "Invalid block type: ", static_cast<int>(index));
+
   return blockTemplates[index].get();
 }
 

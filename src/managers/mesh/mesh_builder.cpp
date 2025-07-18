@@ -9,15 +9,17 @@
 #include "managers/block/vertex_block_data.hpp"
 
 std::map<Blocks,
-         std::function<void(Block* t_block, std::vector<Vec4>* t_vertices,
+         std::function<void(const Vec4* offset, const u8 visibleFaces,
+                            std::vector<Vec4>* t_vertices,
                             std::vector<Color>* t_vertices_colors,
                             std::vector<Vec4>* t_uv_map,
                             WorldLightModel* t_worldLightModel, Level* pLevel)>>
     builders;
 
-std::map<Blocks, std::function<void(
-                     Block* t_block, std::vector<Color>* t_vertices_colors,
-                     WorldLightModel* t_worldLightModel, Level* pLevel)>>
+std::map<Blocks,
+         std::function<void(const Vec4* offset, const u8 visibleFaces,
+                            std::vector<Color>* t_vertices_colors,
+                            WorldLightModel* t_worldLightModel, Level* pLevel)>>
     light_builders;
 
 void MeshBuilder_RegisterBuilders() {
@@ -89,9 +91,9 @@ void MeshBuilder_RegisterBuilders() {
 
   light_builders = {
       // Vegetation
-      {Blocks::GRASS, CrossedMeshBuilder_loadCroosedLightData},
-      {Blocks::POPPY_FLOWER, CrossedMeshBuilder_loadCroosedLightData},
-      {Blocks::DANDELION_FLOWER, CrossedMeshBuilder_loadCroosedLightData},
+      {Blocks::GRASS, CrossedMeshBuilder_loadCrossedLightData},
+      {Blocks::POPPY_FLOWER, CrossedMeshBuilder_loadCrossedLightData},
+      {Blocks::DANDELION_FLOWER, CrossedMeshBuilder_loadCrossedLightData},
 
       // Liquids
       {Blocks::WATER_BLOCK, WaterMeshBuilder_loadLightData},
@@ -159,18 +161,23 @@ void MeshBuilder_UnregisterBuilders() {
   light_builders.clear();
 };
 
-void MeshBuilder_BuildMesh(Block* t_block, std::vector<Vec4>* t_vertices,
+void MeshBuilder_BuildMesh(const Vec4* offset, const u8 visibleFaces,
+                           std::vector<Vec4>* t_vertices,
                            std::vector<Color>* t_vertices_colors,
                            std::vector<Vec4>* t_uv_map,
                            WorldLightModel* t_worldLightModel, Level* pLevel) {
-  builders[t_block->getType()](t_block, t_vertices, t_vertices_colors, t_uv_map,
-                               t_worldLightModel, pLevel);
+  const Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+  builders[block_type](offset, visibleFaces, t_vertices, t_vertices_colors,
+                       t_uv_map, t_worldLightModel, pLevel);
 }
 
-void MeshBuilder_BuildLightData(Block* t_block,
+void MeshBuilder_BuildLightData(const Vec4* offset, const u8 visibleFaces,
                                 std::vector<Color>* t_vertices_colors,
                                 WorldLightModel* t_worldLightModel,
                                 Level* pLevel) {
-  light_builders[t_block->getType()](t_block, t_vertices_colors,
-                                     t_worldLightModel, pLevel);
+  const Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+  light_builders[block_type](offset, visibleFaces, t_vertices_colors,
+                             t_worldLightModel, pLevel);
 }

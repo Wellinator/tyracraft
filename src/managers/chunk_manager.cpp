@@ -59,13 +59,7 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
       chk->setCamPosition(camPos);
       chk->update(frustumPlanes);
 
-      if (chk->isVisible()) {
-        if (!chk->isDrawDataLoaded()) {
-          chk->loadDrawDataWithoutSorting();
-        }
-
-        visibleChunks.emplace_back(chk);
-      }
+      if (chk->isVisible()) visibleChunks.emplace_back(chk);
     }
   }
 }
@@ -89,13 +83,13 @@ void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 }
 
 void ChunkManager::rendererOpaque(Renderer* t_renderer,
-                                   StaticPipeline* stapip) {
+                                  StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->renderer(t_renderer, stapip);
 }
 
 void ChunkManager::rendererTransparent(Renderer* t_renderer,
-                                        StaticPipeline* stapip) {
+                                       StaticPipeline* stapip) {
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
 }
@@ -116,22 +110,6 @@ void ChunkManager::generateChunks() {
       }
     }
   }
-
-  tempId = 0;
-  for (size_t x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
-    for (size_t z = 0; z < OVERWORLD_H_DISTANCE_IN_CHUNKS; z++) {
-      for (size_t y = 0; y < OVERWORLD_V_DISTANCE_IN_CHUNKS; y++) {
-        auto origin = chunks[tempId++];
-
-        origin->topNeighbor = getChunkByOffset(Vec4(x, y + 1, z));
-        origin->bottomNeighbor = getChunkByOffset(Vec4(x, y - 1, z));
-        origin->backNeighbor = getChunkByOffset(Vec4(x, y, z + 1));
-        origin->frontNeighbor = getChunkByOffset(Vec4(x, y, z - 1));
-        origin->leftNeighbor = getChunkByOffset(Vec4(x + 1, y, z));
-        origin->rightNeighbor = getChunkByOffset(Vec4(x - 1, y, z));
-      }
-    }
-  }
 };
 
 Chunk* ChunkManager::getChunkById(const u16& id) {
@@ -141,7 +119,7 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 
 void ChunkManager::enqueueChunksToReloadLight() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
-    if (visibleChunks[i]->isDrawDataLoaded())
+    if (visibleChunks[i]->isLoaded())
       chunksToUpdateLight.push(visibleChunks[i]);
   }
 }
@@ -169,11 +147,11 @@ void ChunkManager::reloadLightDataOfAllChunks() {
   clearLightDataQueue();
 }
 
-void ChunkManager::sortDrawDataFromCamPos(const Vec4& cameraPos) {
-  for (size_t i = 0; i < visibleChunks.size(); i++) {
-    visibleChunks[i]->sortTransParentDrawData(cameraPos);
-  }
-}
+// void ChunkManager::sortDrawDataFromCamPos(const Vec4& cameraPos) {
+//   for (size_t i = 0; i < visibleChunks.size(); i++) {
+//     visibleChunks[i]->sortTransParentDrawData(cameraPos);
+//   }
+// }
 
 const uint16_t ChunkManager::getChunkIdByPosition(
     const Vec4& chunkMinPosition) {

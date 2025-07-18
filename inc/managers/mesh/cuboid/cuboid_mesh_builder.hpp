@@ -22,19 +22,20 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void CuboidMeshBuilder_GenerateMesh(Block* t_block,
+void CuboidMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Vec4>* t_vertices,
                                     std::vector<Color>* t_vertices_colors,
                                     std::vector<Vec4>* t_uv_map,
                                     WorldLightModel* t_worldLightModel,
                                     Level* pLevel);
 
-void CuboidMeshBuilder_loadMeshData(Block* t_block,
+void CuboidMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Vec4>* t_vertices);
-void CuboidMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
+void CuboidMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_uv_map);
 void CuboidMeshBuilder_loadUVFaceData(const u8& index,
                                       std::vector<Vec4>* t_uv_map);
-void CuboidMeshBuilder_loadLightData(Block* t_block,
+void CuboidMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      std::vector<Color>* t_vertices_colors,
                                      WorldLightModel* t_worldLightModel,
                                      Level* pLevel);
@@ -46,7 +47,7 @@ void CuboidMeshBuilder_loadLightData(Block* t_block,
  * This is the sequence of the array: [ left, front, back, right]
  *
  */
-std::array<FACE_SIDE, 4> CuboidMeshBuilder_getFaceByRotation(Block* t_block,
+std::array<FACE_SIDE, 4> CuboidMeshBuilder_getFaceByRotation(const Vec4* offset,
                                                              Level* pLevel);
 
 void CuboidMeshBuilder_loadLightFaceData(Color* faceColor,
@@ -57,5 +58,5 @@ void CuboidMeshBuilder_loadLightFaceDataWithAO(
 
 bool CuboidMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> CuboidMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
-                                                      Block* block,
+                                                      const Vec4* offset,
                                                       Level* pLevel);

@@ -21,20 +21,22 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
-void SlabMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
+void SlabMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
                                   Level* pLevel);
 
-void SlabMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
-                                  Level* pLevel);
-void SlabMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map);
+void SlabMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices, Level* pLevel);
+void SlabMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadSideUVFaceData(const u8& index,
                                         std::vector<Vec4>* t_uv_map);
 void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
                                            std::vector<Vec4>* t_uv_map);
-void SlabMeshBuilder_loadLightData(Block* t_block,
+void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel);
@@ -46,7 +48,7 @@ void SlabMeshBuilder_loadLightData(Block* t_block,
  * This is the sequence of the array: [ left, front, back, right]
  *
  */
-std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(Block* t_block,
+std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(const Vec4* offset,
                                                            Level* pLevel);
 
 void SlabMeshBuilder_loadLightFaceData(Color* faceColor,
@@ -57,9 +59,9 @@ void SlabMeshBuilder_loadLightFaceDataWithAO(
 
 bool SlabMeshBuilder_isBlockOpaque(u8 block_type);
 std::array<u8, 8> SlabMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
-                                                    Block* block,
+                                                    const Vec4* offset,
                                                     Level* pLevel);
 
-void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, Block* targetBlock,
+void SlabMeshBuilder_ApplyLightToFace(Color* baseColor, const Vec4* offset,
                                       FACE_SIDE faceSide, Level* pLevel,
                                       const float sunlightIntensity);

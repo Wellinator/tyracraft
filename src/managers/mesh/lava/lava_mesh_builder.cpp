@@ -1,126 +1,137 @@
 #include "managers/mesh/lava/lava_mesh_builder.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/vertex_block_data.hpp"
+#include "managers/model_builder.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
+#include "utils.hpp"
 #include <algorithm>
 
-void LavaMeshBuilder_GenerateMesh(Block* t_block, std::vector<Vec4>* t_vertices,
+void LavaMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
                                   Level* pLevel) {
-  LavaMeshBuilder_loadMeshData(t_block, t_vertices, pLevel);
-  LavaMeshBuilder_loadUVData(t_block, t_uv_map);
-  LavaMeshBuilder_loadLightData(t_block, t_vertices_colors, t_worldLightModel,
-                                pLevel);
+  LavaMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices, pLevel);
+  LavaMeshBuilder_loadUVData(offset, visibleFaces, t_uv_map, pLevel);
+  LavaMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
+                                t_worldLightModel, pLevel);
 }
 
-void LavaMeshBuilder_loadMeshData(Block* t_block, std::vector<Vec4>* t_vertices,
+void LavaMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
+                                  std::vector<Vec4>* t_vertices,
                                   Level* pLevel) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&t_block->offset, &pos);
-
   const LiquidOrientation orientation =
-      pLevel->GetLiquidOrientationDataFromMap(pos.x, pos.y, pos.z);
+      pLevel->GetLiquidOrientationDataFromMap(offset->x, offset->y, offset->z);
 
   const LiquidQuadMapModel quadMap = LiquidHelper_getQuadMap(
-      pLevel, orientation, &pos, (u8)Blocks::LAVA_BLOCK);
+      pLevel, orientation, const_cast<Vec4*>(offset), (u8)Blocks::LAVA_BLOCK);
 
-  LavaMeshBuilder_loadMeshDataByLevel(t_block, t_vertices, orientation,
-                                      quadMap);
+  LavaMeshBuilder_loadMeshDataByLevel(offset, visibleFaces, t_vertices,
+                                      orientation, quadMap);
 }
 
-void LavaMeshBuilder_loadMeshDataByLevel(Block* t_block,
+void LavaMeshBuilder_loadMeshDataByLevel(const Vec4* offset,
+                                         const u8 visibleFaces,
                                          std::vector<Vec4>* t_vertices,
                                          const LiquidOrientation orientation,
                                          const LiquidQuadMapModel quadMap) {
   u8 vert = 0;
   const Vec4* rawData = VertexBlockData::cuboidVertexData;
+  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
+
+  M4x4 model = ModelBuilder_NoRotationModel(const_cast<Vec4*>(offset));
 
   Vec4 modelNW = Vec4(0.0F, quadMap.NW, 0.0F);
   Vec4 modelNE = Vec4(0.0F, quadMap.NE, 0.0F);
   Vec4 modelSE = Vec4(0.0F, quadMap.SE, 0.0F);
   Vec4 modelSW = Vec4(0.0F, quadMap.SW, 0.0F);
 
-  if (t_block->isTopFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::TOP) {
     vert = 0;
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
   }
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     vert = 6;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
   }
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     vert = 12;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
   }
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     vert = 18;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
   }
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     vert = 24;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelNW);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNE);
+    t_vertices->emplace_back(model * rawData[vert++] - modelNW);
   }
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     vert = 30;
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++]);
 
-    t_vertices->emplace_back(t_block->model * rawData[vert++]);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSW);
-    t_vertices->emplace_back(t_block->model * rawData[vert++] - modelSE);
+    t_vertices->emplace_back(model * rawData[vert++]);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSW);
+    t_vertices->emplace_back(model * rawData[vert++] - modelSE);
   }
 }
 
-void LavaMeshBuilder_loadUVData(Block* t_block, std::vector<Vec4>* t_uv_map) {
-  u8* facesMap = t_block->getFacesMap().data();
+void LavaMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
+                                std::vector<Vec4>* t_uv_map, Level* pLevel) {
+  const Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+  Block* blockTemplate =
+      StaticBlockRepository::getInstance()->getBlockTemplate(block_type);
+  u8* facesMap = blockTemplate->getFacesMap().data();
 
-  if (t_block->isTopFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::TOP) {
     LavaMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   }
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     LavaMeshBuilder_loadUVFaceData(facesMap[1], t_uv_map);
   }
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     LavaMeshBuilder_loadUVFaceData(facesMap[2], t_uv_map);
   }
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     LavaMeshBuilder_loadUVFaceData(facesMap[3], t_uv_map);
   }
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     LavaMeshBuilder_loadUVFaceData(facesMap[4], t_uv_map);
   }
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     LavaMeshBuilder_loadUVFaceData(facesMap[5], t_uv_map);
   }
 }
@@ -141,7 +152,7 @@ void LavaMeshBuilder_loadUVFaceData(const u8& index,
   t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
-void LavaMeshBuilder_loadLightData(Block* t_block,
+void LavaMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    std::vector<Color>* t_vertices_colors,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel) {
@@ -149,12 +160,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
-  if (t_block->isTopFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::TOP) {
     //   Top face 100% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::TOP, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
@@ -163,13 +175,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isBottomFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     //   Top face 50% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BOTTOM,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::BOTTOM, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -177,12 +189,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isLeftFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::LEFT, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::LEFT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -190,13 +203,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isRightFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::RIGHT,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::RIGHT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -204,12 +217,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isBackFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::BACK, pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::BACK, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -217,13 +231,13 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (t_block->isFrontFaceVisible()) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, t_block, FACE_SIDE::FRONT,
-                                   pLevel,
+    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
+                                   FACE_SIDE::FRONT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
     blockColorAverage += tempColor;
@@ -231,9 +245,10 @@ void LavaMeshBuilder_loadLightData(Block* t_block,
     LavaMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  blockColorAverage /= t_block->packed.visibleFacesCount;
-  t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-                         blockColorAverage.z);
+  const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
+  blockColorAverage /= visibleFacesCount;
+  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
+  //                        blockColorAverage.z);
 }
 
 void LavaMeshBuilder_loadLightFaceData(Color* faceColor,

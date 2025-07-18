@@ -190,10 +190,8 @@ uint8_t Level::GetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 uint8_t Level::SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return index >= 0 && index <= (map.height * map.width * map.height)
-             ? map.blocks[index]
-             : (uint8_t)Blocks::VOID;
+  return BoundCheckMap(x, y, z) ? GetBlockFromMap(x, y, z)
+                                : (uint8_t)Blocks::VOID;
 }
 
 // Gets the block ID at the given coordinates in the map.

@@ -105,7 +105,7 @@ class World {
   Block* targetBlock = nullptr;
 
   void removeBlock(Block* blockToRemove);
-  void removeBlockSilently(Block* blockToRemove);
+  // void removeBlockSilently(Block* blockToRemove);
   void putBlock(const Blocks& blockType, Player* t_player,
                 const float cameraYaw);
   void putTorchBlock(const PlacementDirection placementDirection,
@@ -123,12 +123,7 @@ class World {
   void setSavedSpawnArea(Vec4 pos);
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
-  void buildChunk(Chunk* t_chunk);
-  void buildChunkAsync(Chunk* t_chunk);
-  void rebuildChunkFragment(Chunk* t_chunk, Vec4* moddedOffset);
-  void addOrupdateBlockInChunk(Chunk* t_chunk, Vec4* moddedOffset);
-  void updateOrRemoveBlockInChunk(Chunk* t_chunk, Block* t_block);
-  void addBlockToChunk(Chunk* t_chunk, Vec4* offset);
+  void rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset);
 
   inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
@@ -182,7 +177,7 @@ class World {
   void loadScheduledChunks();
   void unloadScheduledChunks();
   void updateNeighBorsChunksByModdedPosition(const Vec4& pos);
-  void removeBlockFromChunk(Block* blockToRemove);
+  // void removeBlockFromChunk(Block* blockToRemove);
   void updateNeighBorsChunksByAddedBlock(Vec4* offset);
   void addChunkToLoadAsync(Chunk* t_chunk);
   void addChunkToUnloadAsync(Chunk* t_chunk);
@@ -239,16 +234,8 @@ class World {
   u8 getLeavesVisibleFaces(const Vec4* t_blockOffset);
   u8 getLiquidBlockVisibleFaces(const Vec4* t_blockOffset);
 
-  inline u8 isBlockTransparentAtPosition(const u8 x, const u8 y, const u8 z);
   inline u8 isAirAtPosition(const u8 x, const u8 y, const u8 z);
   inline u8 isLiquidAtPosition(const u8 x, const u8 y, const u8 z);
-
-  inline u8 isTopFaceVisible(const Vec4* t_blockOffset);
-  inline u8 isBottomFaceVisible(const Vec4* t_blockOffset);
-  inline u8 isLeftFaceVisible(const Vec4* t_blockOffset);
-  inline u8 isRightFaceVisible(const Vec4* t_blockOffset);
-  inline u8 isFrontFaceVisible(const Vec4* t_blockOffset);
-  inline u8 isBackFaceVisible(const Vec4* t_blockOffset);
 
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);
