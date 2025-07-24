@@ -133,7 +133,7 @@ void ChunkManager::reloadLightDataAsync() {
 
 void ChunkManager::reloadLightData() {
   for (size_t i = 0; i < visibleChunks.size(); i++) {
-    visibleChunks[i]->reloadLightData();
+    if (visibleChunks[i]->isLoaded()) visibleChunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
@@ -142,7 +142,7 @@ void ChunkManager::reloadLightData() {
 // after the first update...
 void ChunkManager::reloadLightDataOfAllChunks() {
   for (size_t i = 0; i < chunks.size(); i++) {
-    chunks[i]->reloadLightData();
+    if (chunks[i]->isLoaded()) chunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
