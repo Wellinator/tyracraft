@@ -268,7 +268,6 @@ Vec4 Level::roundToBlockCenter(const Vec4& pos) {
 void Level::getIntersectedBlocks(
     const Vec4& start, const Vec4& end,
     std::vector<LevelIntersectQueryResult>* pResults) {
-  TYRA_LOG("Level::getIntersectedBlocks");
   Vec4 startOffset = worldPosToOffset(start);
   Vec4 endOffset = worldPosToOffset(end);
 
