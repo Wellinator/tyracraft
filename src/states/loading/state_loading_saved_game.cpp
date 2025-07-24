@@ -156,6 +156,7 @@ void StateLoadingSavedGame::loadSavedData() {
 }
 
 void StateLoadingSavedGame::initPlayer() {
+  TYRA_LOG("Initializing player...");
   this->stateGamePlay->player->mesh->getPosition()->set(
       this->stateGamePlay->world->getGlobalSpawnArea());
   this->stateGamePlay->player->spawnArea.set(
@@ -163,7 +164,7 @@ void StateLoadingSavedGame::initPlayer() {
   this->stateGamePlay->context->t_camera->setFirstPerson();
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
-  TYRA_LOG("initPlayer");
+  TYRA_LOG("Player initialized");
 }
 
 void StateLoadingSavedGame::nextState() {
