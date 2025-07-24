@@ -10,6 +10,13 @@
 
 using Tyra::Vec4;
 
+class LevelIntersectQueryResult {
+ public:
+  Vec4 offset;
+  Vec4 hitPosition;
+  uint8_t blockType;
+};
+
 class LevelMap {
  public:
   uint16_t width;
@@ -84,4 +91,18 @@ class Level : public Singleton<Level> {
   static void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y,
                             uint32_t* z);
   static void GetXYZFromPos(u32* pos, Vec4* t_Offset);
+
+  /**
+   * Get start and end points of the line segment and return all intersected
+   * blocks
+   * @details This function performs a 3D line intersection test with the level
+   * grid using DDA algorithm. It calculates the start and end points of the
+   * line segment based on the provided start and
+   * @param start Start point of the line segment
+   * @param end End point of the line segment
+   * @param pResults Pointer to vector of LevelIntersectQueryResult
+   */
+  void getIntersectedBlocks(
+      const Vec4& start, const Vec4& end,
+      std::vector<LevelIntersectQueryResult>* pResults);
 };

@@ -1,4 +1,6 @@
 #include "entities/level.hpp"
+#include <cfloat>
+#include <cmath>
 
 Level::Level(int seed) : Singleton<Level>() {
   TYRA_LOG("Generating base level template");
@@ -261,4 +263,83 @@ Vec4 Level::offsetToWorldPos(const Vec4& offset) {
 
 Vec4 Level::roundToBlockCenter(const Vec4& pos) {
   return worldPosToOffset(pos) * DOUBLE_BLOCK_SIZE;
+}
+
+void Level::getIntersectedBlocks(
+    const Vec4& start, const Vec4& end,
+    std::vector<LevelIntersectQueryResult>* pResults) {
+  TYRA_LOG("Level::getIntersectedBlocks");
+  Vec4 startOffset = worldPosToOffset(start);
+  Vec4 endOffset = worldPosToOffset(end);
+
+  // Clear results vector
+  pResults->clear();
+
+  // Current position
+  int x = (int)startOffset.x;
+  int y = (int)startOffset.y;
+  int z = (int)startOffset.z;
+
+  // Direction and step
+  Vec4 delta = endOffset - startOffset;
+  int stepX = delta.x > 0 ? 1 : -1;
+  int stepY = delta.y > 0 ? 1 : -1;
+  int stepZ = delta.z > 0 ? 1 : -1;
+
+  // Calculate t delta values for DDA
+  float tDeltaX = delta.x != 0 ? std::abs(1.0f / delta.x) : FLT_MAX;
+  float tDeltaY = delta.y != 0 ? std::abs(1.0f / delta.y) : FLT_MAX;
+  float tDeltaZ = delta.z != 0 ? std::abs(1.0f / delta.z) : FLT_MAX;
+
+  // Calculate initial t values
+  float tMaxX = delta.x != 0 ? (stepX > 0 ? (x + 1 - startOffset.x)
+                                          : (startOffset.x - x)) *
+                                   tDeltaX
+                             : FLT_MAX;
+  float tMaxY = delta.y != 0 ? (stepY > 0 ? (y + 1 - startOffset.y)
+                                          : (startOffset.y - y)) *
+                                   tDeltaY
+                             : FLT_MAX;
+  float tMaxZ = delta.z != 0 ? (stepZ > 0 ? (z + 1 - startOffset.z)
+                                          : (startOffset.z - z)) *
+                                   tDeltaZ
+                             : FLT_MAX;
+
+  // DDA traversal
+  int maxIterations =
+      OVERWORLD_H_DISTANCE + OVERWORLD_V_DISTANCE + OVERWORLD_H_DISTANCE;
+  int iterations = 0;
+
+  while (iterations < maxIterations) {
+    // Check bounds and add current block
+    if (x >= 0 && y >= 0 && z >= 0 && x < OVERWORLD_H_DISTANCE &&
+        y < OVERWORLD_V_DISTANCE && z < OVERWORLD_H_DISTANCE) {
+      // Calculate hit position as the intersection point with the current voxel
+      Vec4 blockOffset(x, y, z);
+      u8 blockType = GetBlockFromMap(x, y, z);
+      if (blockType > (u8)Blocks::AIR_BLOCK) {
+        Vec4 hitPos = offsetToWorldPos(blockOffset);
+        pResults->emplace_back(
+            LevelIntersectQueryResult{blockOffset, hitPos, blockType});
+      }
+    }
+
+    // Check if we've reached the end
+    if (x == (int)endOffset.x && y == (int)endOffset.y && z == (int)endOffset.z)
+      break;
+
+    // Move to next voxel
+    if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+      x += stepX;
+      tMaxX += tDeltaX;
+    } else if (tMaxY < tMaxZ) {
+      y += stepY;
+      tMaxY += tDeltaY;
+    } else {
+      z += stepZ;
+      tMaxZ += tDeltaZ;
+    }
+
+    iterations++;
+  }
 }
