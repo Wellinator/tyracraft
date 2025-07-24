@@ -22,7 +22,6 @@ void CuboidMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
                                     std::vector<Vec4>* t_vertices) {
   int vert;
   const Vec4* rawData = VertexBlockData::cuboidVertexData;
-  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
   M4x4 model = ModelBuilder_DefaultModel(const_cast<Vec4*>(offset));
 
   if (visibleFaces & (int)BlockFace::TOP) {
@@ -79,7 +78,6 @@ void CuboidMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
     t_vertices->emplace_back(model * rawData[vert++]);
     t_vertices->emplace_back(model * rawData[vert++]);
   }
-
 }
 
 void CuboidMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
@@ -183,7 +181,6 @@ void CuboidMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
-
   const std::array<FACE_SIDE, 4> faceByRotation =
       CuboidMeshBuilder_getFaceByRotation(offset, pLevel);
 

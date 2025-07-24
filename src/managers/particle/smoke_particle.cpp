@@ -53,10 +53,8 @@ SmokeParticle::SmokeParticle(Vec4* offset) : Particle(ParticleType::Smoke) {
 
   // Set position by top of the torch
   Vec4 min, max;
-
   BBox* rawBBox = VertexBlockData::getTorchRawBBox();
   rawBBox->getMinMax(&min, &max);
-  delete rawBBox;
 
   M4x4 model = ModelBuilder_TorchModel(offset);
   min = model * min;

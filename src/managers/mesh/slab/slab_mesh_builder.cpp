@@ -23,7 +23,6 @@ void SlabMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
   int vert;
   const SlabOrientation orientation =
       pLevel->GetSlabOrientationDataFromMap(offset->x, offset->y, offset->z);
-  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
 
   Vec4* rawData;
   if (orientation == SlabOrientation::Top) {
@@ -151,6 +150,7 @@ void SlabMeshBuilder_loadTopDownUVFaceData(const u8& index,
   t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
 }
 
+// TODO: refactor to receive the result by reference
 std::array<FACE_SIDE, 4> SlabMeshBuilder_getFaceByRotation(const Vec4* offset,
                                                            Level* pLevel) {
   std::array<FACE_SIDE, 4> result = {};

@@ -38,8 +38,6 @@ void LavaMeshBuilder_loadMeshDataByLevel(const Vec4* offset,
                                          const LiquidQuadMapModel quadMap) {
   u8 vert = 0;
   const Vec4* rawData = VertexBlockData::cuboidVertexData;
-  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
-
   M4x4 model = ModelBuilder_NoRotationModel(const_cast<Vec4*>(offset));
 
   Vec4 modelNW = Vec4(0.0F, quadMap.NW, 0.0F);
