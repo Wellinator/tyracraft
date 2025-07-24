@@ -58,7 +58,6 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
 
 Player::~Player() {
   underEntity = nullptr;
-  overEntity = nullptr;
 
   delete bbox;
   // delete handledItem;

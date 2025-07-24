@@ -36,7 +36,6 @@ Pig::Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
 
 Pig::~Pig() {
   underEntity = nullptr;
-  overEntity = nullptr;
 
   g_AABBTree->remove(tree_index);
 
