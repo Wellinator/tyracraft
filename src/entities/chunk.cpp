@@ -16,6 +16,10 @@
 #include "managers/visible_faces_manager.hpp"
 #include "managers/model_builder.hpp"
 
+#ifdef DEBUG_MODE
+#include "memory-monitor/memory_monitor.hpp"
+#endif  // end if DEBUG_MODE
+
 Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
   this->minOffset.set(minOffset);
@@ -56,10 +60,10 @@ void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
 void Chunk::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
 
-  if (frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
-      _distanceFromPlayerInChunks > -1 && _distanceFromPlayerInChunks < 2) {
-    updateSurroundingBlocks();
-  }
+  // if (frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
+  //     _distanceFromPlayerInChunks > -1 && _distanceFromPlayerInChunks < 2) {
+  //   updateSurroundingBlocks();
+  // }
 }
 
 void Chunk::tick() {
@@ -120,19 +124,19 @@ void Chunk::updateSurroundingBlocks() {
         u32 blockIndex = getIndexByOffset(offset.x, offset.y, offset.z);
 
         // Is the block in this chunk?
-        if (containsBlock(&offset)) {
-          // TODO: render surroungding blocks with clipping algorithm
+        // if (containsBlock(&offset)) {
+        // TODO: render surroungding blocks with clipping algorithm
 
-          // if (Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
-          //                                 &t_block->maxCorner) ==
-          //     CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
-          //   if (t_block->hasTransparency()) {
-          //     surroundingTransparentBlocks.push_back(t_block);
-          //   } else {
-          //     surroundingBlocks.push_back(t_block);
-          //   }
-          // }
-        }
+        // if (Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
+        //                                 &t_block->maxCorner) ==
+        //     CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
+        //   if (t_block->hasTransparency()) {
+        //     surroundingTransparentBlocks.push_back(t_block);
+        //   } else {
+        //     surroundingBlocks.push_back(t_block);
+        //   }
+        // }
+        // }
       }
     }
   }
@@ -385,6 +389,10 @@ void Chunk::clearDrawDataWithoutShrink() {
 }
 
 void Chunk::build() {
+#ifdef DEBUG_MODE
+  size_t initialMemoryUsage = get_used_memory();
+#endif  // end if DEBUG_MODE
+
   for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
     for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
       for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
@@ -404,7 +412,6 @@ void Chunk::build() {
           // BBox* rawBBox = VertexBlockData::getTorchRawBBox();
           // Vec4 min, max;
           // rawBBox->getMinMax(&min, &max);
-          // delete rawBBox;
 
           // M4x4 model = ModelBuilder_BuildModel(&offset);
           // min = model * min;
@@ -439,10 +446,21 @@ void Chunk::build() {
   }
 
   state = ChunkState::Loaded;
+
+#ifdef DEBUG_MODE
+  size_t totalVertices = vertices.size() + verticesWithTransparency.size();
+  if (totalVertices > 0) {
+    size_t finalMemoryUsage = get_used_memory();
+    float memoryUsage =
+        static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
+    printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
+           memoryUsage, totalVertices);
+  }
+#endif  // end if DEBUG_MODE
 }
 
 void Chunk::rebuild() {
-  clearDrawDataWithoutShrink();
+  clearDrawData();
   build();
 }
 
@@ -458,7 +476,7 @@ void Chunk::reloadLightData() {
         const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
         const Blocks block_type = static_cast<Blocks>(blockId);
 
-        if (block_type != Blocks::AIR_BLOCK) {
+        if (blockId > (u8)Blocks::AIR_BLOCK) {
           u8 visibleFaces =
               VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
                   offset);
