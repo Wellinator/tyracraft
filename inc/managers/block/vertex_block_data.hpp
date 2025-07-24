@@ -10,14 +10,14 @@ using Tyra::Vec4;
 class VertexBlockData {
  public:
   VertexBlockData();
-
   ~VertexBlockData();
 
-  static BBox* getRawBBoxByBlock(Level* pLevel, const Blocks block_type,
-                                 const u32 block_offset);
-  static BBox* getTransformedRawBBoxByBlock(const Blocks block_type,
-                                            const u32 block_offset,
-                                            M4x4* model);
+  static BBox* getRawBBoxByOffset(Vec4* offset);
+
+  static const BBox* CuboidRawBBox;
+  static const BBox* UpperSlabRawBBox;
+  static const BBox* LowerSlabRawBBox;
+  static const BBox* TorchRawBBox;
 
   /**
    * @brief Provides 36 vertices of raw cube
@@ -32,7 +32,7 @@ class VertexBlockData {
    */
   static const Vec4* getTopSlabVertexData();
   static const Vec4* getBottomSlabVertexData();
-  static BBox* getSlabRawBBox(Level* pLevel, u32 block_offset);
+  static BBox* getSlabRawBBox(Vec4* offset);
 
   /**
    * @brief Provides 36 vertices of raw torch

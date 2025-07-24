@@ -6,6 +6,15 @@ VertexBlockData::VertexBlockData() {}
 
 VertexBlockData::~VertexBlockData() {}
 
+const BBox* VertexBlockData::CuboidRawBBox =
+    new BBox(VertexBlockData::cuboidVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::UpperSlabRawBBox =
+    new BBox(VertexBlockData::topSlabVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::LowerSlabRawBBox =
+    new BBox(VertexBlockData::bottomSlabVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::TorchRawBBox =
+    new BBox(VertexBlockData::torchVertexData, VETEX_COUNT);
+
 const Vec4* VertexBlockData::torchVertexData =
     VertexBlockData::getTorchVertexData();
 const Vec4* VertexBlockData::topSlabVertexData =
@@ -178,50 +187,31 @@ const Vec4* VertexBlockData::getTorchUVData() {
 }
 
 BBox* VertexBlockData::getTorchRawBBox() {
-  auto result = new BBox(VertexBlockData::torchVertexData, VETEX_COUNT);
-  return result;
+  return const_cast<BBox*>(VertexBlockData::TorchRawBBox);
 }
-
-// BBox* VertexBlockData::getTransformedTorchRawBBox(M4x4* model) {
-//   const Vec4* vertexData = VertexBlockData::getTorchVertexData();
-
-//   auto result = new BBox(vertexData, VETEX_COUNT);
-
-//   return result;
-// }
 
 BBox* VertexBlockData::getCuboidRawBBox() {
-  auto result = new BBox(VertexBlockData::cuboidVertexData, VETEX_COUNT);
-  return result;
+  return const_cast<BBox*>(VertexBlockData::CuboidRawBBox);
 }
 
-// BBox* VertexBlockData::getTransformedCuboidRawBBox(M4x4* model) {
-//   const auto vertexData = VertexBlockData::getVertexData();
-//   auto result = new BBox(vertexData, VETEX_COUNT);
-
-//   return result;
-// }
-
-BBox* VertexBlockData::getSlabRawBBox(Level* pLevel, u32 block_offset) {
-  Vec4 pos;
-  pLevel->GetXYZFromPos(&block_offset, &pos);
-
+BBox* VertexBlockData::getSlabRawBBox(Vec4* offset) {
+  Level* pLevel = Level::getInstance();
   const SlabOrientation orientation =
-      pLevel->GetSlabOrientationDataFromMap(pos.x, pos.y, pos.z);
+      pLevel->GetSlabOrientationDataFromMap(offset->x, offset->y, offset->z);
 
-  const auto vertexData = orientation == SlabOrientation::Top
-                              ? VertexBlockData::topSlabVertexData
-                              : VertexBlockData::bottomSlabVertexData;
-  auto result = new BBox(vertexData, VETEX_COUNT);
-
-  return result;
+  return orientation == SlabOrientation::Top
+             ? const_cast<BBox*>(VertexBlockData::UpperSlabRawBBox)
+             : const_cast<BBox*>(VertexBlockData::LowerSlabRawBBox);
 }
 
-BBox* VertexBlockData::getRawBBoxByBlock(Level* pLevel, const Blocks block_type,
-                                         const u32 block_offset) {
+BBox* VertexBlockData::getRawBBoxByOffset(Vec4* offset) {
+  Level* pLevel = Level::getInstance();
+  Blocks block_type = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
+
   switch (block_type) {
     case Blocks::TORCH:
-      return VertexBlockData::getTorchRawBBox();
+      return const_cast<BBox*>(VertexBlockData::TorchRawBBox);
       break;
 
     case Blocks::STONE_SLAB:
@@ -233,11 +223,11 @@ BBox* VertexBlockData::getRawBBoxByBlock(Level* pLevel, const Blocks block_type,
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-      return VertexBlockData::getSlabRawBBox(pLevel, block_offset);
+      return VertexBlockData::getSlabRawBBox(offset);
       break;
 
     default:
-      return VertexBlockData::getCuboidRawBBox();
+      return const_cast<BBox*>(VertexBlockData::CuboidRawBBox);
       break;
   }
 }
