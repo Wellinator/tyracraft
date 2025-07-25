@@ -894,9 +894,7 @@ void World::putSlab(const Blocks& blockType,
   tempModel.scaleY(HALF_BLOCK_SIZE);
   tempModel.translate(newBlockPos);
 
-  BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-      pLevel, blockType,
-      pLevel->GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+  BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&blockOffset);
   BBox tempBBox = rawBBox->getTransformed(tempModel);
   BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
 
@@ -969,9 +967,7 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
   tempModel.scale(BLOCK_SIZE);
   tempModel.translate(newBlockPos);
 
-  BBox* rawBBox = VertexBlockData::getRawBBoxByBlock(
-      pLevel, blockToPlace,
-      pLevel->GetPosFromXYZ(blockOffset.x, blockOffset.y, blockOffset.z));
+  BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&blockOffset);
   BBox tempBBox = rawBBox->getTransformed(tempModel);
   BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
   delete rawBBox;
