@@ -126,6 +126,10 @@ void World::generate() {
 }
 
 void World::generateLight() {
+#ifdef DEBUG_MODE
+  size_t initialMemoryUsage = get_used_memory();
+#endif  // end if DEBUG_MODE
+
   dayNightCycleManager.preLoad();
   updateLightModel();
 
@@ -135,6 +139,13 @@ void World::generateLight() {
   updateSunlight();
   updateBlockLights();
   chunkManager.reloadLightDataOfAllChunks();
+
+#ifdef DEBUG_MODE
+  size_t finalMemoryUsage = get_used_memory();
+  float memoryUsage =
+      static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
+  printf("Memory usage for block light: %.2f KB\n", memoryUsage);
+#endif  // end if DEBUG_MODE
 }
 
 void World::propagateLiquids() {
