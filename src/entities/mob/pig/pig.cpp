@@ -35,8 +35,6 @@ Pig::Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
 }
 
 Pig::~Pig() {
-  underEntity = nullptr;
-
   g_AABBTree->remove(tree_index);
 
   for (size_t i = 0; i < mesh.get()->materials.size(); i++)
@@ -441,7 +439,7 @@ void Pig::onMoved() {
   if (lastTimePlayedStepSfx > stepSfxLimit) {
     if (isOnWater() || isUnderWater()) {
       playSwimSfx();
-    } else if (canPlayStepSfx()) {
+    } else if (isOnGround) {
       playStepSfx();
       lastTimePlayedStepSfx = 0.0F;
       stepSfxLimit = Tyra::Math::randomf(0.25f, 2.0f);

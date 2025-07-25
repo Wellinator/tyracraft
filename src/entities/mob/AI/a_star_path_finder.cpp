@@ -12,6 +12,8 @@ void AStarPathFinder::TracePath(const Vec4& start, const Vec4& goal,
   Vec4 fixedWorldPos;
 
   // Used to fix the centroid position of the block to its bottom
+  // This way the path postition in block will match the entity position, both
+  // at bottom
   const Vec4 FixHeight(0.0f, 0.5f, 0.0f);
 
   while (current.x != start.x || current.y != start.y || current.z != start.z) {

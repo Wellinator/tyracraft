@@ -12,13 +12,6 @@ class VertexBlockData {
   VertexBlockData();
   ~VertexBlockData();
 
-  static BBox* getRawBBoxByOffset(Vec4* offset);
-
-  static const BBox* CuboidRawBBox;
-  static const BBox* UpperSlabRawBBox;
-  static const BBox* LowerSlabRawBBox;
-  static const BBox* TorchRawBBox;
-
   /**
    * @brief Provides 36 vertices of raw cube
    * @returns new Vec4[36]
@@ -65,6 +58,12 @@ class VertexBlockData {
   static const Vec4* bottomSlabVertexData;
   static const Vec4* cuboidVertexData;
   static const Vec4* crossedVertexData;
+
+  static BBox* getRawBBoxByOffset(Vec4* offset);
+  static const BBox* CuboidRawBBox;
+  static const BBox* UpperSlabRawBBox;
+  static const BBox* LowerSlabRawBBox;
+  static const BBox* TorchRawBBox;
 
   inline const u8* getTopFaceIndexes() { return topFacesIndex; };
   inline const u8* getBottomFaceIndexes() { return bottomFaceIndex; };

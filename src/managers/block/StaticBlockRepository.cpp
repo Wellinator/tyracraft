@@ -159,6 +159,15 @@ Block* StaticBlockRepository::getBlockTemplate(Blocks blockType) {
   return blockTemplates[index].get();
 }
 
+Block* StaticBlockRepository::getBlockTemplate(u8 blockId) {
+  size_t index = blockId;
+  TYRA_ASSERT(index > static_cast<size_t>(Blocks::AIR_BLOCK) &&
+                  index < static_cast<size_t>(Blocks::TOTAL_OF_BLOCKS),
+              "Invalid block type: ", static_cast<int>(index));
+
+  return blockTemplates[index].get();
+}
+
 Block* StaticBlockRepository::createBlock(Blocks blockType) {
   Block* template_block = getBlockTemplate(blockType);
   if (!template_block) {

@@ -191,6 +191,15 @@ uint8_t Level::GetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
   return map.blocks[index];
 }
 
+uint8_t Level::GetBlockFromMap(Vec4* offset) {
+  uint32_t x = static_cast<uint32_t>(offset->x);
+  uint32_t y = static_cast<uint32_t>(offset->y);
+  uint32_t z = static_cast<uint32_t>(offset->z);
+
+  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  return map.blocks[index];
+}
+
 uint8_t Level::SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
   return BoundCheckMap(x, y, z) ? GetBlockFromMap(x, y, z)
                                 : (uint8_t)Blocks::VOID;
@@ -250,7 +259,7 @@ uint8_t Level::getBlockByWorldPosition(const Vec4* pos) {
 
 Vec4 Level::worldPosToOffset(const Vec4& pos) {
   Vec4 offset = pos / DOUBLE_BLOCK_SIZE;
-  return Vec4(std::ceil(offset.x), std::ceil(offset.y), std::ceil(offset.z));
+  return Vec4(std::round(offset.x), std::round(offset.y), std::round(offset.z));
 }
 
 Vec4 Level::offsetToWorldPos(const Vec4* offset) {

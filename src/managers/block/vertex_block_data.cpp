@@ -6,15 +6,6 @@ VertexBlockData::VertexBlockData() {}
 
 VertexBlockData::~VertexBlockData() {}
 
-const BBox* VertexBlockData::CuboidRawBBox =
-    new BBox(VertexBlockData::cuboidVertexData, VETEX_COUNT);
-const BBox* VertexBlockData::UpperSlabRawBBox =
-    new BBox(VertexBlockData::topSlabVertexData, VETEX_COUNT);
-const BBox* VertexBlockData::LowerSlabRawBBox =
-    new BBox(VertexBlockData::bottomSlabVertexData, VETEX_COUNT);
-const BBox* VertexBlockData::TorchRawBBox =
-    new BBox(VertexBlockData::torchVertexData, VETEX_COUNT);
-
 const Vec4* VertexBlockData::torchVertexData =
     VertexBlockData::getTorchVertexData();
 const Vec4* VertexBlockData::topSlabVertexData =
@@ -25,6 +16,15 @@ const Vec4* VertexBlockData::cuboidVertexData =
     VertexBlockData::getVertexData();
 const Vec4* VertexBlockData::crossedVertexData =
     VertexBlockData::getCrossedVertexData();
+
+const BBox* VertexBlockData::CuboidRawBBox =
+    new BBox(VertexBlockData::cuboidVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::UpperSlabRawBBox =
+    new BBox(VertexBlockData::topSlabVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::LowerSlabRawBBox =
+    new BBox(VertexBlockData::bottomSlabVertexData, VETEX_COUNT);
+const BBox* VertexBlockData::TorchRawBBox =
+    new BBox(VertexBlockData::torchVertexData, VETEX_COUNT);
 
 const Vec4* VertexBlockData::getVertexData() {
   Vec4 cornerVetices[8] = {

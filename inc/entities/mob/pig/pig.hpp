@@ -56,7 +56,7 @@ class Pig : public Mob {
   // Override Mob
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
-  void render(){};
+  void render() {};
 
   Renderer* t_renderer;
   Level* pLevel;
@@ -121,10 +121,6 @@ class Pig : public Mob {
   void playSplashSfx();
 
   inline const u8 canPlaySaySfx() { return lastTimePlayedSaySfx > saySfxLimit; }
-  inline const u8 canPlayStepSfx() {
-    return isOnGround && underEntity &&
-           underEntity->entity_type == EntityType::Block;
-  }
 
   // Animations
   const float ANIMATION_SPEED_FACT = 0.2f;

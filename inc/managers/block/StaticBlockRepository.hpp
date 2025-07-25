@@ -21,6 +21,7 @@ class StaticBlockRepository : public Singleton<StaticBlockRepository> {
    * Returns a reference to the static block instance.
    */
   Block* getBlockTemplate(Blocks blockType);
+  Block* getBlockTemplate(u8 blockId);
 
   /**
    * Create a new block instance of the specified type.

@@ -75,6 +75,7 @@ class Level : public Singleton<Level> {
   uint8_t GetBlockLightFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t GetSunLightFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t GetBlockFromMap(uint16_t x, uint16_t y, uint16_t z);
+  uint8_t GetBlockFromMap(Vec4* offset);
   uint8_t GetBlockFromMapByIndex(uint32_t index);
 
   uint8_t SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z);

@@ -30,7 +30,6 @@ class Entity {
   Vec4 velocity = Vec4(0, 0, 0);
   Vec4 minCorner, maxCorner;
   TerrainHeightModel terrainHeight;
-  Entity* underEntity = nullptr;
 
   u8 collidable = false;
 

@@ -57,8 +57,6 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
 }
 
 Player::~Player() {
-  underEntity = nullptr;
-
   delete bbox;
   // delete handledItem;
   delete this->renderPip;
@@ -200,9 +198,8 @@ void Player::onMoved() {
   if (lastTimePlayedWalkSfx > 0.35f) {
     if (isOnWater() || isUnderWater()) {
       playSwimSfx();
-    } else if (isOnGround && underEntity &&
-               underEntity->entity_type == EntityType::Block) {
-      playWalkSfx(((Block*)underEntity)->getType());
+    } else if (isOnGround) {
+      playWalkSfx(static_cast<Blocks>(terrainHeight.lowerBlockType));
     }
 
     setWalkingAnimation();
