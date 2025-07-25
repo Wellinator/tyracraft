@@ -288,7 +288,7 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
-        t_chunk->rebuild();
+        t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
         addChunkToUnloadAsync(t_chunk);
       }
