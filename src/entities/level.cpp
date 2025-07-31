@@ -260,6 +260,11 @@ Vec4 Level::worldPosToOffset(const Vec4& pos) {
   return Vec4(std::floor(offset.x), std::floor(offset.y), std::floor(offset.z));
 }
 
+Vec4 Level::worldPosToOffsetNotRounded(const Vec4& pos) {
+  Vec4 offset = ((pos + BLOCK_SIZE_VEC) / DOUBLE_BLOCK_SIZE_VEC);
+  return Vec4(offset.x, offset.y, offset.z);
+}
+
 Vec4 Level::offsetToWorldPos(const Vec4* offset) {
   return (*offset) * DOUBLE_BLOCK_SIZE;
 }
@@ -275,8 +280,9 @@ Vec4 Level::roundToBlockCenter(const Vec4& pos) {
 void Level::getIntersectedBlocks(
     const Vec4& start, const Vec4& end,
     std::vector<LevelIntersectQueryResult>* pResults) {
-  Vec4 startOffset = worldPosToOffset(start);
-  Vec4 endOffset = worldPosToOffset(end);
+      
+  Vec4 startOffset = worldPosToOffsetNotRounded(start);
+  Vec4 endOffset = worldPosToOffsetNotRounded(end);
 
   // Clear results vector
   pResults->clear();

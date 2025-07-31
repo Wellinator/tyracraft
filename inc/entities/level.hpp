@@ -39,6 +39,7 @@ class Level : public Singleton<Level> {
   uint8_t getBlockByWorldPosition(const Vec4* pos);
   Vec4 roundToBlockCenter(const Vec4& pos);
   Vec4 worldPosToOffset(const Vec4& pos);
+  Vec4 worldPosToOffsetNotRounded(const Vec4& pos);
   Vec4 offsetToWorldPos(const Vec4& offset);
   Vec4 offsetToWorldPos(const Vec4* offset);
 
