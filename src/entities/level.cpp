@@ -249,17 +249,15 @@ bool Level::BoundCheckMap(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 uint8_t Level::getBlockByWorldPosition(const Vec4* pos) {
-  Vec4 result = *pos / (DOUBLE_BLOCK_SIZE);
-  auto x = static_cast<uint16_t>(result.x);
-  auto y = static_cast<uint16_t>(result.y);
-  auto z = static_cast<uint16_t>(result.z);
-
-  return BoundCheckMap(x, y, z) ? GetBlockFromMap(x, y, z) : 0;
+  Vec4 offset = worldPosToOffset(*pos);
+  return BoundCheckMap(offset.x, offset.y, offset.z)
+             ? GetBlockFromMap(offset.x, offset.y, offset.z)
+             : static_cast<uint8_t>(Blocks::VOID);
 }
 
 Vec4 Level::worldPosToOffset(const Vec4& pos) {
-  Vec4 offset = pos / DOUBLE_BLOCK_SIZE;
-  return Vec4(std::round(offset.x), std::round(offset.y), std::round(offset.z));
+  Vec4 offset = ((pos + BLOCK_SIZE_VEC) / DOUBLE_BLOCK_SIZE_VEC);
+  return Vec4(std::floor(offset.x), std::floor(offset.y), std::floor(offset.z));
 }
 
 Vec4 Level::offsetToWorldPos(const Vec4* offset) {
@@ -271,7 +269,7 @@ Vec4 Level::offsetToWorldPos(const Vec4& offset) {
 }
 
 Vec4 Level::roundToBlockCenter(const Vec4& pos) {
-  return worldPosToOffset(pos) * DOUBLE_BLOCK_SIZE;
+  return offsetToWorldPos(worldPosToOffset(pos));
 }
 
 void Level::getIntersectedBlocks(
@@ -314,8 +312,7 @@ void Level::getIntersectedBlocks(
                              : FLT_MAX;
 
   // DDA traversal
-  int maxIterations =
-      OVERWORLD_H_DISTANCE + OVERWORLD_V_DISTANCE + OVERWORLD_H_DISTANCE;
+  int maxIterations = startOffset.distanceTo(endOffset) * 3;
   int iterations = 0;
 
   while (iterations < maxIterations) {
