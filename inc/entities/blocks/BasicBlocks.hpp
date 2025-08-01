@@ -7,6 +7,8 @@ class StoneBlock : public Block {
   StoneBlock() : Block() { collidable = isCollidable(); };
   virtual ~StoneBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(StoneBlock)
+
   Blocks getType() override { return Blocks::STONE_BLOCK; }
   float getHardness() override { return 1.5f; }
   std::array<u8, 6> getFacesMap() override {
@@ -25,6 +27,8 @@ class GrassBlock : public Block {
   };
   // virtual ~GrassBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(GrassBlock)
+
   Blocks getType() override { return Blocks::GRASS_BLOCK; }
   float getHardness() override { return 0.6f; }
   std::array<u8, 6> getFacesMap() override {
@@ -40,6 +44,8 @@ class DirtyBlock : public Block {
  public:
   DirtyBlock() : Block() { collidable = isCollidable(); };
   virtual ~DirtyBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(DirtyBlock)
 
   Blocks getType() override { return Blocks::DIRTY_BLOCK; }
   float getHardness() override { return 0.5f; }
@@ -57,6 +63,8 @@ class WaterBlock : public Block {
   WaterBlock() : Block() { collidable = isCollidable(); };
   virtual ~WaterBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(WaterBlock)
+
   Blocks getType() override { return Blocks::WATER_BLOCK; }
   float getHardness() override { return 0.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -72,6 +80,8 @@ class BedrockBlock : public Block {
  public:
   BedrockBlock() : Block() { collidable = isCollidable(); };
   virtual ~BedrockBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(BedrockBlock)
 
   Blocks getType() override { return Blocks::BEDROCK_BLOCK; }
   float getHardness() override { return -1.0f; }

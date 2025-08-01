@@ -7,6 +7,9 @@ class CrackedStoneBricksBlock : public Block {
  public:
   CrackedStoneBricksBlock() : Block() { collidable = isCollidable(); };
   virtual ~CrackedStoneBricksBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(CrackedStoneBricksBlock)
+  
   Blocks getType() override { return Blocks::CRACKED_STONE_BRICKS_BLOCK; }
   float getHardness() override { return 1.5f; }
   std::array<u8, 6> getFacesMap() override { return {96, 96, 96, 96, 96, 96}; }
@@ -20,6 +23,9 @@ class StoneBrickBlock : public Block {
  public:
   StoneBrickBlock() : Block() { collidable = isCollidable(); };
   virtual ~StoneBrickBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(StoneBrickBlock)
+  
   Blocks getType() override { return Blocks::STONE_BRICK_BLOCK; }
   float getHardness() override { return 1.5f; }
   std::array<u8, 6> getFacesMap() override { return {97, 97, 97, 97, 97, 97}; }
@@ -33,6 +39,9 @@ class MossyStoneBricksBlock : public Block {
  public:
   MossyStoneBricksBlock() : Block() { collidable = isCollidable(); };
   virtual ~MossyStoneBricksBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(MossyStoneBricksBlock)
+  
   Blocks getType() override { return Blocks::MOSSY_STONE_BRICKS_BLOCK; }
   float getHardness() override { return 1.5f; }
   std::array<u8, 6> getFacesMap() override { return {98, 98, 98, 98, 98, 98}; }
@@ -46,6 +55,9 @@ class ChiseledStoneBricksBlock : public Block {
  public:
   ChiseledStoneBricksBlock() : Block() { collidable = isCollidable(); };
   virtual ~ChiseledStoneBricksBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(ChiseledStoneBricksBlock)
+  
   Blocks getType() override { return Blocks::CHISELED_STONE_BRICKS_BLOCK; }
   float getHardness() override { return 1.5f; }
   std::array<u8, 6> getFacesMap() override { return {99, 99, 99, 99, 99, 99}; }
@@ -60,6 +72,9 @@ class YellowWool : public Block {
  public:
   YellowWool() : Block() { collidable = isCollidable(); };
   virtual ~YellowWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(YellowWool)
+  
   Blocks getType() override { return Blocks::YELLOW_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -75,6 +90,9 @@ class BlueWool : public Block {
  public:
   BlueWool() : Block() { collidable = isCollidable(); };
   virtual ~BlueWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(BlueWool)
+  
   Blocks getType() override { return Blocks::BLUE_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -90,6 +108,9 @@ class GreenWool : public Block {
  public:
   GreenWool() : Block() { collidable = isCollidable(); };
   virtual ~GreenWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(GreenWool)
+  
   Blocks getType() override { return Blocks::GREEN_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -105,6 +126,9 @@ class OrangeWool : public Block {
  public:
   OrangeWool() : Block() { collidable = isCollidable(); };
   virtual ~OrangeWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(OrangeWool)
+  
   Blocks getType() override { return Blocks::ORANGE_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -120,6 +144,9 @@ class PurpleWool : public Block {
  public:
   PurpleWool() : Block() { collidable = isCollidable(); };
   virtual ~PurpleWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(PurpleWool)
+  
   Blocks getType() override { return Blocks::PURPLE_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -135,6 +162,9 @@ class RedWool : public Block {
  public:
   RedWool() : Block() { collidable = isCollidable(); };
   virtual ~RedWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(RedWool)
+  
   Blocks getType() override { return Blocks::RED_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -150,6 +180,9 @@ class WhiteWool : public Block {
  public:
   WhiteWool() : Block() { collidable = isCollidable(); };
   virtual ~WhiteWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(WhiteWool)
+  
   Blocks getType() override { return Blocks::WHITE_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -165,6 +198,9 @@ class BlackWool : public Block {
  public:
   BlackWool() : Block() { collidable = isCollidable(); };
   virtual ~BlackWool() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(BlackWool)
+  
   Blocks getType() override { return Blocks::BLACK_WOOL; }
   float getHardness() override { return 1.8f; }
   std::array<u8, 6> getFacesMap() override {
@@ -181,6 +217,9 @@ class OakLogBlock : public Block {
  public:
   OakLogBlock() : Block() { collidable = isCollidable(); };
   virtual ~OakLogBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(OakLogBlock)
+  
   Blocks getType() override { return Blocks::OAK_LOG_BLOCK; }
   float getHardness() override { return 2.0f; }
   std::array<u8, 6> getFacesMap() override { return {1, 1, 17, 17, 17, 17}; }
@@ -194,6 +233,9 @@ class BirchLogBlock : public Block {
  public:
   BirchLogBlock() : Block() { collidable = isCollidable(); };
   virtual ~BirchLogBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(BirchLogBlock)
+  
   Blocks getType() override { return Blocks::BIRCH_LOG_BLOCK; }
   float getHardness() override { return 2.0f; }
   std::array<u8, 6> getFacesMap() override { return {6, 6, 22, 22, 22, 22}; }
@@ -208,6 +250,9 @@ class BirchLeavesBlock : public Block {
  public:
   BirchLeavesBlock() : Block() { collidable = isCollidable(); };
   virtual ~BirchLeavesBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(BirchLeavesBlock)
+  
   Blocks getType() override { return Blocks::BIRCH_LEAVES_BLOCK; }
   float getHardness() override { return 0.2f; }
   std::array<u8, 6> getFacesMap() override {
@@ -223,6 +268,9 @@ class OakLeavesBlock : public Block {
  public:
   OakLeavesBlock() : Block() { collidable = isCollidable(); };
   virtual ~OakLeavesBlock() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(OakLeavesBlock)
+  
   Blocks getType() override { return Blocks::OAK_LEAVES_BLOCK; }
   float getHardness() override { return 0.2f; }
   std::array<u8, 6> getFacesMap() override {
@@ -239,6 +287,9 @@ class Torch : public Block {
  public:
   Torch() : Block() { collidable = isCollidable(); };
   virtual ~Torch() = default;
+  
+  IMPLEMENT_BLOCK_CLONE(Torch)
+  
   Blocks getType() override { return Blocks::TORCH; }
   float getHardness() override { return 0.001f; }
   std::array<u8, 6> getFacesMap() override { return {1, 1, 1, 1, 1, 1}; }

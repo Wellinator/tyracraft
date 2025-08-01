@@ -30,6 +30,20 @@ using Tyra::Color;
 using Tyra::M4x4;
 using Tyra::Vec4;
 
+// Helper macro to reduce code duplication for clone methods
+#define IMPLEMENT_BLOCK_CLONE(ClassName) \
+  Block* clone() override { \
+    ClassName* newBlock = new ClassName(); \
+    newBlock->packed = packed; \
+    newBlock->offset = offset; \
+    newBlock->model = model; \
+    newBlock->compressedHitPosition = compressedHitPosition; \
+    newBlock->damage = damage; \
+    newBlock->distance = distance; \
+    newBlock->baseColor = baseColor; \
+    return newBlock; \
+  }
+
 /** Block 3D object class  */
 
 /**
@@ -46,10 +60,10 @@ class Block : public Entity {
 
  public:
   virtual ~Block();
+  virtual Block* clone() = 0;
 
   // Core block data - keep these first for cache efficiency
-  u32 index;   // Index at terrain;
-  u32 offset;  // Terrain offset;
+  u32 index;  // Index at terrain;
 
   // Packed data structure to reduce memory footprint
   struct {
@@ -63,6 +77,7 @@ class Block : public Entity {
     u8 reserved : 3;           // Reserved for future use
   } packed;
 
+  Vec4 offset;
   M4x4 model;
 
   // Compressed hit position using 16-bit integers (saves 8 bytes)

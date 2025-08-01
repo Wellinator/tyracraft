@@ -8,6 +8,8 @@ class GoldOreBlock : public Block {
   GoldOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~GoldOreBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(GoldOreBlock)
+
   Blocks getType() override { return Blocks::GOLD_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -23,6 +25,8 @@ class RedstoneOreBlock : public Block {
  public:
   RedstoneOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~RedstoneOreBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(RedstoneOreBlock)
 
   Blocks getType() override { return Blocks::REDSTONE_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }
@@ -40,6 +44,8 @@ class IronOreBlock : public Block {
   IronOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~IronOreBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(IronOreBlock)
+
   Blocks getType() override { return Blocks::IRON_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -55,6 +61,8 @@ class EmeraldOreBlock : public Block {
  public:
   EmeraldOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~EmeraldOreBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(EmeraldOreBlock)
 
   Blocks getType() override { return Blocks::EMERALD_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }
@@ -72,6 +80,8 @@ class DiamondOreBlock : public Block {
   DiamondOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~DiamondOreBlock() = default;
 
+  IMPLEMENT_BLOCK_CLONE(DiamondOreBlock)
+
   Blocks getType() override { return Blocks::DIAMOND_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -87,6 +97,8 @@ class CoalOreBlock : public Block {
  public:
   CoalOreBlock() : Block() { collidable = isCollidable(); };
   virtual ~CoalOreBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(CoalOreBlock)
 
   Blocks getType() override { return Blocks::COAL_ORE_BLOCK; }
   float getHardness() override { return 3.0f; }

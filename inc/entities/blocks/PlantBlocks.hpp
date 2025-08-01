@@ -8,6 +8,8 @@ class GrassPlant : public Block {
   GrassPlant() : Block() { collidable = isCollidable(); };
   virtual ~GrassPlant() = default;
 
+  IMPLEMENT_BLOCK_CLONE(GrassPlant)
+
   Blocks getType() override { return Blocks::GRASS; }
   float getHardness() override { return 0.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -24,6 +26,8 @@ class PoppyFlower : public Block {
   PoppyFlower() : Block() { collidable = isCollidable(); };
   virtual ~PoppyFlower() = default;
 
+  IMPLEMENT_BLOCK_CLONE(PoppyFlower)
+
   Blocks getType() override { return Blocks::POPPY_FLOWER; }
   float getHardness() override { return 0.0f; }
   std::array<u8, 6> getFacesMap() override {
@@ -39,6 +43,8 @@ class DandelionFlower : public Block {
  public:
   DandelionFlower() : Block() { collidable = isCollidable(); };
   virtual ~DandelionFlower() = default;
+
+  IMPLEMENT_BLOCK_CLONE(DandelionFlower)
 
   Blocks getType() override { return Blocks::DANDELION_FLOWER; }
   float getHardness() override { return 0.0f; }
