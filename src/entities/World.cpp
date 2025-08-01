@@ -10,6 +10,7 @@
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/mazecraft_generator.hpp"
 #include "managers/visible_faces_manager.hpp"
+#include "managers/light_manager.hpp"
 #include "debug.hpp"
 #include <tyra>
 
@@ -25,6 +26,15 @@ using bvh::Bvh_Node;
 using bvh::index_t;
 using Tyra::Color;
 using Tyra::M4x4;
+
+// Temporary hash function for Vec4
+// TODO: move to helper or utility
+int HashVec(const Vec4* vec) {
+  int result = ftoi4(vec->x);
+  result = (result * 397) ^ ftoi4(vec->y);
+  result = (result * 397) ^ ftoi4(vec->z);
+  return result;
+}
 
 World::World(const NewGameOptions& options, Level* level) {
   seed = options.seed;
@@ -204,7 +214,7 @@ void World::tick(Player* t_player, Camera* t_camera) {
   mobManager.tick();
   cloudsManager.tick();
 
-  if (targetBlock && targetBlock->damage > 0) updateBlockDamage();
+  if (validTargetBlock() && targetBlock->damage > 0) updateBlockDamage();
 
   // Update clouds and sun/moon every 50 ticks
   if (isTicksCounterAt(50)) {
@@ -417,7 +427,6 @@ void World::renderBlockDamageOverlay() {
   textureBag.texture = blockManager.getBlocksTexture();
 
   M4x4 model = M4x4::Identity;
-  // model.scale(0.01f);
   infoBag.model = &model;
 
   stapip.core.render(&bag);
@@ -581,8 +590,7 @@ void World::removeBlock(Block* blockToRemove) {
   // Generate amount of particles right begore block gets destroyed
   particlesManager.createBlockParticleBatch(blockToRemove, 48);
 
-  Vec4 offsetToRemove;
-  pLevel->GetXYZFromPos(&blockToRemove->offset, &offsetToRemove);
+  Vec4 offsetToRemove = blockToRemove->offset;
   pLevel->SetBlockInMapByIndex(blockToRemove->index, (u8)Blocks::AIR_BLOCK);
   pLevel->SetLiquidDataToMap(offsetToRemove.x, offsetToRemove.y,
                              offsetToRemove.z, (u8)LiquidLevel::Percent0);
@@ -629,11 +637,8 @@ void World::removeBlock(Block* blockToRemove) {
 void World::putBlock(const Blocks& blockToPlace, Player* t_player,
                      const float cameraYaw) {
   Vec4 targetPos = ray.at(targetBlock->distance);
-
   PlacementDirection placementDirection = PlacementDirection::Top;
-
-  Vec4 blockOffset;
-  pLevel->GetXYZFromPos(&targetBlock->offset, &blockOffset);
+  Vec4 blockOffset = targetBlock->offset;
 
   // TODO: move to function
   // Front
@@ -764,9 +769,7 @@ void World::putSlab(const Blocks& blockType,
                     const PlacementDirection placementDirection,
                     Player* t_player, const float cameraYaw, Vec4 blockOffset,
                     Vec4 targetPos) {
-  Vec4 originalOffset;
-  pLevel->GetXYZFromPos(&targetBlock->offset, &originalOffset);
-
+  Vec4 originalOffset = targetBlock->offset;
   const Blocks blockTypeAtTargetPosition =
       static_cast<Blocks>(pLevel->GetBlockFromMap(
           originalOffset.x, originalOffset.y, originalOffset.z));
@@ -1058,7 +1061,6 @@ void World::stopBreakTargetBlock() {
   breaking_time_pessed = 0;
   if (targetBlock) {
     targetBlock->damage = 0;
-    clearTargetBlockDrawData();
     buildTargetBlockDrawData();
   }
 }
@@ -1262,90 +1264,91 @@ void World::rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset) {
 }
 
 void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
-  const Vec4 baseOrigin =
-      *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
-  bool hitedABlock = false;
-  float tempTargetDistance = -1.0f;
-  float tempPlayerDistance = -1.0f;
-  Block* tempTargetBlock = nullptr;
-  uint32_t _lastTargetBlockId = 0;
+  u32 _lastTargetBlockId = 999999;
 
   if (targetBlock) {
     _lastTargetBlockId = targetBlock->index;
-  }
+    delete targetBlock;
+    targetBlock = nullptr;
+  };
 
-  // Reset the current target block;
-  targetBlock = nullptr;
-
-  // Prepate the raycast
-  ray.origin.set(baseOrigin);
+  const Vec4 origin =
+      *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
+  Ray ray;
+  ray.origin = origin;
   ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
-  std::vector<index_t> ni;
-  g_AABBTree->intersectLine(ray.origin, ray.at(MAX_RANGE_PICKER), ni);
+  // Broad phase raycast
+  std::vector<LevelIntersectQueryResult> tempResult = {};
+  pLevel->getIntersectedBlocks(ray.origin, ray.at(MAX_RANGE_PICKER),
+                               &tempResult);
 
-  for (u16 b = 0; b < ni.size(); b++) {
-    Entity* entity = static_cast<Entity*>(g_AABBTree->user_data(ni[b]));
-    if (entity->entity_type == EntityType::Block) {
-      Block* block = (Block*)entity;
+  // Narrow phase raycast
+  for (const auto& result : tempResult) {
+    Block* targetTemplate = blockManager.getBlockTemplateByType(
+        static_cast<Blocks>(result.blockType));
+    if (targetTemplate->isBreakable()) {
+      BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(
+          const_cast<Vec4*>(&result.offset));
+      M4x4 model = ModelBuilder_BuildModel(const_cast<Vec4*>(&result.offset));
+      BBox blockBBox = rawBBox->getTransformed(model);
 
-      if (!block->isBreakable()) continue;
+      Vec4 min, max;
+      blockBBox.getMinMax(&min, &max);
 
-      float distanceFromCurrentBlockToPlayer =
-          baseOrigin.distanceTo(entity->position);
+      u8 visibleFaces =
+          VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
+              result.offset);
 
-      // Reset block state
-      block->packed.isTarget = false;
-      block->distance = -1.0f;
+      // Check if the ray intersects the bounding box
+      float distance = 0.0f;
+      if (ray.intersectBox(min, max, &distance)) {
+        // Create the targetBlock
+        targetBlock = targetTemplate->clone();
+        targetBlock->index = HashVec(&result.offset);
+        targetBlock->distance = distance;
+        targetBlock->setHitPosition(ray.at(distance));
+        targetBlock->setIsTarget(true);
+        targetBlock->setVisibleFaces(visibleFaces);
+        targetBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
+        targetBlock->position = pLevel->offsetToWorldPos(&result.offset);
+        targetBlock->bbox = new BBox(*rawBBox);
+        targetBlock->minCorner.set(min);
+        targetBlock->maxCorner.set(max);
+        targetBlock->offset = result.offset;
+        M4x4::copy(&targetBlock->model, model);
 
-      float intersectionPoint;
-      if (ray.intersectBox(entity->minCorner, entity->maxCorner,
-                           &intersectionPoint)) {
-        hitedABlock = true;
-        if (tempTargetDistance == -1.0f ||
-            (distanceFromCurrentBlockToPlayer < tempPlayerDistance)) {
-          tempTargetBlock = block;
-          tempTargetDistance = intersectionPoint;
-          tempPlayerDistance = distanceFromCurrentBlockToPlayer;
+        if (targetBlock->index != _lastTargetBlockId) {
+          breaking_time_pessed = 0;
+          buildTargetBlockDrawData();
         }
+
+        break;
       }
     }
-  }
-
-  if (hitedABlock && tempTargetBlock) {
-    targetBlock = tempTargetBlock;
-    targetBlock->packed.isTarget = true;
-    targetBlock->distance = tempTargetDistance;
-    targetBlock->setHitPosition(ray.at(tempTargetDistance));
-
-    if (targetBlock->index != _lastTargetBlockId) {
-      breaking_time_pessed = 0;
-      clearTargetBlockDrawData();
-      buildTargetBlockDrawData();
-    };
-  } else {
-    if (_targetBlockVertices.size() > 0) clearTargetBlockDrawData();
   }
 }
 
 void World::buildTargetBlockDrawData() {
-  return;
-
   TYRA_ASSERT(targetBlock != nullptr, "No target block to build draw data!");
 
-  const u8 size =
-      targetBlock->packed.visibleFacesCount * VertexBlockData::FACES_COUNT;
+  clearTargetBlockDrawData();
 
-  _targetBlockVertices.reserve(size);
-  _targetBlockColors.reserve(size);
-  _targetBlockUVMap.reserve(size);
+  const u8 size = Utils::countSetBits(targetBlock->getVisibleFaces()) *
+                  VertexBlockData::FACES_COUNT;
+  if (_targetBlockVertices.capacity() < size) {
+    _targetBlockVertices.reserve(size);
+    _targetBlockColors.reserve(size);
+    _targetBlockUVMap.reserve(size);
+  }
 
-  // MeshBuilder_BuildMesh(targetBlock, &_targetBlockVertices,
-  // &_targetBlockColors,
-  //                       &_targetBlockUVMap, &worldLightModel, pLevel);
+  MeshBuilder_BuildMesh(&targetBlock->offset, targetBlock->getVisibleFaces(),
+                        &_targetBlockVertices, &_targetBlockColors,
+                        &_targetBlockUVMap, &worldLightModel, pLevel);
 
-  const float highLight = 50.0f * worldLightModel.sunLightIntensity;
-  for (size_t i = 0; i < size; i++) _targetBlockColors[i] += highLight;
+  for (size_t i = 0; i < size; i++) {
+    LightManager::IntensifyColor(&_targetBlockColors[i], 1.35f);
+  }
 }
 
 void World::updateBlockDamage() {
