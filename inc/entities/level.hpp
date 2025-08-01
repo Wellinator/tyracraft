@@ -89,6 +89,8 @@ class Level : public Singleton<Level> {
 
   bool BoundCheckMap(uint16_t x, uint16_t y, uint16_t z);
 
+  uint32_t OffsetToIndex(const Vec4& offset);
+
   static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
 
   /**

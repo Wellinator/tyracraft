@@ -29,6 +29,11 @@ uint32_t Level::GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z) {
   return x + (y << 7) + (z << 14);
 }
 
+uint32_t Level::OffsetToIndex(const Vec4& offset) {
+  return (offset.y * map.length * map.width) + (offset.z * map.width) +
+         offset.x;
+}
+
 // Gets the metadata value at the given coordinates in the map.
 uint8_t Level::GetMetaDataFromMap(uint16_t x, uint16_t y, uint16_t z) {
   uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
@@ -266,7 +271,6 @@ Vec4 Level::roundToBlockCenter(const Vec4& pos) {
 void Level::getIntersectedBlocks(
     const Vec4& start, const Vec4& end,
     std::vector<LevelIntersectQueryResult>* pResults) {
-
   Vec4 startOffset = worldPosToOffsetNotRounded(start);
   Vec4 endOffset = worldPosToOffsetNotRounded(end);
 

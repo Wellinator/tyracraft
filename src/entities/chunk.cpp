@@ -508,7 +508,9 @@ void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {
 }
 
 u8 Chunk::containsBlock(Vec4* offset) {
-  return offset->x >= minOffset.x && offset->x < maxOffset.x &&
-         offset->y >= minOffset.y && offset->y < maxOffset.y &&
-         offset->z >= minOffset.z && offset->z < maxOffset.z;
+  return offset->collidesBox(minOffset, maxOffset);
+  // Check if the offset is within the chunk's boundaries
+  // return offset->x >= minOffset.x && offset->x <= maxOffset.x &&
+  //        offset->y >= minOffset.y && offset->y <= maxOffset.y &&
+  //        offset->z >= minOffset.z && offset->z <= maxOffset.z;
 }

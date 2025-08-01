@@ -27,15 +27,6 @@ using bvh::index_t;
 using Tyra::Color;
 using Tyra::M4x4;
 
-// Temporary hash function for Vec4
-// TODO: move to helper or utility
-int HashVec(const Vec4* vec) {
-  int result = ftoi4(vec->x);
-  result = (result * 397) ^ ftoi4(vec->y);
-  result = (result * 397) ^ ftoi4(vec->z);
-  return result;
-}
-
 World::World(const NewGameOptions& options, Level* level) {
   seed = options.seed;
   pLevel = level;
@@ -607,31 +598,23 @@ void World::removeBlock(Block* blockToRemove) {
 
   playDestroyBlockSound(blockToRemove->getType());
 
-  Chunk* chunkToRebuild =
-      chunkManager.getChunkByBlockOffset(blockToRemove->packed.chunkId);
+  Chunk* chunkToRebuild = chunkManager.getChunkByBlockOffset(offsetToRemove);
+  rebuildChunkNeighbors(chunkToRebuild, const_cast<Vec4*>(&offsetToRemove));
 
   // Remove up block if it's is vegetation
-  const Vec4 upBlockOffset =
-      Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
+  // const Vec4 upBlockOffset =
+  //     Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
 
-  if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
-                            upBlockOffset.z)) {
-    const Blocks b = static_cast<Blocks>(pLevel->GetBlockFromMap(
-        upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
-
-    if (isVegetation(b) || b == Blocks::TORCH) {
-      auto upperChunk = chunkManager.getChunkByBlockOffset(upBlockOffset);
-
-      if (chunkToRebuild->id == upperChunk->id)
-        upperChunk->rebuild();
-      else {
-        chunkToRebuild->rebuild();
-        upperChunk->rebuild();
-      }
-    } else {
-      chunkToRebuild->rebuild();
-    }
-  }
+  // if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
+  //                           upBlockOffset.z)) {
+  // TODO: remove upper block
+  // const Blocks b = static_cast<Blocks>(pLevel->GetBlockFromMap(
+  //     upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+  // if (isVegetation(b) || b == Blocks::TORCH) {
+  // auto upperChunk = chunkManager.getChunkByBlockOffset(upBlockOffset);
+  // upperChunk->rebuild();
+  // }
+  // }
 }
 
 void World::putBlock(const Blocks& blockToPlace, Player* t_player,
@@ -1109,6 +1092,7 @@ void World::breakTargetBlockInCreativeMode(const float& deltaTime) {
     if (breaking_time_pessed >= breakingTime) {
       // Remove block;
       removeBlock(targetBlock);
+      delete targetBlock;
       targetBlock = nullptr;
 
       // Target block has changed, reseting the pressed time;
@@ -1305,7 +1289,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
       if (ray.intersectBox(min, max, &distance)) {
         // Create the targetBlock
         targetBlock = targetTemplate->clone();
-        targetBlock->index = HashVec(&result.offset);
+        targetBlock->index = pLevel->OffsetToIndex(result.offset);
         targetBlock->distance = distance;
         targetBlock->setHitPosition(ray.at(distance));
         targetBlock->setIsTarget(true);
