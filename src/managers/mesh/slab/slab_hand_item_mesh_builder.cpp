@@ -89,22 +89,22 @@ void SlabHandItemMeshBuilder_loadLightData(
   Vec4 blockColorAverage = Vec4(0.0F);
   Color faceColor;
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 1.0F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 0.5F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
-  faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+  faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
   SlabHandItemMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
 
   blockColorAverage /= t_block->getVisibleFacesCount();

@@ -160,7 +160,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::TOP) {
     //   Top face 100% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 1.0F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
@@ -175,7 +175,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::BOTTOM) {
     //   Top face 50% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.5F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
@@ -189,7 +189,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::LEFT) {
     // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
@@ -203,7 +203,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::RIGHT) {
     // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
@@ -217,7 +217,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::BACK) {
     // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
@@ -231,7 +231,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
 
   if (visibleFaces & (int)FACE_SIDE::FRONT) {
     // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
     // Apply sunlight and block light to face
     LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),

@@ -57,7 +57,7 @@ void CloudsManager::updateCloudsPosition() {
 }
 
 void CloudsManager::update(const float deltaTime) {
-  tempColor = LightManager::IntensifyColor(&baseColor,
+  tempColor = LightManager::IntensifyColor(baseColor,
                                            worldLightModel->sunLightIntensity);
 
   lerp += deltaTime / 0.05f;

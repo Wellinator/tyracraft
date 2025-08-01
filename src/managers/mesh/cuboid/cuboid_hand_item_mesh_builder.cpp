@@ -127,13 +127,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     //   Top face 100% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 1.0F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 1.0F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;
@@ -143,13 +143,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     //   Top face 50% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.5F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.5F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;
@@ -159,13 +159,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;
@@ -175,13 +175,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.6F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;
@@ -191,13 +191,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;
@@ -207,13 +207,13 @@ void CuboidHandItemMeshBuilder_loadLightData(
 
   {
     // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(&baseFaceColor, 0.8F);
+    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
     // TODO: calc light by user position
     // const float sunLightFactor =
     //     std::max(t_worldLightModel->sunLightIntensity / MAX_LIGHT_VALUE,
     //              MIN_LIGHT_FACTOR);
-    // faceColor = LightManager::IntensifyColor(&faceColor, sunLightFactor);
+    // faceColor = LightManager::IntensifyColor(faceColor, sunLightFactor);
 
     // Vec4::copy(&tempColor, faceColor.rgba);
     // blockColorAverage += tempColor;

@@ -61,9 +61,19 @@ float LightManager::calcAOIntensity(u8 AOValue) {
   }
 }
 
-Color LightManager::IntensifyColor(Color* color, const float intensity) {
-  return Color(color->r * intensity, color->g * intensity, color->b * intensity,
-               color->a);
+Color LightManager::IntensifyColor(const Color& color, const float intensity) {
+  return Color(color.r * intensity, color.g * intensity, color.b * intensity,
+               color.a);
+}
+
+void LightManager::IntensifyColor(Color* color, const float intensity) {
+  color->r *= intensity;
+  color->g *= intensity;
+  color->b *= intensity;
+
+  color->r = std::min(color->r, 255.0f);
+  color->g = std::min(color->g, 255.0f);
+  color->b = std::min(color->b, 255.0f);
 }
 
 void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
@@ -135,7 +145,7 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
   const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
 
   *baseColor = LightManager::IntensifyColor(
-      baseColor, std::max(sunLightFactor, lightLevelFactor));
+      *baseColor, std::max(sunLightFactor, lightLevelFactor));
 
   // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
   // printf("SunlightIntensity: %f\n", sunlightIntensity);
@@ -163,7 +173,7 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
   const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
 
   *baseColor = LightManager::IntensifyColor(
-      baseColor, std::max(sunLightFactor, lightLevelFactor));
+      *baseColor, std::max(sunLightFactor, lightLevelFactor));
 
   // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
   // printf("SunlightIntensity: %f\n", sunlightIntensity);
