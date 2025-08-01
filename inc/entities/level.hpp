@@ -90,9 +90,6 @@ class Level : public Singleton<Level> {
   bool BoundCheckMap(uint16_t x, uint16_t y, uint16_t z);
 
   static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
-  static void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y,
-                            uint32_t* z);
-  static void GetXYZFromPos(u32* pos, Vec4* t_Offset);
 
   /**
    * Get start and end points of the line segment and return all intersected
@@ -104,7 +101,6 @@ class Level : public Singleton<Level> {
    * @param end End point of the line segment
    * @param pResults Pointer to vector of LevelIntersectQueryResult
    */
-  void getIntersectedBlocks(
-      const Vec4& start, const Vec4& end,
-      std::vector<LevelIntersectQueryResult>* pResults);
+  void getIntersectedBlocks(const Vec4& start, const Vec4& end,
+                            std::vector<LevelIntersectQueryResult>* pResults);
 };

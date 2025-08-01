@@ -408,6 +408,9 @@ typedef enum {
 #define FRONT_VEC Vec4(0, 0, -1)
 #define BACK_VEC Vec4(0, 0, 1)
 
+#define BLOCK_SIZE_VEC Vec4(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+#define DOUBLE_BLOCK_SIZE_VEC Vec4(DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE)
+
 enum class GameMode { Survival, Creative, Maze };
 
 enum class MenuAction { Save };
