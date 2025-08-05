@@ -623,37 +623,56 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
   PlacementDirection placementDirection = PlacementDirection::Top;
   Vec4 blockOffset = targetBlock->offset;
 
+  // BBox faces positions
+  float frontFace = targetBlock->bbox->getFrontFace().axisPosition;
+  float backFace = targetBlock->bbox->getBackFace().axisPosition;
+  float leftFace = targetBlock->bbox->getLeftFace().axisPosition;
+  float rightFace = targetBlock->bbox->getRightFace().axisPosition;
+  float topFace = targetBlock->bbox->getTopFace().axisPosition;
+  float bottomFace = targetBlock->bbox->getBottomFace().axisPosition;
+
+  if (g_debug_mode) {
+    TYRA_LOG("------ Target bbox faces -----");
+    targetPos.print("Target Position: ");
+    printf("Front Face: %f\n", frontFace);
+    printf("Back Face: %f\n", backFace);
+    printf("Left Face: %f\n", leftFace);
+    printf("Right Face: %f\n", rightFace);
+    printf("Top Face: %f\n", topFace);
+    printf("Bottom Face: %f\n", bottomFace);
+    TYRA_LOG("------------------------------");
+    blockOffset.print("Original offset:");
+  }
+
   // TODO: move to function
   // Front
-  if (std::round(targetPos.z) ==
-      std::round(targetBlock->bbox->getFrontFace().axisPosition)) {
+  if (targetPos.z == std::round(frontFace)) {
     placementDirection = PlacementDirection::Front;
     blockOffset.z++;
     // Back
-  } else if (std::round(targetPos.z) ==
-             std::round(targetBlock->bbox->getBackFace().axisPosition)) {
+  } else if (targetPos.z == std::round(backFace)) {
     placementDirection = PlacementDirection::Back;
     blockOffset.z--;
     // Right
-  } else if (std::round(targetPos.x) ==
-             std::round(targetBlock->bbox->getRightFace().axisPosition)) {
+  } else if (targetPos.x == std::round(rightFace)) {
     placementDirection = PlacementDirection::Right;
     blockOffset.x++;
     // Left
-  } else if (std::round(targetPos.x) ==
-             std::round(targetBlock->bbox->getLeftFace().axisPosition)) {
+  } else if (targetPos.x == std::round(leftFace)) {
     placementDirection = PlacementDirection::Left;
     blockOffset.x--;
     // Up
-  } else if (std::round(targetPos.y) ==
-             std::round(targetBlock->bbox->getTopFace().axisPosition)) {
+  } else if (targetPos.y == std::round(topFace)) {
     placementDirection = PlacementDirection::Top;
     blockOffset.y++;
     // Down
-  } else if (std::round(targetPos.y) ==
-             std::round(targetBlock->bbox->getBottomFace().axisPosition)) {
+  } else if (targetPos.y == std::round(bottomFace)) {
     placementDirection = PlacementDirection::Bottom;
     blockOffset.y--;
+  }
+
+  if (g_debug_mode) {
+    blockOffset.print("Final offset:");
   }
 
   // Placing block at invalid position
@@ -956,7 +975,6 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
   BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&blockOffset);
   BBox tempBBox = rawBBox->getTransformed(tempModel);
   BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
-  delete rawBBox;
 
   Vec4 newBlockPosMin;
   Vec4 newBlockPosMax;
@@ -1055,6 +1073,7 @@ void World::breakTargetBlock(const float& deltaTime) {
     if (breaking_time_pessed >= breakingTime) {
       // Remove block;
       removeBlock(targetBlock);
+      delete targetBlock;
       targetBlock = nullptr;
 
       // Target block has changed, reseting the pressed time;
@@ -1258,7 +1277,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
 
   const Vec4 origin =
       *t_player->getPosition() + Vec4(0.0f, t_camera->getCamY(), 0.0f);
-  Ray ray;
+
   ray.origin = origin;
   ray.direction.set(t_camera->unitCirclePosition.getNormalized());
 
@@ -1296,7 +1315,7 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
         targetBlock->setVisibleFaces(visibleFaces);
         targetBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
         targetBlock->position = pLevel->offsetToWorldPos(&result.offset);
-        targetBlock->bbox = new BBox(*rawBBox);
+        targetBlock->bbox = new BBox(blockBBox);
         targetBlock->minCorner.set(min);
         targetBlock->maxCorner.set(max);
         targetBlock->offset = result.offset;
