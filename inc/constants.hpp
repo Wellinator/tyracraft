@@ -305,13 +305,13 @@ enum class SlabOrientation {
   Bottom = 1,
 };
 
-enum class PlacementDirection {
-  Top = 0,
-  Bottom = 1,
-  Left = 2,
-  Right = 3,
-  Front = 4,
-  Back = 5,
+enum class TargetedFace {
+  TopFace,
+  BottomFace,
+  LeftFace,
+  RightFace,
+  FrontFace,
+  BackFace,
 };
 
 // Entities types based on https://minecraft.fandom.com/wiki/Entity
@@ -409,7 +409,8 @@ typedef enum {
 #define BACK_VEC Vec4(0, 0, 1)
 
 #define BLOCK_SIZE_VEC Vec4(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-#define DOUBLE_BLOCK_SIZE_VEC Vec4(DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE)
+#define DOUBLE_BLOCK_SIZE_VEC \
+  Vec4(DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE, DOUBLE_BLOCK_SIZE)
 
 enum class GameMode { Survival, Creative, Maze };
 

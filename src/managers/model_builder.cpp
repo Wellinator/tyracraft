@@ -15,6 +15,8 @@ M4x4 ModelBuilder_BuildModel(Vec4* offset) {
       return ModelBuilder_NoRotationModel(offset);
       break;
 
+    // TODO: add model for slabs
+
     default:
       return ModelBuilder_DefaultModel(offset);
       break;

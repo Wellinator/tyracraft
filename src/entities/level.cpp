@@ -344,3 +344,22 @@ void Level::getIntersectedBlocks(
     iterations++;
   }
 }
+
+bool Level::isPositionEmpty(const uint16_t& x, const uint16_t& y,
+                            const uint16_t& z) {
+  const auto blk = GetBlockFromMap(x, y, z);
+  return blk == (uint8_t)Blocks::AIR_BLOCK;
+}
+
+bool Level::isGrassAtPosition(const uint16_t& x, const uint16_t& y,
+                              const uint16_t& z) {
+  const auto blk = GetBlockFromMap(x, y, z);
+  return blk == (uint8_t)Blocks::GRASS;
+}
+
+bool Level::isReplaceableBySolidBlock(const uint16_t& x, const uint16_t& y,
+                                      const uint16_t& z) {
+  const auto blk = static_cast<Blocks>(GetBlockFromMap(x, y, z));
+  return blk == Blocks::AIR_BLOCK || blk == Blocks::WATER_BLOCK ||
+         blk == Blocks::LAVA_BLOCK || blk == Blocks::GRASS;
+}

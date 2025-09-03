@@ -71,6 +71,12 @@ const u8 BlockManager::isBlockOriented(const Blocks& blockType) {
          blockType == Blocks::PUMPKIN_BLOCK;
 }
 
+const bool BlockManager::isSlab(Blocks type) {
+  const uint8_t typeAsInt = static_cast<uint8_t>(type);
+  return typeAsInt >= static_cast<uint8_t>(Blocks::STONE_SLAB) &&
+         typeAsInt <= static_cast<uint8_t>(Blocks::MOSSY_STONE_BRICKS_SLAB);
+}
+
 SfxBlockModel* BlockManager::getBrokenSoundByBlockType(
     const Blocks& blockType) {
   for (size_t i = 0; i < this->blockSfxRepositories.size(); i++)

@@ -198,8 +198,7 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
 
       if (blockid != Blocks::AIR_BLOCK) {
         stateGamePlay->player->playPutBlockAnimation();
-        stateGamePlay->world->putBlock(blockid, stateGamePlay->player,
-                                       stateGamePlay->context->t_camera->yaw);
+        stateGamePlay->world->putBlock(blockid, stateGamePlay->player);
 
         if (hasReachedTargetBlock()) {
           shouldRenderLevelDoneDialog = true;

@@ -577,6 +577,109 @@ const bool World::getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                targetChunk->maxOffset);
 }
 
+TargetedFace World::getTargetedFace() {
+  Vec4 targetPos = ray.at(targetBlock->distance);
+
+  float frontFace = targetBlock->bbox->getFrontFace().axisPosition;
+  if (targetPos.z == std::round(frontFace)) {
+    return TargetedFace::FrontFace;
+  }
+
+  float backFace = targetBlock->bbox->getBackFace().axisPosition;
+  if (targetPos.z == std::round(backFace)) {
+    return TargetedFace::BackFace;
+  }
+
+  float leftFace = targetBlock->bbox->getLeftFace().axisPosition;
+  if (targetPos.x == std::round(leftFace)) {
+    return TargetedFace::LeftFace;
+  }
+
+  float rightFace = targetBlock->bbox->getRightFace().axisPosition;
+  if (targetPos.x == std::round(rightFace)) {
+    return TargetedFace::RightFace;
+  }
+
+  float topFace = targetBlock->bbox->getTopFace().axisPosition;
+  if (targetPos.y == std::round(topFace)) {
+    return TargetedFace::TopFace;
+  }
+
+  float bottomFace = targetBlock->bbox->getBottomFace().axisPosition;
+  if (targetPos.y == std::round(bottomFace)) {
+    return TargetedFace::BottomFace;
+  }
+
+  if (g_debug_mode) {
+    TYRA_LOG("------ Target bbox faces -----");
+    targetPos.print("Target Position: ");
+    printf("Front Face: %f\n", frontFace);
+    printf("Back Face: %f\n", backFace);
+    printf("Left Face: %f\n", leftFace);
+    printf("Right Face: %f\n", rightFace);
+    printf("Top Face: %f\n", topFace);
+    printf("Bottom Face: %f\n", bottomFace);
+    TYRA_LOG("------------------------------");
+  }
+
+  TYRA_ERROR("Could not determine targeted face!");
+  return TargetedFace::TopFace;  // Default
+}
+
+void World::placeBlockAt(const Blocks& blockType, const Vec4& blockOffset) {
+  const Blocks blockTypeAtOffsetPosition = static_cast<Blocks>(
+      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
+
+  BlockOrientation orientation = BlockOrientation::East;
+
+  if (blockManager.isBlockOriented(blockType)) {
+    const float cameraYaw = Camera::getInstance()->yaw;
+
+    if (cameraYaw > 315 || cameraYaw < 45) {
+      orientation = BlockOrientation::North;
+    } else if (cameraYaw >= 135 && cameraYaw <= 225) {
+      orientation = BlockOrientation::South;
+    } else if (cameraYaw >= 45 && cameraYaw <= 135) {
+      orientation = BlockOrientation::East;
+    } else {
+      orientation = BlockOrientation::West;
+    }
+  }
+  pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
+                                       blockOffset.z, orientation);
+
+  pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
+                        static_cast<u8>(blockType));
+  checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
+
+  const auto lightValue = blockManager.getBlockLightValue(blockType);
+  if (lightValue > 0) {
+    addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
+  } else {
+    removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
+  }
+
+  updateSunlight();
+  updateBlockLights();
+
+  chunkManager.reloadLightData();
+
+  const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
+  const u8 isPlacingLiquid =
+      blockType == Blocks::WATER_BLOCK || blockType == Blocks::LAVA_BLOCK;
+  const u8 itWasLiquidAtPosition =
+      oldTypeBlock == Blocks::WATER_BLOCK || oldTypeBlock == Blocks::LAVA_BLOCK;
+
+  if (isPlacingLiquid) {
+    addLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)blockType,
+              (u8)LiquidLevel::Percent100, (u8)orientation);
+  } else if (itWasLiquidAtPosition) {
+    removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)oldTypeBlock);
+  }
+
+  updateNeighBorsChunksByAddedBlock(const_cast<Vec4*>(&blockOffset));
+}
+
 void World::removeBlock(Block* blockToRemove) {
   // Generate amount of particles right begore block gets destroyed
   particlesManager.createBlockParticleBatch(blockToRemove, 48);
@@ -617,73 +720,20 @@ void World::removeBlock(Block* blockToRemove) {
   // }
 }
 
-void World::putBlock(const Blocks& blockToPlace, Player* t_player,
-                     const float cameraYaw) {
-  Vec4 targetPos = ray.at(targetBlock->distance);
-  PlacementDirection placementDirection = PlacementDirection::Top;
+bool World::putBlock(const Blocks& blockToPlace, Player* t_player) {
   Vec4 blockOffset = targetBlock->offset;
 
-  // BBox faces positions
-  float frontFace = targetBlock->bbox->getFrontFace().axisPosition;
-  float backFace = targetBlock->bbox->getBackFace().axisPosition;
-  float leftFace = targetBlock->bbox->getLeftFace().axisPosition;
-  float rightFace = targetBlock->bbox->getRightFace().axisPosition;
-  float topFace = targetBlock->bbox->getTopFace().axisPosition;
-  float bottomFace = targetBlock->bbox->getBottomFace().axisPosition;
-
-  if (g_debug_mode) {
-    TYRA_LOG("------ Target bbox faces -----");
-    targetPos.print("Target Position: ");
-    printf("Front Face: %f\n", frontFace);
-    printf("Back Face: %f\n", backFace);
-    printf("Left Face: %f\n", leftFace);
-    printf("Right Face: %f\n", rightFace);
-    printf("Top Face: %f\n", topFace);
-    printf("Bottom Face: %f\n", bottomFace);
-    TYRA_LOG("------------------------------");
-    blockOffset.print("Original offset:");
-  }
-
-  // TODO: move to function
-  // Front
-  if (targetPos.z == std::round(frontFace)) {
-    placementDirection = PlacementDirection::Front;
-    blockOffset.z++;
-    // Back
-  } else if (targetPos.z == std::round(backFace)) {
-    placementDirection = PlacementDirection::Back;
-    blockOffset.z--;
-    // Right
-  } else if (targetPos.x == std::round(rightFace)) {
-    placementDirection = PlacementDirection::Right;
-    blockOffset.x++;
-    // Left
-  } else if (targetPos.x == std::round(leftFace)) {
-    placementDirection = PlacementDirection::Left;
-    blockOffset.x--;
-    // Up
-  } else if (targetPos.y == std::round(topFace)) {
-    placementDirection = PlacementDirection::Top;
-    blockOffset.y++;
-    // Down
-  } else if (targetPos.y == std::round(bottomFace)) {
-    placementDirection = PlacementDirection::Bottom;
-    blockOffset.y--;
-  }
-
-  if (g_debug_mode) {
-    blockOffset.print("Final offset:");
-  }
-
   // Placing block at invalid position
-  if (!pLevel->BoundCheckMap(blockOffset.x, blockOffset.y, blockOffset.z))
-    return;
+  if (!pLevel->BoundCheckMap(blockOffset.x, blockOffset.y, blockOffset.z)) {
+    return false;
+  }
 
   t_player->playPutBlockAnimation();
+  bool blockPlaced = false;
 
   switch (blockToPlace) {
     case Blocks::TORCH:
-      putTorchBlock(placementDirection, cameraYaw, blockOffset);
+      blockPlaced = putTorchBlock();
       break;
 
     case Blocks::STONE_SLAB:
@@ -695,29 +745,43 @@ void World::putBlock(const Blocks& blockToPlace, Player* t_player,
     case Blocks::STONE_BRICK_SLAB:
     case Blocks::CRACKED_STONE_BRICKS_SLAB:
     case Blocks::MOSSY_STONE_BRICKS_SLAB:
-      putSlab(blockToPlace, placementDirection, t_player, cameraYaw,
-              blockOffset, targetPos);
+      blockPlaced = putSlab(blockToPlace, t_player);
       break;
 
     default:
-      putDefaultBlock(blockToPlace, t_player, cameraYaw, blockOffset);
+      blockPlaced = putDefaultBlock(blockToPlace, t_player);
       break;
   }
 
-  playPutBlockSound(blockToPlace);
-  updateNeighBorsChunksByAddedBlock(&blockOffset);
+  if (blockPlaced) playPutBlockSound(blockToPlace);
+  return blockPlaced;
 }
 
-void World::putTorchBlock(const PlacementDirection placementDirection,
-                          const float cameraYaw, Vec4 blockOffset) {
-  const Blocks blockTypeAtNewPosition = static_cast<Blocks>(
-      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
+bool World::putTorchBlock() {
+  TargetedFace placementDirection = getTargetedFace();
+  Vec4 blockOffset = targetBlock->offset;
 
-  const u8 canReplace = blockTypeAtNewPosition == Blocks::AIR_BLOCK;
+  if (placementDirection == TargetedFace::FrontFace) {
+    blockOffset.z++;
+  } else if (placementDirection == TargetedFace::BackFace) {
+    blockOffset.z--;
+  } else if (placementDirection == TargetedFace::RightFace) {
+    blockOffset.x++;
+  } else if (placementDirection == TargetedFace::LeftFace) {
+    blockOffset.x--;
+  } else if (placementDirection == TargetedFace::TopFace) {
+    blockOffset.y++;
+  } else if (placementDirection == TargetedFace::BottomFace) {
+    blockOffset.y--;
+  }
+
+  const bool canReplace =
+      pLevel->isPositionEmpty(blockOffset.x, blockOffset.y, blockOffset.z) ||
+      pLevel->isGrassAtPosition(blockOffset.x, blockOffset.y, blockOffset.z);
 
   if (targetBlock->getType() == Blocks::TORCH &&
-      placementDirection == PlacementDirection::Top) {
-    return;
+      placementDirection == TargetedFace::TopFace) {
+    return false;
   }
 
   if (canReplace) {
@@ -729,25 +793,25 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
     } else {
       // Torch orientation must be reverse of placement direction
       switch (placementDirection) {
-        case PlacementDirection::Top:
+        case TargetedFace::TopFace:
           orientation = BlockOrientation::Top;
           break;
-        case PlacementDirection::Left:
+        case TargetedFace::LeftFace:
           orientation = BlockOrientation::East;
           break;
-        case PlacementDirection::Right:
+        case TargetedFace::RightFace:
           orientation = BlockOrientation::West;
           break;
-        case PlacementDirection::Front:
+        case TargetedFace::FrontFace:
           orientation = BlockOrientation::North;
           break;
-        case PlacementDirection::Back:
+        case TargetedFace::BackFace:
           orientation = BlockOrientation::South;
           break;
 
-        case PlacementDirection::Bottom:
+        case TargetedFace::BottomFace:
         default:
-          return;
+          return false;
       }
     }
 
@@ -764,134 +828,127 @@ void World::putTorchBlock(const PlacementDirection placementDirection,
     updateBlockLights();
 
     chunkManager.reloadLightData();
+    updateNeighBorsChunksByAddedBlock(&blockOffset);
+
+    return true;
   }
 }
 
-void World::putSlab(const Blocks& blockType,
-                    const PlacementDirection placementDirection,
-                    Player* t_player, const float cameraYaw, Vec4 blockOffset,
-                    Vec4 targetPos) {
-  Vec4 originalOffset = targetBlock->offset;
-  const Blocks blockTypeAtTargetPosition =
-      static_cast<Blocks>(pLevel->GetBlockFromMap(
-          originalOffset.x, originalOffset.y, originalOffset.z));
+/**
+ * @param slabToPlace - type of slab to place
+ * @param t_player - player reference to player
+ */
+bool World::putSlab(const Blocks& slabToPlace, Player* t_player) {
+  TargetedFace targeted_face = getTargetedFace();
+  Vec4 targetPos = ray.at(targetBlock->distance);
+  Vec4 newSlabPos = targetBlock->offset;
+  SlabOrientation slabOrientation = SlabOrientation::Top;
 
-  const u8 isPlacingTwoSlabsAtTargetPosition =
-      (u8)blockTypeAtTargetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtTargetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB;
-
-  // Is placing two slabs at target position?
-  // If so, fix the blockOffset;
-  if (isPlacingTwoSlabsAtTargetPosition) {
-    const auto targetSlabHeightOrientation =
-        pLevel->GetSlabOrientationDataFromMap(blockOffset.x, blockOffset.y,
-                                              blockOffset.z);
-
-    if (targetSlabHeightOrientation == SlabOrientation::Bottom &&
-        blockOffset.y > originalOffset.y) {
-      blockOffset.y--;
-    } else if (targetSlabHeightOrientation == SlabOrientation::Top &&
-               blockOffset.y < originalOffset.y) {
-      blockOffset.y++;
-    }
-  }
-
-  const Blocks blockTypeAtOffsetPosition = static_cast<Blocks>(
-      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
-
-  // Is placing two slabs at offset position?
-  if ((u8)blockTypeAtOffsetPosition >= (u8)Blocks::STONE_SLAB &&
-      (u8)blockTypeAtOffsetPosition <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
-    // If so, check if are same slab type;
-    // Prevent to place a different type of slab;
-    if (blockTypeAtOffsetPosition != blockType) {
-      return;
-    } else {
-      // convert double slab to solid block
-      Blocks newBlock;
-
-      switch (blockType) {
-        case Blocks::STONE_SLAB:
-          newBlock = Blocks::STONE_BLOCK;
-          break;
-        case Blocks::BRICKS_SLAB:
-          newBlock = Blocks::BRICKS_BLOCK;
-          break;
-        case Blocks::OAK_PLANKS_SLAB:
-          newBlock = Blocks::OAK_PLANKS_BLOCK;
-          break;
-        case Blocks::SPRUCE_PLANKS_SLAB:
-          newBlock = Blocks::SPRUCE_PLANKS_BLOCK;
-          break;
-        case Blocks::BIRCH_PLANKS_SLAB:
-          newBlock = Blocks::BIRCH_PLANKS_BLOCK;
-          break;
-        case Blocks::ACACIA_PLANKS_SLAB:
-          newBlock = Blocks::ACACIA_PLANKS_BLOCK;
-          break;
-        case Blocks::STONE_BRICK_SLAB:
-          newBlock = Blocks::STONE_BRICK_BLOCK;
-          break;
-        case Blocks::CRACKED_STONE_BRICKS_SLAB:
-          newBlock = Blocks::CRACKED_STONE_BRICKS_BLOCK;
-          break;
-        case Blocks::MOSSY_STONE_BRICKS_SLAB:
-          newBlock = Blocks::MOSSY_STONE_BRICKS_BLOCK;
-          break;
-
-        default:
-          newBlock = Blocks::AIR_BLOCK;
-          TYRA_ERROR("Not valid double slab!");
-          break;
-      }
-
-      pLevel->ResetSlabOrientationDataToMap(blockOffset.x, blockOffset.y,
-                                            blockOffset.z);
-
-      // Calc block orientation
-      BlockOrientation orientation;
-
-      if (blockManager.isBlockOriented(blockType)) {
-        if (cameraYaw > 315 || cameraYaw < 45) {
-          orientation = BlockOrientation::North;
-        } else if (cameraYaw >= 135 && cameraYaw <= 225) {
-          orientation = BlockOrientation::South;
-        } else if (cameraYaw >= 45 && cameraYaw <= 135) {
-          orientation = BlockOrientation::East;
-        } else {
-          orientation = BlockOrientation::West;
+  // Check if the target block is a slab
+  // When the target block IS a slab
+  if (blockManager.isSlab(targetBlock->getType())) {
+    // Check if the slab is of the same type
+    if (targetBlock->getType() == slabToPlace) {
+      const auto existing_slab_orientation =
+          pLevel->GetSlabOrientationDataFromMap(newSlabPos.x, newSlabPos.y,
+                                                newSlabPos.z);
+      if ((targeted_face == TargetedFace::TopFace &&
+           existing_slab_orientation == SlabOrientation::Bottom) ||
+          (targeted_face == TargetedFace::BottomFace &&
+           existing_slab_orientation == SlabOrientation::Top)) {
+        mergeSlabs(slabToPlace, t_player, newSlabPos);
+        return true;
+      } else if (targeted_face == TargetedFace::FrontFace ||
+                 targeted_face == TargetedFace::BackFace ||
+                 targeted_face == TargetedFace::RightFace ||
+                 targeted_face == TargetedFace::LeftFace) {
+        // newSlabPos.y stays the same
+        if (targeted_face == TargetedFace::FrontFace) {
+          newSlabPos.z++;
+        } else if (targeted_face == TargetedFace::BackFace) {
+          newSlabPos.z--;
+        } else if (targeted_face == TargetedFace::RightFace) {
+          newSlabPos.x++;
+        } else if (targeted_face == TargetedFace::LeftFace) {
+          newSlabPos.x--;
         }
-      } else {
-        orientation = BlockOrientation::East;
+
+        const float heightOffset =
+            std::fmod(targetPos.y - BLOCK_SIZE, DOUBLE_BLOCK_SIZE);
+        slabOrientation = heightOffset > BLOCK_SIZE ? SlabOrientation::Top
+                                                    : SlabOrientation::Bottom;
+
+        goto placeSlabOnEmptyOrCombine;  // jump to place slab on empty or
+                                         // combine logic
+      }
+    } else {
+      // If the slab is of a different type, place the new slab on top of or
+      // below the existing slab based on the targeted face
+
+      if (targeted_face == TargetedFace::TopFace) {
+        newSlabPos.y++;
+        slabOrientation = SlabOrientation::Bottom;
+      } else if (targeted_face == TargetedFace::BottomFace) {
+        newSlabPos.y--;
+        slabOrientation = SlabOrientation::Top;
+      } else if (targeted_face == TargetedFace::FrontFace) {
+        newSlabPos.z++;
+      } else if (targeted_face == TargetedFace::BackFace) {
+        newSlabPos.z--;
+      } else if (targeted_face == TargetedFace::RightFace) {
+        newSlabPos.x++;
+      } else if (targeted_face == TargetedFace::LeftFace) {
+        newSlabPos.x--;
       }
 
-      pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
-                                           blockOffset.z, orientation);
-
-      pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
-                            (u8)Blocks::AIR_BLOCK);
-      pLevel->SetLiquidDataToMap(blockOffset.x, blockOffset.y, blockOffset.z,
-                                 (u8)LiquidLevel::Percent0);
-
-      // Update sunlight and block light at position
-      removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
-      checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
-      updateSunlight();
-      updateBlockLights();
-      chunkManager.reloadLightData();
-
-      // Update liquid at position
-      checkLiquidPropagation(blockOffset.x, blockOffset.y, blockOffset.z);
-
-      // Chunk* chunk = chunkManager.getChunkByBlockOffset(blockOffset);
-      // chunk->rebuild();
-
-      return putDefaultBlock(newBlock, t_player, cameraYaw, blockOffset);
+      const float heightOffset =
+          std::fmod(targetPos.y - BLOCK_SIZE, DOUBLE_BLOCK_SIZE);
+      slabOrientation = heightOffset > BLOCK_SIZE ? SlabOrientation::Top
+                                                  : SlabOrientation::Bottom;
+      goto placeSlabOnEmptyOrCombine;  // jump to place slab on empty or
+                                       // combine logic
     }
+
+    return false;
   }
+
+  // When the target block IS NOT a slab
+  // Calculate slab orientation and block offset based on targeted face
+
+  if (targeted_face == TargetedFace::TopFace) {
+    newSlabPos.y++;
+    slabOrientation = SlabOrientation::Bottom;
+  } else if (targeted_face == TargetedFace::BottomFace) {
+    newSlabPos.y--;
+    slabOrientation = SlabOrientation::Top;
+  } else if (targeted_face == TargetedFace::FrontFace ||
+             targeted_face == TargetedFace::BackFace ||
+             targeted_face == TargetedFace::RightFace ||
+             targeted_face == TargetedFace::LeftFace) {
+    // newSlabPos.y stays the same
+    if (targeted_face == TargetedFace::FrontFace) {
+      newSlabPos.z++;
+    } else if (targeted_face == TargetedFace::BackFace) {
+      newSlabPos.z--;
+    } else if (targeted_face == TargetedFace::RightFace) {
+      newSlabPos.x++;
+    } else if (targeted_face == TargetedFace::LeftFace) {
+      newSlabPos.x--;
+    }
+
+    const float heightOffset =
+        std::fmod(targetPos.y - BLOCK_SIZE, DOUBLE_BLOCK_SIZE);
+    slabOrientation = heightOffset > BLOCK_SIZE ? SlabOrientation::Top
+                                                : SlabOrientation::Bottom;
+  }
+
+// When placing a slab on an empty block or combining
+// Label for jumping to this point
+placeSlabOnEmptyOrCombine:
 
   // Prevent to put a block at the player position;
-  Vec4 newBlockPos = blockOffset * DOUBLE_BLOCK_SIZE;
+  Vec4 newBlockPos = pLevel->offsetToWorldPos(newSlabPos);
+
   M4x4 tempModel = M4x4();
   tempModel.identity();
   tempModel.scaleX(BLOCK_SIZE);
@@ -899,71 +956,112 @@ void World::putSlab(const Blocks& blockType,
   tempModel.scaleY(HALF_BLOCK_SIZE);
   tempModel.translate(newBlockPos);
 
-  BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&blockOffset);
+  BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&newSlabPos);
   BBox tempBBox = rawBBox->getTransformed(tempModel);
-  BBox finalBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
+  BBox newBlockBBox = BBox(tempBBox.vertices, tempBBox.getVertexCount());
+  BBox playerBBox = t_player->getHitBox();
 
-  Vec4 newBlockPosMin;
-  Vec4 newBlockPosMax;
-  finalBBox.getMinMax(&newBlockPosMin, &newBlockPosMax);
-
-  Vec4 minPlayerCorner;
-  Vec4 maxPlayerCorner;
-  t_player->getHitBox().getMinMax(&minPlayerCorner, &maxPlayerCorner);
-
-  delete rawBBox;
-
-  // Will Collide to player?
-  if (newBlockPosMax.x > minPlayerCorner.x &&
-      newBlockPosMin.x < maxPlayerCorner.x &&
-      newBlockPosMax.z > minPlayerCorner.z &&
-      newBlockPosMin.z < maxPlayerCorner.z &&
-      newBlockPosMax.y > minPlayerCorner.y &&
-      newBlockPosMin.y < maxPlayerCorner.y) {
-    return;  // Return on collision
+  // Return if collides to player
+  if (Utils::AABBCollides(&newBlockBBox, &playerBBox)) {
+    return false;
   }
 
-  const float heightOffset =
-      std::fmod(targetPos.y - BLOCK_SIZE, DOUBLE_BLOCK_SIZE);
+  if (pLevel->isReplaceableBySolidBlock(newSlabPos.x, newSlabPos.y,
+                                        newSlabPos.z)) {
+    pLevel->SetSlabOrientationDataToMap(newSlabPos.x, newSlabPos.y,
+                                        newSlabPos.z, slabOrientation);
+    placeBlockAt(slabToPlace, newSlabPos);
+    return true;
+  } else {
+    // The space is not empty, check if the block is already a slab of the same
+    // type
+    const Blocks existing_block = static_cast<Blocks>(
+        pLevel->GetBlockFromMap(newSlabPos.x, newSlabPos.y, newSlabPos.z));
+    if (existing_block == slabToPlace) {
+      const auto existing_slab_orientation =
+          pLevel->GetSlabOrientationDataFromMap(newSlabPos.x, newSlabPos.y,
+                                                newSlabPos.z);
 
-  const SlabOrientation slabOrientation = heightOffset > BLOCK_SIZE
-                                              ? SlabOrientation::Top
-                                              : SlabOrientation::Bottom;
-  pLevel->SetSlabOrientationDataToMap(blockOffset.x, blockOffset.y,
-                                      blockOffset.z, slabOrientation);
-
-  const u8 canReplace = blockTypeAtOffsetPosition == Blocks::AIR_BLOCK ||
-                        blockTypeAtOffsetPosition == Blocks::WATER_BLOCK ||
-                        blockTypeAtOffsetPosition == Blocks::LAVA_BLOCK ||
-                        blockTypeAtOffsetPosition == Blocks::TORCH ||
-                        blockTypeAtOffsetPosition == Blocks::POPPY_FLOWER ||
-                        blockTypeAtOffsetPosition == Blocks::DANDELION_FLOWER ||
-                        blockTypeAtOffsetPosition == Blocks::GRASS;
-
-  if (canReplace) {
-    pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
-                          static_cast<u8>(blockType));
-    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
-    removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
-
-    updateSunlight();
-    updateBlockLights();
-
-    chunkManager.reloadLightData();
-
-    const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
-
-    // It was liquid at position
-    if (oldTypeBlock == Blocks::WATER_BLOCK ||
-        oldTypeBlock == Blocks::LAVA_BLOCK) {
-      removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
-                   (u8)oldTypeBlock);
+      // if existing_block is a SLAB and existing_block.type is the same as
+      // slab_type:
+      //    If you try to place a bottom slab on an existing bottom slab, it
+      //    should become a full block This is a special case for double slabs
+      if ((slabOrientation == SlabOrientation::Top &&
+           existing_slab_orientation == SlabOrientation::Bottom)) {
+        mergeSlabs(slabToPlace, t_player, newSlabPos);
+        return true;
+      } else if ((slabOrientation == SlabOrientation::Bottom &&
+                  existing_slab_orientation == SlabOrientation::Top)) {
+        mergeSlabs(slabToPlace, t_player, newSlabPos);
+        return true;
+      }
+      return false;  // Cannot place slab
     }
   }
+
+  return false;  // Cannot place slab
 }
 
-void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
-                            const float cameraYaw, Vec4 blockOffset) {
+void World::mergeSlabs(const Blocks& slabToPlace, Player* t_player,
+                       const Vec4& offsetToMerge) {
+  Blocks newBlock;
+
+  switch (slabToPlace) {
+    case Blocks::STONE_SLAB:
+      newBlock = Blocks::STONE_BLOCK;
+      break;
+    case Blocks::BRICKS_SLAB:
+      newBlock = Blocks::BRICKS_BLOCK;
+      break;
+    case Blocks::OAK_PLANKS_SLAB:
+      newBlock = Blocks::OAK_PLANKS_BLOCK;
+      break;
+    case Blocks::SPRUCE_PLANKS_SLAB:
+      newBlock = Blocks::SPRUCE_PLANKS_BLOCK;
+      break;
+    case Blocks::BIRCH_PLANKS_SLAB:
+      newBlock = Blocks::BIRCH_PLANKS_BLOCK;
+      break;
+    case Blocks::ACACIA_PLANKS_SLAB:
+      newBlock = Blocks::ACACIA_PLANKS_BLOCK;
+      break;
+    case Blocks::STONE_BRICK_SLAB:
+      newBlock = Blocks::STONE_BRICK_BLOCK;
+      break;
+    case Blocks::CRACKED_STONE_BRICKS_SLAB:
+      newBlock = Blocks::CRACKED_STONE_BRICKS_BLOCK;
+      break;
+    case Blocks::MOSSY_STONE_BRICKS_SLAB:
+      newBlock = Blocks::MOSSY_STONE_BRICKS_BLOCK;
+      break;
+
+    default:
+      newBlock = Blocks::AIR_BLOCK;
+      TYRA_ERROR("Not valid double slab!");
+      break;
+  }
+
+  placeBlockAt(newBlock, offsetToMerge);
+}
+
+bool World::putDefaultBlock(const Blocks blockToPlace, Player* t_player) {
+  TargetedFace placementDirection = getTargetedFace();
+  Vec4 blockOffset = targetBlock->offset;
+
+  if (placementDirection == TargetedFace::FrontFace) {
+    blockOffset.z++;
+  } else if (placementDirection == TargetedFace::BackFace) {
+    blockOffset.z--;
+  } else if (placementDirection == TargetedFace::RightFace) {
+    blockOffset.x++;
+  } else if (placementDirection == TargetedFace::LeftFace) {
+    blockOffset.x--;
+  } else if (placementDirection == TargetedFace::TopFace) {
+    blockOffset.y++;
+  } else if (placementDirection == TargetedFace::BottomFace) {
+    blockOffset.y--;
+  }
+
   Vec4 newBlockPos = blockOffset * DOUBLE_BLOCK_SIZE;
 
   // Prevent to put a block at the player position;
@@ -991,70 +1089,18 @@ void World::putDefaultBlock(const Blocks blockToPlace, Player* t_player,
       newBlockPosMin.z < maxPlayerCorner.z &&
       newBlockPosMax.y > minPlayerCorner.y &&
       newBlockPosMin.y < maxPlayerCorner.y) {
-    return;  // Return on collision
+    return false;  // Return on collision
   }
 
-  const Blocks blockTypeAtTargetPosition = static_cast<Blocks>(
-      pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
-  const Blocks oldTypeBlock = blockTypeAtTargetPosition;
-
-  const u8 canReplace = blockTypeAtTargetPosition == Blocks::WATER_BLOCK ||
-                        blockTypeAtTargetPosition == Blocks::LAVA_BLOCK ||
-                        blockTypeAtTargetPosition == Blocks::AIR_BLOCK ||
-                        blockTypeAtTargetPosition == Blocks::TORCH ||
-                        blockTypeAtTargetPosition == Blocks::POPPY_FLOWER ||
-                        blockTypeAtTargetPosition == Blocks::DANDELION_FLOWER ||
-                        blockTypeAtTargetPosition == Blocks::GRASS;
+  const u8 canReplace = pLevel->isReplaceableBySolidBlock(
+      blockOffset.x, blockOffset.y, blockOffset.z);
 
   if (canReplace) {
-    // Calc block orientation
-    BlockOrientation orientation;
-
-    if (blockManager.isBlockOriented(blockToPlace)) {
-      if (cameraYaw > 315 || cameraYaw < 45) {
-        orientation = BlockOrientation::North;
-      } else if (cameraYaw >= 135 && cameraYaw <= 225) {
-        orientation = BlockOrientation::South;
-      } else if (cameraYaw >= 45 && cameraYaw <= 135) {
-        orientation = BlockOrientation::East;
-      } else {
-        orientation = BlockOrientation::West;
-      }
-    } else {
-      orientation = BlockOrientation::East;
-    }
-
-    pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
-                          static_cast<u8>(blockToPlace));
-    pLevel->SetBlockOrientationDataToMap(blockOffset.x, blockOffset.y,
-                                         blockOffset.z, orientation);
-    checkSunLightAt(blockOffset.x, blockOffset.y, blockOffset.z);
-
-    const auto lightValue = blockManager.getBlockLightValue(blockToPlace);
-    if (lightValue > 0) {
-      addBlockLight(blockOffset.x, blockOffset.y, blockOffset.z, lightValue);
-    } else {
-      removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
-    }
-
-    updateSunlight();
-    updateBlockLights();
-
-    chunkManager.reloadLightData();
-
-    const u8 isPlacingLiquid = blockToPlace == Blocks::WATER_BLOCK ||
-                               blockToPlace == Blocks::LAVA_BLOCK;
-    const u8 itWasLiquidAtPosition = oldTypeBlock == Blocks::WATER_BLOCK ||
-                                     oldTypeBlock == Blocks::LAVA_BLOCK;
-
-    if (isPlacingLiquid) {
-      addLiquid(blockOffset.x, blockOffset.y, blockOffset.z, (u8)blockToPlace,
-                (u8)LiquidLevel::Percent100, (u8)orientation);
-    } else if (itWasLiquidAtPosition) {
-      removeLiquid(blockOffset.x, blockOffset.y, blockOffset.z,
-                   (u8)oldTypeBlock);
-    }
+    placeBlockAt(blockToPlace, blockOffset);
+    return true;
   }
+
+  return false;
 }
 
 void World::stopBreakTargetBlock() {

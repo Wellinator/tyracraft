@@ -43,6 +43,20 @@ class Level : public Singleton<Level> {
   Vec4 offsetToWorldPos(const Vec4& offset);
   Vec4 offsetToWorldPos(const Vec4* offset);
 
+  bool isPositionEmpty(const Vec4& pos) {
+    return isPositionEmpty(pos.x, pos.y, pos.z);
+  }
+  bool isPositionEmpty(const uint16_t& x, const uint16_t& y, const uint16_t& z);
+
+  bool isReplaceableBySolidBlock(const Vec4& pos) {
+    return isReplaceableBySolidBlock(pos.x, pos.y, pos.z);
+  }
+  bool isReplaceableBySolidBlock(const uint16_t& x, const uint16_t& y,
+                                 const uint16_t& z);
+
+  bool isGrassAtPosition(const uint16_t& x, const uint16_t& y,
+                         const uint16_t& z);
+
   uint8_t GetMetaDataFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t SetMetaDataToMap(uint16_t x, uint16_t y, uint16_t z, uint8_t data);
 

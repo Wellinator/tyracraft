@@ -104,17 +104,17 @@ class World {
 
   Block* targetBlock = nullptr;
 
+  TargetedFace getTargetedFace();
+
+  void placeBlockAt(const Blocks& blockType, const Vec4& blockOffset);
   void removeBlock(Block* blockToRemove);
-  // void removeBlockSilently(Block* blockToRemove);
-  void putBlock(const Blocks& blockType, Player* t_player,
-                const float cameraYaw);
-  void putTorchBlock(const PlacementDirection placementDirection,
-                     const float cameraYaw, Vec4 blockOffset);
-  void putSlab(const Blocks& blockType,
-               const PlacementDirection placementDirection, Player* t_player,
-               const float cameraYaw, Vec4 blockOffset, Vec4 targetPos);
-  void putDefaultBlock(const Blocks blockToPlace, Player* t_player,
-                       const float cameraYaw, Vec4 blockOffset);
+  void mergeSlabs(const Blocks& slabToPlace, Player* t_player,
+                  const Vec4& offsetToMerge);
+
+  bool putBlock(const Blocks& blockType, Player* t_player);
+  bool putTorchBlock();
+  bool putSlab(const Blocks& slabToPlace, Player* t_player);
+  bool putDefaultBlock(const Blocks blockToPlace, Player* t_player);
 
   inline const u8 validTargetBlock() {
     return targetBlock != nullptr && targetBlock->isBreakable();
