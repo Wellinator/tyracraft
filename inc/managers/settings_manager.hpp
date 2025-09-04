@@ -18,6 +18,9 @@ struct settings_file {
   // VSync control
   bool vsync = false;
 
+  // Ambient occlusion illumination
+  bool ambient_occlusion = false;
+
   // Language options
   std::string language = "en_US";
 

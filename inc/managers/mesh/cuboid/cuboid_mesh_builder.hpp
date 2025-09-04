@@ -57,6 +57,6 @@ void CuboidMeshBuilder_loadLightFaceDataWithAO(
     std::vector<Color>* t_vertices_colors);
 
 bool CuboidMeshBuilder_isBlockOpaque(u8 block_type);
-std::array<u8, 8> CuboidMeshBuilder_getFaceNeightbors(FACE_SIDE faceSide,
+std::array<u8, 8> CuboidMeshBuilder_getFaceNeighbors(FACE_SIDE faceSide,
                                                       const Vec4* offset,
                                                       Level* pLevel);

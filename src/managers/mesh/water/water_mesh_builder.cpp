@@ -155,7 +155,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                     WorldLightModel* t_worldLightModel,
                                     Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
-  Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
   if (visibleFaces & (int)FACE_SIDE::TOP) {
@@ -168,8 +167,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -182,8 +179,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    FACE_SIDE::BOTTOM, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -196,8 +191,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    FACE_SIDE::LEFT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -210,8 +203,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    FACE_SIDE::RIGHT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -224,8 +215,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    FACE_SIDE::BACK, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -238,15 +227,10 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    FACE_SIDE::FRONT, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
   const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
-  blockColorAverage /= visibleFacesCount;
-  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-  //                        blockColorAverage.z);
 }
 
 void WaterMeshBuilder_loadLightFaceData(Color* faceColor,

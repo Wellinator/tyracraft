@@ -72,7 +72,6 @@ void CrossedMeshBuilder_loadCrossedLightData(
     std::vector<Color>* t_vertices_colors, WorldLightModel* t_worldLightModel,
     Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
-  Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
   // Face 1
@@ -82,8 +81,6 @@ void CrossedMeshBuilder_loadCrossedLightData(
                                    FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     CrossedMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
@@ -94,15 +91,8 @@ void CrossedMeshBuilder_loadCrossedLightData(
                                    FACE_SIDE::TOP, pLevel,
                                    t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
-
     CrossedMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
-
-  const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
-  blockColorAverage /= visibleFacesCount;
-  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-  //                        blockColorAverage.z);
 }
 
 void CrossedMeshBuilder_loadLightFaceData(

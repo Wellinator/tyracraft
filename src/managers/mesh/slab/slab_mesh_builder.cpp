@@ -3,6 +3,7 @@
 #include "managers/block/vertex_block_data.hpp"
 #include "managers/model_builder.hpp"
 #include "managers/block/StaticBlockRepository.hpp"
+#include "managers/settings_manager.hpp"
 #include "utils.hpp"
 
 void SlabMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
@@ -205,7 +206,6 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                    WorldLightModel* t_worldLightModel,
                                    Level* pLevel) {
   auto baseFaceColor = Color(120, 120, 120);
-  Vec4 blockColorAverage = Vec4(0.0F);
   Vec4 tempColor;
 
   const std::array<FACE_SIDE, 4> faceByRotation =
@@ -220,12 +220,15 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      t_worldLightModel->sunLightIntensity);
 
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::TOP, offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::TOP, offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
 
   if (visibleFaces & (int)BlockFace::BOTTOM) {
@@ -237,12 +240,15 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::BOTTOM, offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(FACE_SIDE::BOTTOM, offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
 
   if (visibleFaces & (int)BlockFace::LEFT) {
@@ -254,12 +260,15 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[0], offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(faceByRotation[0], offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
 
   if (visibleFaces & (int)BlockFace::RIGHT) {
@@ -271,12 +280,15 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[3], offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(faceByRotation[3], offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
 
   if (visibleFaces & (int)BlockFace::BACK) {
@@ -288,12 +300,15 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[2], offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(faceByRotation[2], offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
 
   if (visibleFaces & (int)BlockFace::FRONT) {
@@ -305,18 +320,16 @@ void SlabMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      pLevel,
                                      t_worldLightModel->sunLightIntensity);
     Vec4::copy(&tempColor, faceColor.rgba);
-    blockColorAverage += tempColor;
 
-    auto faceNeightbors =
-        SlabMeshBuilder_getFaceNeightbors(faceByRotation[1], offset, pLevel);
-    SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
-                                            t_vertices_colors);
+    if (g_settings.ambient_occlusion) {
+      auto faceNeightbors =
+          SlabMeshBuilder_getFaceNeightbors(faceByRotation[1], offset, pLevel);
+      SlabMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeightbors,
+                                              t_vertices_colors);
+    } else {
+      SlabMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
+    }
   }
-
-  const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
-  blockColorAverage /= visibleFacesCount;
-  // t_block->baseColor.set(blockColorAverage.x, blockColorAverage.y,
-  //                        blockColorAverage.z);
 }
 
 /**
