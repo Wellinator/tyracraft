@@ -345,6 +345,48 @@ void Level::getIntersectedBlocks(
   }
 }
 
+void Level::getIntersectedBlocksByAABB(
+    const Vec4& aabbMin, const Vec4& aabbMax,
+    std::vector<LevelIntersectQueryResult>* pResults) {
+  // Convert world positions to block offsets
+  Vec4 minOffset = worldPosToOffsetNotRounded(aabbMin);
+  Vec4 maxOffset = worldPosToOffsetNotRounded(aabbMax);
+
+  // Clear results vector
+  pResults->clear();
+
+  // Get the range of blocks to check (floor min, ceil max)
+  int startX = std::max(0, (int)std::floor(minOffset.x));
+  int startY = std::max(0, (int)std::floor(minOffset.y));
+  int startZ = std::max(0, (int)std::floor(minOffset.z));
+
+  int endX = std::min(OVERWORLD_H_DISTANCE - 1, (int)std::ceil(maxOffset.x));
+  int endY = std::min(OVERWORLD_V_DISTANCE - 1, (int)std::ceil(maxOffset.y));
+  int endZ = std::min(OVERWORLD_H_DISTANCE - 1, (int)std::ceil(maxOffset.z));
+
+  // Iterate through all blocks in the AABB range
+  for (int x = startX; x <= endX; x++) {
+    for (int y = startY; y <= endY; y++) {
+      for (int z = startZ; z <= endZ; z++) {
+        // Check if block coordinates are within bounds
+        if (x >= 0 && y >= 0 && z >= 0 && x < OVERWORLD_H_DISTANCE &&
+            y < OVERWORLD_V_DISTANCE && z < OVERWORLD_H_DISTANCE) {
+          u8 blockType = GetBlockFromMap(x, y, z);
+
+          // Only add non-air blocks
+          if (blockType > (u8)Blocks::AIR_BLOCK) {
+            Vec4 blockOffset(x, y, z);
+            Vec4 hitPos = offsetToWorldPos(blockOffset);
+
+            pResults->emplace_back(
+                LevelIntersectQueryResult{blockOffset, hitPos, blockType});
+          }
+        }
+      }
+    }
+  }
+}
+
 bool Level::isPositionEmpty(const uint16_t& x, const uint16_t& y,
                             const uint16_t& z) {
   const auto blk = GetBlockFromMap(x, y, z);

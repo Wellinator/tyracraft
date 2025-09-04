@@ -2,6 +2,7 @@
 #include "entities/level.hpp"
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
+#include "managers/model_builder.hpp"
 #include "3libs/bvh/bvh.h"
 #include "timer.hpp"
 
@@ -127,19 +128,109 @@ bool Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
   float tempHitDistance = -1.0f;
   u8 autoJump = false;
 
-  // Broad phase
   // Temp custom model expanded by entity volocity
   M4x4 model = M4x4::Identity;
   Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
                          std::abs(positionDiff.z));
   Vec4 scaleFraction = (deltaScale / hitBoxDimensions);
-  model.scale(scaleFraction + Vec4(1.0F, 1.0F, 1.0F));
+  model.scale(scaleFraction + Vec4(1.5F, 1.5F, 1.5F));
   model.translate(_targetPosition + (positionDiff * hitBoxDimensions));
 
   Vec4 _min, _max;
   BBox tempBBox = getHitBox(model);
   tempBBox.getMinMax(&_min, &_max);
 
+  // Broad phase
+  // Until now we have aabb expanded by player velocity
+  // Need to check collision with inflated aabb (minkowski sum)
+  std::vector<LevelIntersectQueryResult> tempResult = {};
+  pLevel->getIntersectedBlocksByAABB(_min, _max, &tempResult);
+
+  // Narrow phase
+  Vec4 entityMin, entityMax;
+  BBox entityBB = getHitBox();
+  entityBB.getMinMax(&entityMin, &entityMax);
+
+  const Vec4 origin = ((entityMax - entityMin) / 2) + entityMin;
+
+  // Prepate the raycast
+  const Ray ray = Ray(origin, direction);
+
+  for (size_t i = 0; i < tempResult.size(); i++) {
+    Vec4 currentOffset = tempResult[i].offset;
+    Blocks currentBlockType = static_cast<Blocks>(tempResult[i].blockType);
+    StaticBlockRepository* staticBlockRepo =
+        StaticBlockRepository::getInstance();
+    Block* templateBlock = nullptr;
+
+    templateBlock = staticBlockRepo->getBlockTemplate(currentBlockType);
+    if (templateBlock->isCollidable() == false) continue;
+
+    M4x4 model = ModelBuilder_BuildModel(&currentOffset);
+    Vec4 min, max;
+    BBox blockBBox = VertexBlockData::getRawBBoxByOffset(&currentOffset)
+                         ->getTransformed(model);
+    blockBBox.getMinMax(&min, &max);
+
+    if (entityBB.getBottomFace().axisPosition >= max.y ||
+        entityBB.getTopFace().axisPosition < min.y)
+      continue;
+
+    Vec4 tempInflatedMin;
+    Vec4 tempInflatedMax;
+    Utils::GetMinkowskiSum(entityMin, entityMax, min, max, &tempInflatedMin,
+                           &tempInflatedMax);
+
+    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
+      // Is horizontally collidable?
+      if (tempHitDistance > maxCollidableDistance) continue;
+
+      if (shortestDistance == -1.0f || tempHitDistance < shortestDistance) {
+        shortestDistance = tempHitDistance;
+        autoJump = (max.y - entityMin.y) <= BLOCK_SIZE;
+      }
+    }
+  }
+
+  // Will collide somewhere?
+  if (shortestDistance > -1.0f) {
+    const float timeToHit = shortestDistance / speed;
+
+    // Will collide this frame;
+    if (timeToHit < deltaTime ||
+        shortestDistance < _prevPosition.distanceTo(nextPosition)) {
+      if (isColliding) {
+        return false;
+      }
+
+      // Check if can jump
+      if (autoJump && isOnGround) {
+        jumpQuickly();
+        return true;
+      }
+
+      // Try to move in separated axis;
+      return updateXZPosition(
+                 deltaTime,
+                 Vec4(nextPosition.x, _targetPosition.y, _targetPosition.z),
+                 true) ||
+             updateXZPosition(
+                 deltaTime,
+                 Vec4(_targetPosition.x, _targetPosition.y, nextPosition.z),
+                 true);
+    }
+  }
+
+  if (_targetPosition.distanceTo(nextPosition) > 0.0f) {
+    // Apply new position;
+  }
+
+  _targetPosition.x = nextPosition.x;
+  _targetPosition.z = nextPosition.z;
+  return true;
+
+  /*
+  // TODO: The code below must be applied for entity vs entity collision
   bvh::AABB _aabb;
   _aabb.minx = _min.x;
   _aabb.miny = _min.y;
@@ -224,6 +315,7 @@ bool Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
   }
 
   return false;
+  */
 }
 
 void Pig::resolveOutOfWorldBoundaries() {

@@ -5,6 +5,7 @@
 #include "managers/collision_manager.hpp"
 #include "3libs/bvh/bvh.h"
 #include "managers/settings_manager.hpp"
+#include "managers/model_builder.hpp"
 #include "utils.hpp"
 #include "timer.hpp"
 
@@ -170,11 +171,11 @@ Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
                                                           : _targetPosition;
 }
 
-float Player::getNextVrticalPosition(const float& deltaTime) {
+float Player::getNextVrticalPosition(const float& fixedDeltaTime) {
   if (isFlying) {
     return _targetPosition.y;
   } else {
-    velocity.y += GRAVITY.y * deltaTime;
+    velocity.y += GRAVITY.y * fixedDeltaTime;
   }
 
   if (_isUnderWater) {
@@ -183,7 +184,7 @@ float Player::getNextVrticalPosition(const float& deltaTime) {
     velocity.y *= GRAVITY_ON_WATER_FACTOR;
   }
 
-  return _targetPosition.y + (velocity.y * deltaTime);
+  return _targetPosition.y + (velocity.y * fixedDeltaTime);
 }
 
 const float Player::getHeight() { return Utils::Abs(bbox->getHeight()); }
@@ -260,7 +261,6 @@ u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
   float tempHitDistance = -1.0f;
   u8 autoJump = false;
 
-  // Broad phase
   // Temp custom model expanded by player volocity
   M4x4 model = M4x4::Identity;
   Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
@@ -273,6 +273,97 @@ u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
   BBox tempBBox = getHitBox(model);
   tempBBox.getMinMax(&_min, &_max);
 
+  // Broad phase
+  // Until now we have aabb expanded by player velocity
+  // Need to check collision with inflated aabb (minkowski sum)
+  std::vector<LevelIntersectQueryResult> tempResult = {};
+  pLevel->getIntersectedBlocksByAABB(_min, _max, &tempResult);
+
+  // Narrow phase
+  Vec4 playerMin, playerMax;
+  BBox playerBB = getHitBox();
+  playerBB.getMinMax(&playerMin, &playerMax);
+
+  const Vec4 origin = ((playerMax - playerMin) / 2) + playerMin;
+
+  // Prepate the raycast
+  const Ray ray = Ray(origin, direction);
+
+  for (size_t i = 0; i < tempResult.size(); i++) {
+    Vec4 currentOffset = tempResult[i].offset;
+    Blocks currentBlockType = static_cast<Blocks>(tempResult[i].blockType);
+    StaticBlockRepository* staticBlockRepo =
+        StaticBlockRepository::getInstance();
+    Block* templateBlock = nullptr;
+
+    templateBlock = staticBlockRepo->getBlockTemplate(currentBlockType);
+    if (templateBlock->isCollidable() == false) continue;
+
+    M4x4 model = ModelBuilder_BuildModel(&currentOffset);
+    Vec4 min, max;
+    BBox blockBBox = VertexBlockData::getRawBBoxByOffset(&currentOffset)
+                         ->getTransformed(model);
+    blockBBox.getMinMax(&min, &max);
+
+    // Remove blocks that are lower or higher than player bbox
+    if (playerBB.getBottomFace().axisPosition >= max.y ||
+        playerBB.getTopFace().axisPosition < min.y)
+      continue;
+
+    Vec4 tempInflatedMin;
+    Vec4 tempInflatedMax;
+    Utils::GetMinkowskiSum(playerMin, playerMax, min, max, &tempInflatedMin,
+                           &tempInflatedMax);
+
+    if (ray.intersectBox(tempInflatedMin, tempInflatedMax, &tempHitDistance)) {
+      // Is horizontally collidable?
+      if (tempHitDistance > maxCollidableDistance) continue;
+
+      if (shortestDistance == -1.0f || tempHitDistance < shortestDistance) {
+        shortestDistance = tempHitDistance;
+        // It's truen the block is lower than player and can be auto jumped
+        // e.g. slab
+        autoJump = (max.y - playerMin.y) <= BLOCK_SIZE;
+      }
+    }
+  }
+
+  // Will collide somewhere?
+  if (shortestDistance > -1.0f) {
+    const float timeToHit = shortestDistance / speed;
+
+    // Will collide this frame;
+    if (timeToHit < deltaTime ||
+        shortestDistance < _prevPosition.distanceTo(nextPlayerPos)) {
+      if (isColliding) {
+        return false;
+      }
+
+      // Check if can jump
+      if (autoJump && isOnGround) {
+        jumpQuickly();
+        return true;
+      }
+
+      // Try to move in separated axis;
+      return updateXZPosition(
+                 deltaTime,
+                 Vec4(nextPlayerPos.x, _targetPosition.y, _targetPosition.z),
+                 true) ||
+             updateXZPosition(
+                 deltaTime,
+                 Vec4(_targetPosition.x, _targetPosition.y, nextPlayerPos.z),
+                 true);
+    }
+  }
+
+  // Apply new position;
+  _targetPosition.x = nextPlayerPos.x;
+  _targetPosition.z = nextPlayerPos.z;
+  return true;
+
+  /*
+  // TODO: The code below must be applied for entity vs entity collision
   bvh::AABB _aabb;
   _aabb.minx = _min.x;
   _aabb.miny = _min.y;
@@ -349,11 +440,7 @@ u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
       return false;
     }
   }
-
-  // Apply new position;
-  _targetPosition.x = nextPlayerPos.x;
-  _targetPosition.z = nextPlayerPos.z;
-  return true;
+  */
 }
 
 /**

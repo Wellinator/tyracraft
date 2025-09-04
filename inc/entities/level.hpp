@@ -119,4 +119,16 @@ class Level : public Singleton<Level> {
    */
   void getIntersectedBlocks(const Vec4& start, const Vec4& end,
                             std::vector<LevelIntersectQueryResult>* pResults);
+
+  /**
+   * Get all blocks that intersect with the given AABB
+   * @details This function checks all blocks within the axis-aligned bounding
+   * box (AABB) defined by the minimum and maximum corners. It iterates through
+   * all blocks and tests for intersection with the AABB.
+   * @param aabbMin Minimum corner of the AABB
+   * @param aabbMax Maximum corner of the AABB
+   * @param pResults Pointer to vector of LevelIntersectQueryResult
+   */
+  void getIntersectedBlocksByAABB(const Vec4& aabbMin, const Vec4& aabbMax,
+                            std::vector<LevelIntersectQueryResult>* pResults);
 };
