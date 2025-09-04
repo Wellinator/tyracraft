@@ -64,6 +64,15 @@
 #define MAX_TEX_COLS 16
 #define MAX_TEX_ROWS 16
 
+// Block face visibility flags
+#define FRONT_VISIBLE 0b100000
+#define BACK_VISIBLE 0b010000
+#define LEFT_VISIBLE 0b001000
+#define RIGHT_VISIBLE 0b000100
+#define TOP_VISIBLE 0b000010
+#define BOTTOM_VISIBLE 0b000001
+#define HIDDEN_BLOCK 0b000000
+
 /**
  * Define blocks IDs
  **/

@@ -7,14 +7,6 @@
 #include "entities/entity.hpp"
 #include "renderer/3d/pipeline/minecraft/mcpip_block.hpp"
 
-#define FRONT_VISIBLE 0b100000
-#define BACK_VISIBLE 0b010000
-#define LEFT_VISIBLE 0b001000
-#define RIGHT_VISIBLE 0b000100
-#define TOP_VISIBLE 0b000010
-#define BOTTOM_VISIBLE 0b000001
-#define HIDDEN_BLOCK 0b000000
-
 enum class FACE_SIDE { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM };
 
 enum class BlockFace {
@@ -31,17 +23,17 @@ using Tyra::M4x4;
 using Tyra::Vec4;
 
 // Helper macro to reduce code duplication for clone methods
-#define IMPLEMENT_BLOCK_CLONE(ClassName) \
-  Block* clone() override { \
-    ClassName* newBlock = new ClassName(); \
-    newBlock->packed = packed; \
-    newBlock->offset = offset; \
-    newBlock->model = model; \
+#define IMPLEMENT_BLOCK_CLONE(ClassName)                     \
+  Block* clone() override {                                  \
+    ClassName* newBlock = new ClassName();                   \
+    newBlock->packed = packed;                               \
+    newBlock->offset = offset;                               \
+    newBlock->model = model;                                 \
     newBlock->compressedHitPosition = compressedHitPosition; \
-    newBlock->damage = damage; \
-    newBlock->distance = distance; \
-    newBlock->baseColor = baseColor; \
-    return newBlock; \
+    newBlock->damage = damage;                               \
+    newBlock->distance = distance;                           \
+    newBlock->baseColor = baseColor;                         \
+    return newBlock;                                         \
   }
 
 /** Block 3D object class  */

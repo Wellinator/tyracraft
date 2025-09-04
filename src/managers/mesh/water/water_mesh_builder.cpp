@@ -157,7 +157,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
   auto baseFaceColor = Color(120, 120, 120);
   Vec4 tempColor;
 
-  if (visibleFaces & (int)FACE_SIDE::TOP) {
+  if (visibleFaces & (int)BlockFace::TOP) {
     //   Top face 100% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 1.0F);
 
@@ -170,7 +170,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (visibleFaces & (int)FACE_SIDE::BOTTOM) {
+  if (visibleFaces & (int)BlockFace::BOTTOM) {
     //   Top face 50% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.5F);
 
@@ -182,7 +182,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (visibleFaces & (int)FACE_SIDE::LEFT) {
+  if (visibleFaces & (int)BlockFace::LEFT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
@@ -194,7 +194,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (visibleFaces & (int)FACE_SIDE::RIGHT) {
+  if (visibleFaces & (int)BlockFace::RIGHT) {
     // X-side faces 60% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
 
@@ -206,7 +206,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (visibleFaces & (int)FACE_SIDE::BACK) {
+  if (visibleFaces & (int)BlockFace::BACK) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
@@ -218,7 +218,7 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
 
-  if (visibleFaces & (int)FACE_SIDE::FRONT) {
+  if (visibleFaces & (int)BlockFace::FRONT) {
     // Z-side faces 80% of the base color
     Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
 
@@ -229,8 +229,6 @@ void WaterMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
     Vec4::copy(&tempColor, faceColor.rgba);
     WaterMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
   }
-
-  const u8 visibleFacesCount = Utils::countSetBits(visibleFaces);
 }
 
 void WaterMeshBuilder_loadLightFaceData(Color* faceColor,

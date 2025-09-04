@@ -832,6 +832,8 @@ bool World::putTorchBlock() {
 
     return true;
   }
+
+  return false;
 }
 
 /**
