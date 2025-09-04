@@ -133,12 +133,6 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
       return;
   }
 
-  /**
-   *  I've built this formula:
-   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
-   */
-  // const float sunLightFactor = (intensity + (sunLightLevel /
-  // MAX_LIGHT_VALUE)) / (intensity + 1.0F);
   const float sunLightFactor = std::max(
       (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
 
@@ -146,9 +140,6 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
 
   *baseColor = LightManager::IntensifyColor(
       *baseColor, std::max(sunLightFactor, lightLevelFactor));
-
-  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
-  // printf("SunlightIntensity: %f\n", sunlightIntensity);
 }
 
 void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
@@ -161,12 +152,6 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
   u8 sunLightLevel = ((lightData >> 4) & 0xF);
   u8 lightLevel = lightData & 0x0F;
 
-  /**
-   *  I've built this formula:
-   * (intensity + (lightLevel / MAX_LIGHT_VALUE)) / intensity + 1.0;
-   */
-  // const float sunLightFactor = (intensity + (sunLightLevel /
-  // MAX_LIGHT_VALUE)) / (intensity + 1.0F);
   const float sunLightFactor = std::max(
       (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
 
@@ -174,7 +159,49 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
 
   *baseColor = LightManager::IntensifyColor(
       *baseColor, std::max(sunLightFactor, lightLevelFactor));
+}
 
-  // printf("Sunlight lvl: %d | intensity: %f\n", lightLevel, sunLightFactor);
-  // printf("SunlightIntensity: %f\n", sunlightIntensity);
+Color LightManager::GetLightColorAt(const Vec4& offset, TargetedFace face,
+                                    const float sunlightIntensity) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
+
+  Color baseFaceColor = Color(120, 120, 120, 128);
+  Color finalColor = baseFaceColor;
+
+  Vec4 faceOffset = Vec4(offset);
+
+  if (face == TargetedFace::FrontFace) {
+    finalColor = LightManager::IntensifyColor(finalColor, 0.8F);
+    faceOffset.z++;
+  } else if (face == TargetedFace::BackFace) {
+    finalColor = LightManager::IntensifyColor(finalColor, 0.8F);
+    faceOffset.z--;
+  } else if (face == TargetedFace::RightFace) {
+    finalColor = LightManager::IntensifyColor(finalColor, 0.6F);
+    faceOffset.x++;
+  } else if (face == TargetedFace::LeftFace) {
+    finalColor = LightManager::IntensifyColor(finalColor, 0.6F);
+    faceOffset.x--;
+  } else if (face == TargetedFace::TopFace) {
+    finalColor = LightManager::IntensifyColor(finalColor, 1.0F);
+    faceOffset.y++;
+  } else if (face == TargetedFace::BottomFace) {
+    faceOffset.y--;
+    finalColor = LightManager::IntensifyColor(finalColor, 0.5F);
+  }
+
+  Level* pLevel = Level::getInstance();
+  u8 lightData =
+      pLevel->GetLightDataFromMap(faceOffset.x, faceOffset.y, faceOffset.z);
+  u8 sunLightLevel = ((lightData >> 4) & 0xF);
+  u8 lightLevel = lightData & 0x0F;
+
+  const float sunLightFactor = std::max(
+      (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
+
+  const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+  return LightManager::IntensifyColor(
+      finalColor, std::max(sunLightFactor, lightLevelFactor));
 }

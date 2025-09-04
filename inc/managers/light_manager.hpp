@@ -1,10 +1,10 @@
 #pragma once
 
-#include "entities/level.hpp"
 #include "constants.hpp"
 #include <tyra>
 #include <math.h>
 #include <array>
+#include "entities/level.hpp"
 #include "entities/Block.hpp"
 
 using Tyra::Color;
@@ -23,6 +23,8 @@ class LightManager {
       std::array<u8, 8> blocksNeightbors);
   static u8 getVertexAO(bool side1, bool corner, bool side2);
   static float calcAOIntensity(u8 AOValue);
+  static Color GetLightColorAt(const Vec4& offset, TargetedFace face,
+                               const float sunlightIntensity);
   static Color IntensifyColor(const Color& color, const float intensity);
   static void IntensifyColor(Color* color, const float intensity);
   static void ApplyLightToFace(Color* baseColor, Vec4* offset,

@@ -1042,6 +1042,10 @@ void World::mergeSlabs(const Blocks& slabToPlace, Player* t_player,
   }
 
   placeBlockAt(newBlock, offsetToMerge);
+
+  // Force to rebuild the target block because the merged slab has the same
+  // index
+  buildTargetBlockDrawData();
 }
 
 bool World::putDefaultBlock(const Blocks blockToPlace, Player* t_player) {
@@ -1365,6 +1369,9 @@ void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
         targetBlock->minCorner.set(min);
         targetBlock->maxCorner.set(max);
         targetBlock->offset = result.offset;
+        targetBlock->baseColor =
+            LightManager::GetLightColorAt(result.offset, getTargetedFace(),
+                                          worldLightModel.sunLightIntensity);
         M4x4::copy(&targetBlock->model, model);
 
         if (targetBlock->index != _lastTargetBlockId) {
