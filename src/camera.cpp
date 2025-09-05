@@ -11,10 +11,8 @@
 #include "math/math.hpp"
 #include "managers/settings_manager.hpp"
 #include "managers/collision_manager.hpp"
+#include "entities/entity.hpp"
 #include "3libs/bvh/bvh.h"
-
-// TODO: move to Entity class
-#include "entities/Block.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -80,7 +78,6 @@ void Camera::update(const float& deltaTime, const u8 isWalking) {
   looksAt.set(unitCirclePosition + position);
 }
 
-// TODO: refactore method signature to receive the position directly
 void Camera::setPosition(Vec4 newPosition) {
   if (camera_type == CamType::FirstPerson) {
     position.set(newPosition);
@@ -94,6 +91,8 @@ void Camera::setPosition(Vec4 newPosition) {
     revRay.origin.set(segmentStart);
     revRay.direction.set(-unitCirclePosition);
 
+    /*
+    TODO: refactor camera vs block collision to new compressed system
     std::vector<index_t> ni;
     g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
 
@@ -104,11 +103,12 @@ void Camera::setPosition(Vec4 newPosition) {
 
       float intersectionPoint;
       if (revRay.intersectBox(entity->minCorner, entity->maxCorner,
-                              &intersectionPoint) &&
-          intersectionPoint < hitDistance) {
+      &intersectionPoint) &&
+      intersectionPoint < hitDistance) {
         hitDistance = intersectionPoint * 0.95F;
       }
     }
+    */
 
     const float hDistance = calculateHorizontalDistance();
     const float vDistance = calculateVerticalDistance();
