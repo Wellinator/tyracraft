@@ -39,10 +39,6 @@ class MobManager {
   static const u8 MAX_MOBS_LIMIT = 10;
 
  private:
-  // TODO: move to mob AI
-  float changeDirectionTimer = 1;
-  float changeDirectionLimit = 0;
-
   Renderer* t_renderer = nullptr;
   ChunkManager* t_chunkManager = nullptr;
   WorldLightModel* t_worldLightModel = nullptr;
