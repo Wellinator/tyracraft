@@ -33,6 +33,7 @@ using Tyra::Vec4;
     newBlock->damage = damage;                               \
     newBlock->distance = distance;                           \
     newBlock->baseColor = baseColor;                         \
+    newBlock->isTemplate = false;                           \
     return newBlock;                                         \
   }
 
@@ -71,6 +72,9 @@ class Block : public Entity {
 
   Vec4 offset;
   M4x4 model;
+
+  // Indicates if this block instance is a template (not to be deleted)
+  bool isTemplate = true;
 
   // Compressed hit position using 16-bit integers (saves 8 bytes)
   // Range: -32768 to 32767 (sufficient for block coordinates)
