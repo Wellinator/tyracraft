@@ -280,11 +280,6 @@ class World {
     loadScheduledChunks();
   }
 
-  bool inline isVegetation(Blocks block) {
-    return (u8)block >= (u8)Blocks::GRASS &&
-           (u8)block <= (u8)Blocks::DANDELION_FLOWER;
-  };
-
   bool inline isTransparent(Blocks block) {
     return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
            block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||

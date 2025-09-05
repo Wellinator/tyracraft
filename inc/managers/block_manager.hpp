@@ -37,7 +37,8 @@ class BlockManager : public Singleton<BlockManager> {
 
   const u8 isBlockTransparent(const Blocks& blockType);
   const u8 isBlockOriented(const Blocks& blockType);
-  const bool isSlab(Blocks type);
+  const bool isSlab(const Blocks& type);
+  const bool isVegetation(const Blocks& block);
 
   SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);

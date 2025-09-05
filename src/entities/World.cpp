@@ -705,19 +705,36 @@ void World::removeBlock(Block* blockToRemove) {
   rebuildChunkNeighbors(chunkToRebuild, const_cast<Vec4*>(&offsetToRemove));
 
   // Remove up block if it's is vegetation
-  // const Vec4 upBlockOffset =
-  //     Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
+  const Vec4 upBlockOffset =
+      Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
 
-  // if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
-  //                           upBlockOffset.z)) {
-  // TODO: remove upper block
-  // const Blocks b = static_cast<Blocks>(pLevel->GetBlockFromMap(
-  //     upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
-  // if (isVegetation(b) || b == Blocks::TORCH) {
-  // auto upperChunk = chunkManager.getChunkByBlockOffset(upBlockOffset);
-  // upperChunk->rebuild();
-  // }
-  // }
+  if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
+                            upBlockOffset.z)) {
+    const Blocks upperBlockType = static_cast<Blocks>(pLevel->GetBlockFromMap(
+        upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+
+    if (blockManager.isVegetation(upperBlockType) ||
+        upperBlockType == Blocks::TORCH) {
+      Block* _template = blockManager.getBlockTemplateByType(upperBlockType);
+      Block* upperBlock = _template->clone();
+
+      u8 visibleFaces =
+          VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
+              upBlockOffset);
+
+      upperBlock->offset = upBlockOffset;
+      upperBlock->index = pLevel->OffsetToIndex(upBlockOffset);
+      upperBlock->setVisibleFaces(visibleFaces);
+      upperBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
+      upperBlock->position = pLevel->offsetToWorldPos(&upperBlock->offset);
+      upperBlock->baseColor =
+          LightManager::GetLightColorAt(upperBlock->offset, getTargetedFace(),
+                                        worldLightModel.sunLightIntensity);
+
+      removeBlock(upperBlock);
+      delete upperBlock;
+    }
+  }
 }
 
 bool World::putBlock(const Blocks& blockToPlace, Player* t_player) {

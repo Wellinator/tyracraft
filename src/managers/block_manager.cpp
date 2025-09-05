@@ -71,10 +71,15 @@ const u8 BlockManager::isBlockOriented(const Blocks& blockType) {
          blockType == Blocks::PUMPKIN_BLOCK;
 }
 
-const bool BlockManager::isSlab(Blocks type) {
+const bool BlockManager::isSlab(const Blocks& type) {
   const uint8_t typeAsInt = static_cast<uint8_t>(type);
   return typeAsInt >= static_cast<uint8_t>(Blocks::STONE_SLAB) &&
          typeAsInt <= static_cast<uint8_t>(Blocks::MOSSY_STONE_BRICKS_SLAB);
+}
+
+const bool BlockManager::isVegetation(const Blocks& block) {
+  return (u8)block >= (u8)Blocks::GRASS &&
+         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
 }
 
 SfxBlockModel* BlockManager::getBrokenSoundByBlockType(
