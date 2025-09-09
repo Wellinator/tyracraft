@@ -6,6 +6,7 @@
 #include "utils.hpp"
 
 using Tyra::Color;
+using Tyra::CoreBBoxFrustum;
 using Tyra::EEClipAlgorithmSettings;
 using Tyra::Plane;
 using Tyra::PlanesClipAlgorithm;
@@ -24,7 +25,7 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
-                             Renderer* t_renderer, Vec4& camPos);
+                             Renderer* t_renderer, Vec4& camLooksAt);
 
 int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Vec4>& in_uv,
@@ -32,7 +33,7 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
-                             Renderer* t_renderer, Vec4& camPos);
+                             Renderer* t_renderer, Vec4& camLooksAt);
 
-void ClippingManager_ClipAndRenderBag(StaticPipeline* pStapip, StaPipBag* pBag,
-                                      Renderer* t_renderer, Vec4& camPos);
+void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
+                                      Renderer* t_renderer, Vec4& camLooksAt);

@@ -6,7 +6,7 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
-                             Renderer* t_renderer, Vec4& camPos) {
+                             Renderer* t_renderer, Vec4& camLooksAt) {
   Plane* frustumPlanes =
       (Plane*)t_renderer->core.renderer3D.frustumPlanes.getAll();
 
@@ -46,20 +46,43 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                           &colors[i * 3 + j]};
     }
 
+    // Check triangle visibility and clipping needs
+    CoreBBoxFrustum frustumResult = Utils::FrustumTriangleIntersect(
+        frustumPlanes, inputVerts[0], inputVerts[1], inputVerts[2]);
+
     if (
         // Back face culling
-        !Vec4::shouldBeBackfaceCulled(&camPos, &inputVerts[0], &inputVerts[1],
-                                      &inputVerts[2]) ||
+        !Vec4::shouldBeBackfaceCulled(&camLooksAt, &inputVerts[0],
+                                      &inputVerts[1], &inputVerts[2]) ||
 
-        // Check if the triangle is partially visible
-        Utils::FrustumTriangleIntersect(frustumPlanes, inputVerts[0],
-                                        inputVerts[1], inputVerts[2]) !=
-            Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
+        // Triangle is completely outside frustum
+        frustumResult == Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM) {
       continue;
     }
 
-    int clippedVertivesCount = algorithm.clip(
-        clippedTriangle, inputTriangle.data(), algoSettings, frustumPlanes);
+    int clippedVertivesCount = 0;
+
+    if (frustumResult == Tyra::CoreBBoxFrustum::IN_FRUSTUM) {
+      // Triangle is completely inside frustum, no clipping needed
+      clippedTriangle.resize(3);
+      clippedTriangle[0].position = inputVerts[0];
+      clippedTriangle[0].st = sts[i * 3 + 0];
+      clippedTriangle[0].color = colors[i * 3 + 0];
+
+      clippedTriangle[1].position = inputVerts[1];
+      clippedTriangle[1].st = sts[i * 3 + 1];
+      clippedTriangle[1].color = colors[i * 3 + 1];
+
+      clippedTriangle[2].position = inputVerts[2];
+      clippedTriangle[2].st = sts[i * 3 + 2];
+      clippedTriangle[2].color = colors[i * 3 + 2];
+
+      clippedVertivesCount = 3;
+    } else {
+      // Triangle is partially in frustum, needs clipping
+      clippedVertivesCount = algorithm.clip(
+          clippedTriangle, inputTriangle.data(), algoSettings, frustumPlanes);
+    }
 
     if (clippedVertivesCount == 0) {
       continue;
@@ -93,23 +116,17 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Vec4>& out_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
-                             Renderer* t_renderer, Vec4& camPos) {
+                             Renderer* t_renderer, Vec4& camLooksAt) {
   return ClippingManager_ClipMesh(in_vertex.size(), in_vertex.data(),
                                   in_uv.size(), in_uv.data(), in_colors.size(),
                                   in_colors.data(), out_vertex, out_uv,
-                                  out_colors, t_renderer, camPos);
+                                  out_colors, t_renderer, camLooksAt);
 }
 
-void ClippingManager_ClipAndRenderBag(StaticPipeline* pStapip, StaPipBag* pBag,
-                                      Renderer* t_renderer, Vec4& camPos) {
+void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
+                                      Renderer* t_renderer, Vec4& camLooksAt) {
   const bool hasUV = pBag->texture != nullptr;
   const bool hasColors = pBag->color != nullptr && pBag->color->many != nullptr;
-
-  // std::vector<Vec4> out_vertex(pBag->vertices, pBag->vertices + pBag->count);
-  // std::vector<Vec4> out_uv(pBag->texture->coordinates,
-  //                          pBag->texture->coordinates + pBag->count);
-  // std::vector<Color> out_colors(pBag->color->many,
-  //                               pBag->color->many + pBag->count);
 
   std::vector<Vec4> out_vertex, out_uv;
   std::vector<Color> out_colors;
@@ -118,13 +135,7 @@ void ClippingManager_ClipAndRenderBag(StaticPipeline* pStapip, StaPipBag* pBag,
   if (hasUV) out_uv.reserve(pBag->count);
   if (hasColors) out_colors.reserve(pBag->count);
 
-  // out_vertex(pBag->vertices, pBag->vertices + pBag->count);
-  // if (hasColors) out_colors(pBag->color->many, pBag->color->many +
-  // pBag->count); if (hasUV)
-  //   out_uv(pBag->texture->coordinates,
-  //          pBag->texture->coordinates + pBag->count);
-
-  int generatedVertexCounter = ClippingManager_ClipMesh(
+  ClippingManager_ClipMesh(
       pBag->count, pBag->vertices,
 
       // Check if the bag contains texture data (UV)
@@ -133,16 +144,19 @@ void ClippingManager_ClipAndRenderBag(StaticPipeline* pStapip, StaPipBag* pBag,
       // Check if the bag contains color data
       hasColors ? pBag->count : 0, const_cast<Color*>(pBag->color->many),
 
-      out_vertex, out_uv, out_colors, t_renderer, camPos);
+      out_vertex, out_uv, out_colors, t_renderer, camLooksAt);
 
-  if (generatedVertexCounter > 0) {
-    pBag->vertices = out_vertex.data();
-    if (hasUV) pBag->texture->coordinates = out_uv.data();
-    if (hasColors) {
-      StaPipColorBag newColorBag;
-      newColorBag.many = out_colors.data();
-      pBag->color = &newColorBag;
-    };
+  pBag->count = out_vertex.size();
+  pBag->vertices = out_vertex.data();
+
+  if (hasUV) {
+    pBag->texture->coordinates = out_uv.data();
+  }
+
+  if (hasColors) {
+    StaPipColorBag newColorBag;
+    newColorBag.many = out_colors.data();
+    pBag->color = &newColorBag;
   }
 
   pStapip->core.render(pBag);
