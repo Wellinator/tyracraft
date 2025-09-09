@@ -59,8 +59,8 @@ class CustomPlanesClipAlgorithm {
            const EEClipAlgorithmSettings& settings, Plane* frustumPlanes);
 
  private:
-  Vec4 intersectPlane(Vec4& plane_p, Vec4& plane_n, Vec4& lineStart,
-                      Vec4& lineEnd, float plane_d, float& t);
+  Vec4 intersectPlane(Vec4& plane_n, Vec4& lineStart, Vec4& lineEnd,
+                      float plane_d, float& t);
 
   /** @return clipped size */
   u8 clipAgainstPlane(Triangle& original, PlanesClipVertex* clipped,
