@@ -11,6 +11,7 @@
 #include "managers/mazecraft_generator.hpp"
 #include "managers/visible_faces_manager.hpp"
 #include "managers/light_manager.hpp"
+#include "managers/clipping_manager.hpp"
 #include "debug.hpp"
 #include <tyra>
 
@@ -396,9 +397,22 @@ void World::renderBlockDamageOverlay() {
   StaPipInfoBag infoBag;
   StaPipColorBag colorBag;
   StaPipBag bag;
+  M4x4 model = M4x4::Identity;
 
-  textureBag.coordinates = _targetBlockUVMap.data();
+  // std::vector<Vec4> outVertices;
+  // std::vector<Vec4> outUVMap;
+  // std::vector<Color> outColors;
 
+  // outVertices.reserve(_targetBlockVertices.size());
+  // outUVMap.reserve(_targetBlockVertices.size());
+  // outColors.reserve(_targetBlockVertices.size());
+
+  // ClippingManager_ClipMesh(_targetBlockVertices, _targetBlockUVMap,
+  //                          _targetBlockColors, outVertices, outUVMap,
+  //                          outColors, t_renderer,
+  //                          Camera::getInstance()->looksAt);
+
+  infoBag.model = &model;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
   infoBag.blendingEnabled = true;
@@ -408,19 +422,18 @@ void World::renderBlockDamageOverlay() {
       Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
   colorBag.many = _targetBlockColors.data();
+  bag.color = &colorBag;
+
+  textureBag.coordinates = _targetBlockUVMap.data();
+  textureBag.texture = blockManager.getBlocksTexture();
+  bag.texture = &textureBag;
 
   bag.count = _targetBlockVertices.size();
   bag.vertices = _targetBlockVertices.data();
-  bag.color = &colorBag;
   bag.info = &infoBag;
-  bag.texture = &textureBag;
 
-  textureBag.texture = blockManager.getBlocksTexture();
-
-  M4x4 model = M4x4::Identity;
-  infoBag.model = &model;
-
-  stapip.core.render(&bag);
+  ClippingManager_ClipAndRenderBag(&bag, &stapip, t_renderer,
+                                   Camera::getInstance()->looksAt);
 }
 
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
@@ -581,37 +594,38 @@ TargetedFace World::getTargetedFace() {
   Vec4 targetPos = ray.at(targetBlock->distance);
 
   float frontFace = targetBlock->bbox->getFrontFace().axisPosition;
-  if (targetPos.z == std::round(frontFace)) {
+  if (std::round(targetPos.z) == frontFace) {
     return TargetedFace::FrontFace;
   }
 
   float backFace = targetBlock->bbox->getBackFace().axisPosition;
-  if (targetPos.z == std::round(backFace)) {
+  if (std::round(targetPos.z) == backFace) {
     return TargetedFace::BackFace;
   }
 
   float leftFace = targetBlock->bbox->getLeftFace().axisPosition;
-  if (targetPos.x == std::round(leftFace)) {
+  if (std::round(targetPos.x) == leftFace) {
     return TargetedFace::LeftFace;
   }
 
   float rightFace = targetBlock->bbox->getRightFace().axisPosition;
-  if (targetPos.x == std::round(rightFace)) {
+  if (std::round(targetPos.x) == rightFace) {
     return TargetedFace::RightFace;
   }
 
   float topFace = targetBlock->bbox->getTopFace().axisPosition;
-  if (targetPos.y == std::round(topFace)) {
+  if (std::round(targetPos.y) == topFace) {
     return TargetedFace::TopFace;
   }
 
   float bottomFace = targetBlock->bbox->getBottomFace().axisPosition;
-  if (targetPos.y == std::round(bottomFace)) {
+  if (std::round(targetPos.y) == bottomFace) {
     return TargetedFace::BottomFace;
   }
 
   if (g_debug_mode) {
-    TYRA_LOG("------ Target bbox faces -----");
+    TYRA_ERROR("Could not determine targeted face!");
+    TYRA_ERROR("------ Target bbox faces -----");
     targetPos.print("Target Position: ");
     printf("Front Face: %f\n", frontFace);
     printf("Back Face: %f\n", backFace);
@@ -619,10 +633,9 @@ TargetedFace World::getTargetedFace() {
     printf("Right Face: %f\n", rightFace);
     printf("Top Face: %f\n", topFace);
     printf("Bottom Face: %f\n", bottomFace);
-    TYRA_LOG("------------------------------");
+    TYRA_ERROR("------------------------------");
   }
 
-  TYRA_ERROR("Could not determine targeted face!");
   return TargetedFace::TopFace;  // Default
 }
 
