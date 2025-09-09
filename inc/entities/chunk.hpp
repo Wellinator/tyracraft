@@ -84,6 +84,10 @@ class Chunk {
     return this->frustumCheck != Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
   }
 
+  inline const bool isPartiallyVisible() {
+    return this->frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
+  }
+
   inline s8 getDistanceFromPlayerInChunks() {
     return this->_distanceFromPlayerInChunks;
   };
@@ -98,8 +102,6 @@ class Chunk {
     return (y * pLevel->map.length * pLevel->map.width) +
            (z * pLevel->map.width) + x;
   }
-
-  void updateSurroundingBlocks();
 
  private:
   std::vector<Vec4> vertices;
@@ -120,18 +122,5 @@ class Chunk {
   s8 _distanceFromPlayerInChunks = -1;
 
   // Refactore the clipped blocks for not using blocks array
-  std::vector<Block*> surroundingBlocks;
-  std::vector<Block*> surroundingTransparentBlocks;
   Plane* frustumPlanes = nullptr;
-
-  void renderSolidPartialBlocks(Renderer* t_renderer, StaticPipeline* stapip);
-
-  void renderTransparentPartialBlocks(Renderer* t_renderer,
-                                      StaticPipeline* stapip);
-
-  void renderPartialBlockDrawData(Renderer* t_renderer, u8 hasTransparency,
-                                  StaticPipeline* stapip,
-                                  std::vector<Vec4>& in_vertex,
-                                  std::vector<Vec4>& in_uv,
-                                  std::vector<Color>& in_colors);
 };

@@ -59,11 +59,6 @@ void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
 
 void Chunk::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
-
-  // if (frustumCheck == Tyra::PARTIALLY_IN_FRUSTUM &&
-  //     _distanceFromPlayerInChunks > -1 && _distanceFromPlayerInChunks < 2) {
-  //   updateSurroundingBlocks();
-  // }
 }
 
 void Chunk::tick() {
@@ -108,40 +103,6 @@ void Chunk::tickRandomBlock() {
   // Based on https://minecraft.fandom.com/wiki/Grass_Block#Spread
 }
 
-void Chunk::updateSurroundingBlocks() {
-  surroundingBlocks.clear();
-  surroundingTransparentBlocks.clear();
-
-  u8 offsetRange = 2;
-  Vec4 tempOffset = camPositon / DOUBLE_BLOCK_SIZE;
-  Vec4 camOffset = Vec4(std::lrint(tempOffset.x), std::lrint(tempOffset.y),
-                        std::lrint(tempOffset.z));
-
-  for (s8 _x = -offsetRange; _x <= offsetRange; _x++) {
-    for (s8 _y = -offsetRange; _y <= offsetRange; _y++) {
-      for (s8 _z = -offsetRange; _z <= offsetRange; _z++) {
-        Vec4 offset = camOffset + Vec4(_x, _y, _z);
-        u32 blockIndex = getIndexByOffset(offset.x, offset.y, offset.z);
-
-        // Is the block in this chunk?
-        // if (containsBlock(&offset)) {
-        // TODO: render surroungding blocks with clipping algorithm
-
-        // if (Utils::FrustumAABBIntersect(frustumPlanes, &t_block->minCorner,
-        //                                 &t_block->maxCorner) ==
-        //     CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM) {
-        //   if (t_block->hasTransparency()) {
-        //     surroundingTransparentBlocks.push_back(t_block);
-        //   } else {
-        //     surroundingBlocks.push_back(t_block);
-        //   }
-        // }
-        // }
-      }
-    }
-  }
-}
-
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (isLoaded()) {
     StaPipTextureBag textureBag;
@@ -173,12 +134,17 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
 
-    stapip->core.render(&bag);
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
-    if (surroundingBlocks.size() > 0) {
-      renderSolidPartialBlocks(t_renderer, stapip);
+    const float distance =
+        scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+
+    if (distance <= 1.5f) {
+      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                              camPositon);
     }
+
+    stapip->core.render(&bag);
   }
 };
 
@@ -214,144 +180,21 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     M4x4 rawMatrix = M4x4::Identity;
     infoBag.model = &rawMatrix;
 
-    stapip->core.render(&bag);
     // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
-    if (surroundingTransparentBlocks.size() > 0) {
-      renderTransparentPartialBlocks(t_renderer, stapip);
+    const float distance =
+        scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+    if (distance <= 1.5f) {
+      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                              camPositon);
     }
+
+    stapip->core.render(&bag);
   }
 };
 
-void Chunk::renderSolidPartialBlocks(Renderer* t_renderer,
-                                     StaticPipeline* stapip) {
-  for (size_t i = 0; i < surroundingBlocks.size(); i++) {
-    Block* t_block = surroundingBlocks[i];
-    const auto start = t_block->packed.drawDataIndex;
-    const auto end =
-        (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
-
-    //------------------------
-    // Temp clipped draw data
-    //------------------------
-    std::vector<Vec4> inVertices;
-    std::vector<Vec4> inUVMap;
-    std::vector<Color> inColors;
-
-    inVertices.reserve(t_block->packed.drawDataLength);
-    inUVMap.reserve(t_block->packed.drawDataLength);
-    inColors.reserve(t_block->packed.drawDataLength);
-
-    std::copy(vertices.begin() + start, vertices.begin() + end,
-              std::back_inserter(inVertices));
-    std::copy(uvMap.begin() + start, uvMap.begin() + end,
-              std::back_inserter(inUVMap));
-    std::copy(verticesColors.begin() + start, verticesColors.begin() + end,
-              std::back_inserter(inColors));
-
-    // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(255, 0,
-    // 0));
-    renderPartialBlockDrawData(t_renderer, false, stapip, inVertices, inUVMap,
-                               inColors);
-  }
-}
-
-void Chunk::renderTransparentPartialBlocks(Renderer* t_renderer,
-                                           StaticPipeline* stapip) {
-  for (size_t i = 0; i < surroundingTransparentBlocks.size(); i++) {
-    Block* t_block = surroundingTransparentBlocks[i];
-    const auto start = t_block->packed.drawDataIndex;
-    const auto end =
-        (t_block->packed.drawDataIndex + t_block->packed.drawDataLength);
-
-    //------------------------
-    // Temp clipped draw data
-    //------------------------
-    std::vector<Vec4> inVertices;
-    std::vector<Vec4> inUVMap;
-    std::vector<Color> inColors;
-
-    inVertices.reserve(t_block->packed.drawDataLength);
-    inUVMap.reserve(t_block->packed.drawDataLength);
-    inColors.reserve(t_block->packed.drawDataLength);
-
-    std::copy(verticesWithTransparency.begin() + start,
-              verticesWithTransparency.begin() + end,
-              std::back_inserter(inVertices));
-    std::copy(uvMapWithTransparency.begin() + start,
-              uvMapWithTransparency.begin() + end, std::back_inserter(inUVMap));
-    std::copy(verticesColorsWithTransparency.begin() + start,
-              verticesColorsWithTransparency.begin() + end,
-              std::back_inserter(inColors));
-
-    // t_renderer->renderer3D.utility.drawBBox(*t_block->bbox, Color(0, 0,
-    // 255));
-    renderPartialBlockDrawData(t_renderer, true, stapip, inVertices, inUVMap,
-                               inColors);
-  }
-}
-
-void Chunk::renderPartialBlockDrawData(Renderer* t_renderer, u8 hasTransparency,
-                                       StaticPipeline* stapip,
-                                       std::vector<Vec4>& in_vertex,
-                                       std::vector<Vec4>& in_uv,
-                                       std::vector<Color>& in_colors) {
-  StaPipTextureBag textureBag;
-  StaPipInfoBag infoBag;
-  StaPipColorBag colorBag;
-  StaPipBag bag;
-
-  std::vector<Vec4> outVertices;
-  std::vector<Vec4> outUVMap;
-  std::vector<Color> outColors;
-
-  outVertices.reserve(in_vertex.size());
-  outUVMap.reserve(in_vertex.size());
-  outColors.reserve(in_vertex.size());
-
-  int generatedVertexCounter =
-      ClippingManager_ClipMesh(in_vertex, in_uv, in_colors, outVertices,
-                               outUVMap, outColors, t_renderer, camPositon);
-
-  if (generatedVertexCounter == 0) return;
-
-  textureBag.coordinates = outUVMap.data();
-  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
-
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = true;
-  infoBag.antiAliasingEnabled = false;
-
-  infoBag.fullClipChecks = false;
-  infoBag.frustumCulling =
-      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
-  colorBag.many = outColors.data();
-
-  bag.count = outVertices.size();
-  bag.vertices = outVertices.data();
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  t_renderer->renderer3D.usePipeline(stapip);
-
-  M4x4 rawMatrix = M4x4::Identity;
-  infoBag.model = &rawMatrix;
-
-  stapip->core.render(&bag);
-}
-
 void Chunk::clear() {
   clearDrawData();
-
-  surroundingBlocks.clear();
-  surroundingBlocks.shrink_to_fit();
-
-  surroundingTransparentBlocks.clear();
-  surroundingTransparentBlocks.shrink_to_fit();
-
   resetLoadingOffset();
 
   this->state = ChunkState::Clean;
@@ -371,9 +214,6 @@ void Chunk::clearDrawData() {
   verticesColorsWithTransparency.shrink_to_fit();
   uvMapWithTransparency.clear();
   uvMapWithTransparency.shrink_to_fit();
-
-  surroundingBlocks.clear();
-  surroundingTransparentBlocks.clear();
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
