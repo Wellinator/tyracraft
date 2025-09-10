@@ -60,8 +60,6 @@ class Camera : public Singleton<Camera> {
 
   float camera_time = 0;
 
-  Ray revRay;
-
   void shakeCamera();
   void calculatePitch(Pad* t_pad, const float deltatime);
   void calculateYaw(Pad* t_pad, const float deltatime);
