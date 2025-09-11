@@ -136,7 +136,7 @@ void Player::update(const float& deltaTime, Camera* t_camera) {
   updateFovBySpeed();
 
   renderPip->update(deltaTime, t_camera);
-  animate(t_camera->getCamType());
+  animate(deltaTime, t_camera->getCamType());
 }
 
 void Player::tick() {
@@ -516,7 +516,8 @@ void Player::loadMesh() {
 
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
-  this->mesh->animation.speed = 0.08F;
+  // Speed is treated as frames-per-second; actual step will be multiplied by deltaTime in animate()
+  this->mesh->animation.speed = baseAnimationSpeed;
 }
 
 void Player::loadStaticBBox() {
@@ -714,9 +715,14 @@ void Player::playPutBlockAnimation() { isPuting = true; }
 
 void Player::stopPutBlockAnimation() { isPuting = false; }
 
-void Player::animate(CamType camType) {
+void Player::animate(const float& deltaTime, CamType camType) {
   if (camType == CamType::ThirdPerson) {
+    // Make animation step time-based: scale current animation speed by delta time for this frame
+    const float originalSpeed = this->mesh->animation.speed;
+    this->mesh->animation.speed = originalSpeed * deltaTime;
     this->mesh->update();
+    // Restore speed so game logic can continue to treat it as frames-per-second
+    this->mesh->animation.speed = originalSpeed;
   }
 }
 

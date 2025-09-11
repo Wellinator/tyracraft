@@ -24,7 +24,12 @@ void ScreenSkinSelection::update(const float& deltaTime) {
   handleInput();
   if (isMoving)
     isMovingForward ? moveForward(deltaTime) : moveBackward(deltaTime);
-  for (size_t i = 0; i < models.size(); i++) models[i].get()->update();
+  for (size_t i = 0; i < models.size(); i++) {
+    const float originalSpeed = models[i]->animation.speed;
+    models[i]->animation.speed = originalSpeed * deltaTime;
+    models[i].get()->update();
+    models[i]->animation.speed = originalSpeed;
+  }
 }
 
 void ScreenSkinSelection::render() {
@@ -219,7 +224,7 @@ void ScreenSkinSelection::loadModels() {
     models[i]->translation.identity();
     models[i]->animation.loop = true;
     models[i]->animation.setSequence(standStillSequence);
-    models[i]->animation.speed = 0.005F;
+    models[i]->animation.speed = 3.0F;
 
     auto& materials = models[i].get()->materials;
     for (size_t j = 0; j < materials.size(); j++)
@@ -317,7 +322,7 @@ void ScreenSkinSelection::moveForward(const float& deltaTime) {
 
       models[i]->animation.loop = true;
       models[i]->animation.setSequence(standStillSequence);
-      models[i]->animation.speed = 0.005F;
+      models[i]->animation.speed = 3.0F;
 
       models[i]->rotation.identity();
       models[i]->rotation.rotateY(defaultRotation[i]);
@@ -357,7 +362,7 @@ void ScreenSkinSelection::moveBackward(const float& deltaTime) {
 
       models[i]->animation.loop = true;
       models[i]->animation.setSequence(standStillSequence);
-      models[i]->animation.speed = 0.005F;
+      models[i]->animation.speed = 3.0F;
 
       models[i]->rotation.identity();
       models[i]->rotation.rotateY(defaultRotation[i]);

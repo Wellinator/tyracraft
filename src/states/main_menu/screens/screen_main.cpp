@@ -26,6 +26,14 @@ void ScreenMain::update(const float& deltaTime) {
   handleInput();
   hightLightActiveOption();
   if (shouldNavigate) navigate();
+
+  // Advance player preview animation in a time-based manner
+  if (playerPreviewMesh) {
+    const float originalSpeed = playerPreviewMesh->animation.speed;
+    playerPreviewMesh->animation.speed = originalSpeed * deltaTime;
+    playerPreviewMesh->update();
+    playerPreviewMesh->animation.speed = originalSpeed;
+  }
 }
 
 void ScreenMain::render() {
@@ -102,7 +110,6 @@ void ScreenMain::render() {
 
   // Draw player skin
   t_renderer->renderer3D.usePipeline(&dynpip);
-  playerPreviewMesh->update();
   dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
 
   // Draw player name
@@ -297,5 +304,5 @@ void ScreenMain::loadPlayerPreview(Renderer* renderer) {
 
   playerPreviewMesh->animation.loop = true;
   playerPreviewMesh->animation.setSequence(standStillSequence);
-  playerPreviewMesh->animation.speed = 0.005F;
+  playerPreviewMesh->animation.speed = 3.0F;
 }

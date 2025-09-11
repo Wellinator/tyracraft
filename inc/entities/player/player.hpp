@@ -203,13 +203,14 @@ class Player : public Entity {
   void playSplashSfx();
   u8 isSubmerged = false;
 
-  void animate(CamType camType);
+  void animate(const float& deltaTime, CamType camType);
 
   // Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
   // Animations
   // Player body
-  float baseAnimationSpeed = 0.08F;
+  // Animation base speed expressed in frames-per-second (was per-frame 0.08 @ 60 FPS => 4.8 fps)
+  float baseAnimationSpeed = 3.8F;
   std::vector<u32> walkSequence = {2, 1, 0, 1};
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
   std::vector<u32> standStillSequence = {1};
