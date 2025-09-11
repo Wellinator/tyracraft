@@ -15,7 +15,7 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CFLAGS      := -Og
+CFLAGS      := -O3
 # CFLAGS      := -G0 -DDEBUG_MODE #Used for debug mode
 
 # LINKFLAGS	:= --only-keep-debug
