@@ -30,88 +30,52 @@ void Entity::resolveOutOfWorldBoundaries() {
 };
 
 void Entity::updateTerrainHeightAtEntityPosition() {
+  terrainHeight.reset();
+
   BBox entityBB = getHitBox();
   Vec4 selfMin, selfMax;
   entityBB.getMinMax(&selfMin, &selfMax);
-  terrainHeight.reset();
 
   // Padding used to fix the position offset
   const float EPSLON = 0.0001f;
 
-  // Prepate the raycast
   // Should I inflate by Y velocity?
-  const Vec4 offset = Vec4(0, 40, 0);
-  Vec4 upperPosition = selfMax + offset;
+  const Vec4 offset = Vec4(0, 48, 0);
   Vec4 lowerPosition = selfMin - offset;
-  Vec4 upperOffset = pLevel->worldPosToOffset(upperPosition);
-  Vec4 lowerOffset = pLevel->worldPosToOffset(lowerPosition);
-  Vec4 currentOffset(upperOffset);
+  Vec4 upperPosition = selfMax + offset;
 
-  // Loop from upper to lower position until we find the first solid block
-  uint8_t currentBlockID = pLevel->GetBlockFromMap(&currentOffset);
-  Blocks currentBlockType = static_cast<Blocks>(currentBlockID);
-  StaticBlockRepository* staticBlockRepo = StaticBlockRepository::getInstance();
-  Block* templateBlock = nullptr;
+  std::vector<LevelIntersectQueryResult> tempResult = {};
+  pLevel->getIntersectedBlocksByAABB(lowerPosition, upperPosition, &tempResult);
 
-  while (true) {
-    if (currentBlockType != Blocks::AIR_BLOCK) {
-      templateBlock = staticBlockRepo->getBlockTemplate(currentBlockType);
-      if (templateBlock->isCollidable()) {
-        M4x4 model = ModelBuilder_BuildModel(&currentOffset);
+  for (size_t i = 0; i < tempResult.size(); i++) {
+    Vec4 currentOffset = tempResult[i].offset;
+    Blocks currentBlockType = static_cast<Blocks>(tempResult[i].blockType);
+    StaticBlockRepository* staticBlockRepo =
+        StaticBlockRepository::getInstance();
 
-        Vec4 min, max;
-        BBox blockBBox = VertexBlockData::getRawBBoxByOffset(&currentOffset)
-                             ->getTransformed(model);
-        blockBBox.getMinMax(&min, &max);
+    Block* templateBlock = staticBlockRepo->getBlockTemplate(currentBlockType);
+    if (templateBlock->isCollidable() == false) continue;
 
-        // is under or above entity
-        const float minHeight = max.y + EPSLON;
-        if (selfMin.y >= minHeight && minHeight > terrainHeight.minHeight) {
-          terrainHeight.minHeight = minHeight;
-          terrainHeight.lowerBlockType = currentBlockID;
-        }
+    M4x4 model = ModelBuilder_BuildModel(&currentOffset);
+    Vec4 min, max;
+    BBox blockBBox = VertexBlockData::getRawBBoxByOffset(&currentOffset)
+                         ->getTransformed(model);
+    blockBBox.getMinMax(&min, &max);
 
-        const float maxHeight = min.y - EPSLON;
-        if (selfMax.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
-          terrainHeight.maxHeight = maxHeight;
-          terrainHeight.upperBlockType = currentBlockID;
-        }
+    // is under or above entity
+    if (selfMin.x <= max.x && selfMax.x >= min.x && selfMin.z <= max.z &&
+        selfMax.z >= min.z) {
+      const float minHeight = max.y + EPSLON;
+      if (selfMin.y >= minHeight && minHeight > terrainHeight.minHeight) {
+        terrainHeight.minHeight = minHeight;
+      }
+
+      const float maxHeight = min.y - EPSLON;
+      if (selfMax.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
+        terrainHeight.maxHeight = maxHeight;
       }
     }
-
-    // Move down by one block
-    currentOffset.y--;
-    if (currentOffset.y < lowerOffset.y) {
-      break;
-    }
-
-    currentBlockID = pLevel->GetBlockFromMap(&currentOffset);
-    currentBlockType = static_cast<Blocks>(currentBlockID);
   }
-
-  // std::vector<int32_t> ni;
-  // g_AABBTree->intersectLine(segmentStart, segmentEnd, ni);
-
-  // for (u16 i = 0; i < ni.size(); i++) {
-  //   Entity* entity = (Entity*)g_AABBTree->user_data(ni[i]);
-  //   if (!entity->collidable) continue;
-
-  //   // is under or above entity
-  //   if (selfMin.x <= entity->maxCorner.x && selfMax.x >= entity->minCorner.x
-  //   &&
-  //       selfMin.z <= entity->maxCorner.z && selfMax.z >= entity->minCorner.z)
-  //       {
-  //     const float minHeight = entity->maxCorner.y + EPSLON;
-  //     if (selfMin.y >= minHeight && minHeight > terrainHeight.minHeight) {
-  //       terrainHeight.minHeight = minHeight;
-  //     }
-
-  //     const float maxHeight = entity->minCorner.y - EPSLON;
-  //     if (selfMax.y < maxHeight && maxHeight < terrainHeight.maxHeight) {
-  //       terrainHeight.maxHeight = maxHeight;
-  //     }
-  //   }
-  // }
 }
 
 /** Update entity position by gravity and update index of current block */
