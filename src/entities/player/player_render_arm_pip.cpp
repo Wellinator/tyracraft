@@ -186,7 +186,7 @@ void PlayerRenderArmPip::unloadItemDrawData() {
 };
 
 void PlayerRenderArmPip::updateWalkAnimation(Camera* t_camera) {
-  const float d = t_camera->getCamTime();
+  const float d = t_camera->getBobPhase();
   const float dH = Math::sin(d);
   const float dV = -Math::sin(Math::HALF_PI - 2 * d);
   Vec4 offset_factor = Vec4(dH, dV, 0.0f) / 2;
