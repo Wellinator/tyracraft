@@ -271,16 +271,16 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
 
     startPositions = defaultPositions;
     endPositions = {
-        Vec4(25.0f, 15.0F, 0.0f),
-        Vec4(25.0f, 15.0F, 12.0f),
-        Vec4(25.0f, 15.0F, 24.0f),
+        Vec4(25.0f, 16.5F, 0.0f),
+        Vec4(25.0f, 16.5F, 12.0f),
+        Vec4(25.0f, 16.5F, 24.0f),
     };
 
   } else {
     startRotation = defaultRotation;
     endRotation = {
-        _90DEGINRAD + 0.2f,
         _90DEGINRAD - 0.2f,
+        _90DEGINRAD + 0.2f,
         _90DEGINRAD,
     };
 
@@ -293,9 +293,9 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
 
     startPositions = defaultPositions;
     endPositions = {
-        Vec4(25.0f, 15.0F, -24.0f),
-        Vec4(25.0f, 15.0F, -12.0f),
-        Vec4(25.0f, 15.0F, 0.0f),
+        Vec4(25.0f, 16.5F, -24.0f),
+        Vec4(25.0f, 16.5F, -12.0f),
+        Vec4(25.0f, 16.5F, 0.0f),
     };
   }
 }
@@ -390,23 +390,28 @@ void ScreenSkinSelection::calcLerp(const float& deltaTime) {
   if (nextVal > 1.0f) nextVal = 1.0f;
   interpolation = nextVal;
 
+  // Apply ease-out easing to interpolation for a quick start and smooth finish
+  // easeOutQuad: t * (2 - t)
+  const float t = interpolation;
+  const float easedT = t * (2.0f - t);
+
   // rotation
   tempRotation[0] =
-      Utils::lerp(startRotation[0], endRotation[0], interpolation);
+      Utils::lerp(startRotation[0], endRotation[0], easedT);
   tempRotation[1] =
-      Utils::lerp(startRotation[1], endRotation[1], interpolation);
+      Utils::lerp(startRotation[1], endRotation[1], easedT);
   tempRotation[2] =
-      Utils::lerp(startRotation[2], endRotation[2], interpolation);
+      Utils::lerp(startRotation[2], endRotation[2], easedT);
 
   // scale
-  tempScale[0] = Utils::lerp(startScale[0], endScale[0], interpolation);
-  tempScale[1] = Utils::lerp(startScale[1], endScale[1], interpolation);
-  tempScale[2] = Utils::lerp(startScale[2], endScale[2], interpolation);
+  tempScale[0] = Utils::lerp(startScale[0], endScale[0], easedT);
+  tempScale[1] = Utils::lerp(startScale[1], endScale[1], easedT);
+  tempScale[2] = Utils::lerp(startScale[2], endScale[2], easedT);
 
   // position
-  tempPositions[0].lerp(startPositions[0], endPositions[0], interpolation);
-  tempPositions[1].lerp(startPositions[1], endPositions[1], interpolation);
-  tempPositions[2].lerp(startPositions[2], endPositions[2], interpolation);
+  tempPositions[0].lerp(startPositions[0], endPositions[0], easedT);
+  tempPositions[1].lerp(startPositions[1], endPositions[1], easedT);
+  tempPositions[2].lerp(startPositions[2], endPositions[2], easedT);
 
   for (size_t i = 0; i < models.size(); i++) {
     models[i]->rotation.identity();

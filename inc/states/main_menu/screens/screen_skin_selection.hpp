@@ -47,7 +47,8 @@ class ScreenSkinSelection : public ScreenBase {
   u8 isMovingForward = false;
   float interpolation = 0;
 
-  const std::array<float, 3> defaultRotation = {_90DEGINRAD + 0.2f, _90DEGINRAD,
+  const std::array<float, 3> defaultRotation = {_90DEGINRAD + 0.2f, 
+                                                _90DEGINRAD,
                                                 _90DEGINRAD - 0.2f};
   std::array<float, 3> startRotation = defaultRotation;
   std::array<float, 3> tempRotation = defaultRotation;
@@ -84,7 +85,7 @@ class ScreenSkinSelection : public ScreenBase {
   DynamicPipeline dynpip;
   std::vector<u32> standStillSequence = {0, 1};
 
-  const float TRANSITION_SPEED = 6.0f;
+  const float TRANSITION_SPEED = 1.5f;
 
   void handleInput();
   void backToMainMenu();
