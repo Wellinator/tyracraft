@@ -16,11 +16,17 @@
 #include <tamtypes.h>
 #include <utils.hpp>
 #include <fastmath.h>
+#include <math.h>
 
 // Smooth movement configuration
 #define SMOOTH_FACTOR_ROTATION 20.0F   // Higher = faster rotation smoothing
 #define SMOOTH_FACTOR_POSITION 12.0F   // Higher = faster position smoothing
 #define SMOOTH_THRESHOLD 0.01F        // Minimum difference to smooth
+
+// Performance optimization constants
+#define INV_128 (1.0F / 128.0F)       // Cached division constant
+#define TWO_PI_CONST 6.28318530717958647692F
+#define MAX_SMOOTH_DISTANCE_SQR (200.0F * 200.0F)  // Squared for fast comparison
 
 using Tyra::CameraInfo3D;
 using Tyra::Pad;
