@@ -1,6 +1,8 @@
 #include "timer.hpp"
+#include "managers/settings_manager.hpp"
 #include <numeric>
 #include <iostream>
+#include <graph.h>
 
 namespace TyraCraft {
 
@@ -55,8 +57,22 @@ bool Timer::updateFrame() {
 
 // Calc delta time to render update
 bool Timer::renderFrame() {
-  const bool result = renderAcc >= targetRenderFrame;
+  bool result = false;
+
+  if (g_settings.vsync) {
+    if (is_waiting_vsync == false) {
+      graph_start_vsync();
+      is_waiting_vsync = true;
+    }
+
+    int check = graph_check_vsync();
+    result = check != 0;
+  } else {
+    result = renderAcc >= targetRenderFrame;
+  }
+
   if (result) {
+    is_waiting_vsync = false;
     renderAcc -= targetRenderFrame;
     clock_t renderEnd = clock();
     renderMs = float(renderEnd - renderBegin) / float(CLOCKS_PER_SEC);

@@ -26,8 +26,7 @@ TyraCraftGame::~TyraCraftGame() {}
 void TyraCraftGame::init() {
   loadSavedSettings();
   checkNeededDirectories();
-
-  engine->renderer.core.setFrameLimit(g_settings.vsync);
+  engine->renderer.core.setFrameLimit(false);
 }
 
 void TyraCraftGame::loop() {

@@ -87,5 +87,6 @@ bool SettingsManager::CheckIfSettingsExist() {
 }
 
 void SettingsManager::ApplyChanges(Engine* t_engine) {
-  t_engine->renderer.setFrameLimit(g_settings.vsync);
+  // Test the new VSync setting
+  // t_engine->renderer.setFrameLimit(g_settings.vsync);
 }

@@ -27,6 +27,7 @@ class Timer : public Singleton<Timer> {
   static float stateLerp;
 
  private:
+  bool is_waiting_vsync = false;
   clock_t begin = clock();
 
   float targetRenderFrame = FIXED_60_FRAME_MS,
