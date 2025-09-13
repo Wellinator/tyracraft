@@ -491,7 +491,7 @@ const Vec4 World::defineSpawnArea() {
     spawPos = calcSpawOffset();
   } else {
     TYRA_LOG("Defining spawn area for mazecraft");
-    spawPos = Vec4(1.1f, 3.5f, 1.1f) * DOUBLE_BLOCK_SIZE;
+    spawPos = pLevel->offsetToWorldPos(Vec4(1.2f, 3.5f, 1.2f));
   }
 
   pLevel->map.spawnX = spawPos.x;
@@ -1474,7 +1474,7 @@ void World::clearTargetBlockDrawData() {
   _targetBlockUVMap.clear();
 }
 
-void World::setDrawDistace(const u8& drawDistanceInChunks) {
+void World::setDrawDistance(const u8& drawDistanceInChunks) {
   TYRA_LOG("Setting draw distance to ", static_cast<int>(drawDistanceInChunks),
            " chunks");
   if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
@@ -1485,6 +1485,7 @@ void World::setDrawDistace(const u8& drawDistanceInChunks) {
     TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
     if (currentChunk) {
       scheduleChunksNeighbors(currentChunk, lastPlayerPosition, true);
+      delete targetBlock;
       targetBlock = nullptr;
     }
   }

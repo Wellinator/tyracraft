@@ -1,5 +1,4 @@
 #include "states/game_play/state_game_play.hpp"
-#include "states/loading/mini_games/state_load_next_level_maze_craft.hpp"
 #include "states/loading/mini_games/state_create_maze_craft.hpp"
 #include "states/game_play/states/in_game_menu/state_game_menu.hpp"
 #include "states/game_play/states/welcome/state_welcome.hpp"
@@ -10,6 +9,7 @@
 #include <debug/debug.hpp>
 #include "loaders/3d/obj_loader/obj_loader.hpp"
 #include "managers/collision_manager.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
 
 using Tyra::Audio;
 using Tyra::FileUtils;
@@ -21,7 +21,6 @@ using Tyra::RendererSettings;
 
 StateGamePlay::StateGamePlay(Context* context, const GameMode& gameMode)
     : GameState(context), _gameMode(gameMode) {
-  StaticBlockRepository::getInstance()->initializeBlocks();
   this->handleGameMode(gameMode);
   this->init();
 }
@@ -157,7 +156,4 @@ void StateGamePlay::saveGame() {
   this->previousState->handleAction(MenuAction::Save);
 }
 
-void StateGamePlay::loadNextMiniGameLevel(const NewGameOptions& options) {
-  TYRA_LOG("loadNextMiniGameLevel()");
-  context->setState(new StateLoadNextLevelMazeCraft(context, options));
-}
+void StateGamePlay::loadNextMiniGameLevel(const NewGameOptions& options) {}

@@ -44,16 +44,19 @@ class MazePlayingState : public PlayingStateBase {
   void setDarkTheme();
 
   Sprite overlay;
+  Sprite btnL2;
 
   u8 shouldLoadNextLevel = false;
   u8 shouldRenderLevelDoneDialog = false;
-  double _nextLevelCounter = 5.0f;
+  double _nextLevelCounter = 6.0f;
   void renderCountDown();
 
   const std::string Label_LevelDone =
       LanguageManager::Translate("/minigame/common/level_done_exclamation");
   const std::string Label_LoadingNextLevelIn =
       LanguageManager::Translate("/minigame/common/loading_next_level_in");
+  const std::string Label_Interact =
+      LanguageManager::Translate("/minigame/common/interact");
 
   inline const u8 isSongPlaying() {
     return mazeAudioListener.t_song->isPlaying();

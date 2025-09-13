@@ -161,12 +161,12 @@ void StateGameMenu::handleInput(const float& deltaTime) {
     if (clicked.Cross) {
       this->playClickSound();
       const auto oldDrawDistance = stateGamePlay->world->getDrawDistace();
-      stateGamePlay->world->setDrawDistace(MIN_DRAW_DISTANCE);
+      stateGamePlay->world->setDrawDistance(MIN_DRAW_DISTANCE);
 
       stateGamePlay->saveGame();
       needSaveOverwriteConfirmation = false;
 
-      stateGamePlay->world->setDrawDistace(oldDrawDistance);
+      stateGamePlay->world->setDrawDistance(oldDrawDistance);
     } else if (clicked.Triangle) {
       needSaveOverwriteConfirmation = false;
     }
@@ -272,13 +272,13 @@ void StateGameMenu::hightLightActiveOption() {
 }
 
 void StateGameMenu::increaseDrawDistance() {
-  stateGamePlay->world->setDrawDistace(stateGamePlay->world->getDrawDistace() +
+  stateGamePlay->world->setDrawDistance(stateGamePlay->world->getDrawDistace() +
                                        1);
   updateDrawDistanceScroll();
 }
 
 void StateGameMenu::decreaseDrawDistance() {
-  stateGamePlay->world->setDrawDistace(stateGamePlay->world->getDrawDistace() -
+  stateGamePlay->world->setDrawDistance(stateGamePlay->world->getDrawDistace() -
                                        1);
   updateDrawDistanceScroll();
 }

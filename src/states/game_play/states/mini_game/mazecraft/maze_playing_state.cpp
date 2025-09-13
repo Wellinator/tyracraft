@@ -15,6 +15,7 @@ MazePlayingState::~MazePlayingState() {
   Renderer* t_renderer = &stateGamePlay->context->t_engine->renderer;
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   textureRepo->freeBySprite(overlay);
+  textureRepo->freeBySprite(btnL2);
 }
 
 void MazePlayingState::init() {
@@ -28,6 +29,14 @@ void MazePlayingState::init() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   const float halfWidth = t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = t_renderer->core.getSettings().getHeight() / 2;
+
+  // Buttons
+  btnL2.mode = Tyra::MODE_STRETCH;
+  btnL2.size.set(32, 32);
+  btnL2.position.set(15, t_renderer->core.getSettings().getHeight() - 35);
+
+  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_L2.png"))
+      ->addLink(btnL2.id);
 
   // Overlay
   overlay.mode = Tyra::MODE_STRETCH;
@@ -45,7 +54,7 @@ void MazePlayingState::afterInit() {
   stateGamePlay->player->updateHandledItem();
   stateGamePlay->player->unFly();
 
-  stateGamePlay->world->setDrawDistace(MAX_DRAW_DISTANCE);
+  stateGamePlay->world->setDrawDistance(4);
 }
 
 void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
@@ -194,19 +203,8 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
     }
 
     if (clicked.R2 && stateGamePlay->world->validTargetBlock()) {
-      const Blocks blockid = Blocks::TORCH;
-
-      if (blockid != Blocks::AIR_BLOCK) {
-        stateGamePlay->player->playPutBlockAnimation();
-        stateGamePlay->world->putBlock(blockid, stateGamePlay->player);
-
-        if (hasReachedTargetBlock()) {
-          shouldRenderLevelDoneDialog = true;
-          setHappyTheme();
-          mazeAudioListener.playLevelDoneSound();
-          return;
-        }
-      }
+      stateGamePlay->player->playPutBlockAnimation();
+      stateGamePlay->world->putBlock(Blocks::TORCH, stateGamePlay->player);
     } else {
       stateGamePlay->player->stopPutBlockAnimation();
     }
@@ -276,7 +274,22 @@ void MazePlayingState::setDarkTheme() {
 
 void MazePlayingState::navigate() {}
 
-void MazePlayingState::renderMazeUi() { stateGamePlay->ui->renderCrosshair(); }
+void MazePlayingState::renderMazeUi() {
+  stateGamePlay->ui->renderCrosshair();
+
+  if (hasReachedTargetBlock()) {
+    Renderer* t_renderer = &stateGamePlay->context->t_engine->renderer;
+
+    t_renderer->renderer2D.render(btnL2);
+    FontManager& fm = FontManager::getInstanceRef();
+
+    FontOptions options;
+    options.position.set(40, t_renderer->core.getSettings().getHeight() - 40);
+    options.alignment = TextAlignment::Left;
+    options.scale = 0.8F;
+    fm.printText(Label_Interact, options);
+  }
+}
 
 void MazePlayingState::drawDegubInfo() {
   FontManager& fm = FontManager::getInstanceRef();
@@ -381,10 +394,42 @@ void MazePlayingState::saveProgress() {
 }
 
 void MazePlayingState::loadNextLevel() {
+  mazeAudioListener.stopPlayingAll();
+
+  saveProgress();
+
   NewGameOptions model = *stateGamePlay->world->getWorldOptions();
   model.seed += 1;
-  TYRA_LOG("Generating level: ", model.seed);
-  stateGamePlay->loadNextMiniGameLevel(model);
+
+  TYRA_LOG("Generating new maze for seed: ", model.seed);
+  stateGamePlay->world->setWorldOptions(model);
+  stateGamePlay->world->setSeed(model.seed);
+
+  TYRA_LOG("Generating world...");
+  stateGamePlay->world->generate();
+
+  delete stateGamePlay->world->targetBlock;
+  stateGamePlay->world->targetBlock = nullptr;
+
+  TYRA_LOG("Loading spawn area...");
+  setDarkTheme();
+  stateGamePlay->world->generateLight();
+  stateGamePlay->world->generateSpawnArea();
+  stateGamePlay->world->loadSpawnArea();
+
+  TYRA_LOG("Resetting player position...");
+  Vec4 spawnPos = stateGamePlay->world->getGlobalSpawnArea();
+  stateGamePlay->player->setPosition(spawnPos);
+  stateGamePlay->player->spawnArea.set(spawnPos);
+  stateGamePlay->context->t_camera->setFirstPerson();
+
+  stateGamePlay->world->setDrawDistance(4);
+
+  shouldRenderLevelDoneDialog = false;
+  shouldLoadNextLevel = false;
+  _nextLevelCounter = 6.0f;
+
+  TYRA_LOG("New level loaded.\n");
 }
 
 void MazePlayingState::renderCountDown() {

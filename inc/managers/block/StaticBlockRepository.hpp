@@ -14,7 +14,6 @@
 class StaticBlockRepository : public Singleton<StaticBlockRepository> {
  public:
   StaticBlockRepository();
-  ~StaticBlockRepository() = default;
 
   /**
    * Get a block template by type.
@@ -34,6 +33,7 @@ class StaticBlockRepository : public Singleton<StaticBlockRepository> {
    */
   bool isBlockTransparent(Blocks blockType);
 
+ private:
   /**
    * Get the singleton instance of the StaticBlockRepository.
    */

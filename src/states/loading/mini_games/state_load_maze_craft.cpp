@@ -140,6 +140,14 @@ void StateLoadMazeCraft::initUI() {
 void StateLoadMazeCraft::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository);
+
+  this->stateGamePlay->world->generate();
+  TYRA_LOG("Generating spawn area...");
+  this->stateGamePlay->world->generateSpawnArea();
+
+  TYRA_LOG("Loading spawn area...");
+  this->stateGamePlay->world->loadSpawnArea();
+
   setPercent(70.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");

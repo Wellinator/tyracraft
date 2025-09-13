@@ -130,9 +130,8 @@ class World {
   void breakTargetBlockInCreativeMode(const float& deltaTime);
   void stopBreakTargetBlock();
 
-  void setDrawDistace(const u8& drawDistanceInChunks);
+  void setDrawDistance(const u8& drawDistanceInChunks);
   inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
-  inline NewGameOptions* getWorldOptions() { return &worldOptions; };
 
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
@@ -152,6 +151,15 @@ class World {
   };
 
   inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };
+
+  const uint32_t getSeed() const { return seed; };
+  void setSeed(const uint32_t& newSeed) { seed = newSeed; };
+
+  inline NewGameOptions* getWorldOptions() { return &worldOptions; };
+  const NewGameOptions& getWorldOptions() const { return worldOptions; };
+  void setWorldOptions(const NewGameOptions& options) {
+    worldOptions = options;
+  };
 
  private:
   StaticPipeline stapip;

@@ -39,3 +39,8 @@ void MazeAudioListener::playLevelDoneSound() {
     t_song->play();
   }
 }
+
+void MazeAudioListener::stopPlayingAll() {
+  t_song->stop();
+  t_song->setVolume(0);
+}

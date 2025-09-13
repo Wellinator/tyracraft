@@ -10,7 +10,9 @@ std::array<std::unique_ptr<Block>, static_cast<size_t>(Blocks::TOTAL_OF_BLOCKS)>
     blockTemplates{nullptr};
 
 StaticBlockRepository::StaticBlockRepository()
-    : Singleton<StaticBlockRepository>() {}
+    : Singleton<StaticBlockRepository>() {
+  initializeBlocks();
+}
 
 void StaticBlockRepository::initializeBlocks() {
   TYRA_LOG("StaticBlockRepository::initializeBlocks() - Initializing blocks");

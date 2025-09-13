@@ -12,10 +12,6 @@ Block::Block() : Entity(nullptr, EntityType::Block) {
 }
 
 Block::~Block() {
-  if (isTemplate) {
-    TYRA_TRAP("Trying to delete a block template!");
-  }
-
   if (bbox) delete bbox;
   bbox = nullptr;
 }

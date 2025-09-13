@@ -19,6 +19,7 @@
 #include "entities/World.hpp"
 #include "entities/player/player.hpp"
 #include "managers/items_repository.hpp"
+#include "managers/block/StaticBlockRepository.hpp"
 #include "models/new_game_model.hpp"
 #include "ui.hpp"
 #include <chrono>
@@ -56,6 +57,7 @@ class StateGamePlay : public GameState {
   // Rotating skybox
   StaticMesh* menuSkybox;
 
+  StaticBlockRepository staticBlockRepository;
   Level* plevel;
   World* world;
   Ui* ui;
@@ -76,4 +78,6 @@ class StateGamePlay : public GameState {
   void unpauseGame();
   void displayWelcome();
   void hideWelcome();
+  void displayLoading();
+  void hideLoading();
 };
