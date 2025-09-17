@@ -35,5 +35,13 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Color>& out_colors,
                              Renderer* t_renderer, Vec4& camLooksAt);
 
+int ClippingManager_CustomClipMesh(const u32 vertexCount, Vec4* in_vertex,
+                                   const u32 uvCount, Vec4* in_uv,
+                                   const u32 colorCount, Color* in_colors,
+                                   std::vector<Vec4>& out_vertex,
+                                   std::vector<Vec4>& out_uv,
+                                   std::vector<Color>& out_colors,
+                                   Renderer* t_renderer, Vec4& camLooksAt);
+
 void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
                                       Renderer* t_renderer, Vec4& camLooksAt);

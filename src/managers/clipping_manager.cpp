@@ -1,4 +1,5 @@
 #include "managers/clipping_manager.hpp"
+#include "debug.hpp"
 
 int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                              const u32 uvCount, Vec4* in_uv,
@@ -7,107 +8,168 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
                              Renderer* t_renderer, Vec4& camLooksAt) {
+  // Route to the new clipping approach for consistency across entry points.
+  return ClippingManager_CustomClipMesh(
+      vertexCount, in_vertex, uvCount, in_uv, colorCount, in_colors, out_vertex,
+      out_uv, out_colors, t_renderer, camLooksAt);
+}
+
+int ClippingManager_CustomClipMesh(const u32 vertexCount, Vec4* in_vertex,
+                                   const u32 uvCount, Vec4* in_uv,
+                                   const u32 colorCount, Color* in_colors,
+                                   std::vector<Vec4>& out_vertex,
+                                   std::vector<Vec4>& out_uv,
+                                   std::vector<Color>& out_colors,
+                                   Renderer* t_renderer, Vec4& camLooksAt) {
+  // New clipping approach: Sutherland–Hodgman polygon clipping against all
+  // 6 frustum planes with attribute interpolation (UVs, colors).
+  // Input is a triangle list (3 vertices per triangle).
+
   Plane* frustumPlanes =
       (Plane*)t_renderer->core.renderer3D.frustumPlanes.getAll();
 
-  EEClipAlgorithmSettings algoSettings;
-  algoSettings = {false, uvCount > 0, colorCount > 0};
+  const bool hasValidColors = colorCount > 0;
+  const bool hasValidUVs = uvCount > 0;
 
-  CustomPlanesClipAlgorithm algorithm;
+  // Helper lambda: compute intersection point between segment (a->b) and plane
+  // plane: normal n, distance d; distances da, db are signed distances to the
+  // plane
+  auto intersectPoint = [](const Vec4& a, const Vec4& b, const float da,
+                           const float db) -> std::pair<Vec4, float> {
+    // t = da / (da - db)
+    float denom = (da - db);
+    float t = denom != 0.0F ? (da / (da - db)) : 0.0F;
+    Vec4 p = a + ((b - a) * t);
+    p.w = 1.0F;
+    return {p, t};
+  };
 
-  int result = 0;
+  // Attribute lerp helper (Vec4)
+  auto lerpV4 = [](const Vec4& a, const Vec4& b, float t) -> Vec4 {
+    return Vec4::getByLerp(a, b, t);
+  };
 
-  Vec4 inputVerts[3];
-  std::array<PlanesClipVertexPtrs, 3> inputTriangle;
+  // Clip a polygon (vector of PlanesClipVertex) against one plane
+  auto clipAgainstPlane = [&](const Plane& plane,
+                              const std::vector<PlanesClipVertex>& in,
+                              std::vector<PlanesClipVertex>& out) {
+    out.clear();
+    if (in.empty()) return;
 
-  std::vector<PlanesClipVertex> clippedTriangle;
-  std::vector<PlanesClipVertex> clippedVertices;
-  // clippedVertices.reserve(9);
+    size_t n = in.size();
+    for (size_t i = 0; i < n; i++) {
+      const PlanesClipVertex& cur = in[i];
+      const PlanesClipVertex& nxt = in[(i + 1) % n];
 
-  Vec4* vert = in_vertex;
-  Vec4* sts = in_uv;
-  Vec4* colors = reinterpret_cast<Vec4*>(in_colors);
+      float dCur = plane.distanceTo(cur.position);
+      float dNxt = plane.distanceTo(nxt.position);
 
-  // Iterate over the input vertices per triangles
-  for (u32 i = 0; i < vertexCount / 3; i++) {
-    // Iterate over the triangles
-    for (u8 j = 0; j < 3; j++) {
-      inputVerts[j] = vert[i * 3 + j];
+      const bool curInside = dCur >= 0.0F;
+      const bool nxtInside = dNxt >= 0.0F;
 
-      inputTriangle[j] = {&inputVerts[j],
+      if (curInside && nxtInside) {
+        // Keep next
+        out.push_back(nxt);
+      } else if (curInside && !nxtInside) {
+        // Leaving the volume: add intersection
+        auto [pt, t] = intersectPoint(cur.position, nxt.position, dCur, dNxt);
+        PlanesClipVertex v = {};
+        v.position = pt;
+        if (hasValidUVs) v.st = lerpV4(cur.st, nxt.st, t);
+        if (hasValidColors) v.color = lerpV4(cur.color, nxt.color, t);
+        out.push_back(v);
+      } else if (!curInside && nxtInside) {
+        // Entering the volume: add intersection and next
+        auto [pt, t] = intersectPoint(cur.position, nxt.position, dCur, dNxt);
+        PlanesClipVertex v = {};
+        v.position = pt;
+        if (hasValidUVs) v.st = lerpV4(cur.st, nxt.st, t);
+        if (hasValidColors) v.color = lerpV4(cur.color, nxt.color, t);
+        out.push_back(v);
+        out.push_back(nxt);
+      } else {
+        // Both outside: emit nothing
+      }
+    }
+  };
 
-                          // Normals used with dir light
-                          nullptr,
+  // Working buffers for polygon clipping
+  std::vector<PlanesClipVertex> polyIn;
+  std::vector<PlanesClipVertex> polyOut;
+  polyIn.reserve(16);
+  polyOut.reserve(16);
 
-                          // UV
-                          &sts[i * 3 + j],
+  int emitted = 0;
 
-                          // Colors
-                          &colors[i * 3 + j]};
+  // Iterate triangles
+  for (u32 i = 0; i + 2 < vertexCount; i += 3) {
+    // Seed polygon with the triangle
+    polyIn.clear();
+    for (u8 k = 0; k < 3; k++) {
+      PlanesClipVertex v = {};
+      v.position = in_vertex[i + k];
+      if (hasValidUVs && (i + k) < uvCount) v.st = in_uv[i + k];
+      if (hasValidColors && (i + k) < colorCount)
+        v.color = reinterpret_cast<Vec4*>(in_colors)[i + k];
+      polyIn.push_back(v);
     }
 
-    // Check triangle visibility and clipping needs
-    CoreBBoxFrustum frustumResult = Utils::FrustumTriangleIntersect(
-        frustumPlanes, inputVerts[0], inputVerts[1], inputVerts[2]);
-
-    if (
-        // Back face culling
-        !Vec4::shouldBeBackfaceCulled(&camLooksAt, &inputVerts[0],
-                                      &inputVerts[1], &inputVerts[2]) ||
-
-        // Triangle is completely outside frustum
-        frustumResult == Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM) {
+    // Back-face culling (approximate):
+    // We treat camLooksAt as the camera position proxy here.
+    // If the triangle faces away from the camera, skip it early.
+    if (Vec4::shouldBeBackfaceCulled(&camLooksAt, &polyIn[2].position,
+                                     &polyIn[1].position, &polyIn[0].position))
       continue;
+
+    // Early trivial reject using all 6 planes (AABB-like but per-vertex test)
+    bool triviallyOutside = false;
+    for (u8 p = 0; p < 6; ++p) {
+      u8 insideCount = 0;
+      for (const auto& v : polyIn)
+        insideCount += (frustumPlanes[p].distanceTo(v.position) >= 0.0F);
+      if (insideCount == 0) {
+        triviallyOutside = true;
+        break;
+      }
+    }
+    if (triviallyOutside) continue;
+
+    // Clip against 6 planes: L, R, B, T, N, F
+    for (u8 p = 0; p < 6; ++p) {
+      clipAgainstPlane(frustumPlanes[p], polyIn, polyOut);
+      polyIn.swap(polyOut);
+      if (polyIn.empty()) break;
     }
 
-    int clippedVertivesCount = 0;
+    if (polyIn.size() < 3) continue;
 
-    if (frustumResult == Tyra::CoreBBoxFrustum::IN_FRUSTUM) {
-      // Triangle is completely inside frustum, no clipping needed
-      clippedTriangle.resize(3);
-      clippedTriangle[0].position = inputVerts[0];
-      clippedTriangle[0].st = sts[i * 3 + 0];
-      clippedTriangle[0].color = colors[i * 3 + 0];
+    // Triangulate fan and emit
+    const PlanesClipVertex v0 = polyIn[0];
+    for (size_t k = 1; k + 1 < polyIn.size(); ++k) {
+      const PlanesClipVertex& v1 = polyIn[k];
+      const PlanesClipVertex& v2 = polyIn[k + 1];
 
-      clippedTriangle[1].position = inputVerts[1];
-      clippedTriangle[1].st = sts[i * 3 + 1];
-      clippedTriangle[1].color = colors[i * 3 + 1];
+      out_vertex.emplace_back(v0.position);
+      out_vertex.emplace_back(v1.position);
+      out_vertex.emplace_back(v2.position);
 
-      clippedTriangle[2].position = inputVerts[2];
-      clippedTriangle[2].st = sts[i * 3 + 2];
-      clippedTriangle[2].color = colors[i * 3 + 2];
+      if (hasValidUVs) {
+        out_uv.emplace_back(v0.st);
+        out_uv.emplace_back(v1.st);
+        out_uv.emplace_back(v2.st);
+      }
 
-      clippedVertivesCount = 3;
-    } else {
-      // Triangle is partially in frustum, needs clipping
-      clippedVertivesCount = algorithm.clip(
-          clippedTriangle, inputTriangle.data(), algoSettings, frustumPlanes);
-    }
+      if (hasValidColors) {
+        out_colors.emplace_back(v0.color.xyzw);
+        out_colors.emplace_back(v1.color.xyzw);
+        out_colors.emplace_back(v2.color.xyzw);
+      }
 
-    if (clippedVertivesCount == 0) {
-      continue;
-    }
-
-    result += clippedVertivesCount;
-
-    for (size_t j = 0; j < clippedTriangle.size(); j++) {
-      clippedVertices.emplace_back(clippedTriangle[j]);
+      emitted += 3;
     }
   }
 
-  if (clippedVertices.size() > 0) {
-    out_vertex.reserve(clippedVertices.size());
-    out_uv.reserve(clippedVertices.size());
-    out_colors.reserve(clippedVertices.size());
-
-    for (u32 i = 0; i < clippedVertices.size(); i++) {
-      out_vertex.emplace_back(clippedVertices[i].position);
-      out_uv.emplace_back(clippedVertices[i].st);
-      out_colors.emplace_back(clippedVertices[i].color.xyzw);
-    }
-  }
-
-  return result;
+  return emitted;
 }
 
 int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
@@ -117,10 +179,10 @@ int ClippingManager_ClipMesh(std::vector<Vec4>& in_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
                              Renderer* t_renderer, Vec4& camLooksAt) {
-  return ClippingManager_ClipMesh(in_vertex.size(), in_vertex.data(),
-                                  in_uv.size(), in_uv.data(), in_colors.size(),
-                                  in_colors.data(), out_vertex, out_uv,
-                                  out_colors, t_renderer, camLooksAt);
+  return ClippingManager_CustomClipMesh(
+      in_vertex.size(), in_vertex.data(), in_uv.size(), in_uv.data(),
+      in_colors.size(), in_colors.data(), out_vertex, out_uv, out_colors,
+      t_renderer, camLooksAt);
 }
 
 void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
@@ -130,6 +192,10 @@ void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
 
   std::vector<Vec4> out_vertex, out_uv;
   std::vector<Color> out_colors;
+
+  out_vertex.clear();
+  out_uv.clear();
+  out_colors.clear();
 
   out_vertex.reserve(pBag->count);
   if (hasUV) out_uv.reserve(pBag->count);
@@ -154,9 +220,7 @@ void ClippingManager_ClipAndRenderBag(StaPipBag* pBag, StaticPipeline* pStapip,
   }
 
   if (hasColors) {
-    StaPipColorBag newColorBag;
-    newColorBag.many = out_colors.data();
-    pBag->color = &newColorBag;
+    pBag->color->many = out_colors.data();
   }
 
   pStapip->core.render(pBag);
