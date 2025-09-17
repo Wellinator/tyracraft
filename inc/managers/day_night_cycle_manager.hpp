@@ -68,6 +68,7 @@ class DayNightCycleManager {
   const float distance = HALF_OVERWORLD_H_DISTANCE * DOUBLE_BLOCK_SIZE;
   Vec4 center = CENTER_WORLD_POS;
 
+  float lerpAcc = 0.0f;
   float lerp = 0.0f;
 
   Vec4 sunPosition = Vec4(0, 0, 0);

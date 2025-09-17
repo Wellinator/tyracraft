@@ -18,6 +18,7 @@ DayNightCycleManager::~DayNightCycleManager() {
 void DayNightCycleManager::init(Renderer* renderer) {
   updateCurrentAngle();
   updateIntensityByAngle();
+  calNextEntitiesPosition();
 
   t_renderer = renderer;
   stapip.setRenderer(&renderer->core);
@@ -106,7 +107,16 @@ void DayNightCycleManager::preLoad() {
 }
 
 void DayNightCycleManager::update(const float deltaTime, const Vec4* camPos) {
-  lerp += deltaTime / 0.05;
+  // The lerp must be between 0.0 and 1.0
+  // it should be min (0) at the start of the tick and max (1) at the end of the
+  // DAY_NIGHT_TICKS_UPDATE
+
+  const float fiftyTicksInSeconds =
+      DAY_NIGHT_TICKS_UPDATE * TICKS_IN_SECONDS;
+  lerpAcc += deltaTime;
+  lerp = lerpAcc / fiftyTicksInSeconds;
+
+  // printf("Lerp: %f, lerpAcc: %f, deltaTime: %f\n", lerp, lerpAcc, deltaTime);
 
   updateCurrentAngle();
   updateIntensityByAngle();
@@ -198,30 +208,49 @@ const float DayNightCycleManager::getSunLightIntensity() {
 }
 
 void DayNightCycleManager::updateCurrentAngle() {
-  currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360;
+  currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360.0f;
+
+  // Normalize to 0-360 range
+  if (currentAngleInDegrees < 0) {
+    currentAngleInDegrees += 360.0f;
+  }
 }
 
 void DayNightCycleManager::calNextEntitiesPosition() {
-  lerp = 0.0;
+  lerpAcc = 0.0;
 
-  const float angleStart = Tyra::Math::ANG2RAD * currentAngleInDegrees;
-  Vec4 startDirection =
-      Vec4(0.0F, Math::sin(angleStart), SIN_90 * Math::cos(angleStart))
-          .getNormalized();
+  // Calculate current and next tick positions
+  uint32_t currentDayTick = g_ticksCounter;
+  uint32_t nextDayTick = g_ticksCounter + DAY_NIGHT_TICKS_UPDATE;
 
-  const float angleEnd = Tyra::Math::ANG2RAD *
-                         (((g_ticksCounter + 1) / DAY_DURATION_IN_TICKS) * 360);
-  Vec4 endDirection =
-      Vec4(0.0F, Math::sin(angleEnd), SIN_90 * Math::cos(angleEnd))
-          .getNormalized();
+  // Calculate angles for current and next positions
+  float angleStart = (currentDayTick / DAY_DURATION_IN_TICKS) * 360.0f;
+  float angleEnd = (nextDayTick / DAY_DURATION_IN_TICKS) * 360.0f;
 
-  // Set next sun height position;
-  sunPositionStart.set(startDirection * distance);
-  sunPositionEnd.set(endDirection * distance);
+  // Normalize angles
+  if (angleStart < 0) angleStart += 360.0f;
+  if (angleEnd < 0) angleEnd += 360.0f;
 
-  // Set next sun position;
-  moonPositionStart.set(-startDirection * distance);
-  moonPositionEnd = (-endDirection * distance);
+  // Convert to radians
+  float angleStartRad = Tyra::Math::ANG2RAD * angleStart;
+  float angleEndRad = Tyra::Math::ANG2RAD * angleEnd;
+
+  // Calculate sun positions (moves in a circular arc)
+  // Y component: sin gives the height (DAY_MID)
+  // Z component: cos gives the forward/back position
+  sunPositionStart.set(0.0f, Math::sin(angleStartRad) * distance,
+                       Math::cos(angleStartRad) * distance);
+  sunPositionEnd.set(0.0f, Math::sin(angleEndRad) * distance,
+                     Math::cos(angleEndRad) * distance);
+
+  // Moon is 180 degrees opposite to the sun
+  float moonAngleStartRad = angleStartRad + Tyra::Math::PI;
+  float moonAngleEndRad = angleEndRad + Tyra::Math::PI;
+
+  moonPositionStart.set(0.0f, Math::sin(moonAngleStartRad) * distance,
+                        Math::cos(moonAngleStartRad) * distance);
+  moonPositionEnd.set(0.0f, Math::sin(moonAngleEndRad) * distance,
+                      Math::cos(moonAngleEndRad) * distance);
 }
 
 void DayNightCycleManager::updateEntitiesPosition() {

@@ -424,3 +424,7 @@ typedef enum {
 enum class GameMode { Survival, Creative, Maze };
 
 enum class MenuAction { Save };
+
+// Day/Night cycle global settings
+#define DAY_NIGHT_TICKS_UPDATE 100
+#define CLOUDS_TICKS_UPDATE 150

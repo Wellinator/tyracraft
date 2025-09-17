@@ -1,6 +1,5 @@
 #include "managers/clouds_manager.hpp"
 #include "managers/light_manager.hpp"
-#include "managers/tick_manager.hpp"
 #include "managers/clipping_manager.hpp"
 #include "math3d.h"
 #include "camera.hpp"
@@ -51,20 +50,20 @@ void CloudsManager::calcUVMapping() {
 };
 
 void CloudsManager::updateCloudsPosition() {
+  lerpAcc = 0.0f;
   positionStart.set(position);
-  positionEnd = position + (velocity * TICKS_IN_SECONDS);
-  lerp = 0.0f;
-}
+  positionEnd = position + (velocity * nextInteration);
+};
 
 void CloudsManager::update(const float deltaTime) {
   tempColor = LightManager::IntensifyColor(baseColor,
                                            worldLightModel->sunLightIntensity);
 
-  lerp += deltaTime / 0.05f;
+  lerpAcc += deltaTime;
+  lerp = lerpAcc / nextInteration;
   Vec4::setLerp(&position, positionStart, positionEnd, lerp);
 
   if (position.x > 4.0F) position.x = 1;
-  if (position.y > 4.0F) position.y = 1;
 
   calcUVMapping();
 };

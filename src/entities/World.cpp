@@ -208,9 +208,11 @@ void World::tick(Player* t_player, Camera* t_camera) {
 
   if (validTargetBlock() && targetBlock->damage > 0) updateBlockDamage();
 
-  // Update clouds and sun/moon every 50 ticks
-  if (isTicksCounterAt(50)) {
+  if (isTicksCounterAt(CLOUDS_TICKS_UPDATE)) {
     cloudsManager.tick();
+  }
+
+  if (isTicksCounterAt(DAY_NIGHT_TICKS_UPDATE)) {
     if (_updateDayNightCycle) dayNightCycleManager.tick();
   }
 
@@ -857,6 +859,8 @@ bool World::putTorchBlock() {
     updateSunlight();
     updateBlockLights();
 
+    // TODO: check if the light is being called multiple times
+    // It should be called only once by offset
     chunkManager.reloadLightData();
     updateNeighBorsChunksByAddedBlock(&blockOffset);
 

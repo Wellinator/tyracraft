@@ -4,6 +4,7 @@
 #include <tyra>
 #include <math.h>
 #include "models/world_light_model.hpp"
+#include "managers/tick_manager.hpp"
 
 using Tyra::Color;
 using Tyra::FileUtils;
@@ -46,10 +47,14 @@ class CloudsManager {
   void calcUVMapping();
   void updateCloudsPosition();
 
-  double lerp = 0.0f;
+  float lerpAcc = 0.0f;
+  float lerp = 0.0f;
   Vec4 position = Vec4(1.0f, 1.0f, 0.0f);
   Vec4 positionStart = Vec4(0.0f, 0.0f, 0.0f);
   Vec4 positionEnd = Vec4(0.0f, 0.0f, 0.0f);
-  Vec4 velocity = Vec4(0.001f, 0.0005f, 0.0f);
+
+  Vec4 velocity = Vec4(-0.001f, 0.0, 0.0f);
+  const float nextInteration = (TICKS_IN_SECONDS * CLOUDS_TICKS_UPDATE);
+
   const Vec4 scaleVec = Vec4(1.0F / 4.0F, 1.0F / 4.0F, 1.0F, 0.0F);
 };
