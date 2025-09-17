@@ -105,6 +105,8 @@ void Chunk::tickRandomBlock() {
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (isLoaded()) {
+    if (vertices.empty()) return;
+
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
     StaPipColorBag colorBag;
@@ -151,6 +153,8 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
   if (isLoaded()) {
+    if (verticesWithTransparency.empty()) return;
+
     StaPipTextureBag textureBag;
     StaPipInfoBag infoBag;
     StaPipColorBag colorBag;
