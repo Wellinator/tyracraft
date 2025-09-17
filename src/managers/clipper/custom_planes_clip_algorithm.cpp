@@ -42,8 +42,8 @@ int CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
   // Use double-buffered vectors to avoid list churn and reallocation
   std::vector<Triangle> cur;
   std::vector<Triangle> next;
-  cur.reserve(16);
-  next.reserve(16);
+  cur.reserve(32);
+  next.reserve(32);
 
   PlanesClipVertex tempVertices[6] = {};
 
@@ -85,39 +85,44 @@ int CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
   }
 
   const size_t outCount = cur.size() * 3;
-  o_vertices.resize(
-      outCount, {Vec4(0, 0, 0), Vec4(0, 0, 0), Vec4(0, 0, 0), Vec4(0, 0, 0)});
+  o_vertices.clear();
+  o_vertices.reserve(outCount);
 
-  size_t oi = 0;
   for (auto& t : cur) {
-    o_vertices[oi].position = t.a.position;
-    if (settings.lerpColors) o_vertices[oi].color = t.a.color;
-    if (settings.lerpNormals) o_vertices[oi].normal = t.a.normal;
-    if (settings.lerpTexCoords) o_vertices[oi].st = t.a.st;
-    oi++;
+    // Vertex A
+    PlanesClipVertex vertexA;
+    vertexA.position = t.a.position;
+    vertexA.color =
+        settings.lerpColors ? t.a.color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    vertexA.normal = settings.lerpNormals ? t.a.normal : Vec4(0, 0, 0);
+    vertexA.st = settings.lerpTexCoords ? t.a.st : Vec4(0, 0, 0);
+    o_vertices.emplace_back(vertexA);
 
-    o_vertices[oi].position = t.b.position;
-    if (settings.lerpColors) o_vertices[oi].color = t.b.color;
-    if (settings.lerpNormals) o_vertices[oi].normal = t.b.normal;
-    if (settings.lerpTexCoords) o_vertices[oi].st = t.b.st;
-    oi++;
+    // Vertex B
+    PlanesClipVertex vertexB;
+    vertexB.position = t.b.position;
+    vertexB.color =
+        settings.lerpColors ? t.b.color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    vertexB.normal = settings.lerpNormals ? t.b.normal : Vec4(0, 0, 0);
+    vertexB.st = settings.lerpTexCoords ? t.b.st : Vec4(0, 0, 0);
+    o_vertices.emplace_back(vertexB);
 
-    o_vertices[oi].position = t.c.position;
-    if (settings.lerpColors) o_vertices[oi].color = t.c.color;
-    if (settings.lerpNormals) o_vertices[oi].normal = t.c.normal;
-    if (settings.lerpTexCoords) o_vertices[oi].st = t.c.st;
-    oi++;
+    // Vertex C
+    PlanesClipVertex vertexC;
+    vertexC.position = t.c.position;
+    vertexC.color =
+        settings.lerpColors ? t.c.color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    vertexC.normal = settings.lerpNormals ? t.c.normal : Vec4(0, 0, 0);
+    vertexC.st = settings.lerpTexCoords ? t.c.st : Vec4(0, 0, 0);
+    o_vertices.emplace_back(vertexC);
   }
 
-  // If clipped by any plane, return the clipped size; else, return zero
   return static_cast<int>(o_vertices.size());
 }
 
 u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
     Triangle& original, PlanesClipVertex* clipped,
     const EEClipAlgorithmSettings& settings, Plane* plane) {
-  Vec4 plane_p = plane->normal * plane->distance;
-
   Vec4 inside_points[3];
   u8 nInsidePointCount = 0;
   Vec4 outside_points[3];
@@ -133,8 +138,6 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
   Vec4 outside_col[3];
   u8 nOutsideColCount = 0;
 
-  // Keep normals separate and correct (bugfix: they were using tex arrays
-  // before)
   Vec4 inside_nor[3];
   u8 nInsideNorCount = 0;
   Vec4 outside_nor[3];
@@ -227,7 +230,7 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
 
     // Copy appearance info to new triangle
     // The inside point is valid, so keep that...
-    if (settings.lerpColors) clipped[0].position = inside_points[0];
+    clipped[0].position = inside_points[0];
     if (settings.lerpTexCoords) clipped[0].st = inside_tex[0];
     if (settings.lerpColors) clipped[0].color = inside_col[0];
     if (settings.lerpNormals) clipped[0].normal = inside_nor[0];
@@ -275,13 +278,13 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
     // point determined by the location where one side of the triangle
     // intersects with the plane
     clipped[0].position = inside_points[0];
-    clipped[0].st = inside_tex[0];
-    clipped[0].color = inside_col[0];
+    if (settings.lerpTexCoords) clipped[0].st = inside_tex[0];
+    if (settings.lerpColors) clipped[0].color = inside_col[0];
     if (settings.lerpNormals) clipped[0].normal = inside_nor[0];
 
     clipped[1].position = inside_points[1];
-    clipped[1].st = inside_tex[1];
-    clipped[1].color = inside_col[1];
+    if (settings.lerpTexCoords) clipped[1].st = inside_tex[1];
+    if (settings.lerpColors) clipped[1].color = inside_col[1];
     if (settings.lerpNormals) clipped[1].normal = inside_nor[1];
 
     clipped[2].position = intersectPlane(plane->normal, inside_points[0],
@@ -303,13 +306,13 @@ u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
     // new point determined by the intersection of the other side of the
     // triangle and the plane, and the newly created point above
     clipped[3].position = inside_points[1];
-    clipped[3].st = inside_tex[1];
-    clipped[3].color = inside_col[1];
+    if (settings.lerpTexCoords) clipped[3].st = inside_tex[1];
+    if (settings.lerpColors) clipped[3].color = inside_col[1];
     if (settings.lerpNormals) clipped[3].normal = inside_nor[1];
 
     clipped[4].position = clipped[2].position;
-    clipped[4].st = clipped[2].st;
-    clipped[4].color = clipped[2].color;
+    if (settings.lerpTexCoords) clipped[4].st = clipped[2].st;
+    if (settings.lerpColors) clipped[4].color = clipped[2].color;
     if (settings.lerpNormals) clipped[4].normal = clipped[2].normal;
 
     clipped[5].position = intersectPlane(plane->normal, inside_points[1],
