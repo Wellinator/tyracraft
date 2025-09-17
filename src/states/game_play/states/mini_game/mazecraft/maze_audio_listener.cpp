@@ -13,17 +13,18 @@ void MazeAudioListener::onAudioTick() {}
 void MazeAudioListener::onAudioFinish() {}
 
 void MazeAudioListener::playRandomMazeSound() {
+  TYRA_LOG("Picking a random maze sound...");
   t_song->stop();
-  const std::string sonfToPlay = SoundManager::GetRandonSongFromPath(
+  const std::string soundToPlay = SoundManager::GetRandonSongFromPath(
       FileUtils::fromCwd("sounds/game/mazecraft/"));
 
-  if (sonfToPlay.size() > 0) {
-    TYRA_LOG("Playing song -> ", sonfToPlay.c_str());
-    t_song->load(sonfToPlay);
-    t_song->inLoop = false;
-    t_song->setVolume(90);
-    t_song->play();
-  }
+  if (soundToPlay.empty()) return;
+
+  TYRA_LOG("Playing song -> ", soundToPlay.c_str());
+  t_song->load(soundToPlay);
+  t_song->inLoop = false;
+  t_song->setVolume(90);
+  t_song->play();
 }
 
 void MazeAudioListener::playLevelDoneSound() {

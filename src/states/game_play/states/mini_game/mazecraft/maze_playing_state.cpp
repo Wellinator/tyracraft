@@ -1,8 +1,13 @@
 #include "states/game_play/states/minigame/mazecraft/maze_playing_state.hpp"
+#include "models/new_game_model.hpp"
 #include "managers/settings_manager.hpp"
 #include "managers/save_manager.hpp"
+#include "managers/font/font_manager.hpp"
+#include "managers/font/font_options.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
+
+using Tyra::Color;
 
 MazePlayingState::MazePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
@@ -49,11 +54,9 @@ void MazePlayingState::init() {
 
 void MazePlayingState::afterInit() {
   setDarkTheme();
-
   stateGamePlay->player->fillInventoryWithItem(ItemId::torch);
   stateGamePlay->player->updateHandledItem();
   stateGamePlay->player->unFly();
-
   stateGamePlay->world->setDrawDistance(4);
 }
 
@@ -103,7 +106,10 @@ void MazePlayingState::tick() {
   stateGamePlay->player->tick();
   stateGamePlay->ui->update();
 
-  if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();
+  if (isTicksCounterAt(200)) {
+    if (mazeAudioListener.t_song->isPlaying()) return;
+    mazeAudioListener.playRandomMazeSound();
+  }
 }
 
 void MazePlayingState::render() {
@@ -250,6 +256,8 @@ void MazePlayingState::setHappyTheme() {
 }
 
 void MazePlayingState::setDarkTheme() {
+  stateGamePlay->world->dayNightCycleManager.resetSkyColor();
+
   Color darkColor = Color(AFTERNOON_MORNING_COLOR);
   NewGameOptions* worldOptions = stateGamePlay->world->getWorldOptions();
   u8 level = worldOptions->seed;
@@ -270,6 +278,8 @@ void MazePlayingState::setDarkTheme() {
 
   stateGamePlay->world->dayNightCycleManager.setSkyColor(darkColor, darkColor,
                                                          darkColor);
+
+  stateGamePlay->world->chunkManager.reloadLightDataOfAllChunks();
 }
 
 void MazePlayingState::navigate() {}
@@ -367,11 +377,6 @@ void MazePlayingState::printMemoryInfoToLog() {
               stateGamePlay->context->t_engine->info.getAvailableRAM()))
           .append(" MB");
   TYRA_LOG(freeRam.c_str());
-}
-
-void MazePlayingState::playNewRandomSong() {
-  TYRA_LOG("Song finished, playing a new random song.");
-  mazeAudioListener.playRandomMazeSound();
 }
 
 void MazePlayingState::handleAction(MenuAction action) {

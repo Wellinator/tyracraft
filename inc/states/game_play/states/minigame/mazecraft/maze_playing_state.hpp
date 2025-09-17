@@ -1,10 +1,9 @@
 #pragma once
+
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
 #include "states/game_play/states/minigame/mazecraft/maze_audio_listener.hpp"
-#include "managers/font/font_manager.hpp"
 #include "managers/post-fx/post_fx_manager.hpp"
-#include "managers/font/font_options.hpp"
 #include "managers/tick_manager.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/inventory.hpp"
@@ -14,7 +13,11 @@
 
 using Tyra::Pad;
 using Tyra::PadButtons;
+using Tyra::Renderer;
+using Tyra::Sprite;
+using Tyra::TextureRepository;
 using Tyra::Threading;
+using Tyra::Vec4;
 
 class MazePlayingState : public PlayingStateBase {
  public:
@@ -34,7 +37,6 @@ class MazePlayingState : public PlayingStateBase {
   void navigate();
   void renderMazeUi();
   void drawDegubInfo();
-  void playNewRandomSong();
   void gamePlayInputHandler(const float& deltaTime);
   void saveProgress();
   void loadNextLevel();
