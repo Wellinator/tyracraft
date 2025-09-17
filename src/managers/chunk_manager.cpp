@@ -36,17 +36,10 @@ void ChunkManager::clearAllChunks() {
 
 void ChunkManager::updateLoadedChunks() {
   loadedChunks.clear();
-
   for (u16 i = 0; i < chunks.size(); i++) {
-    if (chunks[i]->getDistanceFromPlayerInChunks() > -1) {
-      loadedChunks.emplace_back(chunks[i]);
-    }
+    if (chunks[i]->isLoaded() == false) continue;
+    loadedChunks.emplace_back(chunks[i]);
   }
-
-  std::sort(loadedChunks.begin(), loadedChunks.end(), [](Chunk* a, Chunk* b) {
-    return a->getDistanceFromPlayerInChunks() >
-           b->getDistanceFromPlayerInChunks();
-  });
 }
 
 void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
@@ -118,9 +111,8 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  for (size_t i = 0; i < visibleChunks.size(); i++) {
-    if (visibleChunks[i]->isLoaded())
-      chunksToUpdateLight.push(visibleChunks[i]);
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    chunksToUpdateLight.push(loadedChunks[i]);
   }
 }
 
@@ -132,8 +124,8 @@ void ChunkManager::reloadLightDataAsync() {
 }
 
 void ChunkManager::reloadLightData() {
-  for (size_t i = 0; i < visibleChunks.size(); i++) {
-    if (visibleChunks[i]->isLoaded()) visibleChunks[i]->reloadLightData();
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    loadedChunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
