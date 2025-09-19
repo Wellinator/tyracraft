@@ -61,7 +61,7 @@ Camera::~Camera() {}
 
 void Camera::update() {
   const float effectivePitch = smoothPitch + bobPitchOffset;
-  
+
   // Cache trigonometric calculations
   const float yawRad = Utils::degreesToRadian(smoothYaw);
   const float pitchRad = Utils::degreesToRadian(effectivePitch);
@@ -69,10 +69,10 @@ void Camera::update() {
   const float sinYaw = Math::sin(yawRad);
   const float cosPitch = Math::cos(pitchRad);
   const float sinPitch = Math::sin(pitchRad);
-  
+
   unitCirclePosition.x = cosYaw * cosPitch;
   unitCirclePosition.z = sinYaw * cosPitch;
-  
+
   if (g_settings.invert_cam_y) {
     unitCirclePosition.y = -sinPitch;
   } else {
@@ -93,7 +93,7 @@ void Camera::update(const float& deltaTime, const u8 isWalking) {
   shakeCamera(deltaTime, isWalking);
 
   const float effectivePitch = smoothPitch + bobPitchOffset;
-  
+
   // Cache trigonometric calculations
   const float yawRad = Utils::degreesToRadian(smoothYaw);
   const float pitchRad = Utils::degreesToRadian(effectivePitch);
@@ -101,10 +101,10 @@ void Camera::update(const float& deltaTime, const u8 isWalking) {
   const float sinYaw = Math::sin(yawRad);
   const float cosPitch = Math::cos(pitchRad);
   const float sinPitch = Math::sin(pitchRad);
-  
+
   unitCirclePosition.x = cosYaw * cosPitch;
   unitCirclePosition.z = sinYaw * cosPitch;
-  
+
   if (g_settings.invert_cam_y) {
     unitCirclePosition.y = -sinPitch;
   } else {
@@ -209,6 +209,15 @@ void Camera::reset() {
   bobPitchOffset = 0.0F;
   bobCurrentOffset.set(0.0F, 0.0F, 0.0F);
   bobTargetOffset.set(0.0F, 0.0F, 0.0F);
+
+  position = Vec4(0.0f, CAMERA_Y, 0.0f);
+  targetPosition.set(position);
+  smoothPosition.set(position);
+
+  looksAt = Vec4(0.0f, CAMERA_Y, 1.0f);
+  targetLooksAt.set(looksAt);
+  smoothLooksAt.set(looksAt);
+
   update();
 }
 
@@ -233,10 +242,10 @@ void Camera::setThirdPersonInverted() {
 void Camera::calculatePitch(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const float normalizedV = (rightJoy.v - 128.0F) * INV_128;
-  
+
   // Early return if input is below threshold
   if (Utils::Abs(normalizedV) <= g_settings.r_stick_V) return;
-  
+
   targetPitch += g_settings.cam_v_sensitivity * deltatime * -normalizedV;
 
   // Clamp pitch efficiently
@@ -250,10 +259,10 @@ void Camera::calculatePitch(Pad* t_pad, const float deltatime) {
 void Camera::calculateYaw(Pad* t_pad, const float deltatime) {
   const auto& rightJoy = t_pad->getRightJoyPad();
   const float normalizedH = (rightJoy.h - 128.0F) * INV_128;
-  
+
   // Early return if input is below threshold
   if (Utils::Abs(normalizedH) <= g_settings.r_stick_H) return;
-  
+
   targetYaw += g_settings.cam_h_sensitivity * deltatime * normalizedH;
 
   // Normalize yaw efficiently
@@ -297,12 +306,12 @@ void Camera::shakeCamera(const float deltaTime, const bool isWalking) {
     // Fast fade out path
     const float fadeSpeed = !bobEnabled ? 10.0F : 8.0F;
     const float f = fadeSpeed * deltaTime;
-    
+
     // Direct lerp without temporary variables
     bobCurrentOffset.x += (0.0F - bobCurrentOffset.x) * f;
     bobCurrentOffset.y += (0.0F - bobCurrentOffset.y) * f;
     bobCurrentOffset.z += (0.0F - bobCurrentOffset.z) * f;
-    
+
     bobTilt += (0.0F - bobTilt) * f;
     const float targetPitchOffset = bobTilt * 0.02F;
     bobPitchOffset += (targetPitchOffset - bobPitchOffset) * f;
@@ -349,15 +358,17 @@ void Camera::shakeCamera(const float deltaTime, const bool isWalking) {
     bobTargetTilt = w1 * 0.35F * intensity;
     const float tiltLerp = 12.0F * deltaTime;
     bobTilt += (bobTargetTilt - bobTilt) * tiltLerp;
-    
+
     // Update pitch offset with clamping
     const float targetPitchOffset = bobTilt * 0.02F;
     const float pitchLerp = 16.0F * deltaTime;
     bobPitchOffset += (targetPitchOffset - bobPitchOffset) * pitchLerp;
-    
+
     // Clamp pitch offset
-    if (bobPitchOffset > 1.0F) bobPitchOffset = 1.0F;
-    else if (bobPitchOffset < -1.0F) bobPitchOffset = -1.0F;
+    if (bobPitchOffset > 1.0F)
+      bobPitchOffset = 1.0F;
+    else if (bobPitchOffset < -1.0F)
+      bobPitchOffset = -1.0F;
   } else {
     // Fade out tilt for third person
     const float tiltFade = 12.0F * deltaTime;
@@ -395,24 +406,27 @@ void Camera::applySmoothMovement(const float deltaTime) {
 
   // Optimize position smoothing
   const float positionLerpFactor = smoothFactorPosition * deltaTime;
-  
+
   // Fast squared distance check to avoid sqrt
   const Vec4 positionDiff = targetPosition - smoothPosition;
-  const float distanceSqr = positionDiff.x * positionDiff.x + 
-                           positionDiff.y * positionDiff.y + 
-                           positionDiff.z * positionDiff.z;
-  
+  const float distanceSqr = positionDiff.x * positionDiff.x +
+                            positionDiff.y * positionDiff.y +
+                            positionDiff.z * positionDiff.z;
+
   // Use pre-calculated constant from header
   const float MIN_SMOOTH_DISTANCE_SQR = SMOOTH_THRESHOLD * SMOOTH_THRESHOLD;
-  
+
   if (distanceSqr > MAX_SMOOTH_DISTANCE_SQR) {
     // Teleport case - snap to target
     smoothPosition = targetPosition;
   } else if (distanceSqr > MIN_SMOOTH_DISTANCE_SQR) {
     // Normal smoothing - direct lerp without Vec4::getByLerp overhead
-    smoothPosition.x += (targetPosition.x - smoothPosition.x) * positionLerpFactor;
-    smoothPosition.y += (targetPosition.y - smoothPosition.y) * positionLerpFactor;
-    smoothPosition.z += (targetPosition.z - smoothPosition.z) * positionLerpFactor;
+    smoothPosition.x +=
+        (targetPosition.x - smoothPosition.x) * positionLerpFactor;
+    smoothPosition.y +=
+        (targetPosition.y - smoothPosition.y) * positionLerpFactor;
+    smoothPosition.z +=
+        (targetPosition.z - smoothPosition.z) * positionLerpFactor;
   }
 
   // Update actual values for compatibility
