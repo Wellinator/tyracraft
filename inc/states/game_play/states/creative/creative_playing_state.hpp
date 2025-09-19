@@ -35,7 +35,7 @@ class CreativePlayingState : public PlayingStateBase {
   void handleInput(const float& deltaTime);
   void navigate();
   void renderCreativeUi();
-  void drawDegubInfo();
+  void drawDebugInfo();
   void playNewRandomSong();
   void openInventory();
   void closeInventory();

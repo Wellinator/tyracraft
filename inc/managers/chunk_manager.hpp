@@ -43,7 +43,6 @@ class ChunkManager : public Singleton<ChunkManager> {
   void reloadLightData();
   void reloadLightDataOfAllChunks();
   void updateLoadedChunks();
-  // void sortDrawDataFromCamPos(const Vec4& cameraPos);
 
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 

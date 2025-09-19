@@ -1,6 +1,7 @@
 #include "managers/clouds_manager.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/clipping_manager.hpp"
+#include "debug.hpp"
 #include "math3d.h"
 #include "camera.hpp"
 
@@ -56,6 +57,10 @@ void CloudsManager::updateCloudsPosition() {
 };
 
 void CloudsManager::update(const float deltaTime) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableClouds == false) return;
+#endif  // DEBUG_MODE
+
   tempColor = LightManager::IntensifyColor(baseColor,
                                            worldLightModel->sunLightIntensity);
 
@@ -68,9 +73,19 @@ void CloudsManager::update(const float deltaTime) {
   calcUVMapping();
 };
 
-void CloudsManager::tick() { updateCloudsPosition(); };
+void CloudsManager::tick() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableClouds == false) return;
+#endif  // DEBUG_MODE
+
+  updateCloudsPosition();
+};
 
 void CloudsManager::render() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableClouds == false) return;
+#endif  // DEBUG_MODE
+
   t_renderer->renderer3D.usePipeline(stapip);
 
   M4x4 rawMatrix;

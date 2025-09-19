@@ -1,5 +1,6 @@
 #include "managers/day_night_cycle_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "debug.hpp"
 #include <array>
 
 using Tyra::StaPipBag;
@@ -107,12 +108,15 @@ void DayNightCycleManager::preLoad() {
 }
 
 void DayNightCycleManager::update(const float deltaTime, const Vec4* camPos) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableDayNightCycle == false) return;
+#endif  // DEBUG_MODE
+
   // The lerp must be between 0.0 and 1.0
   // it should be min (0) at the start of the tick and max (1) at the end of the
   // DAY_NIGHT_TICKS_UPDATE
 
-  const float fiftyTicksInSeconds =
-      DAY_NIGHT_TICKS_UPDATE * TICKS_IN_SECONDS;
+  const float fiftyTicksInSeconds = DAY_NIGHT_TICKS_UPDATE * TICKS_IN_SECONDS;
   lerpAcc += deltaTime;
   lerp = lerpAcc / fiftyTicksInSeconds;
 
@@ -131,13 +135,23 @@ void DayNightCycleManager::update(const float deltaTime, const Vec4* camPos) {
   }
 }
 
-void DayNightCycleManager::tick() { calNextEntitiesPosition(); }
+void DayNightCycleManager::tick() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableDayNightCycle == false) return;
+#endif  // DEBUG_MODE
+
+  calNextEntitiesPosition();
+}
 
 /**
  * Based in https://minecraft.fandom.com/wiki/Daylight_cycle
  * Sun and Moon appears and disappears in the horizon
  */
 void DayNightCycleManager::render() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableDayNightCycle == false) return;
+#endif  // DEBUG_MODE
+
   t_renderer->renderer3D.usePipeline(stapip);
 
   if (g_ticksCounter > 22300 || g_ticksCounter < 13702) {

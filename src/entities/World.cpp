@@ -216,13 +216,10 @@ void World::tick(Player* t_player, Camera* t_camera) {
     if (_updateDayNightCycle) dayNightCycleManager.tick();
   }
 
-  // Update chunk light data every 1000 ticks
-  if (isTicksCounterAt(1000)) {
-    // TODO: refactor to event system
+  if (isTicksCounterAt(250)) {
     updateLightModel();
     updateSunlight();
     updateBlockLights();
-    chunkManager.enqueueChunksToReloadLight();
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
@@ -242,10 +239,18 @@ void World::tick(Player* t_player, Camera* t_camera) {
 }
 
 void World::renderOpaque() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderOpaque == false) return;
+#endif  // DEBUG_MODE
+
   chunkManager.rendererOpaque(t_renderer, &stapip);
 };
 
 void World::renderTransparent() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderTranslucent == false) return;
+#endif  // DEBUG_MODE
+
   chunkManager.rendererTransparent(t_renderer, &stapip);
 };
 
@@ -368,29 +373,38 @@ void World::loadScheduledChunks() {
     }
 
     tempChunksToLoad.pop_front();
-    if (tempChunksToLoad.size() == 0) {
-      tempChunksToLoad.shrink_to_fit();
-      chunkManager.updateLoadedChunks();
-    }
+    return;
+  }
+
+  if (tempChunksToLoad.size() == 0) {
+    tempChunksToLoad.clear();
+    tempChunksToLoad.shrink_to_fit();
+    chunkManager.updateLoadedChunks();
   }
 }
 
 void World::unloadScheduledChunks() {
   if (tempChunksToUnLoad.size() > 0) {
     Chunk* chunk = tempChunksToUnLoad.front();
-
     if (chunk->state != ChunkState::Clean) {
-      return chunk->clear();
-    } else {
+      chunk->clear();
       tempChunksToUnLoad.pop_front();
-      if (tempChunksToUnLoad.size() == 0) {
-        tempChunksToUnLoad.shrink_to_fit();
-      }
     }
+    return;
   }
+
+  if (tempChunksToUnLoad.size() == 0) {
+    tempChunksToUnLoad.clear();
+    tempChunksToUnLoad.shrink_to_fit();
+  }
+  chunkManager.updateLoadedChunks();
 }
 
 void World::renderBlockDamageOverlay() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderBlockDamage == false) return;
+#endif  // DEBUG_MODE
+
   if (!targetBlock) return;
 
   t_renderer->renderer3D.usePipeline(stapip);
@@ -436,6 +450,15 @@ void World::renderBlockDamageOverlay() {
 
   ClippingManager_ClipAndRenderBag(&bag, &stapip, t_renderer,
                                    Camera::getInstance()->looksAt);
+
+#ifdef DEBUG_MODE
+  if (g_debug_menu.showTargetedBlockBoundingBox) {
+    BBox* rawBBox = VertexBlockData::getRawBBoxByOffset(&targetBlock->offset);
+    M4x4 model = ModelBuilder_BuildModel(&targetBlock->offset);
+    BBox blockBBox = rawBBox->getTransformed(model);
+    t_renderer->renderer3D.utility.drawBBox(blockBBox, Color(100, 100, 50));
+  }
+#endif  // DEBUG_MODE
 }
 
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
@@ -443,9 +466,9 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
   for (size_t i = 0; i < tempChunksToLoad.size(); i++)
     if (tempChunksToLoad[i]->id == t_chunk->id) return;
 
-  // Avoid unload and load the same chunk at the same time
-  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
-    if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
+  // // Avoid unload and load the same chunk at the same time
+  // for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
+  //   if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
 
   tempChunksToLoad.push_front(t_chunk);
 }
@@ -455,10 +478,10 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
   for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
     if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
 
-  // Avoid unload and load the same chunk at the same time
-  for (size_t i = 0; i < tempChunksToLoad.size(); i++)
-    if (tempChunksToLoad[i]->id == t_chunk->id)
-      tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
+  // // Avoid unload and load the same chunk at the same time
+  // for (size_t i = 0; i < tempChunksToLoad.size(); i++)
+  //   if (tempChunksToLoad[i]->id == t_chunk->id)
+  //     tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
 
   tempChunksToUnLoad.push_front(t_chunk);
 }
@@ -1353,6 +1376,10 @@ void World::rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset) {
 }
 
 void World::updateTargetBlock(Camera* t_camera, Player* t_player) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderBlockDamage == false) return;
+#endif  // end if DEBUG_MODE
+
   u32 _lastTargetBlockId = 999999;
 
   if (targetBlock) {

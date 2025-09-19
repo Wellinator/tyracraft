@@ -1,4 +1,5 @@
 #include "managers/post-fx/post_fx_manager.hpp"
+#include "debug.hpp"
 #include <gs_gp.h>
 #include <gs_psm.h>
 #include <dma_tags.h>
@@ -14,9 +15,13 @@ PostFxManager::PostFxManager(Renderer* renderer)
   init();
 };
 
-PostFxManager::~PostFxManager(){};
+PostFxManager::~PostFxManager() {};
 
 void PostFxManager::render(Color fogColor) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enablePostFx == false) return;
+#endif  // DEBUG_MODE
+
   // Set GS settings
   qword_t packets[20] ALIGNED(64);
   qword_t* q = packets;
@@ -24,7 +29,7 @@ void PostFxManager::render(Color fogColor) {
   q = draw_disable_tests(q, 0, &pRenderer->core.gs.zBuffer);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-  dma_wait_fast();
+  dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
   // Apply the post effects
   renderFog(fogColor);
@@ -51,7 +56,7 @@ void PostFxManager::render(Color fogColor) {
   q = draw_texture_expand_alpha(q, 0x80, ALPHA_EXPAND_NORMAL, 0x80);
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-  dma_wait_fast();
+  dma_channel_wait(DMA_CHANNEL_GIF, 500);
 }
 
 uint32_t getPatternValue(uint32_t N) {
@@ -258,7 +263,7 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
 
       dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
       dma_channel_fast_waits(DMA_CHANNEL_GIF);
-      dma_wait_fast();
+      dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
       performChannelCopy(channelIn, CHANNEL_ALPHA, x, y, buf_addr, width,
                          height, pal_addr);
@@ -407,7 +412,7 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
 
   FlushCache(0);
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-  dma_wait_fast();
+  dma_channel_wait(DMA_CHANNEL_GIF, 500);
   q = packets;
 
   PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
@@ -431,7 +436,7 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   q++;
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-  dma_wait_fast();
+  dma_channel_wait(DMA_CHANNEL_GIF, 500);
 };
 
 void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
@@ -578,5 +583,5 @@ void PostFxManager::renderFog(Color fogColor) {
   q++;
 
   dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-  dma_wait_fast();
+  dma_channel_wait(DMA_CHANNEL_GIF, 500);
 };

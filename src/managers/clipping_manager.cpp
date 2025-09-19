@@ -8,6 +8,30 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                              std::vector<Vec4>& out_uv,
                              std::vector<Color>& out_colors,
                              Renderer* t_renderer, Vec4& camLooksAt) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.noclipMode) {
+    out_vertex.clear();
+    out_uv.clear();
+    out_colors.clear();
+
+    out_vertex.reserve(vertexCount);
+    out_uv.reserve(uvCount);
+    out_colors.reserve(colorCount);
+
+    for (u32 i = 0; i < vertexCount; i++) {
+      out_vertex.emplace_back(in_vertex[i]);
+    }
+    for (u32 i = 0; i < uvCount; i++) {
+      out_uv.emplace_back(in_uv[i]);
+    }
+    for (u32 i = 0; i < colorCount; i++) {
+      out_colors.emplace_back(in_colors[i]);
+    }
+
+    return vertexCount;
+  }
+#endif  // DEBUG_MODE
+
   Plane* frustumPlanes =
       (Plane*)t_renderer->core.renderer3D.frustumPlanes.getAll();
 

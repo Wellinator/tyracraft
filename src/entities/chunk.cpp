@@ -26,7 +26,6 @@ Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->maxOffset.set(maxOffset);
   this->center.set((maxOffset + minOffset) / 2);
   this->scaledCenterOffset.set(center * DOUBLE_BLOCK_SIZE);
-  resetLoadingOffset();
 
   const Vec4 tempMin = minOffset * DOUBLE_BLOCK_SIZE;
   const Vec4 tempMax = maxOffset * DOUBLE_BLOCK_SIZE;
@@ -104,50 +103,48 @@ void Chunk::tickRandomBlock() {
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
-  if (isLoaded()) {
-    if (vertices.empty()) return;
+  if (!isLoaded() || vertices.empty()) return;
 
-    StaPipTextureBag textureBag;
-    StaPipInfoBag infoBag;
-    StaPipColorBag colorBag;
-    StaPipBag bag;
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
 
-    textureBag.coordinates = uvMap.data();
-    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
+  textureBag.coordinates = uvMap.data();
+  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
 
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = true;
-    infoBag.antiAliasingEnabled = false;
-    infoBag.fullClipChecks = false;
-    infoBag.frustumCulling =
-        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
-    colorBag.many = verticesColors.data();
+  colorBag.many = verticesColors.data();
 
-    bag.count = vertices.size();
-    bag.vertices = vertices.data();
-    bag.color = &colorBag;
-    bag.info = &infoBag;
-    bag.texture = &textureBag;
+  bag.count = vertices.size();
+  bag.vertices = vertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
 
-    t_renderer->renderer3D.usePipeline(stapip);
+  t_renderer->renderer3D.usePipeline(stapip);
 
-    M4x4 rawMatrix = M4x4::Identity;
-    infoBag.model = &rawMatrix;
+  M4x4 rawMatrix = M4x4::Identity;
+  infoBag.model = &rawMatrix;
 
-    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
+  // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
-    const float distance =
-        scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+  const float distance =
+      scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
 
-    if (distance <= 1.5f) {
-      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-                                              camPositon);
-    }
-
-    stapip->core.render(&bag);
+  if (distance <= 1.5f) {
+    return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                            camPositon);
   }
+
+  stapip->core.render(&bag);
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
@@ -199,9 +196,7 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
 
 void Chunk::clear() {
   clearDrawData();
-  resetLoadingOffset();
-
-  this->state = ChunkState::Clean;
+  state = ChunkState::Clean;
 }
 
 void Chunk::clearDrawData() {
@@ -234,7 +229,11 @@ void Chunk::clearDrawDataWithoutShrink() {
 
 void Chunk::build() {
 #ifdef DEBUG_MODE
-  size_t initialMemoryUsage = get_used_memory();
+  size_t initialMemoryUsage = 0;
+  if (g_debug_menu.logChunkMemoryUsage) {
+    initialMemoryUsage = get_used_memory();
+  }
+
 #endif  // end if DEBUG_MODE
 
   for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
@@ -292,13 +291,15 @@ void Chunk::build() {
   state = ChunkState::Loaded;
 
 #ifdef DEBUG_MODE
-  size_t totalVertices = vertices.size() + verticesWithTransparency.size();
-  if (totalVertices > 0) {
-    size_t finalMemoryUsage = get_used_memory();
-    float memoryUsage =
-        static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
-    printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
-           memoryUsage, totalVertices);
+  if (g_debug_menu.logChunkMemoryUsage) {
+    size_t totalVertices = vertices.size() + verticesWithTransparency.size();
+    if (totalVertices > 0) {
+      size_t finalMemoryUsage = get_used_memory();
+      float memoryUsage =
+          static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
+      printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
+             memoryUsage, totalVertices);
+    }
   }
 #endif  // end if DEBUG_MODE
 }
@@ -306,6 +307,10 @@ void Chunk::build() {
 void Chunk::rebuild() {
   clearDrawData();
   build();
+}
+
+bool Chunk::hasDrawData() {
+  return !vertices.empty() && !verticesWithTransparency.empty();
 }
 
 void Chunk::reloadLightData() {
@@ -330,15 +335,11 @@ void Chunk::reloadLightData() {
           Block* pBlockTemplate =
               BlockManager::getInstance()->getBlockTemplateByType(block_type);
 
-          if (pBlockTemplate->hasTransparency()) {
-            MeshBuilder_BuildLightData(const_cast<Vec4*>(&offset), visibleFaces,
-                                       &verticesColorsWithTransparency,
-                                       t_worldLightModel, pLevel);
-          } else {
-            MeshBuilder_BuildLightData(const_cast<Vec4*>(&offset), visibleFaces,
-                                       &verticesColors, t_worldLightModel,
-                                       pLevel);
-          }
+          MeshBuilder_BuildLightData(const_cast<Vec4*>(&offset), visibleFaces,
+                                     pBlockTemplate->hasTransparency()
+                                         ? &verticesColorsWithTransparency
+                                         : &verticesColors,
+                                     t_worldLightModel, pLevel);
         }
       }
     }

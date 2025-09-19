@@ -50,7 +50,7 @@ class WanderState : public MobState {
 
         // Prevent to move to an unloaded chunk
         const Chunk* chk = pChunkManager->getChunkByBlockOffset(offsetTarget);
-        if (chk && chk->state == ChunkState::Loaded) {
+        if (chk && chk->isLoaded()) {
           pMob->currentPath.reset(new PathResult());
           if (!pathFinder.FindPath(offsetStart, offsetTarget,
                                    pMob->currentPath.get())) {

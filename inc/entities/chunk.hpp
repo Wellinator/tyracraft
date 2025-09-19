@@ -48,7 +48,6 @@ class Chunk {
   ChunkState state = ChunkState::Clean;
   const bool isLoaded() const { return state == ChunkState::Loaded; }
 
-  Vec4 tempLoadingOffset = Vec4();
   Vec4 minOffset = Vec4();
   Vec4 maxOffset = Vec4();
   Vec4 center = Vec4();
@@ -72,6 +71,7 @@ class Chunk {
   void build();
   void rebuild();
 
+  bool hasDrawData();
   void reloadLightData();
   void clearDrawData();
   void clearDrawDataWithoutShrink();
@@ -115,8 +115,6 @@ class Chunk {
 
   int randomTickSpeed = DEFAULT_TICK_SPEED;
   void tickRandomBlock();
-
-  inline void resetLoadingOffset() { tempLoadingOffset.set(minOffset); };
 
   Vec4 camPositon = Vec4(0, 0, 0);
   s8 _distanceFromPlayerInChunks = -1;

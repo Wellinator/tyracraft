@@ -8,6 +8,7 @@
 #include "utils.hpp"
 
 using Tyra::Color;
+using Tyra::PadButtons;
 
 MazePlayingState::MazePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
@@ -126,21 +127,34 @@ void MazePlayingState::render() {
   stateGamePlay->world->renderBlockDamageOverlay();
 
   // PostFX
-  // postFxManager.render(
-  //     stateGamePlay->world->dayNightCycleManager.getSkyColor());
+  postFxManager.render(
+      stateGamePlay->world->dayNightCycleManager.getSkyColor());
 
   // General 2D sftuff
   renderMazeUi();
 
-  if (g_debug_mode) drawDegubInfo();
+  if (g_debug_mode) drawDebugInfo();
   if (shouldRenderLevelDoneDialog) renderCountDown();
 }
 
 void MazePlayingState::handleInput(const float& deltaTime) {
-  const auto& clicked = stateGamePlay->context->t_engine->pad.getClicked();
+  const PadButtons& clicked =
+      stateGamePlay->context->t_engine->pad.getClicked();
 
   if (clicked.Select) g_debug_mode = !g_debug_mode;
   if (g_debug_mode) {
+#ifdef DEBUG_MODE
+    if (clicked.L1 && clicked.R1) {
+      g_debug_menu.showDebugMenu = !g_debug_menu.showDebugMenu;
+      TYRA_LOG("Debug menu: ", g_debug_menu.showDebugMenu ? "ON" : "OFF");
+    }
+
+    if (g_debug_menu.showDebugMenu) {
+      handleDebugInput(&stateGamePlay->context->t_engine->pad);
+      return;
+    }
+#endif  // end if DEBUG_MODE
+
     if (clicked.Circle) printMemoryInfoToLog();
 
     // List loaded textures and VRAM
@@ -285,6 +299,10 @@ void MazePlayingState::setDarkTheme() {
 void MazePlayingState::navigate() {}
 
 void MazePlayingState::renderMazeUi() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderUI == false) return;
+#endif  // DEBUG_MODE
+
   stateGamePlay->ui->renderCrosshair();
 
   if (hasReachedTargetBlock()) {
@@ -301,7 +319,14 @@ void MazePlayingState::renderMazeUi() {
   }
 }
 
-void MazePlayingState::drawDegubInfo() {
+void MazePlayingState::drawDebugInfo() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.showDebugMenu) {
+    renderDebugMenu();
+    return;
+  }
+#endif  // end if DEBUG_MODE
+
   FontManager& fm = FontManager::getInstanceRef();
 
   // Draw seed

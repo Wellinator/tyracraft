@@ -200,7 +200,6 @@ void CuboidMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
           CuboidMeshBuilder_getFaceNeighbors(FACE_SIDE::TOP, offset, pLevel);
       CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
                                                 t_vertices_colors);
-
     } else {
       CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
     }

@@ -2,6 +2,7 @@
 #include "entities/mob/pig/pig.hpp"
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
+#include "debug.hpp"
 
 using Tyra::MeshBuilderData;
 using Tyra::ObjLoader;
@@ -74,33 +75,45 @@ void MobManager::render() {
   t_renderer->renderer3D.usePipeline(&dynpip);
   for (size_t i = 0; i < mobs.size(); i++) {
     if (mobs[i]->shouldUnspawn) continue;
+
+#ifdef DEBUG_MODE
+    if (g_debug_menu.enableRenderMobs == false) continue;
+#endif  // DEBUG_MODE
+
     dynpip.render(mobs[i]->mesh.get(), &dynpipOptions);
 
 #ifdef DEBUG_MODE
-    auto currentBBox = mobs[i]->getHitBox();
-    t_renderer->renderer3D.utility.drawBBox(currentBBox, Color(200, 20, 200));
-
-    if (mobs[i]->currentPath != nullptr) {
-      auto& waypoints = mobs[i]->currentPath->waypoints;
-
-      // Start Red
-      const Vec4 start = waypoints[0];
-      t_renderer->renderer3D.utility.drawBox(start, 0.5f, Color(200, 0, 0));
-
-      //  Cursor Blue
-      for (size_t j = 1; j < waypoints.size() - 1; j++) {
-        const Vec4 p = waypoints[j];
-        t_renderer->renderer3D.utility.drawBox(p, 0.5f, Color(50, 50, 200));
-      }
-
-      // Goal Green
-      const Vec4 goal = waypoints[waypoints.size() - 1];
-      t_renderer->renderer3D.utility.drawBox(goal, 0.5f, Color(0, 200, 0));
+    if (g_debug_menu.showCollisionBoxes) {
+      t_renderer->renderer3D.utility.drawBBox(mobs[i]->getHitBox(),
+                                              Color(100, 50, 50));
     }
 
-    // Current Yellow
-    t_renderer->renderer3D.utility.drawBox(mobs[i]->position, 0.5f,
-                                           Color(200, 200, 50));
+    if (g_debug_menu.showMobPathfinding) {
+      auto currentBBox = mobs[i]->getHitBox();
+      t_renderer->renderer3D.utility.drawBBox(currentBBox, Color(200, 20, 200));
+
+      if (mobs[i]->currentPath != nullptr) {
+        auto& waypoints = mobs[i]->currentPath->waypoints;
+
+        // Start Red
+        const Vec4 start = waypoints[0];
+        t_renderer->renderer3D.utility.drawBox(start, 0.5f, Color(200, 0, 0));
+
+        //  Cursor Blue
+        for (size_t j = 1; j < waypoints.size() - 1; j++) {
+          const Vec4 p = waypoints[j];
+          t_renderer->renderer3D.utility.drawBox(p, 0.5f, Color(50, 50, 200));
+        }
+
+        // Goal Green
+        const Vec4 goal = waypoints[waypoints.size() - 1];
+        t_renderer->renderer3D.utility.drawBox(goal, 0.5f, Color(0, 200, 0));
+      }
+
+      // Current Yellow
+      t_renderer->renderer3D.utility.drawBox(mobs[i]->position, 0.5f,
+                                             Color(200, 200, 50));
+    }
 #endif
   }
 }

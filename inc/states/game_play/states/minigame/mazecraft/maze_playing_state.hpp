@@ -36,7 +36,7 @@ class MazePlayingState : public PlayingStateBase {
   void handleInput(const float& deltaTime);
   void navigate();
   void renderMazeUi();
-  void drawDegubInfo();
+  void drawDebugInfo();
   void gamePlayInputHandler(const float& deltaTime);
   void saveProgress();
   void loadNextLevel();

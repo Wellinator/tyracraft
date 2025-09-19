@@ -2,6 +2,7 @@
 #include "managers/tick_manager.hpp"
 #include "math3d.h"
 #include "utils.hpp"
+#include "debug.hpp"
 
 // Static values init
 std::vector<Particle*> ParticlesManager::Particles = {};
@@ -32,6 +33,10 @@ void ParticlesManager::loadParticlesTexture(const std::string& texturePack) {
 Texture* ParticlesManager::getParticlesTexture() { return particlesTexture; }
 
 void ParticlesManager::fixedUpdate(const float& fixedDeltaTime) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderParticles == false) return;
+#endif  // DEBUG_MODE
+
   auto counter = ParticlesManager::Particles.size();
   for (size_t i = 0; i < counter; i++) {
     Particle* p = ParticlesManager::Particles[i];
@@ -43,6 +48,10 @@ void ParticlesManager::fixedUpdate(const float& fixedDeltaTime) {
 };
 
 void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderParticles == false) return;
+#endif  // DEBUG_MODE
+
   aliveParticlesCounter = ParticlesManager::Particles.size();
   for (size_t i = 0; i < ParticlesManager::Particles.size(); i++) {
     Particle* p = ParticlesManager::Particles[i];
@@ -56,7 +65,13 @@ void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
   }
 };
 
-void ParticlesManager::tick() { destroyExpiredParticles(); }
+void ParticlesManager::tick() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderParticles == false) return;
+#endif  // DEBUG_MODE
+
+  destroyExpiredParticles();
+}
 
 void ParticlesManager::destroyExpiredParticles() {
   if (particlesHasChanged) {
@@ -122,6 +137,10 @@ void ParticlesManager::createBlockParticle(Block* pBlock) {
 };
 
 void ParticlesManager::render() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableRenderParticles == false) return;
+#endif  // DEBUG_MODE
+
   Particle** pData = ParticlesManager::Particles.data();
   size_t size = ParticlesManager::Particles.size();
 

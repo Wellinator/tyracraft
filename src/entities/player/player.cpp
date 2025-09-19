@@ -8,6 +8,7 @@
 #include "managers/model_builder.hpp"
 #include "utils.hpp"
 #include "timer.hpp"
+#include "debug.hpp"
 
 using bvh::AABB;
 using bvh::AABBTree;
@@ -147,7 +148,16 @@ void Player::tick() {
   updateItemColorByCurrentPosition();
 }
 
-void Player::render() { renderPip->render(t_renderer); }
+void Player::render() {
+#ifdef DEBUG_MODE
+  if (g_debug_menu.showPlayerBoundingBox) {
+    t_renderer->renderer3D.utility.drawBBox(getHitBox(), Color(100, 50, 50));
+  }
+  if (g_debug_menu.enableRenderPlayers == false) return;
+#endif  // DEBUG_MODE
+
+  renderPip->render(t_renderer);
+}
 
 Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
                                const Vec4& camDir) {
@@ -516,7 +526,8 @@ void Player::loadMesh() {
 
   this->mesh->animation.loop = true;
   this->mesh->animation.setSequence(standStillSequence);
-  // Speed is treated as frames-per-second; actual step will be multiplied by deltaTime in animate()
+  // Speed is treated as frames-per-second; actual step will be multiplied by
+  // deltaTime in animate()
   this->mesh->animation.speed = baseAnimationSpeed;
 }
 
@@ -717,7 +728,8 @@ void Player::stopPutBlockAnimation() { isPuting = false; }
 
 void Player::animate(const float& deltaTime, CamType camType) {
   if (camType == CamType::ThirdPerson) {
-    // Make animation step time-based: scale current animation speed by delta time for this frame
+    // Make animation step time-based: scale current animation speed by delta
+    // time for this frame
     const float originalSpeed = this->mesh->animation.speed;
     this->mesh->animation.speed = originalSpeed * deltaTime;
     this->mesh->update();

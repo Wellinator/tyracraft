@@ -1,6 +1,7 @@
 #include "managers/chunk_manager.hpp"
 #include "managers/tick_manager.hpp"
 #include "math/plane.hpp"
+#include "debug.hpp"
 #include <algorithm>
 
 using Tyra::M4x4;
@@ -48,7 +49,7 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   // TODO: refactore to fast index by offset
   for (size_t i = 0; i < loadedChunks.size(); i++) {
     Chunk* chk = loadedChunks[i];
-    if (chk->state == ChunkState::Loaded) {
+    if (chk->isLoaded()) {
       chk->setCamPosition(camPos);
       chk->update(frustumPlanes);
 
@@ -58,9 +59,13 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
 }
 
 void ChunkManager::tick() {
-  if (isTicksCounterAt(10)) {
-    // Is Time To Update Light?
+  if (isTicksCounterAt(2)) {
     if (chunksToUpdateLight.empty() == false) reloadLightDataAsync();
+  }
+
+  // This tick time must be in sync with World::updateLightModel()
+  if (isTicksCounterAt(250) && chunksToUpdateLight.empty() == false) {
+    enqueueChunksToReloadLight();
   }
 
   for (size_t i = 0; i < chunks.size(); i++) {
@@ -73,18 +78,42 @@ void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     visibleChunks[i]->renderer(t_renderer, stapip);
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
+
+#ifdef DEBUG_MODE
+  if (g_debug_menu.showChunkBorders) {
+    for (u16 i = 0; i < visibleChunks.size(); i++) {
+      t_renderer->renderer3D.utility.drawBBox(*visibleChunks[i]->bbox,
+                                              Color(50, 50, 200));
+    }
+  }
+#endif  // end if DEBUG_MODE
 }
 
 void ChunkManager::rendererOpaque(Renderer* t_renderer,
                                   StaticPipeline* stapip) {
-  for (u16 i = 0; i < visibleChunks.size(); i++)
+  for (u16 i = 0; i < visibleChunks.size(); i++) {
     visibleChunks[i]->renderer(t_renderer, stapip);
+
+#ifdef DEBUG_MODE
+    if (g_debug_menu.showChunkBorders) {
+      t_renderer->renderer3D.utility.drawBBox(*visibleChunks[i]->bbox,
+                                              Color(50, 50, 200));
+    }
+#endif  // end if DEBUG_MODE
+  }
 }
 
 void ChunkManager::rendererTransparent(Renderer* t_renderer,
                                        StaticPipeline* stapip) {
-  for (u16 i = 0; i < visibleChunks.size(); i++)
+  for (u16 i = 0; i < visibleChunks.size(); i++) {
     visibleChunks[i]->rendererTransparentData(t_renderer, stapip);
+#ifdef DEBUG_MODE
+    if (g_debug_menu.showChunkBorders) {
+      t_renderer->renderer3D.utility.drawBBox(*visibleChunks[i]->bbox,
+                                              Color(50, 50, 200));
+    }
+#endif  // end if DEBUG_MODE
+  }
 }
 
 void ChunkManager::generateChunks() {
@@ -111,8 +140,8 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  for (size_t i = 0; i < loadedChunks.size(); i++) {
-    chunksToUpdateLight.push(loadedChunks[i]);
+  for (size_t i = 0; i < chunks.size(); i++) {
+    if (chunks[i]->isLoaded()) chunksToUpdateLight.push(chunks[i]);
   }
 }
 
