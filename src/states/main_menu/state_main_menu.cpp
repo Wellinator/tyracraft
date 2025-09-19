@@ -17,14 +17,14 @@ using Tyra::Renderer;
 using Tyra::RendererSettings;
 
 StateMainMenu::StateMainMenu(Context* t_context) : GameState(t_context) {
-  this->init();
+  init();
 }
 
 StateMainMenu::~StateMainMenu() {
   TYRA_LOG("Stopping menu song");
   context->t_engine->audio.song.stop();
 
-  this->unloadTextures();
+  unloadTextures();
 }
 
 void StateMainMenu::init() {
@@ -32,13 +32,13 @@ void StateMainMenu::init() {
    * TODO: Add menu actions sfx;
    * */
 
-  stapip.setRenderer(&this->context->t_engine->renderer.core);
+  stapip.setRenderer(&context->t_engine->renderer.core);
 
   const float halfWidth =
-      this->context->t_engine->renderer.core.getSettings().getWidth() / 2;
+      context->t_engine->renderer.core.getSettings().getWidth() / 2;
 
-  this->loadSkybox(&this->context->t_engine->renderer);
-  this->context->t_camera->reset();
+  loadSkybox(&context->t_engine->renderer);
+  context->t_camera->reset();
 
   // Load title
   // Title
@@ -50,49 +50,49 @@ void StateMainMenu::init() {
   title[1].size.set(256, 128);
   title[1].position.set(halfWidth, 64);
 
-  this->context->t_engine->renderer.getTextureRepository()
+  context->t_engine->renderer.getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/menu/title_1.png"))
       ->addLink(title[0].id);
-  this->context->t_engine->renderer.getTextureRepository()
+  context->t_engine->renderer.getTextureRepository()
       .add(FileUtils::fromCwd("textures/gui/menu/title_2.png"))
       ->addLink(title[1].id);
 
-  this->loadMenuSong();
-  this->setScreen(new ScreenMain(this));
+  loadMenuSong();
+  setScreen(new ScreenMain(this));
 }
 
 void StateMainMenu::update(const float& deltaTime) {
-  this->context->t_camera->setPosition(*menuSkybox->getPosition());
-  this->context->t_camera->update();
+  context->t_camera->setPosition(*menuSkybox->getPosition());
+  context->t_camera->update();
 
-  this->menuSkybox->rotation.rotateY(0.001F * deltaTime);
+  menuSkybox->rotation.rotateY(0.001F * deltaTime);
 
   // Update current screen state
-  this->screen->update(deltaTime);
+  screen->update(deltaTime);
 }
 
 void StateMainMenu::render() {
   // Meshes
-  this->context->t_engine->renderer.renderer3D.usePipeline(&stapip);
-  stapip.render(this->menuSkybox, skyboxOptions);
+  context->t_engine->renderer.renderer3D.usePipeline(&stapip);
+  stapip.render(menuSkybox, skyboxOptions);
 
   /**
    * --------------- Sprites ---------------
    * */
 
   // Title & Subtitle
-  this->context->t_engine->renderer.renderer2D.render(title[0]);
-  this->context->t_engine->renderer.renderer2D.render(title[1]);
+  context->t_engine->renderer.renderer2D.render(title[0]);
+  context->t_engine->renderer.renderer2D.render(title[1]);
 
-  this->screen->render();
+  screen->render();
 }
 
 void StateMainMenu::loadSkybox(Renderer* renderer) {
-  this->skyboxOptions = new StaPipOptions();
-  this->skyboxOptions->fullClipChecks = false;
-  this->skyboxOptions->textureMappingType =
+  skyboxOptions = new StaPipOptions();
+  skyboxOptions->fullClipChecks = false;
+  skyboxOptions->textureMappingType =
       Tyra::PipelineTextureMappingType::TyraLinear;
-  this->skyboxOptions->frustumCulling =
+  skyboxOptions->frustumCulling =
       Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
 
   ObjLoaderOptions options;
@@ -102,40 +102,36 @@ void StateMainMenu::loadSkybox(Renderer* renderer) {
   auto data =
       ObjLoader::load(FileUtils::fromCwd("models/skybox/skybox.obj"), options);
   // data->normalsEnabled = false;
-  this->menuSkybox = new StaticMesh(data.get());
+  menuSkybox = new StaticMesh(data.get());
 
   renderer->core.texture.repository.addByMesh(
-      this->menuSkybox, FileUtils::fromCwd("textures/entity/skybox/menu/1/"),
-      "png");
+      menuSkybox, FileUtils::fromCwd("textures/entity/skybox/menu/1/"), "png");
 }
 
 void StateMainMenu::unloadTextures() {
-  this->context->t_engine->renderer.getTextureRepository().freeByMesh(
-      menuSkybox);
+  context->t_engine->renderer.getTextureRepository().freeByMesh(menuSkybox);
 
   for (u8 i = 0; i < 2; i++)
-    this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-        title[i]);
+    context->t_engine->renderer.getTextureRepository().freeBySprite(title[i]);
 
-  delete this->menuSkybox;
-  delete this->skyboxOptions;
+  delete menuSkybox;
+  delete skyboxOptions;
 }
 
 void StateMainMenu::loadGame(const NewGameOptions& options) {
-  this->context->setState(new StateLoadingGame(this->context, options));
-  delete this->screen;
+  context->setState(new StateLoadingGame(context, options));
+  delete screen;
 }
 
 void StateMainMenu::loadSavedGame(const std::string save_file_full_path) {
-  this->context->setState(
-      new StateLoadingSavedGame(this->context, save_file_full_path));
-  delete this->screen;
+  context->setState(new StateLoadingSavedGame(context, save_file_full_path));
+  delete screen;
 }
 
 void StateMainMenu::createMiniGame(const NewGameOptions& options) {
   switch (options.gameMode) {
     case GameMode::Maze:
-      this->context->setState(new StateCreateMazeCraft(this->context, options));
+      context->setState(new StateCreateMazeCraft(context, options));
       break;
 
     default:
@@ -143,15 +139,14 @@ void StateMainMenu::createMiniGame(const NewGameOptions& options) {
       break;
   }
 
-  delete this->screen;
+  delete screen;
 }
 
 void StateMainMenu::loadSavedMiniGame(GameMode gameMode,
                                       const std::string save_file_full_path) {
   switch (gameMode) {
     case GameMode::Maze:
-      this->context->setState(
-          new StateLoadMazeCraft(this->context, save_file_full_path));
+      context->setState(new StateLoadMazeCraft(context, save_file_full_path));
       break;
 
     default:
@@ -159,13 +154,13 @@ void StateMainMenu::loadSavedMiniGame(GameMode gameMode,
       break;
   }
 
-  delete this->screen;
+  delete screen;
 }
 
 void StateMainMenu::playClickSound() {
   SoundManager* pSoundManager = SoundManager::getInstance();
 
-  this->context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
+  context->t_engine->audio.adpcm.setVolume(50, MENU_SFX_CH);
   pSoundManager->playSfx(SoundFxCategory::Random, SoundFX::WoodClick,
                          MENU_SFX_CH);
 }
@@ -174,10 +169,10 @@ void StateMainMenu::loadMenuSong() {
   const std::string randSong =
       SoundManager::GetRandonSongFromPath(FileUtils::fromCwd("sounds/menu/"));
   if (randSong.size() > 0) {
-    this->context->t_engine->audio.song.load(randSong.c_str());
-    this->context->t_engine->audio.song.inLoop = true;
-    this->context->t_engine->audio.song.setVolume(65);
-    this->context->t_engine->audio.song.play();
+    context->t_engine->audio.song.load(randSong.c_str());
+    context->t_engine->audio.song.inLoop = true;
+    context->t_engine->audio.song.setVolume(65);
+    context->t_engine->audio.song.play();
   }
 }
 
@@ -187,6 +182,6 @@ void StateMainMenu::setScreen(ScreenBase* screen) {
 }
 
 void StateMainMenu::goToLanguageSelectioScreen() {
-  if (this->screen) delete this->screen;
+  if (screen) delete screen;
   context->setState(new StateLanguageSelectionScreen(context));
 }

@@ -3,22 +3,22 @@
 StateCreateMazeCraft::StateCreateMazeCraft(Context* t_context,
                                            const NewGameOptions& options)
     : GameState(t_context) {
-  this->worldOptions = options;
-  this->stateGamePlay = new StateGamePlay(t_context, options.gameMode);
-  this->init();
+  worldOptions = options;
+  stateGamePlay = new StateGamePlay(t_context, options.gameMode);
+  init();
 }
 
-StateCreateMazeCraft::~StateCreateMazeCraft() { this->unload(); }
+StateCreateMazeCraft::~StateCreateMazeCraft() { unload(); }
 
 void StateCreateMazeCraft::init() {
-  this->setBgColorBlack();
+  setBgColorBlack();
   progressLabel = Label_Loading;
 
   const RendererSettings& rendererSettings =
-      this->context->t_engine->renderer.core.getSettings();
+      context->t_engine->renderer.core.getSettings();
   const float width = rendererSettings.getWidth();
   const float height = rendererSettings.getHeight();
-  this->BASE_HEIGHT = height - 120;
+  BASE_HEIGHT = height - 120;
 
   // Background
   std::string backgroundTex = FileUtils::fromCwd(
@@ -27,7 +27,7 @@ void StateCreateMazeCraft::init() {
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
   background->position.set(0, 0);
-  this->context->t_engine->renderer.core.texture.repository.add(backgroundTex)
+  context->t_engine->renderer.core.texture.repository.add(backgroundTex)
       ->addLink(background->id);
 
   // Loading slot
@@ -37,7 +37,7 @@ void StateCreateMazeCraft::init() {
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
   loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 25);
-  this->context->t_engine->renderer.core.texture.repository.add(loadingSlotTex)
+  context->t_engine->renderer.core.texture.repository.add(loadingSlotTex)
       ->addLink(loadingSlot->id);
 
   // Loading bar
@@ -45,52 +45,49 @@ void StateCreateMazeCraft::init() {
       FileUtils::fromCwd("textures/gui/mini_game/mazecraft/load.png");
   loadingprogress = new Sprite;
   loadingprogress->mode = Tyra::MODE_STRETCH;
-  loadingprogress->size.set(this->_percent / 100 * 253, 9);
+  loadingprogress->size.set(_percent / 100 * 253, 9);
   loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 28);
-  this->context->t_engine->renderer.core.texture.repository
-      .add(loadingprogressTex)
+  context->t_engine->renderer.core.texture.repository.add(loadingprogressTex)
       ->addLink(loadingprogress->id);
 }
 
 void StateCreateMazeCraft::update(const float& deltaTime) {
-  if (this->hasFinished()) {
-    this->nextState();
+  if (hasFinished()) {
+    nextState();
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
-  if (this->shouldCreatedEntities) {
+  if (shouldCreatedEntities) {
     progressLabel = Label_CreatingEntities;
-    return this->createEntities();
-  } else if (this->shouldInitItemRepository) {
+    return createEntities();
+  } else if (shouldInitItemRepository) {
     progressLabel = Label_LoadingItemsRepo;
-    return this->initItemRepository();
-  } else if (this->shouldInitUI) {
+    return initItemRepository();
+  } else if (shouldInitUI) {
     progressLabel = Label_LoadingUI;
-    return this->initUI();
-  } else if (this->shouldInitWorld) {
+    return initUI();
+  } else if (shouldInitWorld) {
     progressLabel = Label_LoadingWorld;
-    return this->initWorld();
-  } else if (this->shouldInitPlayer) {
+    return initWorld();
+  } else if (shouldInitPlayer) {
     progressLabel = Label_LoadingPlayer;
-    return this->initPlayer();
+    return initPlayer();
   }
-  this->isLoading = false;
+  isLoading = false;
 }
 
 void StateCreateMazeCraft::render() {
-  this->context->t_engine->renderer.renderer2D.render(background);
-  this->context->t_engine->renderer.renderer2D.render(loadingSlot);
-  this->context->t_engine->renderer.renderer2D.render(loadingprogress);
+  context->t_engine->renderer.renderer2D.render(background);
+  context->t_engine->renderer.renderer2D.render(loadingSlot);
+  context->t_engine->renderer.renderer2D.render(loadingprogress);
 
   FontManager::getInstance()->printText(progressLabel, progressLabelOptions);
 }
 
 void StateCreateMazeCraft::unload() {
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *background);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *loadingSlot);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+  context->t_engine->renderer.getTextureRepository().freeBySprite(*background);
+  context->t_engine->renderer.getTextureRepository().freeBySprite(*loadingSlot);
+  context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingprogress);
 
   delete background;
@@ -99,53 +96,52 @@ void StateCreateMazeCraft::unload() {
 }
 
 void StateCreateMazeCraft::createEntities() {
-  this->stateGamePlay->plevel = new Level(worldOptions.seed);
-  this->stateGamePlay->world = new World(worldOptions, stateGamePlay->plevel);
-  this->stateGamePlay->itemRepository = new ItemRepository();
+  stateGamePlay->plevel = new Level(worldOptions.seed);
+  stateGamePlay->world = new World(worldOptions, stateGamePlay->plevel);
+  stateGamePlay->itemRepository = new ItemRepository();
 
-  this->stateGamePlay->player =
-      new Player(stateGamePlay->plevel, &this->context->t_engine->renderer,
-                 this->stateGamePlay->itemRepository,
-                 this->stateGamePlay->world->getWorldLightModel());
+  stateGamePlay->player =
+      new Player(stateGamePlay->plevel, &context->t_engine->renderer,
+                 stateGamePlay->itemRepository,
+                 stateGamePlay->world->getWorldLightModel());
 
-  this->stateGamePlay->ui = new Ui();
+  stateGamePlay->ui = new Ui();
   setPercent(25.0F);
-  this->shouldCreatedEntities = 0;
+  shouldCreatedEntities = 0;
 }
 
 void StateCreateMazeCraft::initItemRepository() {
-  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer,
-                                            this->worldOptions.texturePack);
+  stateGamePlay->itemRepository->init(&context->t_engine->renderer,
+                                      worldOptions.texturePack);
 
   setPercent(35.0F);
-  this->shouldInitItemRepository = 0;
+  shouldInitItemRepository = 0;
   TYRA_LOG("initItemRepository");
 }
 
 void StateCreateMazeCraft::initUI() {
-  this->stateGamePlay->ui->init(&this->context->t_engine->renderer,
-                                this->stateGamePlay->itemRepository,
-                                this->stateGamePlay->player);
+  stateGamePlay->ui->init(&context->t_engine->renderer,
+                          stateGamePlay->itemRepository, stateGamePlay->player);
   setPercent(50.0F);
-  this->shouldInitUI = 0;
+  shouldInitUI = 0;
   TYRA_LOG("initUI");
 }
 
 void StateCreateMazeCraft::initWorld() {
-  this->stateGamePlay->world->init(&this->context->t_engine->renderer,
-                                   this->stateGamePlay->itemRepository);
-  this->stateGamePlay->world->generate();
-  this->stateGamePlay->world->generateLight();
-  this->stateGamePlay->world->propagateLiquids();
+  stateGamePlay->world->init(&context->t_engine->renderer,
+                             stateGamePlay->itemRepository);
+  stateGamePlay->world->generate();
+  stateGamePlay->world->generateLight();
+  stateGamePlay->world->propagateLiquids();
 
   TYRA_LOG("Generating spawn area...");
-  this->stateGamePlay->world->generateSpawnArea();
+  stateGamePlay->world->generateSpawnArea();
 
   TYRA_LOG("Loading spawn area...");
-  this->stateGamePlay->world->loadSpawnArea();
+  stateGamePlay->world->loadSpawnArea();
 
   setPercent(90.0F);
-  this->shouldInitWorld = 0;
+  shouldInitWorld = 0;
   TYRA_LOG("initWorld");
 }
 
@@ -153,35 +149,34 @@ void StateCreateMazeCraft::initPlayer() {
   TYRA_LOG("Initiating player...");
 
   TYRA_LOG("Setting player position...");
-  this->stateGamePlay->player->setPosition(
-      this->stateGamePlay->world->getGlobalSpawnArea());
+  stateGamePlay->player->setPosition(
+      stateGamePlay->world->getGlobalSpawnArea());
 
   TYRA_LOG("Setting player spawn area...");
-  this->stateGamePlay->player->spawnArea.set(
-      this->stateGamePlay->world->getLocalSpawnArea());
-  this->stateGamePlay->context->t_camera->setFirstPerson();
+  stateGamePlay->player->spawnArea.set(
+      stateGamePlay->world->getLocalSpawnArea());
+  stateGamePlay->context->t_camera->setFirstPerson();
 
   setPercent(100.0F);
 
-  this->shouldInitPlayer = 0;
+  shouldInitPlayer = 0;
 
   TYRA_LOG("Player initiated!");
 }
 
 void StateCreateMazeCraft::nextState() {
   TYRA_LOG("nextState");
-  this->stateGamePlay->afterInit();
-  this->context->setState(this->stateGamePlay);
+  stateGamePlay->afterInit();
+  context->setState(stateGamePlay);
 }
 
 void StateCreateMazeCraft::setPercent(float completed) {
-  this->_percent = completed;
-  this->loadingprogress->size.set(this->_percent / 100 * 250, 9);
+  _percent = completed;
+  loadingprogress->size.set(_percent / 100 * 250, 9);
 }
 
 void StateCreateMazeCraft::setBgColorBlack() {
-  this->context->t_engine->renderer.setClearScreenColor(
-      Color(0.0F, 0.0F, 0.0F));
+  context->t_engine->renderer.setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
 }
 
-bool StateCreateMazeCraft::hasFinished() { return this->isLoading == false; }
+bool StateCreateMazeCraft::hasFinished() { return isLoading == false; }

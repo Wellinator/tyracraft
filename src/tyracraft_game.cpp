@@ -43,6 +43,7 @@ void TyraCraftGame::loop() {
   // Control render calls
   if (timer.renderFrame()) {
     engine->renderer.beginFrame(camera.getCameraInfo());
+
     stateManager.render();
     notificationManger.render();
 

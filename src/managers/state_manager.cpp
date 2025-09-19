@@ -1,18 +1,18 @@
 #include "managers/state_manager.hpp"
 
 StateManager::StateManager(Engine* t_engine, Camera* t_camera) {
-  this->context = new Context(t_engine, t_camera);
-  this->context->setState(new StateSplashScreen(this->context));
+  context = new Context(t_engine, t_camera);
+  context->setState(new StateSplashScreen(context));
 }
 
-StateManager::~StateManager() { delete this->context; }
+StateManager::~StateManager() { delete context; }
 
 void StateManager::fixedUpdate(const float& fixedDeltaTime) {
-  this->context->fixedUpdate(fixedDeltaTime);
+  context->fixedUpdate(fixedDeltaTime);
 }
 
 void StateManager::update(const float& deltaTime) {
-  this->context->update(deltaTime);
+  context->update(deltaTime);
 }
 
-void StateManager::render() { this->context->render(); }
+void StateManager::render() { context->render(); }

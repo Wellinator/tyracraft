@@ -10,17 +10,17 @@ StateLoadingSavedGame::StateLoadingSavedGame(
   init();
 }
 
-StateLoadingSavedGame::~StateLoadingSavedGame() { this->unload(); }
+StateLoadingSavedGame::~StateLoadingSavedGame() { unload(); }
 
 void StateLoadingSavedGame::init() {
-  this->setBgColorBlack();
+  setBgColorBlack();
   progressLabel = Label_Loading;
 
   const RendererSettings& rendererSettings =
-      this->context->t_engine->renderer.core.getSettings();
+      context->t_engine->renderer.core.getSettings();
   const float width = rendererSettings.getWidth();
   const float height = rendererSettings.getHeight();
-  this->BASE_HEIGHT = height - 120;
+  BASE_HEIGHT = height - 120;
 
   // Background
   std::string backgroundTex =
@@ -29,7 +29,7 @@ void StateLoadingSavedGame::init() {
   background->mode = Tyra::MODE_STRETCH;
   background->size.set(512, 512);
   background->position.set(0, 0);
-  this->context->t_engine->renderer.core.texture.repository.add(backgroundTex)
+  context->t_engine->renderer.core.texture.repository.add(backgroundTex)
       ->addLink(background->id);
 
   // Loading slot
@@ -39,7 +39,7 @@ void StateLoadingSavedGame::init() {
   loadingSlot->mode = Tyra::MODE_STRETCH;
   loadingSlot->size.set(256, 16);
   loadingSlot->position.set(width / 2 - 128, BASE_HEIGHT + 25);
-  this->context->t_engine->renderer.core.texture.repository.add(loadingSlotTex)
+  context->t_engine->renderer.core.texture.repository.add(loadingSlotTex)
       ->addLink(loadingSlot->id);
 
   // Loading bar
@@ -47,56 +47,53 @@ void StateLoadingSavedGame::init() {
       FileUtils::fromCwd("textures/gui/loading/load.png");
   loadingprogress = new Sprite;
   loadingprogress->mode = Tyra::MODE_STRETCH;
-  loadingprogress->size.set(this->_percent / 100 * 253, 9);
+  loadingprogress->size.set(_percent / 100 * 253, 9);
   loadingprogress->position.set(width / 2 - 125, BASE_HEIGHT + 28);
-  this->context->t_engine->renderer.core.texture.repository
-      .add(loadingprogressTex)
+  context->t_engine->renderer.core.texture.repository.add(loadingprogressTex)
       ->addLink(loadingprogress->id);
 }
 
 void StateLoadingSavedGame::update(const float& deltaTime) {
-  if (this->hasFinished()) {
-    this->nextState();
+  if (hasFinished()) {
+    nextState();
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  if (this->shouldCreatedEntities) {
+  if (shouldCreatedEntities) {
     progressLabel = Label_CreatingEntities;
-    return this->createEntities();
-  } else if (this->shouldInitItemRepository) {
+    return createEntities();
+  } else if (shouldInitItemRepository) {
     progressLabel = Label_LoadingItemsRepo;
-    return this->initItemRepository();
-  } else if (this->shouldInitUI) {
+    return initItemRepository();
+  } else if (shouldInitUI) {
     progressLabel = Label_LoadingUI;
-    return this->initUI();
-  } else if (this->shouldInitWorld) {
+    return initUI();
+  } else if (shouldInitWorld) {
     progressLabel = Label_LoadingWorld;
-    return this->initWorld();
-  } else if (this->shouldLoadSavedData) {
+    return initWorld();
+  } else if (shouldLoadSavedData) {
     progressLabel = Label_LoadingSave;
-    return this->loadSavedData();
-  } else if (this->shouldInitPlayer) {
+    return loadSavedData();
+  } else if (shouldInitPlayer) {
     progressLabel = Label_LoadingPlayer;
-    return this->initPlayer();
+    return initPlayer();
   }
-  this->_state = LoadingState::Complete;
+  _state = LoadingState::Complete;
 }
 
 void StateLoadingSavedGame::render() {
-  this->context->t_engine->renderer.renderer2D.render(background);
-  this->context->t_engine->renderer.renderer2D.render(loadingSlot);
-  this->context->t_engine->renderer.renderer2D.render(loadingprogress);
+  context->t_engine->renderer.renderer2D.render(background);
+  context->t_engine->renderer.renderer2D.render(loadingSlot);
+  context->t_engine->renderer.renderer2D.render(loadingprogress);
 
   FontManager::getInstance()->printText(progressLabel, progressLabelOptions);
 }
 
 void StateLoadingSavedGame::unload() {
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *background);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
-      *loadingSlot);
-  this->context->t_engine->renderer.getTextureRepository().freeBySprite(
+  context->t_engine->renderer.getTextureRepository().freeBySprite(*background);
+  context->t_engine->renderer.getTextureRepository().freeBySprite(*loadingSlot);
+  context->t_engine->renderer.getTextureRepository().freeBySprite(
       *loadingprogress);
 
   delete background;
@@ -106,82 +103,80 @@ void StateLoadingSavedGame::unload() {
 }
 
 void StateLoadingSavedGame::createEntities() {
-  this->stateGamePlay->plevel = new Level(worldOptions->seed);
-  this->stateGamePlay->world = new World(*worldOptions, stateGamePlay->plevel);
-  this->stateGamePlay->itemRepository = new ItemRepository();
+  stateGamePlay->plevel = new Level(worldOptions->seed);
+  stateGamePlay->world = new World(*worldOptions, stateGamePlay->plevel);
+  stateGamePlay->itemRepository = new ItemRepository();
 
-  this->stateGamePlay->player =
-      new Player(stateGamePlay->plevel, &this->context->t_engine->renderer,
-                 this->stateGamePlay->itemRepository,
-                 this->stateGamePlay->world->getWorldLightModel());
-  this->stateGamePlay->ui = new Ui();
+  stateGamePlay->player =
+      new Player(stateGamePlay->plevel, &context->t_engine->renderer,
+                 stateGamePlay->itemRepository,
+                 stateGamePlay->world->getWorldLightModel());
+  stateGamePlay->ui = new Ui();
   setPercent(25.0F);
-  this->shouldCreatedEntities = 0;
+  shouldCreatedEntities = 0;
 }
 
 void StateLoadingSavedGame::initItemRepository() {
-  this->stateGamePlay->itemRepository->init(&this->context->t_engine->renderer,
-                                            worldOptions->texturePack);
+  stateGamePlay->itemRepository->init(&context->t_engine->renderer,
+                                      worldOptions->texturePack);
 
   setPercent(35.0F);
-  this->shouldInitItemRepository = 0;
+  shouldInitItemRepository = 0;
   TYRA_LOG("initItemRepository");
 }
 
 void StateLoadingSavedGame::initUI() {
-  this->stateGamePlay->ui->init(&this->context->t_engine->renderer,
-                                this->stateGamePlay->itemRepository,
-                                this->stateGamePlay->player);
+  stateGamePlay->ui->init(&context->t_engine->renderer,
+                          stateGamePlay->itemRepository, stateGamePlay->player);
   setPercent(50.0F);
-  this->shouldInitUI = 0;
+  shouldInitUI = 0;
   TYRA_LOG("initUI");
 }
 
 void StateLoadingSavedGame::initWorld() {
-  this->stateGamePlay->world->init(&this->context->t_engine->renderer,
-                                   this->stateGamePlay->itemRepository);
+  stateGamePlay->world->init(&context->t_engine->renderer,
+                             stateGamePlay->itemRepository);
   setPercent(70.0F);
-  this->shouldInitWorld = 0;
+  shouldInitWorld = 0;
   TYRA_LOG("initWorld");
 }
 
 void StateLoadingSavedGame::loadSavedData() {
-  SaveManager::LoadSavedGame(this->stateGamePlay, saveFileFullPath.c_str());
-  this->stateGamePlay->world->generateLight();
-  this->stateGamePlay->world->loadSpawnArea();
+  SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
+  stateGamePlay->world->generateLight();
+  stateGamePlay->world->loadSpawnArea();
 
   setPercent(80.0F);
-  this->shouldLoadSavedData = 0;
+  shouldLoadSavedData = 0;
   TYRA_LOG("loadSavedWorld");
 }
 
 void StateLoadingSavedGame::initPlayer() {
   TYRA_LOG("Initializing player...");
-  this->stateGamePlay->player->mesh->getPosition()->set(
-      this->stateGamePlay->world->getGlobalSpawnArea());
-  this->stateGamePlay->player->spawnArea.set(
-      this->stateGamePlay->world->getLocalSpawnArea());
-  this->stateGamePlay->context->t_camera->setFirstPerson();
+  stateGamePlay->player->mesh->getPosition()->set(
+      stateGamePlay->world->getGlobalSpawnArea());
+  stateGamePlay->player->spawnArea.set(
+      stateGamePlay->world->getLocalSpawnArea());
+  stateGamePlay->context->t_camera->setFirstPerson();
   setPercent(100.0F);
-  this->shouldInitPlayer = 0;
+  shouldInitPlayer = 0;
   TYRA_LOG("Player initialized");
 }
 
 void StateLoadingSavedGame::nextState() {
   TYRA_LOG("nextState");
-  this->context->setState(this->stateGamePlay);
+  context->setState(stateGamePlay);
 }
 
 void StateLoadingSavedGame::setPercent(float completed) {
-  this->_percent = completed;
-  this->loadingprogress->size.set(this->_percent / 100 * 250, 9);
+  _percent = completed;
+  loadingprogress->size.set(_percent / 100 * 250, 9);
 }
 
 void StateLoadingSavedGame::setBgColorBlack() {
-  this->context->t_engine->renderer.setClearScreenColor(
-      Color(0.0F, 0.0F, 0.0F));
+  context->t_engine->renderer.setClearScreenColor(Color(0.0F, 0.0F, 0.0F));
 }
 
 bool StateLoadingSavedGame::hasFinished() {
-  return this->_state == LoadingState::Complete;
+  return _state == LoadingState::Complete;
 }

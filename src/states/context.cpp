@@ -6,7 +6,6 @@
 Context::Context(Engine* t_engine, Camera* t_camera) : soundManager(t_engine) {
   this->t_engine = t_engine;
   this->t_camera = t_camera;
-  pFontManager = FontManager::getInstance();
 }
 
 Context::~Context() { delete state; }
@@ -17,11 +16,9 @@ void Context::fixedUpdate(const float& fixedDeltaTime) {
 
 void Context::update(const float& deltaTime) { state->update(deltaTime); }
 
-void Context::render() {
-  state->render();
-}
+void Context::render() { state->render(); }
 
 void Context::setState(GameState* newState) {
-  if (state != nullptr) delete state;
+  if (state) delete state;
   state = newState;
 }
