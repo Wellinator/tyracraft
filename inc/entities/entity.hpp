@@ -24,6 +24,7 @@ class Entity {
 
   const EntityType entity_type;
 
+  Vec4 rotation = Vec4(0, 0, 0);
   Vec4 position = Vec4(0, 0, 0), _prevPosition = Vec4(0, 0, 0),
        _targetPosition = Vec4(0, 0, 0);
 

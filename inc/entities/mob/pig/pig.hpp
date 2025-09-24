@@ -16,6 +16,7 @@
 #include "entities/Block.hpp"
 #include "entities/chunk.hpp"
 #include "entities/mob/mob.hpp"
+#include "entities/animation/animated.hpp"
 #include <tamtypes.h>
 #include <array>
 #include "managers/chunk_manager.hpp"
@@ -30,9 +31,7 @@
 using Tyra::Audio;
 using Tyra::BBox;
 using Tyra::CoreBBox;
-using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
+
 using Tyra::FileUtils;
 using Tyra::M4x4;
 using Tyra::MeshBuilderData;
@@ -41,29 +40,30 @@ using Tyra::ObjLoaderOptions;
 using Tyra::PadButtons;
 using Tyra::Ray;
 using Tyra::Renderer;
+using Tyra::StaPipOptions;
 using Tyra::StaticPipeline;
 using Tyra::TextureRepository;
 using Tyra::Timer;
 using Tyra::Vec4;
 
 /** Pig 3D object class  */
-class Pig : public Mob {
+class Pig : public Mob, public Animated {
  public:
-  Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
-      Texture* pigTexture, DynamicMesh* baseMesh);
+  Pig(Level* level, Renderer* pRenderer, Texture* pigTexture,
+      Tyra::Mesh** framesArray, const int size);
   ~Pig();
 
   // Override Mob
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
-  void render() {};
+  void render();
 
   Renderer* t_renderer;
   Level* pLevel;
 
   void setWalkingAnimation();
+  void setIdleAnimation();
   void updateWalkingAnimationSpeed();
-  void unsetWalkingAnimation();
   void jumpQuickly();
   void swim();
   bool isOnWater();
@@ -105,7 +105,6 @@ class Pig : public Mob {
 
   Texture* texture;
 
-  void loadMesh(DynamicMesh* baseMesh);
   void loadStaticBBox();
   float getNextVrticalPosition(const float& fixedDeltaTime);
 
@@ -124,8 +123,13 @@ class Pig : public Mob {
 
   // Animations
   const float ANIMATION_SPEED_FACT = 0.2f;
-  std::vector<u32> standStillSequence = {0};
-  std::vector<u32> walkSequence = {1, 2};
 
   void updateStateInWater();
+
+ private:
+  StaPipOptions statPipOptions;
+  StaticPipeline statPip;
+
+  const u8 IDLE_ANIMATION = 0;
+  const u8 WALK_ANIMATION = 1;
 };

@@ -17,16 +17,35 @@ using Tyra::Renderer3D;
 // Constructors/Destructors
 // ----
 
-Pig::Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
-         Texture* pigTexture, DynamicMesh* baseMesh)
-    : Mob(level) {
+Pig::Pig(Level* level, Renderer* pRenderer, Texture* pigTexture,
+         Tyra::Mesh** framesArray, const int size)
+    : Mob(level), Animated(framesArray, size) {
   pLevel = level;
-  this->t_renderer = t_renderer;
-  this->t_chunkManager = t_chunkManager;
-  this->texture = pigTexture;
+  t_renderer = pRenderer;
+  texture = pigTexture;
 
-  loadMesh(baseMesh);
+  statPip.setRenderer(&t_renderer->core);
   loadStaticBBox();
+
+  std::vector<u8> standStillSequence = {0};
+  AnimationOptions idleAnimation;
+  idleAnimation.animationId = IDLE_ANIMATION;
+  idleAnimation.framesIndices = standStillSequence;
+  idleAnimation.durationInMs = 250.0f;
+  idleAnimation.loop = true;
+  idleAnimation.wrapFrames = false;
+  addAnimation(idleAnimation);
+
+  std::vector<u8> walkSequence = {1, 2};
+  AnimationOptions walkAnimation;
+  walkAnimation.animationId = WALK_ANIMATION;
+  walkAnimation.framesIndices = walkSequence;
+  walkAnimation.durationInMs = 700.0f;
+  walkAnimation.loop = true;
+  walkAnimation.wrapFrames = false;
+  addAnimation(walkAnimation);
+
+  setIdleAnimation();
 
   isWalkingAnimationSet = false;
   isStandStillAnimationSet = false;
@@ -37,17 +56,7 @@ Pig::Pig(Level* level, Renderer* t_renderer, ChunkManager* t_chunkManager,
 
 Pig::~Pig() {
   g_AABBTree->remove(tree_index);
-
-  for (size_t i = 0; i < mesh.get()->materials.size(); i++)
-    texture->removeLinkById(mesh.get()->materials[i]->id);
-
   delete bbox;
-
-  walkSequence.clear();
-  walkSequence.shrink_to_fit();
-
-  standStillSequence.clear();
-  standStillSequence.shrink_to_fit();
 }
 
 // ----
@@ -59,7 +68,8 @@ void Pig::fixedUpdate(const float& fixedDeltaTime) {
   // set new prev to old target
   _prevPosition.set(_targetPosition);
 
-  Chunk* chk = t_chunkManager->getChunkByWorldPosition(position);
+  auto pChunkManager = ChunkManager::getInstance();
+  Chunk* chk = pChunkManager->getChunkByWorldPosition(position);
   if (chk != nullptr) {
     if (chk->state != ChunkState::Loaded ||
         chk->getDistanceFromPlayerInChunks() > 6) {
@@ -74,13 +84,59 @@ void Pig::fixedUpdate(const float& fixedDeltaTime) {
   const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
   updateTerrainHeightAtEntityPosition();
   updateYPosition(nextYPos);
-
-  mesh.get()->update();
 }
 
 void Pig::update(const float& deltaTime) {
   position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
-  mesh.get()->getPosition()->set(position);
+  Mob::update(deltaTime);
+  Animated::update(deltaTime);
+}
+
+void Pig::render() {
+  std::vector<Vec4> vertices = {};
+  std::vector<Color> verticesColors = {};
+  std::vector<Vec4> uvMap = {};
+
+  // Calc draw data by frames interpolation
+  const AnimationOptions currentAnimationOptions = getCurrentAnimation();
+  if (currentAnimationOptions.framesIndices.size() > 1) {
+    fillDrawDataByLerp(&vertices, &verticesColors, &uvMap);
+  } else {
+    fillDrawDataByFrame(&vertices, &verticesColors, &uvMap);
+  }
+
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
+
+  textureBag.coordinates = uvMap.data();
+  textureBag.texture = texture;
+
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  Color tempColor = Color(128, 128, 128);
+  colorBag.single = &tempColor;  // verticesColors.data();
+
+  M4x4 rawMatrix = M4x4::Identity;
+  rawMatrix.rotate(rotation);
+  rawMatrix.translate(position);
+  infoBag.model = &rawMatrix;
+
+  bag.count = vertices.size();
+  bag.vertices = vertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  t_renderer->renderer3D.usePipeline(statPip);
+  statPip.core.render(&bag);
 }
 
 void Pig::tick() {
@@ -326,20 +382,6 @@ void Pig::resolveOutOfWorldBoundaries() {
 
 const float Pig::getHeight() { return DOUBLE_BLOCK_SIZE * 0.9F; }
 
-void Pig::loadMesh(DynamicMesh* baseMesh) {
-  mesh = std::make_unique<DynamicMesh>(*baseMesh);
-  mesh.get()->rotation.identity();
-  mesh.get()->scale.identity();
-
-  auto& materials = mesh.get()->materials;
-  for (size_t i = 0; i < materials.size(); i++)
-    texture->addLink(materials[i]->id);
-
-  mesh.get()->animation.setSequence(standStillSequence);
-  mesh.get()->animation.loop = false;
-  mesh.get()->animation.speed = 0;
-}
-
 void Pig::loadStaticBBox() {
   if (bbox) delete bbox;
 
@@ -384,25 +426,9 @@ void Pig::swim() {
   isOnGround = false;
 }
 
-void Pig::setWalkingAnimation() {
-  mesh.get()->animation.loop = true;
-  mesh.get()->animation.setSequence(walkSequence);
-  isWalkingAnimationSet = true;
-}
+void Pig::setWalkingAnimation() { setAnimation(WALK_ANIMATION); }
 
-void Pig::updateWalkingAnimationSpeed() {
-  mesh.get()->animation.speed =
-      TyraCraft::Timer::getInstance()->getFixedDeltaTime() *
-      (ANIMATION_SPEED_FACT * speed);
-}
-
-void Pig::unsetWalkingAnimation() {
-  if (!isWalkingAnimationSet) return;
-
-  mesh.get()->animation.setSequence(standStillSequence);
-  mesh.get()->animation.loop = false;
-  isWalkingAnimationSet = false;
-}
+void Pig::setIdleAnimation() { setAnimation(IDLE_ANIMATION); }
 
 void Pig::updateStateInWater() {
   Vec4 min, mid, max, top, bottom;
@@ -538,7 +564,6 @@ void Pig::onMoved() {
     }
 
     if (!isWalkingAnimationSet) setWalkingAnimation();
-    updateWalkingAnimationSpeed();
 
   } else {
     lastTimePlayedStepSfx +=
@@ -546,7 +571,7 @@ void Pig::onMoved() {
   }
 }
 
-void Pig::onStopMoving() { unsetWalkingAnimation(); }
+void Pig::onStopMoving() { setIdleAnimation(); }
 
 // ----
 // Override

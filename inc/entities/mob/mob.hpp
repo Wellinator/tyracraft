@@ -9,8 +9,6 @@
 #include "3libs/bvh/bvh.h"
 #include <memory>
 
-using Tyra::DynamicMesh;
-
 class Mob : public Entity {
  public:
   Mob(Level* level);
@@ -30,9 +28,12 @@ class Mob : public Entity {
                                 u8 isColliding = 0) = 0;
 
   virtual inline Vec4* getPosition() { return &position; };
+
   virtual void setPosition(const Vec4& pos) {
     position.set(pos);
-    mesh.get()->getPosition()->set(position);
+
+    // mesh.get()->getPosition()->set(position);
+    //  TODO: move mesh position to render matrix
 
     _prevPosition.set(position);
     _targetPosition.set(position);
@@ -54,7 +55,8 @@ class Mob : public Entity {
   const uint32_t id = rand() % 999999;
 
   /** Mob mesh data */
-  std::unique_ptr<DynamicMesh> mesh;
+  Tyra::Mesh** framesArray = nullptr;
+  const int framesCount = 0;
 
   Vec4 spawnPosition;
   Vec4 lookAt;

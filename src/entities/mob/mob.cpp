@@ -6,7 +6,7 @@ Mob::Mob(Level* level) : Entity(level, EntityType::Mob) {
   currentState = new WanderState();
 };
 
-Mob::~Mob(){};
+Mob::~Mob() {};
 
 void Mob::fixedUpdate(const float& fixedDeltaTime) {
   if (currentState != nullptr) {
@@ -28,10 +28,14 @@ bool Mob::advancePath(const float& fixedDeltaTime, bool faceRoute) {
 
   if (faceRoute) {
     // Update mesh rotation; This routine do not change the hitbox
+
+    // mesh.get()->rotation.identity();
+    // TODO: implement mob rotation
+
     Vec4 dir = (target - position).getNormalized();
-    mesh.get()->rotation.identity();
     float revTheta = Utils::reverseAngle(Tyra::Math::atan2(dir.x, dir.z));
-    mesh.get()->rotation.rotateY(revTheta);
+    rotation.y = revTheta;
+    // TODO: implement mob rotation
   };
 
   // TODO: lookAt

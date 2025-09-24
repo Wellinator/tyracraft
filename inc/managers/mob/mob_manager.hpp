@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 #include <tyra>
+#include <memory>
 #include <math.h>
 #include "models/world_light_model.hpp"
 #include "entities/mob/mob.hpp"
@@ -12,10 +13,9 @@
 
 using Tyra::Color;
 using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
 using Tyra::MeshBuilderData;
 using Tyra::Renderer;
+
 using Tyra::Texture;
 using Tyra::Vec4;
 
@@ -48,17 +48,13 @@ class MobManager {
   Texture* pigTexture = nullptr;
 
   // Mobs mesh
-  DynamicMesh* pigBaseMesh;
-  MeshBuilderData* pigMeshBuilderData;
+  std::array<std::unique_ptr<Tyra::Mesh>, 3> pigFrames;
 
   u8 _mobsHasChanged = false;
   std::vector<Mob*> mobs;
 
-  DynPipOptions dynpipOptions;
-  DynamicPipeline dynpip;
-
   void _loadPigTexture();
-  void _loadPigMesh();
+  void _loadPigFrames();
 
   Vec4 _getMobMoviementDirection(Mob* mob);
 

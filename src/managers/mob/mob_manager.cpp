@@ -8,14 +8,7 @@ using Tyra::MeshBuilderData;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 
-MobManager::MobManager() {
-  dynpipOptions.antiAliasingEnabled = false;
-  dynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  dynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
-};
+MobManager::MobManager() {};
 
 MobManager::~MobManager() {
   for (size_t i = 0; i < mobs.size(); i++) {
@@ -23,8 +16,8 @@ MobManager::~MobManager() {
     mobs[i] = nullptr;
   }
 
-  delete pigBaseMesh;
-  delete pigMeshBuilderData;
+  // delete pigBaseMesh;
+  // delete pigMeshBuilderData;
 
   t_renderer->getTextureRepository().free(pigTexture);
 
@@ -40,9 +33,7 @@ void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
   pLevel = level;
 
   _loadPigTexture();
-  _loadPigMesh();
-
-  dynpip.setRenderer(&this->t_renderer->core);
+  _loadPigFrames();
 }
 
 void MobManager::fixedUpdate(const float& fixedDeltaTime) {
@@ -72,7 +63,6 @@ void MobManager::tick() {
 }
 
 void MobManager::render() {
-  t_renderer->renderer3D.usePipeline(&dynpip);
   for (size_t i = 0; i < mobs.size(); i++) {
     if (mobs[i]->shouldUnspawn) continue;
 
@@ -80,7 +70,7 @@ void MobManager::render() {
     if (g_debug_menu.enableRenderMobs == false) continue;
 #endif  // DEBUG_MODE
 
-    dynpip.render(mobs[i]->mesh.get(), &dynpipOptions);
+    mobs[i]->render();
 
 #ifdef DEBUG_MODE
     if (g_debug_menu.showCollisionBoxes) {
@@ -123,17 +113,21 @@ void MobManager::_loadPigTexture() {
       FileUtils::fromCwd("textures/entity/pig/pig.png"));
 }
 
-void MobManager::_loadPigMesh() {
+void MobManager::_loadPigFrames() {
   ObjLoaderOptions options;
   options.scale = 17.0F;
   options.flipUVs = true;
-  options.animation.count = 3;
+  options.animation.count = 1;
 
-  pigMeshBuilderData =
-      ObjLoader::load(FileUtils::fromCwd("models/pig/pig.obj"), options)
-          .release();
-  pigMeshBuilderData->loadNormals = false;
-  pigBaseMesh = new DynamicMesh(pigMeshBuilderData);
+  for (size_t i = 0; i < pigFrames.size(); i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData =
+        ObjLoader::load(FileUtils::fromCwd("models/pig/pig_frame_" +
+                                           std::to_string(i + 1) + ".obj"),
+                        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
+    pigFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
+  }
 }
 
 Vec4 MobManager::_getMobMoviementDirection(Mob* mob) {
@@ -173,8 +167,15 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
 }
 
 Mob* MobManager::_createPig() {
-  Pig* mob =
-      new Pig(pLevel, t_renderer, t_chunkManager, pigTexture, pigBaseMesh);
+  // Convert smart pointers to raw pointers for Animated constructor
+  std::array<Tyra::Mesh*, 3> rawFrames;
+  for (size_t i = 0; i < pigFrames.size(); i++) {
+    rawFrames[i] = pigFrames[i].get();
+  }
+
+  Mob* mob = new Pig(pLevel, t_renderer, pigTexture, rawFrames.data(),
+                     rawFrames.size());
+
   mobs.emplace_back(mob);
   return mob;
 }
