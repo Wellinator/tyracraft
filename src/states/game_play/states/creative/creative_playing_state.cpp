@@ -110,6 +110,9 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 
     if (pressed.Square && clicked.DpadUp) {
       stateGamePlay->world->mobManager.spawnMobAtPosition(
+          MobType::Pig, stateGamePlay->player->position);
+
+      stateGamePlay->world->mobManager.spawnMobAtPosition(
           MobType::Cow, stateGamePlay->player->position);
     }
 
