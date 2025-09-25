@@ -99,7 +99,8 @@ class Pig : public Mob, public Animated {
   const float maxSpeed = 20.0F;
   float speed = 25.0F;
 
-  const Vec4 hitBoxDimensions =
+  // Based in hitbox info from https://minecraft.wiki/w/Pig
+  const Vec4 hitBoxSize =
       Vec4((DOUBLE_BLOCK_SIZE * 0.9F) / 2, DOUBLE_BLOCK_SIZE * 0.9F,
            (DOUBLE_BLOCK_SIZE * 0.9F) / 2);
 
