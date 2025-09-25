@@ -46,20 +46,29 @@ class MobManager {
 
   // Mobs textures
   Texture* pigTexture = nullptr;
+  Texture* cowTexture = nullptr;
 
-  // Mobs mesh
+  /**
+   * Mobs mesh
+   */
+  // Frame [1] - Idle
+  // Frame [2, 3] - Walk
   std::array<std::unique_ptr<Tyra::Mesh>, 3> pigFrames;
+
+  // Frame [1] - Idle
+  // Frame [2, 3] - Walk
+  std::array<std::unique_ptr<Tyra::Mesh>, 3> cowFrames;
 
   u8 _mobsHasChanged = false;
   std::vector<Mob*> mobs;
 
-  void _loadPigTexture();
-  void _loadPigFrames();
+  void _loadMobTextures();
+  void _loadMobFrames();
 
   Vec4 _getMobMoviementDirection(Mob* mob);
 
-  Mob* _createPig();
-  Mob* _createPigAtPosition(const Vec4& position);
+  Mob* _createMob(const MobType type);
+  Mob* _createMobAtPosition(const MobType type, const Vec4& position);
 
   void _destroyUnspownedMobs();
 };

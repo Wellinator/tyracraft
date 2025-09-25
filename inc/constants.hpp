@@ -366,7 +366,7 @@ enum class ItemType { McPipBlock, ObjBlock, Tool, Food };
 
 enum class MobCategory { Passive, Neutral, Hostile, Invalid };
 
-enum class MobType { Pig, Invalid };
+enum class MobType { Pig, Cow, Invalid };
 
 enum class ParticleType { Block, Flame, Smoke };
 

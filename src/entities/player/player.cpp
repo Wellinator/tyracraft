@@ -533,8 +533,7 @@ void Player::loadMesh() {
 
 void Player::loadStaticBBox() {
   Vec4 minCorner = Vec4(-hitBoxDimensions.x, 0, -hitBoxDimensions.z);
-  Vec4 maxCorner =
-      Vec4(hitBoxDimensions.x, hitBoxDimensions.y, hitBoxDimensions.z);
+  Vec4 maxCorner = Vec4(hitBoxDimensions.x, hitBoxDimensions.y, hitBoxDimensions.z);
 
   Vec4 vertices[8] = {Vec4(minCorner),
                       Vec4(maxCorner.x, minCorner.y, minCorner.z),

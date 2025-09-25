@@ -1,5 +1,6 @@
 #include "managers/mob/mob_manager.hpp"
 #include "entities/mob/pig/pig.hpp"
+#include "entities/mob/cow/cow.hpp"
 #include "managers/tick_manager.hpp"
 #include "managers/collision_manager.hpp"
 #include "debug.hpp"
@@ -20,6 +21,7 @@ MobManager::~MobManager() {
   // delete pigMeshBuilderData;
 
   t_renderer->getTextureRepository().free(pigTexture);
+  t_renderer->getTextureRepository().free(cowTexture);
 
   mobs.clear();
   mobs.shrink_to_fit();
@@ -32,8 +34,8 @@ void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
   this->t_worldLightModel = t_worldLightModel;
   pLevel = level;
 
-  _loadPigTexture();
-  _loadPigFrames();
+  _loadMobTextures();
+  _loadMobFrames();
 }
 
 void MobManager::fixedUpdate(const float& fixedDeltaTime) {
@@ -108,14 +110,16 @@ void MobManager::render() {
   }
 }
 
-void MobManager::_loadPigTexture() {
+void MobManager::_loadMobTextures() {
   pigTexture = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/entity/pig/pig.png"));
+  cowTexture = t_renderer->getTextureRepository().add(
+      FileUtils::fromCwd("textures/entity/cow/cow.png"));
 }
 
-void MobManager::_loadPigFrames() {
+void MobManager::_loadMobFrames() {
   ObjLoaderOptions options;
-  options.scale = 17.0F;
+  options.scale = 16.5F;
   options.flipUVs = true;
   options.animation.count = 1;
 
@@ -127,6 +131,16 @@ void MobManager::_loadPigFrames() {
     tempFrameData->loadNormals = false;
     tempFrameData->loadLightmap = false;
     pigFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
+  }
+
+  for (size_t i = 0; i < cowFrames.size(); i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData =
+        ObjLoader::load(FileUtils::fromCwd("models/cow/cow_frame_" +
+                                           std::to_string(i + 1) + ".obj"),
+                        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
+    cowFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
   }
 }
 
@@ -142,7 +156,8 @@ Mob* MobManager::spawnMob(const MobType type) {
 
   switch (type) {
     case MobType::Pig:
-      return _createPig();
+    case MobType::Cow:
+      return _createMob(type);
 
     default:
       TYRA_ERROR("Invalid MobType!");
@@ -157,8 +172,9 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
 
   switch (type) {
     case MobType::Pig:
-      position.print("Spawning Pig at: ");
-      return _createPigAtPosition(position);
+    case MobType::Cow:
+      position.print("Spawning mob at: ");
+      return _createMobAtPosition(type, position);
 
     default:
       TYRA_ERROR("Invalid MobType!");
@@ -166,22 +182,40 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
   }
 }
 
-Mob* MobManager::_createPig() {
-  // Convert smart pointers to raw pointers for Animated constructor
-  std::array<Tyra::Mesh*, 3> rawFrames;
-  for (size_t i = 0; i < pigFrames.size(); i++) {
-    rawFrames[i] = pigFrames[i].get();
-  }
+Mob* MobManager::_createMob(const MobType type) {
+  Mob* mob = nullptr;
+  std::vector<Tyra::Mesh*> rawFrames = {};
+  rawFrames.reserve(5);  // Reserve space for up to 5 frames
 
-  Mob* mob = new Pig(pLevel, t_renderer, pigTexture, rawFrames.data(),
-                     rawFrames.size());
+  switch (type) {
+    case MobType::Pig:
+      // Convert smart pointers to raw pointers for Animated constructor
+      for (size_t i = 0; i < pigFrames.size(); i++)
+        rawFrames.emplace_back(pigFrames[i].get());
+
+      mob = new Pig(pLevel, t_renderer, pigTexture, rawFrames.data(),
+                    rawFrames.size());
+      break;
+    case MobType::Cow:
+      // Convert smart pointers to raw pointers for Animated constructor
+      for (size_t i = 0; i < cowFrames.size(); i++)
+        rawFrames.emplace_back(cowFrames[i].get());
+      mob = new Cow(pLevel, t_renderer, cowTexture, rawFrames.data(),
+                    rawFrames.size());
+      break;
+
+    default:
+      TYRA_TRAP("Invalid MobType!");
+      return nullptr;
+  }
 
   mobs.emplace_back(mob);
   return mob;
 }
 
-Mob* MobManager::_createPigAtPosition(const Vec4& position) {
-  Mob* mob = _createPig();
+Mob* MobManager::_createMobAtPosition(const MobType type,
+                                      const Vec4& position) {
+  Mob* mob = _createMob(type);
   mob->spawnPosition.set(position);
   mob->setPosition(position);
   return mob;

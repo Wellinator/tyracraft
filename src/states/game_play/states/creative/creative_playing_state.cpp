@@ -110,7 +110,7 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 
     if (pressed.Square && clicked.DpadUp) {
       stateGamePlay->world->mobManager.spawnMobAtPosition(
-          MobType::Pig, stateGamePlay->player->position);
+          MobType::Cow, stateGamePlay->player->position);
     }
 
     // List loaded textures and VRAM
