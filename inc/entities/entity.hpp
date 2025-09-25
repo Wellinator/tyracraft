@@ -49,4 +49,14 @@ class Entity {
   virtual void updateTerrainHeightAtEntityPosition();
   /** Update entity position by gravity and update index of current block */
   virtual void updateYPosition(const float nextYPos);
+
+  virtual const Vec4 getHitBoxSize() {
+    TYRA_TRAP("getHitBoxSize() not implemented!");
+    return Vec4(0, 0, 0);
+  };
+
+ protected:
+  virtual void loadStaticBBox() {
+    TYRA_TRAP("loadStaticBBox() not implemented!");
+  };
 };

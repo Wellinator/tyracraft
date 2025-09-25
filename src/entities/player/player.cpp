@@ -275,9 +275,10 @@ u8 Player::updateXZPosition(const float& deltaTime, const Vec4& nextPlayerPos,
   M4x4 model = M4x4::Identity;
   Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
                          std::abs(positionDiff.z));
-  Vec4 scaleFraction = (deltaScale / hitBoxDimensions);
+  const Vec4 hitBoxSize = getHitBoxSize();
+  Vec4 scaleFraction = (deltaScale / hitBoxSize);
   model.scale(scaleFraction + Vec4(1.0F, 1.0F, 1.0F));
-  model.translate(_targetPosition + (positionDiff * hitBoxDimensions));
+  model.translate(_targetPosition + (positionDiff * hitBoxSize));
 
   Vec4 _min, _max;
   BBox tempBBox = getHitBox(model);
@@ -532,8 +533,9 @@ void Player::loadMesh() {
 }
 
 void Player::loadStaticBBox() {
-  Vec4 minCorner = Vec4(-hitBoxDimensions.x, 0, -hitBoxDimensions.z);
-  Vec4 maxCorner = Vec4(hitBoxDimensions.x, hitBoxDimensions.y, hitBoxDimensions.z);
+  const Vec4 hitBoxSize = getHitBoxSize();
+  Vec4 minCorner = Vec4(-hitBoxSize.x, 0, -hitBoxSize.z);
+  Vec4 maxCorner = Vec4(hitBoxSize.x, hitBoxSize.y, hitBoxSize.z);
 
   Vec4 vertices[8] = {Vec4(minCorner),
                       Vec4(maxCorner.x, minCorner.y, minCorner.z),

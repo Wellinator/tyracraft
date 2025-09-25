@@ -76,7 +76,7 @@ class Player : public Entity {
   Level* pLevel;
 
   inline Vec4* getPosition() { return &position; };
-  
+
   void setPosition(const Vec4& pos) {
     position.set(pos);
     mesh->getPosition()->set(position);
@@ -119,9 +119,10 @@ class Player : public Entity {
   };
   inline ItemId* getInventoryData() { return inventory; };
 
-  const Vec4 hitBoxDimensions =
-      Vec4((DOUBLE_BLOCK_SIZE * 0.4F) / 2, DOUBLE_BLOCK_SIZE * 1.8F,
-           (DOUBLE_BLOCK_SIZE * 0.4F) / 2);
+  const Vec4 getHitBoxSize() override {
+    return Vec4((DOUBLE_BLOCK_SIZE * 0.3F) / 2, DOUBLE_BLOCK_SIZE * 1.8F,
+                (DOUBLE_BLOCK_SIZE * 0.3F) / 2);
+  };
 
   DynPipOptions modelDynpipOptions;
   DynamicPipeline dynpip;
@@ -209,7 +210,8 @@ class Player : public Entity {
 
   // Animations
   // Player body
-  // Animation base speed expressed in frames-per-second (was per-frame 0.08 @ 60 FPS => 4.8 fps)
+  // Animation base speed expressed in frames-per-second (was per-frame 0.08 @
+  // 60 FPS => 4.8 fps)
   float baseAnimationSpeed = 3.8F;
   std::vector<u32> walkSequence = {2, 1, 0, 1};
   std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};

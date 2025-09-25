@@ -100,9 +100,10 @@ class Pig : public Mob, public Animated {
   float speed = 25.0F;
 
   // Based in hitbox info from https://minecraft.wiki/w/Pig
-  const Vec4 hitBoxSize =
-      Vec4((DOUBLE_BLOCK_SIZE * 0.9F) / 2, DOUBLE_BLOCK_SIZE * 0.9F,
-           (DOUBLE_BLOCK_SIZE * 0.9F) / 2);
+  const Vec4 getHitBoxSize() override {
+    return Vec4((DOUBLE_BLOCK_SIZE * 0.9F) / 2, DOUBLE_BLOCK_SIZE * 0.9F,
+                (DOUBLE_BLOCK_SIZE * 0.9F) / 2);
+  }
 
   Texture* texture;
 

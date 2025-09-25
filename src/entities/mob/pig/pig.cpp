@@ -188,6 +188,8 @@ bool Pig::updateXZPosition(const float& deltaTime, const Vec4& nextPosition,
   M4x4 model = M4x4::Identity;
   Vec4 deltaScale = Vec4(std::abs(positionDiff.x), std::abs(positionDiff.y),
                          std::abs(positionDiff.z));
+
+  const Vec4 hitBoxSize = getHitBoxSize();
   Vec4 scaleFraction = (deltaScale / hitBoxSize);
   model.scale(scaleFraction + Vec4(1.5F, 1.5F, 1.5F));
   model.translate(_targetPosition + (positionDiff * hitBoxSize));
@@ -385,6 +387,7 @@ const float Pig::getHeight() { return DOUBLE_BLOCK_SIZE * 0.9F; }
 void Pig::loadStaticBBox() {
   if (bbox) delete bbox;
 
+  const Vec4 hitBoxSize = getHitBoxSize();
   Vec4 minCorner = Vec4(-hitBoxSize.x, 0, -hitBoxSize.z);
   Vec4 maxCorner = Vec4(hitBoxSize.x, hitBoxSize.y, hitBoxSize.z);
 
