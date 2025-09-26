@@ -125,7 +125,7 @@ class World {
   const Vec4 calcSpawOffset(int bias = 0);
   void rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset);
 
-  inline u8 isBreakingBLock() { return this->_isBreakingBlock; };
+  inline u8 isBreakingBlock() { return this->_isBreakingBlock; };
   void breakTargetBlock(const float& deltaTime);
   void breakTargetBlockInCreativeMode(const float& deltaTime);
   void stopBreakTargetBlock();

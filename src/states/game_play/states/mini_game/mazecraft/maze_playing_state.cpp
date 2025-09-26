@@ -217,9 +217,9 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
         stateGamePlay->world->breakTargetBlockInCreativeMode(deltaTime);
         stateGamePlay->player->setArmBreakingAnimation();
       }
-    } else if (stateGamePlay->world->isBreakingBLock()) {
+    } else if (stateGamePlay->world->isBreakingBlock()) {
       stateGamePlay->world->stopBreakTargetBlock();
-      stateGamePlay->player->unsetArmBreakingAnimation();
+      stateGamePlay->player->setArmIdleAnimation();
     }
 
     if (clicked.R2 && stateGamePlay->world->validTargetBlock()) {

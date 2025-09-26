@@ -23,55 +23,31 @@ using Tyra::Renderer3D;
 Player::Player(Level* pLevel, Renderer* t_renderer,
                ItemRepository* t_itemRepository,
                WorldLightModel* t_worldLightModel)
-    : Entity(pLevel, EntityType::Player) {
+    : Entity(pLevel, EntityType::Player), Animated() {
   this->pLevel = pLevel;
   this->t_renderer = t_renderer;
   this->t_itemRepository = t_itemRepository;
   this->t_worldLightModel = t_worldLightModel;
 
+  loadStaticBBox();
   loadPlayerTexture();
   loadMesh();
-  loadStaticBBox();
+  loadAnimations();
+  setIdleAnimation();
 
-  isWalkingAnimationSet = false;
-  isBreakingAnimationSet = false;
-  isStandStillAnimationSet = false;
-
+  _isFlying = false;
+  _isBreaking = false;
   isOnGround = true;
-  isFlying = false;
-  isBreaking = false;
   collidable = false;
 
-  dynpip.setRenderer(&this->t_renderer->core);
-  modelDynpipOptions.antiAliasingEnabled = false;
-  modelDynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  modelDynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  modelDynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
-
-  // TODO: refactor to handled item, temp stuff...
-  // this->handledItem->init(t_renderer);
-  stpip.setRenderer(&t_renderer->core);
-
   // Set render pip
-  this->setRenderPip(new PlayerRenderArmPip(this));
+  renderPip = std::make_unique<PlayerRenderArmPip>(this);
 }
 
 Player::~Player() {
   delete bbox;
-  // delete handledItem;
-  delete this->renderPip;
 
   t_renderer->getTextureRepository().free(playerTexture);
-  walkSequence.clear();
-  walkSequence.shrink_to_fit();
-
-  breakBlockSequence.clear();
-  breakBlockSequence.shrink_to_fit();
-
-  standStillSequence.clear();
-  standStillSequence.shrink_to_fit();
 }
 
 // ----
@@ -87,7 +63,7 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
   // Vertical collision and movement
   const float nextYPos = getNextVrticalPosition(fixedDeltaTime);
   updateTerrainHeightAtEntityPosition();
-  if (!isFlying) updateYPosition(nextYPos);
+  if (!isFlying()) updateYPosition(nextYPos);
 
   isMoving = movementDir.length();
   // Horizontal collision and movement
@@ -95,8 +71,8 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
     onMoved();
 
     // Update player speed
-    const float _maxSpeed = isRunning ? runningMaxSpeed : maxSpeed;
-    const float _maxAcc = isRunning ? runningAcceleration : acceleration;
+    const float _maxSpeed = isRunning() ? runningMaxSpeed : maxSpeed;
+    const float _maxAcc = isRunning() ? runningAcceleration : acceleration;
 
     // Accelerate speed until mach max
     if (speed < _maxSpeed) {
@@ -123,21 +99,18 @@ void Player::fixedUpdate(const float& fixedDeltaTime, const Vec4& movementDir,
 
   // TODO: move to player render pip
   if (t_camera->getCamType() != CamType::FirstPerson) {
-    mesh.get()->rotation.identity();
-    float theta = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
-                                    t_camera->unitCirclePosition.z);
-    mesh->rotation.rotateY(theta);
+    rotation.y = Tyra::Math::atan2(t_camera->unitCirclePosition.x,
+                                   t_camera->unitCirclePosition.z);
   }
 }
 
 void Player::update(const float& deltaTime, Camera* t_camera) {
   position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
-  mesh->getPosition()->set(position);
 
   updateFovBySpeed();
 
-  renderPip->update(deltaTime, t_camera);
-  animate(deltaTime, t_camera->getCamType());
+  renderPip.get()->update(deltaTime, t_camera);
+  Animated::update(deltaTime);
 }
 
 void Player::tick() {
@@ -156,7 +129,7 @@ void Player::render() {
   if (g_debug_menu.enableRenderPlayers == false) return;
 #endif  // DEBUG_MODE
 
-  renderPip->render(t_renderer);
+  renderPip.get()->render(t_renderer);
 }
 
 Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
@@ -182,7 +155,7 @@ Vec4 Player::getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
 }
 
 float Player::getNextVrticalPosition(const float& fixedDeltaTime) {
-  if (isFlying) {
+  if (isFlying()) {
     return _targetPosition.y;
   } else {
     velocity.y += GRAVITY.y * fixedDeltaTime;
@@ -221,7 +194,7 @@ void Player::onMoved() {
   }
 }
 
-void Player::onStopMoving() { unsetWalkingAnimation(); }
+void Player::onStopMoving() { setIdleAnimation(); }
 
 /** Fly in up direction */
 void Player::flyUp(const float& deltaTime) {
@@ -250,7 +223,7 @@ void Player::fly(const float& deltaTime,
     if (newYPos < terrainHeight.minHeight) {
       newYPos = terrainHeight.minHeight;
       this->isOnGround = true;
-      this->isFlying = false;
+      this->_isFlying = false;
     }
 
     if (newYPos + playerHeight > terrainHeight.maxHeight) {
@@ -509,27 +482,53 @@ void Player::loadMesh() {
   ObjLoaderOptions options;
   options.scale = 15.0F;
   options.flipUVs = true;
-  options.animation.count = 10;
+  options.animation.count = 1;
 
-  auto data =
-      ObjLoader::load(FileUtils::fromCwd("models/player/player.obj"), options);
-  data.get()->loadNormals = false;
+  for (size_t i = 0; i < playerFrames.size(); i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData =
+        ObjLoader::load(FileUtils::fromCwd("models/player/player_frame_" +
+                                           std::to_string(i + 1) + ".obj"),
+                        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
+    playerFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
+  }
 
-  this->mesh = std::make_unique<DynamicMesh>(data.get());
+  std::array<Tyra::Mesh*, 10> rawFrames = {};
+  for (size_t i = 0; i < playerFrames.size(); i++) {
+    rawFrames[i] = playerFrames[i].get();
+  }
 
-  this->mesh->rotation.identity();
-  this->mesh->scale.identity();
-  this->mesh->scale.scaleX(0.85F);
+  setFrames(rawFrames.data(), rawFrames.size());
+}
 
-  auto& materials = this->mesh.get()->materials;
-  for (size_t i = 0; i < materials.size(); i++)
-    playerTexture->addLink(materials[i]->id);
+void Player::loadAnimations() {
+  std::vector<u8> standStillSequence = {1};
+  AnimationOptions idleAnimation;
+  idleAnimation.animationId = IDLE_ANIMATION;
+  idleAnimation.framesIndices = standStillSequence;
+  idleAnimation.durationInMs = 250.0f;
+  idleAnimation.loop = true;
+  idleAnimation.wrapFrames = false;
+  addAnimation(idleAnimation);
 
-  this->mesh->animation.loop = true;
-  this->mesh->animation.setSequence(standStillSequence);
-  // Speed is treated as frames-per-second; actual step will be multiplied by
-  // deltaTime in animate()
-  this->mesh->animation.speed = baseAnimationSpeed;
+  std::vector<u8> walkSequence = {2, 1, 0, 1};
+  AnimationOptions walkAnimation;
+  walkAnimation.animationId = WALK_ANIMATION;
+  walkAnimation.framesIndices = walkSequence;
+  walkAnimation.durationInMs = 500.0f;
+  walkAnimation.loop = true;
+  walkAnimation.wrapFrames = false;
+  addAnimation(walkAnimation);
+
+  std::vector<u8> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
+  AnimationOptions breakBlockAnimation;
+  breakBlockAnimation.animationId = BREAKING_ANIMATION;
+  breakBlockAnimation.framesIndices = breakBlockSequence;
+  breakBlockAnimation.durationInMs = 1000.0f;
+  breakBlockAnimation.loop = false;
+  breakBlockAnimation.wrapFrames = false;
+  addAnimation(breakBlockAnimation);
 }
 
 void Player::loadStaticBBox() {
@@ -610,15 +609,11 @@ void Player::playSplashSfx() {
 }
 
 void Player::toggleFlying() {
-  isFlying = !isFlying;
-  if (isFlying) isOnGround = false;
+  _isFlying = !_isFlying;
+  if (_isFlying) isOnGround = false;
 }
 
-void Player::setRunning(bool _isRunning) {
-  if (isRunning != _isRunning) {
-    isRunning = _isRunning;
-  }
-}
+void Player::setRunning(bool isRunning) { _isRunning = isRunning; }
 
 void Player::selectNextItem() {
   int currentItemId = (int)inventory[selectedInventoryIndex];
@@ -683,61 +678,17 @@ void Player::swim() {
   isOnGround = false;
 }
 
-void Player::setRenderPip(PlayerRenderPip* pipToSet) {
-  delete this->renderPip;
-  this->renderPip = pipToSet;
-}
+void Player::setArmBreakingAnimation() { setAnimation(BREAKING_ANIMATION); }
 
-void Player::setArmBreakingAnimation() {
-  if (isBreakingAnimationSet) return;
+void Player::setArmIdleAnimation() { setAnimation(IDLE_ANIMATION); }
 
-  mesh->animation.speed = baseAnimationSpeed * 3;
-  mesh->animation.setSequence(breakBlockSequence);
+void Player::setWalkingAnimation() { setAnimation(WALK_ANIMATION); }
 
-  isBreakingAnimationSet = true;
-  isBreaking = true;
-}
+void Player::setIdleAnimation() { setAnimation(IDLE_ANIMATION); }
 
-void Player::unsetArmBreakingAnimation() {
-  if (!isBreakingAnimationSet) return;
+void Player::playPutBlockAnimation() { _isPuting = true; }
 
-  isBreaking = false;
-  isBreakingAnimationSet = false;
-  mesh->animation.setSequence(standStillSequence);
-}
-
-void Player::setWalkingAnimation() {
-  const float _speed = (speed / runningMaxSpeed) * 4;
-  this->mesh->animation.speed = baseAnimationSpeed * _speed;
-
-  if (!isWalkingAnimationSet) {
-    this->mesh->animation.setSequence(walkSequence);
-    isWalkingAnimationSet = true;
-  }
-}
-
-void Player::unsetWalkingAnimation() {
-  if (!isWalkingAnimationSet) return;
-
-  isWalkingAnimationSet = false;
-  mesh->animation.setSequence(standStillSequence);
-}
-
-void Player::playPutBlockAnimation() { isPuting = true; }
-
-void Player::stopPutBlockAnimation() { isPuting = false; }
-
-void Player::animate(const float& deltaTime, CamType camType) {
-  if (camType == CamType::ThirdPerson) {
-    // Make animation step time-based: scale current animation speed by delta
-    // time for this frame
-    const float originalSpeed = this->mesh->animation.speed;
-    this->mesh->animation.speed = originalSpeed * deltaTime;
-    this->mesh->update();
-    // Restore speed so game logic can continue to treat it as frames-per-second
-    this->mesh->animation.speed = originalSpeed;
-  }
-}
+void Player::stopPutBlockAnimation() { _isPuting = false; }
 
 void Player::shiftItemToInventory(const ItemId& itemToShift) {
   for (size_t i = HOT_INVENTORY_SIZE - 1; i > 0; i--) {
@@ -790,11 +741,26 @@ void Player::updateStateInWater() {
 
 bool Player::isOnWater() { return _isOnWater; }
 
+void Player::fillAnimationDrawData(std::vector<Vec4>* pVertices,
+                                   std::vector<Color>* pVerticesColors,
+                                   std::vector<Vec4>* pUvMap) {
+  const AnimationOptions currentAnimationOptions = getCurrentAnimation();
+  if (currentAnimationOptions.framesIndices.size() > 1) {
+    fillDrawDataByLerp(pVertices, pVerticesColors, pUvMap);
+  } else {
+    fillDrawDataByFrame(pVertices, pVerticesColors, pUvMap);
+  }
+}
+
 bool Player::isUnderWater() { return _isUnderWater; }
 
-void Player::setRenderArmPip() { setRenderPip(new PlayerRenderArmPip(this)); }
+void Player::setRenderArmPip() {
+  renderPip = std::make_unique<PlayerRenderArmPip>(this);
+}
 
-void Player::setRenderBodyPip() { setRenderPip(new PlayerRenderBodyPip(this)); }
+void Player::setRenderBodyPip() {
+  renderPip = std::make_unique<PlayerRenderBodyPip>(this);
+}
 
 void Player::updateFovBySpeed() {
   const float _speed = speed < maxSpeed ? maxSpeed : speed;
@@ -802,7 +768,7 @@ void Player::updateFovBySpeed() {
   const float _maxSpeed = runningMaxSpeed;
   float _fovByLerp;
 
-  if (isFlying) {
+  if (_isFlying) {
     _fovByLerp = Utils::reRangeScale(_minFovFlaying, _maxFovFlaying, _minSpeed,
                                      _maxSpeed, _speed);
   } else {

@@ -5,6 +5,8 @@ using Tyra::Mesh;
 using Tyra::MeshMaterial;
 using Tyra::Vec4;
 
+Animated::Animated() {}
+
 Animated::Animated(Tyra::Mesh** framesArray, const int size) {
   setFrames(framesArray, size);
 }

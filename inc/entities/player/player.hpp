@@ -14,6 +14,7 @@
 #include "entities/Block.hpp"
 #include "entities/item.hpp"
 #include "entities/entity.hpp"
+#include "entities/animation/animated.hpp"
 #include <tamtypes.h>
 #include "managers/items_repository.hpp"
 #include "managers/sound_manager.hpp"
@@ -33,11 +34,11 @@
 using Tyra::Audio;
 using Tyra::DynamicMesh;
 using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
 using Tyra::FileUtils;
 using Tyra::M4x4;
 using Tyra::MD2Loader;
 using Tyra::MD2LoaderOptions;
+using Tyra::MeshBuilderData;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 using Tyra::PadButtons;
@@ -52,7 +53,7 @@ using Tyra::Vec4;
 /** Player 3D object class  */
 
 // TODO: showld inherit Mob class instead Entity directly
-class Player : public Entity {
+class Player : public Entity, public Animated {
  public:
   Player(Level* pLevel, Renderer* t_renderer, ItemRepository* t_itemRepository,
          WorldLightModel* t_worldLightModel);
@@ -69,8 +70,8 @@ class Player : public Entity {
 
   void toggleFlying();
   inline void unFly() {
-    this->isFlying = false;
-    this->isOnGround = false;
+    _isFlying = false;
+    isOnGround = false;
   };
 
   Level* pLevel;
@@ -79,13 +80,9 @@ class Player : public Entity {
 
   void setPosition(const Vec4& pos) {
     position.set(pos);
-    mesh->getPosition()->set(position);
-
     _prevPosition.set(position);
     _targetPosition.set(position);
   };
-
-  bool isFlying, isBreaking, isPuting, isRunning;
 
   inline const u8 isHandFree() { return !isHoldingAnItem(); };
   inline const u8 isHoldingAnItem() {
@@ -95,7 +92,9 @@ class Player : public Entity {
   void playPutBlockAnimation();
   void stopPutBlockAnimation();
 
-  std::unique_ptr<DynamicMesh> mesh;
+  // Frame [1] - Idle
+  // Frame [2, 3] - Walk
+  std::array<std::unique_ptr<Tyra::Mesh>, 10> playerFrames;
 
   Vec4 spawnArea;
   u16 currentChunkId = 0;
@@ -124,18 +123,12 @@ class Player : public Entity {
                 (DOUBLE_BLOCK_SIZE * 0.3F) / 2);
   };
 
-  DynPipOptions modelDynpipOptions;
-  DynamicPipeline dynpip;
-
   Renderer* t_renderer;
-  PlayerRenderPip* renderPip = nullptr;
+  std::unique_ptr<PlayerRenderPip> renderPip;
 
   void moveSelectorToTheLeft();
   void moveSelectorToTheRight();
-  void setArmBreakingAnimation();
-  void unsetArmBreakingAnimation();
-  void setWalkingAnimation();
-  void unsetWalkingAnimation();
+
   void selectNextItem();
   void selectPreviousItem();
   void jump();
@@ -146,6 +139,18 @@ class Player : public Entity {
   void shiftItemToInventory(const ItemId& itemToShift);
   void setItemToInventory(const ItemId& itemToShift);
   void setRunning(bool _isRunning);
+  void setWalkingAnimation();
+  void setIdleAnimation();
+  void setArmBreakingAnimation();
+  void setArmIdleAnimation();
+  bool isPuttingBlock() { return _isPuting; };
+  bool isBreakingBlock() { return _isBreaking; };
+  bool isFlying() { return _isFlying; };
+  bool isRunning() { return _isRunning; };
+
+  void fillAnimationDrawData(std::vector<Vec4>* pVertices,
+                             std::vector<Color>* pVerticesColors,
+                             std::vector<Vec4>* pUvMap);
 
   bool isOnWater();
   bool isUnderWater();
@@ -158,13 +163,12 @@ class Player : public Entity {
   inline Color* getBaseColorAtPlayerPos() { return &_baseColorAtPlayerPos; };
 
  private:
-  StaticPipeline stpip;
   Vec4 getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
                          const Vec4& camDir);
-  bool isWalkingAnimationSet, isBreakingAnimationSet, isStandStillAnimationSet;
   Audio* t_audio;
 
-  void setRenderPip(PlayerRenderPip* pipToSet);
+  // State control
+  bool _isFlying, _isBreaking, _isPuting, _isRunning;
 
   // Forces values
   float acceleration = 140.0F;
@@ -204,18 +208,14 @@ class Player : public Entity {
   void playSplashSfx();
   u8 isSubmerged = false;
 
-  void animate(const float& deltaTime, CamType camType);
-
   // Axe* handledItem = new Axe(ItemsMaterials::Wood);
 
   // Animations
   // Player body
-  // Animation base speed expressed in frames-per-second (was per-frame 0.08 @
-  // 60 FPS => 4.8 fps)
-  float baseAnimationSpeed = 3.8F;
-  std::vector<u32> walkSequence = {2, 1, 0, 1};
-  std::vector<u32> breakBlockSequence = {9, 3, 4, 5, 6, 7, 8, 9};
-  std::vector<u32> standStillSequence = {1};
+  const u8 IDLE_ANIMATION = 0;
+  const u8 WALK_ANIMATION = 1;
+  const u8 BREAKING_ANIMATION = 2;
+  void loadAnimations();
 
   void updateStateInWater();
 

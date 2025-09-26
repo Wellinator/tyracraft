@@ -46,6 +46,7 @@ class Animated {
   int getLastActualFrameIndex() const;
 
  public:
+  Animated();
   Animated(Tyra::Mesh** framesArray, const int size);
   virtual ~Animated();
 

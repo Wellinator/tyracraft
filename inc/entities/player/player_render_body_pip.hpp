@@ -4,9 +4,9 @@
 #include "constants.hpp"
 #include <tyra>
 
+using Tyra::Color;
 using Tyra::Renderer;
 
-// TODO: fix player rotation
 class PlayerRenderBodyPip : public PlayerRenderPip {
  public:
   PlayerRenderBodyPip(Player* t_player);
@@ -16,4 +16,8 @@ class PlayerRenderBodyPip : public PlayerRenderPip {
   void render(Renderer* t_render);
   void loadItemDrawData();
   void unloadItemDrawData();
+
+ private:
+  Color baseColorAtPlayerPos;
+  StaticPipeline statPip;
 };

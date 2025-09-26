@@ -174,9 +174,9 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         stateGamePlay->world->breakTargetBlockInCreativeMode(deltaTime);
         stateGamePlay->player->setArmBreakingAnimation();
       }
-    } else if (stateGamePlay->world->isBreakingBLock()) {
+    } else if (stateGamePlay->world->isBreakingBlock()) {
       stateGamePlay->world->stopBreakTargetBlock();
-      stateGamePlay->player->unsetArmBreakingAnimation();
+      stateGamePlay->player->setArmIdleAnimation();
     }
 
     if (clicked.R2) {
@@ -206,7 +206,7 @@ void CreativePlayingState::gamePlayInputHandler(const float& deltaTime) {
         stateGamePlay->player->selectNextItem();
       else if (clicked.DpadDown)
         stateGamePlay->player->selectPreviousItem();
-    } else if (stateGamePlay->player->isFlying) {
+    } else if (stateGamePlay->player->isFlying()) {
       if (pressed.DpadUp) {
         stateGamePlay->player->flyUp(deltaTime);
       } else if (pressed.DpadDown) {

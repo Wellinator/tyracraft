@@ -153,7 +153,7 @@ void StateLoadingSavedGame::loadSavedData() {
 
 void StateLoadingSavedGame::initPlayer() {
   TYRA_LOG("Initializing player...");
-  stateGamePlay->player->mesh->getPosition()->set(
+  stateGamePlay->player->position.set(
       stateGamePlay->world->getGlobalSpawnArea());
   stateGamePlay->player->spawnArea.set(
       stateGamePlay->world->getLocalSpawnArea());
