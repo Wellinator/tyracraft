@@ -69,7 +69,7 @@ void Cow::fixedUpdate(const float& fixedDeltaTime) {
   Chunk* chk = pChunkManager->getChunkByWorldPosition(position);
   if (chk != nullptr) {
     if (chk->state != ChunkState::Loaded ||
-        chk->getDistanceFromPlayerInChunks() > 6) {
+        chk->getDistanceFromPlayerInChunks() > 10) {
       shouldUnspawn = true;
       return;
     }

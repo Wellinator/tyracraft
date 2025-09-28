@@ -33,12 +33,18 @@ class MobManager {
 
   Mob* spawnMob(const MobType type);
   Mob* spawnMobAtPosition(const MobType type, const Vec4& position);
+  Mob* trySpawningMobAtPosition(const MobCategory category, const MobType type,
+                                const Vec4& position);
   void unspawnMob(const uint32_t id);
 
-  // TODO: should be test to check PS2 limits
-  static const u8 MAX_MOBS_LIMIT = 10;
+  const int getMobCountByCategory(const MobCategory category);
+  const int getMobCapByCategory(const MobCategory category);
 
  private:
+  // TODO: should be test to check PS2 limits
+  const u8 GLOBAL_MOB_CAP = 40;
+  std::array<u8, 3> MOB_CAPS = {0, 0, 0};  // Passive, Neutral, Hostile
+
   Renderer* t_renderer = nullptr;
   ChunkManager* t_chunkManager = nullptr;
   WorldLightModel* t_worldLightModel = nullptr;

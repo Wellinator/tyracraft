@@ -235,6 +235,64 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateChunkByPlayerPosition(t_player, t_camera);
   }
 
+  // Try to spawn a passive mob every 20 seconds (400 ticks)
+  // Based on https://minecraft.wiki/w/Mob_spawning
+  if (isTicksCounterAt(400)) {
+    const u8 shouldSpawnMob = Utils::Probability(0.1F);
+
+    // Try to spawn a mob pack
+    const u8 currentPassiveMobsCount =
+        mobManager.getMobCountByCategory(MobCategory::Passive);
+    const int mobCap = mobManager.getMobCapByCategory(MobCategory::Passive);
+    const MobType randomType = static_cast<MobType>(
+        Tyra::Math::randomi(0, static_cast<int>(MobType::Invalid) - 1));
+
+    if (currentPassiveMobsCount < mobCap && shouldSpawnMob) {
+      const int mobsToSpawn = 4;
+      const Chunk* targetChunk = chunkManager.getLoadedChunks()->at(
+          Tyra::Math::randomi(0, chunkManager.getLoadedChunks()->size() - 1));
+      int randomX = Tyra::Math::randomi(targetChunk->minOffset.x,
+                                        targetChunk->maxOffset.x - 1);
+      int randomZ = Tyra::Math::randomi(targetChunk->minOffset.z,
+                                        targetChunk->maxOffset.z - 1);
+      bool spawnedPack = false;
+
+      for (size_t i = 0; i < mobsToSpawn; i++) {
+        Vec4 tempPos;
+        if (calcSpawnOffsetByXZ(&tempPos, randomX, randomZ)) {
+          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType,
+                                              tempPos);
+          spawnedPack = true;
+        } else {
+          // Update next position by triangular distribution
+          const int max_dist = OVERWORLD_MAX_DISTANCE - 1;
+        define_triangular_distribution:
+          const int offsetX = Tyra::Math::randomi(-5, 5);
+          randomX += offsetX;
+          const int offsetZ = Tyra::Math::randomi(-5, 5);
+          randomZ += offsetZ;
+
+          if (randomX >= max_dist || randomX < 0 || randomZ >= max_dist ||
+              randomZ < 0) {
+            goto define_triangular_distribution;
+          }
+        }
+      }
+
+      if (!spawnedPack) {
+        // Try to spawn a single mob
+        const int chunkIndex =
+            Tyra::Math::randomi(0, chunkManager.getLoadedChunks()->size() - 1);
+        Chunk* chunk = chunkManager.getLoadedChunks()->at(chunkIndex);
+        Vec4 mobPos;
+        if (getOptimalSpawnPositionInChunk(chunk, &mobPos)) {
+          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType,
+                                              mobPos);
+        }
+      }
+    }
+  }
+
   t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
 }
 
@@ -359,13 +417,7 @@ void World::loadScheduledChunks() {
              chunk->timeToBuild);
     }
 
-    // // TODO: implement callback 'afterLoadChunk'
-    const u8 shouldSpawnMobInChunk = Utils::Probability(0.01);
-
-    // TODO: move to chunk randon tick
-    const u8 isInSpawnZone = chunk->getDistanceFromPlayerInChunks() <= 2;
-
-    if (shouldSpawnMobInChunk && isInSpawnZone) {
+    if (Utils::Probability(0.1F, worldOptions.seed)) {
       Vec4 _spawnPosition;
       if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
         mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
@@ -559,6 +611,39 @@ const Vec4 World::calcSpawOffset(int bias) {
     return calcSpawOffset(bias + 1);
 }
 
+const bool World::calcSpawnOffsetByXZ(Vec4* result, const int posX,
+                                      const int posZ) {
+  bool found = false;
+  u8 airBlockCounter = 0;
+  Vec4 offset;
+
+  for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
+    u8 type = pLevel->GetBlockFromMap(posX, posY, posZ);
+
+    // TODO: implement "isSolid" at block template
+    // Use it to check if the block is solid instead of checking if it's not air
+    if (type == (u8)Blocks::GRASS_BLOCK &&
+        pLevel->GetSunLightFromMap(posX, posY + 1, posZ) == 15 &&
+        airBlockCounter >= 3) {
+      found = true;
+      offset.set(posX, posY + 1, posZ);
+      break;
+    }
+
+    if (type == (u8)Blocks::AIR_BLOCK)
+      airBlockCounter++;
+    else
+      airBlockCounter = 0;
+  }
+
+  if (found) {
+    result->set(pLevel->offsetToWorldPos(offset));
+    return found;
+  } else {
+    return false;
+  }
+}
+
 const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
                                         const Vec4& maxOffset, uint16_t bias) {
   if (bias >= CHUNK_LENGTH) {
@@ -584,6 +669,8 @@ const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
       break;
     }
 
+    // TODO: implement "isSolid" at block template
+    // Use it to check if the block is solid instead of checking if it's not air
     if (type == (u8)Blocks::AIR_BLOCK)
       airBlockCounter++;
     else

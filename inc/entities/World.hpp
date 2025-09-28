@@ -196,6 +196,7 @@ class World {
                                             Vec4* result);
   const bool calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
                                    const Vec4& maxOffset, uint16_t bias = 0);
+  const bool calcSpawnOffsetByXZ(Vec4* result, const int posX, const int posZ);
 
   std::vector<Vec4> _targetBlockVertices;
   std::vector<Vec4> _targetBlockUVMap;

@@ -44,6 +44,8 @@ class ChunkManager : public Singleton<ChunkManager> {
   void reloadLightDataOfAllChunks();
   void updateLoadedChunks();
 
+  std::vector<Chunk*>* getLoadedChunks() { return &loadedChunks; };
+
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 
   Chunk* getChunkById(const u16& id);

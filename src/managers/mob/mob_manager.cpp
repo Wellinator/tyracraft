@@ -150,7 +150,7 @@ Vec4 MobManager::_getMobMoviementDirection(Mob* mob) {
 }
 
 Mob* MobManager::spawnMob(const MobType type) {
-  if (mobs.size() >= MAX_MOBS_LIMIT) {
+  if (mobs.size() >= GLOBAL_MOB_CAP) {
     return nullptr;
   }
 
@@ -164,12 +164,43 @@ Mob* MobManager::spawnMob(const MobType type) {
       return nullptr;
   }
 }
+Mob* MobManager::trySpawningMobAtPosition(const MobCategory category,
+                                          const MobType type,
+                                          const Vec4& position) {
+  bool hasReachedGlobalCap = mobs.size() >= GLOBAL_MOB_CAP;
+  bool hasReachedCategoryCap = false;
+  int categoryCap = getMobCapByCategory(category);
+  if (categoryCap > 0) {
+    int currentCategoryCount = MOB_CAPS[static_cast<int>(category)];
+    hasReachedCategoryCap = currentCategoryCount >= categoryCap;
+  } else {
+    // If category cap is 0 or less, we consider it reached
+    hasReachedCategoryCap = true;
+  }
 
-Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
-  if (mobs.size() > MAX_MOBS_LIMIT) {
+  if (hasReachedGlobalCap || hasReachedCategoryCap) {
     return nullptr;
   }
 
+  Mob* mob = nullptr;
+
+  switch (type) {
+    case MobType::Pig:
+    case MobType::Cow:
+      position.print("Spawning mob at: ");
+      mob = _createMobAtPosition(type, position);
+    default:
+      TYRA_ERROR("Invalid MobType!");
+      return nullptr;
+  }
+
+  if (mob) {
+    MOB_CAPS[static_cast<int>(category)]++;
+  }
+  return mob;
+}
+
+Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
   switch (type) {
     case MobType::Pig:
     case MobType::Cow:
@@ -227,6 +258,25 @@ void MobManager::unspawnMob(const uint32_t id) {
       delete mobs[i];
       break;
     }
+}
+
+const int MobManager::getMobCountByCategory(const MobCategory category) {
+  if (category == MobCategory::Invalid) {
+    return -1;
+  }
+
+  return MOB_CAPS[static_cast<int>(category)];
+}
+
+const int MobManager::getMobCapByCategory(const MobCategory category) {
+  switch (category) {
+    case MobCategory::Hostile:
+      return 30;
+    case MobCategory::Passive:
+      return 10;
+    default:
+      return 0;
+  }
 }
 
 void MobManager::_destroyUnspownedMobs() {
