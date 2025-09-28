@@ -134,8 +134,11 @@ class Utils {
     return std::fmod(angleInRad + Tyra::Math::PI, 2 * Tyra::Math::PI);
   };
 
-  static bool Probability(float probability) {
-    return rand() < probability * ((float)RAND_MAX + 1.0);
+  static bool Probability(float probability, int seed = 0) {
+    if (seed != 0) {
+      srand(seed);
+    }
+    return ((float)rand() / (float)RAND_MAX) < probability;
   }
 
   static float lerp(float a, float b, float f) { return a + f * (b - a); }
