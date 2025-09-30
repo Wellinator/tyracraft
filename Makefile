@@ -15,8 +15,8 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CFLAGS      := -O3
-# CFLAGS      := -G0 -DDEBUG_MODE #Used for debug mode
+# CFLAGS      := -O3
+CFLAGS      := -fno-omit-frame-pointer -G0 -DDEBUG_MODE #Used for debug mode
 
 # LINKFLAGS	:= --only-keep-debug
 LIB         := -ltyra
