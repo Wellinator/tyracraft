@@ -103,6 +103,9 @@ class Chunk {
            (z * pLevel->map.width) + x;
   }
 
+  const int getLODFromDistance();
+  const int getLODFromDistance(const int distance);
+
  private:
   std::vector<Vec4> vertices;
   std::vector<Color> verticesColors;
@@ -117,8 +120,10 @@ class Chunk {
   void tickRandomBlock();
 
   Vec4 camPositon = Vec4(0, 0, 0);
-  s8 _distanceFromPlayerInChunks = -1;
+  int _distanceFromPlayerInChunks = -1;
 
   // Refactore the clipped blocks for not using blocks array
   Plane* frustumPlanes = nullptr;
+
+  int _lod = 0;
 };

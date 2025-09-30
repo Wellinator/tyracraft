@@ -6,20 +6,27 @@
 #include "utils.hpp"
 
 void TorchMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices,
+                                   const int lod, std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
-                                   Level* pLevel) {
-  TorchMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices);
+                                   Level* pLevel, CustomMeshOptions* options) {
+  // Prevent to render torch in LOD > 0
+  if (lod > 0) return;
+
+  TorchMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices, options);
   TorchMeshBuilder_loadUVData(t_uv_map);
   TorchMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
                                  t_worldLightModel, pLevel);
 }
 
 void TorchMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices) {
-  M4x4 model = ModelBuilder_TorchModel(const_cast<Vec4*>(offset));
+                                   std::vector<Vec4>* t_vertices,
+                                   CustomMeshOptions* options) {
+  M4x4 model = options ? ModelBuilder_TorchModel(
+                             const_cast<Vec4*>(offset), options->scale,
+                             options->rotation, options->translation)
+                       : ModelBuilder_TorchModel(const_cast<Vec4*>(offset));
 
   for (size_t i = 0; i < VertexBlockData::VETEX_COUNT; i++) {
     t_vertices->emplace_back(model * VertexBlockData::torchVertexData[i]);

@@ -7,20 +7,21 @@
 #include "utils.hpp"
 
 void SlabMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
-                                  std::vector<Vec4>* t_vertices,
+                                  const int lod, std::vector<Vec4>* t_vertices,
                                   std::vector<Color>* t_vertices_colors,
                                   std::vector<Vec4>* t_uv_map,
                                   WorldLightModel* t_worldLightModel,
-                                  Level* pLevel) {
-  SlabMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices, pLevel);
+                                  Level* pLevel, CustomMeshOptions* options) {
+  SlabMeshBuilder_loadMeshData(offset, visibleFaces, lod, t_vertices, pLevel,
+                               options);
   SlabMeshBuilder_loadUVData(offset, visibleFaces, t_uv_map);
   SlabMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
                                 t_worldLightModel, pLevel);
 }
 
 void SlabMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
-                                  std::vector<Vec4>* t_vertices,
-                                  Level* pLevel) {
+                                  const int lod, std::vector<Vec4>* t_vertices,
+                                  Level* pLevel, CustomMeshOptions* options) {
   int vert;
   const SlabOrientation orientation =
       pLevel->GetSlabOrientationDataFromMap(offset->x, offset->y, offset->z);
@@ -32,7 +33,10 @@ void SlabMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
     rawData = (Vec4*)VertexBlockData::bottomSlabVertexData;
   }
 
-  M4x4 model = ModelBuilder_DefaultModel(const_cast<Vec4*>(offset));
+  M4x4 model = options ? ModelBuilder_DefaultModel(
+                             const_cast<Vec4*>(offset), options->scale,
+                             options->rotation, options->translation)
+                       : ModelBuilder_DefaultModel(const_cast<Vec4*>(offset));
 
   if (visibleFaces & (int)BlockFace::TOP) {
     vert = 0;

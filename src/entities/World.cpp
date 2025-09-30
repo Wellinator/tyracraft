@@ -380,6 +380,12 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
           t_chunk->build();
       } else if (t_chunk->state == ChunkState::Clean) {
         addChunkToLoadAsync(t_chunk);
+      } else if (t_chunk->state == ChunkState::Loaded) {
+        // LOD has changed, rebuild chunk.
+        if (t_chunk->getLODFromDistance(distance) !=
+            t_chunk->getLODFromDistance()) {
+          addChunkToLoadAsync(t_chunk);
+        }
       }
 
       t_chunk->setDistanceFromPlayerInChunks(distance);
@@ -621,7 +627,8 @@ const bool World::calcSpawnOffsetByXZ(Vec4* result, const int posX,
     u8 type = pLevel->GetBlockFromMap(posX, posY, posZ);
 
     // TODO: implement "isSolid" at block template
-    // Use it to check if the block is solid instead of checking if it's not air
+    // Use it to check if the block is solid instead of checking if it's not
+    // air
     if (type == (u8)Blocks::GRASS_BLOCK &&
         pLevel->GetSunLightFromMap(posX, posY + 1, posZ) == 15 &&
         airBlockCounter >= 3) {
@@ -670,7 +677,8 @@ const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
     }
 
     // TODO: implement "isSolid" at block template
-    // Use it to check if the block is solid instead of checking if it's not air
+    // Use it to check if the block is solid instead of checking if it's not
+    // air
     if (type == (u8)Blocks::AIR_BLOCK)
       airBlockCounter++;
     else
@@ -1119,8 +1127,8 @@ placeSlabOnEmptyOrCombine:
     placeBlockAt(slabToPlace, newSlabPos);
     return true;
   } else {
-    // The space is not empty, check if the block is already a slab of the same
-    // type
+    // The space is not empty, check if the block is already a slab of the
+    // same type
     const Blocks existing_block = static_cast<Blocks>(
         pLevel->GetBlockFromMap(newSlabPos.x, newSlabPos.y, newSlabPos.z));
     if (existing_block == slabToPlace) {
@@ -1548,9 +1556,11 @@ void World::buildTargetBlockDrawData() {
     _targetBlockUVMap.reserve(size);
   }
 
-  MeshBuilder_BuildMesh(&targetBlock->offset, targetBlock->getVisibleFaces(),
+  // Inflate the target block a bit to avoid z-fighting
+  CustomMeshOptions options = {.scale = 1.01f};
+  MeshBuilder_BuildMesh(&targetBlock->offset, targetBlock->getVisibleFaces(), 0,
                         &_targetBlockVertices, &_targetBlockColors,
-                        &_targetBlockUVMap, &worldLightModel, pLevel);
+                        &_targetBlockUVMap, &worldLightModel, pLevel, &options);
 
   for (size_t i = 0; i < size; i++) {
     LightManager::IntensifyColor(&_targetBlockColors[i], 1.35f);
@@ -1680,7 +1690,8 @@ void World::addLiquid(uint16_t x, uint16_t y, uint16_t z, u8 type, u8 level,
     const auto prevDir = pLevel->GetLiquidOrientationDataFromMap(x, y, z);
 
     // Fix traversal orientation to linear
-    // It two traversal flux encounter each other, it will become a linear flux
+    // It two traversal flux encounter each other, it will become a linear
+    // flux
     if (((u8)LiquidOrientation::NorthEast == orientation &&
          LiquidOrientation::NorthWest == prevDir) ||
         ((u8)LiquidOrientation::NorthWest == orientation &&

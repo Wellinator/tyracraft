@@ -6,37 +6,50 @@
 #include "managers/model_builder.hpp"
 #include "utils.hpp"
 
-void CrossedMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
-                                     std::vector<Vec4>* t_vertices,
-                                     std::vector<Color>* t_vertices_colors,
-                                     std::vector<Vec4>* t_uv_map,
-                                     WorldLightModel* t_worldLightModel,
-                                     Level* pLevel) {
-  CrossedMeshBuilder_loadCrossedMeshData(offset, t_vertices);
+void CrossedMeshBuilder_GenerateMesh(
+    const Vec4* offset, const u8 visibleFaces, const int lod,
+    std::vector<Vec4>* t_vertices, std::vector<Color>* t_vertices_colors,
+    std::vector<Vec4>* t_uv_map, WorldLightModel* t_worldLightModel,
+    Level* pLevel, CustomMeshOptions* options) {
+  if (lod > 0) return;
+  CrossedMeshBuilder_loadCrossedMeshData(offset, t_vertices, options);
   CrossedMeshBuilder_loadCrossedUVData(offset, t_uv_map);
   CrossedMeshBuilder_loadCrossedLightData(
       offset, visibleFaces, t_vertices_colors, t_worldLightModel, pLevel);
 }
 
 void CrossedMeshBuilder_loadCrossedMeshData(const Vec4* offset,
-                                            std::vector<Vec4>* t_vertices) {
+                                            std::vector<Vec4>* t_vertices,
+                                            CustomMeshOptions* options) {
   int vert = 0;
   const Vec4* crossBlockRawData = VertexBlockData::crossedVertexData;
-  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
 
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
+  float _scale = BLOCK_SIZE;
+  Vec4 _position = Level::getInstance()->offsetToWorldPos(offset);
 
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
-  t_vertices->emplace_back(crossBlockRawData[vert++] * BLOCK_SIZE + position);
+  if (options) {
+    if (options->scale != 0) {
+      _scale *= options->scale;
+    }
+
+    if (options->translation.length() != 0) {
+      _position += options->translation;
+    }
+  }
+
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
+  t_vertices->emplace_back(crossBlockRawData[vert++] * _scale + _position);
 }
 
 void CrossedMeshBuilder_loadCrossedUVData(const Vec4* offset,

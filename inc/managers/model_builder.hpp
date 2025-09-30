@@ -10,10 +10,18 @@
 using Tyra::M4x4;
 using Tyra::Vec4;
 
-M4x4 ModelBuilder_BuildModel(Vec4* offset);
+M4x4 ModelBuilder_BuildModel(Vec4* offset, float scale = 1.0f,
+                             Vec4 rotation = Vec4(0, 0, 0),
+                             Vec4 position = Vec4(0, 0, 0));
 
-M4x4 ModelBuilder_DefaultModel(Vec4* offset);
+M4x4 ModelBuilder_DefaultModel(Vec4* offset, float scale = 1.0f,
+                               Vec4 rotation = Vec4(0, 0, 0),
+                               Vec4 position = Vec4(0, 0, 0));
 
-M4x4 ModelBuilder_NoRotationModel(Vec4* offset);
+M4x4 ModelBuilder_NoRotationModel(Vec4* offset, float scale = 1.0f,
+                                  Vec4 rotation = Vec4(0, 0, 0),
+                                  Vec4 position = Vec4(0, 0, 0));
 
-M4x4 ModelBuilder_TorchModel(Vec4* offset);
+M4x4 ModelBuilder_TorchModel(Vec4* offset, float scale = 1.0f,
+                             Vec4 rotation = Vec4(0, 0, 0),
+                             Vec4 position = Vec4(0, 0, 0));

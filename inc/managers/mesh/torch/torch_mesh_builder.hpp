@@ -6,6 +6,7 @@
 #include <math.h>
 #include <vector>
 #include "models/world_light_model.hpp"
+#include "models/custom_mesh_options.hpp"
 #include "entities/level.hpp"
 
 using Tyra::Color;
@@ -22,18 +23,20 @@ using Tyra::Texture;
 using Tyra::Vec4;
 
 void TorchMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices,
+                                   const int lod, std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
-                                   Level* pLevel);
+                                   Level* pLevel,
+                                   CustomMeshOptions* options = nullptr);
 
 void TorchMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices);
+                                   std::vector<Vec4>* t_vertices,
+                                   CustomMeshOptions* options = nullptr);
 void TorchMeshBuilder_loadUVData(std::vector<Vec4>* t_uv_map);
 void TorchMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Color>* t_vertices_colors,
-                                   WorldLightModel* t_worldLightModel,
-                                   Level* pLevel);
+                                    std::vector<Color>* t_vertices_colors,
+                                    WorldLightModel* t_worldLightModel,
+                                    Level* pLevel);
 void TorchMeshBuilder_loadLightFaceData(Color* faceColor,
                                         std::vector<Color>* t_vertices_colors);

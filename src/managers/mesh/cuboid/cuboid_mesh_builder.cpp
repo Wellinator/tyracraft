@@ -8,22 +8,30 @@
 #include "utils.hpp"
 
 void CuboidMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
+                                    const int lod,
                                     std::vector<Vec4>* t_vertices,
                                     std::vector<Color>* t_vertices_colors,
                                     std::vector<Vec4>* t_uv_map,
                                     WorldLightModel* t_worldLightModel,
-                                    Level* pLevel) {
-  CuboidMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices);
+                                    Level* pLevel, CustomMeshOptions* options) {
+  CuboidMeshBuilder_loadMeshData(offset, visibleFaces, lod, t_vertices,
+                                 options);
   CuboidMeshBuilder_loadUVData(offset, visibleFaces, t_uv_map);
   CuboidMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
                                   t_worldLightModel, pLevel);
 }
 
 void CuboidMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
-                                    std::vector<Vec4>* t_vertices) {
+                                    const int lod,
+                                    std::vector<Vec4>* t_vertices,
+                                    CustomMeshOptions* options) {
   int vert;
   const Vec4* rawData = VertexBlockData::cuboidVertexData;
-  M4x4 model = ModelBuilder_DefaultModel(const_cast<Vec4*>(offset));
+
+  M4x4 model = options ? ModelBuilder_DefaultModel(
+                             const_cast<Vec4*>(offset), options->scale,
+                             options->rotation, options->translation)
+                       : ModelBuilder_DefaultModel(const_cast<Vec4*>(offset));
 
   if (visibleFaces & (int)BlockFace::TOP) {
     vert = 0;

@@ -102,6 +102,21 @@ void Chunk::tickRandomBlock() {
   // Based on https://minecraft.fandom.com/wiki/Grass_Block#Spread
 }
 
+const int Chunk::getLODFromDistance() {
+  return getLODFromDistance(_distanceFromPlayerInChunks);
+}
+
+const int Chunk::getLODFromDistance(const int distance) {
+  if (distance < 3)
+    return 0;
+  else if (distance < 4)
+    return 1;
+  else if (distance < 5)
+    return 2;
+  else
+    return 3;
+}
+
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (!isLoaded() || vertices.empty()) return;
 
@@ -240,7 +255,6 @@ void Chunk::build() {
     for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
       for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
         Vec4 offset = Vec4(x, y, z);
-        Level* pLevel = Level::getInstance();
         const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
         const Blocks block_type = static_cast<Blocks>(blockId);
 
@@ -250,39 +264,17 @@ void Chunk::build() {
                   offset);
           if (visibleFaces == 0) continue;
 
-          // Build the block mesh
-          // TODO: Add AABB data to AABBTree
-          // BBox* rawBBox = VertexBlockData::getTorchRawBBox();
-          // Vec4 min, max;
-          // rawBBox->getMinMax(&min, &max);
-
-          // M4x4 model = ModelBuilder_BuildModel(&offset);
-          // min = model * min;
-          // max = model * max;
-
-          // // Add data to AABBTree
-          // bvh::AABB blockAABB = bvh::AABB();
-          // blockAABB.minx = block->minCorner.x;
-          // blockAABB.miny = block->minCorner.y;
-          // blockAABB.minz = block->minCorner.z;
-          // blockAABB.maxx = block->maxCorner.x;
-          // blockAABB.maxy = block->maxCorner.y;
-          // blockAABB.maxz = block->maxCorner.z;
-          // block->tree_index = g_AABBTree->insert(blockAABB, block);
-
           Block* pBlockTemplate =
               BlockManager::getInstance()->getBlockTemplateByType(block_type);
 
-          if (pBlockTemplate->hasTransparency()) {
-            MeshBuilder_BuildMesh(
-                &offset, visibleFaces, &verticesWithTransparency,
-                &verticesColorsWithTransparency, &uvMapWithTransparency,
-                t_worldLightModel, pLevel);
-          } else {
-            MeshBuilder_BuildMesh(&offset, visibleFaces, &vertices,
-                                  &verticesColors, &uvMap, t_worldLightModel,
-                                  pLevel);
-          }
+          const bool hasTransparency = pBlockTemplate->hasTransparency();
+          MeshBuilder_BuildMesh(
+              &offset, visibleFaces, _lod,
+              hasTransparency ? &verticesWithTransparency : &vertices,
+              hasTransparency ? &verticesColorsWithTransparency
+                              : &verticesColors,
+              hasTransparency ? &uvMapWithTransparency : &uvMap,
+              t_worldLightModel, pLevel);
         }
       }
     }

@@ -1,31 +1,32 @@
 #include "managers/model_builder.hpp"
 
-M4x4 ModelBuilder_BuildModel(Vec4* offset) {
+M4x4 ModelBuilder_BuildModel(Vec4* offset, float scale, Vec4 rotation,
+                             Vec4 position) {
   Level* pLevel = Level::getInstance();
   const Blocks block_type = static_cast<Blocks>(
       pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
 
   switch (block_type) {
     case Blocks::TORCH:
-      return ModelBuilder_TorchModel(offset);
+      return ModelBuilder_TorchModel(offset, scale, rotation, position);
       break;
 
     case Blocks::WATER_BLOCK:
     case Blocks::LAVA_BLOCK:
-      return ModelBuilder_NoRotationModel(offset);
+      return ModelBuilder_NoRotationModel(offset, scale, rotation, position);
       break;
 
     // TODO: add model for slabs
-
     default:
-      return ModelBuilder_DefaultModel(offset);
+      return ModelBuilder_DefaultModel(offset, scale, rotation, position);
       break;
   }
 }
 
-M4x4 ModelBuilder_DefaultModel(Vec4* offset) {
+M4x4 ModelBuilder_DefaultModel(Vec4* offset, float scale, Vec4 rotation,
+                               Vec4 position) {
   Level* pLevel = Level::getInstance();
-  Vec4 position = pLevel->offsetToWorldPos(offset);
+  Vec4 _position = pLevel->offsetToWorldPos(offset);
 
   M4x4 model;
   model.identity();
@@ -49,25 +50,31 @@ M4x4 ModelBuilder_DefaultModel(Vec4* offset) {
       break;
   }
 
-  model.scale(BLOCK_SIZE);
-  model.translate(position);
+  model.scale(BLOCK_SIZE * scale);
+  if (rotation.length() > 0.0f) {
+    model.rotate(rotation);
+  }
+  model.translate(_position + position);
+
   return model;
 }
 
-M4x4 ModelBuilder_NoRotationModel(Vec4* offset) {
-  Vec4 position = Level::getInstance()->offsetToWorldPos(offset);
+M4x4 ModelBuilder_NoRotationModel(Vec4* offset, float scale, Vec4 rotation,
+                                  Vec4 position) {
+  Vec4 _position = Level::getInstance()->offsetToWorldPos(offset);
 
   M4x4 model;
   model.identity();
 
-  model.scale(BLOCK_SIZE);
-  model.translate(position);
+  model.scale(BLOCK_SIZE * scale);
+  model.translate(_position + position);
   return model;
 }
 
-M4x4 ModelBuilder_TorchModel(Vec4* offset) {
+M4x4 ModelBuilder_TorchModel(Vec4* offset, float scale, Vec4 rotation,
+                             Vec4 position) {
   Level* pLevel = Level::getInstance();
-  Vec4 position = pLevel->offsetToWorldPos(offset);
+  Vec4 _position = pLevel->offsetToWorldPos(offset);
 
   Vec4 offsetCorrection = Vec4(0, 0, 0);
   const float offsetH = BLOCK_SIZE * 0.70F;
@@ -103,7 +110,7 @@ M4x4 ModelBuilder_TorchModel(Vec4* offset) {
     }
   }
 
-  model.scale(BLOCK_SIZE);
-  model.translate(position + offsetCorrection);
+  model.scale(BLOCK_SIZE * scale);
+  model.translate(_position + offsetCorrection + position);
   return model;
 }

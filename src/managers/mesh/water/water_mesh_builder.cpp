@@ -8,19 +8,19 @@
 #include "utils.hpp"
 
 void WaterMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices,
+                                   const int lod, std::vector<Vec4>* t_vertices,
                                    std::vector<Color>* t_vertices_colors,
                                    std::vector<Vec4>* t_uv_map,
                                    WorldLightModel* t_worldLightModel,
-                                   Level* pLevel) {
-  WaterMeshBuilder_loadMeshData(offset, visibleFaces, t_vertices, pLevel);
+                                   Level* pLevel, CustomMeshOptions* options) {
+  WaterMeshBuilder_loadMeshData(offset, visibleFaces, lod, t_vertices, pLevel);
   WaterMeshBuilder_loadUVData(offset, visibleFaces, t_uv_map, pLevel);
   WaterMeshBuilder_loadLightData(offset, visibleFaces, t_vertices_colors,
                                  t_worldLightModel, pLevel);
 }
 
 void WaterMeshBuilder_loadMeshData(const Vec4* offset, const u8 visibleFaces,
-                                   std::vector<Vec4>* t_vertices,
+                                   const int lod, std::vector<Vec4>* t_vertices,
                                    Level* pLevel) {
   const LiquidOrientation orientation =
       pLevel->GetLiquidOrientationDataFromMap(offset->x, offset->y, offset->z);
