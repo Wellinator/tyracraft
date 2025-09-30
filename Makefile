@@ -21,8 +21,8 @@ CFLAGS      := -O3
 # LINKFLAGS	:= --only-keep-debug
 LIB         := -ltyra
 LIBDIRS     := -L$(ENGINEDIR)/bin
-INC         := -I$(INCDIR) -I$(ENGINEDIR)/inc
-INCDEP      := -I$(INCDIR) -I$(ENGINEDIR)/inc
+INC         := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc
+INCDEP      := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc
 
 include /tyra/Makefile.base
 
