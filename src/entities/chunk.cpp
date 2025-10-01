@@ -7,6 +7,7 @@
 #include <array>
 #include <limits>
 #include <unordered_map>
+#include <cstdint>
 #include "debug.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
@@ -135,221 +136,201 @@ void Chunk::mergeFaces() { quadsData.clear(); }
 void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                        std::vector<Vec4>* inVertices,
                        std::vector<Color>* inColors, std::vector<Vec4>* inUVs) {
-  if (!inVertices || inVertices->empty() || !inColors || !inUVs) return;
-  if (inVertices->size() != inColors->size() ||
+  if (!outQuadsData || !inVertices || !inColors || !inUVs) return;
+  if (inVertices->empty() || inVertices->size() != inColors->size() ||
       inVertices->size() != inUVs->size())
     return;
 
-  // Convert triangles to quads - every 6 vertices form 2 triangles = 1 quad
-  size_t numTriangles = inVertices->size() / 3;
+  outQuadsData->clear();
+  const size_t quadCount = inVertices->size() / 6;
+  if (quadCount == 0) return;
 
-  // Group triangles into quads (pairs of triangles)
-  std::vector<bool> processed(numTriangles, false);
+  outQuadsData->reserve(quadCount);
 
-  for (size_t i = 0; i < numTriangles; i += 2) {
-    if (i + 1 >= numTriangles) break;  // Need pairs of triangles
-    if (processed[i] || processed[i + 1]) continue;
-
-    // Create a quad from two triangles
+  struct FaceInfo {
     ChunkQuadData quad;
+    u8 orientation = 0;  // 0 = X, 1 = Y, 2 = Z
+    s16 planeCoord = 0;
+    s16 minA = 0;
+    s16 maxA = 0;
+    s16 minB = 0;
+    s16 maxB = 0;
+  };
 
-    // Extract vertices from two triangles (6 vertices total)
-    quad.vertices.reserve(6);
-    quad.colors.reserve(6);
-    quad.uv.reserve(6);
+  std::vector<FaceInfo> faces;
+  faces.reserve(quadCount);
 
-    for (int j = 0; j < 6; j++) {
-      size_t vertexIndex = i * 3 + j;
-      if (vertexIndex < inVertices->size()) {
-        quad.vertices.push_back((*inVertices)[vertexIndex]);
-        quad.colors.push_back((*inColors)[vertexIndex]);
-        quad.uv.push_back((*inUVs)[vertexIndex]);
+  auto normalizeRange = [](s16& minVal, s16& maxVal) {
+    if (maxVal < minVal) std::swap(minVal, maxVal);
+    if (maxVal == minVal) ++maxVal;
+  };
+
+  for (size_t quadIdx = 0; quadIdx < quadCount; ++quadIdx) {
+    FaceInfo info;
+    const size_t baseIndex = quadIdx * 6;
+
+    for (size_t v = 0; v < 6; ++v) {
+      const size_t sourceIndex = baseIndex + v;
+      info.quad.vertices[v] = (*inVertices)[sourceIndex];
+      info.quad.colors[v] = (*inColors)[sourceIndex];
+      info.quad.uv[v] = (*inUVs)[sourceIndex];
+    }
+
+    Vec4 v1 = info.quad.vertices[1] - info.quad.vertices[0];
+    Vec4 v2 = info.quad.vertices[2] - info.quad.vertices[0];
+    info.quad.normal.set(v1.cross(v2));
+    info.quad.normal.normalize();
+
+    Vec4 minBounds, maxBounds;
+    getQuadBounds(info.quad, minBounds, maxBounds);
+
+    const float absX = fabs(info.quad.normal.x);
+    const float absY = fabs(info.quad.normal.y);
+    const float absZ = fabs(info.quad.normal.z);
+
+    const auto toInt = [](float value) {
+      return static_cast<s16>(std::lround(value));
+    };
+
+    if (absX >= absY && absX >= absZ) {
+      info.orientation = 0;
+      info.planeCoord = toInt((minBounds.x + maxBounds.x) * 0.5F);
+      info.minA = toInt(minBounds.y);
+      info.maxA = toInt(maxBounds.y);
+      info.minB = toInt(minBounds.z);
+      info.maxB = toInt(maxBounds.z);
+    } else if (absY >= absZ) {
+      info.orientation = 1;
+      info.planeCoord = toInt((minBounds.y + maxBounds.y) * 0.5F);
+      info.minA = toInt(minBounds.x);
+      info.maxA = toInt(maxBounds.x);
+      info.minB = toInt(minBounds.z);
+      info.maxB = toInt(maxBounds.z);
+    } else {
+      info.orientation = 2;
+      info.planeCoord = toInt((minBounds.z + maxBounds.z) * 0.5F);
+      info.minA = toInt(minBounds.x);
+      info.maxA = toInt(maxBounds.x);
+      info.minB = toInt(minBounds.y);
+      info.maxB = toInt(maxBounds.y);
+    }
+
+    normalizeRange(info.minA, info.maxA);
+    normalizeRange(info.minB, info.maxB);
+
+    faces.emplace_back(std::move(info));
+  }
+
+  if (faces.empty()) return;
+
+  auto materialsMatch = [](const ChunkQuadData& a,
+                           const ChunkQuadData& b) -> bool {
+    Vec4 normalDiff = a.normal - b.normal;
+    if (normalDiff.length() > 0.1F) return false;
+
+    for (size_t i = 0; i < a.colors.size(); ++i) {
+      const Color& c1 = a.colors[i];
+      const Color& c2 = b.colors[i];
+      if (abs(c1.r - c2.r) > 10 || abs(c1.g - c2.g) > 10 ||
+          abs(c1.b - c2.b) > 10) {
+        return false;
+      }
+
+      const Vec4& uv1 = a.uv[i];
+      const Vec4& uv2 = b.uv[i];
+      if (fabs(uv1.x - uv2.x) > 0.01F || fabs(uv1.y - uv2.y) > 0.01F) {
+        return false;
       }
     }
 
-    // Calculate and set the normal vector for this quad
-    if (quad.vertices.size() >= 3) {
-      Vec4 v1 = quad.vertices[1] - quad.vertices[0];
-      Vec4 v2 = quad.vertices[2] - quad.vertices[0];
-      quad.normal.set(v1.cross(v2));
-      quad.normal.normalize();
+    return true;
+  };
+
+  enum class MergePhase : uint8_t { AxisA = 0, AxisB = 1 };
+
+  auto makeKey = [](const FaceInfo& face, MergePhase phase) -> uint64_t {
+    const uint16_t plane = static_cast<uint16_t>(face.planeCoord);
+    uint16_t first = 0;
+    uint16_t second = 0;
+
+    if (phase == MergePhase::AxisA) {
+      first = static_cast<uint16_t>(face.minB);
+      second = static_cast<uint16_t>(face.maxB);
+    } else {
+      first = static_cast<uint16_t>(face.minA);
+      second = static_cast<uint16_t>(face.maxA);
     }
 
-    processed[i] = true;
-    processed[i + 1] = true;
+    uint64_t key = static_cast<uint64_t>(face.orientation);
+    key = (key << 16) | plane;
+    key = (key << 16) | first;
+    key = (key << 16) | second;
+    return key;
+  };
 
-    outQuadsData->push_back(std::move(quad));
-  }
+  auto mergeAlongAxis = [&](std::vector<FaceInfo>& input,
+                            MergePhase phase) -> std::vector<FaceInfo> {
+    if (input.empty()) return {};
 
-  // Now perform greedy meshing on the quads
-  mergeAdjacentQuads(outQuadsData);
-}
+    std::unordered_map<uint64_t, std::vector<size_t>> groups;
+    groups.reserve(input.size());
 
-void Chunk::mergeAdjacentQuads(std::vector<ChunkQuadData>* quads) {
-  if (!quads || quads->size() < 2) return;
+    for (size_t idx = 0; idx < input.size(); ++idx) {
+      groups[makeKey(input[idx], phase)].push_back(idx);
+    }
 
-  bool merged = true;
-  while (merged) {
-    merged = false;
+    std::vector<FaceInfo> output;
+    output.reserve(input.size());
 
-    for (size_t i = 0; i < quads->size() && !merged; i++) {
-      for (size_t j = i + 1; j < quads->size() && !merged; j++) {
-        ChunkQuadData& quad1 = (*quads)[i];
-        ChunkQuadData& quad2 = (*quads)[j];
+    auto getMin = [&](const FaceInfo& face) -> s16 {
+      return (phase == MergePhase::AxisA) ? face.minA : face.minB;
+    };
 
-        // Check if quads can be merged (same face direction, UV, colors)
-        if (canMergeQuads(quad1, quad2)) {
-          // Merge quad2 into quad1
-          mergeQuadPair(quad1, quad2);
+    auto getMax = [&](const FaceInfo& face) -> s16 {
+      return (phase == MergePhase::AxisA) ? face.maxA : face.maxB;
+    };
 
-          // Remove quad2
-          quads->erase(quads->begin() + j);
-          merged = true;
+    for (auto& entry : groups) {
+      auto& indices = entry.second;
+      std::sort(indices.begin(), indices.end(), [&](size_t lhs, size_t rhs) {
+        return getMin(input[lhs]) < getMin(input[rhs]);
+      });
+
+      FaceInfo current = input[indices[0]];
+
+      for (size_t pos = 1; pos < indices.size(); ++pos) {
+        const FaceInfo& candidate = input[indices[pos]];
+        if (getMin(candidate) == getMax(current) &&
+            materialsMatch(current.quad, candidate.quad)) {
+          mergeQuadPair(current.quad, candidate.quad);
+          if (phase == MergePhase::AxisA) {
+            current.maxA = candidate.maxA;
+          } else {
+            current.maxB = candidate.maxB;
+          }
+        } else {
+          output.push_back(std::move(current));
+          current = candidate;
         }
       }
+
+      output.push_back(std::move(current));
     }
-  }
-}
 
-bool Chunk::canMergeQuads(const ChunkQuadData& quad1,
-                          const ChunkQuadData& quad2) {
-  // Check if quads have same colors and UVs (simplified)
-  if (quad1.colors.size() != quad2.colors.size() ||
-      quad1.uv.size() != quad2.uv.size()) {
-    return false;
-  }
-
-  // Check if quads face the same direction (same normal)
-  Vec4 normalDiff = quad1.normal - quad2.normal;
-  if (normalDiff.length() > 0.1f) {
-    return false;
-  }
-
-  // Check if colors are similar (allowing for slight variations due to
-  // lighting)
-  for (size_t i = 0; i < quad1.colors.size(); i++) {
-    const Color& c1 = quad1.colors[i];
-    const Color& c2 = quad2.colors[i];
-    if (abs(c1.r - c2.r) > 10 || abs(c1.g - c2.g) > 10 ||
-        abs(c1.b - c2.b) > 10) {
-      return false;
-    }
-  }
-
-  // Check if UVs are the same
-  for (size_t i = 0; i < quad1.uv.size(); i++) {
-    const Vec4& uv1 = quad1.uv[i];
-    const Vec4& uv2 = quad2.uv[i];
-    if (abs(uv1.x - uv2.x) > 0.01f || abs(uv1.y - uv2.y) > 0.01f) {
-      return false;
-    }
-  }
-
-  // Check if quads are adjacent (share an edge)
-  return areQuadsAdjacent(quad1, quad2);
-}
-
-bool Chunk::areQuadsAdjacent(const ChunkQuadData& quad1,
-                             const ChunkQuadData& quad2) {
-  const float epsilon = 0.01f;
-
-  // First check if quads are coplanar (on the same plane)
-  if (!areQuadsCoplanar(quad1, quad2, epsilon)) {
-    return false;
-  }
-
-  // Get bounding boxes of both quads
-  Vec4 min1, max1, min2, max2;
-  getQuadBounds(quad1, min1, max1);
-  getQuadBounds(quad2, min2, max2);
-
-  std::array<float, 3> minA = {min1.x, min1.y, min1.z};
-  std::array<float, 3> maxA = {max1.x, max1.y, max1.z};
-  std::array<float, 3> minB = {min2.x, min2.y, min2.z};
-  std::array<float, 3> maxB = {max2.x, max2.y, max2.z};
-
-  auto rangesEqual = [&](int axis) {
-    return abs(minA[axis] - minB[axis]) < epsilon &&
-           abs(maxA[axis] - maxB[axis]) < epsilon;
+    return output;
   };
 
-  auto rangesContiguous = [&](int axis) {
-    return (abs(maxA[axis] - minB[axis]) < epsilon) ||
-           (abs(maxB[axis] - minA[axis]) < epsilon);
-  };
+  faces = mergeAlongAxis(faces, MergePhase::AxisA);
+  faces = mergeAlongAxis(faces, MergePhase::AxisB);
 
-  auto rangeLength = [&](int axis) {
-    return maxA[axis] - minA[axis];
-  };
-
-  auto alignAndExpand = [&](int alignAxis, int expandAxis) {
-    return rangeLength(alignAxis) > epsilon &&
-           rangesEqual(alignAxis) && rangesContiguous(expandAxis);
-  };
-
-  Vec4 normal = quad1.normal;
-  float absX = fabs(normal.x);
-  float absY = fabs(normal.y);
-  float absZ = fabs(normal.z);
-
-  int normalAxis = 0;
-  if (absY > absX && absY >= absZ)
-    normalAxis = 1;
-  else if (absZ > absX && absZ > absY)
-    normalAxis = 2;
-
-  std::array<int, 2> planeAxes;
-  if (normalAxis == 0) {
-    planeAxes = {1, 2};
-  } else if (normalAxis == 1) {
-    planeAxes = {0, 2};
-  } else {
-    planeAxes = {0, 1};
+  outQuadsData->reserve(outQuadsData->size() + faces.size());
+  for (auto& face : faces) {
+    outQuadsData->push_back(std::move(face.quad));
   }
-
-  return alignAndExpand(planeAxes[0], planeAxes[1]) ||
-         alignAndExpand(planeAxes[1], planeAxes[0]);
-}
-
-bool Chunk::areQuadsCoplanar(const ChunkQuadData& quad1,
-                             const ChunkQuadData& quad2, float epsilon) {
-  // Check if both quads are on the same plane by comparing their distance from
-  // a reference point along their normal vectors
-
-  if (quad1.vertices.empty() || quad2.vertices.empty()) return false;
-
-  Vec4 normal1 = quad1.normal;
-  Vec4 normal2 = quad2.normal;
-
-  // Check if normals are parallel (same direction)
-  Vec4 normalDiff = normal1 - normal2;
-  if (normalDiff.length() > epsilon) {
-    return false;
-  }
-
-  // Check if quads are on the same plane by testing if vertices of quad2
-  // are coplanar with quad1's plane
-  Vec4 refPoint = quad1.vertices[0];
-  float planeD = normal1.dot3(refPoint);
-
-  for (const Vec4& vertex : quad2.vertices) {
-    float distance = abs(normal1.dot3(vertex) - planeD);
-    if (distance > epsilon) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 void Chunk::getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
                           Vec4& maxBounds) {
-  if (quad.vertices.empty()) {
-    minBounds = Vec4(0, 0, 0);
-    maxBounds = Vec4(0, 0, 0);
-    return;
-  }
-
   minBounds = quad.vertices[0];
   maxBounds = quad.vertices[0];
 
@@ -465,10 +446,10 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
 
   int alignAxis = (planeAxes[0] == expansionAxis) ? planeAxes[1] : planeAxes[0];
 
-  float newExpansionSpan = getSpan(target, expansionAxis) +
-                           getSpan(source, expansionAxis);
-  float newAlignSpan = std::max(getSpan(target, alignAxis),
-                                getSpan(source, alignAxis));
+  float newExpansionSpan =
+      getSpan(target, expansionAxis) + getSpan(source, expansionAxis);
+  float newAlignSpan =
+      std::max(getSpan(target, alignAxis), getSpan(source, alignAxis));
 
   setSpan(target, expansionAxis, newExpansionSpan);
   setSpan(target, alignAxis, newAlignSpan);
@@ -526,37 +507,36 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
   }
 
   // Create new expanded quad vertices
-  std::vector<Vec4> newVertices;
-  newVertices.reserve(6);
+  std::array<Vec4, 6> newVertices = {};
 
   // Determine which face we're dealing with based on normal
   if (abs(normal.x) > 0.9f) {  // X-facing quad (left/right)
     float x = (normal.x > 0) ? maxBounds.x : minBounds.x;
     // Two triangles forming a quad on YZ plane
-    newVertices.push_back(Vec4(x, minBounds.y, minBounds.z));  // Triangle 1
-    newVertices.push_back(Vec4(x, maxBounds.y, minBounds.z));
-    newVertices.push_back(Vec4(x, maxBounds.y, maxBounds.z));
-    newVertices.push_back(Vec4(x, minBounds.y, minBounds.z));  // Triangle 2
-    newVertices.push_back(Vec4(x, maxBounds.y, maxBounds.z));
-    newVertices.push_back(Vec4(x, minBounds.y, maxBounds.z));
+    newVertices[0] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 1
+    newVertices[1] = Vec4(x, maxBounds.y, minBounds.z);
+    newVertices[2] = Vec4(x, maxBounds.y, maxBounds.z);
+    newVertices[3] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 2
+    newVertices[4] = Vec4(x, maxBounds.y, maxBounds.z);
+    newVertices[5] = Vec4(x, minBounds.y, maxBounds.z);
   } else if (abs(normal.y) > 0.9f) {  // Y-facing quad (top/bottom)
     float y = (normal.y > 0) ? maxBounds.y : minBounds.y;
     // Two triangles forming a quad on XZ plane
-    newVertices.push_back(Vec4(minBounds.x, y, minBounds.z));  // Triangle 1
-    newVertices.push_back(Vec4(maxBounds.x, y, minBounds.z));
-    newVertices.push_back(Vec4(maxBounds.x, y, maxBounds.z));
-    newVertices.push_back(Vec4(minBounds.x, y, minBounds.z));  // Triangle 2
-    newVertices.push_back(Vec4(maxBounds.x, y, maxBounds.z));
-    newVertices.push_back(Vec4(minBounds.x, y, maxBounds.z));
+    newVertices[0] = (Vec4(minBounds.x, y, minBounds.z));  // Triangle 1
+    newVertices[1] = (Vec4(maxBounds.x, y, minBounds.z));
+    newVertices[2] = (Vec4(maxBounds.x, y, maxBounds.z));
+    newVertices[3] = (Vec4(minBounds.x, y, minBounds.z));  // Triangle 2
+    newVertices[4] = (Vec4(maxBounds.x, y, maxBounds.z));
+    newVertices[5] = (Vec4(minBounds.x, y, maxBounds.z));
   } else {  // Z-facing quad (front/back)
     float z = (normal.z > 0) ? maxBounds.z : minBounds.z;
     // Two triangles forming a quad on XY plane
-    newVertices.push_back(Vec4(minBounds.x, minBounds.y, z));  // Triangle 1
-    newVertices.push_back(Vec4(maxBounds.x, minBounds.y, z));
-    newVertices.push_back(Vec4(maxBounds.x, maxBounds.y, z));
-    newVertices.push_back(Vec4(minBounds.x, minBounds.y, z));  // Triangle 2
-    newVertices.push_back(Vec4(maxBounds.x, maxBounds.y, z));
-    newVertices.push_back(Vec4(minBounds.x, maxBounds.y, z));
+    newVertices[0] = (Vec4(minBounds.x, minBounds.y, z));  // Triangle 1
+    newVertices[1] = (Vec4(maxBounds.x, minBounds.y, z));
+    newVertices[2] = (Vec4(maxBounds.x, maxBounds.y, z));
+    newVertices[3] = (Vec4(minBounds.x, minBounds.y, z));  // Triangle 2
+    newVertices[4] = (Vec4(maxBounds.x, maxBounds.y, z));
+    newVertices[5] = (Vec4(minBounds.x, maxBounds.y, z));
   }
 
   // Update target vertices with expanded geometry
@@ -579,15 +559,41 @@ Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
-  if (!isLoaded() || quadsData.empty()) return;
+  if (quadsData.empty()) return;
+
+  StaPipColorBag colorBag;
 
   StaPipTextureBag textureBag;
+  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
+
   StaPipInfoBag infoBag;
-  StaPipColorBag colorBag;
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = false;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  M4x4 rawMatrix = M4x4::Identity;
+  infoBag.model = &rawMatrix;
+
   StaPipBag bag;
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  t_renderer->renderer3D.usePipeline(stapip);
 
   // Debug draw quads data
-  for (auto& quad : quadsData) {
+  for (size_t i = 0; i < quadsData.size(); i++) {
+    ChunkQuadData& quad = quadsData[i];
+
+    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[0],
+                                     &quad.vertices[1], &quad.vertices[2])) {
+      continue;
+    }
+
     /* Draw each quad's vertex mesh
     t_renderer->renderer3D.utility.drawLine(quad.vertices[0], quad.vertices[1]);
     t_renderer->renderer3D.utility.drawLine(quad.vertices[1], quad.vertices[2]);
@@ -598,37 +604,17 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     */
 
     textureBag.coordinates = quad.uv.data();
-    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
-
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = false;
-    infoBag.antiAliasingEnabled = false;
-    infoBag.fullClipChecks = false;
-    infoBag.frustumCulling =
-        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
     colorBag.many = quad.colors.data();
-
     bag.count = 6;  // Two triangles per quad
     bag.vertices = quad.vertices.data();
-    bag.color = &colorBag;
-    bag.info = &infoBag;
-    bag.texture = &textureBag;
 
-    M4x4 rawMatrix = M4x4::Identity;
-    infoBag.model = &rawMatrix;
+    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
-    t_renderer->renderer3D.usePipeline(stapip);
-    // // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
-
-    // const float distance =
-    //     scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
-
-    // if (distance <= 1.5f) {
-    //   return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-    //                                           camPositon);
-    // }
+    const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+    if (d <= 1.5f) {
+      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                              camPositon);
+    }
 
     stapip->core.render(&bag);
   }
@@ -636,15 +622,41 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
-  if (!isLoaded() || transparentQuadsData.empty()) return;
+  if (transparentQuadsData.empty()) return;
+
+  StaPipColorBag colorBag;
 
   StaPipTextureBag textureBag;
+  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
+
   StaPipInfoBag infoBag;
-  StaPipColorBag colorBag;
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = false;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  M4x4 rawMatrix = M4x4::Identity;
+  infoBag.model = &rawMatrix;
+
   StaPipBag bag;
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  t_renderer->renderer3D.usePipeline(stapip);
 
   // Debug draw quads data
-  for (auto& quad : transparentQuadsData) {
+  for (size_t i = 0; i < transparentQuadsData.size(); i++) {
+    ChunkQuadData& quad = transparentQuadsData[i];
+
+    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[0],
+                                     &quad.vertices[1], &quad.vertices[2])) {
+      continue;
+    }
+
     /* Draw each quad's vertex mesh
     t_renderer->renderer3D.utility.drawLine(quad.vertices[0], quad.vertices[1]);
     t_renderer->renderer3D.utility.drawLine(quad.vertices[1], quad.vertices[2]);
@@ -655,37 +667,17 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     */
 
     textureBag.coordinates = quad.uv.data();
-    textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
-
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-    infoBag.blendingEnabled = true;
-    infoBag.antiAliasingEnabled = false;
-    infoBag.fullClipChecks = false;
-    infoBag.frustumCulling =
-        Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
     colorBag.many = quad.colors.data();
-
     bag.count = 6;  // Two triangles per quad
     bag.vertices = quad.vertices.data();
-    bag.color = &colorBag;
-    bag.info = &infoBag;
-    bag.texture = &textureBag;
 
-    M4x4 rawMatrix = M4x4::Identity;
-    infoBag.model = &rawMatrix;
+    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
 
-    t_renderer->renderer3D.usePipeline(stapip);
-    // // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
-
-    // const float distance =
-    //     scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
-
-    // if (distance <= 1.5f) {
-    //   return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-    //                                           camPositon);
-    // }
+    const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+    if (d <= 1.5f) {
+      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                              camPositon);
+    }
 
     stapip->core.render(&bag);
   }

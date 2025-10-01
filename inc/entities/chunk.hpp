@@ -42,9 +42,9 @@ struct ChunkQuadData {
   // How many blocks this quad is spanning in X, Y and Z axis
   Vec4 span = Vec4(1, 1, 1);
   Vec4 normal = Vec4(0, 0, 0);  // Normal vector of the quad face
-  std::vector<Vec4> vertices;
-  std::vector<Vec4> uv;
-  std::vector<Color> colors;
+  std::array<Vec4, 6> vertices;
+  std::array<Vec4, 6> uv;
+  std::array<Color, 6> colors;
 };
 
 class Chunk {
@@ -136,12 +136,8 @@ class Chunk {
   void mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                   std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
                   std::vector<Vec4>* inUVs);
-                  
+
   // Helper methods for face merging
-  void mergeAdjacentQuads(std::vector<ChunkQuadData>* quads);
-  bool canMergeQuads(const ChunkQuadData& quad1, const ChunkQuadData& quad2);
-  bool areQuadsAdjacent(const ChunkQuadData& quad1, const ChunkQuadData& quad2);
-  bool areQuadsCoplanar(const ChunkQuadData& quad1, const ChunkQuadData& quad2, float epsilon);
   void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds, Vec4& maxBounds);
   void mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source);
   void expandQuadGeometry(ChunkQuadData& target, const ChunkQuadData& source, const Vec4& direction, int expansionAxis);
