@@ -8,6 +8,10 @@
 #include <limits>
 #include <unordered_map>
 #include <cstdint>
+
+extern "C" {
+#include <math3d.h>
+}
 #include "debug.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
@@ -24,6 +28,114 @@
 #ifdef DEBUG_MODE
 #include "memory-monitor/memory_monitor.hpp"
 #endif  // end if DEBUG_MODE
+
+namespace {
+constexpr float kQuadVertexCountReciprocal = 1.0F / 6.0F;
+
+inline s16 fastFloatToS16(const float value) {
+  const float bias = value >= 0.0F ? 0.5F : -0.5F;
+  return static_cast<s16>(value + bias);
+}
+
+inline void vuMinMaxUpdate(float* minVec, float* maxVec, float* candidate) {
+#if __GNUC__ > 3
+  asm volatile(
+  "lqc2 $vf1, 0x00(%2)\n"
+  "lqc2 $vf2, 0x00(%0)\n"
+  "lqc2 $vf3, 0x00(%1)\n"
+  "vmax.xyzw $vf2, $vf2, $vf1\n"
+  "vsub.xyzw $vf4, $vf0, $vf1\n"
+  "vsub.xyzw $vf5, $vf0, $vf3\n"
+  "vmax.xyzw $vf4, $vf4, $vf5\n"
+  "vsub.xyzw $vf3, $vf0, $vf4\n"
+  "sqc2 $vf2, 0x00(%0)\n"
+  "sqc2 $vf3, 0x00(%1)\n"
+      :
+      : "r"(maxVec), "r"(minVec), "r"(candidate)
+      : "memory");
+#else
+  asm volatile(
+  "lqc2 vf1, 0x00(%2)\n"
+  "lqc2 vf2, 0x00(%0)\n"
+  "lqc2 vf3, 0x00(%1)\n"
+  "vmax.xyzw vf2, vf2, vf1\n"
+  "vsub.xyzw vf4, vf0, vf1\n"
+  "vsub.xyzw vf5, vf0, vf3\n"
+  "vmax.xyzw vf4, vf4, vf5\n"
+  "vsub.xyzw vf3, vf0, vf4\n"
+  "sqc2 vf2, 0x00(%0)\n"
+  "sqc2 vf3, 0x00(%1)\n"
+  :
+  : "r"(maxVec), "r"(minVec), "r"(candidate)
+  : "memory");
+#endif
+}
+
+inline void computeQuadBoundsVU(const ChunkQuadData& quad, Vec4& minBounds,
+                                Vec4& maxBounds) {
+  VECTOR minVec;
+  VECTOR maxVec;
+  vector_copy(minVec, const_cast<float*>(quad.vertices[0].xyzw));
+  vector_copy(maxVec, const_cast<float*>(quad.vertices[0].xyzw));
+
+  for (size_t i = 1; i < quad.vertices.size(); ++i) {
+    vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[i].xyzw));
+  }
+
+  Vec4::copy(&minBounds, reinterpret_cast<const float*>(minVec));
+  Vec4::copy(&maxBounds, reinterpret_cast<const float*>(maxVec));
+}
+
+inline void computeQuadNormalVU(ChunkQuadData& quad) {
+  Vec4 edgeA = quad.vertices[1] - quad.vertices[0];
+  Vec4 edgeB = quad.vertices[2] - quad.vertices[0];
+
+  VECTOR edgeAVector;
+  VECTOR edgeBVector;
+  VECTOR normalVector;
+  vector_copy(edgeAVector, edgeA.xyzw);
+  vector_copy(edgeBVector, edgeB.xyzw);
+  vector_cross_product(normalVector, edgeAVector, edgeBVector);
+  vector_normalize(normalVector, normalVector);
+  Vec4::copy(&quad.normal, reinterpret_cast<const float*>(normalVector));
+  quad.normal.w = 0.0F;
+}
+
+inline void vuVectorAccumulate(float* acc, float* value) {
+#if __GNUC__ > 3
+  asm volatile(
+  "lqc2 $vf1, 0x00(%0)\n"
+  "lqc2 $vf2, 0x00(%1)\n"
+  "vadd.xyzw $vf1, $vf1, $vf2\n"
+  "sqc2 $vf1, 0x00(%0)\n"
+      :
+      : "r"(acc), "r"(value)
+      : "memory");
+#else
+  asm volatile(
+  "lqc2 vf1, 0x00(%0)\n"
+  "lqc2 vf2, 0x00(%1)\n"
+  "vadd.xyzw vf1, vf1, vf2\n"
+  "sqc2 vf1, 0x00(%0)\n"
+  :
+  : "r"(acc), "r"(value)
+  : "memory");
+#endif
+}
+
+inline Vec4 computeCenterVU(const std::array<Vec4, 6>& vertices) {
+  VECTOR accum = {0.0F, 0.0F, 0.0F, 0.0F};
+  for (const Vec4& vertex : vertices) {
+    vuVectorAccumulate(accum, const_cast<float*>(vertex.xyzw));
+  }
+
+  Vec4 center;
+  Vec4::copy(&center, reinterpret_cast<const float*>(accum));
+  center *= kQuadVertexCountReciprocal;
+  center.w = 1.0F;
+  return center;
+}
+}  // namespace
 
 Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -176,43 +288,36 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
       info.quad.uv[v] = (*inUVs)[sourceIndex];
     }
 
-    Vec4 v1 = info.quad.vertices[1] - info.quad.vertices[0];
-    Vec4 v2 = info.quad.vertices[2] - info.quad.vertices[0];
-    info.quad.normal.set(v1.cross(v2));
-    info.quad.normal.normalize();
+    computeQuadNormalVU(info.quad);
 
     Vec4 minBounds, maxBounds;
-    getQuadBounds(info.quad, minBounds, maxBounds);
+    computeQuadBoundsVU(info.quad, minBounds, maxBounds);
 
-    const float absX = fabs(info.quad.normal.x);
-    const float absY = fabs(info.quad.normal.y);
-    const float absZ = fabs(info.quad.normal.z);
-
-    const auto toInt = [](float value) {
-      return static_cast<s16>(std::lround(value));
-    };
+    const float absX = Utils::Abs(info.quad.normal.x);
+    const float absY = Utils::Abs(info.quad.normal.y);
+    const float absZ = Utils::Abs(info.quad.normal.z);
 
     if (absX >= absY && absX >= absZ) {
       info.orientation = 0;
-      info.planeCoord = toInt((minBounds.x + maxBounds.x) * 0.5F);
-      info.minA = toInt(minBounds.y);
-      info.maxA = toInt(maxBounds.y);
-      info.minB = toInt(minBounds.z);
-      info.maxB = toInt(maxBounds.z);
+      info.planeCoord = fastFloatToS16((minBounds.x + maxBounds.x) * 0.5F);
+      info.minA = fastFloatToS16(minBounds.y);
+      info.maxA = fastFloatToS16(maxBounds.y);
+      info.minB = fastFloatToS16(minBounds.z);
+      info.maxB = fastFloatToS16(maxBounds.z);
     } else if (absY >= absZ) {
       info.orientation = 1;
-      info.planeCoord = toInt((minBounds.y + maxBounds.y) * 0.5F);
-      info.minA = toInt(minBounds.x);
-      info.maxA = toInt(maxBounds.x);
-      info.minB = toInt(minBounds.z);
-      info.maxB = toInt(maxBounds.z);
+      info.planeCoord = fastFloatToS16((minBounds.y + maxBounds.y) * 0.5F);
+      info.minA = fastFloatToS16(minBounds.x);
+      info.maxA = fastFloatToS16(maxBounds.x);
+      info.minB = fastFloatToS16(minBounds.z);
+      info.maxB = fastFloatToS16(maxBounds.z);
     } else {
       info.orientation = 2;
-      info.planeCoord = toInt((minBounds.z + maxBounds.z) * 0.5F);
-      info.minA = toInt(minBounds.x);
-      info.maxA = toInt(maxBounds.x);
-      info.minB = toInt(minBounds.y);
-      info.maxB = toInt(maxBounds.y);
+      info.planeCoord = fastFloatToS16((minBounds.z + maxBounds.z) * 0.5F);
+      info.minA = fastFloatToS16(minBounds.x);
+      info.maxA = fastFloatToS16(maxBounds.x);
+      info.minB = fastFloatToS16(minBounds.y);
+      info.maxB = fastFloatToS16(maxBounds.y);
     }
 
     normalizeRange(info.minA, info.maxA);
@@ -225,8 +330,7 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
 
   auto materialsMatch = [](const ChunkQuadData& a,
                            const ChunkQuadData& b) -> bool {
-    Vec4 normalDiff = a.normal - b.normal;
-    if (normalDiff.length() > 0.1F) return false;
+    if (a.normal.dot3(b.normal) < 0.99F) return false;
 
     for (size_t i = 0; i < a.colors.size(); ++i) {
       const Color& c1 = a.colors[i];
@@ -238,7 +342,8 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
 
       const Vec4& uv1 = a.uv[i];
       const Vec4& uv2 = b.uv[i];
-      if (fabs(uv1.x - uv2.x) > 0.01F || fabs(uv1.y - uv2.y) > 0.01F) {
+      if (Utils::Abs(uv1.x - uv2.x) > 0.01F ||
+          Utils::Abs(uv1.y - uv2.y) > 0.01F) {
         return false;
       }
     }
@@ -331,17 +436,7 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
 
 void Chunk::getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
                           Vec4& maxBounds) {
-  minBounds = quad.vertices[0];
-  maxBounds = quad.vertices[0];
-
-  for (const Vec4& vertex : quad.vertices) {
-    minBounds.x = std::min(minBounds.x, vertex.x);
-    minBounds.y = std::min(minBounds.y, vertex.y);
-    minBounds.z = std::min(minBounds.z, vertex.z);
-    maxBounds.x = std::max(maxBounds.x, vertex.x);
-    maxBounds.y = std::max(maxBounds.y, vertex.y);
-    maxBounds.z = std::max(maxBounds.z, vertex.z);
-  }
+  computeQuadBoundsVU(quad, minBounds, maxBounds);
 }
 
 void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
@@ -351,14 +446,13 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
   Vec4 direction = sourceCenter - targetCenter;
 
   Vec4 normal = target.normal;
-  if (normal.length() == 0.0F) {
-    Vec4 v1 = target.vertices[1] - target.vertices[0];
-    Vec4 v2 = target.vertices[2] - target.vertices[0];
-    normal = v1.cross(v2).getNormalized();
-    target.normal = normal;
+  const float normalLenSq = normal.dot3(normal);
+  if (Tyra::Math::equalf(normalLenSq, 0.0F, 0.00001F)) {
+    computeQuadNormalVU(target);
+    normal = target.normal;
   }
 
-  const float epsilon = 0.01f;
+  const float epsilon = 0.01F;
   Vec4 minTarget, maxTarget, minSource, maxSource;
   getQuadBounds(target, minTarget, maxTarget);
   getQuadBounds(source, minSource, maxSource);
@@ -369,13 +463,13 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
   std::array<float, 3> maxB = {maxSource.x, maxSource.y, maxSource.z};
 
   auto rangesEqual = [&](int axis) {
-    return abs(minA[axis] - minB[axis]) < epsilon &&
-           abs(maxA[axis] - maxB[axis]) < epsilon;
+    return Utils::Abs(minA[axis] - minB[axis]) < epsilon &&
+           Utils::Abs(maxA[axis] - maxB[axis]) < epsilon;
   };
 
   auto rangesContiguous = [&](int axis) {
-    return (abs(maxA[axis] - minB[axis]) < epsilon) ||
-           (abs(maxB[axis] - minA[axis]) < epsilon);
+    return (Utils::Abs(maxA[axis] - minB[axis]) < epsilon) ||
+           (Utils::Abs(maxB[axis] - minA[axis]) < epsilon);
   };
 
   auto getSpan = [&](const ChunkQuadData& quad, int axis) -> float {
@@ -403,9 +497,9 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
     }
   };
 
-  float absX = fabs(normal.x);
-  float absY = fabs(normal.y);
-  float absZ = fabs(normal.z);
+  float absX = Utils::Abs(normal.x);
+  float absY = Utils::Abs(normal.y);
+  float absZ = Utils::Abs(normal.z);
 
   int normalAxis = 0;
   if (absY > absX && absY >= absZ)
@@ -432,11 +526,14 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
   if (expansionAxis == -1) {
     // Fallback to directional heuristic if numerical issues prevented detection
     if (normalAxis == 0) {
-      expansionAxis = (fabs(direction.y) >= fabs(direction.z)) ? 1 : 2;
+      expansionAxis =
+          (Utils::Abs(direction.y) >= Utils::Abs(direction.z)) ? 1 : 2;
     } else if (normalAxis == 1) {
-      expansionAxis = (fabs(direction.x) >= fabs(direction.z)) ? 0 : 2;
+      expansionAxis =
+          (Utils::Abs(direction.x) >= Utils::Abs(direction.z)) ? 0 : 2;
     } else {
-      expansionAxis = (fabs(direction.x) >= fabs(direction.y)) ? 0 : 1;
+      expansionAxis =
+          (Utils::Abs(direction.x) >= Utils::Abs(direction.y)) ? 0 : 1;
     }
   }
 
@@ -473,27 +570,18 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
   if (target.vertices.size() != 6 || source.vertices.size() != 6) return;
 
   // Find the bounding box of both quads combined
-  Vec4 minBounds = target.vertices[0];
-  Vec4 maxBounds = target.vertices[0];
+  Vec4 targetMin, targetMax, sourceMin, sourceMax;
+  getQuadBounds(target, targetMin, targetMax);
+  getQuadBounds(source, sourceMin, sourceMax);
 
-  // Find min/max bounds from both quads
-  for (const Vec4& vertex : target.vertices) {
-    minBounds.x = std::min(minBounds.x, vertex.x);
-    minBounds.y = std::min(minBounds.y, vertex.y);
-    minBounds.z = std::min(minBounds.z, vertex.z);
-    maxBounds.x = std::max(maxBounds.x, vertex.x);
-    maxBounds.y = std::max(maxBounds.y, vertex.y);
-    maxBounds.z = std::max(maxBounds.z, vertex.z);
-  }
-
-  for (const Vec4& vertex : source.vertices) {
-    minBounds.x = std::min(minBounds.x, vertex.x);
-    minBounds.y = std::min(minBounds.y, vertex.y);
-    minBounds.z = std::min(minBounds.z, vertex.z);
-    maxBounds.x = std::max(maxBounds.x, vertex.x);
-    maxBounds.y = std::max(maxBounds.y, vertex.y);
-    maxBounds.z = std::max(maxBounds.z, vertex.z);
-  }
+  Vec4 minBounds;
+  Vec4 maxBounds;
+  minBounds.x = std::min(targetMin.x, sourceMin.x);
+  minBounds.y = std::min(targetMin.y, sourceMin.y);
+  minBounds.z = std::min(targetMin.z, sourceMin.z);
+  maxBounds.x = std::max(targetMax.x, sourceMax.x);
+  maxBounds.y = std::max(targetMax.y, sourceMax.y);
+  maxBounds.z = std::max(targetMax.z, sourceMax.z);
 
   // Reconstruct the quad vertices to span the expanded area
   // Keep the same face orientation but expand the size
@@ -510,7 +598,7 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
   std::array<Vec4, 6> newVertices = {};
 
   // Determine which face we're dealing with based on normal
-  if (abs(normal.x) > 0.9f) {  // X-facing quad (left/right)
+  if (Utils::Abs(normal.x) > 0.9F) {  // X-facing quad (left/right)
     float x = (normal.x > 0) ? maxBounds.x : minBounds.x;
     // Two triangles forming a quad on YZ plane
     newVertices[0] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 1
@@ -519,7 +607,7 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
     newVertices[3] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 2
     newVertices[4] = Vec4(x, maxBounds.y, maxBounds.z);
     newVertices[5] = Vec4(x, minBounds.y, maxBounds.z);
-  } else if (abs(normal.y) > 0.9f) {  // Y-facing quad (top/bottom)
+  } else if (Utils::Abs(normal.y) > 0.9F) {  // Y-facing quad (top/bottom)
     float y = (normal.y > 0) ? maxBounds.y : minBounds.y;
     // Two triangles forming a quad on XZ plane
     newVertices[0] = (Vec4(minBounds.x, y, minBounds.z));  // Triangle 1
@@ -548,14 +636,7 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
 }
 
 Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
-  Vec4 center(0, 0, 0);
-  if (!quad.vertices.empty()) {
-    for (const Vec4& vertex : quad.vertices) {
-      center = center + vertex;
-    }
-    center = center / static_cast<float>(quad.vertices.size());
-  }
-  return center;
+  return computeCenterVU(quad.vertices);
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
@@ -589,8 +670,8 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   for (size_t i = 0; i < quadsData.size(); i++) {
     ChunkQuadData& quad = quadsData[i];
 
-    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[0],
-                                     &quad.vertices[1], &quad.vertices[2])) {
+    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[2],
+                                     &quad.vertices[1], &quad.vertices[0])) {
       continue;
     }
 
@@ -652,8 +733,8 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   for (size_t i = 0; i < transparentQuadsData.size(); i++) {
     ChunkQuadData& quad = transparentQuadsData[i];
 
-    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[0],
-                                     &quad.vertices[1], &quad.vertices[2])) {
+    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[2],
+                                     &quad.vertices[1], &quad.vertices[0])) {
       continue;
     }
 
