@@ -38,6 +38,15 @@ using Tyra::Vec4;
 
 enum class ChunkState { Loaded, Clean };
 
+struct ChunkQuadData {
+  // How many blocks this quad is spanning in X, Y and Z axis
+  Vec4 span = Vec4(1, 1, 1);
+  Vec4 normal = Vec4(0, 0, 0);  // Normal vector of the quad face
+  std::vector<Vec4> vertices;
+  std::vector<Vec4> uv;
+  std::vector<Color> colors;
+};
+
 class Chunk {
  public:
   Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
@@ -106,16 +115,11 @@ class Chunk {
   const int getLODFromDistance();
   const int getLODFromDistance(const int distance);
 
+  void optimize();
+
  private:
-  std::vector<Vec4> vertices;
-  std::vector<Color> verticesColors;
-  std::vector<Vec4> uvMap;
-
-  // Transparency data
-  std::vector<Vec4> verticesWithTransparency;
-  std::vector<Color> verticesColorsWithTransparency;
-  std::vector<Vec4> uvMapWithTransparency;
-
+  void mergeFaces();
+  
   int randomTickSpeed = DEFAULT_TICK_SPEED;
   void tickRandomBlock();
 
@@ -126,4 +130,20 @@ class Chunk {
   Plane* frustumPlanes = nullptr;
 
   int _lod = 0;
+
+  std::vector<ChunkQuadData> quadsData;
+  std::vector<ChunkQuadData> transparentQuadsData;
+  void mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
+                  std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
+                  std::vector<Vec4>* inUVs);
+                  
+  // Helper methods for face merging
+  void mergeAdjacentQuads(std::vector<ChunkQuadData>* quads);
+  bool canMergeQuads(const ChunkQuadData& quad1, const ChunkQuadData& quad2);
+  bool areQuadsAdjacent(const ChunkQuadData& quad1, const ChunkQuadData& quad2);
+  bool areQuadsCoplanar(const ChunkQuadData& quad1, const ChunkQuadData& quad2, float epsilon);
+  void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds, Vec4& maxBounds);
+  void mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source);
+  void expandQuadGeometry(ChunkQuadData& target, const ChunkQuadData& source, const Vec4& direction, int expansionAxis);
+  Vec4 calculateQuadCenter(const ChunkQuadData& quad);
 };
