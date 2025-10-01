@@ -380,13 +380,14 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
           t_chunk->build();
       } else if (t_chunk->state == ChunkState::Clean) {
         addChunkToLoadAsync(t_chunk);
-      } else if (t_chunk->state == ChunkState::Loaded) {
-        // LOD has changed, rebuild chunk.
-        if (t_chunk->getLODFromDistance(distance) !=
-            t_chunk->getLODFromDistance()) {
-          addChunkToLoadAsync(t_chunk);
-        }
       }
+      // else if (t_chunk->state == ChunkState::Loaded) {
+      // // LOD has changed, rebuild chunk.
+      // if (t_chunk->getLODFromDistance(distance) !=
+      //     t_chunk->getLODFromDistance()) {
+      //   addChunkToLoadAsync(t_chunk);
+      // }
+      // }
 
       t_chunk->setDistanceFromPlayerInChunks(distance);
     }
