@@ -116,7 +116,8 @@ class Chunk {
   const int getLODFromDistance(const int distance);
 
   void onLodChanged();
-  void compress(const bool applyBackFaceCulling = true);
+  void compress(const bool staticBackFaceCulling = false);
+  void optimize();
 
  private:
   int randomTickSpeed = DEFAULT_TICK_SPEED;
@@ -127,7 +128,8 @@ class Chunk {
   void buildCompressed();
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
-                     std::vector<Color>* inColors, std::vector<Vec4>* inUVs);
+                     std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
+                     int limit = -1);
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;

@@ -175,6 +175,10 @@ void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
 
 void Chunk::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
+
+  // Disabled for testing
+  // TODO: add an option at debug menu to toggle optimization
+  // optimize();
 }
 
 void Chunk::tick() {
@@ -230,66 +234,160 @@ const int Chunk::getLODFromDistance(const int distance) {
     return 1;
 }
 
-void Chunk::compress(const bool applyBackFaceCulling) {
-  int size = 0;
+void Chunk::compress(const bool staticBackFaceCulling) {
+  // Cache camera position pointer to avoid repeated address calculations
+  const Vec4* camPosPtr = staticBackFaceCulling ? &camPositon : nullptr;
 
+  // Process opaque geometry
   std::vector<ChunkQuadData> quadsData;
   mergeFaces(&quadsData, &vertices, &colors, &UV);
 
-  size = quadsData.size() * 6;
-  std::vector<Vec4>().swap(vertices);
-  std::vector<Vec4>().swap(UV);
-  std::vector<Color>().swap(colors);
-  vertices.reserve(size);
-  UV.reserve(size);
-  colors.reserve(size);
+  const size_t maxOpaqueVerts = quadsData.size() * 6;
+  vertices.clear();
+  UV.clear();
+  colors.clear();
+  vertices.reserve(maxOpaqueVerts);
+  UV.reserve(maxOpaqueVerts);
+  colors.reserve(maxOpaqueVerts);
 
   // Process the merged quads into mesh
   for (size_t i = 0; i < quadsData.size(); i++) {
-    if (applyBackFaceCulling) {
-      if (Vec4::shouldBeBackfaceCulled(&camPositon, &quadsData[i].vertices[2],
-                                       &quadsData[i].vertices[1],
-                                       &quadsData[i].vertices[0])) {
-        continue;
-      }
+    const ChunkQuadData& quad = quadsData[i];
+
+    if (staticBackFaceCulling &&
+        Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
+                                     &quad.vertices[1], &quad.vertices[0])) {
+      continue;
     }
 
-    for (size_t j = 0; j < 6; j++) {
-      vertices.emplace_back(quadsData[i].vertices[j]);
-      UV.emplace_back(quadsData[i].uv[j]);
-      colors.emplace_back(quadsData[i].colors[j]);
-    }
+    // Unrolled loop for better instruction pipelining on EE
+    vertices.emplace_back(quad.vertices[0]);
+    vertices.emplace_back(quad.vertices[1]);
+    vertices.emplace_back(quad.vertices[2]);
+    vertices.emplace_back(quad.vertices[3]);
+    vertices.emplace_back(quad.vertices[4]);
+    vertices.emplace_back(quad.vertices[5]);
+
+    UV.emplace_back(quad.uv[0]);
+    UV.emplace_back(quad.uv[1]);
+    UV.emplace_back(quad.uv[2]);
+    UV.emplace_back(quad.uv[3]);
+    UV.emplace_back(quad.uv[4]);
+    UV.emplace_back(quad.uv[5]);
+
+    colors.emplace_back(quad.colors[0]);
+    colors.emplace_back(quad.colors[1]);
+    colors.emplace_back(quad.colors[2]);
+    colors.emplace_back(quad.colors[3]);
+    colors.emplace_back(quad.colors[4]);
+    colors.emplace_back(quad.colors[5]);
   }
 
+  // Process transparent geometry
   std::vector<ChunkQuadData> transparentQuadsData;
   mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV);
-  size = transparentQuadsData.size() * 6;
-  std::vector<Vec4>().swap(transpVertices);
-  std::vector<Vec4>().swap(transpUV);
-  std::vector<Color>().swap(transpColors);
-  transpVertices.reserve(size);
-  transpUV.reserve(size);
-  transpColors.reserve(size);
 
-  // Process the merged quads into mesh
+  const size_t maxTranspVerts = transparentQuadsData.size() * 6;
+  transpVertices.clear();
+  transpUV.clear();
+  transpColors.clear();
+  transpVertices.reserve(maxTranspVerts);
+  transpUV.reserve(maxTranspVerts);
+  transpColors.reserve(maxTranspVerts);
+
+  // Process the merged transparent quads into mesh
   for (size_t i = 0; i < transparentQuadsData.size(); i++) {
-    if (applyBackFaceCulling) {
-      if (Vec4::shouldBeBackfaceCulled(&camPositon,
-                                       &transparentQuadsData[i].vertices[2],
-                                       &transparentQuadsData[i].vertices[1],
-                                       &transparentQuadsData[i].vertices[0])) {
-        continue;
-      }
+    const ChunkQuadData& quad = transparentQuadsData[i];
+
+    if (staticBackFaceCulling &&
+        Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
+                                     &quad.vertices[1], &quad.vertices[0])) {
+      continue;
     }
 
-    for (size_t j = 0; j < 6; j++) {
-      transpVertices.emplace_back(transparentQuadsData[i].vertices[j]);
-      transpUV.emplace_back(transparentQuadsData[i].uv[j]);
-      transpColors.emplace_back(transparentQuadsData[i].colors[j]);
-    }
+    // Unrolled loop for better instruction pipelining on EE
+    transpVertices.emplace_back(quad.vertices[0]);
+    transpVertices.emplace_back(quad.vertices[1]);
+    transpVertices.emplace_back(quad.vertices[2]);
+    transpVertices.emplace_back(quad.vertices[3]);
+    transpVertices.emplace_back(quad.vertices[4]);
+    transpVertices.emplace_back(quad.vertices[5]);
+
+    transpUV.emplace_back(quad.uv[0]);
+    transpUV.emplace_back(quad.uv[1]);
+    transpUV.emplace_back(quad.uv[2]);
+    transpUV.emplace_back(quad.uv[3]);
+    transpUV.emplace_back(quad.uv[4]);
+    transpUV.emplace_back(quad.uv[5]);
+
+    transpColors.emplace_back(quad.colors[0]);
+    transpColors.emplace_back(quad.colors[1]);
+    transpColors.emplace_back(quad.colors[2]);
+    transpColors.emplace_back(quad.colors[3]);
+    transpColors.emplace_back(quad.colors[4]);
+    transpColors.emplace_back(quad.colors[5]);
   }
 
   isCompressed = true;
+}
+
+
+void Chunk::optimize() {
+  if (isDrawDataOptimized) return;
+  if (!vertices.empty())
+    applyBackFaceCulling(&vertexCutLimit, &vertices, &UV, &colors);
+
+  if (!transpVertices.empty())
+    applyBackFaceCulling(&transpVertexCutLimit, &transpVertices, &transpUV,
+                         &transpColors);
+
+  isDrawDataOptimized = true;
+}
+
+void Chunk::applyBackFaceCulling(int* targetLimit, std::vector<Vec4>* pVertex,
+                                 std::vector<Vec4>* pUV,
+                                 std::vector<Color>* pColors) {
+  *targetLimit = static_cast<int>(pVertex->size());
+
+  constexpr size_t kFaceStride = 6;
+  size_t activeVertexCount = pVertex->size();
+  size_t i = 0;
+
+  // Cache pointers to avoid repeated vtable lookups and address calculations
+  const Vec4* camPosPtr = &camPositon;
+  Vec4* vertexData = pVertex->data();
+  Vec4* uvData = pUV->data();
+  Color* colorData = pColors->data();
+
+  while (i + 2 < activeVertexCount) {
+    // Check if the face can be culled by backface culling
+    // If so, move the face data to the end of the array and update the
+    // active vertex count
+    if (Vec4::shouldBeBackfaceCulled(camPosPtr, &vertexData[i],
+                                     &vertexData[i + 1], &vertexData[i + 2])) {
+      activeVertexCount -= kFaceStride;
+
+      // Swap face data using raw pointer operations
+      for (size_t j = 0; j < kFaceStride; ++j) {
+        std::swap(vertexData[i + j], vertexData[activeVertexCount + j]);
+        std::swap(uvData[i + j], uvData[activeVertexCount + j]);
+        std::swap(colorData[i + j], colorData[activeVertexCount + j]);
+      }
+
+      // Re-evaluate the swapped face at the current index
+      continue;
+    }
+
+    i += kFaceStride;
+  }
+
+  *targetLimit = static_cast<int>(activeVertexCount);
+}
+
+void Chunk::invalidateOptimization() {
+  isDrawDataOptimized = false;
+  vertexCutLimit = -1;
+  transpVertexCutLimit = -1;
 }
 
 /**
@@ -696,7 +794,7 @@ Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
 void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                           std::vector<Vec4>* inVertices,
                           std::vector<Color>* inColors,
-                          std::vector<Vec4>* inUVs) {
+                          std::vector<Vec4>* inUVs, int limit) {
   t_renderer->renderer3D.usePipeline(stapip);
   M4x4 rawMatrix = M4x4::Identity;
 
@@ -721,8 +819,13 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
-  bag.count = inVertices->size();
   bag.vertices = inVertices->data();
+
+  if (isDrawDataOptimized) {
+    bag.count = limit;
+  } else {
+    bag.count = inVertices->size();
+  }
 
   const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   if (d <= 1.5f) {
@@ -735,13 +838,14 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (!isLoaded()) return;
-  flushDrawData(t_renderer, stapip, &vertices, &colors, &UV);
+  flushDrawData(t_renderer, stapip, &vertices, &colors, &UV, vertexCutLimit);
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
   if (!isLoaded()) return;
-  flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV);
+  flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV,
+                transpVertexCutLimit);
 };
 
 void Chunk::clear() {
