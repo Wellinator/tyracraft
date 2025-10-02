@@ -116,7 +116,7 @@ class Chunk {
   const int getLODFromDistance(const int distance);
 
   void onLodChanged();
-  void compress();
+  void compress(const bool applyBackFaceCulling = true);
 
  private:
   int randomTickSpeed = DEFAULT_TICK_SPEED;

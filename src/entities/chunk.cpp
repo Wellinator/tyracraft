@@ -230,7 +230,7 @@ const int Chunk::getLODFromDistance(const int distance) {
     return 1;
 }
 
-void Chunk::compress() {
+void Chunk::compress(const bool applyBackFaceCulling) {
   int size = 0;
 
   std::vector<ChunkQuadData> quadsData;
@@ -246,6 +246,14 @@ void Chunk::compress() {
 
   // Process the merged quads into mesh
   for (size_t i = 0; i < quadsData.size(); i++) {
+    if (applyBackFaceCulling) {
+      if (Vec4::shouldBeBackfaceCulled(&camPositon, &quadsData[i].vertices[2],
+                                       &quadsData[i].vertices[1],
+                                       &quadsData[i].vertices[0])) {
+        continue;
+      }
+    }
+
     for (size_t j = 0; j < 6; j++) {
       vertices.emplace_back(quadsData[i].vertices[j]);
       UV.emplace_back(quadsData[i].uv[j]);
@@ -265,6 +273,15 @@ void Chunk::compress() {
 
   // Process the merged quads into mesh
   for (size_t i = 0; i < transparentQuadsData.size(); i++) {
+    if (applyBackFaceCulling) {
+      if (Vec4::shouldBeBackfaceCulled(&camPositon,
+                                       &transparentQuadsData[i].vertices[2],
+                                       &transparentQuadsData[i].vertices[1],
+                                       &transparentQuadsData[i].vertices[0])) {
+        continue;
+      }
+    }
+
     for (size_t j = 0; j < 6; j++) {
       transpVertices.emplace_back(transparentQuadsData[i].vertices[j]);
       transpUV.emplace_back(transparentQuadsData[i].uv[j]);
@@ -687,18 +704,18 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   colorBag.many = inColors->data();
 
   StaPipTextureBag textureBag;
-  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
   textureBag.coordinates = inUVs->data();
+  textureBag.texture =
+      isCompressed ? BlockManager::getInstance()->getBlocksTextureLowRes()
+                   : BlockManager::getInstance()->getBlocksTexture();
 
   StaPipInfoBag infoBag;
   infoBag.model = &rawMatrix;
+  infoBag.blendingEnabled = !isCompressed;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = false;
-  infoBag.antiAliasingEnabled = false;
-  infoBag.fullClipChecks = false;
-  infoBag.frustumCulling =
-      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+  infoBag.shadingType = isCompressed
+                            ? Tyra::PipelineShadingType::TyraShadingFlat
+                            : Tyra::PipelineShadingType::TyraShadingGouraud;
 
   StaPipBag bag;
   bag.color = &colorBag;
