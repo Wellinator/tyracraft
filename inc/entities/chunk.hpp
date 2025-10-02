@@ -97,11 +97,11 @@ class Chunk {
     return this->frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
   }
 
-  inline s8 getDistanceFromPlayerInChunks() {
+  inline int getDistanceFromPlayerInChunks() {
     return this->_distanceFromPlayerInChunks;
   };
 
-  inline void setDistanceFromPlayerInChunks(const s8 distante) {
+  inline void setDistanceFromPlayerInChunks(const int distante) {
     this->_distanceFromPlayerInChunks = distante;
   };
 
@@ -115,13 +115,19 @@ class Chunk {
   const int getLODFromDistance();
   const int getLODFromDistance(const int distance);
 
-  void optimize();
+  void onLodChanged();
+  void compress();
 
  private:
-  void mergeFaces();
-  
   int randomTickSpeed = DEFAULT_TICK_SPEED;
   void tickRandomBlock();
+
+  bool isCompressed = false;
+  void buildNormaly();
+  void buildCompressed();
+  void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
+                     std::vector<Vec4>* inVertices,
+                     std::vector<Color>* inColors, std::vector<Vec4>* inUVs);
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
@@ -131,15 +137,23 @@ class Chunk {
 
   int _lod = 0;
 
-  std::vector<ChunkQuadData> quadsData;
-  std::vector<ChunkQuadData> transparentQuadsData;
+  std::vector<Vec4> vertices;
+  std::vector<Vec4> UV;
+  std::vector<Color> colors;
+
+  std::vector<Vec4> transpVertices;
+  std::vector<Vec4> transpUV;
+  std::vector<Color> transpColors;
+
   void mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                   std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
                   std::vector<Vec4>* inUVs);
 
   // Helper methods for face merging
-  void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds, Vec4& maxBounds);
+  void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
+                     Vec4& maxBounds);
   void mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source);
-  void expandQuadGeometry(ChunkQuadData& target, const ChunkQuadData& source, const Vec4& direction, int expansionAxis);
+  void expandQuadGeometry(ChunkQuadData& target, const ChunkQuadData& source,
+                          const Vec4& direction, int expansionAxis);
   Vec4 calculateQuadCenter(const ChunkQuadData& quad);
 };

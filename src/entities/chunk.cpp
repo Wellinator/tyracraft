@@ -40,34 +40,34 @@ inline s16 fastFloatToS16(const float value) {
 inline void vuMinMaxUpdate(float* minVec, float* maxVec, float* candidate) {
 #if __GNUC__ > 3
   asm volatile(
-  "lqc2 $vf1, 0x00(%2)\n"
-  "lqc2 $vf2, 0x00(%0)\n"
-  "lqc2 $vf3, 0x00(%1)\n"
-  "vmax.xyzw $vf2, $vf2, $vf1\n"
-  "vsub.xyzw $vf4, $vf0, $vf1\n"
-  "vsub.xyzw $vf5, $vf0, $vf3\n"
-  "vmax.xyzw $vf4, $vf4, $vf5\n"
-  "vsub.xyzw $vf3, $vf0, $vf4\n"
-  "sqc2 $vf2, 0x00(%0)\n"
-  "sqc2 $vf3, 0x00(%1)\n"
+      "lqc2 $vf1, 0x00(%2)\n"
+      "lqc2 $vf2, 0x00(%0)\n"
+      "lqc2 $vf3, 0x00(%1)\n"
+      "vmax.xyzw $vf2, $vf2, $vf1\n"
+      "vsub.xyzw $vf4, $vf0, $vf1\n"
+      "vsub.xyzw $vf5, $vf0, $vf3\n"
+      "vmax.xyzw $vf4, $vf4, $vf5\n"
+      "vsub.xyzw $vf3, $vf0, $vf4\n"
+      "sqc2 $vf2, 0x00(%0)\n"
+      "sqc2 $vf3, 0x00(%1)\n"
       :
       : "r"(maxVec), "r"(minVec), "r"(candidate)
       : "memory");
 #else
   asm volatile(
-  "lqc2 vf1, 0x00(%2)\n"
-  "lqc2 vf2, 0x00(%0)\n"
-  "lqc2 vf3, 0x00(%1)\n"
-  "vmax.xyzw vf2, vf2, vf1\n"
-  "vsub.xyzw vf4, vf0, vf1\n"
-  "vsub.xyzw vf5, vf0, vf3\n"
-  "vmax.xyzw vf4, vf4, vf5\n"
-  "vsub.xyzw vf3, vf0, vf4\n"
-  "sqc2 vf2, 0x00(%0)\n"
-  "sqc2 vf3, 0x00(%1)\n"
-  :
-  : "r"(maxVec), "r"(minVec), "r"(candidate)
-  : "memory");
+      "lqc2 vf1, 0x00(%2)\n"
+      "lqc2 vf2, 0x00(%0)\n"
+      "lqc2 vf3, 0x00(%1)\n"
+      "vmax.xyzw vf2, vf2, vf1\n"
+      "vsub.xyzw vf4, vf0, vf1\n"
+      "vsub.xyzw vf5, vf0, vf3\n"
+      "vmax.xyzw vf4, vf4, vf5\n"
+      "vsub.xyzw vf3, vf0, vf4\n"
+      "sqc2 vf2, 0x00(%0)\n"
+      "sqc2 vf3, 0x00(%1)\n"
+      :
+      : "r"(maxVec), "r"(minVec), "r"(candidate)
+      : "memory");
 #endif
 }
 
@@ -104,22 +104,22 @@ inline void computeQuadNormalVU(ChunkQuadData& quad) {
 inline void vuVectorAccumulate(float* acc, float* value) {
 #if __GNUC__ > 3
   asm volatile(
-  "lqc2 $vf1, 0x00(%0)\n"
-  "lqc2 $vf2, 0x00(%1)\n"
-  "vadd.xyzw $vf1, $vf1, $vf2\n"
-  "sqc2 $vf1, 0x00(%0)\n"
+      "lqc2 $vf1, 0x00(%0)\n"
+      "lqc2 $vf2, 0x00(%1)\n"
+      "vadd.xyzw $vf1, $vf1, $vf2\n"
+      "sqc2 $vf1, 0x00(%0)\n"
       :
       : "r"(acc), "r"(value)
       : "memory");
 #else
   asm volatile(
-  "lqc2 vf1, 0x00(%0)\n"
-  "lqc2 vf2, 0x00(%1)\n"
-  "vadd.xyzw vf1, vf1, vf2\n"
-  "sqc2 vf1, 0x00(%0)\n"
-  :
-  : "r"(acc), "r"(value)
-  : "memory");
+      "lqc2 vf1, 0x00(%0)\n"
+      "lqc2 vf2, 0x00(%1)\n"
+      "vadd.xyzw vf1, vf1, vf2\n"
+      "sqc2 vf1, 0x00(%0)\n"
+      :
+      : "r"(acc), "r"(value)
+      : "memory");
 #endif
 }
 
@@ -220,23 +220,60 @@ void Chunk::tickRandomBlock() {
 }
 
 const int Chunk::getLODFromDistance() {
-  return getLODFromDistance(_distanceFromPlayerInChunks);
+  return getLODFromDistance(getDistanceFromPlayerInChunks());
 }
 
 const int Chunk::getLODFromDistance(const int distance) {
   if (distance < 3)
     return 0;
-  else if (distance < 4)
-    return 1;
-  else if (distance < 5)
-    return 2;
   else
-    return 3;
+    return 1;
 }
 
-void Chunk::optimize() { mergeFaces(); }
+void Chunk::compress() {
+  int size = 0;
 
-void Chunk::mergeFaces() { quadsData.clear(); }
+  std::vector<ChunkQuadData> quadsData;
+  mergeFaces(&quadsData, &vertices, &colors, &UV);
+
+  size = quadsData.size() * 6;
+  std::vector<Vec4>().swap(vertices);
+  std::vector<Vec4>().swap(UV);
+  std::vector<Color>().swap(colors);
+  vertices.reserve(size);
+  UV.reserve(size);
+  colors.reserve(size);
+
+  // Process the merged quads into mesh
+  for (size_t i = 0; i < quadsData.size(); i++) {
+    for (size_t j = 0; j < 6; j++) {
+      vertices.emplace_back(quadsData[i].vertices[j]);
+      UV.emplace_back(quadsData[i].uv[j]);
+      colors.emplace_back(quadsData[i].colors[j]);
+    }
+  }
+
+  std::vector<ChunkQuadData> transparentQuadsData;
+  mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV);
+  size = transparentQuadsData.size() * 6;
+  std::vector<Vec4>().swap(transpVertices);
+  std::vector<Vec4>().swap(transpUV);
+  std::vector<Color>().swap(transpColors);
+  transpVertices.reserve(size);
+  transpUV.reserve(size);
+  transpColors.reserve(size);
+
+  // Process the merged quads into mesh
+  for (size_t i = 0; i < transparentQuadsData.size(); i++) {
+    for (size_t j = 0; j < 6; j++) {
+      transpVertices.emplace_back(transparentQuadsData[i].vertices[j]);
+      transpUV.emplace_back(transparentQuadsData[i].uv[j]);
+      transpColors.emplace_back(transparentQuadsData[i].colors[j]);
+    }
+  }
+
+  isCompressed = true;
+}
 
 /**
  * @brief Merge the faces (quad of two triangles) that are
@@ -639,15 +676,22 @@ Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
   return computeCenterVU(quad.vertices);
 }
 
-void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
-  if (quadsData.empty()) return;
+void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
+                          std::vector<Vec4>* inVertices,
+                          std::vector<Color>* inColors,
+                          std::vector<Vec4>* inUVs) {
+  t_renderer->renderer3D.usePipeline(stapip);
+  M4x4 rawMatrix = M4x4::Identity;
 
   StaPipColorBag colorBag;
+  colorBag.many = inColors->data();
 
   StaPipTextureBag textureBag;
   textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
+  textureBag.coordinates = inUVs->data();
 
   StaPipInfoBag infoBag;
+  infoBag.model = &rawMatrix;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
   infoBag.blendingEnabled = false;
@@ -656,151 +700,63 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   infoBag.frustumCulling =
       Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
 
-  M4x4 rawMatrix = M4x4::Identity;
-  infoBag.model = &rawMatrix;
-
   StaPipBag bag;
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
+  bag.count = inVertices->size();
+  bag.vertices = inVertices->data();
 
-  t_renderer->renderer3D.usePipeline(stapip);
-
-  // Debug draw quads data
-  for (size_t i = 0; i < quadsData.size(); i++) {
-    ChunkQuadData& quad = quadsData[i];
-
-    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[2],
-                                     &quad.vertices[1], &quad.vertices[0])) {
-      continue;
-    }
-
-    /* Draw each quad's vertex mesh
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[0], quad.vertices[1]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[1], quad.vertices[2]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[2], quad.vertices[0]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[3], quad.vertices[4]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[4], quad.vertices[5]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[5], quad.vertices[3]);
-    */
-
-    textureBag.coordinates = quad.uv.data();
-    colorBag.many = quad.colors.data();
-    bag.count = 6;  // Two triangles per quad
-    bag.vertices = quad.vertices.data();
-
-    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
-
-    const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
-    if (d <= 1.5f) {
-      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-                                              camPositon);
-    }
-
+  const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+  if (d <= 1.5f) {
+    return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
+                                            camPositon);
+  } else {
     stapip->core.render(&bag);
   }
+}
+
+void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+  if (!isLoaded()) return;
+  flushDrawData(t_renderer, stapip, &vertices, &colors, &UV);
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
-  if (transparentQuadsData.empty()) return;
-
-  StaPipColorBag colorBag;
-
-  StaPipTextureBag textureBag;
-  textureBag.texture = BlockManager::getInstance()->getBlocksTexture();
-
-  StaPipInfoBag infoBag;
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
-  infoBag.blendingEnabled = false;
-  infoBag.antiAliasingEnabled = false;
-  infoBag.fullClipChecks = false;
-  infoBag.frustumCulling =
-      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
-
-  M4x4 rawMatrix = M4x4::Identity;
-  infoBag.model = &rawMatrix;
-
-  StaPipBag bag;
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  t_renderer->renderer3D.usePipeline(stapip);
-
-  // Debug draw quads data
-  for (size_t i = 0; i < transparentQuadsData.size(); i++) {
-    ChunkQuadData& quad = transparentQuadsData[i];
-
-    if (Vec4::shouldBeBackfaceCulled(&camPositon, &quad.vertices[2],
-                                     &quad.vertices[1], &quad.vertices[0])) {
-      continue;
-    }
-
-    /* Draw each quad's vertex mesh
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[0], quad.vertices[1]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[1], quad.vertices[2]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[2], quad.vertices[0]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[3], quad.vertices[4]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[4], quad.vertices[5]);
-    t_renderer->renderer3D.utility.drawLine(quad.vertices[5], quad.vertices[3]);
-    */
-
-    textureBag.coordinates = quad.uv.data();
-    colorBag.many = quad.colors.data();
-    bag.count = 6;  // Two triangles per quad
-    bag.vertices = quad.vertices.data();
-
-    // t_renderer->renderer3D.utility.drawBBox(*bbox, Color(255, 0, 0));
-
-    const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
-    if (d <= 1.5f) {
-      return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-                                              camPositon);
-    }
-
-    stapip->core.render(&bag);
-  }
+  if (!isLoaded()) return;
+  flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV);
 };
 
 void Chunk::clear() {
   clearDrawData();
   state = ChunkState::Clean;
+  isCompressed = false;
 }
 
 void Chunk::clearDrawData() {
-  // vertices.clear();
-  // vertices.shrink_to_fit();
-  // verticesColors.clear();
-  // verticesColors.shrink_to_fit();
-  // uvMap.clear();
-  // uvMap.shrink_to_fit();
+  vertices.clear();
+  vertices.shrink_to_fit();
+  colors.clear();
+  colors.shrink_to_fit();
+  UV.clear();
+  UV.shrink_to_fit();
 
-  // verticesWithTransparency.clear();
-  // verticesWithTransparency.shrink_to_fit();
-  // verticesColorsWithTransparency.clear();
-  // verticesColorsWithTransparency.shrink_to_fit();
-  // uvMapWithTransparency.clear();
-  // uvMapWithTransparency.shrink_to_fit();
-
-  quadsData.clear();
-  quadsData.shrink_to_fit();
+  transpVertices.clear();
+  transpVertices.shrink_to_fit();
+  transpColors.clear();
+  transpColors.shrink_to_fit();
+  transpUV.clear();
+  transpUV.shrink_to_fit();
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
-  // vertices.clear();
-  // verticesColors.clear();
-  // uvMap.clear();
+  vertices.clear();
+  UV.clear();
+  colors.clear();
 
-  // verticesWithTransparency.clear();
-  // verticesColorsWithTransparency.clear();
-  // uvMapWithTransparency.clear();
-
-  quadsData.clear();
-  transparentQuadsData.clear();
-
-  // _isDrawDataLoaded = false;
+  transpVertices.clear();
+  transpUV.clear();
+  transpColors.clear();
 }
 
 void Chunk::build() {
@@ -812,15 +768,30 @@ void Chunk::build() {
 
 #endif  // end if DEBUG_MODE
 
-  std::vector<Vec4> vertices;
-  std::vector<Color> verticesColors;
-  std::vector<Vec4> uvMap;
+  const int lod = getLODFromDistance();
+  if (lod == 0) {
+    buildNormaly();
+  } else {
+    buildCompressed();
+  }
 
-  // Transparency data
-  std::vector<Vec4> verticesWithTransparency;
-  std::vector<Color> verticesColorsWithTransparency;
-  std::vector<Vec4> uvMapWithTransparency;
+  state = ChunkState::Loaded;
 
+#ifdef DEBUG_MODE
+  if (g_debug_menu.logChunkMemoryUsage) {
+    size_t totalVertices = vertices.size() + transpVertices.size();
+    if (totalVertices > 0) {
+      size_t finalMemoryUsage = get_used_memory();
+      float memoryUsage =
+          static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
+      printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
+             memoryUsage, totalVertices);
+    }
+  }
+#endif  // end if DEBUG_MODE
+}
+
+void Chunk::buildNormaly() {
   for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
     for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
       for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
@@ -838,81 +809,81 @@ void Chunk::build() {
               BlockManager::getInstance()->getBlockTemplateByType(block_type);
 
           const bool hasTransparency = pBlockTemplate->hasTransparency();
-          MeshBuilder_BuildMesh(
-              &offset, visibleFaces, _lod,
-              hasTransparency ? &verticesWithTransparency : &vertices,
-              hasTransparency ? &verticesColorsWithTransparency
-                              : &verticesColors,
-              hasTransparency ? &uvMapWithTransparency : &uvMap,
-              t_worldLightModel, pLevel);
+          MeshBuilder_BuildMesh(&offset, visibleFaces, _lod,
+                                hasTransparency ? &transpVertices : &vertices,
+                                hasTransparency ? &transpColors : &colors,
+                                hasTransparency ? &transpUV : &UV,
+                                t_worldLightModel, pLevel);
         }
       }
     }
   }
+};
 
-  optimize();
-  mergeFaces(&quadsData, &vertices, &verticesColors, &uvMap);
-  mergeFaces(&transparentQuadsData, &verticesWithTransparency,
-             &verticesColorsWithTransparency, &uvMapWithTransparency);
-
+void Chunk::buildCompressed() {
+  buildNormaly();
+  compress();
   state = ChunkState::Loaded;
-
-#ifdef DEBUG_MODE
-  if (g_debug_menu.logChunkMemoryUsage) {
-    size_t totalVertices = vertices.size() + verticesWithTransparency.size();
-    if (totalVertices > 0) {
-      size_t finalMemoryUsage = get_used_memory();
-      float memoryUsage =
-          static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
-      printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
-             memoryUsage, totalVertices);
-    }
-  }
-#endif  // end if DEBUG_MODE
-}
+};
 
 void Chunk::rebuild() {
-  clearDrawData();
+  clear();
   build();
 }
 
-bool Chunk::hasDrawData() {
-  return !quadsData.empty() && !transparentQuadsData.empty();
+void Chunk::onLodChanged() {
+  if (isCompressed) {
+    // Player is near, has to rebuild from scratch
+    rebuild();
+  } else {
+    // Player is far, can just compress to reduce the LOD
+    compress();
+  }
 }
 
+bool Chunk::hasDrawData() {
+  return !vertices.empty() && !transpVertices.empty();
+}
+
+// TODO: refactore to update the colors directly instead of rebuilding all
+// mesh. Maybe use the worldLightModel
 void Chunk::reloadLightData() {
-  /*
-  verticesColors.clear();
-  verticesColorsWithTransparency.clear();
+  // verticesColors.clear();
+  // transpColors.clear();
 
-  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-        Vec4 offset = Vec4(x, y, z);
-        Level* pLevel = Level::getInstance();
-        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-        const Blocks block_type = static_cast<Blocks>(blockId);
+  // const lod = getLODFromDistance();
+  // if (lod == 0) {
+  //   buildNormaly();
+  // } else {
+  //   buildCompressed();
+  // }
 
-        if (blockId > (u8)Blocks::AIR_BLOCK) {
-          u8 visibleFaces =
-              VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
-                  offset);
+  // for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+  //   for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+  //     for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+  //       Vec4 offset = Vec4(x, y, z);
+  //       Level* pLevel = Level::getInstance();
+  //       const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+  //       const Blocks block_type = static_cast<Blocks>(blockId);
 
-          if (visibleFaces == 0) continue;
+  //       if (blockId > (u8)Blocks::AIR_BLOCK) {
+  //         u8 visibleFaces =
+  //             VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
+  //                 offset);
 
-          Block* pBlockTemplate =
-              BlockManager::getInstance()->getBlockTemplateByType(block_type);
+  //         if (visibleFaces == 0) continue;
 
-          MeshBuilder_BuildLightData(const_cast<Vec4*>(&offset), visibleFaces,
-                                     pBlockTemplate->hasTransparency()
-                                         ? &verticesColorsWithTransparency
-                                         : &verticesColors,
-                                     t_worldLightModel, pLevel);
-        }
-      }
-    }
-  }
-  */
+  //         Block* pBlockTemplate =
+  //             BlockManager::getInstance()->getBlockTemplateByType(block_type);
+
+  //         MeshBuilder_BuildLightData(
+  //             const_cast<Vec4*>(&offset), visibleFaces,
+  //             pBlockTemplate->hasTransparency() ? &transpColors : &colors,
+  //             t_worldLightModel, pLevel);
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {

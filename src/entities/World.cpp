@@ -360,9 +360,8 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   auto chunks = chunkManager.getChunks();
   for (u16 i = 0; i < chunks->size(); i++) {
     auto t_chunk = (*chunks)[i];
-    const s8 distance =
-        floor(origin_chunk->center.distanceTo(t_chunk->center) / CHUNK_SIZE) +
-        1;
+    const int distance =
+        origin_chunk->center.distanceTo(t_chunk->center) / CHUNK_SIZE;
 
     if (distance > worldOptions.drawDistance) {
       if (force_loading) {
@@ -370,7 +369,6 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       } else if (t_chunk->isLoaded()) {
         addChunkToUnloadAsync(t_chunk);
       }
-
       t_chunk->setDistanceFromPlayerInChunks(-1);
     } else {
       if (force_loading) {
@@ -380,22 +378,19 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
           t_chunk->build();
       } else if (t_chunk->state == ChunkState::Clean) {
         addChunkToLoadAsync(t_chunk);
+      } else {
+        if (t_chunk->getLODFromDistance(distance) !=
+            t_chunk->getLODFromDistance()) {
+          t_chunk->setDistanceFromPlayerInChunks(distance);
+          t_chunk->onLodChanged();
+        }
       }
-      // else if (t_chunk->state == ChunkState::Loaded) {
-      // // LOD has changed, rebuild chunk.
-      // if (t_chunk->getLODFromDistance(distance) !=
-      //     t_chunk->getLODFromDistance()) {
-      //   addChunkToLoadAsync(t_chunk);
-      // }
-      // }
 
       t_chunk->setDistanceFromPlayerInChunks(distance);
     }
   }
 
-  origin_chunk->setDistanceFromPlayerInChunks(0);
   chunkManager.updateLoadedChunks();
-
   if (!force_loading && !tempChunksToLoad.empty())
     sortChunksToLoad(currentPlayerPos);
 }
