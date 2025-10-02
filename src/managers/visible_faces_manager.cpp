@@ -166,16 +166,23 @@ u8 VisibleFacesManager::getLeavesVisibleFaces(const Vec4& offset) {
   const Blocks bBottom =
       static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y - 1, z));
 
-  BlockManager* pBlockManager = BlockManager::getInstance();
-
-  if (pBlockManager->isBlockTransparent(bFront))
+  if (Blocks::AIR_BLOCK == bFront || Blocks::OAK_LOG_BLOCK == bFront ||
+      Blocks::BIRCH_LOG_BLOCK == bFront)
     result = result | FRONT_VISIBLE;
-  if (pBlockManager->isBlockTransparent(bBlack)) result = result | BACK_VISIBLE;
-  if (pBlockManager->isBlockTransparent(bRight))
+  if (Blocks::AIR_BLOCK == bBlack || Blocks::OAK_LOG_BLOCK == bBlack ||
+      Blocks::BIRCH_LOG_BLOCK == bBlack)
+    result = result | BACK_VISIBLE;
+  if (Blocks::AIR_BLOCK == bRight || Blocks::OAK_LOG_BLOCK == bRight ||
+      Blocks::BIRCH_LOG_BLOCK == bRight)
     result = result | RIGHT_VISIBLE;
-  if (pBlockManager->isBlockTransparent(bLeft)) result = result | LEFT_VISIBLE;
-  if (pBlockManager->isBlockTransparent(bTop)) result = result | TOP_VISIBLE;
-  if (pBlockManager->isBlockTransparent(bBottom))
+  if (Blocks::AIR_BLOCK == bLeft || Blocks::OAK_LOG_BLOCK == bLeft ||
+      Blocks::BIRCH_LOG_BLOCK == bLeft)
+    result = result | LEFT_VISIBLE;
+  if (Blocks::AIR_BLOCK == bTop || Blocks::OAK_LOG_BLOCK == bTop ||
+      Blocks::BIRCH_LOG_BLOCK == bTop)
+    result = result | TOP_VISIBLE;
+  if (Blocks::AIR_BLOCK == bBottom || Blocks::OAK_LOG_BLOCK == bBottom ||
+      Blocks::BIRCH_LOG_BLOCK == bBottom)
     result = result | BOTTOM_VISIBLE;
 
   return result;
