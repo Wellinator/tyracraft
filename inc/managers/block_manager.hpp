@@ -43,10 +43,8 @@ class BlockManager : public Singleton<BlockManager> {
   SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
-  inline Texture* getBlocksTexture() { return this->blocksTexAtlas; };
-  inline Texture* getBlocksTextureLowRes() {
-    return this->blocksTexAtlasLowRes;
-  };
+  inline Texture* getBlocksTexture() { return blocksTexAtlas; };
+  inline Texture* getBlocksTextureLowRes() { return blocksTexAtlasLowRes; };
 
   float getBlockBreakingTime(Block* targetBlock);
   u8 getBlockLightValue(Blocks blockType);
