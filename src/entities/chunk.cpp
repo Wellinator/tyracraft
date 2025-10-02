@@ -331,6 +331,7 @@ void Chunk::compress(const bool staticBackFaceCulling) {
   isCompressed = true;
 }
 
+void Chunk::markDirty() { dirty = true; }
 
 void Chunk::optimize() {
   if (isDrawDataOptimized) return;

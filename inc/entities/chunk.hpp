@@ -138,11 +138,21 @@ class Chunk {
   Plane* frustumPlanes = nullptr;
 
   int _lod = 0;
+  bool dirty = false;
+  void markDirty();
 
+  bool isDrawDataOptimized = false;
+  void invalidateOptimization();
+  void applyBackFaceCulling(int* targetLimit, std::vector<Vec4>* pVertex,
+                            std::vector<Vec4>* pUV,
+                            std::vector<Color>* pColors);
+
+  int vertexCutLimit = -1;
   std::vector<Vec4> vertices;
   std::vector<Vec4> UV;
   std::vector<Color> colors;
 
+  int transpVertexCutLimit = -1;
   std::vector<Vec4> transpVertices;
   std::vector<Vec4> transpUV;
   std::vector<Color> transpColors;
