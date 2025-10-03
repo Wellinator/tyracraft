@@ -128,7 +128,7 @@ inline void vuVectorAccumulate(float* acc, float* value) {
 
 inline Vec4 computeCenterVU(const std::array<Vec4, 6>& vertices) {
   VECTOR accum = {0.0F, 0.0F, 0.0F, 0.0F};
-  
+
   // Unrolled accumulation for 6 vertices
   vuVectorAccumulate(accum, const_cast<float*>(vertices[0].xyzw));
   vuVectorAccumulate(accum, const_cast<float*>(vertices[1].xyzw));
@@ -447,7 +447,8 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
     FaceInfo info;
     const size_t baseIndex = quadIdx * 6;
 
-    // Unrolled loop for better EE pipeline - preserves vertex order for backface culling
+    // Unrolled loop for better EE pipeline - preserves vertex order for
+    // backface culling
     info.quad.vertices[0] = vertData[baseIndex];
     info.quad.vertices[1] = vertData[baseIndex + 1];
     info.quad.vertices[2] = vertData[baseIndex + 2];
@@ -631,7 +632,7 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
   Vec4 minTarget, maxTarget, minSource, maxSource;
   getQuadBounds(target, minTarget, maxTarget);
   getQuadBounds(source, minSource, maxSource);
-  
+
   // Calculate direction only for fallback heuristic
   Vec4 targetCenter = calculateQuadCenter(target);
   Vec4 sourceCenter = calculateQuadCenter(source);
@@ -702,13 +703,15 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
   // Direct access to span members instead of lambda calls
   float* targetSpan = &target.span.x;
   const float* sourceSpan = &source.span.x;
-  
+
   targetSpan[expansionAxis] += sourceSpan[expansionAxis];
-  targetSpan[alignAxis] = std::max(targetSpan[alignAxis], sourceSpan[alignAxis]);
-  
+  targetSpan[alignAxis] =
+      std::max(targetSpan[alignAxis], sourceSpan[alignAxis]);
+
   int remainingAxis = normalAxis;
   if (remainingAxis != expansionAxis && remainingAxis != alignAxis) {
-    targetSpan[remainingAxis] = std::max(targetSpan[remainingAxis], sourceSpan[remainingAxis]);
+    targetSpan[remainingAxis] =
+        std::max(targetSpan[remainingAxis], sourceSpan[remainingAxis]);
   }
 
   // Expand the quad geometry by recalculating vertices
@@ -830,13 +833,11 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
-  if (!isLoaded()) return;
   flushDrawData(t_renderer, stapip, &vertices, &colors, &UV, vertexCutLimit);
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
-  if (!isLoaded()) return;
   flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV,
                 transpVertexCutLimit);
 };
@@ -844,7 +845,6 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
 void Chunk::clear() {
   clearDrawData();
   state = ChunkState::Clean;
-  isCompressed = false;
 }
 
 void Chunk::clearDrawData() {
@@ -861,6 +861,8 @@ void Chunk::clearDrawData() {
   transpColors.shrink_to_fit();
   transpUV.clear();
   transpUV.shrink_to_fit();
+
+  isCompressed = false;
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -871,6 +873,8 @@ void Chunk::clearDrawDataWithoutShrink() {
   transpVertices.clear();
   transpUV.clear();
   transpColors.clear();
+
+  isCompressed = false;
 }
 
 void Chunk::build() {
@@ -937,11 +941,10 @@ void Chunk::buildNormaly() {
 void Chunk::buildCompressed() {
   buildNormaly();
   compress();
-  state = ChunkState::Loaded;
 };
 
 void Chunk::rebuild() {
-  clear();
+  clearDrawDataWithoutShrink();
   build();
 }
 
