@@ -34,7 +34,7 @@ class Entity {
 
   u8 collidable = false;
 
-  // Entity dynamic states
+  // Entity states
   bool isOnGround, isMoving, _isOnWater, _isUnderWater;
 
   virtual const float getHeight();

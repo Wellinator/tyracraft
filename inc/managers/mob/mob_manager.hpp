@@ -12,7 +12,6 @@
 #include "3libs/FastNoiseLite/ModdedFastNoiseLite.h"
 
 using Tyra::Color;
-using Tyra::DynamicMesh;
 using Tyra::MeshBuilderData;
 using Tyra::Renderer;
 

@@ -32,8 +32,6 @@
 #include <tyra>
 
 using Tyra::Audio;
-using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
 using Tyra::FileUtils;
 using Tyra::M4x4;
 using Tyra::MD2Loader;

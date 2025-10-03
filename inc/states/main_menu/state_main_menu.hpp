@@ -19,7 +19,6 @@
 #include "camera.hpp"
 #include "renderer/3d/mesh/static/static_mesh.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
-#include "renderer/3d/pipeline/dynamic/dynamic_pipeline.hpp"
 #include "states/game_state.hpp"
 #include "states/context.hpp"
 #include "states/main_menu/screens/screen_base.hpp"
