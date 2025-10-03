@@ -9,33 +9,31 @@ namespace TyraCraft {
 float Timer::stateLerp = 0.0f;
 
 void Timer::update() {
-  // Calc real delta time
-  clock_t end = clock();
-  realDeltaTime = float(end - begin) / float(CLOCKS_PER_SEC);
+  // Calc real delta time - usando multiplicação ao invés de divisão
+  const clock_t end = clock();
+  realDeltaTime = static_cast<float>(end - begin) * INV_CLOCKS_PER_SEC;
   begin = end;
 
   // Track the number of timer iterations per second
   iteratorAcc += realDeltaTime;
-  tempTimerIterationsCounter++;
+  ++tempTimerIterationsCounter;
   if (iteratorAcc >= 1.0f) {
-    iteratorAcc = 0.0f;
+    iteratorAcc -= 1.0f;  // Preserva o excesso ao invés de zerar
     timerIterationsCounter = tempTimerIterationsCounter;
     tempTimerIterationsCounter = 0;
   }
 
-  // Calc delta time average
-  dtDeque.pop_front();
-  dtDeque.push_back(realDeltaTime);
-  float sum = std::accumulate(dtDeque.begin(), dtDeque.end(), 0.0f);
-  avgDeltaTime = sum / 10.0f;
+  // Calc delta time average usando buffer circular (muito mais rápido que deque)
+  dtSum -= dtSamples[dtIndex];  // Remove valor antigo da soma
+  dtSamples[dtIndex] = realDeltaTime;  // Adiciona novo valor
+  dtSum += realDeltaTime;  // Atualiza soma
+  dtIndex = (dtIndex + 1) % 10;  // Avança índice circular
+  avgDeltaTime = dtSum * INV_DT_SAMPLES;  // Multiplicação ao invés de divisão
 
   physicsAcc += realDeltaTime;
   renderAcc += realDeltaTime;
 
-  Timer::stateLerp = physicsAcc / targetUpdateFrame;
-
-  // using namespace std;
-  // cout << "dt: " << realDeltaTime << " dt(avg): " << avgDeltaTime << endl;
+  Timer::stateLerp = physicsAcc * (1.0f / targetUpdateFrame);  // Pré-calcular se possível
 }
 
 // Calc delta time to fixed update
@@ -43,13 +41,13 @@ bool Timer::updateFrame() {
   const bool result = physicsAcc >= targetUpdateFrame;
   if (result) {
     physicsAcc -= targetUpdateFrame;
-    clock_t physicsEnd = clock();
-    physicsMs = float(physicsEnd - physicsBegin) / float(CLOCKS_PER_SEC);
+    const clock_t physicsEnd = clock();
+    physicsMs = static_cast<float>(physicsEnd - physicsBegin) * INV_CLOCKS_PER_SEC * 1000.0f;
     physicsBegin = physicsEnd;
 
-    // Skip frames if the physics accumulator is too high
-    if (static_cast<int>(physicsAcc / targetUpdateFrame) > 2) {
-      physicsAcc = targetUpdateFrame / 2.0f;
+    // Skip frames if the physics accumulator is too high - usando multiplicação
+    if (physicsAcc * (1.0f / targetUpdateFrame) > MAX_FRAME_SKIP) {
+      physicsAcc = targetUpdateFrame * 0.5f;
     }
   }
   return result;
@@ -57,16 +55,14 @@ bool Timer::updateFrame() {
 
 // Calc delta time to render update
 bool Timer::renderFrame() {
-  bool result = false;
+  bool result;
 
   if (g_settings.vsync) {
-    if (is_waiting_vsync == false) {
+    if (!is_waiting_vsync) {
       graph_start_vsync();
       is_waiting_vsync = true;
     }
-
-    int check = graph_check_vsync();
-    result = check != 0;
+    result = graph_check_vsync() != 0;
   } else {
     result = renderAcc >= targetRenderFrame;
   }
@@ -74,13 +70,13 @@ bool Timer::renderFrame() {
   if (result) {
     is_waiting_vsync = false;
     renderAcc -= targetRenderFrame;
-    clock_t renderEnd = clock();
-    renderMs = float(renderEnd - renderBegin) / float(CLOCKS_PER_SEC);
+    const clock_t renderEnd = clock();
+    renderMs = static_cast<float>(renderEnd - renderBegin) * INV_CLOCKS_PER_SEC * 1000.0f;
     renderBegin = renderEnd;
 
-    // Skip frames if the render accumulator is too high
-    if (static_cast<int>(renderAcc / targetRenderFrame) > 2) {
-      renderAcc = targetRenderFrame / 2.0f;
+    // Skip frames if the render accumulator is too high - usando multiplicação
+    if (renderAcc * (1.0f / targetRenderFrame) > MAX_FRAME_SKIP) {
+      renderAcc = targetRenderFrame * 0.5f;
     }
   }
   return result;
