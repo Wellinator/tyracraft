@@ -24,16 +24,13 @@ using Tyra::Vec2;
 
 class FontManager : public Singleton<FontManager> {
  public:
-  std::string SpecialValidChars = " -_";
-  std::string UpperCaseAlphaChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  std::string LowerCaseAlphaChars = "abcdefghijklmnopqrstuvwxyz";
-  std::string NumericValidChars = "0123456789";
-  std::string AlphaValidChars =
-      std::string(UpperCaseAlphaChars + LowerCaseAlphaChars);
-  std::string AlphanumericValidChars =
-      std::string(NumericValidChars + AlphaValidChars);
-  std::string AllValidChars =
-      std::string(SpecialValidChars + AlphanumericValidChars);
+  static constexpr const char* SpecialValidChars = " -_";
+  static constexpr const char* UpperCaseAlphaChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static constexpr const char* LowerCaseAlphaChars = "abcdefghijklmnopqrstuvwxyz";
+  static constexpr const char* NumericValidChars = "0123456789";
+  static constexpr const char* AlphaValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  static constexpr const char* AlphanumericValidChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  static constexpr const char* AllValidChars = " -_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
   std::array<Sprite*, 256> printable_ascii_chars_sprites;
 

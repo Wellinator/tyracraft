@@ -10,50 +10,46 @@ FontManager::~FontManager() {}
 void FontManager::init() { loadFontChars(); }
 
 void FontManager::printText(const char* text, const FontOptions& options) {
-  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  std::wstring tempWstr = converter.from_bytes(text, text + strlen(text));
+  const std::wstring tempWstr = utf8_to_wstring(std::string(text));
   printText(tempWstr.c_str(), tempWstr.length(), options);
 }
 
 void FontManager::printText(const char* text, const float& x, const float& y) {
-  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  std::wstring tempWstr = converter.from_bytes(text, text + strlen(text));
+  const std::wstring tempWstr = utf8_to_wstring(std::string(text));
   printText(tempWstr.c_str(), tempWstr.length(), FontOptions(Vec2(x, y)));
 }
 
 void FontManager::printText(const wchar_t* text, const size_t length,
                             const FontOptions& options) {
+  if (length == 0) return;
+
+  const float padding = calcLinePadding(text, length, options.alignment) * options.scale;
+  const float lineHeight = BASE_LINE_HEIGHT * options.scale;
+  const float baseX = options.position.x - padding;
+  const float baseY = options.position.y;
+  
   float cursorX = 0.0F;
   float cursorY = 0.0F;
-  float padding = calcLinePadding(text, length, options.alignment);
-  padding *= options.scale;
 
   for (size_t i = 0; i < length; i++) {
-    const u8 charCode = u8(text[i]);
-    Sprite* fontCharAt = printable_ascii_chars_sprites[charCode];
+    const u8 charCode = static_cast<u8>(text[i]);
+    
+    // Break line
+    if (charCode == LINE_FEED) {
+      cursorY += lineHeight;
+      cursorX = 0.0F;
+      continue;
+    }
+
+    Sprite* const fontCharAt = printable_ascii_chars_sprites[charCode];
 
     if (fontCharAt != nullptr) {
-      // Break line
-      if (charCode == LINE_FEED) {
-        cursorY += BASE_LINE_HEIGHT * options.scale;
-        cursorX = 0;
-        continue;
-      }
-
-      fontCharAt->position.set(options.position.x + cursorX - padding,
-                               options.position.y + cursorY);
-      fontCharAt->color.set(options.color);
+      fontCharAt->position.set(baseX + cursorX, baseY + cursorY);
+      fontCharAt->color = options.color;
       fontCharAt->scale = options.scale;
 
       pRenderer->renderer2D.render(*fontCharAt);
       cursorX += char_widths[charCode] * options.scale;
-    } else {
-      TYRA_TRAP(std::string("Char at ")
-                    .append(std::to_string(i))
-                    .append(std::string("("))
-                    .append(std::to_string(charCode))
-                    .append(std::string(") is not a valid ASCII code!"))
-                    .c_str());
     }
   }
 }
@@ -63,32 +59,30 @@ float FontManager::calcLinePadding(const wchar_t* text, const size_t length,
   if (alignment == TextAlignment::Left) return 0.0F;
 
   float padding = 0.0F;
-  const size_t stringLenth = length;
-  for (size_t i = 0; i < stringLenth; i++) {
-    const u8 charCode = u8(text[i]);
-    padding += char_widths[charCode];
+  for (size_t i = 0; i < length; i++) {
+    padding += char_widths[static_cast<u8>(text[i])];
   }
 
-  return alignment == TextAlignment::Center ? padding / 2 : padding;
+  return (alignment == TextAlignment::Center) ? padding * 0.5F : padding;
 }
 
 void FontManager::loadFontChars() {
-  const int MAX_COLS = 16;
-  const u8 INITIAL_CHAR_CODE = 0;
-  const u8 FINAL_CHAR_CODE = 255;
+  constexpr int MAX_COLS = 16;
+  constexpr float CHAR_SIZE = 32.0F;
+  constexpr size_t TOTAL_CHARS = 256;
 
   Font_ASCII_Texture = pRenderer->getTextureRepository().add(
       FileUtils::fromCwd("textures/font/ascii.png"));
 
-  for (size_t code = INITIAL_CHAR_CODE; code <= FINAL_CHAR_CODE; code++) {
+  for (size_t code = 0; code < TOTAL_CHARS; code++) {
     Sprite* charSprite = new Sprite();
 
     charSprite->mode = Tyra::MODE_REPEAT;
-    charSprite->size.set(32.0F, 32.0F);
+    charSprite->size.set(CHAR_SIZE, CHAR_SIZE);
 
-    const u8 x_offset = code < MAX_COLS ? code : code % MAX_COLS;
-    const u8 y_offset = code < MAX_COLS ? 0 : std::floor(code / MAX_COLS);
-    charSprite->offset = Vec2(x_offset, y_offset) * charSprite->size;
+    const u8 x_offset = code % MAX_COLS;
+    const u8 y_offset = code / MAX_COLS;
+    charSprite->offset.set(x_offset * CHAR_SIZE, y_offset * CHAR_SIZE);
 
     Font_ASCII_Texture->addLink(charSprite->id);
 
@@ -104,8 +98,14 @@ void FontManager::unloadFontChars() {
 
 // UTF-8
 std::wstring FontManager::utf8_to_wstring(const std::string& str) {
+  if (str.empty()) return std::wstring();
+  
   std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  return converter.from_bytes(str);
+  try {
+    return converter.from_bytes(str);
+  } catch (...) {
+    return std::wstring();
+  }
 }
 
 size_t FontManager::utf8len(char* s) {

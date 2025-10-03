@@ -429,7 +429,7 @@ void ScreenNewGame::handleOptionsSelection() {
 
 void ScreenNewGame::handleSeedInput() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
-  auto validChars = FontManager::getInstance()->NumericValidChars;
+  const std::string validChars(FontManager::getInstance()->NumericValidChars);
   std::size_t found = validChars.find(tempSeed[editingIndex]);
   u8 currentCharIndex = found != std::string::npos ? found : 0;
 
@@ -463,8 +463,8 @@ void ScreenNewGame::handleSeedInput() {
 
 void ScreenNewGame::handleWorldNameInput() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
-  auto validChars = FontManager::getInstance()->SpecialValidChars +
-                    FontManager::getInstance()->AlphanumericValidChars;
+  const std::string validChars = std::string(FontManager::getInstance()->SpecialValidChars) +
+                                 std::string(FontManager::getInstance()->AlphanumericValidChars);
   std::size_t found = validChars.find(tempWorldName[editingIndexWorldName]);
   u8 currentCharIndex = found != std::string::npos ? found : 0;
 
