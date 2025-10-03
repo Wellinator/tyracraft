@@ -231,6 +231,15 @@ void Chunk::tickRandomBlock() {
   // Based on https://minecraft.fandom.com/wiki/Grass_Block#Spread
 }
 
+void Chunk::setDistanceFromPlayerInChunks(const int distance) {
+  // Check if LOD changed
+  const int currentLOD = getLODFromDistance();
+  const int newLOD = getLODFromDistance(distance);
+  if (currentLOD != newLOD) dirty = true;
+
+  this->_distanceFromPlayerInChunks = distance;
+}
+
 const int Chunk::getLODFromDistance() {
   return getLODFromDistance(getDistanceFromPlayerInChunks());
 }
@@ -792,10 +801,10 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                           std::vector<Color>* inColors,
                           std::vector<Vec4>* inUVs, int limit) {
   t_renderer->renderer3D.usePipeline(stapip);
-  
+
   // Static identity matrix to avoid repeated allocation
   static M4x4 identityMatrix = M4x4::Identity;
-  
+
   // Cache BlockManager instance to avoid repeated singleton lookups
   BlockManager* blockMgr = BlockManager::getInstance();
 
@@ -828,7 +837,8 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                                   : static_cast<u32>(inVertices->size());
 
   // Check if clipping is needed based on distance
-  const float normalizedDistance = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+  const float normalizedDistance =
+      scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   if (normalizedDistance <= 1.5f) {
     ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer, camPositon);
   } else {
@@ -890,6 +900,12 @@ void Chunk::build() {
 
 #endif  // end if DEBUG_MODE
 
+  // Used to control asynchronous LOD updates on build calls
+  if (state == ChunkState::Loaded && dirty) {
+    updateLOD();
+    return;
+  }
+
   const int lod = getLODFromDistance();
   if (lod == 0) {
     buildNormaly();
@@ -924,13 +940,14 @@ void Chunk::buildNormaly() {
     for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
       for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
         const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-        
+
         // Early exit for air blocks - most common case
         if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
 
         Vec4 offset(x, y, z);
-        const u8 visibleFaces = visibleFacesMgr->getVisibleFacesByOffset(offset);
-        
+        const u8 visibleFaces =
+            visibleFacesMgr->getVisibleFacesByOffset(offset);
+
         // Skip blocks with no visible faces
         if (visibleFaces == 0) continue;
 
@@ -939,12 +956,15 @@ void Chunk::buildNormaly() {
         const bool hasTransparency = pBlockTemplate->hasTransparency();
 
         // Select appropriate buffers based on transparency
-        std::vector<Vec4>* targetVertices = hasTransparency ? &transpVertices : &vertices;
-        std::vector<Color>* targetColors = hasTransparency ? &transpColors : &colors;
+        std::vector<Vec4>* targetVertices =
+            hasTransparency ? &transpVertices : &vertices;
+        std::vector<Color>* targetColors =
+            hasTransparency ? &transpColors : &colors;
         std::vector<Vec4>* targetUV = hasTransparency ? &transpUV : &UV;
 
         MeshBuilder_BuildMesh(&offset, visibleFaces, _lod, targetVertices,
-                              targetColors, targetUV, t_worldLightModel, pLevel);
+                              targetColors, targetUV, t_worldLightModel,
+                              pLevel);
       }
     }
   }
@@ -960,7 +980,9 @@ void Chunk::rebuild() {
   build();
 }
 
-void Chunk::onLodChanged() {
+void Chunk::updateLOD() {
+  dirty = false;
+
   if (isCompressed) {
     // Player is near, has to rebuild from scratch
     rebuild();

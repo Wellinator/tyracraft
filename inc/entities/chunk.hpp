@@ -101,9 +101,7 @@ class Chunk {
     return this->_distanceFromPlayerInChunks;
   };
 
-  inline void setDistanceFromPlayerInChunks(const int distante) {
-    this->_distanceFromPlayerInChunks = distante;
-  };
+  void setDistanceFromPlayerInChunks(const int distance);
 
   inline void setCamPosition(Vec4* pos) { this->camPositon.set(*pos); };
 
@@ -115,9 +113,11 @@ class Chunk {
   const int getLODFromDistance();
   const int getLODFromDistance(const int distance);
 
-  void onLodChanged();
+  void updateLOD();
   void compress(const bool staticBackFaceCulling = false);
   void optimize();
+  void markDirty();
+  inline bool isDirty() { return dirty; }
 
  private:
   int randomTickSpeed = DEFAULT_TICK_SPEED;
@@ -139,7 +139,6 @@ class Chunk {
 
   int _lod = 0;
   bool dirty = false;
-  void markDirty();
 
   bool isDrawDataOptimized = false;
   void invalidateOptimization();

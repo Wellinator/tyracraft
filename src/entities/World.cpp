@@ -358,41 +358,66 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   if (!canBuildChunk()) return;
 
   auto chunks = chunkManager.getChunks();
+  const float maxDistance = static_cast<float>(worldOptions.drawDistance);
+
+  // Usar um vector para coletar chunks que precisam de sorting
+  std::vector<std::pair<Chunk*, float>> chunksToLoad;
+
   for (u16 i = 0; i < chunks->size(); i++) {
     auto t_chunk = (*chunks)[i];
-    const int distance =
+
+    // Usar método otimizado do PS2 para calcular distância 3D
+    const float distance3D =
         origin_chunk->center.distanceTo(t_chunk->center) / CHUNK_SIZE;
 
-    if (distance > worldOptions.drawDistance) {
+    // Chunk está fora da draw distance (usa distância horizontal)
+    if (distance3D > maxDistance) {
       if (force_loading) {
         t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
         addChunkToUnloadAsync(t_chunk);
       }
       t_chunk->setDistanceFromPlayerInChunks(-1);
-    } else {
-      if (force_loading) {
-        if (t_chunk->isLoaded())
-          t_chunk->rebuild();
-        else
-          t_chunk->build();
-      } else if (t_chunk->state == ChunkState::Clean) {
-        addChunkToLoadAsync(t_chunk);
-      } else {
-        if (t_chunk->getLODFromDistance(distance) !=
-            t_chunk->getLODFromDistance()) {
-          t_chunk->setDistanceFromPlayerInChunks(distance);
-          t_chunk->onLodChanged();
-        }
-      }
+      continue;
+    }
 
+    // Chunk está dentro da draw distance
+    const int distance = static_cast<int>(distance3D);
+
+    if (force_loading) {
+      // Modo síncrono: carregar/reconstruir imediatamente
+      if (t_chunk->isLoaded())
+        t_chunk->rebuild();
+      else
+        t_chunk->build();
       t_chunk->setDistanceFromPlayerInChunks(distance);
+    } else {
+      // Modo assíncrono: agendar carregamento (usa distância 3D para
+      // priorização)
+      t_chunk->setDistanceFromPlayerInChunks(distance);
+      if (t_chunk->isDirty() || !t_chunk->isLoaded()) {
+        chunksToLoad.push_back(std::make_pair(t_chunk, distance3D));
+      }
     }
   }
 
-  chunkManager.updateLoadedChunks();
-  if (!force_loading && !tempChunksToLoad.empty())
-    sortChunksToLoad(currentPlayerPos);
+  // Ordenar e agendar chunks por proximidade 3D (apenas no modo assíncrono)
+  if (!force_loading && !chunksToLoad.empty()) {
+    // Ordenar por distância 3D (subchunks no mesmo nível têm prioridade)
+    std::sort(
+        chunksToLoad.begin(), chunksToLoad.end(),
+        [](const std::pair<Chunk*, float>& a,
+           const std::pair<Chunk*, float>& b) { return a.second < b.second; });
+
+    // Adicionar à fila de carregamento na ordem correta
+    for (const auto& pair : chunksToLoad) {
+      addChunkToLoadAsync(pair.first);
+    }
+  }
+
+  if (!force_loading) {
+    chunkManager.updateLoadedChunks();
+  }
 }
 
 void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
@@ -419,7 +444,7 @@ void World::loadScheduledChunks() {
              chunk->timeToBuild);
     }
 
-    if (Utils::Probability(0.1F, worldOptions.seed)) {
+    if (Utils::Probability(0.01F, worldOptions.seed)) {
       Vec4 _spawnPosition;
       if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
         mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
@@ -432,7 +457,6 @@ void World::loadScheduledChunks() {
 
   if (tempChunksToLoad.size() == 0) {
     tempChunksToLoad.clear();
-    tempChunksToLoad.shrink_to_fit();
     chunkManager.updateLoadedChunks();
   }
 }
@@ -449,7 +473,6 @@ void World::unloadScheduledChunks() {
 
   if (tempChunksToUnLoad.size() == 0) {
     tempChunksToUnLoad.clear();
-    tempChunksToUnLoad.shrink_to_fit();
   }
   chunkManager.updateLoadedChunks();
 }
