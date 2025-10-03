@@ -792,41 +792,45 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                           std::vector<Color>* inColors,
                           std::vector<Vec4>* inUVs, int limit) {
   t_renderer->renderer3D.usePipeline(stapip);
-  M4x4 rawMatrix = M4x4::Identity;
+  
+  // Static identity matrix to avoid repeated allocation
+  static M4x4 identityMatrix = M4x4::Identity;
+  
+  // Cache BlockManager instance to avoid repeated singleton lookups
+  BlockManager* blockMgr = BlockManager::getInstance();
 
+  // Initialize color bag
   StaPipColorBag colorBag;
   colorBag.many = inColors->data();
 
+  // Initialize texture bag
   StaPipTextureBag textureBag;
   textureBag.coordinates = inUVs->data();
-  textureBag.texture =
-      isCompressed ? BlockManager::getInstance()->getBlocksTextureLowRes()
-                   : BlockManager::getInstance()->getBlocksTexture();
+  textureBag.texture = isCompressed ? blockMgr->getBlocksTextureLowRes()
+                                    : blockMgr->getBlocksTexture();
 
+  // Initialize info bag
   StaPipInfoBag infoBag;
-  infoBag.model = &rawMatrix;
+  infoBag.model = &identityMatrix;
   infoBag.blendingEnabled = !isCompressed;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = isCompressed
                             ? Tyra::PipelineShadingType::TyraShadingFlat
                             : Tyra::PipelineShadingType::TyraShadingGouraud;
 
+  // Initialize main bag
   StaPipBag bag;
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
   bag.vertices = inVertices->data();
+  bag.count = isDrawDataOptimized ? static_cast<u32>(limit)
+                                  : static_cast<u32>(inVertices->size());
 
-  if (isDrawDataOptimized) {
-    bag.count = limit;
-  } else {
-    bag.count = inVertices->size();
-  }
-
-  const float d = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
-  if (d <= 1.5f) {
-    return ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer,
-                                            camPositon);
+  // Check if clipping is needed based on distance
+  const float normalizedDistance = scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
+  if (normalizedDistance <= 1.5f) {
+    ClippingManager_ClipAndRenderBag(&bag, stapip, t_renderer, camPositon);
   } else {
     stapip->core.render(&bag);
   }
