@@ -26,8 +26,8 @@ class Animated {
 
   int currentAnimation;
   // Indices into _currentAnimationFramesIndices (not direct frame indices)
-  int _lastAnimationFrameIndex = 0;    // Previous index in animation sequence
-  int _currentAnimationFrameIndex = 0; // Current index in animation sequence
+  int _lastAnimationFrameIndex = 0;     // Previous index in animation sequence
+  int _currentAnimationFrameIndex = 0;  // Current index in animation sequence
   float animationDurationInMs;
   float animationTimer;
   bool isLooping;
@@ -40,7 +40,7 @@ class Animated {
   void nextFrame();
   void prevFrame();
   void setAnimationFrameIndex(int animationFrameIndex);
-  
+
   // Helper methods to get actual frame indices
   int getCurrentActualFrameIndex() const;
   int getLastActualFrameIndex() const;
@@ -51,7 +51,7 @@ class Animated {
   virtual ~Animated();
 
   virtual void update(const float& deltaTime);
-  virtual void render() = 0;
+  virtual void render() { TYRA_TRAP("Animated::render() not implemented"); };
 
   void setFrames(Tyra::Mesh** framesArray, const int size);
   void setAnimation(const int animationId);
@@ -64,15 +64,15 @@ class Animated {
   bool isAnimationPlaying() const;
   bool isAnimationLooping() const;
   float getAnimationDuration() const;
-
- protected:
-  virtual void onAnimationStart() {};
-  virtual void onAnimationEnd() {};
-  virtual void onAnimationComplete() {};
   void fillDrawDataByFrame(std::vector<Vec4>* pVertices,
                            std::vector<Color>* pVerticesColors,
                            std::vector<Vec4>* pUvMap);
   void fillDrawDataByLerp(std::vector<Vec4>* pVertices,
                           std::vector<Color>* pVerticesColors,
                           std::vector<Vec4>* pUvMap);
+
+ protected:
+  virtual void onAnimationStart() {};
+  virtual void onAnimationEnd() {};
+  virtual void onAnimationComplete() {};
 };

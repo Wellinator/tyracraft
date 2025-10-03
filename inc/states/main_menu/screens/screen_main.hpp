@@ -8,18 +8,19 @@
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include "managers/settings_manager.hpp"
+#include "entities/animation/animated.hpp"
 #include "utils.hpp"
 #include "models/block_info_model.hpp"
+#include "memory.h"
 
-using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
 using Tyra::FileUtils;
+using Tyra::ObjLoader;
+using Tyra::ObjLoaderOptions;
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::StaPipOptions;
+using Tyra::StaticPipeline;
 using Tyra::Texture;
-using Tyra::ObjLoaderOptions;
-using Tyra::ObjLoader;
 
 enum class ScreenMainOptions {
   PlayGame,
@@ -38,6 +39,7 @@ class ScreenMain : public ScreenBase {
   void init();
   void update(const float& deltaTime);
   void render();
+  void renderPlayerPreview();
 
  private:
   Renderer* t_renderer;
@@ -57,14 +59,15 @@ class ScreenMain : public ScreenBase {
   ScreenMainOptions selectedOption = ScreenMainOptions::None;
   ScreenMainOptions activeOption = ScreenMainOptions::PlayGame;
 
-  DynPipOptions dynpipOptions;
-  DynamicPipeline dynpip;
-  std::unique_ptr<DynamicMesh> playerPreviewMesh;
-  std::vector<u32> standStillSequence = {0, 1};
+  Animated animator;
+  StaPipOptions statPipOptions;
+  StaticPipeline statPip;
+  const u8 IDLE_ANIMATION = 0;
+  std::array<std::unique_ptr<Tyra::Mesh>, 2> animationFrames;
   Texture* skinTexture = nullptr;
+  M4x4 playerPreviewModelMatrix;
 
   void loadSkinTexture(Renderer* renderer);
-  void loadPlayerPreview(Renderer* renderer);
 
   const float SLOT_WIDTH = 160;
   const float SLOT_HIGHT_OFFSET = 200;
@@ -76,9 +79,13 @@ class ScreenMain : public ScreenBase {
   void handleInput();
   void navigate();
 
-  const std::string Label_PlayGame      = LanguageManager::Translate("/main_menu/play_game");
-  const std::string Label_Options       = LanguageManager::Translate("/main_menu/options");
-  const std::string Label_HowToPlay     = LanguageManager::Translate("/main_menu/how_to_play");
-  const std::string Label_About         = LanguageManager::Translate("/main_menu/about");
-  const std::string Label_Select        = LanguageManager::Translate("/gui/select");
+  const std::string Label_PlayGame =
+      LanguageManager::Translate("/main_menu/play_game");
+  const std::string Label_Options =
+      LanguageManager::Translate("/main_menu/options");
+  const std::string Label_HowToPlay =
+      LanguageManager::Translate("/main_menu/how_to_play");
+  const std::string Label_About =
+      LanguageManager::Translate("/main_menu/about");
+  const std::string Label_Select = LanguageManager::Translate("/gui/select");
 };

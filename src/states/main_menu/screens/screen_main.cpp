@@ -7,6 +7,13 @@
 #include "states/main_menu/screens/screen_skin_selection.hpp"
 #include "managers/font/font_manager.hpp"
 
+using Tyra::MeshBuilderData;
+using Tyra::ObjLoaderOptions;
+using Tyra::StaPipBag;
+using Tyra::StaPipColorBag;
+using Tyra::StaPipInfoBag;
+using Tyra::StaPipTextureBag;
+
 ScreenMain::ScreenMain(StateMainMenu* t_context) : ScreenBase(t_context) {
   t_renderer = &t_context->context->t_engine->renderer;
   init();
@@ -23,17 +30,11 @@ ScreenMain::~ScreenMain() {
 }
 
 void ScreenMain::update(const float& deltaTime) {
+  animator.update(deltaTime);
+
   handleInput();
   hightLightActiveOption();
   if (shouldNavigate) navigate();
-
-  // Advance player preview animation in a time-based manner
-  if (playerPreviewMesh) {
-    const float originalSpeed = playerPreviewMesh->animation.speed;
-    playerPreviewMesh->animation.speed = originalSpeed * deltaTime;
-    playerPreviewMesh->update();
-    playerPreviewMesh->animation.speed = originalSpeed;
-  }
 }
 
 void ScreenMain::render() {
@@ -109,8 +110,7 @@ void ScreenMain::render() {
   fm.printText(Label_Select, 35, 407);
 
   // Draw player skin
-  t_renderer->renderer3D.usePipeline(&dynpip);
-  dynpip.render(playerPreviewMesh.get(), &dynpipOptions);
+  renderPlayerPreview();
 
   // Draw player name
   // About
@@ -126,11 +126,92 @@ void ScreenMain::render() {
   }
 }
 
+void ScreenMain::renderPlayerPreview() {
+  std::vector<Vec4> vertices = {};
+  std::vector<Color> verticesColors = {};
+  std::vector<Vec4> uvMap = {};
+
+  // Calc draw data by frames interpolation
+  const AnimationOptions currentAnimationOptions =
+      animator.getCurrentAnimation();
+  if (currentAnimationOptions.framesIndices.size() > 1) {
+    animator.fillDrawDataByLerp(&vertices, &verticesColors, &uvMap);
+  } else {
+    animator.fillDrawDataByFrame(&vertices, &verticesColors, &uvMap);
+  }
+
+  StaPipTextureBag textureBag;
+  StaPipInfoBag infoBag;
+  StaPipColorBag colorBag;
+  StaPipBag bag;
+
+  textureBag.coordinates = uvMap.data();
+  textureBag.texture = skinTexture;
+
+  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.blendingEnabled = true;
+  infoBag.antiAliasingEnabled = false;
+  infoBag.fullClipChecks = false;
+  infoBag.frustumCulling =
+      Tyra::PipelineInfoBagFrustumCulling::PipelineInfoBagFrustumCulling_None;
+
+  Color tempColor = Color(128, 128, 128);
+  colorBag.single = &tempColor;
+
+  infoBag.model = &playerPreviewModelMatrix;
+
+  bag.count = vertices.size();
+  bag.vertices = vertices.data();
+  bag.color = &colorBag;
+  bag.info = &infoBag;
+  bag.texture = &textureBag;
+
+  t_renderer->renderer3D.usePipeline(statPip);
+  statPip.core.render(&bag);
+}
+
 void ScreenMain::init() {
-  dynpip.setRenderer(&t_renderer->core);
+  statPip.setRenderer(&t_renderer->core);
+
+  // Load animation frames
+  ObjLoaderOptions options;
+  options.scale = 3.4F;
+  options.flipUVs = true;
+  options.animation.count = 1;
+
+  for (size_t i = 0; i < animationFrames.size(); i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData = ObjLoader::load(
+        FileUtils::fromCwd("models/player/stand_still/player_frame_" +
+                           std::to_string(i + 1) + ".obj"),
+        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
+    animationFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
+  }
+
+  Tyra::Mesh* rawFrames[2] = {
+      animationFrames[0].get(),
+      animationFrames[1].get(),
+  };
+  animator.setFrames(rawFrames, 2);
+
+  playerPreviewModelMatrix.identity();
+  playerPreviewModelMatrix.rotateY(_90DEGINRAD - 0.25f);
+  playerPreviewModelMatrix.translate(Vec4(25.0f, 19.5F, 10.0f));
+
+  std::vector<u8> standStillSequence = {0, 1};
+  AnimationOptions idleAnimation;
+  idleAnimation.animationId = IDLE_ANIMATION;
+  idleAnimation.framesIndices = standStillSequence;
+  idleAnimation.durationInMs = 1000.0f;
+  idleAnimation.loop = true;
+  idleAnimation.wrapFrames = false;
+
+  animator.addAnimation(idleAnimation);
+  animator.setAnimation(IDLE_ANIMATION);
 
   loadSkinTexture(t_renderer);
-  loadPlayerPreview(t_renderer);
 
   const float halfWidth = t_renderer->core.getSettings().getWidth() / 2;
   auto baseX = halfWidth - SLOT_WIDTH / 2;
@@ -268,41 +349,4 @@ void ScreenMain::loadSkinTexture(Renderer* renderer) {
 
   skinTexture = renderer->getTextureRepository().add(
       FileUtils::fromCwd(skinPath.c_str()));
-}
-
-void ScreenMain::loadPlayerPreview(Renderer* renderer) {
-  dynpipOptions.antiAliasingEnabled = false;
-  dynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_None;
-  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-
-  dynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
-
-  ObjLoaderOptions options;
-  options.scale = 3.4F;
-  options.flipUVs = true;
-  options.animation.count = 2;
-
-  auto data = ObjLoader::load(
-      FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
-  data.get()->loadNormals = false;
-
-  playerPreviewMesh = std::make_unique<DynamicMesh>(data.get());
-
-  playerPreviewMesh->rotation.identity();
-  playerPreviewMesh->rotation.rotateY(_90DEGINRAD - 0.2f);
-
-  playerPreviewMesh->scale.identity();
-  playerPreviewMesh->translation.identity();
-
-  playerPreviewMesh->getPosition()->set(Vec4(25.0f, 19.5F, 10.0f));
-
-  auto& materials = playerPreviewMesh.get()->materials;
-  for (size_t i = 0; i < materials.size(); i++)
-    skinTexture->addLink(materials[i]->id);
-
-  playerPreviewMesh->animation.loop = true;
-  playerPreviewMesh->animation.setSequence(standStillSequence);
-  playerPreviewMesh->animation.speed = 3.0F;
 }
