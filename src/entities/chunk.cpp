@@ -936,9 +936,9 @@ void Chunk::buildNormaly() {
 
   // Y as outer loop provides better cache locality for vertical column access
   // This matches how the level data is typically accessed
-  for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-    for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-      for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
         const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
 
         // Early exit for air blocks - most common case
