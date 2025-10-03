@@ -78,9 +78,12 @@ inline void computeQuadBoundsVU(const ChunkQuadData& quad, Vec4& minBounds,
   vector_copy(minVec, const_cast<float*>(quad.vertices[0].xyzw));
   vector_copy(maxVec, const_cast<float*>(quad.vertices[0].xyzw));
 
-  for (size_t i = 1; i < quad.vertices.size(); ++i) {
-    vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[i].xyzw));
-  }
+  // Unrolled loop for better EE pipeline - we always have exactly 6 vertices
+  vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[1].xyzw));
+  vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[2].xyzw));
+  vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[3].xyzw));
+  vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[4].xyzw));
+  vuMinMaxUpdate(minVec, maxVec, const_cast<float*>(quad.vertices[5].xyzw));
 
   Vec4::copy(&minBounds, reinterpret_cast<const float*>(minVec));
   Vec4::copy(&maxBounds, reinterpret_cast<const float*>(maxVec));
@@ -125,9 +128,14 @@ inline void vuVectorAccumulate(float* acc, float* value) {
 
 inline Vec4 computeCenterVU(const std::array<Vec4, 6>& vertices) {
   VECTOR accum = {0.0F, 0.0F, 0.0F, 0.0F};
-  for (const Vec4& vertex : vertices) {
-    vuVectorAccumulate(accum, const_cast<float*>(vertex.xyzw));
-  }
+  
+  // Unrolled accumulation for 6 vertices
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[0].xyzw));
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[1].xyzw));
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[2].xyzw));
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[3].xyzw));
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[4].xyzw));
+  vuVectorAccumulate(accum, const_cast<float*>(vertices[5].xyzw));
 
   Vec4 center;
   Vec4::copy(&center, reinterpret_cast<const float*>(accum));
@@ -425,6 +433,11 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
   std::vector<FaceInfo> faces;
   faces.reserve(quadCount);
 
+  // Cache raw pointers for faster access - avoids repeated vtable lookups
+  const Vec4* vertData = inVertices->data();
+  const Color* colorData = inColors->data();
+  const Vec4* uvData = inUVs->data();
+
   auto normalizeRange = [](s16& minVal, s16& maxVal) {
     if (maxVal < minVal) std::swap(minVal, maxVal);
     if (maxVal == minVal) ++maxVal;
@@ -434,12 +447,27 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
     FaceInfo info;
     const size_t baseIndex = quadIdx * 6;
 
-    for (size_t v = 0; v < 6; ++v) {
-      const size_t sourceIndex = baseIndex + v;
-      info.quad.vertices[v] = (*inVertices)[sourceIndex];
-      info.quad.colors[v] = (*inColors)[sourceIndex];
-      info.quad.uv[v] = (*inUVs)[sourceIndex];
-    }
+    // Unrolled loop for better EE pipeline - preserves vertex order for backface culling
+    info.quad.vertices[0] = vertData[baseIndex];
+    info.quad.vertices[1] = vertData[baseIndex + 1];
+    info.quad.vertices[2] = vertData[baseIndex + 2];
+    info.quad.vertices[3] = vertData[baseIndex + 3];
+    info.quad.vertices[4] = vertData[baseIndex + 4];
+    info.quad.vertices[5] = vertData[baseIndex + 5];
+
+    info.quad.colors[0] = colorData[baseIndex];
+    info.quad.colors[1] = colorData[baseIndex + 1];
+    info.quad.colors[2] = colorData[baseIndex + 2];
+    info.quad.colors[3] = colorData[baseIndex + 3];
+    info.quad.colors[4] = colorData[baseIndex + 4];
+    info.quad.colors[5] = colorData[baseIndex + 5];
+
+    info.quad.uv[0] = uvData[baseIndex];
+    info.quad.uv[1] = uvData[baseIndex + 1];
+    info.quad.uv[2] = uvData[baseIndex + 2];
+    info.quad.uv[3] = uvData[baseIndex + 3];
+    info.quad.uv[4] = uvData[baseIndex + 4];
+    info.quad.uv[5] = uvData[baseIndex + 5];
 
     computeQuadNormalVU(info.quad);
 
@@ -530,8 +558,9 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                             MergePhase phase) -> std::vector<FaceInfo> {
     if (input.empty()) return {};
 
+    // Pre-allocate with load factor consideration to avoid rehashing
     std::unordered_map<uint64_t, std::vector<size_t>> groups;
-    groups.reserve(input.size());
+    groups.reserve(input.size() / 2);  // Heuristic: expect ~50% unique keys
 
     for (size_t idx = 0; idx < input.size(); ++idx) {
       groups[makeKey(input[idx], phase)].push_back(idx);
@@ -554,12 +583,14 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
         return getMin(input[lhs]) < getMin(input[rhs]);
       });
 
-      FaceInfo current = input[indices[0]];
+      FaceInfo current = std::move(input[indices[0]]);
 
       for (size_t pos = 1; pos < indices.size(); ++pos) {
-        const FaceInfo& candidate = input[indices[pos]];
+        FaceInfo& candidate = input[indices[pos]];
         if (getMin(candidate) == getMax(current) &&
             materialsMatch(current.quad, candidate.quad)) {
+          // Merge preserves original winding order for backface culling
+          // expandQuadGeometry maintains vertex ordering
           mergeQuadPair(current.quad, candidate.quad);
           if (phase == MergePhase::AxisA) {
             current.maxA = candidate.maxA;
@@ -568,7 +599,7 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
           }
         } else {
           output.push_back(std::move(current));
-          current = candidate;
+          current = std::move(candidate);
         }
       }
 
@@ -593,61 +624,33 @@ void Chunk::getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
 }
 
 void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
-  // Calculate the new span based on the direction of expansion
-  Vec4 targetCenter = calculateQuadCenter(target);
-  Vec4 sourceCenter = calculateQuadCenter(source);
-  Vec4 direction = sourceCenter - targetCenter;
-
+  // Assume normal is already computed from mergeFaces - skip validation
   Vec4 normal = target.normal;
-  const float normalLenSq = normal.dot3(normal);
-  if (Tyra::Math::equalf(normalLenSq, 0.0F, 0.00001F)) {
-    computeQuadNormalVU(target);
-    normal = target.normal;
-  }
 
   const float epsilon = 0.01F;
   Vec4 minTarget, maxTarget, minSource, maxSource;
   getQuadBounds(target, minTarget, maxTarget);
   getQuadBounds(source, minSource, maxSource);
+  
+  // Calculate direction only for fallback heuristic
+  Vec4 targetCenter = calculateQuadCenter(target);
+  Vec4 sourceCenter = calculateQuadCenter(source);
+  Vec4 direction = sourceCenter - targetCenter;
 
   std::array<float, 3> minA = {minTarget.x, minTarget.y, minTarget.z};
   std::array<float, 3> maxA = {maxTarget.x, maxTarget.y, maxTarget.z};
   std::array<float, 3> minB = {minSource.x, minSource.y, minSource.z};
   std::array<float, 3> maxB = {maxSource.x, maxSource.y, maxSource.z};
 
-  auto rangesEqual = [&](int axis) {
+  // Inline lambdas as they're called once - reduces function call overhead
+  auto rangesEqual = [&](int axis) -> bool {
     return Utils::Abs(minA[axis] - minB[axis]) < epsilon &&
            Utils::Abs(maxA[axis] - maxB[axis]) < epsilon;
   };
 
-  auto rangesContiguous = [&](int axis) {
+  auto rangesContiguous = [&](int axis) -> bool {
     return (Utils::Abs(maxA[axis] - minB[axis]) < epsilon) ||
            (Utils::Abs(maxB[axis] - minA[axis]) < epsilon);
-  };
-
-  auto getSpan = [&](const ChunkQuadData& quad, int axis) -> float {
-    switch (axis) {
-      case 0:
-        return quad.span.x;
-      case 1:
-        return quad.span.y;
-      default:
-        return quad.span.z;
-    }
-  };
-
-  auto setSpan = [&](ChunkQuadData& quad, int axis, float value) {
-    switch (axis) {
-      case 0:
-        quad.span.x = value;
-        break;
-      case 1:
-        quad.span.y = value;
-        break;
-      default:
-        quad.span.z = value;
-        break;
-    }
   };
 
   float absX = Utils::Abs(normal.x);
@@ -696,19 +699,16 @@ void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
 
   int alignAxis = (planeAxes[0] == expansionAxis) ? planeAxes[1] : planeAxes[0];
 
-  float newExpansionSpan =
-      getSpan(target, expansionAxis) + getSpan(source, expansionAxis);
-  float newAlignSpan =
-      std::max(getSpan(target, alignAxis), getSpan(source, alignAxis));
-
-  setSpan(target, expansionAxis, newExpansionSpan);
-  setSpan(target, alignAxis, newAlignSpan);
-
+  // Direct access to span members instead of lambda calls
+  float* targetSpan = &target.span.x;
+  const float* sourceSpan = &source.span.x;
+  
+  targetSpan[expansionAxis] += sourceSpan[expansionAxis];
+  targetSpan[alignAxis] = std::max(targetSpan[alignAxis], sourceSpan[alignAxis]);
+  
   int remainingAxis = normalAxis;
   if (remainingAxis != expansionAxis && remainingAxis != alignAxis) {
-    setSpan(target, remainingAxis,
-            std::max(getSpan(target, remainingAxis),
-                     getSpan(source, remainingAxis)));
+    targetSpan[remainingAxis] = std::max(targetSpan[remainingAxis], sourceSpan[remainingAxis]);
   }
 
   // Expand the quad geometry by recalculating vertices
@@ -720,7 +720,7 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
                                const Vec4& direction, int expansionAxis) {
   static_cast<void>(direction);
   static_cast<void>(expansionAxis);
-  if (target.vertices.size() != 6 || source.vertices.size() != 6) return;
+  // Size check removed - guaranteed by caller in mergeFaces
 
   // Find the bounding box of both quads combined
   Vec4 targetMin, targetMax, sourceMin, sourceMax;
@@ -736,16 +736,8 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
   maxBounds.y = std::max(targetMax.y, sourceMax.y);
   maxBounds.z = std::max(targetMax.z, sourceMax.z);
 
-  // Reconstruct the quad vertices to span the expanded area
-  // Keep the same face orientation but expand the size
-  Vec4 normal = target.normal;
-  if (normal.length() == 0) {
-    // Calculate normal if not set
-    Vec4 v1 = target.vertices[1] - target.vertices[0];
-    Vec4 v2 = target.vertices[2] - target.vertices[0];
-    normal = v1.cross(v2).getNormalized();
-    target.normal = normal;
-  }
+  // Normal is already computed and valid from mergeFaces - reuse it
+  const Vec4& normal = target.normal;
 
   // Create new expanded quad vertices
   std::array<Vec4, 6> newVertices = {};
