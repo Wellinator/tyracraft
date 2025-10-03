@@ -910,29 +910,37 @@ void Chunk::build() {
 }
 
 void Chunk::buildNormaly() {
-  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-        Vec4 offset = Vec4(x, y, z);
+  // Cache singleton instances to avoid repeated lookups
+  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
+  BlockManager* blockMgr = BlockManager::getInstance();
+
+  // Y as outer loop provides better cache locality for vertical column access
+  // This matches how the level data is typically accessed
+  for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+    for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+      for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
         const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+        
+        // Early exit for air blocks - most common case
+        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
+
+        Vec4 offset(x, y, z);
+        const u8 visibleFaces = visibleFacesMgr->getVisibleFacesByOffset(offset);
+        
+        // Skip blocks with no visible faces
+        if (visibleFaces == 0) continue;
+
         const Blocks block_type = static_cast<Blocks>(blockId);
+        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
+        const bool hasTransparency = pBlockTemplate->hasTransparency();
 
-        if (blockId > (u8)Blocks::AIR_BLOCK) {
-          u8 visibleFaces =
-              VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
-                  offset);
-          if (visibleFaces == 0) continue;
+        // Select appropriate buffers based on transparency
+        std::vector<Vec4>* targetVertices = hasTransparency ? &transpVertices : &vertices;
+        std::vector<Color>* targetColors = hasTransparency ? &transpColors : &colors;
+        std::vector<Vec4>* targetUV = hasTransparency ? &transpUV : &UV;
 
-          Block* pBlockTemplate =
-              BlockManager::getInstance()->getBlockTemplateByType(block_type);
-
-          const bool hasTransparency = pBlockTemplate->hasTransparency();
-          MeshBuilder_BuildMesh(&offset, visibleFaces, _lod,
-                                hasTransparency ? &transpVertices : &vertices,
-                                hasTransparency ? &transpColors : &colors,
-                                hasTransparency ? &transpUV : &UV,
-                                t_worldLightModel, pLevel);
-        }
+        MeshBuilder_BuildMesh(&offset, visibleFaces, _lod, targetVertices,
+                              targetColors, targetUV, t_worldLightModel, pLevel);
       }
     }
   }
