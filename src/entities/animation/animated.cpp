@@ -80,8 +80,12 @@ void Animated::clearFrames() {
 }
 
 void Animated::setAnimation(const int animationId) {
-  if (animations.find(animationId) == animations.end()) return;
-
+  if (animations.find(animationId) == animations.end()) {
+    TYRA_TRAP("Animated::setAnimation\nAnimation ID not found: ", animationId,
+              "\nMake sure to add the animation first using addAnimation().");
+    return;
+  }
+  
   const AnimationOptions& animationOptions = animations[animationId];
   currentAnimation = animationOptions.animationId;
   _currentAnimationFramesIndices = animationOptions.framesIndices;
