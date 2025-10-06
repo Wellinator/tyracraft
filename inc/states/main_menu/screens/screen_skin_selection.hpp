@@ -4,6 +4,7 @@
 #include "managers/font/font_options.hpp"
 #include "managers/language_manager.hpp"
 #include "managers/settings_manager.hpp"
+#include "entities/mannequin/mannequin.hpp"
 #include <tamtypes.h>
 #include <tyra>
 #include <string>
@@ -12,14 +13,14 @@
 #include <utils.hpp>
 
 using Tyra::Color;
-using Tyra::DynamicMesh;
-using Tyra::DynamicPipeline;
-using Tyra::DynPipOptions;
 using Tyra::FileUtils;
 using Tyra::Math;
 using Tyra::ObjLoader;
 using Tyra::Renderer;
 using Tyra::Sprite;
+using Tyra::StaPipOptions;
+using Tyra::StaticPipeline;
+using Tyra::MeshBuilderData;
 using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Vec4;
@@ -47,14 +48,13 @@ class ScreenSkinSelection : public ScreenBase {
   u8 isMovingForward = false;
   float interpolation = 0;
 
-  const std::array<float, 3> defaultRotation = {_90DEGINRAD + 0.2f, 
-                                                _90DEGINRAD,
+  const std::array<float, 3> defaultRotation = {_90DEGINRAD + 0.2f, _90DEGINRAD,
                                                 _90DEGINRAD - 0.2f};
   std::array<float, 3> startRotation = defaultRotation;
   std::array<float, 3> tempRotation = defaultRotation;
   std::array<float, 3> endRotation = defaultRotation;
 
-  const std::array<float, 3> defaultScale = {1.0f, 1.3f, 1.0f};
+  const std::array<float, 3> defaultScale = {1.0f, 1.35f, 1.0f};
   std::array<float, 3> startScale = defaultScale;
   std::array<float, 3> tempScale = defaultScale;
   std::array<float, 3> endScale = defaultScale;
@@ -69,21 +69,21 @@ class ScreenSkinSelection : public ScreenBase {
   const float slotWidth = 246.0F;
   const float slotHeight = 32.0F;
 
-  const std::string Label_Select    = LanguageManager::Translate("/gui/select");
-  const std::string Label_Prev      = LanguageManager::Translate("/gui/prev");
-  const std::string Label_Next      = LanguageManager::Translate("/gui/next");
-  const std::string Label_Back      = LanguageManager::Translate("/gui/back");
+  const std::string Label_Select = LanguageManager::Translate("/gui/select");
+  const std::string Label_Prev = LanguageManager::Translate("/gui/prev");
+  const std::string Label_Next = LanguageManager::Translate("/gui/next");
+  const std::string Label_Back = LanguageManager::Translate("/gui/back");
 
   std::vector<SkinInfoModel> skins;
   SkinInfoModel selectedSkin;
 
-  std::array<std::unique_ptr<DynamicMesh>, 3> models;
   std::array<Texture*, 3> textures;
 
-  std::unique_ptr<DynamicMesh> baseMesh;
-  DynPipOptions dynpipOptions;
-  DynamicPipeline dynpip;
-  std::vector<u32> standStillSequence = {0, 1};
+  StaPipOptions statPipOptions;
+  StaticPipeline statPip;
+  const u8 IDLE_ANIMATION = 0;
+  std::array<std::unique_ptr<Tyra::Mesh>, 2> animationFrames;
+  std::array<std::unique_ptr<Mannequin>, 3> mannequins;
 
   const float TRANSITION_SPEED = 1.5f;
 
@@ -96,7 +96,6 @@ class ScreenSkinSelection : public ScreenBase {
   void loadSkinTextures();
   void unloadSkinTextures();
   void loadModels();
-  void unloadModels();
   void calcLerp(const float& deltaTime);
   void startMoving(u8 _movingForward);
   void moveForward(const float& deltaTime);

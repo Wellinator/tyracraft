@@ -16,28 +16,27 @@ ScreenSkinSelection::~ScreenSkinSelection() {
   textureRepo->freeBySprite(arrowLeft);
   textureRepo->freeBySprite(arrowRight);
 
-  unloadModels();
   unloadSkinTextures();
 }
 
 void ScreenSkinSelection::update(const float& deltaTime) {
   handleInput();
+
   if (isMoving)
     isMovingForward ? moveForward(deltaTime) : moveBackward(deltaTime);
-  for (size_t i = 0; i < models.size(); i++) {
-    const float originalSpeed = models[i]->animation.speed;
-    models[i]->animation.speed = originalSpeed * deltaTime;
-    models[i].get()->update();
-    models[i]->animation.speed = originalSpeed;
-  }
+
+  mannequins[0]->update(deltaTime);
+  mannequins[1]->update(deltaTime);
+  mannequins[2]->update(deltaTime);
 }
 
 void ScreenSkinSelection::render() {
   FontManager& fm = FontManager::getInstanceRef();
 
-  t_renderer->renderer3D.usePipeline(&dynpip);
-  for (size_t i = 0; i < models.size(); i++)
-    dynpip.render(models[i].get(), &dynpipOptions);
+  t_renderer->renderer3D.usePipeline(&statPip);
+  mannequins[0]->render(&statPip, textures[0]);
+  mannequins[1]->render(&statPip, textures[1]);
+  mannequins[2]->render(&statPip, textures[2]);
 
   t_renderer->renderer2D.render(btnCross);
   fm.printText(Label_Select, 35, 407);
@@ -60,7 +59,7 @@ void ScreenSkinSelection::render() {
 }
 
 void ScreenSkinSelection::init() {
-  dynpip.setRenderer(&t_renderer->core);
+  statPip.setRenderer(&t_renderer->core);
 
   getAvailableSkins();
   loadSkinTextures();
@@ -200,54 +199,56 @@ void ScreenSkinSelection::unloadSkinTextures() {
 }
 
 void ScreenSkinSelection::loadModels() {
-  dynpipOptions.antiAliasingEnabled = true;
-  dynpipOptions.frustumCulling =
-      Tyra::PipelineFrustumCulling::PipelineFrustumCulling_Precise;
-  dynpipOptions.shadingType = Tyra::PipelineShadingType::TyraShadingFlat;
-  dynpipOptions.textureMappingType =
-      Tyra::PipelineTextureMappingType::TyraNearest;
-
+  // Load animation frames
   ObjLoaderOptions options;
   options.scale = 3.5F;
   options.flipUVs = true;
-  options.animation.count = 2;
+  options.animation.count = 1;
 
-  auto data = ObjLoader::load(
-      FileUtils::fromCwd("models/player/stand_still/player.obj"), options);
-  data.get()->loadNormals = false;
-  baseMesh = std::make_unique<DynamicMesh>(data.get());
-
-  for (size_t i = 0; i < models.size(); i++) {
-    models[i] = std::make_unique<DynamicMesh>(*baseMesh.get());
-    models[i]->rotation.identity();
-    models[i]->scale.identity();
-    models[i]->translation.identity();
-    models[i]->animation.loop = true;
-    models[i]->animation.setSequence(standStillSequence);
-    models[i]->animation.speed = 3.0F;
-
-    auto& materials = models[i].get()->materials;
-    for (size_t j = 0; j < materials.size(); j++)
-      textures[i]->addLink(materials[j]->id);
+  // Load frames used for animation
+  for (size_t i = 0; i < animationFrames.size(); i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData = ObjLoader::load(
+        FileUtils::fromCwd("models/player/stand_still/player_frame_" +
+                           std::to_string(i + 1) + ".obj"),
+        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
+    animationFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
   }
 
-  models[1]->scale.scale(1.3f);
+  Tyra::Mesh* rawFrames[2] = {
+      animationFrames[0].get(),
+      animationFrames[1].get(),
+  };
 
-  models[0]->rotation.rotateY(defaultRotation[0]);
-  models[1]->rotation.rotateY(defaultRotation[1]);
-  models[2]->rotation.rotateY(defaultRotation[2]);
+  std::vector<u8> standStillSequence = {0, 1};
+  AnimationOptions idleAnimation;
+  idleAnimation.animationId = IDLE_ANIMATION;
+  idleAnimation.framesIndices = standStillSequence;
+  idleAnimation.durationInMs = 1000.0f;
+  idleAnimation.loop = true;
+  idleAnimation.wrapFrames = false;
 
-  models[0]->translation.translate(defaultPositions[0]);
-  models[1]->translation.translate(defaultPositions[1]);
-  models[2]->translation.translate(defaultPositions[2]);
-}
-
-void ScreenSkinSelection::unloadModels() {
-  for (size_t i = 0; i < models.size(); i++) {
-    for (size_t j = 0; j < models[i]->materials.size(); j++) {
-      textures[i]->removeLinkById(models[i]->materials[j]->id);
-    }
+  // Create the mannequins
+  for (size_t i = 0; i < mannequins.size(); i++) {
+    mannequins[i] = std::make_unique<Mannequin>();
+    mannequins[i]->setFrames(rawFrames, 2);
+    mannequins[i]->addAnimation(idleAnimation);
+    mannequins[i]->setAnimation(IDLE_ANIMATION);
   }
+
+  // The middle is larger
+  mannequins[0]->scale.scale(defaultScale[0]);
+  mannequins[1]->scale.scale(defaultScale[1]);
+  mannequins[2]->scale.scale(defaultScale[2]);
+
+  mannequins[0]->rotation.rotateY(defaultRotation[0]);
+  mannequins[1]->rotation.rotateY(defaultRotation[1]);
+  mannequins[2]->rotation.rotateY(defaultRotation[2]);
+
+  mannequins[0]->translation.translate(defaultPositions[0]);
+  mannequins[1]->translation.translate(defaultPositions[1]);
+  mannequins[2]->translation.translate(defaultPositions[2]);
 }
 
 void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
@@ -264,7 +265,7 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
 
     startScale = defaultScale;
     endScale = {
-        1.3f,
+        1.35f,
         1.0f,
         1.0f,
     };
@@ -288,7 +289,7 @@ void ScreenSkinSelection::startMoving(u8 _isMovingForward) {
     endScale = {
         1.0f,
         1.0f,
-        1.3f,
+        1.35f,
     };
 
     startPositions = defaultPositions;
@@ -304,38 +305,20 @@ void ScreenSkinSelection::moveForward(const float& deltaTime) {
   calcLerp(deltaTime);
 
   if (interpolation == 1.0f) {
-    TextureRepository* textureRepo = &t_renderer->getTextureRepository();
-
     stopMoving();
     selectPreviousSkin();
-
-    textureRepo->freeByMesh(models[0].get());
-    textureRepo->freeByMesh(models[1].get());
-    textureRepo->freeByMesh(models[2].get());
-
+    unloadSkinTextures();
     loadSkinTextures();
 
-    for (size_t i = 0; i < models.size(); i++) {
-      models[i].reset();
+    for (size_t i = 0; i < mannequins.size(); i++) {
+      mannequins[i]->rotation.identity();
+      mannequins[i]->rotation.rotateY(defaultRotation[i]);
 
-      models[i] = std::make_unique<DynamicMesh>(*baseMesh.get());
+      mannequins[i]->scale.identity();
+      mannequins[i]->scale.scale(defaultScale[i]);
 
-      models[i]->animation.loop = true;
-      models[i]->animation.setSequence(standStillSequence);
-      models[i]->animation.speed = 3.0F;
-
-      models[i]->rotation.identity();
-      models[i]->rotation.rotateY(defaultRotation[i]);
-
-      models[i]->scale.identity();
-      models[i]->scale.scale(defaultScale[i]);
-
-      models[i]->translation.identity();
-      models[i]->translation.translate(defaultPositions[i]);
-
-      auto& materials = models[i].get()->materials;
-      for (size_t j = 0; j < materials.size(); j++)
-        textures[i]->addLink(materials[j]->id);
+      mannequins[i]->translation.identity();
+      mannequins[i]->translation.translate(defaultPositions[i]);
     }
   }
 }
@@ -344,38 +327,20 @@ void ScreenSkinSelection::moveBackward(const float& deltaTime) {
   calcLerp(deltaTime);
 
   if (interpolation == 1.0f) {
-    TextureRepository* textureRepo = &t_renderer->getTextureRepository();
-
     stopMoving();
     selectNextSkin();
-
-    textureRepo->freeByMesh(models[0].get());
-    textureRepo->freeByMesh(models[1].get());
-    textureRepo->freeByMesh(models[2].get());
-
+    unloadSkinTextures();
     loadSkinTextures();
 
-    for (size_t i = 0; i < models.size(); i++) {
-      models[i].reset();
+    for (size_t i = 0; i < mannequins.size(); i++) {
+      mannequins[i]->rotation.identity();
+      mannequins[i]->rotation.rotateY(defaultRotation[i]);
 
-      models[i] = std::make_unique<DynamicMesh>(*baseMesh.get());
+      mannequins[i]->scale.identity();
+      mannequins[i]->scale.scale(defaultScale[i]);
 
-      models[i]->animation.loop = true;
-      models[i]->animation.setSequence(standStillSequence);
-      models[i]->animation.speed = 3.0F;
-
-      models[i]->rotation.identity();
-      models[i]->rotation.rotateY(defaultRotation[i]);
-
-      models[i]->scale.identity();
-      models[i]->scale.scale(defaultScale[i]);
-
-      models[i]->translation.identity();
-      models[i]->translation.translate(defaultPositions[i]);
-
-      auto& materials = models[i].get()->materials;
-      for (size_t j = 0; j < materials.size(); j++)
-        textures[i]->addLink(materials[j]->id);
+      mannequins[i]->translation.identity();
+      mannequins[i]->translation.translate(defaultPositions[i]);
     }
   }
 }
@@ -396,12 +361,9 @@ void ScreenSkinSelection::calcLerp(const float& deltaTime) {
   const float easedT = t * (2.0f - t);
 
   // rotation
-  tempRotation[0] =
-      Utils::lerp(startRotation[0], endRotation[0], easedT);
-  tempRotation[1] =
-      Utils::lerp(startRotation[1], endRotation[1], easedT);
-  tempRotation[2] =
-      Utils::lerp(startRotation[2], endRotation[2], easedT);
+  tempRotation[0] = Utils::lerp(startRotation[0], endRotation[0], easedT);
+  tempRotation[1] = Utils::lerp(startRotation[1], endRotation[1], easedT);
+  tempRotation[2] = Utils::lerp(startRotation[2], endRotation[2], easedT);
 
   // scale
   tempScale[0] = Utils::lerp(startScale[0], endScale[0], easedT);
@@ -413,14 +375,14 @@ void ScreenSkinSelection::calcLerp(const float& deltaTime) {
   tempPositions[1].lerp(startPositions[1], endPositions[1], easedT);
   tempPositions[2].lerp(startPositions[2], endPositions[2], easedT);
 
-  for (size_t i = 0; i < models.size(); i++) {
-    models[i]->rotation.identity();
-    models[i]->rotation.rotateY(tempRotation[i]);
+  for (size_t i = 0; i < mannequins.size(); i++) {
+    mannequins[i]->rotation.identity();
+    mannequins[i]->rotation.rotateY(tempRotation[i]);
 
-    models[i]->scale.identity();
-    models[i]->scale.scale(tempScale[i]);
+    mannequins[i]->scale.identity();
+    mannequins[i]->scale.scale(tempScale[i]);
 
-    models[i]->translation.identity();
-    models[i]->translation.translate(tempPositions[i]);
+    mannequins[i]->translation.identity();
+    mannequins[i]->translation.translate(tempPositions[i]);
   }
 }
