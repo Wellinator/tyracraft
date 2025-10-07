@@ -85,11 +85,12 @@ void Animated::setAnimation(const int animationId) {
               "\nMake sure to add the animation first using addAnimation().");
     return;
   }
-  
+
   const AnimationOptions& animationOptions = animations[animationId];
   currentAnimation = animationOptions.animationId;
   _currentAnimationFramesIndices = animationOptions.framesIndices;
   animationDurationInMs = animationOptions.durationInMs;
+  framesDurationsInMs = animationOptions.framesDurationsInMs;
 
   // If we zero the timer, we always start from the first frame
   // In this case, we want to keep the current timer position for a smooth
@@ -101,11 +102,12 @@ void Animated::setAnimation(const int animationId) {
 
   // The _lastAnimationFrameIndex will be the current frame before switching
   // to the new animation
-  _lastAnimationFrameIndex = _currentAnimationFrameIndex;
-
-  // The _lastAnimationFrameIndex now becomes the first frame of the new
-  // animation
   _lastAnimationFrameIndex = 0;
+  _currentAnimationFrameIndex = 0;
+
+  // The _currentAnimationFrameIndex now becomes the first frame of the new
+  // animation
+  _currentAnimationFrameIndex = getNextAnimationFrameIndex();
 
   onAnimationStart();
 }

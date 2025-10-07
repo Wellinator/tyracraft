@@ -81,8 +81,7 @@ class ScreenSkinSelection : public ScreenBase {
 
   StaPipOptions statPipOptions;
   StaticPipeline statPip;
-  const u8 IDLE_ANIMATION = 0;
-  std::array<std::unique_ptr<Tyra::Mesh>, 2> animationFrames;
+  std::array<std::unique_ptr<Tyra::Mesh>, 7> animationFrames;
   std::array<std::unique_ptr<Mannequin>, 3> mannequins;
 
   const float TRANSITION_SPEED = 1.5f;

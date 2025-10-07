@@ -10,7 +10,14 @@ using Tyra::Vec4;
 struct AnimationOptions {
   int animationId;
   std::vector<u8> framesIndices;
-  float durationInMs;
+
+  // Total duration of the animation in milliseconds. Primary
+  // frame duration is calculated based on this value
+  float durationInMs = 0.0f;
+
+  // Optional, used if durationInMs is not set. Apply per frame duration
+  std::vector<float> framesDurationsInMs = {};
+
   bool loop;
   bool wrapFrames;
 
@@ -28,7 +35,14 @@ class Animated {
   // Indices into _currentAnimationFramesIndices (not direct frame indices)
   int _lastAnimationFrameIndex = 0;     // Previous index in animation sequence
   int _currentAnimationFrameIndex = 0;  // Current index in animation sequence
-  float animationDurationInMs;
+
+  // Total duration of the animation in milliseconds. Primary
+  // frame duration is calculated based on this value
+  float animationDurationInMs = 0.0f;
+
+  // Optional, used if animationDurationInMs is not set. Apply per frame duration
+  std::vector<float> framesDurationsInMs = {};
+
   float animationTimer;
   bool isLooping;
   bool wrapFrames;

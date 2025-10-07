@@ -1,6 +1,7 @@
 #include "states/main_menu/screens/screen_skin_selection.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "managers/font/font_manager.hpp"
+#include "utils.hpp"
 
 ScreenSkinSelection::ScreenSkinSelection(StateMainMenu* t_context)
     : ScreenBase(t_context) {
@@ -20,14 +21,15 @@ ScreenSkinSelection::~ScreenSkinSelection() {
 }
 
 void ScreenSkinSelection::update(const float& deltaTime) {
-  handleInput();
-
-  if (isMoving)
+  if (isMoving) {
     isMovingForward ? moveForward(deltaTime) : moveBackward(deltaTime);
+  }
 
   mannequins[0]->update(deltaTime);
   mannequins[1]->update(deltaTime);
   mannequins[2]->update(deltaTime);
+
+  handleInput();
 }
 
 void ScreenSkinSelection::render() {
@@ -114,6 +116,7 @@ void ScreenSkinSelection::handleInput() {
   } else if (clickedButtons.Cross) {
     context->playClickSound();
     saveSkin();
+    backToMainMenu();
   }
 }
 
@@ -175,7 +178,6 @@ void ScreenSkinSelection::selectNextSkin() {
 void ScreenSkinSelection::saveSkin() {
   g_settings.skin = selectedSkin.name;
   SettingsManager::Save();
-  backToMainMenu();
 }
 
 void ScreenSkinSelection::loadSkinTextures() {
@@ -205,8 +207,8 @@ void ScreenSkinSelection::loadModels() {
   options.flipUVs = true;
   options.animation.count = 1;
 
-  // Load frames used for animation
-  for (size_t i = 0; i < animationFrames.size(); i++) {
+  // Load stand still animation frames
+  for (size_t i = 0; i < 2; i++) {
     std::unique_ptr<MeshBuilderData> tempFrameData = ObjLoader::load(
         FileUtils::fromCwd("models/player/stand_still/player_frame_" +
                            std::to_string(i + 1) + ".obj"),
@@ -216,25 +218,32 @@ void ScreenSkinSelection::loadModels() {
     animationFrames[i] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
   }
 
-  Tyra::Mesh* rawFrames[2] = {
-      animationFrames[0].get(),
-      animationFrames[1].get(),
-  };
+  // Load greeting animation frames
+  for (size_t i = 0; i < 5; i++) {
+    std::unique_ptr<MeshBuilderData> tempFrameData =
+        ObjLoader::load(FileUtils::fromCwd("models/player/greeting/frame_" +
+                                           std::to_string(i + 1) + ".obj"),
+                        options);
+    tempFrameData->loadNormals = false;
+    tempFrameData->loadLightmap = false;
 
-  std::vector<u8> standStillSequence = {0, 1};
-  AnimationOptions idleAnimation;
-  idleAnimation.animationId = IDLE_ANIMATION;
-  idleAnimation.framesIndices = standStillSequence;
-  idleAnimation.durationInMs = 1000.0f;
-  idleAnimation.loop = true;
-  idleAnimation.wrapFrames = false;
+    // +2 because the first two are stand still frames
+    animationFrames[i + 2] = std::make_unique<Tyra::Mesh>(tempFrameData.get());
+  }
+
+  Tyra::Mesh* rawFrames[7] = {
+      // Stand still animation frames
+      animationFrames[0].get(), animationFrames[1].get(),
+
+      // Greeting animation frames
+      animationFrames[2].get(), animationFrames[3].get(),
+      animationFrames[4].get(), animationFrames[5].get(),
+      animationFrames[6].get()};
 
   // Create the mannequins
   for (size_t i = 0; i < mannequins.size(); i++) {
     mannequins[i] = std::make_unique<Mannequin>();
-    mannequins[i]->setFrames(rawFrames, 2);
-    mannequins[i]->addAnimation(idleAnimation);
-    mannequins[i]->setAnimation(IDLE_ANIMATION);
+    mannequins[i]->setFrames(rawFrames, animationFrames.size());
   }
 
   // The middle is larger
