@@ -48,6 +48,7 @@ void renderDebugMenu() {
       {"World Info", &g_debug_menu.showWorldInfo, true},
       {"Liquid Propagation", &g_debug_menu.showLiquidPropagationInfo, true},
       {"Render Mob Pathfinding", &g_debug_menu.showMobPathfinding, true},
+    {"Log Pathfinding", &g_debug_menu.logPathfinding, true},
       {"Day/Night Cycle", &g_debug_menu.enableDayNightCycle, true},
       {"Clouds", &g_debug_menu.enableClouds, true},
       {"Render Opaque", &g_debug_menu.enableRenderOpaque, true},
@@ -168,51 +169,54 @@ void handleDebugInput(Pad* pPad) {
         optionToToggle = &g_debug_menu.showMobPathfinding;
         break;
       case 8:
-        optionToToggle = &g_debug_menu.enableDayNightCycle;
+        optionToToggle = &g_debug_menu.logPathfinding;
         break;
       case 9:
-        optionToToggle = &g_debug_menu.enableClouds;
+        optionToToggle = &g_debug_menu.enableDayNightCycle;
         break;
       case 10:
-        optionToToggle = &g_debug_menu.enableRenderOpaque;
+        optionToToggle = &g_debug_menu.enableClouds;
         break;
       case 11:
-        optionToToggle = &g_debug_menu.enableRenderTranslucent;
+        optionToToggle = &g_debug_menu.enableRenderOpaque;
         break;
       case 12:
-        optionToToggle = &g_debug_menu.enableRenderParticles;
+        optionToToggle = &g_debug_menu.enableRenderTranslucent;
         break;
       case 13:
-        optionToToggle = &g_debug_menu.enableRenderMobs;
+        optionToToggle = &g_debug_menu.enableRenderParticles;
         break;
       case 14:
-        optionToToggle = &g_debug_menu.enableRenderPlayers;
+        optionToToggle = &g_debug_menu.enableRenderMobs;
         break;
       case 15:
-        optionToToggle = &g_debug_menu.enableRenderBlockDamage;
+        optionToToggle = &g_debug_menu.enableRenderPlayers;
         break;
       case 16:
-        optionToToggle = &g_debug_menu.enableRenderUI;
+        optionToToggle = &g_debug_menu.enableRenderBlockDamage;
         break;
       case 17:
-        optionToToggle = &g_debug_menu.enablePostFx;
+        optionToToggle = &g_debug_menu.enableRenderUI;
         break;
       case 18:
-        optionToToggle = &g_debug_menu.showBlockUpdateInfo;
+        optionToToggle = &g_debug_menu.enablePostFx;
         break;
       case 19:
-        optionToToggle = &g_debug_menu.showChunkUpdateInfo;
+        optionToToggle = &g_debug_menu.showBlockUpdateInfo;
         break;
       case 20:
-        optionToToggle = &g_debug_menu.showLightUpdateInfo;
+        optionToToggle = &g_debug_menu.showChunkUpdateInfo;
         break;
       case 21:
-        optionToToggle = &g_debug_menu.godMode;
+        optionToToggle = &g_debug_menu.showLightUpdateInfo;
         break;
       case 22:
-        optionToToggle = &g_debug_menu.noclipMode;
+        optionToToggle = &g_debug_menu.godMode;
         break;
       case 23:
+        optionToToggle = &g_debug_menu.noclipMode;
+        break;
+      case 24:
         optionToToggle = &g_debug_menu.logChunkMemoryUsage;
         break;
     }

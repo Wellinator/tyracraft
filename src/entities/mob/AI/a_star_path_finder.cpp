@@ -3,6 +3,7 @@
 #include "entities/mob/AI/priority_queue.hpp"
 #include "entities/level.hpp"
 #include "utils.hpp"
+#include "debug.hpp"
 
 void AStarPathFinder::TracePath(const Vec4& start, const Vec4& goal,
                                 std::unordered_map<int, Vec4>* parents,
@@ -27,11 +28,13 @@ void AStarPathFinder::TracePath(const Vec4& start, const Vec4& goal,
   list->emplace_back(fixedWorldPos);
 
 #ifdef DEBUG_MODE
-  TYRA_LOG("AStarPathFinder::TracePath START");
-  for (size_t i = 0; i < list->size(); i++) {
-    (*list)[i].print("TracePath: ");
+  if (g_debug_menu.logPathfinding) {
+    TYRA_LOG("AStarPathFinder::TracePath START");
+    for (size_t i = 0; i < list->size(); i++) {
+      (*list)[i].print("TracePath: ");
+    }
+    TYRA_LOG("AStarPathFinder::TracePath END");
   }
-  TYRA_LOG("AStarPathFinder::TracePath END");
 #endif
 }
 

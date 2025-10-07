@@ -7,6 +7,7 @@
 #include "entities/level.hpp"
 #include "entities/chunk.hpp"
 #include "managers/chunk_manager.hpp"
+#include "debug.hpp"
 #include <memory>
 
 class StateResolver;
@@ -44,8 +45,10 @@ class WanderState : public MobState {
       if (pLevel->BoundCheckMap(offsetTarget.x, offsetTarget.y,
                                 offsetTarget.z)) {
 #ifdef DEBUG_MODE
-        offsetStart.print("From: ");
-        offsetTarget.print("To: ");
+        if (g_debug_menu.logPathfinding) {
+          offsetStart.print("From: ");
+          offsetTarget.print("To: ");
+        }
 #endif
 
         // Prevent to move to an unloaded chunk

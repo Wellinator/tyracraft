@@ -24,6 +24,8 @@ struct DebugMenu {
   u8 showLightUpdateInfo = false;
   u8 showLiquidPropagationInfo = false;
   u8 showMobPathfinding = false;
+  // When enabled, print detailed logs for pathfinding routines
+  u8 logPathfinding = false;
   u8 enableDayNightCycle = true;
   u8 enableClouds = true;
   u8 enableRenderOpaque = true;
