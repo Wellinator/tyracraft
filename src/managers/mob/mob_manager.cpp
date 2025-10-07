@@ -189,8 +189,9 @@ Mob* MobManager::trySpawningMobAtPosition(const MobCategory category,
     case MobType::Cow:
       position.print("Spawning mob at: ");
       mob = _createMobAtPosition(type, position);
+      break;
     default:
-      TYRA_ERROR("Invalid MobType!");
+      TYRA_TRAP("Invalid MobType!");
       return nullptr;
   }
 
