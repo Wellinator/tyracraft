@@ -20,6 +20,8 @@
 #include "managers/block/StaticBlockRepository.hpp"
 #include <tyra>
 
+#define MAX_TILES 16
+
 using Tyra::Audio;
 using Tyra::McpipBlock;
 using Tyra::Mesh;
@@ -48,6 +50,9 @@ class BlockManager : public Singleton<BlockManager> {
 
   float getBlockBreakingTime(Block* targetBlock);
   u8 getBlockLightValue(Blocks blockType);
+
+  const u8 inline getMaxTilesPerRow() const { return MAX_TILES; }
+  const u8 inline getMaxTilesPerCol() const { return MAX_TILES; }
 
  private:
   void registerBlockSoundsEffects();
