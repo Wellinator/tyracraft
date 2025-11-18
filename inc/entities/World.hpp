@@ -136,6 +136,7 @@ class World {
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
 
+  inline size_t getVisibleChunksCount() { return chunkManager.getVisibleChunks()->size(); };
   inline size_t getChunksToLoadCount() { return tempChunksToLoad.size(); };
   inline size_t getChunksToUnloadCount() { return tempChunksToUnLoad.size(); };
   inline size_t getChunksToUpdateLightCount() {
