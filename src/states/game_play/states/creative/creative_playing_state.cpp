@@ -73,15 +73,15 @@ void CreativePlayingState::render() {
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  // PostFX
-  postFxManager.render(
-      stateGamePlay->world->dayNightCycleManager.getSkyColor());
-
+  // PostFX - APÓS TUDO, sem alterar estado do GS
+  postFxManager.renderFog(Color(200, 50, 50, 128));
+  
   // General 2D sftuff
   renderCreativeUi();
 
   if (g_debug_mode) drawDebugInfo();
   if (isInventoryOpened()) stateGamePlay->ui->renderInventoryMenu();
+
 }
 
 void CreativePlayingState::handleInput(const float& deltaTime) {

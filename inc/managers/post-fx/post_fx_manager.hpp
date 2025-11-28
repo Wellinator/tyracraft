@@ -16,35 +16,50 @@ typedef enum {
   CHANNEL_ALPHA,
 } ColourChannels;
 
+typedef struct {
+  unsigned char enable;
+  unsigned char method;
+  unsigned char compval;
+  unsigned char keep;
+} ALPHATEST;
+
+typedef struct {
+  unsigned char enable;
+  unsigned char pass;
+} DESTTEST;
+
+typedef struct {
+  unsigned char enable;
+  unsigned char method;
+} DEPTHTEST;
+
+typedef struct {
+  char color1;
+  char color2;
+  char alpha;
+  char color3;
+  unsigned char fixed_alpha;
+} BLEND;
+
 class PostFxManager : public Singleton<PostFxManager> {
  public:
   PostFxManager(Renderer* renderer);
   ~PostFxManager();
 
-  void render(Color fogColor = Color(150, 150, 150));
-  void updateDebugPallet();
+  void renderFog(Color fogColor);
 
  private:
-  int debugPalletIndex = 0;
   constexpr static float gsCenter = 4096.0F;
   constexpr static float screenCenter = gsCenter / 2.0F;
 
   Renderer* pRenderer = nullptr;
   const RendererSettings& settings;
-
-  Texture* pFogTexture;
-  Texture* pDepthBufferTexture;
-
-  void init();
-  void renderFog(Color fogColor);
-  void copyDepthBuffer(ColourChannels channelIn, Texture* palette);
-  void scaleDepthMask(Texture* palette, uint8_t initial_value,
-                      uint8_t factors[16]);
+  
+  void setTwTh(int w, int h, int* tw, int* th);
   void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
                           uint32_t blockX, uint32_t blockY, uint32_t source,
                           uint32_t width, uint32_t height,
                           uint32_t paletteAddress);
-  void setTwTh(int w, int h, int* tw, int* th);
 
   static inline uint32_t lzw(uint32_t val) {
     uint32_t res;

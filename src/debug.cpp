@@ -11,12 +11,88 @@ u8 g_debug_mode = false;
 DebugMenu g_debug_menu;
 int g_selected_debug_menu_item = 0;
 
+// Helper struct to organize menu items by tab
+struct MenuItem {
+  const char* label;
+  u8* value;
+  DebugMenuTab tab;
+};
+
+// Define all menu items with their respective tabs
+static MenuItem g_all_menu_items[] = {
+    // GENERAL tab
+    {"Render Opaque", &g_debug_menu.enableRenderOpaque, DebugMenuTab::GENERAL},
+    {"Render Translucent", &g_debug_menu.enableRenderTranslucent, DebugMenuTab::GENERAL},
+    {"Render Particles", &g_debug_menu.enableRenderParticles, DebugMenuTab::GENERAL},
+    {"Render Mobs", &g_debug_menu.enableRenderMobs, DebugMenuTab::GENERAL},
+    {"Render Players", &g_debug_menu.enableRenderPlayers, DebugMenuTab::GENERAL},
+    {"Render Block Damage", &g_debug_menu.enableRenderBlockDamage, DebugMenuTab::GENERAL},
+    {"Render UI", &g_debug_menu.enableRenderUI, DebugMenuTab::GENERAL},
+    {"Day/Night Cycle", &g_debug_menu.enableDayNightCycle, DebugMenuTab::GENERAL},
+    {"Clouds", &g_debug_menu.enableClouds, DebugMenuTab::GENERAL},
+    {"Collision Boxes", &g_debug_menu.showCollisionBoxes, DebugMenuTab::GENERAL},
+    {"Chunk Borders", &g_debug_menu.showChunkBorders, DebugMenuTab::GENERAL},
+    {"Player Bounding Box", &g_debug_menu.showPlayerBoundingBox, DebugMenuTab::GENERAL},
+    {"Targeted Block Box", &g_debug_menu.showTargetedBlockBoundingBox, DebugMenuTab::GENERAL},
+    {"Player Info", &g_debug_menu.showPlayerInfo, DebugMenuTab::GENERAL},
+    {"World Info", &g_debug_menu.showWorldInfo, DebugMenuTab::GENERAL},
+    {"Block Update Info", &g_debug_menu.showBlockUpdateInfo, DebugMenuTab::GENERAL},
+    {"Chunk Update Info", &g_debug_menu.showChunkUpdateInfo, DebugMenuTab::GENERAL},
+    {"Light Update Info", &g_debug_menu.showLightUpdateInfo, DebugMenuTab::GENERAL},
+    {"Liquid Propagation", &g_debug_menu.showLiquidPropagationInfo, DebugMenuTab::GENERAL},
+    {"Render Mob Pathfinding", &g_debug_menu.showMobPathfinding, DebugMenuTab::GENERAL},
+    {"God Mode", &g_debug_menu.godMode, DebugMenuTab::GENERAL},
+    {"Noclip Mode", &g_debug_menu.noclipMode, DebugMenuTab::GENERAL},
+    
+    // POST_FX tab
+    {"Post FX", &g_debug_menu.enablePostFx, DebugMenuTab::POST_FX},
+    {"Fog: Setup", &g_debug_menu.fogPassSetup, DebugMenuTab::POST_FX},
+    {"Fog: First Pass", &g_debug_menu.fogPass1, DebugMenuTab::POST_FX},
+    {"Fog: Second Pass", &g_debug_menu.fogPass2, DebugMenuTab::POST_FX},
+    {"Fog: Third Pass", &g_debug_menu.fogPass3, DebugMenuTab::POST_FX},
+    {"Fog: Fourth Pass", &g_debug_menu.fogPass4, DebugMenuTab::POST_FX},
+    {"Fog: Fifth Pass", &g_debug_menu.fogPass5, DebugMenuTab::POST_FX},
+    {"Fog: Sixth Pass", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
+    {"Fog: Restore GS State", &g_debug_menu.fogPassRestore, DebugMenuTab::POST_FX},
+    
+    // WORLD_INFO tab
+    
+    // GAMEPLAY tab
+    
+    // PERFORMANCE tab
+    {"Log Pathfinding", &g_debug_menu.logPathfinding, DebugMenuTab::PERFORMANCE},
+    {"Log Chunk Memory Usage", &g_debug_menu.logChunkMemoryUsage, DebugMenuTab::PERFORMANCE},
+};
+
+static const int g_total_menu_items = sizeof(g_all_menu_items) / sizeof(MenuItem);
+
+// Get tab name
+const char* getTabName(DebugMenuTab tab) {
+  switch (tab) {
+    case DebugMenuTab::GENERAL: return "GENERAL";
+    case DebugMenuTab::POST_FX: return "POST FX";
+    case DebugMenuTab::WORLD_INFO: return "WORLD INFO";
+    case DebugMenuTab::GAMEPLAY: return "GAMEPLAY";
+    case DebugMenuTab::PERFORMANCE: return "PERFORMANCE";
+    default: return "UNKNOWN";
+  }
+}
+
+// Count items in current tab
+int getItemCountForTab(DebugMenuTab tab) {
+  int count = 0;
+  for (int i = 0; i < g_total_menu_items; i++) {
+    if (g_all_menu_items[i].tab == tab) {
+      count++;
+    }
+  }
+  return count;
+}
+
 void renderDebugMenu() {
-  const float screenWidth = 512.0F;
-  const float screenHeight = 448.0F;
   const float defaultFontSize = 0.60F;
   float startX = 5.0F;
-  float startY = 50.0F;
+  float startY = 30.0F;
   float lineHeight = 12.0F;
   float currentY = startY;
   float currentX = startX;
@@ -29,60 +105,49 @@ void renderDebugMenu() {
                            defaultFontSize, TextAlignment::Left);
   FontOptions selectedOptions(Vec2(0, 0), Color(255.0F, 255.0F, 255.0F),
                               defaultFontSize, TextAlignment::Left);
+  FontOptions tabOptions(Vec2(0, 0), Color(100.0F, 150.0F, 255.0F),
+                         defaultFontSize, TextAlignment::Left);
+  FontOptions activeTabOptions(Vec2(0, 0), Color(255.0F, 200.0F, 100.0F),
+                               defaultFontSize + 0.1F, TextAlignment::Left);
 
   FontManager& fm = FontManager::getInstanceRef();
-
-  // Define menu items
-  struct MenuItem {
-    const char* label;
-    u8* value;
-    bool isToggleable;
-  };
-
-  MenuItem menuItems[] = {
-      {"Collision Boxes", &g_debug_menu.showCollisionBoxes, true},
-      {"Chunk Borders", &g_debug_menu.showChunkBorders, true},
-      {"Player Bounding Box", &g_debug_menu.showPlayerBoundingBox, true},
-      {"Targeted Block Box", &g_debug_menu.showTargetedBlockBoundingBox, true},
-      {"Player Info", &g_debug_menu.showPlayerInfo, true},
-      {"World Info", &g_debug_menu.showWorldInfo, true},
-      {"Liquid Propagation", &g_debug_menu.showLiquidPropagationInfo, true},
-      {"Render Mob Pathfinding", &g_debug_menu.showMobPathfinding, true},
-    {"Log Pathfinding", &g_debug_menu.logPathfinding, true},
-      {"Day/Night Cycle", &g_debug_menu.enableDayNightCycle, true},
-      {"Clouds", &g_debug_menu.enableClouds, true},
-      {"Render Opaque", &g_debug_menu.enableRenderOpaque, true},
-      {"Render Translucent", &g_debug_menu.enableRenderTranslucent, true},
-      {"Render Particles", &g_debug_menu.enableRenderParticles, true},
-      {"Render Mobs", &g_debug_menu.enableRenderMobs, true},
-      {"Render Players", &g_debug_menu.enableRenderPlayers, true},
-      {"Render Block Damage", &g_debug_menu.enableRenderBlockDamage, true},
-      {"Render UI", &g_debug_menu.enableRenderUI, true},
-      {"Post FX", &g_debug_menu.enablePostFx, true},
-      {"Block Update Info", &g_debug_menu.showBlockUpdateInfo, true},
-      {"Chunk Update Info", &g_debug_menu.showChunkUpdateInfo, true},
-      {"Light Update Info", &g_debug_menu.showLightUpdateInfo, true},
-      {"God Mode", &g_debug_menu.godMode, true},
-      {"Noclip Mode", &g_debug_menu.noclipMode, true},
-      {"Log Chunk Memory Usage", &g_debug_menu.logChunkMemoryUsage, true},
-  };
-
-  const int numItems = sizeof(menuItems) / sizeof(MenuItem);
 
   // Render title
   labelOptions.position = Vec2(currentX, currentY);
   fm.printText("=== DEBUG MENU ===", labelOptions);
   currentY += lineHeight * 1.5F;
 
-  // Render menu items
-  for (int i = 0; i < numItems; i++) {
-    bool isSelected = (i == g_selected_debug_menu_item);
+  // Render tabs
+  float tabX = currentX;
+  for (int t = 0; t < static_cast<int>(DebugMenuTab::COUNT); t++) {
+    DebugMenuTab tab = static_cast<DebugMenuTab>(t);
+    bool isCurrentTab = (tab == g_debug_menu.currentTab);
+    
+    FontOptions* tabOpt = isCurrentTab ? &activeTabOptions : &tabOptions;
+    std::string tabText = isCurrentTab ? "[" : " ";
+    tabText += getTabName(tab);
+    tabText += isCurrentTab ? "]" : " ";
+    
+    tabOpt->position = Vec2(tabX, currentY);
+    fm.printText(tabText, *tabOpt);
+    tabX += 80.0F; // Spacing between tabs
+  }
+  currentY += lineHeight * 2.0F;
+
+  // Render menu items for current tab
+  int itemIndexInTab = 0;
+  for (int i = 0; i < g_total_menu_items; i++) {
+    if (g_all_menu_items[i].tab != g_debug_menu.currentTab) {
+      continue;
+    }
+
+    bool isSelected = (itemIndexInTab == g_selected_debug_menu_item);
 
     // Choose color based on selection and state
     FontOptions* options;
     if (isSelected) {
       options = &selectedOptions;
-    } else if (*(menuItems[i].value)) {
+    } else if (*(g_all_menu_items[i].value)) {
       options = &turnedOnOptions;
     } else {
       options = &turnedOffOptions;
@@ -90,18 +155,23 @@ void renderDebugMenu() {
 
     // Add selection indicator
     std::string text = isSelected ? "> " : "  ";
-    text += menuItems[i].label;
+    text += g_all_menu_items[i].label;
     text += ": ";
-    text += (*(menuItems[i].value)) ? "ON" : "OFF";
+    text += (*(g_all_menu_items[i].value)) ? "ON" : "OFF";
 
     options->position = Vec2(currentX, currentY);
     fm.printText(text, *options);
     currentY += lineHeight;
+    itemIndexInTab++;
   }
 
   // Render instructions
   const float instructionOffset = 10.0F;
   currentY += instructionOffset;
+
+  labelOptions.position = Vec2(currentX, currentY);
+  fm.printText("L1/R1: Switch Tab", labelOptions);
+  currentY += lineHeight;
 
   labelOptions.position = Vec2(currentX, currentY);
   fm.printText("D-Pad Up/Down: Navigate", labelOptions);
@@ -120,109 +190,60 @@ void handleDebugInput(Pad* pPad) {
 
   const auto& clicked = pPad->getClicked();
 
-  // Calculate total number of menu items (25 toggleable items)
-  const int totalItems = 25;
+  // Switch tabs with L1/R1
+  if (clicked.L1) {
+    int currentTabIndex = static_cast<int>(g_debug_menu.currentTab);
+    currentTabIndex--;
+    if (currentTabIndex < 0) {
+      currentTabIndex = static_cast<int>(DebugMenuTab::COUNT) - 1;
+    }
+    g_debug_menu.currentTab = static_cast<DebugMenuTab>(currentTabIndex);
+    g_selected_debug_menu_item = 0; // Reset selection when changing tabs
+  }
+
+  if (clicked.R1) {
+    int currentTabIndex = static_cast<int>(g_debug_menu.currentTab);
+    currentTabIndex++;
+    if (currentTabIndex >= static_cast<int>(DebugMenuTab::COUNT)) {
+      currentTabIndex = 0;
+    }
+    g_debug_menu.currentTab = static_cast<DebugMenuTab>(currentTabIndex);
+    g_selected_debug_menu_item = 0; // Reset selection when changing tabs
+  }
+
+  // Get number of items in current tab
+  int itemsInCurrentTab = getItemCountForTab(g_debug_menu.currentTab);
 
   // Navigate up
   if (clicked.DpadUp) {
     g_selected_debug_menu_item--;
     if (g_selected_debug_menu_item < 0) {
-      g_selected_debug_menu_item = totalItems - 1;
+      g_selected_debug_menu_item = itemsInCurrentTab - 1;
     }
   }
 
   // Navigate down
   if (clicked.DpadDown) {
     g_selected_debug_menu_item++;
-    if (g_selected_debug_menu_item >= totalItems) {
+    if (g_selected_debug_menu_item >= itemsInCurrentTab) {
       g_selected_debug_menu_item = 0;
     }
   }
 
-  // Toggle option or adjust camera speed
+  // Toggle option
   if (clicked.Cross) {
-    // Toggle boolean options
-    u8* optionToToggle = nullptr;
-    switch (g_selected_debug_menu_item) {
-      case 0:
-        optionToToggle = &g_debug_menu.showCollisionBoxes;
+    // Find the selected item in the current tab
+    int itemIndexInTab = 0;
+    for (int i = 0; i < g_total_menu_items; i++) {
+      if (g_all_menu_items[i].tab != g_debug_menu.currentTab) {
+        continue;
+      }
+      
+      if (itemIndexInTab == g_selected_debug_menu_item) {
+        *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
         break;
-      case 1:
-        optionToToggle = &g_debug_menu.showChunkBorders;
-        break;
-      case 2:
-        optionToToggle = &g_debug_menu.showPlayerBoundingBox;
-        break;
-      case 3:
-        optionToToggle = &g_debug_menu.showTargetedBlockBoundingBox;
-        break;
-      case 4:
-        optionToToggle = &g_debug_menu.showPlayerInfo;
-        break;
-      case 5:
-        optionToToggle = &g_debug_menu.showWorldInfo;
-        break;
-      case 6:
-        optionToToggle = &g_debug_menu.showLiquidPropagationInfo;
-        break;
-      case 7:
-        optionToToggle = &g_debug_menu.showMobPathfinding;
-        break;
-      case 8:
-        optionToToggle = &g_debug_menu.logPathfinding;
-        break;
-      case 9:
-        optionToToggle = &g_debug_menu.enableDayNightCycle;
-        break;
-      case 10:
-        optionToToggle = &g_debug_menu.enableClouds;
-        break;
-      case 11:
-        optionToToggle = &g_debug_menu.enableRenderOpaque;
-        break;
-      case 12:
-        optionToToggle = &g_debug_menu.enableRenderTranslucent;
-        break;
-      case 13:
-        optionToToggle = &g_debug_menu.enableRenderParticles;
-        break;
-      case 14:
-        optionToToggle = &g_debug_menu.enableRenderMobs;
-        break;
-      case 15:
-        optionToToggle = &g_debug_menu.enableRenderPlayers;
-        break;
-      case 16:
-        optionToToggle = &g_debug_menu.enableRenderBlockDamage;
-        break;
-      case 17:
-        optionToToggle = &g_debug_menu.enableRenderUI;
-        break;
-      case 18:
-        optionToToggle = &g_debug_menu.enablePostFx;
-        break;
-      case 19:
-        optionToToggle = &g_debug_menu.showBlockUpdateInfo;
-        break;
-      case 20:
-        optionToToggle = &g_debug_menu.showChunkUpdateInfo;
-        break;
-      case 21:
-        optionToToggle = &g_debug_menu.showLightUpdateInfo;
-        break;
-      case 22:
-        optionToToggle = &g_debug_menu.godMode;
-        break;
-      case 23:
-        optionToToggle = &g_debug_menu.noclipMode;
-        break;
-      case 24:
-        optionToToggle = &g_debug_menu.logChunkMemoryUsage;
-        break;
-    }
-
-    if (optionToToggle != nullptr) {
-      *optionToToggle = !(*optionToToggle);
+      }
+      itemIndexInTab++;
     }
   }
 
