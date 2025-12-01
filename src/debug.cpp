@@ -1,6 +1,7 @@
 #include "debug.hpp"
 #include "managers/font/font_options.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/post-fx/post_fx_manager.hpp"
 #include <string>
 #include <cstdio>
 
@@ -54,6 +55,7 @@ static MenuItem g_all_menu_items[] = {
     {"Fog: Fifth Pass", &g_debug_menu.fogPass5, DebugMenuTab::POST_FX},
     {"Fog: Sixth Pass", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
     {"Fog: Restore GS State", &g_debug_menu.fogPassRestore, DebugMenuTab::POST_FX},
+    {"Fog: Use Custom CLIP_Z", &g_debug_menu.fogUseCustomClipZ, DebugMenuTab::POST_FX},
     
     // WORLD_INFO tab
     
@@ -165,6 +167,30 @@ void renderDebugMenu() {
     itemIndexInTab++;
   }
 
+  // Render CLIP_ZVALUE adjustment when enabled
+  if (g_debug_menu.currentTab == DebugMenuTab::POST_FX && 
+      g_debug_menu.fogUseCustomClipZ) {
+    currentY += lineHeight * 0.5F;
+    
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("--- CLIP_Z Adjustment ---", labelOptions);
+    currentY += lineHeight;
+    
+    char valueStr[64];
+    snprintf(valueStr, sizeof(valueStr), "  Value: 0x%06X (%d)", 
+             g_debug_menu.fogClipZValue, g_debug_menu.fogClipZValue);
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText(valueStr, labelOptions);
+    currentY += lineHeight;
+    
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  L2/R2: +/- 0x1000", labelOptions);
+    currentY += lineHeight;
+    
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  Left/Right: +/- 0x100", labelOptions);
+  }
+
   // Render instructions
   const float instructionOffset = 10.0F;
   currentY += instructionOffset;
@@ -189,6 +215,7 @@ void handleDebugInput(Pad* pPad) {
   if (!g_debug_menu.showDebugMenu) return;
 
   const auto& clicked = pPad->getClicked();
+  const auto& pressed = pPad->getPressed();
 
   // Switch tabs with L1/R1
   if (clicked.L1) {
@@ -211,19 +238,41 @@ void handleDebugInput(Pad* pPad) {
     g_selected_debug_menu_item = 0; // Reset selection when changing tabs
   }
 
+  // Adjust CLIP_ZVALUE when custom mode is enabled
+  if (g_debug_menu.fogUseCustomClipZ) {
+    auto& postFxManager = PostFxManager::getInstance();
+    
+    if (pressed.L2) {
+      postFxManager.adjustClipZValue(-0x1000);
+      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+    }
+    if (pressed.R2) {
+      postFxManager.adjustClipZValue(0x1000);
+      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+    }
+    if (pressed.DpadLeft) {
+      postFxManager.adjustClipZValue(-0x100);
+      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+    }
+    if (pressed.DpadRight) {
+      postFxManager.adjustClipZValue(0x100);
+      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+    }
+  }
+
   // Get number of items in current tab
   int itemsInCurrentTab = getItemCountForTab(g_debug_menu.currentTab);
 
-  // Navigate up
-  if (clicked.DpadUp) {
+  // Navigate up (skip when adjusting CLIP_Z with DpadLeft/Right)
+  if (clicked.DpadUp && !g_debug_menu.fogUseCustomClipZ) {
     g_selected_debug_menu_item--;
     if (g_selected_debug_menu_item < 0) {
       g_selected_debug_menu_item = itemsInCurrentTab - 1;
     }
   }
 
-  // Navigate down
-  if (clicked.DpadDown) {
+  // Navigate down (skip when adjusting CLIP_Z with DpadLeft/Right)
+  if (clicked.DpadDown && !g_debug_menu.fogUseCustomClipZ) {
     g_selected_debug_menu_item++;
     if (g_selected_debug_menu_item >= itemsInCurrentTab) {
       g_selected_debug_menu_item = 0;
@@ -241,6 +290,21 @@ void handleDebugInput(Pad* pPad) {
       
       if (itemIndexInTab == g_selected_debug_menu_item) {
         *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
+        
+        // Sincronizar com PostFxManager quando togglear "Fog: Use Custom CLIP_Z"
+        if (g_all_menu_items[i].value == &g_debug_menu.fogUseCustomClipZ) {
+          auto& postFxManager = PostFxManager::getInstance();
+          
+          if (g_debug_menu.fogUseCustomClipZ) {
+            // Ao ativar, sincronizar valor atual do PostFxManager
+            g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+          } else {
+            // Ao desativar, resetar para valor padrão
+            postFxManager.resetClipZValueToDefault();
+            g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+          }
+        }
+        
         break;
       }
       itemIndexInTab++;

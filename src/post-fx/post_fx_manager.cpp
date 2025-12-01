@@ -231,7 +231,8 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   // Inverter o Z (como feito no Passo 1)
   uint32_t zInvertido = 0xFFFFFF - zOriginal;
 
-  return zInvertido;
+  // Retornar apenas os 24 bits úteis
+  return zInvertido & 0x00FFFFFF;
 }
 
 void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
@@ -249,10 +250,46 @@ PostFxManager::PostFxManager(Renderer* renderer)
 
 PostFxManager::~PostFxManager() {};
 
+void PostFxManager::setClipZValue(uint32_t value) {
+  // Clampar valor entre 0x000000 e 0xFFFFFF
+  CLIP_ZVALUE = value & 0x00FFFFFF;
+}
+
+void PostFxManager::adjustClipZValue(int delta) {
+  int64_t newValue = static_cast<int64_t>(CLIP_ZVALUE) + delta;
+  
+  // Clampar entre 0 e 0xFFFFFF
+  if (newValue < 0) {
+    newValue = 0;
+  } else if (newValue > 0xFFFFFF) {
+    newValue = 0xFFFFFF;
+  }
+  
+  CLIP_ZVALUE = static_cast<uint32_t>(newValue);
+}
+
+void PostFxManager::resetClipZValueToDefault() {
+  CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
+}
+
 void PostFxManager::renderFog(Color fogColor) {
 #ifdef DEBUG_MODE
   if (g_debug_menu.enablePostFx == false) return;
 #endif  // DEBUG_MODE
+
+  // ===== DOCUMENTAÇÃO TÉCNICA: Depth of Field com Z-Buffer Fog =====
+  // Baseado em técnica original Sony (fog.txt - 640x448)
+  // Adaptado para 512x448 com channel shuffle G→A (16-bit mode)
+  //
+  // Passes:
+  // 1. Invert Z-buffer values (para usar ZGREATER em Pass 2)
+  // 2. Clip objetos próximos (remove da máscara de profundidade)
+  // 3. Channel copy: G-channel do Z-buffer → Alpha-channel do framebuffer
+  //    - Usa 16-bit mode (PSMCT16S) para channel shuffle
+  //    - Copia em strips de 8 pixels com offset +8 para ler canal G
+  // 4. Downsample framebuffer para workbuffer (width/2 × height/2)
+  // 5. Draw workbuffer com alpha blending (profundidade como máscara)
+  // 6. Aplicar cor fog e saturação
 
   const uint32_t width = settings.getWidth();
   const uint32_t height = settings.getHeight();
@@ -269,7 +306,6 @@ void PostFxManager::renderFog(Color fogColor) {
 
   qword_t packets[200] ALIGNED(64);
   qword_t* q = packets;
-
 
   // ===== PASS 1 & 2: Clipar Z-Buffer =====
   // Remove objetos próximos do zbuffer para que não recebam fog
@@ -395,13 +431,14 @@ void PostFxManager::renderFog(Color fogColor) {
     q++;
 
     // Textura de origem (Z-Buffer) lida como 16-bit
-    // TW=10, TH=10 (1024x1024) como no código original
+    // TW=10, TH=10 (1024x1024) fixos para channel shuffle, como no código original
     PACK_GIFTAG(q,
                 GS_SET_TEX0(zbufferAddr >> 6, width >> 6, GS_PSM_16S,
                             10, 10, 1, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
 
+    // TEX1 com NEAREST/NEAREST para evitar qualquer filtragem (equivalente ao fog.txt)
     PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 0, 0, 0, 0, 0), GS_REG_TEX1_1);
     q++;
 
@@ -426,8 +463,9 @@ void PostFxManager::renderFog(Color fogColor) {
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
     // Desenhar strips conforme código original: width >> 4 strips
-    // Para 512px = 32 strips
-    int strips = width >> 4;
+    // Para 512px = 32 strips de 8 pixels cada
+    // Técnica: copia strip de 8 pixels (256 em UV coords) por iteração
+    int strips = width >> 4;  // width / 16 = número de strips
 
     for (int i = 0; i < strips; i++) {
       q = packets;
@@ -440,18 +478,18 @@ void PostFxManager::renderFog(Color fogColor) {
               (GIF_REG_XYZ2 << 12));
       q++;
 
-      // Coordenadas exatamente como no código original
-      // UV: 8 + (i << 8), 8
-      // XYZ: (8 << 4) + (i << 8), (0 << 4)
-      // UV2: 8 + (8 << 4) + (i << 8), 8 + ((height * 2) << 4)
-      // XYZ2: (8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4)
+      // Channel Shuffle: copiar strips de 8 pixels (256 unidades em UV)
+      // Cada iteração lê 8 pixels horizontais do z-buffer via channel shuffle
+      // UV em unidades de 1/16 pixel, então 8 pixels = 128 em coordenadas inteiras
+      // Mas usamos shift: i<<8 = i*256 para escalar corretamente
+      // Offset +8 para ler do canal G (canal verde está 8 pixels a direita em 16-bit)
 
-      // Vértice 1 (Top-Left)
+      // Vértice 1 (Top-Left): começo do strip
       q->dw[0] = GS_SET_UV(8 + (i << 8), 8);
       q->dw[1] = GS_SET_XYZ((8 << 4) + (i << 8), (0 << 4), 0);
       q++;
 
-      // Vértice 2 (Bottom-Right)
+      // Vértice 2 (Bottom-Right): final do strip com altura dobrada para 16-bit
       q->dw[0] = GS_SET_UV(8 + (8 << 4) + (i << 8), 8 + ((height * 2) << 4));
       q->dw[1] = GS_SET_XYZ((8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4), 0);
       q++;
@@ -542,6 +580,7 @@ void PostFxManager::renderFog(Color fogColor) {
     q++;
 
     setTwTh(halfWidth, halfHeight, &tw, &th);
+    // Textura do workbuffer tem metade das dimensões originais
     PACK_GIFTAG(q,
                 GS_SET_TEX0(zbufferAddr >> 6, width >> 6, buf_frame.psm, tw, th,
                             1, 1, 0, 0, 0, 0, 0),
@@ -601,13 +640,12 @@ void PostFxManager::renderFog(Color fogColor) {
 #endif
     if (fogColor.a > 0) {
       q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(10, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(11, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      PACK_GIFTAG(
-          q,
-          GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g, (int)fogColor.b, 0, 0),
-          GS_REG_RGBAQ);
+      // Ensure pixel test is all-pass before saturation/fog
+      PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
+                  GS_REG_TEST_1);
       q++;
 
       PACK_GIFTAG(q,
@@ -623,15 +661,20 @@ void PostFxManager::renderFog(Color fogColor) {
       setTwTh(width, height, &tw, &th);
       PACK_GIFTAG(q,
                   GS_SET_TEX0(buf_frame.address >> 6, width >> 6, buf_frame.psm,
-                              tw, th, 1, 0, 0, 0, 0, 0, 0),
-                  GS_REG_TEX0);
+                              tw, th, 1, 1, 0, 0, 0, 0, 0),
+                  GS_REG_TEX0_1);
+      q++;
+
+      // Use linear filtering to reduce feedback artifacts during saturation
+      PACK_GIFTAG(q, GS_SET_TEX1(1, 0, 1, 1, 0, 0, 0), GS_REG_TEX1_1);
       q++;
 
       PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
                   GS_REG_PRIM);
       q++;
 
-      PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 1, 1, 0), GS_REG_ALPHA_1);
+      // Blend: (Cs - 0) * Ad + Cd (fog.alpha controla intensidade)
+      PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 1, (int)fogColor.a), GS_REG_ALPHA_1);
       q++;
 
       PACK_GIFTAG(q, GS_SET_UV(ftoi4(0), ftoi4(0)), GS_REG_UV);
@@ -649,16 +692,22 @@ void PostFxManager::renderFog(Color fogColor) {
 
       // 6th pass: add fog
       q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      // Blend conforme código original: (Cs - 0) * Ad + Cd
-      // A = 0 (Cs), B = 2 (0), C = 1 (Ad), D = 1 (Cd)
+      // Blend: (Cs - 0) * Ad + Cd
+      // Cs = cor fog, Ad = alpha (máscara profundidade), Cd = cor tela
       PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 1, 1, 0), GS_REG_ALPHA_1);
       q++;
 
       PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 1, 0, 1, 0, 0),
                   GS_REG_PRIM);
+      q++;
+
+      // Definir cor do fog novamente (necessário após saturation pass)
+      PACK_GIFTAG(q,
+                  GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g, (int)fogColor.b, 0, 0),
+                  GS_REG_RGBAQ);
       q++;
 
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);

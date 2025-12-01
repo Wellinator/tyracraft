@@ -48,6 +48,28 @@ class PostFxManager : public Singleton<PostFxManager> {
 
   void renderFog(Color fogColor);
 
+  /**
+   * Define o valor de CLIP_ZVALUE para o fog.
+   * @param value Valor de CLIP_ZVALUE (0x000000 a 0xFFFFFF)
+   */
+  void setClipZValue(uint32_t value);
+
+  /**
+   * Ajusta o valor de CLIP_ZVALUE por um delta.
+   * @param delta Valor a ser adicionado (pode ser negativo)
+   */
+  void adjustClipZValue(int delta);
+
+  /**
+   * Retorna o valor atual de CLIP_ZVALUE.
+   */
+  uint32_t getClipZValue() const { return CLIP_ZVALUE; }
+
+  /**
+   * Reseta CLIP_ZVALUE para o valor padrão calculado.
+   */
+  void resetClipZValueToDefault();
+
  private:
   constexpr static float gsCenter = 4096.0F;
   constexpr static float screenCenter = gsCenter / 2.0F;
@@ -75,6 +97,7 @@ class PostFxManager : public Singleton<PostFxManager> {
   // TODO: mover numeros mágicos para constantes.
   // Reaplicar no RendererSettings.
   uint32_t CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
+  const uint32_t DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
 
   static inline uint32_t lzw(uint32_t val) {
     uint32_t res;

@@ -60,6 +60,10 @@ struct DebugMenu {
   u8 fogPass5 = true;
   u8 fogPass6 = true;
   u8 fogPassRestore = true;
+  
+  // Post FX - Fog CLIP_ZVALUE adjustment
+  u8 fogUseCustomClipZ = false;
+  int fogClipZValue = 0xFF8000;  // Default: 50% fog distance
 };
 
 extern DebugMenu g_debug_menu;
