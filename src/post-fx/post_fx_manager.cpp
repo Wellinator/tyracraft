@@ -428,6 +428,30 @@ void PostFxManager::renderFog(Color fogColor) {
   if (g_debug_menu.fogPass3) {
 #endif
 
+    // IMPORTANTE: Restaurar estado consistente do GS antes do channel shuffle
+    // Isso garante funcionamento correto mesmo se PASS 1/2 forem desabilitados
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+    
+    // Restaurar ZBUF para read-only (mask=1)
+    PACK_GIFTAG(q, GS_SET_ZBUF(zbufferAddr >> 11, zbufferPsm, 1),
+                GS_REG_ZBUF_1);
+    q++;
+    
+    // Restaurar TEST para all-pass
+    PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
+                GS_REG_TEST_1);
+    q++;
+    
+    // Restaurar TEXA padrão antes do channel shuffle
+    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 128), GS_REG_TEXA);
+    q++;
+    
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
     q = packets;
     PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
@@ -540,6 +564,23 @@ void PostFxManager::renderFog(Color fogColor) {
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass4) {
 #endif
+    // Restaurar estado antes do downsample
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+    
+    PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
+                GS_REG_TEST_1);
+    q++;
+    
+    PACK_GIFTAG(q, GS_SET_ZBUF(zbufferAddr >> 11, zbufferPsm, 1),
+                GS_REG_ZBUF_1);
+    q++;
+    
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+    
     q = packets;
     PACK_GIFTAG(q, GIF_SET_TAG(9, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
@@ -586,6 +627,27 @@ void PostFxManager::renderFog(Color fogColor) {
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass5) {
 #endif
+    // Restaurar estado antes do blend
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+    
+    PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
+                GS_REG_TEST_1);
+    q++;
+    
+    PACK_GIFTAG(q, GS_SET_ZBUF(zbufferAddr >> 11, zbufferPsm, 1),
+                GS_REG_ZBUF_1);
+    q++;
+    
+    PACK_GIFTAG(q, GS_SET_SCISSOR(0, width - 1, 0, height - 1),
+                GS_REG_SCISSOR_1);
+    q++;
+    
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+    
     q = packets;
     PACK_GIFTAG(q, GIF_SET_TAG(13, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
