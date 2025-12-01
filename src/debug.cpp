@@ -183,12 +183,24 @@ void renderDebugMenu() {
     fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
     
+    // Mostrar porcentagem aproximada
+    float percentage = (float)g_debug_menu.fogClipZValue / 16777215.0f * 100.0f;
+    char percentStr[64];
+    snprintf(percentStr, sizeof(percentStr), "  ~%.1f%% of max", percentage);
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText(percentStr, labelOptions);
+    currentY += lineHeight;
+    
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText("  L2/R2: +/- 0x1000", labelOptions);
     currentY += lineHeight;
     
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText("  Left/Right: +/- 0x100", labelOptions);
+    currentY += lineHeight;
+    
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  Square: Reset to default", labelOptions);
   }
 
   // Render instructions
@@ -258,21 +270,25 @@ void handleDebugInput(Pad* pPad) {
       postFxManager->adjustClipZValue(0x100);
       g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
+    if (clicked.Square) {
+      postFxManager->resetClipZValueToDefault();
+      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+    }
   }
 
   // Get number of items in current tab
   int itemsInCurrentTab = getItemCountForTab(g_debug_menu.currentTab);
 
-  // Navigate up (skip when adjusting CLIP_Z with DpadLeft/Right)
-  if (clicked.DpadUp && !g_debug_menu.fogUseCustomClipZ) {
+  // Navigate up (sempre permitido)
+  if (clicked.DpadUp) {
     g_selected_debug_menu_item--;
     if (g_selected_debug_menu_item < 0) {
       g_selected_debug_menu_item = itemsInCurrentTab - 1;
     }
   }
 
-  // Navigate down (skip when adjusting CLIP_Z with DpadLeft/Right)
-  if (clicked.DpadDown && !g_debug_menu.fogUseCustomClipZ) {
+  // Navigate down (sempre permitido)
+  if (clicked.DpadDown) {
     g_selected_debug_menu_item++;
     if (g_selected_debug_menu_item >= itemsInCurrentTab) {
       g_selected_debug_menu_item = 0;
