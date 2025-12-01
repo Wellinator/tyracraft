@@ -96,8 +96,8 @@ class PostFxManager : public Singleton<PostFxManager> {
 
   // TODO: mover numeros mágicos para constantes.
   // Reaplicar no RendererSettings.
-  uint32_t CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
-  const uint32_t DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
+  uint32_t CLIP_ZVALUE;
+  uint32_t DEFAULT_CLIP_ZVALUE;
 
   static inline uint32_t lzw(uint32_t val) {
     uint32_t res;

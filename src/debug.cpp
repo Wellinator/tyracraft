@@ -240,23 +240,23 @@ void handleDebugInput(Pad* pPad) {
 
   // Adjust CLIP_ZVALUE when custom mode is enabled
   if (g_debug_menu.fogUseCustomClipZ) {
-    auto& postFxManager = PostFxManager::getInstance();
+    auto* postFxManager = PostFxManager::getInstance();
     
     if (pressed.L2) {
-      postFxManager.adjustClipZValue(-0x1000);
-      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+      postFxManager->adjustClipZValue(-0x1000);
+      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (pressed.R2) {
-      postFxManager.adjustClipZValue(0x1000);
-      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+      postFxManager->adjustClipZValue(0x1000);
+      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (pressed.DpadLeft) {
-      postFxManager.adjustClipZValue(-0x100);
-      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+      postFxManager->adjustClipZValue(-0x100);
+      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (pressed.DpadRight) {
-      postFxManager.adjustClipZValue(0x100);
-      g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+      postFxManager->adjustClipZValue(0x100);
+      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
   }
 
@@ -293,15 +293,15 @@ void handleDebugInput(Pad* pPad) {
         
         // Sincronizar com PostFxManager quando togglear "Fog: Use Custom CLIP_Z"
         if (g_all_menu_items[i].value == &g_debug_menu.fogUseCustomClipZ) {
-          auto& postFxManager = PostFxManager::getInstance();
+          auto* postFxManager = PostFxManager::getInstance();
           
           if (g_debug_menu.fogUseCustomClipZ) {
             // Ao ativar, sincronizar valor atual do PostFxManager
-            g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+            g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
           } else {
             // Ao desativar, resetar para valor padrão
-            postFxManager.resetClipZValueToDefault();
-            g_debug_menu.fogClipZValue = postFxManager.getClipZValue();
+            postFxManager->resetClipZValueToDefault();
+            g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
           }
         }
         

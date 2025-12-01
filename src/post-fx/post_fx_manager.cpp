@@ -246,6 +246,10 @@ void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
 PostFxManager::PostFxManager(Renderer* renderer)
     : Singleton<PostFxManager>(), settings(renderer->core.getSettings()) {
   pRenderer = renderer;
+  
+  // Inicializar valores de CLIP_ZVALUE
+  DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
+  CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
 };
 
 PostFxManager::~PostFxManager() {};
