@@ -54,12 +54,27 @@ class PostFxManager : public Singleton<PostFxManager> {
 
   Renderer* pRenderer = nullptr;
   const RendererSettings& settings;
-  
+
   void setTwTh(int w, int h, int* tw, int* th);
   void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
                           uint32_t blockX, uint32_t blockY, uint32_t source,
                           uint32_t width, uint32_t height,
                           uint32_t paletteAddress);
+
+  /**
+   * Calcula o valor CLIP_ZVALUE para o efeito de fog.
+   * @param nearPlane Distância do plano near (ex: 0.01f)
+   * @param farPlane Distância do plano far (ex: 1000.0f)
+   * @param fogStartPercent Porcentagem da distância onde o fog começa (0.0f =
+   * near, 1.0f = far)
+   * @return Valor CLIP_ZVALUE para uso no passo 2 do fog
+   */
+  static uint32_t calculateClipZValue(float nearPlane, float farPlane,
+                                      float fogStartPercent);
+
+  // TODO: mover numeros mágicos para constantes.
+  // Reaplicar no RendererSettings.
+  uint32_t CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
 
   static inline uint32_t lzw(uint32_t val) {
     uint32_t res;

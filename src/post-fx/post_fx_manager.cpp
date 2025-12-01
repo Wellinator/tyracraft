@@ -186,6 +186,54 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   dma_channel_wait(DMA_CHANNEL_GIF, 500);
 };
 
+/**
+ * Calcula o CLIP_ZVALUE baseado nos planos near/far e porcentagem de início do
+ * fog.
+ *
+ * O Z-Buffer do PS2 usa mapeamento hiperbólico (não linear):
+ *   Z_buffer = (far * near) / (far - distance * (far - near)) * (2^24 / far)
+ *
+ * Após inversão no Passo 1:
+ *   Z_invertido = 0xFFFFFF - Z_original
+ *
+ * @param nearPlane Distância do plano near (ex: 0.01f)
+ * @param farPlane Distância do plano far (ex: 1000.0f)
+ * @param fogStartPercent Porcentagem onde fog começa (0.0 = near, 1.0 = far)
+ *                        Ex: 0.5 = fog começa na metade da distância
+ * @return Valor CLIP_ZVALUE para uso no Passo 2
+ */
+uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
+                                            float fogStartPercent) {
+  // Clampar porcentagem entre 0 e 1
+  if (fogStartPercent < 0.0f) fogStartPercent = 0.0f;
+  if (fogStartPercent > 1.0f) fogStartPercent = 1.0f;
+
+  // Calcular a distância onde o fog começa
+  // Usar interpolação linear entre near e far
+  float fogDistance = nearPlane + (farPlane - nearPlane) * fogStartPercent;
+
+  // Evitar divisão por zero
+  if (fogDistance <= nearPlane) fogDistance = nearPlane + 0.001f;
+  if (fogDistance >= farPlane) fogDistance = farPlane - 0.001f;
+
+  // Calcular Z original usando a fórmula do Z-Buffer hiperbólico do PS2
+  // Z = (far * near) / distance * (2^24 - 1) / far
+  // Simplificando: Z = near / distance * (2^24 - 1)
+  const float maxZ = 16777215.0f;  // 2^24 - 1 = 0xFFFFFF
+
+  // Fórmula do Z-Buffer perspectivo:
+  // Z_normalized = (far / distance - 1) / (far / near - 1)
+  // Z_buffer = Z_normalized * maxZ
+  float zNormalized =
+      (farPlane / fogDistance - 1.0f) / (farPlane / nearPlane - 1.0f);
+  uint32_t zOriginal = (uint32_t)(zNormalized * maxZ);
+
+  // Inverter o Z (como feito no Passo 1)
+  uint32_t zInvertido = 0xFFFFFF - zOriginal;
+
+  return zInvertido;
+}
+
 void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
   *tw = 31 - (lzw(w) + 1);
   if (w > (1 << *tw)) (*tw)++;
@@ -210,6 +258,8 @@ void PostFxManager::renderFog(Color fogColor) {
   const uint32_t height = settings.getHeight();
   const uint32_t halfWidth = width / 2;
   const uint32_t halfHeight = height / 2;
+  int tw, th;
+  setTwTh(width, height, &tw, &th); 
 
   const zbuffer_t zbuffer = pRenderer->core.gs.zBuffer;
   const framebuffer_t buf_frame = pRenderer->core.gs.getCurrentFrameData();
@@ -219,8 +269,7 @@ void PostFxManager::renderFog(Color fogColor) {
 
   qword_t packets[200] ALIGNED(64);
   qword_t* q = packets;
-  //   const uint32_t CLIP_ZVALUE = 0xff8000;
-  const uint32_t CLIP_ZVALUE = 0xFFF000;
+
 
   // ===== PASS 1 & 2: Clipar Z-Buffer =====
   // Remove objetos próximos do zbuffer para que não recebam fog
@@ -325,52 +374,49 @@ void PostFxManager::renderFog(Color fogColor) {
 #endif
 
   // ===== PASS 3: Copiar canal G do Z-buffer para canal Alpha do framebuffer
-  // ===== Isso cria uma máscara de profundidade no alpha do framebuffer
+  // ===== usando channel shuffle (16-bit mode) conforme técnica da Sony
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass3) {
 #endif
 
-    // performChannelCopy(CHANNEL_GREEN, CHANNEL_ALPHA, width, height,
-    // zbufferAddr, width, height, 0);
-
-    /*
-     */
     q = packets;
     PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
+    // Configurar Frame como 16-bit para o channel shuffle
+    // Máscara 0x00003fff protege os bits que não queremos modificar (14 bits inferiores)
     PACK_GIFTAG(q,
                 GS_SET_FRAME(buf_frame.address >> 11, width >> 6, GS_PSM_16S,
                              0x00003fff),
-                GS_REG_FRAME);
+                GS_REG_FRAME_1);
     q++;
 
     PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
     q++;
 
-    int tw, th;
-    setTwTh(width, height, &tw, &th);
+    // Textura de origem (Z-Buffer) lida como 16-bit
+    // TW=10, TH=10 (1024x1024) como no código original
     PACK_GIFTAG(q,
-                GS_SET_TEX0(zbufferAddr >> 6, width >> 6, GS_PSM_16S, tw, th, 1,
-                            1, 0, GS_PSM_32, 0, 0, 0),
+                GS_SET_TEX0(zbufferAddr >> 6, width >> 6, GS_PSM_16S,
+                            10, 10, 1, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
-    // PACK_GIFTAG(q,
-    //             GS_SET_TEX0(zbufferAddr >> 6, width >> 6, GS_PSM_16S, 10, 10,
-    //             1,
-    //                         1, 0, 0, 0, 0, 0),
-    //             GS_REG_TEX0_1);
-    // q++;
 
     PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 0, 0, 0, 0, 0), GS_REG_TEX1_1);
     q++;
+
     PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 0), GS_REG_TEXA);
     q++;
+
+    // Alpha blend conforme código original: (Cs - 0) * FIX + 0 = Cs * 64/128
     PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 2, 64), GS_REG_ALPHA_1);
     q++;
+
+    // Scissor: largura normal, altura DOBRADA
     PACK_GIFTAG(q, GS_SET_SCISSOR(0, width - 1, 0, (height * 2) - 1),
                 GS_REG_SCISSOR_1);
     q++;
+
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
                 GS_REG_PRIM);
     q++;
@@ -379,15 +425,13 @@ void PostFxManager::renderFog(Color fogColor) {
     dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-    // Desenhar strips para realizar o channel shuffle
-    // Isso é necessário por causa da forma como o PS2 armazena pixels em blocos
-
+    // Desenhar strips conforme código original: width >> 4 strips
+    // Para 512px = 32 strips
     int strips = width >> 4;
+
     for (int i = 0; i < strips; i++) {
       q = packets;
-      // GIF tag em modo REGLIST: NLOOP=1 significa processar NREG=4
-      // registradores uma vez Ordem: UV, XYZ2, UV, XYZ2 (primeiro e segundo
-      // vértice do sprite)
+
       PACK_GIFTAG(
           q,
           GIF_SET_TAG(1, 1, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
@@ -396,16 +440,20 @@ void PostFxManager::renderFog(Color fogColor) {
               (GIF_REG_XYZ2 << 12));
       q++;
 
-      // Em modo REGLIST, cada qword contém dados para 2 registradores (64 bits
-      // cada) Primeiro qword: UV (lower 64 bits) + XYZ2 (upper 64 bits)
+      // Coordenadas exatamente como no código original
+      // UV: 8 + (i << 8), 8
+      // XYZ: (8 << 4) + (i << 8), (0 << 4)
+      // UV2: 8 + (8 << 4) + (i << 8), 8 + ((height * 2) << 4)
+      // XYZ2: (8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4)
+
+      // Vértice 1 (Top-Left)
       q->dw[0] = GS_SET_UV(8 + (i << 8), 8);
       q->dw[1] = GS_SET_XYZ((8 << 4) + (i << 8), (0 << 4), 0);
       q++;
 
-      // Segundo qword: UV (lower 64 bits) + XYZ2 (upper 64 bits)
+      // Vértice 2 (Bottom-Right)
       q->dw[0] = GS_SET_UV(8 + (8 << 4) + (i << 8), 8 + ((height * 2) << 4));
-      q->dw[1] =
-          GS_SET_XYZ((8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4), 0);
+      q->dw[1] = GS_SET_XYZ((8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4), 0);
       q++;
 
       FlushCache(0);
@@ -413,7 +461,7 @@ void PostFxManager::renderFog(Color fogColor) {
       dma_channel_wait(DMA_CHANNEL_GIF, 500);
     }
 
-    // Restaurar scissor e texa
+    // Restaurar TEXA e Scissor
     q = packets;
     PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
@@ -449,10 +497,10 @@ void PostFxManager::renderFog(Color fogColor) {
 
     PACK_GIFTAG(q,
                 GS_SET_TEX0(buf_frame.address >> 6, width >> 6, buf_frame.psm,
-                            10, 10, 0, 1, 0, 0, 0, 0, 0),
+                            tw, th, 0, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
-    PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 0, 0, 0, 0, 0), GS_REG_TEX1_1);
+    PACK_GIFTAG(q, GS_SET_TEX1(1, 0, 1, 1, 0, 0, 0), GS_REG_TEX1_1);
     q++;
 
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 0, 0, 1, 0, 0),
@@ -493,8 +541,9 @@ void PostFxManager::renderFog(Color fogColor) {
     PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
     q++;
 
+    setTwTh(halfWidth, halfHeight, &tw, &th);
     PACK_GIFTAG(q,
-                GS_SET_TEX0(zbufferAddr >> 6, width >> 6, buf_frame.psm, 10, 10,
+                GS_SET_TEX0(zbufferAddr >> 6, width >> 6, buf_frame.psm, tw, th,
                             1, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
@@ -506,21 +555,25 @@ void PostFxManager::renderFog(Color fogColor) {
                 GS_REG_PRIM);
     q++;
 
-    const int32_t offset = 16;
+    const int32_t offset = 8;
 
-    PACK_GIFTAG(q, GS_SET_UV(ftoi4(1), ftoi4(1)), GS_REG_UV);
+    // UV: Mapear do início (0,0) até o fim do buffer de trabalho (halfWidth,
+    // halfHeight) Adicionar 0.5 (8) ao UV garante que lemos o centro do texel.
+    PACK_GIFTAG(q, GS_SET_UV(ftoi4(0) + 8, ftoi4(0) + 8), GS_REG_UV);
     q++;
 
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(1) + offset, ftoi4(1) + offset, 0),
+    // XYZ: Desenhar na tela inteira (0,0 até width,height)
+    // Adicionar offset de meio pixel (8) é padrão no GS para alinhamento.
+    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0) + offset, ftoi4(0) + offset, 0),
                 GS_REG_XYZ2);
     q++;
 
-    PACK_GIFTAG(q, GS_SET_UV(ftoi4(width), ftoi4(height)), GS_REG_UV);
+    PACK_GIFTAG(q, GS_SET_UV(ftoi4(halfWidth) + 8, ftoi4(halfHeight) + 8),
+                GS_REG_UV);
     q++;
 
-    PACK_GIFTAG(
-        q, GS_SET_XYZ(ftoi4(width + 1) + offset, ftoi4(height + 1) + offset, 0),
-        GS_REG_XYZ2);
+    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(width) + offset, ftoi4(height) + offset, 0),
+                GS_REG_XYZ2);
     q++;
 
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(0) + offset, ftoi4(0) + offset), GS_REG_UV);
@@ -548,7 +601,7 @@ void PostFxManager::renderFog(Color fogColor) {
 #endif
     if (fogColor.a > 0) {
       q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(9, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(10, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
       PACK_GIFTAG(
@@ -557,13 +610,20 @@ void PostFxManager::renderFog(Color fogColor) {
           GS_REG_RGBAQ);
       q++;
 
+      PACK_GIFTAG(q,
+                  GS_SET_FRAME(buf_frame.address >> 11, width >> 6,
+                               buf_frame.psm, 0x00000000),
+                  GS_REG_FRAME_1);
+      q++;
+
       // 6th pass: add saturation
       PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
       q++;
 
+      setTwTh(width, height, &tw, &th);
       PACK_GIFTAG(q,
                   GS_SET_TEX0(buf_frame.address >> 6, width >> 6, buf_frame.psm,
-                              10, 10, 1, 0, 0, 0, 0, 0, 0),
+                              tw, th, 1, 0, 0, 0, 0, 0, 0),
                   GS_REG_TEX0);
       q++;
 
@@ -592,6 +652,8 @@ void PostFxManager::renderFog(Color fogColor) {
       PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
+      // Blend conforme código original: (Cs - 0) * Ad + Cd
+      // A = 0 (Cs), B = 2 (0), C = 1 (Ad), D = 1 (Cd)
       PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 1, 1, 0), GS_REG_ALPHA_1);
       q++;
 
@@ -599,7 +661,7 @@ void PostFxManager::renderFog(Color fogColor) {
                   GS_REG_PRIM);
       q++;
 
-      PACK_GIFTAG(q, GS_SET_XYZ(0, 0, 0), GS_REG_XYZ2);
+      PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
       q++;
 
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(width), ftoi4(height), 0), GS_REG_XYZ2);
