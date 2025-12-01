@@ -495,22 +495,22 @@ void PostFxManager::renderFog(Color fogColor) {
       q++;
 
       // Channel Shuffle conforme código original Sony
-      // Em PSMCT16S, o canal G está deslocado 8 pixels na leitura UV
-      // Mas o XY deve ter offset (8<<4) fixo conforme original!
-      // i << 8 = i * 256 = posição do strip (16 pixels por strip)
+      // CRÍTICO: O XY não deve ter offset inicial, apenas incremento!
+      // O offset (8<<4) só aparece na LARGURA do sprite, não na posição inicial
+      // i << 8 = i * 256 = posição base de cada strip (16 pixels em fixed-point 4.4)
       
       // Vértice 1 (Top-Left)
       // UV: offset de 8 para ler canal G + posição do strip
-      // XY: (8<<4) fixo + posição do strip
+      // XY: (8<<4) + (i<<8) = 128 + strip_pos - largura de 8 pixels em fixed-point
       q->dw[0] = GS_SET_UV(8 + (i << 8), 8);
       q->dw[1] = GS_SET_XYZ((8 << 4) + (i << 8), (0 << 4), 0);
       q++;
 
       // Vértice 2 (Bottom-Right)
-      // UV: adicionar largura de 8 pixels (8<<4=128) + altura dobrada
-      // XY: adicionar largura de 8 pixels (8<<4=128) + altura dobrada
+      // UV: adicionar largura de 8 pixels (8<<4=128) ao U e altura ao V
+      // XY: mesma posição X base + largura, altura completa
       q->dw[0] = GS_SET_UV(8 + (8 << 4) + (i << 8), 8 + ((height * 2) << 4));
-      q->dw[1] = GS_SET_XYZ((8 << 4) + (8 << 4) + (i << 8), ((height * 2) << 4), 0);
+      q->dw[1] = GS_SET_XYZ((8 << 4) + (i << 8), ((height * 2) << 4), 0);
       q++;
 
       FlushCache(0);
