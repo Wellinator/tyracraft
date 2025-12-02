@@ -64,6 +64,9 @@ struct DebugMenu {
   // Post FX - Fog CLIP_ZVALUE adjustment
   u8 fogUseCustomClipZ = false;
   int fogClipZValue = 0xFF8000;  // Default: 50% fog distance
+  
+  // Post FX - Debug screenshots (trigger único)
+  u8 fogTriggerScreenshot = false;
 };
 
 extern DebugMenu g_debug_menu;

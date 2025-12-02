@@ -82,6 +82,10 @@ class PostFxManager : public Singleton<PostFxManager> {
                           uint32_t blockX, uint32_t blockY, uint32_t source,
                           uint32_t width, uint32_t height,
                           uint32_t paletteAddress);
+  
+#ifdef DEBUG_MODE
+  void saveDebugScreenshot(const char* filename, uint32_t address, uint32_t width, uint32_t height, uint32_t psm);
+#endif
 
   /**
    * Calcula o valor CLIP_ZVALUE para o efeito de fog.

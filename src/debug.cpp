@@ -56,6 +56,7 @@ static MenuItem g_all_menu_items[] = {
     {"Fog: Sixth Pass", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
     {"Fog: Restore GS State", &g_debug_menu.fogPassRestore, DebugMenuTab::POST_FX},
     {"Fog: Use Custom CLIP_Z", &g_debug_menu.fogUseCustomClipZ, DebugMenuTab::POST_FX},
+    {"Fog: Capture Screenshots", &g_debug_menu.fogTriggerScreenshot, DebugMenuTab::POST_FX},
     
     // WORLD_INFO tab
     
