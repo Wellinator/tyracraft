@@ -194,17 +194,23 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
  * O Z-Buffer do PS2 usa mapeamento hiperbólico (não linear).
  * Após o PASS 1, os valores são invertidos: Z_invertido = 0xFFFFFF - Z_original
  *
- * Para CLIP_ZVALUE:
- * - Valores BAIXOS (próximo de 0x000000) = clipar objetos PRÓXIMOS (fog em tudo
- * menos near)
- * - Valores ALTOS (próximo de 0xFFFFFF) = clipar objetos DISTANTES (fog só no
- * far)
+ * Lógica do CLIP_ZVALUE com ZTEST_GREATER:
+ * - Pass 1 inverte Z-Buffer: objetos próximos ficam com valores BAIXOS
+ * - Pass 2 usa ZTEST_GREATER: se CLIP_ZVALUE > Z_Buffer, sobrescreve
+ * - Para clipar apenas objetos PRÓXIMOS (próximo ao fogDistance):
+ *   * CLIP_ZVALUE deve ser um valor INTERMEDIÁRIO
+ *   * Pixels com Z < CLIP_ZVALUE (objetos próximos) são clippados
+ *   * Pixels com Z > CLIP_ZVALUE (objetos distantes) mantêm profundidade
+ *
+ * Comportamento do fogStartPercent:
+ * - 0.0 = fog começa no near (clippa quase nada, fog em tudo)
+ * - 0.5 = fog começa no meio (clippa metade próxima)
+ * - 1.0 = fog começa no far (clippa quase tudo, fog só no horizonte)
  *
  * @param nearPlane Distância do plano near (ex: 0.01f)
  * @param farPlane Distância do plano far (ex: 1000.0f)
  * @param fogStartPercent Porcentagem onde fog começa (0.0 = near, 1.0 = far)
- *                        Ex: 0.5 = fog começa na metade da distância
- * @return Valor CLIP_ZVALUE para uso no Passo 2
+ * @return Valor CLIP_ZVALUE para uso no Passo 2 com ZTEST_GREATER
  */
 uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
                                             float fogStartPercent) {
@@ -212,9 +218,10 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   if (fogStartPercent < 0.0f) fogStartPercent = 0.0f;
   if (fogStartPercent > 1.0f) fogStartPercent = 1.0f;
 
-  // Calcular a distância onde o fog começa
-  // fogStartPercent=0.0 -> fog começa no near (fog em tudo)
-  // fogStartPercent=1.0 -> fog começa no far (fog só no horizonte)
+  // fogStartPercent define onde o fog COMEÇA (objetos mais próximos ficam nítidos)
+  // fogStartPercent=0.0 -> fog começa no near (tudo tem fog, nada é clippado)
+  // fogStartPercent=0.5 -> fog começa no meio (metade próxima é clippada/nítida)
+  // fogStartPercent=1.0 -> fog começa no far (quase tudo é clippado/nítido)
   float fogDistance = nearPlane + (farPlane - nearPlane) * fogStartPercent;
 
   // Evitar divisão por zero
@@ -222,18 +229,28 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   if (fogDistance >= farPlane) fogDistance = farPlane - 0.001f;
 
   // Calcular Z original usando a fórmula do Z-Buffer perspectivo do PS2
+  // Z-Buffer do PS2: objetos PRÓXIMOS têm valores ALTOS, objetos DISTANTES têm valores BAIXOS
   const float maxZ = 16777215.0f;  // 2^24 - 1 = 0xFFFFFF
 
   // Fórmula do Z-Buffer perspectivo:
   // Z_normalized = (far / distance - 1) / (far / near - 1)
-  // Z_buffer = Z_normalized * maxZ
   float zNormalized =
       (farPlane / fogDistance - 1.0f) / (farPlane / nearPlane - 1.0f);
   uint32_t zOriginal = (uint32_t)(zNormalized * maxZ);
 
-  // Inverter o Z (como feito no Passo 1)
-  // Isso faz com que valores altos representem objetos próximos
+  // APÓS PASS 1 (inversão): Z_invertido = 0xFFFFFF - Z_original
+  // Resultado: objetos PRÓXIMOS têm valores BAIXOS, objetos DISTANTES têm valores ALTOS
   uint32_t zInvertido = 0xFFFFFF - zOriginal;
+
+  // Para ZTEST_GREATER no Pass 2:
+  // - Sobrescreve se CLIP_ZVALUE > Z_Buffer
+  // - Queremos clippar objetos MAIS PRÓXIMOS que fogDistance
+  // - Objetos próximos têm Z BAIXO após inversão
+  // - Logo, CLIP_ZVALUE deve ser o threshold: valores MENORES serão clippados
+  // 
+  // CLIP_ZVALUE = zInvertido (threshold direto)
+  // Pixels com Z < zInvertido (mais próximos) → CLIP_ZVALUE > Z → SOBRESCREVE ✓
+  // Pixels com Z > zInvertido (mais distantes) → CLIP_ZVALUE < Z → MANTÉM ✓
 
   // Retornar apenas os 24 bits úteis
   return zInvertido & 0x00FFFFFF;
@@ -263,8 +280,14 @@ PostFxManager::PostFxManager(Renderer* renderer)
   pRenderer = renderer;
 
   // Inicializar valores de CLIP_ZVALUE
-  DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.01f, 1000.0f, 0.5f);
+  // fogStartPercent=0.5 = fog começa na metade da distância visível
+  // Objetos mais próximos que 50% do far plane ficam nítidos (sem fog)
+  DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.1f, 128.0f, 0.5f);
   CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
+  
+#ifdef DEBUG_MODE
+  TYRA_LOG("[FOG INIT] DEFAULT_CLIP_ZVALUE = 0x", std::hex, DEFAULT_CLIP_ZVALUE, std::dec);
+#endif
 };
 
 PostFxManager::~PostFxManager() {};
@@ -378,13 +401,6 @@ void PostFxManager::renderFog(Color fogColor) {
     q++;
 
     // Alpha blend para inversão do Z-buffer
-    // Fórmula GS: (A - B) * C + D
-    // Para inverter: queremos (Cs - Cd) * 2 + 0, onde Cs=255 (branco)
-    // A=0 (Cs), B=1 (Cd), C=2 (FIX), D=2 (0), FIX=128
-    // FIX=128 representa multiplicador de 128/128 = 1.0, então (255-Z)*1 + 0 =
-    // 255-Z Mas precisamos *2 para inverter corretamente, então: (Cs - Cd) * As
-    // + 0, onde As vem do RGBAQ (alpha=128) Resultado: (255 - zbuffer_val) *
-    // 128/128 = 255 - zbuffer_val (inversão correta!)
     PACK_GIFTAG(q, GS_SET_ALPHA(0, 1, 2, 2, 128), GS_REG_ALPHA_1);
     q++;
 
@@ -410,6 +426,7 @@ void PostFxManager::renderFog(Color fogColor) {
   // PASS 2: Clipar objetos próximos
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass2) {
+    TYRA_LOG("[FOG PASS 2] CLIP_ZVALUE = 0x", std::hex, CLIP_ZVALUE, std::dec);
 #endif
     q = packets;
     // Aumentado para 9 pacotes para incluir GS_SET_FRAME
