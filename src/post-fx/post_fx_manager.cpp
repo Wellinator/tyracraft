@@ -218,10 +218,11 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   if (fogStartPercent < 0.0f) fogStartPercent = 0.0f;
   if (fogStartPercent > 1.0f) fogStartPercent = 1.0f;
 
-  // fogStartPercent define onde o fog COMEÇA (objetos mais próximos ficam nítidos)
-  // fogStartPercent=0.0 -> fog começa no near (tudo tem fog, nada é clippado)
-  // fogStartPercent=0.5 -> fog começa no meio (metade próxima é clippada/nítida)
-  // fogStartPercent=1.0 -> fog começa no far (quase tudo é clippado/nítido)
+  // fogStartPercent define onde o fog COMEÇA (objetos mais próximos ficam
+  // nítidos) fogStartPercent=0.0 -> fog começa no near (tudo tem fog, nada é
+  // clippado) fogStartPercent=0.5 -> fog começa no meio (metade próxima é
+  // clippada/nítida) fogStartPercent=1.0 -> fog começa no far (quase tudo é
+  // clippado/nítido)
   float fogDistance = nearPlane + (farPlane - nearPlane) * fogStartPercent;
 
   // Evitar divisão por zero
@@ -229,7 +230,8 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   if (fogDistance >= farPlane) fogDistance = farPlane - 0.001f;
 
   // Calcular Z original usando a fórmula do Z-Buffer perspectivo do PS2
-  // Z-Buffer do PS2: objetos PRÓXIMOS têm valores ALTOS, objetos DISTANTES têm valores BAIXOS
+  // Z-Buffer do PS2: objetos PRÓXIMOS têm valores ALTOS, objetos DISTANTES têm
+  // valores BAIXOS
   const float maxZ = 16777215.0f;  // 2^24 - 1 = 0xFFFFFF
 
   // Fórmula do Z-Buffer perspectivo:
@@ -239,7 +241,8 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   uint32_t zOriginal = (uint32_t)(zNormalized * maxZ);
 
   // APÓS PASS 1 (inversão): Z_invertido = 0xFFFFFF - Z_original
-  // Resultado: objetos PRÓXIMOS têm valores BAIXOS, objetos DISTANTES têm valores ALTOS
+  // Resultado: objetos PRÓXIMOS têm valores BAIXOS, objetos DISTANTES têm
+  // valores ALTOS
   uint32_t zInvertido = 0xFFFFFF - zOriginal;
 
   // Para ZTEST_GREATER no Pass 2:
@@ -247,7 +250,7 @@ uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
   // - Queremos clippar objetos MAIS PRÓXIMOS que fogDistance
   // - Objetos próximos têm Z BAIXO após inversão
   // - Logo, CLIP_ZVALUE deve ser o threshold: valores MENORES serão clippados
-  // 
+  //
   // CLIP_ZVALUE = zInvertido (threshold direto)
   // Pixels com Z < zInvertido (mais próximos) → CLIP_ZVALUE > Z → SOBRESCREVE ✓
   // Pixels com Z > zInvertido (mais distantes) → CLIP_ZVALUE < Z → MANTÉM ✓
@@ -284,9 +287,10 @@ PostFxManager::PostFxManager(Renderer* renderer)
   // Objetos mais próximos que 50% do far plane ficam nítidos (sem fog)
   DEFAULT_CLIP_ZVALUE = calculateClipZValue(0.1f, 128.0f, 0.5f);
   CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
-  
+
 #ifdef DEBUG_MODE
-  TYRA_LOG("[FOG INIT] DEFAULT_CLIP_ZVALUE = 0x", std::hex, DEFAULT_CLIP_ZVALUE, std::dec);
+  TYRA_LOG("[FOG INIT] DEFAULT_CLIP_ZVALUE = 0x", std::hex, DEFAULT_CLIP_ZVALUE,
+           std::dec);
 #endif
 };
 
@@ -477,137 +481,138 @@ void PostFxManager::renderFog(Color fogColor) {
 #endif
 
   // ===== PASS 3: Copiar canal G do Z-buffer para canal Alpha do framebuffer
-  // ===== usando channel shuffle (16-bit mode) conforme técnica da Sony
+  // =====
+  // ===== Abordagem ALTERNATIVA: Usar o Z-Buffer processado diretamente
+  // ===== como máscara de profundidade para o efeito de blur/fog.
+  // =====
+  // ===== Em vez de fazer channel shuffle complexo, vamos:
+  // ===== 1. Ler o Z-Buffer como textura 32-bit (tratando PSMZ24 como PSMCT32)
+  // ===== 2. Usar alpha blending para copiar a informação de profundidade
+  // =====    para o canal Alpha do framebuffer
+  // =====
+  // ===== O Z-Buffer após Pass 1&2 contém:
+  // ===== - Valores BAIXOS para objetos próximos (clippados para uniforme)
+  // ===== - Valores ALTOS para objetos distantes (variação preservada)
+  // ===== Queremos que objetos DISTANTES recebam mais blur/fog (alpha alto)
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass3) {
 #endif
 
-    // IMPORTANTE: Restaurar estado consistente do GS antes do channel shuffle
-    // Isso garante funcionamento correto mesmo se PASS 1/2 forem desabilitados
+    // Restaurar estado consistente do GS
     q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
-    // Restaurar ZBUF para read-only (mask=1)
     PACK_GIFTAG(q, GS_SET_ZBUF(zbufferAddr >> 11, zbufferPsm, 1),
                 GS_REG_ZBUF_1);
     q++;
 
-    // Restaurar TEST para all-pass
     PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
                 GS_REG_TEST_1);
     q++;
 
-    // Restaurar TEXA padrão antes do channel shuffle
-    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 128), GS_REG_TEXA);
+    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
+    q++;
+
+    PACK_GIFTAG(q, GS_SET_COLCLAMP(1), GS_REG_COLCLAMP);
+    q++;
+
+    PACK_GIFTAG(q, GS_SET_SCISSOR(0, width - 1, 0, height - 1),
+                GS_REG_SCISSOR_1);
     q++;
 
     FlushCache(0);
     dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
+    // ===== Copiar Z-Buffer para Alpha do Framebuffer =====
+    // Técnica: Ler Z-Buffer como textura PSMCT32 e usar blending
+    // para extrair o canal G (bits 8-15) e escrever no Alpha
+    //
+    // O Z-Buffer PSMZ24 tem layout: [-------- ZZZZZZZZ ZZZZZZZZ ZZZZZZZZ]
+    // Quando lido como PSMCT32:     [AAAAAAAA BBBBBBBB GGGGGGGG RRRRRRRR]
+    // Os bits 8-15 do Z (canal "G") representam profundidade média
+
     q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GIF_SET_TAG(9, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
-    // Configurar Frame como 16-bit para o channel shuffle
-    // Máscara 0x00003fff conforme código original Sony (protege 14 bits
-    // inferiores) Width >> 5 para 1024 pixels (correto para 16-bit alias de 512
-    // 32-bit)
+    // Frame: Escrever APENAS no canal Alpha do framebuffer
+    // Máscara ~0xFF000000 = 0x00FFFFFF protege RGB, permite escrita em Alpha
     PACK_GIFTAG(q,
-                GS_SET_FRAME(buf_frame.address >> 11, width >> 5, GS_PSM_16S,
-                             0x00003fff),
+                GS_SET_FRAME(buf_frame.address >> 11, width >> 6, buf_frame.psm,
+                             0x00FFFFFF),
                 GS_REG_FRAME_1);
     q++;
 
     PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
     q++;
 
-    // Textura de origem (Z-Buffer) lida como 16-bit
-    // TW=10, TH=10 (1024x1024) fixos para channel shuffle, como no código
-    // original Width >> 5 para 1024 pixels
+    // Textura: Z-Buffer lido como PSMCT32 (reinterpretando os bytes)
+    // TBW = width >> 6 (64 pixels por bloco em 32-bit)
+    int zbufTw, zbufTh;
+    setTwTh(width, height, &zbufTw, &zbufTh);
     PACK_GIFTAG(q,
-                GS_SET_TEX0(zbufferAddr >> 6, width >> 5, GS_PSM_16S, 10, 10, 1,
-                            1, 0, 0, 0, 0, 0),
+                GS_SET_TEX0(zbufferAddr >> 6, width >> 6, GS_PSM_32, zbufTw,
+                            zbufTh, 0, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
 
-    // TEX1 com NEAREST/NEAREST para evitar qualquer filtragem (equivalente ao
-    // fog.txt)
+    // Filtragem NEAREST para cópia exata
     PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 0, 0, 0, 0, 0), GS_REG_TEX1_1);
     q++;
 
-    // TEXA conforme original Sony
-    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 0), GS_REG_TEXA);
+    // TEXA não é usado para texturas 32-bit
+    PACK_GIFTAG(q, GS_SET_TEXA(0x80, 0, 0x80), GS_REG_TEXA);
     q++;
 
-    // Alpha blend: (Cs - 0) * FIX + 0
-    // FIX=64 significa multiplicar por 64/128 = 0.5
-    // Isso controla a intensidade da cópia do canal
-    PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 2, 64), GS_REG_ALPHA_1);
+    // Alpha blend: Resultado = Cs (source) - cópia direta
+    // Queremos copiar o canal G da textura para o Alpha do frame
+    // Blend: (Cs - 0) * FIX + 0, onde FIX = 128 (cópia 1:1)
+    PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 2, 0x80), GS_REG_ALPHA_1);
     q++;
 
-    // Scissor: largura DOBRADA, altura normal
-    PACK_GIFTAG(q, GS_SET_SCISSOR(0, (width * 2) - 1, 0, height - 1),
-                GS_REG_SCISSOR_1);
+    // Cor do vértice: Branco com alpha máximo
+    // Isso garante que a textura seja copiada sem modificação
+    PACK_GIFTAG(q, GS_SET_RGBAQ(0x80, 0x80, 0x80, 0x80, 0), GS_REG_RGBAQ);
     q++;
 
+    // Primitiva: Sprite com textura, alpha blend habilitado
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
                 GS_REG_PRIM);
+    q++;
+
+    // Desenhar tela inteira: UV de (0,0) a (width,height)
+    PACK_GIFTAG(q, GS_SET_UV(ftoi4(0), ftoi4(0)), GS_REG_UV);
     q++;
 
     FlushCache(0);
     dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-    // Desenhar strips conforme código original
-    // Para 512px (32-bit) -> 1024px (16-bit)
-    // Strips de 8 pixels
-    int strips = (width * 2) >> 3;  // 1024 / 8 = 128 strips
-
-    for (int i = 0; i < strips; i++) {
-      q = packets;
-
-      PACK_GIFTAG(
-          q,
-          GIF_SET_TAG(1, 1, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
-                      0, GIF_FLG_REGLIST, 4),
-          (GIF_REG_UV) | (GIF_REG_XYZ2 << 4) | (GIF_REG_UV << 8) |
-              (GIF_REG_XYZ2 << 12));
-      q++;
-
-      // Channel Shuffle G->A (Shift de 8 pixels)
-      // X: Posição atual do strip (i * 8)
-      // U: Posição atual + 8 pixels (Shift) + 0.5 (Half-texel)
-
-      // Vértice 1 (Top-Left)
-      // U = (i * 8) + 8 + 0.5 -> (i << 7) + (8 << 4) + 8
-      // X = (i * 8)           -> (i << 7)
-      q->dw[0] = GS_SET_UV((8 << 4) + (i << 7) + 8, 8);
-      q->dw[1] = GS_SET_XYZ((i << 7), (0 << 4), 0);
-      q++;
-
-      // Vértice 2 (Bottom-Right)
-      // U = U_start + 8 -> (i << 7) + (8 << 4) + 8 + (8 << 4)
-      // X = X_start + 8 -> (i << 7) + (8 << 4)
-      q->dw[0] =
-          GS_SET_UV((8 << 4) + (i << 7) + 8 + (8 << 4), 8 + (height << 4));
-      q->dw[1] = GS_SET_XYZ((i << 7) + (8 << 4), (height << 4), 0);
-      q++;
-
-      FlushCache(0);
-      dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-      dma_channel_wait(DMA_CHANNEL_GIF, 500);
-    }
-
-    // Restaurar TEXA e Scissor
     q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
-    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 128), GS_REG_TEXA);
+
+    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
     q++;
-    PACK_GIFTAG(q, GS_SET_SCISSOR(0, width - 1, 0, height - 1),
-                GS_REG_SCISSOR_1);
+    PACK_GIFTAG(q, GS_SET_UV(ftoi4(width), ftoi4(height)), GS_REG_UV);
+    q++;
+    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(width), ftoi4(height), 0), GS_REG_XYZ2);
+    q++;
+
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+    // Restaurar frame normal
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(1, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+    PACK_GIFTAG(q,
+                GS_SET_FRAME(buf_frame.address >> 11, width >> 6, buf_frame.psm,
+                             buf_frame.mask),
+                GS_REG_FRAME_1);
     q++;
 
     FlushCache(0);
@@ -874,12 +879,6 @@ void PostFxManager::renderFog(Color fogColor) {
 #ifdef DEBUG_MODE
     saveDebugScreenshot("host:debug/fog_pass6_final.tga", buf_frame.address,
                         width, height, buf_frame.psm);
-
-    // Reset trigger após capturar todos os passos
-    if (g_debug_menu.fogTriggerScreenshot) {
-      g_debug_menu.fogTriggerScreenshot = false;
-      TYRA_LOG("Fog screenshots capture completed. Trigger reset.");
-    }
   }
 #endif
 
@@ -963,6 +962,12 @@ void PostFxManager::renderFog(Color fogColor) {
     dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 #ifdef DEBUG_MODE
+  }
+
+  // Reset trigger após capturar todos os passos
+  if (g_debug_menu.fogTriggerScreenshot) {
+    g_debug_menu.fogTriggerScreenshot = false;
+    TYRA_LOG("Fog screenshots capture completed. Trigger reset.");
   }
 #endif
 }
