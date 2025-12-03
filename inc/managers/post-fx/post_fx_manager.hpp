@@ -78,13 +78,63 @@ class PostFxManager : public Singleton<PostFxManager> {
   const RendererSettings& settings;
 
   void setTwTh(int w, int h, int* tw, int* th);
+  void copyDepthBuffer(ColourChannels channelIn, Texture* palette);
   void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
-                          uint32_t blockX, uint32_t blockY, uint32_t source,
-                          uint32_t width, uint32_t height,
-                          uint32_t paletteAddress);
-  
+                          uint32_t blockX, uint32_t blockY,
+                          uint32_t source_addr, uint32_t width, uint32_t height,
+                          uint32_t dest);
+
+  /**
+   * Faz upload do CLUT de identidade para a VRAM.
+   * Necessário para o channel shuffle funcionar corretamente.
+   * O CLUT é uma paleta onde índice N mapeia para cor (N,N,N,N).
+   */
+  void uploadIdentityCLUT();
+
+  void updateFogCLUT();
+
+  // Fog rendering passes - métodos privados para cada etapa
+  void fogPassSetup();
+  void fogPass1InvertZ();
+  void fogPass2ClipZ();
+  void fogPass3ChannelCopy();
+  void fogPass4Downsample();
+  void fogPass5Blend();
+  void fogPass6Apply(const Color& fogColor);
+  void fogPassRestore();
+
+  // Propriedades reutilizáveis para fog rendering
+  uint32_t fog_width;
+  uint32_t fog_height;
+  uint32_t fog_halfWidth;
+  uint32_t fog_halfHeight;
+  int fog_tw;
+  int fog_th;
+  uint32_t fog_zbufferAddr;
+  uint32_t fog_zbufferPsm;
+  zbuffer_t fog_zbuffer;
+  framebuffer_t fog_buf_frame;
+
+  /**
+   * Textura que contém a paleta de identidade para channel shuffle.
+   * Gerenciada pelo TextureRepository da Tyra.
+   */
+  Texture* identityCLUT = nullptr;
+
+  /**
+   * Textura usada para copiar o depth buffer.
+   * Criada e gerenciada pelo TextureRepository da Tyra.
+   */
+  Texture* pDepthBufferTexture = nullptr;
+
+  /**
+   * Endereço da CLUT na VRAM após alocação.
+   */
+  uint32_t clutVramAddress = 0;
+
 #ifdef DEBUG_MODE
-  void saveDebugScreenshot(const char* filename, uint32_t address, uint32_t width, uint32_t height, uint32_t psm);
+  void saveDebugScreenshot(const char* filename, uint32_t address,
+                           uint32_t width, uint32_t height, uint32_t psm);
 #endif
 
   /**

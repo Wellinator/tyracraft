@@ -56,8 +56,8 @@ struct DebugMenu {
   u8 fogPass1 = true;
   u8 fogPass2 = true;
   u8 fogPass3 = true;
-  u8 fogPass4 = true;
-  u8 fogPass5 = true;
+  u8 fogPass4 = false;
+  u8 fogPass5 = false;
   u8 fogPass6 = true;
   u8 fogPassRestore = true;
   

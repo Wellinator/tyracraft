@@ -264,11 +264,11 @@ void handleDebugInput(Pad* pPad) {
       g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (pressed.DpadLeft) {
-      postFxManager->adjustClipZValue(-0x100);
+      postFxManager->adjustClipZValue(-0x10);
       g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (pressed.DpadRight) {
-      postFxManager->adjustClipZValue(0x100);
+      postFxManager->adjustClipZValue(0x10);
       g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
     }
     if (clicked.Square) {
