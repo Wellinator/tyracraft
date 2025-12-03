@@ -963,20 +963,32 @@ void PostFxManager::fogPass6Apply(const Color& fogColor) {
       dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
       dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-      // ===== 6th pass part 2: add fog color =====
-      // Aplica cor de fog com dest alpha (máscara de profundidade)
+      // ===== 6th pass part 2: add fog color (SÓLIDO) =====
+      // Aplica cor de fog SÓLIDA usando dest alpha como máscara
+      // A máscara de profundidade (dest alpha) controla ONDE o fog aparece
+      // Mas a COR do fog é aplicada com opacidade total (fog.alpha)
       q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      // Blend fog: (Cs - 0) * Ad + Cd
-      // Cs = cor fog, Ad = dest alpha (profundidade), Cd = cor atual da tela
-      PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 1, 1, 0), GS_REG_ALPHA_1);
+      // Blend fog SÓLIDO: (Cs - 0) * Ad + Cd, mas com Cs já multiplicado por fog.alpha
+      // Para fog sólido, usamos: (Cs - Cd) * FIX + Cd onde FIX baseado em Ad
+      // Alternativamente: (Cs - 0) * Ad + Cd com Cs na intensidade total
+      // MELHOR: (Cs - Cd) * Ad + Cd para respeitar dest alpha mas cor sólida
+      PACK_GIFTAG(q, GS_SET_ALPHA(0, 1, 1, 1, 0), GS_REG_ALPHA_1);
       q++;
 
-      // Sprite sem textura, usa cor RGB diretamente
+      // Sprite sem textura, usa cor RGB diretamente com ALPHA como opacidade
       PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 1, 0, 1, 0, 0),
                   GS_REG_PRIM);
+      q++;
+
+      // Definir cor do fog com ALPHA total (fog.a controla opacidade)
+      // RGBAQ: R, G, B na cor desejada, A = fog.alpha para opacidade total
+      PACK_GIFTAG(q,
+                  GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g, 
+                               (int)fogColor.b, (int)fogColor.a, 0),
+                  GS_REG_RGBAQ);
       q++;
 
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
