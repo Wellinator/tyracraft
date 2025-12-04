@@ -69,6 +69,9 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
   uint32_t page = 0;
   uint32_t x, y;
 
+  const uint32_t src_tbw = width >> 6;  // TBW for full-screen zbuffer
+  const uint32_t dst_tbw = 1;           // Temp buffer is 64px wide
+
   for (y = 0; y < height; y += 32) {
     for (x = 0; x < width; x += 64) {
       uint32_t buf_addr =
@@ -80,10 +83,11 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
       PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      PACK_GIFTAG(q,
-                  GS_SET_BITBLTBUF((zbufferAddr >> 6) + page, 1, GS_PSMZ_32,
-                                   buf_addr >> 6, 1, GS_PSM_32),
-                  GS_REG_BITBLTBUF);
+      PACK_GIFTAG(
+          q,
+          GS_SET_BITBLTBUF((zbufferAddr >> 6) + page, src_tbw, GS_PSMZ_32,
+                           buf_addr >> 6, dst_tbw, GS_PSM_32),
+          GS_REG_BITBLTBUF);
       q++;
 
       PACK_GIFTAG(q, GS_SET_TRXPOS(0, 0, 0, 0, 0),
@@ -106,8 +110,7 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
       dma_channel_fast_waits(DMA_CHANNEL_GIF);
       dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-      performChannelCopy(channelIn, CHANNEL_ALPHA, x, y, buf_addr, width,
-                         height, pal_addr);
+      performChannelCopy(channelIn, CHANNEL_ALPHA, x, y, buf_addr);
 
       page += 32;
     }
@@ -120,8 +123,7 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
 void PostFxManager::performChannelCopy(ColourChannels channelIn,
                                        ColourChannels channelOut,
                                        uint32_t blockX, uint32_t blockY,
-                                       uint32_t source_addr, uint32_t width,
-                                       uint32_t height, uint32_t dest) {
+                                       uint32_t source_addr) {
   // For the BLUE and ALPHA channels, we need to offset our 'U's by 8 texels
   const uint32_t horz_block_offset =
       (channelIn == CHANNEL_BLUE || channelIn == CHANNEL_ALPHA);
@@ -141,24 +143,14 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
   q++;
 
-  int tw, th;
-  setTwTh(width, height, &tw, &th);
-
   // TEX0: Configuração da textura 8-bit
-  // TBP0 = source >> 6 (endereço da textura fonte - Z-Buffer)
-  // TBW = 2 (128 pixels por linha em modo 8-bit, adequado para 512/640)
-  // PSM = GS_PSM_8 (8-bit indexed)
-  // TW = 10, TH = 10 (1024x1024 - tamanho fixo conforme original)
-  // TCC = 1 (use color from CLUT)
-  // TFX = 1 (DECAL - cópia direta)
-  // CBP = clutVramAddress >> 6 (endereço da CLUT de identidade na VRAM)
-  // CPSM = GS_PSM_32 (CLUT em 32-bit)
-  // CSM = 0 (CLUT Storage Mode = CSM1)
-  // CSA = 0 (CLUT entry offset)
-  // CLD = 1 (carregar CLUT)
+  // Para Z-buffer em PSMZ32, usar TBW baseado na largura da tela
+  // TBW deve corresponder ao layout do Z-buffer: width >> 6
+  // source_addr já aponta para o Z-buffer completo (não para blocos
+  // individuais)
   PACK_GIFTAG(q,
-              GS_SET_TEX0(source_addr >> 6, 1, GS_PSM_8, tw, th, 1, 1,
-                          dest >> 6, GS_PSM_32, 0, 0, 1),
+              GS_SET_TEX0(source_addr >> 6, fog_width >> 6, GS_PSM_8, 10, 10, 1,
+                          1, clutVramAddress >> 6, GS_PSM_32, 0, 0, 1),
               GS_REG_TEX0_1);
   q++;
 
@@ -172,43 +164,15 @@ void PostFxManager::performChannelCopy(ColourChannels channelIn,
   PACK_GIFTAG(q, GS_SET_TEXFLUSH(1), GS_REG_TEXFLUSH);
   q++;
 
-  // FRAME: Máscara para escrever apenas no canal de saída desejado
-  uint32_t frame_mask;
-  switch (channelOut) {
-    case CHANNEL_RED:
-      frame_mask = ~0x000000FF;
-      break;
-    case CHANNEL_GREEN:
-      frame_mask = ~0x0000FF00;
-      break;
-    case CHANNEL_BLUE:
-      frame_mask = ~0x00FF0000;
-      break;
-    case CHANNEL_ALPHA:
-      frame_mask = ~0xFF000000;
-      break;
-    default:
-      frame_mask = ~0x00FF0000;
-      break;
-  }
-
-  // FRAME: FBP = dest >> 11, FBW = 10 (640 pixels), PSM = 0 (PSMCT32)
-  // Conforme original: GS_SET_FRAME(0, 10, 0, frame_mask)
-  // Adaptado para usar endereço dinâmico do framebuffer
-  const framebuffer_t buf_frame = pRenderer->core.gs.getCurrentFrameData();
-  PACK_GIFTAG(q,
-              GS_SET_FRAME(buf_frame.address >> 11, buf_frame.width >> 6,
-                           buf_frame.psm, frame_mask),
-              GS_REG_FRAME_1);
+  // PRIM: Sprite com textura habilitada, alpha blending habilitado
+  PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
+              GS_REG_PRIM);
   q++;
 
-  // GIF tag para 96 primitivas (sprites) com PRIM embutido
-  PACK_GIFTAG(
-      q,
-      GIF_SET_TAG(96, 1, 1, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 0, 0, 1, 0, 0),
-                  GIF_FLG_PACKED, 4),
-      (GIF_REG_UV) | (GIF_REG_XYZ2 << 4) | (GIF_REG_UV << 8) |
-          (GIF_REG_XYZ2 << 12));
+  // GIF tag para 96 primitivas (sprites) - UV/XYZ2 pairs
+  PACK_GIFTAG(q, GIF_SET_TAG(96, 1, 0, 0, GIF_FLG_PACKED, 4),
+              (GIF_REG_UV) | (GIF_REG_XYZ2 << 4) | (GIF_REG_UV << 8) |
+                  (GIF_REG_XYZ2 << 12));
   q++;
 
   // Desenhar blocos 64x32 com padrões alternados para channel shuffle
@@ -486,6 +450,7 @@ void PostFxManager::fogPassSetup() {
     PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
                 GS_REG_TEST_1);
     q++;
+    // Allow Z writes for the upcoming passes (Pass 1 needs to modify zbuffer)
     PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
                 GS_REG_ZBUF_1);
     q++;
@@ -561,7 +526,7 @@ void PostFxManager::fogPass2ClipZ() {
 #endif
     qword_t packets[200] ALIGNED(64);
     qword_t* q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GIF_SET_TAG(6, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
     PACK_GIFTAG(q, GS_SET_TEST(1, 0, 0, 2, 0, 0, 1, ZTEST_METHOD_GREATER),
@@ -575,11 +540,18 @@ void PostFxManager::fogPass2ClipZ() {
     q++;
     PACK_GIFTAG(q, GS_SET_RGBAQ(0, 0, 0, 0, 0), GS_REG_RGBAQ);
     q++;
-
     PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), CLIP_ZVALUE), GS_REG_XYZ2);
     q++;
     PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_width), ftoi4(fog_height), CLIP_ZVALUE),
                 GS_REG_XYZ2);
+    q++;
+
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
     PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
                 GS_REG_TEST_1);
@@ -603,106 +575,43 @@ void PostFxManager::fogPass3ChannelCopy() {
   // ===== PASS 3: Channel Shuffle - Copiar canal G do Z-buffer para Alpha do
   // framebuffer =====
   //
-  // TÉCNICA CORRETA (baseada em DepthOfFieldWithZFog.cpp):
-  // - Usar PSMCT16S (16-bit) para permitir channel shuffle
-  // - Ler Z-Buffer como textura PSMCT16S
-  // - Escrever no framebuffer usando PSMCT16S
-  // - SCISSOR em (0, width-1, 0, ALTURA*2-1) para processar corretamente
-  // - Loop de sprites verticais (8 pixels de largura) com offsets UV
-  // específicos
-  //
-  // Em PSMCT16S, o canal G (bits 8-15) do Z-Buffer contém a profundidade
-  // intermediária O offset UV de +8 em X extrai o canal G e copia para o Alpha
-  // do framebuffer
+  // TÉCNICA: Implementação correta baseada em channel_copy.cpp
+  // - Processa Z-buffer em blocos de 64x32 pixels
+  // - Usa textura 8-bit com CLUT de identidade para channel shuffle
+  // - Copia LOCAL-TO-LOCAL para temp buffer, depois performChannelCopy
+  // - Canal GREEN do Z-buffer → Canal ALPHA do framebuffer
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass3) {
 #endif
 
-    // // FOR TESET ONLY
-    // // Copiar Z-buffer para buffer temporário e depois fazer channel copy
-    // copyDepthBuffer(CHANNEL_GREEN, identityCLUT);
+    // Preparar GS para escrever apenas no canal alpha do framebuffer
+    {
+      qword_t packets[16] ALIGNED(64);
+      qword_t* q = packets;
 
-    qword_t packets[200] ALIGNED(64);
-    qword_t* q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // Frame: Escrever APENAS no canal Alpha do framebuffer usando PSMCT16S
-    // Máscara 0x00003FFF protege RGB (14 bits), permite escrita em Alpha (2
-    // bits MSB)
-    PACK_GIFTAG(q,
-                GS_SET_FRAME(fog_buf_frame.address >> 11, fog_width >> 6,
-                             GS_PSM_16S, 0x00003FFF),
-                GS_REG_FRAME_1);
-    q++;
-
-    PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
-    q++;
-
-    // Textura: Z-Buffer lido como PSMCT16S
-    // TW=10, TH=10 (1024x1024) conforme original - valores fixos para 512x448
-    PACK_GIFTAG(q,
-                GS_SET_TEX0(fog_zbufferAddr >> 6, fog_width >> 6, GS_PSM_16S,
-                            10, 10, 1, 1, 0, 0, 0, 0, 0),
-                GS_REG_TEX0_1);
-    q++;
-
-    // Filtragem NEAREST para cópia exata
-    PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 0, 0, 0, 0, 0), GS_REG_TEX1_1);
-    q++;
-
-    // TEXA: Configurar alpha para 0 (transparente)
-    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 0), GS_REG_TEXA);
-    q++;
-
-    // Alpha blend: (Cs - 0) * FIX + 0, FIX=64
-    // Copia o canal fonte com controle fino via FIX
-    PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 2, 64), GS_REG_ALPHA_1);
-    q++;
-
-    // SCISSOR: Processar altura dobrada (height*2) para PSMCT16S
-    // Isso é necessário devido ao layout de memória 16-bit
-    PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height * 2 - 1),
-                GS_REG_SCISSOR_1);
-    q++;
-
-    // Primitiva: Sprite com textura e alpha blend
-    PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
-                GS_REG_PRIM);
-    q++;
-
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
-
-    // Loop de channel shuffle: Desenhar sprites verticais de 8 pixels
-    // O offset UV de +8 em X extrai o canal G do Z-Buffer
-    // Processa em strips verticais para cobrir toda a largura
-    const int numStrips = fog_width >> 4;  // width / 16 strips
-    for (int i = 0; i < numStrips; i++) {
-      q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      // UV início: offset de +8 em X para selecionar canal G
-      PACK_GIFTAG(q, GS_SET_UV(8 + (i << 8), 8), GS_REG_UV);
-      q++;
-
-      // XYZ início: posição da strip no framebuffer
-      PACK_GIFTAG(q, GS_SET_XYZ((8 << 4) + (i << 8), (0 << 4), 0), GS_REG_XYZ2);
-      q++;
-
-      // UV fim: +8 pixels em X, altura dobrada
-      PACK_GIFTAG(
-          q, GS_SET_UV(8 + (8 << 4) + (i << 8), 8 + ((fog_height * 2) << 4)),
-          GS_REG_UV);
-      q++;
-
-      // XYZ fim: strip de 8 pixels de largura, altura dobrada
+      // FRAME: framebuffer, máscara RGB (0x00FFFFFF) para escrever só alpha
       PACK_GIFTAG(q,
-                  GS_SET_XYZ((8 << 4) + (8 << 4) + (i << 8),
-                             ((fog_height * 2) << 4), 0),
-                  GS_REG_XYZ2);
+                  GS_SET_FRAME(fog_buf_frame.address >> 11, fog_width >> 6,
+                               fog_buf_frame.psm, 0x00FFFFFF),
+                  GS_REG_FRAME_1);
+      q++;
+
+      PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
+                  GS_REG_TEST_1);
+      q++;
+
+      PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
+                  GS_REG_ZBUF_1);
+      q++;
+
+      PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
+      q++;
+
+      PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height - 1),
+                  GS_REG_SCISSOR_1);
       q++;
 
       FlushCache(0);
@@ -710,21 +619,11 @@ void PostFxManager::fogPass3ChannelCopy() {
       dma_channel_wait(DMA_CHANNEL_GIF, 500);
     }
 
-    // Restaurar TEXA e SCISSOR para valores normais
-    q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    PACK_GIFTAG(q, GS_SET_TEXA(0, 0, 128), GS_REG_TEXA);
-    q++;
-
-    PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height - 1),
-                GS_REG_SCISSOR_1);
-    q++;
-
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+    // Usar copyDepthBuffer que implementa a técnica correta:
+    // - Loop através de blocos 64x32
+    // - LOCAL-TO-LOCAL copy do Z-buffer para temp buffer
+    // - performChannelCopy(GREEN → ALPHA) para cada bloco
+    copyDepthBuffer(CHANNEL_GREEN, identityCLUT);
 
 #ifdef DEBUG_MODE
     saveDebugScreenshot("host:debug/fog_pass3_channel_copy.tga",
@@ -736,29 +635,35 @@ void PostFxManager::fogPass3ChannelCopy() {
 
 void PostFxManager::fogPass4Downsample() {
   // 4th pass: downsample framebuffer to workbuffer
+  // Usa LINEAR filtering para downsample suave
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass4) {
 #endif
-    // Restaurar estado antes do downsample
     qword_t packets[200] ALIGNED(64);
     qword_t* q = packets;
+
+    // Restaurar FRAME para framebuffer antes de configurar workbuffer
     PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+
+    PACK_GIFTAG(q,
+                GS_SET_FRAME(fog_buf_frame.address >> 11, fog_width >> 6,
+                             fog_buf_frame.psm, fog_buf_frame.mask),
+                GS_REG_FRAME_1);
     q++;
 
     PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
                 GS_REG_TEST_1);
     q++;
 
-    PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
-                GS_REG_ZBUF_1);
-    q++;
-
     FlushCache(0);
     dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
+    // Setup: FRAME = workbuffer (Z-buffer), TEX0 = framebuffer, LINEAR
+    // filtering
     q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(9, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
     PACK_GIFTAG(q,
@@ -770,23 +675,36 @@ void PostFxManager::fogPass4Downsample() {
     PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
     q++;
 
-    // TEX0: TW=10, TH=10 (1024x1024) conforme original, não calculado
-    // dinamicamente
+    // TEX0: Framebuffer como textura, TW=10 TH=10 (1024x1024), DECAL
     PACK_GIFTAG(q,
                 GS_SET_TEX0(fog_buf_frame.address >> 6, fog_width >> 6,
                             fog_buf_frame.psm, 10, 10, 0, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
+
+    // TEX1: LINEAR filtering (importante para downsample suave)
     PACK_GIFTAG(q, GS_SET_TEX1(1, 0, 1, 1, 0, 0, 0), GS_REG_TEX1_1);
     q++;
 
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 0, 0, 1, 0, 0),
                 GS_REG_PRIM);
     q++;
+
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+    // 1 sprite: mapeia (0,0)→(width,height) para (0,0)→(width/2,height/2)
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 2),
+                GIF_REG_UV | (GIF_REG_XYZ2 << 4));
+    q++;
+
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(0), ftoi4(0)), GS_REG_UV);
     q++;
     PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
     q++;
+
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(fog_width), ftoi4(fog_height)), GS_REG_UV);
     q++;
     PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_halfWidth), ftoi4(fog_halfHeight), 0),
@@ -807,13 +725,16 @@ void PostFxManager::fogPass4Downsample() {
 void PostFxManager::fogPass5Blend() {
   // 5th pass x2: draw workbuffer onto framebuffer with dest alpha (z-buf
   // channel)
+  // Desenha o workbuffer downsampled 2x sobre o framebuffer com blur
+  // Usa dest alpha (canal de profundidade) como máscara de blend
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass5) {
 #endif
-    // Restaurar estado antes do blend
     qword_t packets[200] ALIGNED(64);
     qword_t* q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+
+    // Setup: Restaurar estados e configurar blend com dest alpha
+    PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
     PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
@@ -824,16 +745,11 @@ void PostFxManager::fogPass5Blend() {
                 GS_REG_ZBUF_1);
     q++;
 
-    PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height - 1),
-                GS_REG_SCISSOR_1);
+    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
     q++;
 
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
-
-    q = packets;
-    PACK_GIFTAG(q, GIF_SET_TAG(13, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height - 1),
+                GS_REG_SCISSOR_1);
     q++;
 
     PACK_GIFTAG(q,
@@ -842,60 +758,90 @@ void PostFxManager::fogPass5Blend() {
                 GS_REG_FRAME_1);
     q++;
 
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+
     PACK_GIFTAG(q, GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
     q++;
 
-    // Textura do workbuffer: tw=10, th=10 conforme original (não
-    // halfWidth/halfHeight!)
+    // Textura do workbuffer (downsampled): tw=10, th=10, DECAL
     PACK_GIFTAG(q,
                 GS_SET_TEX0(fog_zbufferAddr >> 6, fog_width >> 6,
                             fog_buf_frame.psm, 10, 10, 1, 1, 0, 0, 0, 0, 0),
                 GS_REG_TEX0_1);
     q++;
 
+    // ALPHA: (Cd - Cs) * Ad + Cs (blend usando dest alpha como máscara)
     PACK_GIFTAG(q, GS_SET_ALPHA(1, 0, 1, 0, 0), GS_REG_ALPHA_1);
+    q++;
+
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(1, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
                 GS_REG_PRIM);
     q++;
 
-    const int32_t offset = 16;  // Offset conforme código original (não 8!)
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-    // UV: Mapear do início (1,1) até o fim do buffer de trabalho (halfWidth,
-    // halfHeight) Primeiro sprite: leve offset para blend suave
+    // Offset para criar efeito de blur cruzado (conforme GTA SA)
+    constexpr int32_t FOG_BLEND_OFFSET = 16;
+
+    // Primeiro sprite: offset positivo para criar blur
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 2),
+                GIF_REG_UV | (GIF_REG_XYZ2 << 4));
+    q++;
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(1), ftoi4(1)), GS_REG_UV);
     q++;
-
-    // XYZ: Desenhar na tela inteira (1,1 até width+1,height+1) com offset
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(1) + offset, ftoi4(1) + offset, 0),
-                GS_REG_XYZ2);
+    PACK_GIFTAG(
+        q,
+        GS_SET_XYZ(ftoi4(1) + FOG_BLEND_OFFSET, ftoi4(1) + FOG_BLEND_OFFSET, 0),
+        GS_REG_XYZ2);
     q++;
-
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(fog_halfWidth), ftoi4(fog_halfHeight)),
                 GS_REG_UV);
     q++;
-
     PACK_GIFTAG(q,
-                GS_SET_XYZ(ftoi4(fog_width + 1) + offset,
-                           ftoi4(fog_height + 1) + offset, 0),
+                GS_SET_XYZ(ftoi4(fog_width + 1) + FOG_BLEND_OFFSET,
+                           ftoi4(fog_height + 1) + FOG_BLEND_OFFSET, 0),
                 GS_REG_XYZ2);
     q++;
 
-    // Segundo sprite para blend adicional
-    PACK_GIFTAG(q, GS_SET_UV(ftoi4(0) + offset, ftoi4(0) + offset), GS_REG_UV);
-    q++;
+    FlushCache(0);
+    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
+    // Segundo sprite: offset negativo (complementar) para blur cruzado
+    q = packets;
+    PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 2),
+                GIF_REG_UV | (GIF_REG_XYZ2 << 4));
+    q++;
+    PACK_GIFTAG(
+        q, GS_SET_UV(ftoi4(0) + FOG_BLEND_OFFSET, ftoi4(0) + FOG_BLEND_OFFSET),
+        GS_REG_UV);
+    q++;
     PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
     q++;
-
     PACK_GIFTAG(q, GS_SET_UV(ftoi4(fog_halfWidth), ftoi4(fog_halfHeight)),
                 GS_REG_UV);
     q++;
-
-    PACK_GIFTAG(
-        q, GS_SET_XYZ(ftoi4(fog_width) - offset, ftoi4(fog_height) - offset, 0),
-        GS_REG_XYZ2);
+    PACK_GIFTAG(q,
+                GS_SET_XYZ(ftoi4(fog_width) - FOG_BLEND_OFFSET,
+                           ftoi4(fog_height) - FOG_BLEND_OFFSET, 0),
+                GS_REG_XYZ2);
     q++;
 
     FlushCache(0);
@@ -920,8 +866,8 @@ void PostFxManager::fogPass6Apply(const Color& fogColor) {
     // Apenas aplicar fog se a cor tiver alpha > 0
     if (fogColor.a > 0) {
       // ===== 6th pass part 1: add saturation =====
-      // Usa o próprio framebuffer como textura com dest alpha para saturação
-      PACK_GIFTAG(q, GIF_SET_TAG(9, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      // Setup registros GS
+      PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
       PACK_GIFTAG(
@@ -945,10 +891,18 @@ void PostFxManager::fogPass6Apply(const Color& fogColor) {
       q++;
 
       // Blend saturation: (Cs - 0) * FIX + Cd, onde FIX = fog.alpha
-      // Controla intensidade da saturação via alpha do fog
       PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 1, (int)fogColor.a), GS_REG_ALPHA_1);
       q++;
 
+      FlushCache(0);
+      dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+      dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+      // Primitivas do sprite
+      q = packets;
+      PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 2),
+                  GIF_REG_UV | (GIF_REG_XYZ2 << 4));
+      q++;
       PACK_GIFTAG(q, GS_SET_UV(ftoi4(0), ftoi4(0)), GS_REG_UV);
       q++;
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
@@ -964,36 +918,37 @@ void PostFxManager::fogPass6Apply(const Color& fogColor) {
       dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
       // ===== 6th pass part 2: add fog color (SÓLIDO) =====
-      // Aplica cor de fog SÓLIDA usando dest alpha como máscara
-      // A máscara de profundidade (dest alpha) controla ONDE o fog aparece
-      // Mas a COR do fog é aplicada com opacidade total (fog.alpha)
+      // Setup registros GS
       q = packets;
-      PACK_GIFTAG(q, GIF_SET_TAG(5, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
       q++;
 
-      // Blend fog SÓLIDO: (Cs - 0) * Ad + Cd, mas com Cs já multiplicado por fog.alpha
-      // Para fog sólido, usamos: (Cs - Cd) * FIX + Cd onde FIX baseado em Ad
-      // Alternativamente: (Cs - 0) * Ad + Cd com Cs na intensidade total
-      // MELHOR: (Cs - Cd) * Ad + Cd para respeitar dest alpha mas cor sólida
+      // Blend fog usando dest alpha: (Cs - Cd) * Ad + Cd
       PACK_GIFTAG(q, GS_SET_ALPHA(0, 1, 1, 1, 0), GS_REG_ALPHA_1);
       q++;
 
-      // Sprite sem textura, usa cor RGB diretamente com ALPHA como opacidade
+      // Sprite sem textura
       PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 1, 0, 1, 0, 0),
                   GS_REG_PRIM);
       q++;
 
-      // Definir cor do fog com ALPHA total (fog.a controla opacidade)
-      // RGBAQ: R, G, B na cor desejada, A = fog.alpha para opacidade total
+      // Cor do fog
       PACK_GIFTAG(q,
-                  GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g, 
+                  GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g,
                                (int)fogColor.b, (int)fogColor.a, 0),
                   GS_REG_RGBAQ);
       q++;
 
+      FlushCache(0);
+      dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
+      dma_channel_wait(DMA_CHANNEL_GIF, 500);
+
+      // Primitivas do sprite
+      q = packets;
+      PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+      q++;
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
       q++;
-
       PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_width), ftoi4(fog_height), 0),
                   GS_REG_XYZ2);
       q++;
@@ -1066,8 +1021,12 @@ void PostFxManager::fogPassRestore() {
                 GS_REG_ZBUF);
     q++;
 
-    // Primitive coordinate offsets
-    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
+    // Primitive coordinate offsets - RESTAURAR OFFSET ORIGINAL
+    PACK_GIFTAG(
+        q,
+        GS_SET_XYOFFSET((int)(2048.0f - (fog_buf_frame.width / 2.0F) * 16.0f),
+                        (int)(2048.0f - (fog_buf_frame.height / 2.0F) * 16.0f)),
+        GS_REG_XYOFFSET_1);
     q++;
 
     // Scissoring area
@@ -1127,8 +1086,8 @@ void PostFxManager::renderFog(Color fogColor) {
   // 1. Invert Z-buffer values (para usar ZGREATER em Pass 2)
   // 2. Clip objetos próximos (remove da máscara de profundidade)
   // 3. Channel copy: G-channel do Z-buffer → Alpha-channel do framebuffer
-  //    - Usa 16-bit mode (PSMCT16S) para channel shuffle
-  //    - Copia em strips de 8 pixels com offset +8 para ler canal G
+  //    - Usa textura 8-bit + CLUT identidade em blocos 64x32 (channel_copy)
+  //    - Copia local-to-local para temp buffer e faz shuffle por bloco
   // 4. Downsample framebuffer para workbuffer (width/2 × height/2)
   // 5. Draw workbuffer com alpha blending (profundidade como máscara)
   // 6. Aplicar cor fog e saturação

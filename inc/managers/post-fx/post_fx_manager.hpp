@@ -81,8 +81,7 @@ class PostFxManager : public Singleton<PostFxManager> {
   void copyDepthBuffer(ColourChannels channelIn, Texture* palette);
   void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
                           uint32_t blockX, uint32_t blockY,
-                          uint32_t source_addr, uint32_t width, uint32_t height,
-                          uint32_t dest);
+                          uint32_t source_addr);
 
   /**
    * Faz upload do CLUT de identidade para a VRAM.
