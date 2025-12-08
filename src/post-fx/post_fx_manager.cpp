@@ -656,7 +656,7 @@ void PostFxManager::fogPass2ClipZ() {
                 GS_REG_TEST_1);
     q++;
 
-    PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 0),
+    PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
                 GS_REG_ZBUF_1);
     q++;
 
