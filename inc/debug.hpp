@@ -49,7 +49,7 @@ struct DebugMenu {
   u8 godMode = false;
   u8 noclipMode = false;
   u8 logChunkMemoryUsage = false;
-  
+
   // Post FX - Fog render passes control
   u8 enablePostFx = true;
   u8 fogPassSetup = true;
@@ -60,11 +60,11 @@ struct DebugMenu {
   u8 fogPass5 = false;
   u8 fogPass6 = true;
   u8 fogPassRestore = true;
-  
+
   // Post FX - Fog CLIP_ZVALUE adjustment
   u8 fogUseCustomClipZ = false;
   int fogClipZValue = 0xFF8000;  // Default: 50% fog distance
-  
+
   // Post FX - Debug screenshots (trigger único)
   u8 fogTriggerScreenshot = false;
 };

@@ -100,6 +100,7 @@ class PostFxManager : public Singleton<PostFxManager> {
   void fogPass4Downsample();
   void fogPass5Blend();
   void fogPass6Apply(const Color& fogColor);
+  void fogPass6CustomApply(const Color& fogColor);
   void fogPassRestore();
 
   // Propriedades reutilizáveis para fog rendering
