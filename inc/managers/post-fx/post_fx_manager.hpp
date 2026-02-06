@@ -78,10 +78,25 @@ class PostFxManager : public Singleton<PostFxManager> {
   const RendererSettings& settings;
 
   void setTwTh(int w, int h, int* tw, int* th);
-  void copyDepthBuffer(ColourChannels channelIn, Texture* palette);
-  void performChannelCopy(ColourChannels channelIn, ColourChannels channelOut,
-                          uint32_t blockX, uint32_t blockY,
-                          uint32_t source_addr);
+
+  /**
+   * Copia o Z-buffer inteiro para o framebuffer usando channel shuffle.
+   * Processa em blocos de 64x32 com local-to-local transfer e CLUT identidade.
+   */
+  void copyDepthBuffer(ColourChannels channelIn, ColourChannels channelOut);
+
+  /**
+   * Copia um bloco 64x32 do Z-buffer (PSMZ_32) para buffer temporário (PSM_32)
+   * usando BITBLTBUF local-to-local transfer.
+   */
+  void copyZBufferBlockToTemp(uint32_t zbufPage, uint32_t tempAddr);
+
+  /**
+   * Faz channel copy de um bloco 64x32 usando PSM_8 + CLUT identidade.
+   */
+  void performChannelCopyBlock(ColourChannels channelIn,
+                               ColourChannels channelOut, uint32_t blockX,
+                               uint32_t blockY, uint32_t source_addr);
 
   /**
    * Faz upload do CLUT de identidade para a VRAM.
@@ -100,7 +115,6 @@ class PostFxManager : public Singleton<PostFxManager> {
   void fogPass4Downsample();
   void fogPass5Blend();
   void fogPass6Apply(const Color& fogColor);
-  void fogPass6CustomApply(const Color& fogColor);
   void fogPassRestore();
 
   // Propriedades reutilizáveis para fog rendering
@@ -151,7 +165,7 @@ class PostFxManager : public Singleton<PostFxManager> {
   // TODO: mover numeros mágicos para constantes.
   // Reaplicar no RendererSettings.
   uint32_t CLIP_ZVALUE;
-  uint32_t DEFAULT_CLIP_ZVALUE;
+  uint32_t DEFAULT_CLIP_ZVALUE = 0xFE00BF;
 
   static inline uint32_t lzw(uint32_t val) {
     uint32_t res;
