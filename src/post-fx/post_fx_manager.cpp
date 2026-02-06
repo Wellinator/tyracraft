@@ -134,10 +134,16 @@ void PostFxManager::uploadIdentityCLUT() {
   uint32_t* clutData =
       (uint32_t*)aligned_alloc(64, CLUT_SIZE * sizeof(uint32_t));
 
-  // Criar paleta de identidade linear simples
-  // Como em channel_copy.cpp: PAL[i] = (i << 24) | (i << 16) | (i << 8) | i
+  // Criar paleta de identidade ESCALADA para range 0-128 do PS2 GS.
+  // O PS2 GS trata alpha 128 como 1.0 (opaco) nos blend formulas.
+  // Valores > 128 causam overflow em fórmulas como ((Cd-Cs)*Ad)/128 + Cs.
+  // Portanto, escalamos cada byte: out = min(i/2, 128)
+  // Isso mapeia Z-buffer green byte [0..255] → alpha [0..127]
+  // (128 = fully opaque fog, 0 = no fog)
   for (int i = 0; i < CLUT_SIZE; i++) {
-    clutData[i] = (i << 24) | (i << 16) | (i << 8) | i;
+    uint8_t scaled = (uint8_t)(i >> 1);  // i/2, max 127
+    clutData[i] = ((uint32_t)scaled << 24) | ((uint32_t)scaled << 16) |
+                  ((uint32_t)scaled << 8) | (uint32_t)scaled;
   }
 
   FlushCache(0);
@@ -678,11 +684,14 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
     }
   }
 
-  // Restaurar estado do GS
+  // Restaurar estado do GS após channel copy
+  // NOTA: NÃO restaurar XYOFFSET aqui! Os passes 4/5/6 usam XYOFFSET=(0,0)
+  // e coordenadas de pixel brutas. Restaurar XYOFFSET é responsabilidade
+  // do fogPassRestore() no final de toda a pipeline.
   qword_t packets[20] ALIGNED(64);
   qword_t* q = packets;
 
-  PACK_GIFTAG(q, GIF_SET_TAG(3, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+  PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
   q++;
 
   PACK_GIFTAG(q, GS_SET_CLAMP(1, 1, 0, 0, 0, 0), GS_REG_CLAMP_1);
@@ -693,13 +702,6 @@ void PostFxManager::copyDepthBuffer(ColourChannels channelIn,
       GS_SET_FRAME(fog_buf_frame.address >> 11, fog_buf_frame.width >> 6,
                    fog_buf_frame.psm, fog_buf_frame.mask),
       GS_REG_FRAME_1);
-  q++;
-
-  PACK_GIFTAG(q,
-              GS_SET_XYOFFSET(
-                  (int)(screenCenter - (fog_buf_frame.width / 2.0F) * 16.0f),
-                  (int)(screenCenter - (fog_buf_frame.height / 2.0F) * 16.0f)),
-              GS_REG_XYOFFSET_1);
   q++;
 
   FlushCache(0);
@@ -757,8 +759,14 @@ void PostFxManager::fogPass4Downsample() {
     qword_t packets[200] ALIGNED(64);
     qword_t* q = packets;
 
-    // Configuração: 5 registradores (EOP=0, continua com sprite data)
-    PACK_GIFTAG(q, GIF_SET_TAG(5, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    // Configuração: 6 registradores (EOP=0, continua com sprite data)
+    // Inclui XYOFFSET(0,0) para garantir coordenadas corretas após
+    // copyDepthBuffer que pode ter alterado o offset
+    PACK_GIFTAG(q, GIF_SET_TAG(6, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
+    q++;
+
+    // XYOFFSET: (0,0) — ESSENCIAL: resetar após copyDepthBuffer
+    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
     q++;
 
     // FRAME: Z-buffer como destino (workbuffer)

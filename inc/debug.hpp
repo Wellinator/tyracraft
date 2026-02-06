@@ -53,12 +53,12 @@ struct DebugMenu {
   // Post FX - Fog render passes control
   u8 enablePostFx = true;
   u8 fogPassSetup = true;
-  u8 fogPass1 = true;
-  u8 fogPass2 = true;
-  u8 fogPass3 = true;
+  u8 fogPass1 = false;
+  u8 fogPass2 = false;
+  u8 fogPass3 = false;
   u8 fogPass4 = false;
   u8 fogPass5 = false;
-  u8 fogPass6 = true;
+  u8 fogPass6 = false;
   u8 fogPassRestore = true;
 
   // Post FX - Fog CLIP_ZVALUE adjustment
