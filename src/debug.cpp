@@ -48,14 +48,10 @@ static MenuItem g_all_menu_items[] = {
     // POST_FX tab
     {"Post FX", &g_debug_menu.enablePostFx, DebugMenuTab::POST_FX},
     {"Fog: Setup", &g_debug_menu.fogPassSetup, DebugMenuTab::POST_FX},
-    {"Fog: First Pass", &g_debug_menu.fogPass1, DebugMenuTab::POST_FX},
-    {"Fog: Second Pass", &g_debug_menu.fogPass2, DebugMenuTab::POST_FX},
-    {"Fog: Third Pass", &g_debug_menu.fogPass3, DebugMenuTab::POST_FX},
-    {"Fog: Fourth Pass", &g_debug_menu.fogPass4, DebugMenuTab::POST_FX},
-    {"Fog: Fifth Pass", &g_debug_menu.fogPass5, DebugMenuTab::POST_FX},
-    {"Fog: Sixth Pass", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
+    {"Fog: Channel Copy", &g_debug_menu.fogPass3, DebugMenuTab::POST_FX},
+    {"Fog: Apply Color", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
     {"Fog: Restore GS State", &g_debug_menu.fogPassRestore, DebugMenuTab::POST_FX},
-    {"Fog: Use Custom CLIP_Z", &g_debug_menu.fogUseCustomClipZ, DebugMenuTab::POST_FX},
+    {"Fog: Adjust Params", &g_debug_menu.fogAdjustParams, DebugMenuTab::POST_FX},
     {"Fog: Capture Screenshots", &g_debug_menu.fogTriggerScreenshot, DebugMenuTab::POST_FX},
     
     // WORLD_INFO tab
@@ -168,40 +164,38 @@ void renderDebugMenu() {
     itemIndexInTab++;
   }
 
-  // Render CLIP_ZVALUE adjustment when enabled
+  // Render fog parameter adjustment when enabled
   if (g_debug_menu.currentTab == DebugMenuTab::POST_FX && 
-      g_debug_menu.fogUseCustomClipZ) {
+      g_debug_menu.fogAdjustParams) {
     currentY += lineHeight * 0.5F;
     
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("--- CLIP_Z Adjustment ---", labelOptions);
+    fm.printText("--- Fog Parameters ---", labelOptions);
     currentY += lineHeight;
     
     char valueStr[64];
-    snprintf(valueStr, sizeof(valueStr), "  Value: 0x%06X (%d)", 
-             g_debug_menu.fogClipZValue, g_debug_menu.fogClipZValue);
+    snprintf(valueStr, sizeof(valueStr), "  Near%%: %d%%", 
+             g_debug_menu.fogNearPercentInt);
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
     
-    // Mostrar porcentagem aproximada
-    float percentage = (float)g_debug_menu.fogClipZValue / 16777215.0f * 100.0f;
-    char percentStr[64];
-    snprintf(percentStr, sizeof(percentStr), "  ~%.1f%% of max", percentage);
+    snprintf(valueStr, sizeof(valueStr), "  Intensity: %.1f", 
+             (float)g_debug_menu.fogIntensityX10 / 10.0f);
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText(percentStr, labelOptions);
+    fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
     
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("  L2/R2: +/- 0x1000", labelOptions);
+    fm.printText("  L2/R2: Near% +/- 5", labelOptions);
     currentY += lineHeight;
     
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("  Left/Right: +/- 0x100", labelOptions);
+    fm.printText("  Left/Right: Intensity +/- 0.1", labelOptions);
     currentY += lineHeight;
     
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("  Square: Reset to default", labelOptions);
+    fm.printText("  Square: Reset defaults", labelOptions);
   }
 
   // Render instructions
@@ -251,29 +245,35 @@ void handleDebugInput(Pad* pPad) {
     g_selected_debug_menu_item = 0; // Reset selection when changing tabs
   }
 
-  // Adjust CLIP_ZVALUE when custom mode is enabled
-  if (g_debug_menu.fogUseCustomClipZ) {
+  // Adjust fog parameters when adjustment mode is enabled
+  if (g_debug_menu.fogAdjustParams) {
     auto* postFxManager = PostFxManager::getInstance();
     
     if (pressed.L2) {
-      postFxManager->adjustClipZValue(-0x1000);
-      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+      g_debug_menu.fogNearPercentInt -= 5;
+      if (g_debug_menu.fogNearPercentInt < 0) g_debug_menu.fogNearPercentInt = 0;
+      postFxManager->setFogNearPercent((float)g_debug_menu.fogNearPercentInt / 100.0f);
     }
     if (pressed.R2) {
-      postFxManager->adjustClipZValue(0x1000);
-      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+      g_debug_menu.fogNearPercentInt += 5;
+      if (g_debug_menu.fogNearPercentInt > 100) g_debug_menu.fogNearPercentInt = 100;
+      postFxManager->setFogNearPercent((float)g_debug_menu.fogNearPercentInt / 100.0f);
     }
     if (pressed.DpadLeft) {
-      postFxManager->adjustClipZValue(-0x10);
-      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+      g_debug_menu.fogIntensityX10 -= 1;
+      if (g_debug_menu.fogIntensityX10 < 1) g_debug_menu.fogIntensityX10 = 1;
+      postFxManager->setFogIntensity((float)g_debug_menu.fogIntensityX10 / 10.0f);
     }
     if (pressed.DpadRight) {
-      postFxManager->adjustClipZValue(0x10);
-      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+      g_debug_menu.fogIntensityX10 += 1;
+      if (g_debug_menu.fogIntensityX10 > 100) g_debug_menu.fogIntensityX10 = 100;
+      postFxManager->setFogIntensity((float)g_debug_menu.fogIntensityX10 / 10.0f);
     }
     if (clicked.Square) {
-      postFxManager->resetClipZValueToDefault();
-      g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+      g_debug_menu.fogNearPercentInt = 15;
+      g_debug_menu.fogIntensityX10 = 20;
+      postFxManager->setFogNearPercent(0.15f);
+      postFxManager->setFogIntensity(2.0f);
     }
   }
 
@@ -308,17 +308,16 @@ void handleDebugInput(Pad* pPad) {
       if (itemIndexInTab == g_selected_debug_menu_item) {
         *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
         
-        // Sincronizar com PostFxManager quando togglear "Fog: Use Custom CLIP_Z"
-        if (g_all_menu_items[i].value == &g_debug_menu.fogUseCustomClipZ) {
+        // Sincronizar com PostFxManager quando togglear "Fog: Adjust Params"
+        if (g_all_menu_items[i].value == &g_debug_menu.fogAdjustParams) {
           auto* postFxManager = PostFxManager::getInstance();
           
-          if (g_debug_menu.fogUseCustomClipZ) {
-            // Ao ativar, sincronizar valor atual do PostFxManager
-            g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
-          } else {
-            // Ao desativar, resetar para valor padrão
-            postFxManager->resetClipZValueToDefault();
-            g_debug_menu.fogClipZValue = postFxManager->getClipZValue();
+          if (g_debug_menu.fogAdjustParams) {
+            // Ao ativar, sincronizar valores atuais do PostFxManager
+            g_debug_menu.fogNearPercentInt =
+                (int)(postFxManager->getFogNearPercent() * 100.0f + 0.5f);
+            g_debug_menu.fogIntensityX10 =
+                (int)(postFxManager->getFogIntensity() * 10.0f + 0.5f);
           }
         }
         

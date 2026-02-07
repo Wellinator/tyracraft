@@ -53,17 +53,16 @@ struct DebugMenu {
   // Post FX - Fog render passes control
   u8 enablePostFx = true;
   u8 fogPassSetup = true;
-  u8 fogPass1 = false;
-  u8 fogPass2 = false;
-  u8 fogPass3 = false;
-  u8 fogPass4 = false;
-  u8 fogPass5 = false;
-  u8 fogPass6 = false;
+  u8 fogPass3 = false;   // Channel copy (G→Alpha via CLUT)
+  u8 fogPass6 = false;   // Apply fog color (lerp)
   u8 fogPassRestore = true;
 
-  // Post FX - Fog CLIP_ZVALUE adjustment
-  u8 fogUseCustomClipZ = false;
-  int fogClipZValue = 0xFF8000;  // Default: 50% fog distance
+  // Post FX - Fog parameter adjustment
+  u8 fogAdjustParams = false;
+  // fogNearPercent em porcentagem inteira (0-100), default 15 = 15%
+  int fogNearPercentInt = 15;
+  // fogIntensity × 10 para ajuste inteiro (10 = 1.0, 20 = 2.0), default 20
+  int fogIntensityX10 = 20;
 
   // Post FX - Debug screenshots (trigger único)
   u8 fogTriggerScreenshot = false;

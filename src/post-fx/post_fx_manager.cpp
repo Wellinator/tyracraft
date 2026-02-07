@@ -1,5 +1,4 @@
 #include "managers/post-fx/post_fx_manager.hpp"
-#include "managers/dma_gif_builder.hpp"
 #include "screen_settings.hpp"
 #include "debug.hpp"
 #include <gs_gp.h>
@@ -8,6 +7,8 @@
 #include <screenshot.h>
 
 #include <stdlib.h>
+#include <malloc.h>
+#include <math.h>
 #include <kernel.h>
 #include <draw.h>
 #include <graph.h>
@@ -24,88 +25,13 @@ PostFxManager::PostFxManager(Renderer* renderer)
     : Singleton<PostFxManager>(), settings(renderer->core.getSettings()) {
   pRenderer = renderer;
 
-  // Inicializar CLIP_ZVALUE com valor padrão
-  CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
-
-  // Upload CLUT de identidade para uso no channel copy
-  uploadIdentityCLUT();
+  // Upload fog CLUT (inversão + clipping + curva não-linear)
+  uploadFogCLUT();
 }
 
 PostFxManager::~PostFxManager() {
   // CLUT é alocada em posição fixa da VRAM, não requer cleanup manual
   // (VRAM é gerenciada pelo GS e reinicializada a cada boot)
-}
-
-/**
- * Calcula o CLIP_ZVALUE baseado nos planos near/far e porcentagem de início do
- * fog.
- *
- * O Z-Buffer do PS2 usa mapeamento hiperbólico (não linear).
- * Após o PASS 1, os valores são invertidos: Z_invertido = 0xFFFFFF - Z_original
- *
- * Lógica do CLIP_ZVALUE com ZTEST_GREATER:
- * - Pass 1 inverte Z-Buffer: objetos próximos ficam com valores BAIXOS
- * - Pass 2 usa ZTEST_GREATER: se CLIP_ZVALUE > Z_Buffer, sobrescreve
- * - Para clipar apenas objetos PRÓXIMOS (próximo ao fogDistance):
- *   * CLIP_ZVALUE deve ser um valor INTERMEDIÁRIO
- *   * Pixels com Z < CLIP_ZVALUE (objetos próximos) são clippados
- *   * Pixels com Z > CLIP_ZVALUE (objetos distantes) mantêm profundidade
- *
- * Comportamento do fogStartPercent:
- * - 0.0 = fog começa no near (clippa quase nada, fog em tudo)
- * - 0.5 = fog começa no meio (clippa metade próxima)
- * - 1.0 = fog começa no far (clippa quase tudo, fog só no horizonte)
- *
- * @param nearPlane Distância do plano near (ex: 0.01f)
- * @param farPlane Distância do plano far (ex: 1000.0f)
- * @param fogStartPercent Porcentagem onde fog começa (0.0 = near, 1.0 = far)
- * @return Valor CLIP_ZVALUE para uso no Passo 2 com ZTEST_GREATER
- */
-uint32_t PostFxManager::calculateClipZValue(float nearPlane, float farPlane,
-                                            float fogStartPercent) {
-  // Clampar porcentagem entre 0 e 1
-  if (fogStartPercent < 0.0f) fogStartPercent = 0.0f;
-  if (fogStartPercent > 1.0f) fogStartPercent = 1.0f;
-
-  // fogStartPercent define onde o fog COMEÇA (objetos mais próximos ficam
-  // nítidos) fogStartPercent=0.0 -> fog começa no near (tudo tem fog, nada é
-  // clippado) fogStartPercent=0.5 -> fog começa no meio (metade próxima é
-  // clippada/nítida) fogStartPercent=1.0 -> fog começa no far (quase tudo é
-  // clippado/nítido)
-  float fogDistance = nearPlane + (farPlane - nearPlane) * fogStartPercent;
-
-  // Evitar divisão por zero
-  if (fogDistance <= nearPlane) fogDistance = nearPlane + 0.001f;
-  if (fogDistance >= farPlane) fogDistance = farPlane - 0.001f;
-
-  // Calcular Z original usando a fórmula do Z-Buffer perspectivo do PS2
-  // Z-Buffer do PS2: objetos PRÓXIMOS têm valores ALTOS, objetos DISTANTES têm
-  // valores BAIXOS
-  const float maxZ = 16777215.0f;  // 2^24 - 1 = 0xFFFFFF
-
-  // Fórmula do Z-Buffer perspectivo:
-  // Z_normalized = (far / distance - 1) / (far / near - 1)
-  float zNormalized =
-      (farPlane / fogDistance - 1.0f) / (farPlane / nearPlane - 1.0f);
-  uint32_t zOriginal = (uint32_t)(zNormalized * maxZ);
-
-  // APÓS PASS 1 (inversão): Z_invertido = 0xFFFFFF - Z_original
-  // Resultado: objetos PRÓXIMOS têm valores BAIXOS, objetos DISTANTES têm
-  // valores ALTOS
-  uint32_t zInvertido = 0xFFFFFF - zOriginal;
-
-  // Para ZTEST_GREATER no Pass 2:
-  // - Sobrescreve se CLIP_ZVALUE > Z_Buffer
-  // - Queremos clippar objetos MAIS PRÓXIMOS que fogDistance
-  // - Objetos próximos têm Z BAIXO após inversão
-  // - Logo, CLIP_ZVALUE deve ser o threshold: valores MENORES serão clippados
-  //
-  // CLIP_ZVALUE = zInvertido (threshold direto)
-  // Pixels com Z < zInvertido (mais próximos) → CLIP_ZVALUE > Z → SOBRESCREVE ✓
-  // Pixels com Z > zInvertido (mais distantes) → CLIP_ZVALUE < Z → MANTÉM ✓
-
-  // Retornar apenas os 24 bits úteis
-  return zInvertido & 0x00FFFFFF;
 }
 
 void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
@@ -116,71 +42,108 @@ void PostFxManager::setTwTh(int w, int h, int* tw, int* th) {
   if (h > (1 << *th)) (*th)++;
 }
 
-// Upload CLUT de identidade para VRAM usando draw_texture_transfer do PS2SDK.
-// A paleta de identidade é uma textura 16x16 (256 pixels) em formato 32-bit,
-// onde cada pixel N tem a cor (N, N, N, N) em RGBA. Isso permite que a
-// textura 8-bit funcione como lookup direto de bytes.
+void PostFxManager::setFogNearPercent(float percent) {
+  if (percent < 0.0f) percent = 0.0f;
+  if (percent > 1.0f) percent = 1.0f;
+  if (fogNearPercent != percent) {
+    fogNearPercent = percent;
+    clutDirty = true;
+  }
+}
+
+void PostFxManager::setFogIntensity(float intensity) {
+  if (intensity < 0.01f) intensity = 0.01f;
+  if (fogIntensity != intensity) {
+    fogIntensity = intensity;
+    clutDirty = true;
+  }
+}
+
+// ===================================================================
+// Upload da Fog CLUT (STRATEGY B)
+// ===================================================================
 //
-// Baseado em channel_copy.cpp - usa abordagem simples que funciona porque
-// draw_texture_transfer lida com o swizzle CSM1 internamente.
-void PostFxManager::uploadIdentityCLUT() {
-  // Dimensões da paleta: 16x16 = 256 cores
+// A CLUT não-linear substitui os antigos passes 1 (invert Z) e 2 (clip Z).
+// Cada entrada da paleta codifica três operações numa única lookup:
+//
+//   1. INVERSÃO: O Z-buffer do PS2 tem near=ALTO, far=BAIXO.
+//      Para fog, queremos far=alpha alto, near=alpha baixo.
+//      A CLUT inverte: CLUT[alto] = 0 (near, sem fog),
+//                      CLUT[baixo] = 127 (far, fog máximo).
+//
+//   2. CLIPPING: Valores acima de um threshold (objetos próximos)
+//      são forçados a alpha=0 (sem fog). Controlado por fogNearPercent.
+//
+//   3. CURVA NÃO-LINEAR: pow(t, fogIntensity) controla a distribuição
+//      do fog. Valores maiores concentram o fog mais longe.
+//
+// CSM1 SWIZZLE: O PS2 GS armazena CLUT de 256 entradas com blocos de 8
+// reordenados (dentro de cada grupo de 32, blocos 8-15 e 16-23 são trocados).
+// Precisamos pre-swizzle os dados para que o hardware faça lookup correto.
+//
+// FORMATO: Cada pixel RGBA da paleta é (V, V, V, V) onde V é o fog alpha.
+// O channel copy usa FRAME mask para escrever apenas no canal alpha do FB.
+//
+void PostFxManager::uploadFogCLUT() {
   constexpr int CLUT_WIDTH = 16;
   constexpr int CLUT_HEIGHT = 16;
   constexpr int CLUT_SIZE = CLUT_WIDTH * CLUT_HEIGHT;
 
-  // Alocar dados da paleta de identidade (alinhado a 64 bytes para DMA)
-  // Formato PS2 RGBA: R=bits 0-7, G=bits 8-15, B=bits 16-23, A=bits 24-31
   uint32_t* clutData =
-      (uint32_t*)aligned_alloc(64, CLUT_SIZE * sizeof(uint32_t));
-
-  // Criar paleta de identidade ESCALADA para range 0-128 do PS2 GS.
-  // O PS2 GS trata alpha 128 como 1.0 (opaco) nos blend formulas.
-  // Valores > 128 causam overflow em fórmulas como ((Cd-Cs)*Ad)/128 + Cs.
-  // Portanto, escalamos cada byte: out = min(i/2, 128)
-  // Isso mapeia Z-buffer green byte [0..255] → alpha [0..127]
-  // (128 = fully opaque fog, 0 = no fog)
-  for (int i = 0; i < CLUT_SIZE; i++) {
-    uint8_t scaled = (uint8_t)(i >> 1);  // i/2, max 127
-    clutData[i] = ((uint32_t)scaled << 24) | ((uint32_t)scaled << 16) |
-                  ((uint32_t)scaled << 8) | (uint32_t)scaled;
+      (uint32_t*)memalign(64, CLUT_SIZE * sizeof(uint32_t));
+  if (!clutData) {
+#ifdef DEBUG_MODE
+    TYRA_LOG("[FOG] ERROR: Failed to allocate CLUT data buffer!");
+#endif
+    return;
   }
 
-  FlushCache(0);
+  // Calcular threshold de clipping em termos do green byte (0-255).
+  // Green byte do Z: 255 = near plane, 0 = far plane.
+  // fogNearPercent = 0.15 significa "15% mais perto não tem fog".
+  // Threshold = 255 * (1.0 - fogNearPercent) = ~217 para 0.15
+  // Valores de green byte ACIMA do threshold → alpha = 0 (sem fog)
+  float clipThreshold = 255.0f * (1.0f - fogNearPercent);
 
-  // Calcular endereço da CLUT após o zbuffer e temp buffer
-  // zbuffer: width × height × 4 bytes
-  // temp buffer: 64 × 32 × 4 = 8192 bytes
-  // Total em words: (512*448*4 + 8192) / 4 = 231936 words após início do
-  // zbuffer
-  //
-  // Vamos usar um endereço fixo no final da VRAM para a CLUT (4MB - 4KB)
-  // Endereço em words: (4*1024*1024 - 4096) / 4 = 1047552 words
-  // Em 256-byte units: 1047552 >> 6 = 16368
-  //
-  // Alternativa mais segura: usar o espaço após o framebuffer duplo e zbuffer
-  // PS2 VRAM = 4MB = 4194304 bytes
-  // Framebuffer 512x448x4x2 (duplo) = 1835008 bytes @ endereço 0
-  // Zbuffer 512x448x4 = 917504 bytes @ endereço ~1835008
-  // Total usado ≈ 2752512 bytes
-  // CLUT 16x16x4 = 1024 bytes
-  //
-  // Vamos alocar no final da VRAM menos alguns KB para margem de segurança
-  // Endereço em WORD units (4 bytes) — compatível com ps2sdk:
-  // - draw_texture_transfer espera words (faz dest>>6 internamente para DBP)
-  // - graph_vram_allocate retorna words
-  // - framebuffer_t.address e zbuffer_t.address são em words
-  // Para TEX0 CBP: clutVramAddress >> 6 converte para 256-byte units
-  //
+  // Preencher a paleta com curva de fog não-linear.
+  // Usar array temporário linear, depois aplicar CSM1 swizzle.
+  uint8_t fogValues[CLUT_SIZE];
+
+  for (int i = 0; i < CLUT_SIZE; i++) {
+    if ((float)i >= clipThreshold) {
+      // Objetos próximos (green byte alto) → sem fog
+      fogValues[i] = 0;
+    } else {
+      // Calcular fog normalizado: 0.0 (no threshold) → 1.0 (far plane, i=0)
+      float t = 1.0f - ((float)i / clipThreshold);
+      // Aplicar curva não-linear: pow(t, intensity)
+      // intensity=1.0 → linear, intensity=2.0 → quadrático (mais fog longe)
+      float curved = powf(t, fogIntensity);
+      // Escalar para range GS alpha (0-127, onde 128 = 1.0)
+      int alpha = (int)(curved * 127.0f + 0.5f);
+      if (alpha > 127) alpha = 127;
+      if (alpha < 0) alpha = 0;
+      fogValues[i] = (uint8_t)alpha;
+    }
+  }
+
+  // Aplicar CSM1 swizzle: para que CLUT[i] retorne fogValues[i],
+  // precisamos armazenar fogValues[i] na posição csm1Reorder(i) em VRAM.
+  for (int i = 0; i < CLUT_SIZE; i++) {
+    int swizzled = csm1Reorder(i);
+    uint8_t v = fogValues[i];
+    clutData[swizzled] = ((uint32_t)v << 24) | ((uint32_t)v << 16) |
+                         ((uint32_t)v << 8) | (uint32_t)v;
+  }
+
+  // Alocar CLUT no final da VRAM (4MB - 8KB)
+  // Endereço em WORD units (4 bytes) para compatibilidade com ps2sdk.
   // 4MB = 4194304 bytes. 4MB - 8KB = 4186112 bytes.
   // 4186112 / 4 = 1046528 (em word units)
   constexpr uint32_t CLUT_VRAM_ADDR_WORDS = (4 * 1024 * 1024 - 8 * 1024) / 4;
   clutVramAddress = CLUT_VRAM_ADDR_WORDS;
 
-  // Preparar pacote DMA para upload da CLUT
-  // Usar draw_texture_transfer que lida com swizzle CSM1 automaticamente
-  // Nota: dest_width = 256 como em channel_copy.cpp (buffer width de 256
-  // pixels para 16x16 CLUT em PSM_32, equivalente a row alignment)
+  // Upload via draw_texture_transfer (DMA chain com REF para clutData)
   qword_t packets[30] ALIGNED(64);
   qword_t* q = packets;
 
@@ -188,17 +151,21 @@ void PostFxManager::uploadIdentityCLUT() {
                             clutVramAddress, 256);
   q = draw_texture_flush(q);
 
-  // Enviar via DMA
+  // CRITICAL: FlushCache APÓS construir os packets E preencher clutData.
+  // O DMA controller lê da memória física — tanto os packets (DMA chain tags)
+  // quanto clutData (via DMA REF). Ambos precisam estar flushed do cache.
+  FlushCache(0);
+
   dma_channel_send_chain(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
   dma_channel_wait(DMA_CHANNEL_GIF, 500);
 
-  // Liberar memória temporária
   free(clutData);
+  clutDirty = false;
 
 #ifdef DEBUG_MODE
-  TYRA_LOG("[FOG] Identity CLUT created and uploaded to VRAM");
+  TYRA_LOG("[FOG] Fog CLUT uploaded (nearPercent=", fogNearPercent,
+           ", intensity=", fogIntensity, ")");
   TYRA_LOG("[FOG] CLUT VRAM address (words): ", clutVramAddress);
-  TYRA_LOG("[FOG] CLUT VRAM address (bytes): ", clutVramAddress * 4);
   TYRA_LOG("[FOG] CLUT VRAM address (256B blocks / TEX0 CBP): ",
            clutVramAddress >> 6);
 #endif
@@ -215,43 +182,21 @@ void PostFxManager::saveDebugScreenshot(const char* filename, uint32_t address,
 }
 #endif
 
-void PostFxManager::setClipZValue(uint32_t value) {
-  // Clampar valor entre 0x000000 e 0xFFFFFF
-  CLIP_ZVALUE = value & 0x00FFFFFF;
-}
-
-void PostFxManager::adjustClipZValue(int delta) {
-  int64_t newValue = static_cast<int64_t>(CLIP_ZVALUE) + delta;
-
-  // Clampar entre 0 e 0xFFFFFF
-  if (newValue < 0) {
-    newValue = 0;
-  } else if (newValue > 0xFFFFFF) {
-    newValue = 0xFFFFFF;
-  }
-
-  CLIP_ZVALUE = static_cast<uint32_t>(newValue);
-}
-
-void PostFxManager::resetClipZValueToDefault() {
-  CLIP_ZVALUE = DEFAULT_CLIP_ZVALUE;
-}
-
 void PostFxManager::fogPassSetup() {
   // ===== CONFIGURAÇÃO INICIAL =====
   // Define os parâmetros do GS para os passes subsequentes
   // - TEST: ALLPASS (sem testes, aceita tudo)
-  // - ZBUF: Habilita escrita no Z-buffer (necessário para Pass 1)
-  // - XYOFFSET: (0,0) (offset de coordenadas)
-  // - PABE: Desabilitado (não usa alpha per-pixel)
-  // - SCISSOR: Clipping area = resolução completa (512x448)
-  // - COLCLAMP: Habilitado (evita overflow de cores)
+  // - ZBUF: Z-buffer writes DESABILITADAS
+  // - XYOFFSET: (0,0) para coordenadas de pixel brutas
+  // - PABE: Desabilitado
+  // - SCISSOR: Resolução completa (512x448)
+  // - COLCLAMP: Habilitado
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPassSetup == false) return;
 #endif
 
-  qword_t packets[200] ALIGNED(64);
+  qword_t packets[20] ALIGNED(64);
   qword_t* q = packets;
 
   // GIF tag: 6 registradores A+D
@@ -263,13 +208,12 @@ void PostFxManager::fogPassSetup() {
               GS_REG_TEST_1);
   q++;
 
-  // ZBUF_1: Z-buffer writes DESABILITADAS (mask=1 = não escreve)
-  // Passes subsequentes controlam escrita via FRAME target
+  // ZBUF_1: Z-buffer writes DESABILITADAS (mask=1)
   PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
               GS_REG_ZBUF_1);
   q++;
 
-  // XYOFFSET_1: Offset (0,0) para coordenadas de primitivas
+  // XYOFFSET_1: Offset (0,0)
   PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
   q++;
 
@@ -277,7 +221,7 @@ void PostFxManager::fogPassSetup() {
   PACK_GIFTAG(q, GS_SET_PABE(0), GS_REG_PABE);
   q++;
 
-  // SCISSOR_1: Clipping area (0,511) x (0,447) para 512x448
+  // SCISSOR_1: Clipping area (0,511) x (0,447)
   PACK_GIFTAG(q, GS_SET_SCISSOR(0, fog_width - 1, 0, fog_height - 1),
               GS_REG_SCISSOR_1);
   q++;
@@ -293,148 +237,6 @@ void PostFxManager::fogPassSetup() {
 #ifdef DEBUG_MODE
   saveDebugScreenshot("host:debug/fog_pass_setup.tga", fog_buf_frame.address,
                       fog_width, fog_height, fog_buf_frame.psm);
-#endif
-}
-
-void PostFxManager::fogPass1InvertZ() {
-  // ===== PASS 1: INVERTER Z-BUFFER =====
-  // Objetivo: Transformar Z-buffer para usar ZTEST_GREATER no Pass 2
-  //
-  // Técnica baseada no original (DepthOfFieldWithZFog.cpp):
-  // - FRAME target = Z-buffer, com mask 0xFF000000 para proteger byte alto
-  // - ALPHA blend (0,1,2,2,128) = ((Cs - Cd) * FIX) >> 7 + D
-  //   Cs=255 (RGBAQ), Cd=Z_original, FIX=128 → resultado ≈ 255 - Z_original
-  // - Sprite full-screen com Z=0, alpha blending habilitado
-
-#ifdef DEBUG_MODE
-  if (g_debug_menu.fogPass1) {
-    saveDebugScreenshot("host:debug/fog_pass1_before_invert_z.tga",
-                        fog_zbufferAddr, fog_width, fog_height, fog_zbufferPsm);
-#endif
-
-    {
-      qword_t packets[100] ALIGNED(64);
-      qword_t* q = packets;
-
-      // 6 registradores A+D: FRAME, ALPHA, PRIM, RGBAQ, XYZ2, XYZ2
-      PACK_GIFTAG(q, GIF_SET_TAG(6, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-      q++;
-
-      // FRAME_1: Z-buffer como destino de renderização
-      // PSM do zbuffer, mask 0xFF000000 protege o byte mais alto (alpha)
-      // FBW = largura em unidades de 64 pixels
-      PACK_GIFTAG(q,
-                  GS_SET_FRAME(fog_zbufferAddr >> 11, fog_width >> 6,
-                               fog_zbufferPsm, 0xFF000000),
-                  GS_REG_FRAME_1);
-      q++;
-
-      // ALPHA_1: A=0(Cs), B=1(Cd), C=2(FIX), D=2(0), FIX=128
-      // Formula: ((Cs - Cd) * 128) >> 7 + 0 = Cs - Cd
-      // Com Cs=0xFF: resultado = 0xFF - Z_original (inversão)
-      PACK_GIFTAG(q, GS_SET_ALPHA(0, 1, 2, 2, 128), GS_REG_ALPHA_1);
-      q++;
-
-      // PRIM: Sprite, ABE=1 (alpha blend enabled)
-      PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 1, 0, 0, 0, 0),
-                  GS_REG_PRIM);
-      q++;
-
-      // RGBAQ: R=255, G=255, B=255, A=128 (Cs = 0xFF por canal)
-      PACK_GIFTAG(q, GS_SET_RGBAQ(255, 255, 255, 128, 0), GS_REG_RGBAQ);
-      q++;
-
-      // XYZ2 inicio: (0, 0, Z=0)
-      PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GIF_REG_XYZ2);
-      q++;
-
-      // XYZ2 fim: (width, height, Z=0) — drawing kick
-      PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_width), ftoi4(fog_height), 0),
-                  GIF_REG_XYZ2);
-      q++;
-
-      FlushCache(0);
-      dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-      dma_channel_wait(DMA_CHANNEL_GIF, 500);
-    }
-
-#ifdef DEBUG_MODE
-    saveDebugScreenshot("host:debug/fog_pass1_invert_z.tga", fog_zbufferAddr,
-                        fog_width, fog_height, fog_zbufferPsm);
-  }
-#endif
-}
-
-void PostFxManager::fogPass2ClipZ() {
-  // ===== PASS 2: CLIPAR OBJETOS PRÓXIMOS =====
-  // Baseado no original (DepthOfFieldWithZFog.cpp):
-  // - TEST: ZTEST_GREATER + ATE=1 (alpha test habilitado para funcionar)
-  // - ZBUF: mask=0 (writes habilitadas) — escrita real no zbuffer
-  // - Sprite full-screen com Z=CLIP_ZVALUE e RGBA=0
-  // - Onde CLIP_ZVALUE > Z_invertido → sobrescreve com 0 (clippa)
-  // - Depois restaura TEST=ALLPASS e ZBUF mask=1
-
-#ifdef DEBUG_MODE
-  if (g_debug_menu.fogPass2) {
-#endif
-
-    qword_t packets[100] ALIGNED(64);
-    qword_t* q = packets;
-
-    // 8 registradores: TEST, ZBUF, PRIM, RGBAQ, XYZ2, XYZ2, TEST, ZBUF
-    PACK_GIFTAG(q, GIF_SET_TAG(8, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // TEST_1: ATE=1, ATST=0(NEVER), AREF=0, AFAIL=2(ZBONLY),
-    //         DATE=0, DATM=0, ZTE=1, ZTST=GREATER
-    // Alpha test NEVER para não escrever no frame, AFAIL=ZBONLY para
-    // só escrever no zbuffer. Isso replica o comportamento do original
-    // onde PRIM não tem ABE e cor é irrelevante.
-    PACK_GIFTAG(q, GS_SET_TEST(1, 0, 0, 2, 0, 0, 1, ZTEST_METHOD_GREATER),
-                GS_REG_TEST_1);
-    q++;
-
-    // ZBUF_1: Z-buffer writes habilitadas (mask=0)
-    PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 0),
-                GS_REG_ZBUF_1);
-    q++;
-
-    // PRIM: Sprite simples, sem textura, sem blend
-    PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 0, 0, 0, 0, 0),
-                GS_REG_PRIM);
-    q++;
-
-    // RGBAQ: Cor preta (irrelevante, AFAIL=ZBONLY)
-    PACK_GIFTAG(q, GS_SET_RGBAQ(0, 0, 0, 0, 0), GS_REG_RGBAQ);
-    q++;
-
-    // XYZ2 start: (0, 0, CLIP_ZVALUE)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), CLIP_ZVALUE), GIF_REG_XYZ2);
-    q++;
-
-    // XYZ2 end: (width, height, CLIP_ZVALUE) — drawing kick
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_width), ftoi4(fog_height), CLIP_ZVALUE),
-                GIF_REG_XYZ2);
-    q++;
-
-    // Restaurar: TEST=ALLPASS
-    PACK_GIFTAG(q, GS_SET_TEST(0, 0, 0, 0, 0, 0, 1, ZTEST_METHOD_ALLPASS),
-                GS_REG_TEST_1);
-    q++;
-
-    // Restaurar: ZBUF mask=1 (writes desabilitadas)
-    PACK_GIFTAG(q, GS_SET_ZBUF(fog_zbufferAddr >> 11, fog_zbufferPsm, 1),
-                GS_REG_ZBUF_1);
-    q++;
-
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
-
-#ifdef DEBUG_MODE
-    saveDebugScreenshot("host:debug/fog_pass2_clip_z.tga", fog_zbufferAddr,
-                        fog_width, fog_height, fog_zbufferPsm);
-  }
 #endif
 }
 
@@ -522,7 +324,7 @@ void PostFxManager::performChannelCopyBlock(ColourChannels channelIn,
       break;
   }
 
-  qword_t packets[500] ALIGNED(64);
+  static qword_t packets[500] ALIGNED(64);
   qword_t* q = packets;
 
   // 5 registradores setup: XYOFFSET, TEX0, CLAMP, TEXFLUSH, FRAME
@@ -714,20 +516,16 @@ void PostFxManager::fogPass3ChannelCopy() {
   //
   // Per Sony doc "Using the Z Buffer for Visual and Special Effects":
   // - For 32-bit Z-Buffer, bits 15-8 (Green channel) map best for fog
-  // - The PSMCT16S trick CANNOT be used with PSMZ_32 zbuffer because
-  //   PSMZ_32 has reversed column order within blocks compared to PSMCT
-  //   formats. Reading PSMZ_32 VRAM as a PSMCT16S texture produces garbled
-  //   output.
+  // - PSMZ_32 has reversed column order within blocks compared to PSM formats,
+  //   so direct texture reads produce garbled output.
   //
-  // Solution: Use BITBLTBUF local-to-local transfer (PSMZ_32 → PSM_32)
-  // in 64x32 blocks to resolve the column swizzle, then channel shuffle
-  // with PSM_8 + identity CLUT to extract the Green channel byte and
-  // write it into the framebuffer Alpha channel.
+  // Solution: BITBLTBUF local-to-local (PSMZ_32 → PSM_32) per 64x32 block
+  // resolves swizzle. Then channel copy with PSM_8 + fog CLUT extracts the
+  // Green byte and writes the fog alpha into framebuffer Alpha channel.
   //
-  // This matches the GTA SA PostFX approach:
-  //   CSkyEdgePostEffects_CopyDepthBuffer(CHANNEL_BLUE, table)
-  // But we use CHANNEL_GREEN for 32-bit zbuffer as per Sony doc
-  // (bits 15-8 = Green, best mapping for fog distance).
+  // A CLUT não-linear controla inversão (near→0, far→high), clipping
+  // (near objects → alpha 0) e curva de fog (pow(t, intensity))
+  // — substituindo os antigos passes 1 (invert) e 2 (clip).
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.fogPass3) {
@@ -743,122 +541,45 @@ void PostFxManager::fogPass3ChannelCopy() {
 #endif
 }
 
-void PostFxManager::fogPass4Downsample() {
-  // ===== PASS 4: DOWNSAMPLE =====
-  // Técnica original de DepthOfFieldWithZFog.cpp:
-  // - FRAME: zbuffer como destino, PSM do framebuffer, mask=0xFF000000
-  // - TEX0: framebuffer como textura, TCC=0, TFX=DECAL
-  // - TEX1: LINEAR filter
-  // - PRIM: sprite com textura, SEM ABE
-  // - UV: (0,0) to (width, height)
-  // - XYZ: (0,0) to (width/2, height/2)
-
-#ifdef DEBUG_MODE
-  if (g_debug_menu.fogPass4) {
-#endif
-    qword_t packets[200] ALIGNED(64);
-    qword_t* q = packets;
-
-    // Configuração: 6 registradores (EOP=0, continua com sprite data)
-    // Inclui XYOFFSET(0,0) para garantir coordenadas corretas após
-    // copyDepthBuffer que pode ter alterado o offset
-    PACK_GIFTAG(q, GIF_SET_TAG(6, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // XYOFFSET: (0,0) — ESSENCIAL: resetar após copyDepthBuffer
-    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
-    q++;
-
-    // FRAME: Z-buffer como destino (workbuffer)
-    // mask=0xFF000000 protege o byte alpha (bits 24-31)
-    PACK_GIFTAG(q,
-                GS_SET_FRAME(fog_zbufferAddr >> 11, fog_width >> 6,
-                             fog_buf_frame.psm, 0xFF000000),
-                GS_REG_FRAME_1);
-    q++;
-
-    // TEXFLUSH
-    PACK_GIFTAG(q, GS_SET_TEXFLUSH(1), GS_REG_TEXFLUSH);
-    q++;
-
-    // TEX0: Framebuffer como textura source
-    // TCC=0 (ignora alpha da textura), TFX=DECAL
-    PACK_GIFTAG(q,
-                GS_SET_TEX0(fog_buf_frame.address >> 6, fog_width >> 6,
-                            fog_buf_frame.psm, 10, 10, 0, 1, 0, 0, 0, 0, 0),
-                GS_REG_TEX0_1);
-    q++;
-
-    // TEX1: LINEAR filter (MMAG=1, MMIN=1)
-    PACK_GIFTAG(q, GS_SET_TEX1(0, 0, 1, 1, 0, 0, 0), GS_REG_TEX1_1);
-    q++;
-
-    // PRIM: Sprite com textura, SEM ABE, FST=1
-    PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 0, 0, 1, 0, 0),
-                GS_REG_PRIM);
-    q++;
-
-    // Sprite data em modo A+D: UV + XYZ2 × 2 = 4 regs
-    PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // UV start: (0, 0) com half-texel offset
-    PACK_GIFTAG(q, GS_SET_UV(8, 8), GS_REG_UV);
-    q++;
-    // XYZ2 start: (0, 0)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
-    q++;
-
-    // UV end: (width, height)
-    PACK_GIFTAG(q, GS_SET_UV(8 + (fog_width << 4), 8 + (fog_height << 4)),
-                GS_REG_UV);
-    q++;
-    // XYZ2 end: (halfWidth, halfHeight) → downsample 2x
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_halfWidth), ftoi4(fog_halfHeight), 0),
-                GS_REG_XYZ2);
-    q++;
-
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
-
-#ifdef DEBUG_MODE
-    saveDebugScreenshot("host:debug/fog_pass4_downsample.tga", fog_zbufferAddr,
-                        fog_halfWidth, fog_halfHeight, fog_buf_frame.psm);
-  }
-#endif
-}
-
-void PostFxManager::fogPass5Blend() {
-  // ===== PASS 5: BLEND ALPHA =====
-  // Objetivo: Desenhar workbuffer no framebuffer usando alpha como máscara
+void PostFxManager::fogPass6Apply(const Color& fogColor) {
+  // ===== PASS 6: APLICAR COR DE FOG (LERP) =====
   //
-  // Técnica:
-  // - Source: Workbuffer (Z-buffer com downsampled framebuffer + alpha channel)
-  // - Dest: Framebuffer original
-  // - Blend: (1,0,1,0,0) = Cs * As
-  // - Resultado: blending baseado no alpha extraído do Z-buffer
+  // Fórmula: Output = lerp(Cd, fogColor, Ad/128)
+  //        = Cd + (fogColor - Cd) * Ad/128
+  //
+  // Usando GS alpha blend: ALPHA(0, 1, 1, 1, 0)
+  //   A=0(Cs), B=1(Cd), C=1(Ad), D=1(Cd)
+  //   Output = ((Cs - Cd) * Ad) >> 7 + Cd
+  //          = Cd + (Cs - Cd) * Ad/128
+  //
+  // Onde:
+  //   Cs = fogColor (RGBAQ, sem textura)
+  //   Cd = framebuffer (cena original)
+  //   Ad = alpha do framebuffer = fog mask do channel copy
+  //
+  // Resultado:
+  //   Ad=0 (near, sem fog)  → Output = Cd (cena original)
+  //   Ad=127 (far, fog max) → Output ≈ fogColor (fog completo)
+  //
+  // NOTA: O GS faz aritmética interna em 9 bits com sinal, então
+  // (Cs - Cd) pode ser negativo sem problemas. COLCLAMP faz clamp
+  // apenas no resultado final para [0, 255].
+
+  if (fogColor.a == 0) return;
 
 #ifdef DEBUG_MODE
-  if (g_debug_menu.fogPass5) {
+  if (g_debug_menu.fogPass6) {
 #endif
-    qword_t packets[200] ALIGNED(64);
+
+    qword_t packets[20] ALIGNED(64);
     qword_t* q = packets;
 
-    // Pass 5 original faz dois sprites com offset de sub-pixel para
-    // criar blur. Basicamente desenha o workbuffer (metade) escalado
-    // de volta ao framebuffer com alpha blending (depth mask).
-    //
-    // Original: ALPHA(1,0,1,0,0) = ((Cd - Cs) * Ad) >> 7 + Cs
-    // = Cs + (Cd - Cs) * Ad = lerp entre Cs (workbuffer) e Cd (framebuffer)
-    // controlado por Ad (alpha do destino = depth mask)
-
-    // Configuração: FRAME + TEXFLUSH + TEX0 + ALPHA + PRIM (5 regs, EOP=0)
+    // 5 registradores + 2 XYZ2 para sprite fullscreen
     PACK_GIFTAG(q, GIF_SET_TAG(5, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
-    // FRAME: Framebuffer original como destino
-    // mask=0xFF000000 para proteger alpha (depth mask)
+    // FRAME: Framebuffer como destino, proteger alpha (mask 0xFF000000)
+    // para que a cor do fog não sobrescreva a depth mask
     PACK_GIFTAG(
         q,
         GS_SET_FRAME(fog_buf_frame.address >> 11, fog_buf_frame.width >> 6,
@@ -866,176 +587,27 @@ void PostFxManager::fogPass5Blend() {
         GS_REG_FRAME_1);
     q++;
 
-    // TEXFLUSH
-    PACK_GIFTAG(q, GS_SET_TEXFLUSH(1), GS_REG_TEXFLUSH);
-    q++;
-
-    // TEX0: Workbuffer (Z-buffer) como textura source
-    // TCC=1 (usa alpha da textura), TFNCT=DECAL
-    PACK_GIFTAG(q,
-                GS_SET_TEX0(fog_zbufferAddr >> 6, fog_width >> 6,
-                            fog_buf_frame.psm, 10, 10, 1, 1, 0, 0, 0, 0, 0),
-                GS_REG_TEX0_1);
-    q++;
-
-    // ALPHA: (1,0,1,0,0) = ((Cd - Cs) * Ad) >> 7 + Cs
-    // Blend baseado no alpha do destino (framebuffer)
-    PACK_GIFTAG(q, GS_SET_ALPHA(1, 0, 1, 0, 0), GS_REG_ALPHA_1);
-    q++;
-
-    // PRIM: Sprite com textura, ABE=1 (alpha blend), FST=1 (UV)
-    PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
-                GS_REG_PRIM);
-    q++;
-
-    // Offset de 16 sub-pixels (1 pixel) para blur, como no original
-    int32_t offset = 16;
-
-    // Sprite 1: Com offset positivo — modo A+D (4 regs, EOP=0)
-    PACK_GIFTAG(q, GIF_SET_TAG(4, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // UV start: (1, 1) com half-texel offset
-    PACK_GIFTAG(q, GS_SET_UV(8 + (1 << 4), 8 + (1 << 4)), GS_REG_UV);
-    q++;
-    // XYZ2 start: (1+offset, 1+offset)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(1) + offset, ftoi4(1) + offset, 0),
-                GS_REG_XYZ2);
-    q++;
-
-    // UV end: (halfWidth, halfHeight)
-    PACK_GIFTAG(q,
-                GS_SET_UV(8 + (fog_halfWidth << 4), 8 + (fog_halfHeight << 4)),
-                GS_REG_UV);
-    q++;
-    // XYZ2 end: (width+1+offset, height+1+offset)
-    PACK_GIFTAG(
-        q,
-        GS_SET_XYZ(ftoi4(fog_width + 1) + offset,
-                   ftoi4(fog_height + 1) + offset, 0),
-        GS_REG_XYZ2);
-    q++;
-
-    // Sprite 2: Com offset negativo (blur oposto) — modo A+D (4 regs, EOP=1)
-    PACK_GIFTAG(q, GIF_SET_TAG(4, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // UV start: (0+offset, 0+offset)
-    PACK_GIFTAG(q, GS_SET_UV(8 + offset, 8 + offset), GS_REG_UV);
-    q++;
-    // XYZ2 start: (0, 0)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
-    q++;
-
-    // UV end: (halfWidth, halfHeight)
-    PACK_GIFTAG(q,
-                GS_SET_UV(8 + (fog_halfWidth << 4), 8 + (fog_halfHeight << 4)),
-                GS_REG_UV);
-    q++;
-    // XYZ2 end: (width-offset, height-offset)
-    PACK_GIFTAG(q,
-                GS_SET_XYZ(ftoi4(fog_width) - offset,
-                           ftoi4(fog_height) - offset, 0),
-                GS_REG_XYZ2);
-    q++;
-
-    FlushCache(0);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packets, q - packets, 0, 0);
-    dma_channel_wait(DMA_CHANNEL_GIF, 500);
-
-#ifdef DEBUG_MODE
-    saveDebugScreenshot("host:debug/fog_pass5_blend_alpha.tga",
-                        fog_buf_frame.address, fog_width, fog_height,
-                        fog_buf_frame.psm);
-  }
-#endif
-}
-
-void PostFxManager::fogPass6Apply(const Color& fogColor) {
-  // ===== PASS 6: APLICAR SATURAÇÃO E COR DE FOG =====
-  // Técnica original de DepthOfFieldWithZFog.cpp:
-  // 1. Primeiro sprite: saturação com MODULATE + ALPHA(0,2,2,1,fog.alpha)
-  // 2. Segundo sprite: fog color com ALPHA(0,2,1,1,0) sem textura
-
-  // Só executa se fog.alpha > 0
-  if (fogColor.a == 0) return;
-
-#ifdef DEBUG_MODE
-  if (g_debug_menu.fogPass6) {
-#endif
-
-    qword_t packets[100] ALIGNED(64);
-    qword_t* q = packets;
-
-    // === PARTE 1: SATURAÇÃO ===
-    // Configuração: RGBAQ, TEXFLUSH, TEX0, PRIM, ALPHA (5 regs, EOP=0)
-    PACK_GIFTAG(q, GIF_SET_TAG(5, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // RGBAQ: Cor do fog (usada como multiplicador com MODULATE)
+    // RGBAQ: Cor do fog (Cs na fórmula de blend)
     PACK_GIFTAG(
         q,
         GS_SET_RGBAQ((int)fogColor.r, (int)fogColor.g, (int)fogColor.b, 0, 0),
         GS_REG_RGBAQ);
     q++;
 
-    // TEXFLUSH
-    PACK_GIFTAG(q, GS_SET_TEXFLUSH(1), GS_REG_TEXFLUSH);
+    // ALPHA: (0,1,1,1,0) = ((Cs-Cd)*Ad)>>7 + Cd = lerp(Cd, Cs, Ad/128)
+    PACK_GIFTAG(q, GS_SET_ALPHA(0, 1, 1, 1, 0), GS_REG_ALPHA_1);
     q++;
 
-    // TEX0: Framebuffer como textura, TFX=MODULATE (0)
-    // TCC=1 (usa alpha da textura), TFX=MODULATE
-    PACK_GIFTAG(q,
-                GS_SET_TEX0(fog_buf_frame.address >> 6, fog_width >> 6,
-                            fog_buf_frame.psm, 10, 10, 1, 0, 0, 0, 0, 0, 0),
-                GS_REG_TEX0_1);
-    q++;
-
-    // PRIM: Sprite com textura, ABE=1, FST=1
-    PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0),
-                GS_REG_PRIM);
-    q++;
-
-    // ALPHA: (0,2,2,1,fog.alpha) = ((Cs-0)*fog.alpha)/128 + Cd
-    // Resultado: Cd + Cs*fog.alpha/128 (adiciona saturação)
-    PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 2, 1, (int)fogColor.a), GS_REG_ALPHA_1);
-    q++;
-
-    // Sprite para saturação em modo A+D: UV + XYZ2 × 2 = 4 regs (EOP=0)
-    PACK_GIFTAG(q, GIF_SET_TAG(4, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    // UV start: (0, 0) com half-texel offset
-    PACK_GIFTAG(q, GS_SET_UV(8, 8), GS_REG_UV);
-    q++;
-    // XYZ2 start: (0, 0)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(0), ftoi4(0), 0), GS_REG_XYZ2);
-    q++;
-
-    // UV end: (width, height)
-    PACK_GIFTAG(q, GS_SET_UV(8 + (fog_width << 4), 8 + (fog_height << 4)),
-                GS_REG_UV);
-    q++;
-    // XYZ2 end: (width, height)
-    PACK_GIFTAG(q, GS_SET_XYZ(ftoi4(fog_width), ftoi4(fog_height), 0),
-                GS_REG_XYZ2);
-    q++;
-
-    // === PARTE 2: FOG COLOR ===
-    // ALPHA: (0,2,1,1,0) = ((Cs-0)*Ad)/128 + Cd
-    // Resultado: Cd + Cs*Ad/128 (adiciona cor fog baseado no alpha do destino)
-    PACK_GIFTAG(q, GIF_SET_TAG(2, 0, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
-    q++;
-
-    PACK_GIFTAG(q, GS_SET_ALPHA(0, 2, 1, 1, 0), GS_REG_ALPHA_1);
-    q++;
-
-    // PRIM: Sprite sem textura, ABE=1, FST=1
+    // PRIM: Sprite sem textura, ABE=1 (alpha blend), FST=1
     PACK_GIFTAG(q, GS_SET_PRIM(GS_PRIM_SPRITE, 0, 0, 0, 1, 0, 1, 0, 0),
                 GS_REG_PRIM);
     q++;
 
-    // Sprite para fog color em modo A+D: XYZ2 × 2 = 2 regs (EOP=1, último)
+    // XYOFFSET: (0,0) garantir coordenadas corretas
+    PACK_GIFTAG(q, GS_SET_XYOFFSET(0, 0), GS_REG_XYOFFSET_1);
+    q++;
+
+    // Sprite full-screen: 2 XYZ2 (EOP=1)
     PACK_GIFTAG(q, GIF_SET_TAG(2, 1, 0, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
     q++;
 
@@ -1089,7 +661,7 @@ void PostFxManager::fogPassRestore() {
     ztest.enable = DRAW_ENABLE;
     ztest.method = fog_zbuffer.method;
 
-    qword_t packets[200] ALIGNED(64);
+    qword_t packets[20] ALIGNED(64);
     qword_t* q = packets;
 
     // GIF tag: 10 registradores A+D
@@ -1179,25 +751,24 @@ void PostFxManager::renderFog(Color fogColor) {
   if (g_debug_menu.enablePostFx == false) return;
 #endif  // DEBUG_MODE
 
-  // ===== DOCUMENTAÇÃO TÉCNICA: Depth of Field com Z-Buffer Fog =====
-  // Baseado em técnica original Sony (fog.txt - 640x448)
-  // Adaptado para 512x448 com channel shuffle G→A (16-bit mode)
+  // ===== STRATEGY B: Pipeline simplificada de fog pós-processamento =====
   //
-  // Passes:
-  // 1. Invert Z-buffer values (para usar ZGREATER em Pass 2)
-  // 2. Clip objetos próximos (remove da máscara de profundidade)
-  // 3. Channel copy: G-channel do Z-buffer → Alpha-channel do framebuffer
-  //    - Usa textura 8-bit + CLUT identidade em blocos 64x32 (channel_copy)
-  //    - Copia local-to-local para temp buffer e faz shuffle por bloco
-  // 4. Downsample framebuffer para workbuffer (width/2 × height/2)
-  // 5. Draw workbuffer com alpha blending (profundidade como máscara)
-  // 6. Aplicar cor fog e saturação
+  // A CLUT não-linear faz todo o trabalho de inversão, clipping e curva
+  // numa única lookup durante o channel copy. Isso elimina os antigos
+  // passes 1 (invert Z), 2 (clip Z), 4 (downsample) e 5 (blur/blend).
+  //
+  // Pipeline:
+  //   Setup → Channel Copy (G→Alpha via CLUT) → Apply Fog Color → Restore
+  //
+  // A CLUT converte o green byte do Z-buffer (near=255, far=0) em fog alpha:
+  //   - Near objects → alpha 0 (sem fog)
+  //   - Far objects → alpha 127 (fog máximo)
+  //   - Curva não-linear controlada por fogIntensity (pow)
+  //   - Clipping de near objects controlado por fogNearPercent
 
   // Configurar propriedades reutilizáveis
   fog_width = SCREEN_WIDTH;
   fog_height = SCREEN_HEIGHT;
-  fog_halfWidth = fog_width / 2;
-  fog_halfHeight = fog_height / 2;
   setTwTh(fog_width, fog_height, &fog_tw, &fog_th);
 
   fog_zbuffer = pRenderer->core.gs.zBuffer;
@@ -1205,15 +776,14 @@ void PostFxManager::renderFog(Color fogColor) {
   fog_zbufferAddr = fog_zbuffer.address;
   fog_zbufferPsm = fog_zbuffer.zsm;
 
-  // ===== PASS 1 & 2: Clipar Z-Buffer =====
-  // Remove objetos próximos do zbuffer para que não recebam fog
+  // Re-upload CLUT se os parâmetros mudaram
+  if (clutDirty) {
+    uploadFogCLUT();
+  }
 
+  // Pipeline simplificada: 4 etapas em vez de 8
   fogPassSetup();
-  fogPass1InvertZ();
-  fogPass2ClipZ();
   fogPass3ChannelCopy();
-  fogPass4Downsample();
-  fogPass5Blend();
   fogPass6Apply(fogColor);
   fogPassRestore();
 }
