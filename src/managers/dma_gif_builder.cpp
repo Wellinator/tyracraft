@@ -51,8 +51,15 @@ void DmaGifBuilder::begin() {
   m_begun = true;
 }
 
-void DmaGifBuilder::addGifTag(u64 regs, u32 regCount) {
+void DmaGifBuilder::addGifTag(u64 regs, u32 regCount, u32 eop) {
   ensureBegun();
+
+  // Check buffer overflow BEFORE writing
+  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
+    printf("DmaGifBuilder: Buffer overflow in addGifTag! Max: %d\n",
+           DMA_GIF_BUILDER_MAX_PACKETS);
+    return;
+  }
 
   // Finalize previous GIF tag if exists
   if (m_gifTagPos != nullptr && m_autoCount) {
@@ -63,8 +70,9 @@ void DmaGifBuilder::addGifTag(u64 regs, u32 regCount) {
   m_gifTagPos = m_current;
   m_autoCount = (regCount == 0);
 
-  // Add GIF tag
-  PACK_GIFTAG(m_current, GIF_SET_TAG(regCount, 1, 0, 0, GIF_FLG_PACKED, 1), regs);
+  // Add GIF tag (NREG=1 for A+D mode)
+  PACK_GIFTAG(m_current, GIF_SET_TAG(regCount, eop, 0, 0, GIF_FLG_PACKED, 1),
+              regs);
   m_current++;
   m_packetCount = 0;
 }
@@ -72,43 +80,55 @@ void DmaGifBuilder::addGifTag(u64 regs, u32 regCount) {
 void DmaGifBuilder::addAd(u64 value, u64 reg) {
   ensureBegun();
 
-  // Add register/value pair
+  // Check buffer overflow BEFORE writing
+  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
+    printf("DmaGifBuilder: Buffer overflow in addAd! Max: %d\n",
+           DMA_GIF_BUILDER_MAX_PACKETS);
+    return;
+  }
+
+  // Add register/value pair (A+D format: data in dw[0], addr in dw[1])
   PACK_GIFTAG(m_current, value, reg);
   m_current++;
   m_packetCount++;
-
-  // Check buffer overflow
-  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
-    printf("DmaGifBuilder: Buffer overflow! Max packets: %d\n", DMA_GIF_BUILDER_MAX_PACKETS);
-  }
 }
 
 void DmaGifBuilder::addRaw(u64 low, u64 high) {
   ensureBegun();
 
+  // Check buffer overflow BEFORE writing
+  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
+    printf("DmaGifBuilder: Buffer overflow in addRaw! Max: %d\n",
+           DMA_GIF_BUILDER_MAX_PACKETS);
+    return;
+  }
+
   m_current->dw[0] = low;
   m_current->dw[1] = high;
   m_current++;
-
-  // Check buffer overflow
-  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
-    printf("DmaGifBuilder: Buffer overflow! Max packets: %d\n", DMA_GIF_BUILDER_MAX_PACKETS);
-  }
+  m_packetCount++;
 }
 
 void DmaGifBuilder::addGifLoopTag(u32 nloop, u32 eop, u32 pre, u64 prim, u32 flg, u32 nreg, u64 regs) {
   ensureBegun();
+
+  // Check buffer overflow BEFORE writing
+  if ((m_current - m_packets) >= DMA_GIF_BUILDER_MAX_PACKETS) {
+    printf("DmaGifBuilder: Buffer overflow in addGifLoopTag! Max: %d\n",
+           DMA_GIF_BUILDER_MAX_PACKETS);
+    return;
+  }
 
   // Finalize previous GIF tag if exists
   if (m_gifTagPos != nullptr && m_autoCount) {
     finalizeGifTag();
   }
 
-  // Add GIF loop tag
+  // Add GIF loop tag with explicit NLOOP (no auto-counting)
   PACK_GIFTAG(m_current, GIF_SET_TAG(nloop, eop, pre, prim, flg, nreg), regs);
   m_current++;
   
-  // Reset auto-count since this is a different type of tag
+  // Reset auto-count since this tag has explicit NLOOP
   m_gifTagPos = nullptr;
   m_autoCount = false;
   m_packetCount = 0;

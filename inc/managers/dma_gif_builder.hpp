@@ -39,14 +39,15 @@ class DmaGifBuilder {
   void begin();
 
   /**
-   * Add a GIF packed mode tag with count
-   * This is typically the first call after begin() to set up the GIF tag
-   * The count will be automatically calculated if using addAd() after this
+   * Add a GIF packed mode tag with A+D descriptor
+   * This is typically the first call after begin() to set up the GIF tag.
+   * The NLOOP count will be automatically calculated if regCount is 0.
    * 
    * @param regs Register specification (e.g., GIF_REG_AD)
-   * @param regCount Number of registers that will follow (default: 0 for auto-count)
+   * @param regCount Number of loop iterations / A+D pairs (default: 0 for auto-count)
+   * @param eop End Of Packet flag (default: 1 = last GIF tag in this transfer)
    */
-  void addGifTag(u64 regs, u32 regCount = 0);
+  void addGifTag(u64 regs, u32 regCount = 0, u32 eop = 1);
 
   /**
    * Add a register/value pair in A+D mode
