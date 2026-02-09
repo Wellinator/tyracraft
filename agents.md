@@ -297,6 +297,7 @@ agents. Each file dives deep into a specific aspect of the project:
 | [docs/agents/codebase-map.md](docs/agents/codebase-map.md) | File-by-file map: all managers, entities, states, blocks, libraries with purpose annotations |
 | [docs/agents/build-and-workflow.md](docs/agents/build-and-workflow.md) | Docker build pipeline, VS Code tasks, asset pipeline, testing on PCSX2/real PS2 |
 | [docs/agents/conventions.md](docs/agents/conventions.md) | Code style, naming, patterns for adding blocks/states/managers/mobs, memory rules |
+| [docs/agents/dma-gif-reference.md](docs/agents/dma-gif-reference.md) | Complete DMA/GIF reference: DMAtag/GIFtag bit layout, PACKED/REGLIST/IMAGE modes, full GS register catalog |
 
 ### PS2 Hardware Skills
 
@@ -318,6 +319,7 @@ essential information organized for code-generation tasks.
 | [README.md](README.md) | Human-readable project overview |
 | [CHANGELOG.md](CHANGELOG.md) | Detailed version history |
 | [ROADMAP.TXT](ROADMAP.TXT) | Feature roadmap with completion status |
+| [docs/agents/dma-gif-reference.md](docs/agents/dma-gif-reference.md) | Complete DMA/GIF reference: DMAtag/GIFtag bit layout, PACKED/REGLIST/IMAGE modes, full GS register catalog |
 | [docs/EE_CORE_MANUAL.md](docs/EE_CORE_MANUAL.md) | PS2 Emotion Engine core reference (raw — prefer skill-ee-cpu.md) |
 | [docs/EE_USERS_MANUAL.md](docs/EE_USERS_MANUAL.md) | PS2 EE system reference (raw — prefer skill-ee-system.md) |
 | [docs/GS_USERS_MANUAL.md](docs/GS_USERS_MANUAL.md) | PS2 Graphics Synthesizer reference (raw — prefer skill-gs-rendering.md) |
