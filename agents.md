@@ -442,6 +442,9 @@ through `TOTAL_OF_BLOCKS`. Concrete implementations in `inc/entities/blocks/`:
 2. **Check `inc/constants.hpp`** — world limits, enums, and block types live here.
 5. **Understand the build system** — changes must compile via `make` inside Docker.
 
+### After Making Changes
+1. **Compiling and recompiling** - All the compilation process is done manually by the user, no need to ask for recompiling.
+
 ### When Modifying Code
 
 1. **Memory is the #1 concern** — always consider allocation impact.
