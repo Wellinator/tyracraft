@@ -10,6 +10,7 @@
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <math/m4x4.hpp>
 #include <vector>
+#include <array>
 #include <queue>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
@@ -71,6 +72,17 @@ class ChunkManager : public Singleton<ChunkManager> {
     return sqrtf(dx * dx + dz * dz);
   }
 
+  // Optimized: Squared distance (avoids sqrt, preserves ordering for sorting)
+  static inline float horizontalDistance2DSquared(const Vec4& a, const Vec4& b) {
+    const float dx = a.x - b.x;
+    const float dz = a.z - b.z;
+    return dx * dx + dz * dz;
+  }
+
+  // Spatial optimization: Get chunks within radius using 2D grid
+  void getChunksInRadius(const Vec4& center, float radiusInChunks,
+                         std::vector<Chunk*>& outChunks);
+
  private:
   WorldLightModel* worldLightModel;
   Level* pLevel;
@@ -79,6 +91,12 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::vector<Chunk*> chunks;
   std::vector<Chunk*> loadedChunks;
   std::vector<Chunk*> visibleChunks;
+  std::vector<Chunk*> activeChunks;  // Phase 2: Chunks with state == Loaded for faster tick
+
+  // Phase 1: Spatial grid for optimized radius queries (16x16 horizontal grid)
+  // Each cell contains pointers to the 8 vertical chunks in that XZ column
+  static constexpr size_t SPATIAL_GRID_SIZE = OVERWORLD_H_DISTANCE_IN_CHUNKS * OVERWORLD_H_DISTANCE_IN_CHUNKS;
+  std::array<std::vector<Chunk*>, SPATIAL_GRID_SIZE> spatialGrid;
 
   void generateChunks();
 

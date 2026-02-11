@@ -13,6 +13,7 @@
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
 #include <vector>
 #include <deque>
+#include <bitset>
 #include <algorithm>
 #include "managers/chunk_manager.hpp"
 #include "managers/clouds_manager.hpp"
@@ -189,6 +190,11 @@ class World {
 
   std::deque<Chunk*> tempChunksToLoad;
   std::deque<Chunk*> tempChunksToUnLoad;
+
+  // Phase 3: Bitsets for O(1) queue deduplication (768 bytes total)
+  // Chunk IDs are 0-2047, so std::bitset<2048> is perfect
+  std::bitset<2048> chunksInLoadQueue;
+  std::bitset<2048> chunksInUnloadQueue;
 
   u8 _updateDayNightCycle = true;
 

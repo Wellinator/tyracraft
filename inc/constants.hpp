@@ -6,6 +6,8 @@
 #define VERSION "v0.86.140-pre-alpha"  // Software version
 #endif
 
+// Total number of chunks in the overworld
+#define OVERWORLD_SIZE_IN_CHUNKS (OVERWORLD_SIZE / (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE))  
 #define OVERWORLD_H_DISTANCE 128  // Total horizontal overworld distance;
 #define OVERWORLD_V_DISTANCE 64   // Total vertical overworld distance;
 

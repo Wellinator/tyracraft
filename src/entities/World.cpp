@@ -337,28 +337,49 @@ void World::reloadWorldArea(const Vec4& position) {
   }
 }
 
-// TODO: refactor to use BFS algorithm instead loop
+// Phase 1: Optimized chunk scheduling using spatial grid and squared distances
 void World::scheduleChunksNeighbors(Chunk* origin_chunk,
                                     const Vec4 currentPlayerPos,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
 
-  auto chunks = chunkManager.getChunks();
+#ifdef DEBUG_MODE
+  // Phase 4: Profiling metrics for optimization validation
+  static u32 totalScheduleCalls = 0;
+  static u32 totalChunksProcessed = 0;
+  totalScheduleCalls++;
+#endif
+
   const float maxDistance = static_cast<float>(worldOptions.drawDistance);
+  const float maxDistanceSquared = maxDistance * maxDistance;
 
   // Vector to collect chunks needing loading/sorting
   std::vector<std::pair<Chunk*, float>> chunksToLoad;
 
-  for (u16 i = 0; i < chunks->size(); i++) {
-    auto t_chunk = (*chunks)[i];
+  // Phase 1: Use spatial grid to query only chunks within radius
+  // This reduces from 2048 iterations to ~100-400 (80-95% reduction)
+  std::vector<Chunk*> nearbyChunks;
+  chunkManager.getChunksInRadius(origin_chunk->center, maxDistance + 1.0f, nearbyChunks);
 
-    // Use 2D horizontal distance (XZ plane only) - matches Minecraft
-    const float distance2D = ChunkManager::horizontalDistance2D(
-      origin_chunk->center, t_chunk->center
-    ) / CHUNK_SIZE;
+#ifdef DEBUG_MODE
+  totalChunksProcessed += nearbyChunks.size();
+  if (totalScheduleCalls % 100 == 0) {
+    float avgChunksPerCall = static_cast<float>(totalChunksProcessed) / totalScheduleCalls;
+    TYRA_LOG("[Chunk Optimization] Avg chunks processed per schedule:", 
+             static_cast<int>(avgChunksPerCall), " / 2048 (",
+             static_cast<int>((1.0f - avgChunksPerCall / 2048.0f) * 100.0f), "% reduction)");
+  }
+#endif
 
-    // Chunk is outside draw distance
-    if (distance2D > maxDistance) {
+  // Process chunks within draw distance
+  for (Chunk* t_chunk : nearbyChunks) {
+    // Use squared distance to avoid sqrt (preserves ordering for sorting)
+    const float distanceSquared2D = 
+        ChunkManager::horizontalDistance2DSquared(origin_chunk->center, t_chunk->center) /
+        (CHUNK_SIZE * CHUNK_SIZE);
+
+    // Chunk is outside draw distance (safety check, should be rare)
+    if (distanceSquared2D > maxDistanceSquared) {
       if (force_loading) {
         t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
@@ -368,8 +389,8 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       continue;
     }
 
-    // Chunk is within draw distance
-    const int distance = static_cast<int>(distance2D);
+    // Calculate actual distance for LOD (only when needed)
+    const int distance = static_cast<int>(sqrtf(distanceSquared2D));
 
     if (force_loading) {
       // Synchronous mode: load/rebuild immediately
@@ -385,14 +406,37 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       // Only add if needs loading AND not already in a queue
       if ((t_chunk->isDirty() || !t_chunk->isLoaded()) && 
           !t_chunk->isBuilding() && !t_chunk->isUnloading()) {
-        chunksToLoad.push_back(std::make_pair(t_chunk, distance2D));
+        chunksToLoad.push_back(std::make_pair(t_chunk, distanceSquared2D));
       }
+    }
+  }
+
+  // Unload chunks outside draw distance (check only currently loaded chunks)
+  // This is much more efficient than checking all 2048 chunks
+  if (!force_loading) {
+    // Phase 3: Use bitset for O(1) lookup instead of O(n) search
+    static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> processedChunks;
+    processedChunks.reset();  // Clear all bits
+    
+    // Mark all nearby chunks as processed using O(1) bitset set
+    for (const Chunk* nearby : nearbyChunks) {
+      processedChunks.set(nearby->id);
+    }
+    
+    auto loadedChunks = chunkManager.getLoadedChunks();
+    for (Chunk* t_chunk : *loadedChunks) {
+      // O(1) bitset test instead of O(n) linear search
+      if (processedChunks.test(t_chunk->id)) continue;
+
+      // This chunk is loaded but outside draw distance
+      addChunkToUnloadAsync(t_chunk);
+      t_chunk->setDistanceFromPlayerInChunks(-1);
     }
   }
 
   // Sort and schedule chunks by proximity (only in async mode)
   if (!force_loading && !chunksToLoad.empty()) {
-    // Sort by 2D distance (closest first)
+    // Sort by squared distance (avoids sqrt, preserves ordering)
     std::sort(
         chunksToLoad.begin(), chunksToLoad.end(),
         [](const std::pair<Chunk*, float>& a,
@@ -414,6 +458,7 @@ void World::loadScheduledChunks() {
 
   Chunk* chunk = tempChunksToLoad.front();
   tempChunksToLoad.pop_front();
+  chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
   
   // Validate state before building
   if (chunk->state != ChunkState::Building) {
@@ -445,6 +490,7 @@ void World::unloadScheduledChunks() {
 
   Chunk* chunk = tempChunksToUnLoad.front();
   tempChunksToUnLoad.pop_front();
+  chunksInUnloadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
 
   // Validate state before clearing
   if (chunk->state != ChunkState::Unloading) {
@@ -461,39 +507,51 @@ void World::renderBlockDamageOverlay() {
 }
 
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
-  // Avoid duplicate entries in load queue
-  for (size_t i = 0; i < tempChunksToLoad.size(); i++)
-    if (tempChunksToLoad[i]->id == t_chunk->id) return;
+  const u16 chunkId = t_chunk->id;
+
+  // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
+  if (chunksInLoadQueue.test(chunkId)) return;
 
   // Remove from unload queue if present (prioritize loading)
-  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
-    if (tempChunksToUnLoad[i]->id == t_chunk->id) {
-      tempChunksToUnLoad[i]->state = ChunkState::Clean;  // Reset state
-      tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
-      break;
+  if (chunksInUnloadQueue.test(chunkId)) {
+    // Find and remove from unload deque (rare case, so linear search acceptable)
+    for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
+      if (tempChunksToUnLoad[i]->id == chunkId) {
+        tempChunksToUnLoad[i]->state = ChunkState::Clean;  // Reset state
+        tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
+        chunksInUnloadQueue.reset(chunkId);  // Clear bitset
+        break;
+      }
     }
   }
 
   t_chunk->state = ChunkState::Building;
-  tempChunksToLoad.push_back(t_chunk);  // Changed from push_front
+  tempChunksToLoad.push_back(t_chunk);
+  chunksInLoadQueue.set(chunkId);  // Mark as queued
 }
 
 void World::addChunkToUnloadAsync(Chunk* t_chunk) {
-  // Avoid duplicate entries in unload queue
-  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
-    if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
+  const u16 chunkId = t_chunk->id;
+
+  // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
+  if (chunksInUnloadQueue.test(chunkId)) return;
 
   // Remove from load queue if present (prioritize unloading)
-  for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
-    if (tempChunksToLoad[i]->id == t_chunk->id) {
-      tempChunksToLoad[i]->state = ChunkState::Clean;  // Reset state
-      tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
-      break;
+  if (chunksInLoadQueue.test(chunkId)) {
+    // Find and remove from load deque (rare case, so linear search acceptable)
+    for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
+      if (tempChunksToLoad[i]->id == chunkId) {
+        tempChunksToLoad[i]->state = ChunkState::Clean;  // Reset state
+        tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
+        chunksInLoadQueue.reset(chunkId);  // Clear bitset
+        break;
+      }
     }
   }
 
   t_chunk->state = ChunkState::Unloading;
   tempChunksToUnLoad.push_front(t_chunk);
+  chunksInUnloadQueue.set(chunkId);  // Mark as queued
 }
 
 void World::updateLightModel() {

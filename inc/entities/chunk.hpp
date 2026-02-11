@@ -64,6 +64,7 @@ class Chunk {
   const bool isLoaded() const { return state == ChunkState::Loaded; }
   const bool isBuilding() const { return state == ChunkState::Building; }
   const bool isUnloading() const { return state == ChunkState::Unloading; }
+  const ChunkState getState() const { return state; }
 
   Vec4 minOffset = Vec4();
   Vec4 maxOffset = Vec4();
@@ -127,6 +128,12 @@ class Chunk {
   void markDirty();
   inline bool isDirty() { return dirty; }
 
+  // Phase 1: Distance cache management
+  inline void markDistanceDirty() { distanceCacheDirty = true; }
+  inline float getCachedDistanceSquared() const { return cachedDistanceSquared; }
+  inline bool isDistanceCacheDirty() const { return distanceCacheDirty; }
+  void updateDistanceCache(const Vec4& playerPos);
+
   // Callback system for chunk lifecycle events
   using OnLoadedCallback = std::function<void(Chunk*)>;
   void setOnLoadedCallback(OnLoadedCallback cb) { onLoadedCallback = cb; }
@@ -145,6 +152,10 @@ class Chunk {
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
+
+  // Phase 1: Distance cache optimization
+  float cachedDistanceSquared = -1.0f;  // Cached squared distance to player
+  bool distanceCacheDirty = true;        // Cache invalidation flag
 
   // Refactore the clipped blocks for not using blocks array
   Plane* frustumPlanes = nullptr;

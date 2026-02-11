@@ -37,9 +37,16 @@ void ChunkManager::clearAllChunks() {
 
 void ChunkManager::updateLoadedChunks() {
   loadedChunks.clear();
+  activeChunks.clear();  // Phase 2: Maintain activeChunks list
+  
+  // Phase 1: spatialGrid is STATIC - never remove chunks from it
+  // It's populated once in generateChunks() and stays constant
+  // Validation happens at usage time in getChunksInRadius()
+  
   for (u16 i = 0; i < chunks.size(); i++) {
     if (chunks[i]->isLoaded() == false) continue;
     loadedChunks.emplace_back(chunks[i]);
+    activeChunks.emplace_back(chunks[i]);  // Phase 2: Same as loadedChunks for now
   }
 }
 
@@ -68,8 +75,10 @@ void ChunkManager::tick() {
     enqueueChunksToReloadLight();
   }
 
-  for (size_t i = 0; i < chunks.size(); i++) {
-    chunks[i]->tick();
+  // Phase 2: Only tick active (loaded) chunks instead of all 2048
+  // Reduces from 2048 virtual calls to ~100-500 (80-95% reduction)
+  for (size_t i = 0; i < activeChunks.size(); i++) {
+    activeChunks[i]->tick();
   }
 }
 
@@ -128,6 +137,13 @@ void ChunkManager::generateChunks() {
         tempChunk->init(pLevel, worldLightModel);
         chunks.emplace_back(tempChunk);
 
+        // Phase 1: Populate spatial grid (16x16 horizontal grid)
+        // Calculate grid cell index from XZ coordinates
+        const size_t gridX = x / CHUNK_SIZE;
+        const size_t gridZ = z / CHUNK_SIZE;
+        const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
+        spatialGrid[gridIndex].push_back(tempChunk);
+
         tempId++;
       }
     }
@@ -140,8 +156,10 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  for (size_t i = 0; i < chunks.size(); i++) {
-    if (chunks[i]->isLoaded()) chunksToUpdateLight.push(chunks[i]);
+  // Phase 2: Use loadedChunks instead of all chunks (already filtered)
+  // Eliminates redundant isLoaded() check since loadedChunks is maintained
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    chunksToUpdateLight.push(loadedChunks[i]);
   }
 }
 
@@ -157,7 +175,14 @@ void ChunkManager::reloadLightDataAsync() {
   auto chunk = chunksToUpdateLight.front();
   chunksToUpdateLight.pop();
   
-  // Validate state before updating (chunk may have been unloaded)
+  // Validate chunk pointer and state before updating
+  // Check if chunk still exists in chunks vector (not deleted)
+  if (chunk == nullptr) return;
+  
+  auto it = std::find(chunks.begin(), chunks.end(), chunk);
+  if (it == chunks.end()) return;  // Chunk was deleted
+  
+  // Validate state (chunk may have been unloaded)
   if (!chunk->isLoaded()) return;
   
   chunk->reloadLightData();
@@ -272,3 +297,49 @@ float ChunkManager::getHeightAtPosition(const Vec4& position) {
   const Vec4 offset = pLevel->worldPosToOffset(position);
   return getHeightAtOffset(offset) * DOUBLE_BLOCK_SIZE;
 }
+
+void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
+                                     std::vector<Chunk*>& outChunks) {
+  outChunks.clear();
+
+  // Convert center position to chunk grid coordinates
+  const float centerChunkX = center.x / CHUNK_SIZE;
+  const float centerChunkZ = center.z / CHUNK_SIZE;
+
+  // Calculate grid bounds to check (with safety clamping)
+  const int minGridX = std::max(0, static_cast<int>(centerChunkX - radiusInChunks - 1));
+  const int maxGridX = std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
+                                 static_cast<int>(centerChunkX + radiusInChunks + 1));
+  const int minGridZ = std::max(0, static_cast<int>(centerChunkZ - radiusInChunks - 1));
+  const int maxGridZ = std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
+                                 static_cast<int>(centerChunkZ + radiusInChunks + 1));
+
+  // Squared radius for distance comparisons (avoids sqrt)
+  const float radiusSquared = radiusInChunks * radiusInChunks;
+
+  // Iterate only the grid cells within the bounding box
+  for (int gridX = minGridX; gridX <= maxGridX; gridX++) {
+    for (int gridZ = minGridZ; gridZ <= maxGridZ; gridZ++) {
+      const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
+
+      // Process all vertical chunks in this XZ column
+      for (Chunk* chunk : spatialGrid[gridIndex]) {
+        // Validate chunk pointer
+        if (chunk == nullptr) continue;
+        
+        // Skip only Unloading chunks - Building chunks need to be returned
+        // so scheduleChunksNeighbors can process them
+        if (chunk->getState() == ChunkState::Unloading) continue;
+        
+        // 2D distance check (XZ plane only, ignoring Y)
+        const float distSquared = horizontalDistance2DSquared(center, chunk->center);
+        const float distInChunksSquared = distSquared / (CHUNK_SIZE * CHUNK_SIZE);
+
+        if (distInChunksSquared <= radiusSquared) {
+          outChunks.push_back(chunk);
+        }
+      }
+    }
+  }
+}
+

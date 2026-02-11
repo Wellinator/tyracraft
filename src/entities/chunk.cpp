@@ -240,6 +240,14 @@ void Chunk::setDistanceFromPlayerInChunks(const int distance) {
   this->_distanceFromPlayerInChunks = distance;
 }
 
+void Chunk::updateDistanceCache(const Vec4& playerPos) {
+  // Calculate and cache squared distance (XZ plane only)
+  const float dx = scaledCenterOffset.x - playerPos.x;
+  const float dz = scaledCenterOffset.z - playerPos.z;
+  cachedDistanceSquared = dx * dx + dz * dz;
+  distanceCacheDirty = false;
+}
+
 const int Chunk::getLODFromDistance() {
   return getLODFromDistance(getDistanceFromPlayerInChunks());
 }
@@ -252,6 +260,18 @@ const int Chunk::getLODFromDistance(const int distance) {
 }
 
 void Chunk::compress(const bool staticBackFaceCulling) {
+  // Safety: Don't compress if chunk is unloading or clean (no data)
+  // Allow both Building and Loaded states since compress is called during build
+  if (state == ChunkState::Unloading || state == ChunkState::Clean) return;
+  
+  if (vertices.empty() && transpVertices.empty()) {
+    isCompressed = true;  // Mark as compressed even if empty to avoid re-processing
+    return;
+  }
+  
+  // Already compressed, nothing to do
+  if (isCompressed) return;
+  
   // Cache camera position pointer to avoid repeated address calculations
   const Vec4* camPosPtr = staticBackFaceCulling ? &camPositon : nullptr;
 
@@ -860,6 +880,7 @@ void Chunk::clear() {
   state = ChunkState::Unloading;
   clearDrawData();
   state = ChunkState::Clean;
+  markDistanceDirty();  // Phase 1: Invalidate cache on clear
 }
 
 void Chunk::clearDrawData() {
@@ -901,8 +922,16 @@ void Chunk::build() {
 
 #endif  // end if DEBUG_MODE
 
-  // Mark as building at start
-  state = ChunkState::Building;
+  // Safety: Prevent build if unloading or already loaded
+  // Note: Building state is ALLOWED - it's set by addChunkToLoadAsync before enqueuing
+  if (state == ChunkState::Unloading || state == ChunkState::Loaded) {
+    return;
+  }
+
+  // Transition to Building state if not already (handles direct build() calls)
+  if (state != ChunkState::Building) {
+    state = ChunkState::Building;
+  }
 
   // If dirty, force complete rebuild instead of early return
   if (dirty) {
@@ -910,17 +939,27 @@ void Chunk::build() {
     dirty = false;
   }
 
-  const int lod = getLODFromDistance();
-  if (lod == 0) {
-    buildNormaly();
-  } else {
-    buildCompressed();
+  try {
+    const int lod = getLODFromDistance();
+    if (lod == 0) {
+      buildNormaly();
+    } else {
+      buildCompressed();
+    }
+
+    state = ChunkState::Loaded;
+
+    // Phase 1: Invalidate distance cache after build
+    markDistanceDirty();
+
+    // Notify that chunk is ready for lighting updates
+    if (onLoadedCallback) onLoadedCallback(this);
+  } catch (...) {
+    // On error, revert to clean state and clear partial data
+    state = ChunkState::Clean;
+    clearDrawData();
+    throw;  // Re-throw to let caller handle error
   }
-
-  state = ChunkState::Loaded;
-
-  // Notify that chunk is ready for lighting updates
-  if (onLoadedCallback) onLoadedCallback(this);
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.logChunkMemoryUsage) {
@@ -984,22 +1023,32 @@ void Chunk::buildCompressed() {
 
 void Chunk::rebuild() {
   clearDrawDataWithoutShrink();
+  // Reset state to allow build() to proceed
+  state = ChunkState::Clean;
   build();
 }
 
 void Chunk::updateLOD() {
   if (!isLoaded()) return;  // Safety check
   
-  dirty = false;
-
-  if (isCompressed) {
-    // Player is near, mark for rebuild instead of immediate recursion
+  // Safety: prevent updateLOD during building or unloading
+  if (state == ChunkState::Building || state == ChunkState::Unloading) return;
+  
+  const int currentLOD = getLODFromDistance();
+  
+  // LOD 0 = high detail (uncompressed), LOD 1 = low detail (compressed)
+  if (currentLOD == 0 && isCompressed) {
+    // Player is near, need high detail - mark for rebuild
     dirty = true;
     // Will be rebuilt on next scheduleChunksNeighbors() pass
-  } else {
-    // Player is far, can just compress to reduce the LOD
-    compress();
+  } else if (currentLOD == 1 && !isCompressed) {
+    // Player is far, can compress to reduce LOD
+    // Only compress if we have valid draw data
+    if (!vertices.empty() || !transpVertices.empty()) {
+      compress();
+    }
   }
+  // If LOD matches current state, do nothing
 }
 
 bool Chunk::hasDrawData() {
