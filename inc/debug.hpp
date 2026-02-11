@@ -50,22 +50,22 @@ struct DebugMenu {
   u8 noclipMode = false;
   u8 logChunkMemoryUsage = false;
 
-  // Post FX - Fog render passes control
+  // Post FX
   u8 enablePostFx = true;
-  u8 fogPassSetup = true;
-  u8 fogPass3 = false;   // Channel copy (G→Alpha via CLUT)
-  u8 fogPass6 = false;   // Apply fog color (lerp)
-  u8 fogPassRestore = true;
+  u8 fogEnabled = true;
 
-  // Post FX - Fog parameter adjustment
-  u8 fogAdjustParams = false;
-  // fogNearPercent em porcentagem inteira (0-100), default 15 = 15%
-  int fogNearPercentInt = 15;
-  // fogIntensity × 10 para ajuste inteiro (10 = 1.0, 20 = 2.0), default 20
-  int fogIntensityX10 = 20;
+  // Post FX - Bloom control
+  u8 enableBloom = false;
+  u8 bloomAdjustParams = false;
+  // bloomCutoff × 100 (0-100, default 30 = 0.3)
+  int bloomCutoffX100 = 30;
+  // bloomDepth (1-4, default 3)
+  int bloomDepth = 3;
+  // bloomSourceScale × 10 (0-50, default 15 = 1.5)
+  int bloomSourceScaleX10 = 15;
+  // bloomGain × 10 (0-30, default 12 = 1.2)
+  int bloomGainX10 = 12;
 
-  // Post FX - Debug screenshots (trigger único)
-  u8 fogTriggerScreenshot = false;
 };
 
 extern DebugMenu g_debug_menu;

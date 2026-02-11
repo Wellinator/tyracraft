@@ -73,8 +73,7 @@ void CreativePlayingState::render() {
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  // PostFX - APÓS TUDO, sem alterar estado do GS
-  postFxManager.renderFog(Color(25, 25, 255));
+  postFxManager.renderAll(Color(25, 25, 255));
   // postFxManager.renderFog(
   //     stateGamePlay->world->dayNightCycleManager.getSkyColor());
 

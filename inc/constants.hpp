@@ -410,6 +410,20 @@ typedef enum {
 
 #define MAX_SAFE_MEMORY_ALLOCATION 29
 
+// ===== Post-FX VRAM Constants =====
+// PS2 total VRAM: 4MB
+#define PS2_VRAM_SIZE_BYTES (4 * 1024 * 1024)
+
+// Fog CLUT size: 8KB reserved at end of VRAM
+// (256 colors × 4 bytes = 1KB actual, but 8KB allocated for alignment/safety)
+#define FOG_CLUT_SIZE_BYTES (8 * 1024)
+
+// Half-resolution buffer size for bloom temp buffers
+// 256×224×4 bytes/pixel = 229,376 bytes = 57,344 words (32-bit word units)
+// Used for tempBufA and tempBufB in bloom effect
+#define HALF_RES_BUFFER_SIZE_WORDS ((256 * 224 * 4) / 4)
+// =====================================
+
 #define DOWN_VEC Vec4(0, -1, 0)
 #define UP_VEC Vec4(0, 1, 0)
 #define RIGHT_VEC Vec4(-1, 0, 0)

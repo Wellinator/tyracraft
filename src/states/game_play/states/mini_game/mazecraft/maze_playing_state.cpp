@@ -126,8 +126,8 @@ void MazePlayingState::render() {
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  // PostFX
-  postFxManager.renderFog(
+  // PostFX - fog + bloom (se habilitado) + restore
+  postFxManager.renderAll(
       stateGamePlay->world->dayNightCycleManager.getSkyColor());
 
   // General 2D sftuff

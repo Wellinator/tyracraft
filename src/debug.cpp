@@ -47,12 +47,9 @@ static MenuItem g_all_menu_items[] = {
     
     // POST_FX tab
     {"Post FX", &g_debug_menu.enablePostFx, DebugMenuTab::POST_FX},
-    {"Fog: Setup", &g_debug_menu.fogPassSetup, DebugMenuTab::POST_FX},
-    {"Fog: Channel Copy", &g_debug_menu.fogPass3, DebugMenuTab::POST_FX},
-    {"Fog: Apply Color", &g_debug_menu.fogPass6, DebugMenuTab::POST_FX},
-    {"Fog: Restore GS State", &g_debug_menu.fogPassRestore, DebugMenuTab::POST_FX},
-    {"Fog: Adjust Params", &g_debug_menu.fogAdjustParams, DebugMenuTab::POST_FX},
-    {"Fog: Capture Screenshots", &g_debug_menu.fogTriggerScreenshot, DebugMenuTab::POST_FX},
+    {"Fog", &g_debug_menu.fogEnabled, DebugMenuTab::POST_FX},
+    {"Bloom", &g_debug_menu.enableBloom, DebugMenuTab::POST_FX},
+    {"Bloom: Adjust Params", &g_debug_menu.bloomAdjustParams, DebugMenuTab::POST_FX},
     
     // WORLD_INFO tab
     
@@ -164,36 +161,56 @@ void renderDebugMenu() {
     itemIndexInTab++;
   }
 
-  // Render fog parameter adjustment when enabled
-  if (g_debug_menu.currentTab == DebugMenuTab::POST_FX && 
-      g_debug_menu.fogAdjustParams) {
+  // Render bloom parameter adjustment when enabled
+  if (g_debug_menu.currentTab == DebugMenuTab::POST_FX &&
+      g_debug_menu.bloomAdjustParams) {
     currentY += lineHeight * 0.5F;
-    
+
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("--- Fog Parameters ---", labelOptions);
+    fm.printText("--- Bloom Parameters ---", labelOptions);
     currentY += lineHeight;
-    
+
     char valueStr[64];
-    snprintf(valueStr, sizeof(valueStr), "  Near%%: %d%%", 
-             g_debug_menu.fogNearPercentInt);
+    snprintf(valueStr, sizeof(valueStr), "  Cutoff: %.2f",
+             (float)g_debug_menu.bloomCutoffX100 / 100.0f);
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
-    
-    snprintf(valueStr, sizeof(valueStr), "  Intensity: %.1f", 
-             (float)g_debug_menu.fogIntensityX10 / 10.0f);
+
+    snprintf(valueStr, sizeof(valueStr), "  Depth: %d",
+             g_debug_menu.bloomDepth);
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
-    
+
+    snprintf(valueStr, sizeof(valueStr), "  Scale: %.1f",
+             (float)g_debug_menu.bloomSourceScaleX10 / 10.0f);
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("  L2/R2: Near% +/- 5", labelOptions);
+    fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
-    
+
+    snprintf(valueStr, sizeof(valueStr), "  Gain: %.1f",
+             (float)g_debug_menu.bloomGainX10 / 10.0f);
     labelOptions.position = Vec2(currentX, currentY);
-    fm.printText("  Left/Right: Intensity +/- 0.1", labelOptions);
+    fm.printText(valueStr, labelOptions);
     currentY += lineHeight;
-    
+
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  L2/R2: Cutoff +/- 0.05", labelOptions);
+    currentY += lineHeight;
+
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  Left/Right: Depth +/- 1", labelOptions);
+    currentY += lineHeight;
+
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  Up/Down: Scale +/- 0.1", labelOptions);
+    currentY += lineHeight;
+
+    labelOptions.position = Vec2(currentX, currentY);
+    fm.printText("  L1/R1: Gain +/- 0.1", labelOptions);
+    currentY += lineHeight;
+
     labelOptions.position = Vec2(currentX, currentY);
     fm.printText("  Square: Reset defaults", labelOptions);
   }
@@ -245,35 +262,59 @@ void handleDebugInput(Pad* pPad) {
     g_selected_debug_menu_item = 0; // Reset selection when changing tabs
   }
 
-  // Adjust fog parameters when adjustment mode is enabled
-  if (g_debug_menu.fogAdjustParams) {
+  // Adjust bloom parameters when adjustment mode is enabled
+  if (g_debug_menu.bloomAdjustParams) {
     auto* postFxManager = PostFxManager::getInstance();
-    
+
     if (pressed.L2) {
-      g_debug_menu.fogNearPercentInt -= 5;
-      if (g_debug_menu.fogNearPercentInt < 0) g_debug_menu.fogNearPercentInt = 0;
-      postFxManager->setFogNearPercent((float)g_debug_menu.fogNearPercentInt / 100.0f);
+      g_debug_menu.bloomCutoffX100 -= 5;
+      if (g_debug_menu.bloomCutoffX100 < 0) g_debug_menu.bloomCutoffX100 = 0;
+      postFxManager->setBloomCutoff((float)g_debug_menu.bloomCutoffX100 / 100.0f);
     }
     if (pressed.R2) {
-      g_debug_menu.fogNearPercentInt += 5;
-      if (g_debug_menu.fogNearPercentInt > 100) g_debug_menu.fogNearPercentInt = 100;
-      postFxManager->setFogNearPercent((float)g_debug_menu.fogNearPercentInt / 100.0f);
+      g_debug_menu.bloomCutoffX100 += 5;
+      if (g_debug_menu.bloomCutoffX100 > 100) g_debug_menu.bloomCutoffX100 = 100;
+      postFxManager->setBloomCutoff((float)g_debug_menu.bloomCutoffX100 / 100.0f);
     }
     if (pressed.DpadLeft) {
-      g_debug_menu.fogIntensityX10 -= 1;
-      if (g_debug_menu.fogIntensityX10 < 1) g_debug_menu.fogIntensityX10 = 1;
-      postFxManager->setFogIntensity((float)g_debug_menu.fogIntensityX10 / 10.0f);
+      g_debug_menu.bloomDepth -= 1;
+      if (g_debug_menu.bloomDepth < 1) g_debug_menu.bloomDepth = 1;
+      postFxManager->setBloomDepth(g_debug_menu.bloomDepth);
     }
     if (pressed.DpadRight) {
-      g_debug_menu.fogIntensityX10 += 1;
-      if (g_debug_menu.fogIntensityX10 > 100) g_debug_menu.fogIntensityX10 = 100;
-      postFxManager->setFogIntensity((float)g_debug_menu.fogIntensityX10 / 10.0f);
+      g_debug_menu.bloomDepth += 1;
+      if (g_debug_menu.bloomDepth > 4) g_debug_menu.bloomDepth = 4;
+      postFxManager->setBloomDepth(g_debug_menu.bloomDepth);
+    }
+    if (pressed.DpadUp) {
+      g_debug_menu.bloomSourceScaleX10 += 1;
+      if (g_debug_menu.bloomSourceScaleX10 > 50) g_debug_menu.bloomSourceScaleX10 = 50;
+      postFxManager->setBloomSourceScale((float)g_debug_menu.bloomSourceScaleX10 / 10.0f);
+    }
+    if (pressed.DpadDown) {
+      g_debug_menu.bloomSourceScaleX10 -= 1;
+      if (g_debug_menu.bloomSourceScaleX10 < 0) g_debug_menu.bloomSourceScaleX10 = 0;
+      postFxManager->setBloomSourceScale((float)g_debug_menu.bloomSourceScaleX10 / 10.0f);
+    }
+    if (pressed.L1) {
+      g_debug_menu.bloomGainX10 -= 1;
+      if (g_debug_menu.bloomGainX10 < 1) g_debug_menu.bloomGainX10 = 1;
+      postFxManager->setBloomGain((float)g_debug_menu.bloomGainX10 / 10.0f);
+    }
+    if (pressed.R1) {
+      g_debug_menu.bloomGainX10 += 1;
+      if (g_debug_menu.bloomGainX10 > 30) g_debug_menu.bloomGainX10 = 30;
+      postFxManager->setBloomGain((float)g_debug_menu.bloomGainX10 / 10.0f);
     }
     if (clicked.Square) {
-      g_debug_menu.fogNearPercentInt = 15;
-      g_debug_menu.fogIntensityX10 = 20;
-      postFxManager->setFogNearPercent(0.15f);
-      postFxManager->setFogIntensity(2.0f);
+      g_debug_menu.bloomCutoffX100 = 30;
+      g_debug_menu.bloomDepth = 3;
+      g_debug_menu.bloomSourceScaleX10 = 15;
+      g_debug_menu.bloomGainX10 = 12;
+      postFxManager->setBloomCutoff(0.3f);
+      postFxManager->setBloomDepth(3);
+      postFxManager->setBloomSourceScale(1.5f);
+      postFxManager->setBloomGain(1.2f);
     }
   }
 
@@ -308,17 +349,26 @@ void handleDebugInput(Pad* pPad) {
       if (itemIndexInTab == g_selected_debug_menu_item) {
         *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
         
-        // Sincronizar com PostFxManager quando togglear "Fog: Adjust Params"
-        if (g_all_menu_items[i].value == &g_debug_menu.fogAdjustParams) {
+        // Sincronizar com PostFxManager quando togglear "Bloom: Adjust Params"
+        if (g_all_menu_items[i].value == &g_debug_menu.bloomAdjustParams) {
           auto* postFxManager = PostFxManager::getInstance();
-          
-          if (g_debug_menu.fogAdjustParams) {
+
+          if (g_debug_menu.bloomAdjustParams) {
             // Ao ativar, sincronizar valores atuais do PostFxManager
-            g_debug_menu.fogNearPercentInt =
-                (int)(postFxManager->getFogNearPercent() * 100.0f + 0.5f);
-            g_debug_menu.fogIntensityX10 =
-                (int)(postFxManager->getFogIntensity() * 10.0f + 0.5f);
+            g_debug_menu.bloomCutoffX100 =
+                (int)(postFxManager->getBloomCutoff() * 100.0f + 0.5f);
+            g_debug_menu.bloomDepth = postFxManager->getBloomDepth();
+            g_debug_menu.bloomSourceScaleX10 =
+                (int)(postFxManager->getBloomSourceScale() * 10.0f + 0.5f);
+            g_debug_menu.bloomGainX10 =
+                (int)(postFxManager->getBloomGain() * 10.0f + 0.5f);
           }
+        }
+
+        // Sincronizar enableBloom com PostFxManager
+        if (g_all_menu_items[i].value == &g_debug_menu.enableBloom) {
+          auto* postFxManager = PostFxManager::getInstance();
+          postFxManager->setBloomEnabled(g_debug_menu.enableBloom);
         }
         
         break;
