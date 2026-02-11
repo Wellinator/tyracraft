@@ -37,9 +37,6 @@ class PostFxManager : public Singleton<PostFxManager> {
   void renderAll(Color fogColor);
 
   // ===== Bloom controls =====
-  void setBloomEnabled(bool enabled) { bloomEnabled = enabled; }
-  bool isBloomEnabled() const { return bloomEnabled; }
-
   void setBloomCutoff(float cutoff) { bloomCutoff = cutoff; }
   float getBloomCutoff() const { return bloomCutoff; }
 
@@ -60,7 +57,6 @@ class PostFxManager : public Singleton<PostFxManager> {
   uint32_t fogClutVramAddr = 0;
 
   // ===== Bloom parameters =====
-  bool bloomEnabled = true;
   float bloomCutoff = 0.3f;      // Brightness threshold (0.0-1.0)
   int bloomDepth = 3;            // Blur pyramid depth (1-4)
   float bloomSourceScale = 1.5f; // Additive blend strength

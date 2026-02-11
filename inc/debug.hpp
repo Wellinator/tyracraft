@@ -51,21 +51,9 @@ struct DebugMenu {
   u8 logChunkMemoryUsage = false;
 
   // Post FX
-  u8 enablePostFx = true;
-  u8 fogEnabled = true;
-
-  // Post FX - Bloom control
+  u8 enablePostFx = false;
+  u8 fogEnabled = false;
   u8 enableBloom = false;
-  u8 bloomAdjustParams = false;
-  // bloomCutoff × 100 (0-100, default 30 = 0.3)
-  int bloomCutoffX100 = 30;
-  // bloomDepth (1-4, default 3)
-  int bloomDepth = 3;
-  // bloomSourceScale × 10 (0-50, default 15 = 1.5)
-  int bloomSourceScaleX10 = 15;
-  // bloomGain × 10 (0-30, default 12 = 1.2)
-  int bloomGainX10 = 12;
-
 };
 
 extern DebugMenu g_debug_menu;

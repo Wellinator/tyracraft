@@ -58,7 +58,7 @@ void PostFxManager::computeTempBufferAddresses() {
 
 void PostFxManager::renderBloom() {
 #ifdef DEBUG_MODE
-  if (!bloomEnabled) return;
+  if (g_debug_menu.enableBloom == false) return;
 #endif
 
   computeTempBufferAddresses();
@@ -96,18 +96,21 @@ void PostFxManager::renderAll(Color fogColor) {
   if (g_debug_menu.fogEnabled) {
 #endif
     postFxFog(hlp, fbAddr, zbufAddr, tempAddr, SCREEN_WIDTH, SCREEN_HEIGHT,
-              (int)fogColor.r, (int)fogColor.g, (int)fogColor.b);
+      (int)fogColor.r, (int)fogColor.g, (int)fogColor.b);
+      #ifdef DEBUG_MODE
+    }
+#endif
+
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableBloom) {
+#endif
+    computeTempBufferAddresses();
+    postFxGlare(hlp, fbAddr, tempBufA_words, tempBufB_words, SCREEN_WIDTH,
+    SCREEN_HEIGHT, bloomCutoff, bloomDepth, bloomSourceScale,
+    bloomGain, 0.5f);
 #ifdef DEBUG_MODE
   }
 #endif
-
-  // Phase 2: Bloom (reuses Z-buffer VRAM as temp storage)
-  if (bloomEnabled) {
-    computeTempBufferAddresses();
-    postFxGlare(hlp, fbAddr, tempBufA_words, tempBufB_words, SCREEN_WIDTH,
-                SCREEN_HEIGHT, bloomCutoff, bloomDepth, bloomSourceScale,
-                bloomGain, 0.5f);
-  }
 }
 
 void PostFxManager::renderFog(Color fogColor) {
