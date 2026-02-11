@@ -47,6 +47,7 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::vector<Chunk*>* getLoadedChunks() { return &loadedChunks; };
   std::vector<Chunk*>* getVisibleChunks() { return &visibleChunks; };
 
+  void enqueueChunkToReloadLight(Chunk* chunk);  // Single chunk enqueue
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 
   Chunk* getChunkById(const u16& id);
@@ -60,6 +61,15 @@ class ChunkManager : public Singleton<ChunkManager> {
   // TODO: implement to heightmap
   int getHeightAtOffset(const Vec4& offset);
   float getHeightAtPosition(const Vec4& position);
+
+  // Helper for 2D horizontal distance calculation (XZ plane only)
+  static inline float horizontalDistance2D(const Vec4& a, const Vec4& b) {
+    const float dx = a.x - b.x;
+    const float dz = a.z - b.z;
+
+    // TODO: reimplement using fast sqrt approximation if needed or VU code
+    return sqrtf(dx * dx + dz * dz);
+  }
 
  private:
   WorldLightModel* worldLightModel;

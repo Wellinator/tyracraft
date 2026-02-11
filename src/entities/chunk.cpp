@@ -857,6 +857,7 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
 };
 
 void Chunk::clear() {
+  state = ChunkState::Unloading;
   clearDrawData();
   state = ChunkState::Clean;
 }
@@ -900,10 +901,13 @@ void Chunk::build() {
 
 #endif  // end if DEBUG_MODE
 
-  // Used to control asynchronous LOD updates on build calls
-  if (state == ChunkState::Loaded && dirty) {
-    updateLOD();
-    return;
+  // Mark as building at start
+  state = ChunkState::Building;
+
+  // If dirty, force complete rebuild instead of early return
+  if (dirty) {
+    clearDrawDataWithoutShrink();
+    dirty = false;
   }
 
   const int lod = getLODFromDistance();
@@ -914,6 +918,9 @@ void Chunk::build() {
   }
 
   state = ChunkState::Loaded;
+
+  // Notify that chunk is ready for lighting updates
+  if (onLoadedCallback) onLoadedCallback(this);
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.logChunkMemoryUsage) {
@@ -981,11 +988,14 @@ void Chunk::rebuild() {
 }
 
 void Chunk::updateLOD() {
+  if (!isLoaded()) return;  // Safety check
+  
   dirty = false;
 
   if (isCompressed) {
-    // Player is near, has to rebuild from scratch
-    rebuild();
+    // Player is near, mark for rebuild instead of immediate recursion
+    dirty = true;
+    // Will be rebuilt on next scheduleChunksNeighbors() pass
   } else {
     // Player is far, can just compress to reduce the LOD
     compress();

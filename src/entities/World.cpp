@@ -52,6 +52,14 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
   blockInteraction.init(pLevel, t_renderer, &blockManager, &chunkManager,
                         &particlesManager, &lightPropagation,
                         &liquidPropagation, &worldLightModel);
+
+  // Register lighting callbacks for all chunks
+  auto chunks = chunkManager.getChunks();
+  for (auto chunk : *chunks) {
+    chunk->setOnLoadedCallback([this](Chunk* c) {
+      this->chunkManager.enqueueChunkToReloadLight(c);
+    });
+  }
 };
 
 void World::generate() {
@@ -200,6 +208,9 @@ void World::tick(Player* t_player, Camera* t_camera) {
     updateLightModel();
     lightPropagation.updateSunlight();
     lightPropagation.updateBlockLights();
+    
+    // Enqueue loaded chunks to reload light (uses internal validation)
+    chunkManager.enqueueChunksToReloadLight();
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
@@ -335,18 +346,19 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   auto chunks = chunkManager.getChunks();
   const float maxDistance = static_cast<float>(worldOptions.drawDistance);
 
-  // Usar um vector para coletar chunks que precisam de sorting
+  // Vector to collect chunks needing loading/sorting
   std::vector<std::pair<Chunk*, float>> chunksToLoad;
 
   for (u16 i = 0; i < chunks->size(); i++) {
     auto t_chunk = (*chunks)[i];
 
-    // Usar método otimizado do PS2 para calcular distância 3D
-    const float distance3D =
-        origin_chunk->center.distanceTo(t_chunk->center) / CHUNK_SIZE;
+    // Use 2D horizontal distance (XZ plane only) - matches Minecraft
+    const float distance2D = ChunkManager::horizontalDistance2D(
+      origin_chunk->center, t_chunk->center
+    ) / CHUNK_SIZE;
 
-    // Chunk está fora da draw distance (usa distância horizontal)
-    if (distance3D > maxDistance) {
+    // Chunk is outside draw distance
+    if (distance2D > maxDistance) {
       if (force_loading) {
         t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
@@ -356,35 +368,37 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       continue;
     }
 
-    // Chunk está dentro da draw distance
-    const int distance = static_cast<int>(distance3D);
+    // Chunk is within draw distance
+    const int distance = static_cast<int>(distance2D);
 
     if (force_loading) {
-      // Modo síncrono: carregar/reconstruir imediatamente
+      // Synchronous mode: load/rebuild immediately
       if (t_chunk->isLoaded())
         t_chunk->rebuild();
       else
         t_chunk->build();
       t_chunk->setDistanceFromPlayerInChunks(distance);
     } else {
-      // Modo assíncrono: agendar carregamento (usa distância 3D para
-      // priorização)
+      // Asynchronous mode: schedule loading
       t_chunk->setDistanceFromPlayerInChunks(distance);
-      if (t_chunk->isDirty() || !t_chunk->isLoaded()) {
-        chunksToLoad.push_back(std::make_pair(t_chunk, distance3D));
+      
+      // Only add if needs loading AND not already in a queue
+      if ((t_chunk->isDirty() || !t_chunk->isLoaded()) && 
+          !t_chunk->isBuilding() && !t_chunk->isUnloading()) {
+        chunksToLoad.push_back(std::make_pair(t_chunk, distance2D));
       }
     }
   }
 
-  // Ordenar e agendar chunks por proximidade 3D (apenas no modo assíncrono)
+  // Sort and schedule chunks by proximity (only in async mode)
   if (!force_loading && !chunksToLoad.empty()) {
-    // Ordenar por distância 3D (subchunks no mesmo nível têm prioridade)
+    // Sort by 2D distance (closest first)
     std::sort(
         chunksToLoad.begin(), chunksToLoad.end(),
         [](const std::pair<Chunk*, float>& a,
            const std::pair<Chunk*, float>& b) { return a.second < b.second; });
 
-    // Adicionar à fila de carregamento na ordem correta
+    // Add to load queue in sorted order
     for (const auto& pair : chunksToLoad) {
       addChunkToLoadAsync(pair.first);
     }
@@ -395,60 +409,50 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   }
 }
 
-void World::sortChunksToLoad(const Vec4& currentPlayerPos) {
-  std::sort(tempChunksToLoad.begin(), tempChunksToLoad.end(),
-            [currentPlayerPos](const Chunk* a, const Chunk* b) {
-              auto distanceA =
-                  ((a->center * DOUBLE_BLOCK_SIZE) - currentPlayerPos).length();
-              auto distanceB =
-                  ((b->center * DOUBLE_BLOCK_SIZE) - currentPlayerPos).length();
-
-              return distanceA < distanceB;
-            });
-}
-
 void World::loadScheduledChunks() {
-  if (tempChunksToLoad.size() > 0) {
-    Chunk* chunk = tempChunksToLoad.front();
-    chunk->build();
+  if (tempChunksToLoad.empty()) return;
 
-    if (g_debug_mode) {
-      chunk->timeToBuild =
-          ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
-      printf("Time to async build chunk %i: %f\n", chunk->id,
-             chunk->timeToBuild);
-    }
-
-    if (Utils::Probability(0.01F, worldOptions.seed)) {
-      Vec4 _spawnPosition;
-      if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-        mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
-      }
-    }
-
-    tempChunksToLoad.pop_front();
+  Chunk* chunk = tempChunksToLoad.front();
+  tempChunksToLoad.pop_front();
+  
+  // Validate state before building
+  if (chunk->state != ChunkState::Building) {
+    TYRA_LOG("Warning: chunk ", chunk->id, " not in Building state");
     return;
   }
 
-  if (tempChunksToLoad.size() == 0) {
-    tempChunksToLoad.clear();
-    chunkManager.updateLoadedChunks();
+  chunk->build();
+
+  if (g_debug_mode) {
+    chunk->timeToBuild =
+        ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+    printf("Time to async build chunk %i: %f\n", chunk->id,
+           chunk->timeToBuild);
   }
+
+  if (Utils::Probability(0.01F, worldOptions.seed)) {
+    Vec4 _spawnPosition;
+    if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+      mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+    }
+  }
+
+  chunkManager.updateLoadedChunks();
 }
 
 void World::unloadScheduledChunks() {
-  if (tempChunksToUnLoad.size() > 0) {
-    Chunk* chunk = tempChunksToUnLoad.front();
-    if (chunk->state != ChunkState::Clean) {
-      chunk->clear();
-      tempChunksToUnLoad.pop_front();
-    }
+  if (tempChunksToUnLoad.empty()) return;
+
+  Chunk* chunk = tempChunksToUnLoad.front();
+  tempChunksToUnLoad.pop_front();
+
+  // Validate state before clearing
+  if (chunk->state != ChunkState::Unloading) {
+    TYRA_LOG("Warning: chunk ", chunk->id, " not in Unloading state");
     return;
   }
 
-  if (tempChunksToUnLoad.size() == 0) {
-    tempChunksToUnLoad.clear();
-  }
+  chunk->clear();
   chunkManager.updateLoadedChunks();
 }
 
@@ -457,27 +461,38 @@ void World::renderBlockDamageOverlay() {
 }
 
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
-  // Avoid being duplicated;
+  // Avoid duplicate entries in load queue
   for (size_t i = 0; i < tempChunksToLoad.size(); i++)
     if (tempChunksToLoad[i]->id == t_chunk->id) return;
 
-  // // Avoid unload and load the same chunk at the same time
-  // for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
-  //   if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
+  // Remove from unload queue if present (prioritize loading)
+  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
+    if (tempChunksToUnLoad[i]->id == t_chunk->id) {
+      tempChunksToUnLoad[i]->state = ChunkState::Clean;  // Reset state
+      tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
+      break;
+    }
+  }
 
-  tempChunksToLoad.push_front(t_chunk);
+  t_chunk->state = ChunkState::Building;
+  tempChunksToLoad.push_back(t_chunk);  // Changed from push_front
 }
 
 void World::addChunkToUnloadAsync(Chunk* t_chunk) {
-  // Avoid being duplicated;
+  // Avoid duplicate entries in unload queue
   for (size_t i = 0; i < tempChunksToUnLoad.size(); i++)
     if (tempChunksToUnLoad[i]->id == t_chunk->id) return;
 
-  // // Avoid unload and load the same chunk at the same time
-  // for (size_t i = 0; i < tempChunksToLoad.size(); i++)
-  //   if (tempChunksToLoad[i]->id == t_chunk->id)
-  //     tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
+  // Remove from load queue if present (prioritize unloading)
+  for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
+    if (tempChunksToLoad[i]->id == t_chunk->id) {
+      tempChunksToLoad[i]->state = ChunkState::Clean;  // Reset state
+      tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
+      break;
+    }
+  }
 
+  t_chunk->state = ChunkState::Unloading;
   tempChunksToUnLoad.push_front(t_chunk);
 }
 
@@ -653,6 +668,13 @@ void World::setDrawDistance(const u8& drawDistanceInChunks) {
   if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;
+    
+    // Clear async queues and reset chunk states
+    for (auto chunk : tempChunksToLoad) chunk->state = ChunkState::Clean;
+    for (auto chunk : tempChunksToUnLoad) chunk->state = ChunkState::Clean;
+    tempChunksToLoad.clear();
+    tempChunksToUnLoad.clear();
+    
     Chunk* currentChunk =
         chunkManager.getChunkByWorldPosition(lastPlayerPosition);
     TYRA_ASSERT(currentChunk, "Invalid chunk pointer");

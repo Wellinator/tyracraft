@@ -5,6 +5,7 @@
 #include <renderer/renderer.hpp>
 #include <fastmath.h>
 #include <algorithm>
+#include <functional>
 #include "entities/Block.hpp"
 #include "constants.hpp"
 #include "utils.hpp"
@@ -36,7 +37,12 @@ using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Vec4;
 
-enum class ChunkState { Loaded, Clean };
+enum class ChunkState { 
+  Clean,      // Chunk descarregado, sem geometria
+  Building,   // Chunk em fila de construção OU sendo construído
+  Loaded,     // Chunk construído, pronto para render
+  Unloading   // Chunk em fila de descarregamento
+};
 
 struct ChunkQuadData {
   // How many blocks this quad is spanning in X, Y and Z axis
@@ -56,6 +62,8 @@ class Chunk {
 
   ChunkState state = ChunkState::Clean;
   const bool isLoaded() const { return state == ChunkState::Loaded; }
+  const bool isBuilding() const { return state == ChunkState::Building; }
+  const bool isUnloading() const { return state == ChunkState::Unloading; }
 
   Vec4 minOffset = Vec4();
   Vec4 maxOffset = Vec4();
@@ -119,6 +127,10 @@ class Chunk {
   void markDirty();
   inline bool isDirty() { return dirty; }
 
+  // Callback system for chunk lifecycle events
+  using OnLoadedCallback = std::function<void(Chunk*)>;
+  void setOnLoadedCallback(OnLoadedCallback cb) { onLoadedCallback = cb; }
+
  private:
   int randomTickSpeed = DEFAULT_TICK_SPEED;
   void tickRandomBlock();
@@ -139,6 +151,8 @@ class Chunk {
 
   int _lod = 0;
   bool dirty = false;
+
+  OnLoadedCallback onLoadedCallback;
 
   bool isDrawDataOptimized = false;
   void invalidateOptimization();

@@ -145,11 +145,22 @@ void ChunkManager::enqueueChunksToReloadLight() {
   }
 }
 
+void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk) {
+  if (chunk && chunk->isLoaded()) {
+    chunksToUpdateLight.push(chunk);
+  }
+}
+
 void ChunkManager::reloadLightDataAsync() {
+  if (chunksToUpdateLight.empty()) return;
+  
   auto chunk = chunksToUpdateLight.front();
-  chunk->reloadLightData();
   chunksToUpdateLight.pop();
-  return;
+  
+  // Validate state before updating (chunk may have been unloaded)
+  if (!chunk->isLoaded()) return;
+  
+  chunk->reloadLightData();
 }
 
 void ChunkManager::reloadLightData() {
