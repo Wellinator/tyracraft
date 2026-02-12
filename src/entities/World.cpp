@@ -472,9 +472,11 @@ void World::loadScheduledChunks() {
   tempChunksToLoad.pop_front();
   chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
   
-  // Validate state before building
-  if (chunk->state != ChunkState::Building) {
-    TYRA_LOG("Warning: chunk ", chunk->id, " not in Building state");
+  // Validate state before building:
+  // - New chunks should be in Building state
+  // - LOD rebuilds stay in Loaded state until build() runs
+  if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
+    TYRA_LOG("Warning: chunk ", chunk->id, " not in expected state for build");
     return;
   }
 
@@ -539,7 +541,13 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
 
   // Track if this is an LOD rebuild (already loaded, just dirty)
   t_chunk->isLODRebuild = t_chunk->isLoaded();
-  t_chunk->state = ChunkState::Building;
+  
+  // For LOD rebuilds, keep the Loaded state so old geometry remains visible
+  // State will transition to Building only when build() actually runs
+  if (!t_chunk->isLODRebuild) {
+    t_chunk->state = ChunkState::Building;
+  }
+  
   tempChunksToLoad.push_back(t_chunk);
   chunksInLoadQueue.set(chunkId);  // Mark as queued
 }
@@ -556,6 +564,7 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
     for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
       if (tempChunksToLoad[i]->id == chunkId) {
         tempChunksToLoad[i]->state = ChunkState::Clean;  // Reset state
+        tempChunksToLoad[i]->isLODRebuild = false;       // Reset LOD flag
         tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
         chunksInLoadQueue.reset(chunkId);  // Clear bitset
         break;

@@ -917,6 +917,7 @@ void Chunk::clear() {
   // Reset fade state
   isFadingIn = false;
   fadeAlpha = 0.0f;
+  isLODRebuild = false;
   
   state = ChunkState::Clean;
   markDistanceDirty();  // Phase 1: Invalidate cache on clear
@@ -962,8 +963,12 @@ void Chunk::build() {
 #endif  // end if DEBUG_MODE
 
   // Safety: Prevent build if unloading or already loaded
-  // Note: Building state is ALLOWED - it's set by addChunkToLoadAsync before enqueuing
-  if (state == ChunkState::Unloading || state == ChunkState::Loaded) {
+  // Note: Building state is ALLOWED for new chunks
+  // Loaded state is ALLOWED for LOD rebuilds (old geometry still visible)
+  if (state == ChunkState::Unloading) {
+    return;
+  }
+  if (state == ChunkState::Loaded && !isLODRebuild) {
     return;
   }
 
