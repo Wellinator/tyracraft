@@ -879,6 +879,8 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
 void Chunk::clear() {
   state = ChunkState::Unloading;
   clearDrawData();
+  visibilityGraph = 0;
+  visibilityGraphDirty = true;
   state = ChunkState::Clean;
   markDistanceDirty();  // Phase 1: Invalidate cache on clear
 }
@@ -951,6 +953,9 @@ void Chunk::build() {
 
     // Phase 1: Invalidate distance cache after build
     markDistanceDirty();
+
+    // Build visibility graph for cave culling
+    rebuildVisibilityGraph();
 
     // Notify that chunk is ready for lighting updates
     if (onLoadedCallback) onLoadedCallback(this);
@@ -1108,4 +1113,15 @@ u8 Chunk::containsBlock(Vec4* offset) {
   // return offset->x >= minOffset.x && offset->x <= maxOffset.x &&
   //        offset->y >= minOffset.y && offset->y <= maxOffset.y &&
   //        offset->z >= minOffset.z && offset->z <= maxOffset.z;
+}
+
+void Chunk::rebuildVisibilityGraph() {
+  visibilityGraph = BuildVisibilityGraph(
+      pLevel, static_cast<int>(minOffset.x), static_cast<int>(minOffset.y),
+      static_cast<int>(minOffset.z));
+  visibilityGraphDirty = false;
+}
+
+bool Chunk::isConnected(u8 faceA, u8 faceB) const {
+  return IsConnected(visibilityGraph, faceA, faceB);
 }

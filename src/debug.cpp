@@ -55,6 +55,7 @@ static MenuItem g_all_menu_items[] = {
     // GAMEPLAY tab
     
     // PERFORMANCE tab
+    {"Cave Culling", &g_debug_menu.enableCaveCulling, DebugMenuTab::PERFORMANCE},
     {"Log Pathfinding", &g_debug_menu.logPathfinding, DebugMenuTab::PERFORMANCE},
     {"Log Chunk Memory Usage", &g_debug_menu.logChunkMemoryUsage, DebugMenuTab::PERFORMANCE},
 };
@@ -233,6 +234,12 @@ void handleDebugInput(Pad* pPad) {
     for (int i = 0; i < g_total_menu_items; i++) {
       if (g_all_menu_items[i].tab != g_debug_menu.currentTab) {
         continue;
+      }
+      
+      if (itemIndexInTab == g_selected_debug_menu_item) {
+        // Toggle the value
+        *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
+        break;
       }
       
       itemIndexInTab++;

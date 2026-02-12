@@ -12,6 +12,7 @@
 #include <vector>
 #include <array>
 #include <queue>
+#include <bitset>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 #include "singleton.hpp"
@@ -31,6 +32,8 @@ class ChunkManager : public Singleton<ChunkManager> {
 
   void init(WorldLightModel* worldLightModel, Level* Level);
   void update(const Plane* frustumPlanes, Vec4* camPos);
+  void updateWithVisibilityGraph(const Plane* frustumPlanes, Vec4* camPos,
+                                  const Vec4& camForward);
   void tick();
 
   inline u8 isChunkVisible(Chunk* chunk) { return chunk->isVisible(); };
@@ -62,6 +65,9 @@ class ChunkManager : public Singleton<ChunkManager> {
   // TODO: implement to heightmap
   int getHeightAtOffset(const Vec4& offset);
   float getHeightAtPosition(const Vec4& position);
+
+  // Get the chunk neighboring the given chunk on the specified face
+  Chunk* getNeighborChunk(Chunk* chunk, u8 face);
 
   // Helper for 2D horizontal distance calculation (XZ plane only)
   static inline float horizontalDistance2D(const Vec4& a, const Vec4& b) {

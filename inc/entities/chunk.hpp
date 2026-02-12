@@ -1,5 +1,8 @@
 #pragma once
 
+// Forward declaration for visibility graph
+#include "managers/visibility_graph.hpp"
+
 #include <vector>
 #include <math/vec4.hpp>
 #include <renderer/renderer.hpp>
@@ -91,6 +94,12 @@ class Chunk {
 
   bool hasDrawData();
   void reloadLightData();
+
+  // Visibility graph for cave culling (15-bit face-pair connectivity)
+  u16 visibilityGraph = 0;
+  bool visibilityGraphDirty = true;
+  void rebuildVisibilityGraph();
+  bool isConnected(u8 faceA, u8 faceB) const;
   void clearDrawData();
   void clearDrawDataWithoutShrink();
 

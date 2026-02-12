@@ -166,8 +166,20 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
   mobManager.fixedUpdate(fixedDeltaTime);
 
   cloudsManager.update(fixedDeltaTime);
-  chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                      &t_camera->looksAt);
+#ifdef DEBUG_MODE
+  if (g_debug_menu.enableCaveCulling) {
+    chunkManager.updateWithVisibilityGraph(
+        t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
+        t_camera->unitCirclePosition);
+  } else {
+    chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
+                        &t_camera->looksAt);
+  }
+#else
+  chunkManager.updateWithVisibilityGraph(
+      t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
+      t_camera->unitCirclePosition);
+#endif
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
   if (liquidPropagation.hasAffectedChunks())

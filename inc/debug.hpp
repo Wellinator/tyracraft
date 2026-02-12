@@ -49,6 +49,7 @@ struct DebugMenu {
   u8 godMode = false;
   u8 noclipMode = false;
   u8 logChunkMemoryUsage = false;
+  u8 enableCaveCulling = true;
 
   // Post FX
   u8 enablePostFx = false;

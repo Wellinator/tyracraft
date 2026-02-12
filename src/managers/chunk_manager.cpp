@@ -343,3 +343,136 @@ void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
   }
 }
 
+Chunk* ChunkManager::getNeighborChunk(Chunk* chunk, u8 face) {
+  int dx, dy, dz;
+  GetFaceDirection(face, dx, dy, dz);
+
+  // Calculate neighbor's minOffset in block coordinates
+  float nx = chunk->minOffset.x + dx;
+  float ny = chunk->minOffset.y + dy;
+  float nz = chunk->minOffset.z + dz;
+
+  // Bounds check — world is [0, OVERWORLD_H_DISTANCE) × [0, OVERWORLD_V_DISTANCE) × [0, OVERWORLD_H_DISTANCE)
+  if (nx < 0 || nx >= OVERWORLD_H_DISTANCE || ny < 0 ||
+      ny >= OVERWORLD_V_DISTANCE || nz < 0 || nz >= OVERWORLD_H_DISTANCE) {
+    return nullptr;
+  }
+
+  Vec4 neighborOffset(nx, ny, nz);
+  return getChunkByPosition(neighborOffset);
+}
+
+// BFS queue element for visibility graph traversal
+struct VisBfsEntry {
+  u16 chunkId;
+  u8 entryFace;  // Face through which we entered this chunk
+  u8 steps;      // Number of steps from camera chunk
+};
+
+void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
+                                              Vec4* camPos,
+                                              const Vec4& camForward) {
+  visibleChunks.clear();
+
+  // First, update frustum check for all loaded chunks (needed for filtering)
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    Chunk* chk = loadedChunks[i];
+    if (chk->isLoaded()) {
+      chk->setCamPosition(camPos);
+      chk->update(frustumPlanes);
+    }
+  }
+
+  // Find the camera chunk
+  Chunk* cameraChunk = getChunkByWorldPosition(*camPos);
+  if (!cameraChunk || !cameraChunk->isLoaded()) {
+    // Fallback to standard frustum culling if camera chunk is not loaded
+    for (size_t i = 0; i < loadedChunks.size(); i++) {
+      Chunk* chk = loadedChunks[i];
+      if (chk->isLoaded() && chk->isVisible()) {
+        visibleChunks.emplace_back(chk);
+      }
+    }
+    return;
+  }
+
+  // BFS traversal using visibility graph
+  static constexpr u8 MAX_STEPS = 16;
+  static constexpr u16 BFS_QUEUE_SIZE = OVERWORLD_SIZE_IN_CHUNKS;
+
+  // Visited bitset — one bit per chunk ID
+  static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> visited;
+  visited.reset();
+
+  // Fixed-size circular buffer BFS queue
+  static VisBfsEntry bfsQueue[BFS_QUEUE_SIZE];
+  u16 qHead = 0;
+  u16 qTail = 0;
+  u16 qCount = 0;
+
+  // Enqueue camera chunk (special: enters from ALL faces)
+  visited.set(cameraChunk->id);
+  visibleChunks.emplace_back(cameraChunk);
+
+  // Queue neighbors from camera chunk directly (no connectivity filter for
+  // camera chunk)
+  for (u8 face = 0; face < FACE_COUNT; face++) {
+    Chunk* neighbor = getNeighborChunk(cameraChunk, face);
+    if (!neighbor || !neighbor->isLoaded()) continue;
+    if (visited.test(neighbor->id)) continue;
+
+    // Frustum check
+    if (!neighbor->isVisible()) continue;
+
+    visited.set(neighbor->id);
+    bfsQueue[qTail] = {neighbor->id, OppositeFace(face), 1};
+    qTail = (qTail + 1) % BFS_QUEUE_SIZE;
+    qCount++;
+  }
+
+  // BFS traversal
+  while (qCount > 0) {
+    VisBfsEntry entry = bfsQueue[qHead];
+    qHead = (qHead + 1) % BFS_QUEUE_SIZE;
+    qCount--;
+
+    Chunk* current = chunks[entry.chunkId];
+    if (!current->isLoaded()) continue;
+
+    // Add to visible chunks
+    visibleChunks.emplace_back(current);
+
+    // Don't expand further if we've reached the step limit
+    if (entry.steps >= MAX_STEPS) continue;
+
+    // Try to expand to all 6 neighbors
+    for (u8 exitFace = 0; exitFace < FACE_COUNT; exitFace++) {
+      // Filter 1: Connectivity test — can we see through this chunk from
+      // entryFace to exitFace?
+      if (!current->isConnected(entry.entryFace, exitFace)) continue;
+
+      // Filter 2: No backtracking — don't go back the way we came
+      if (exitFace == OppositeFace(entry.entryFace)) continue;
+
+      Chunk* neighbor = getNeighborChunk(current, exitFace);
+      if (!neighbor || !neighbor->isLoaded()) continue;
+      if (visited.test(neighbor->id)) continue;
+
+      // Filter 3: Frustum check
+      if (!neighbor->isVisible()) continue;
+
+      visited.set(neighbor->id);
+
+      // Step cost: 1 for straight movement, 2 for turns
+      u8 stepCost = (exitFace == entry.entryFace) ? 1 : 2;
+      u8 newSteps = entry.steps + stepCost;
+
+      // Filter 4: Step budget
+      if (newSteps > MAX_STEPS) continue;
+
+      bfsQueue[qTail] = {neighbor->id, OppositeFace(exitFace), newSteps};
+      qTail = (qTail + 1) % BFS_QUEUE_SIZE;
+      qCount++;
+    }
+  }
+}
