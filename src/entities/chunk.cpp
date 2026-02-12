@@ -169,6 +169,10 @@ Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
       Vec4(tempMax.x, tempMax.y, tempMin.z),
   };
   this->bbox = new BBox(_vertices, count);
+  
+  // Initialize fade state
+  fadeAlpha = 0.0f;
+  isFadingIn = false;
 };
 
 Chunk::~Chunk() {
@@ -183,6 +187,15 @@ void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
 
 void Chunk::update(const Plane* frustumPlanes) {
   updateFrustumCheck(frustumPlanes);
+
+  // Update fade-in animation
+  if (isFadingIn && fadeAlpha < 1.0f) {
+    fadeAlpha += (1.0f / FADE_IN_DURATION) * (1.0f / 60.0f);  // Assuming ~60fps
+    if (fadeAlpha >= 1.0f) {
+      fadeAlpha = 1.0f;
+      isFadingIn = false;
+    }
+  }
 
   // Disabled for testing
   // TODO: add an option at debug menu to toggle optimization
@@ -830,7 +843,26 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 
   // Initialize color bag
   StaPipColorBag colorBag;
-  colorBag.many = inColors->data();
+  
+  // Static buffer for faded colors to avoid repeated allocations on PS2
+  static std::vector<Color> fadedColors;
+  
+  // Apply fade alpha if chunk is fading
+  if (fadeAlpha < 1.0f) {
+    // Create temporary color buffer with adjusted alpha
+    fadedColors.resize(inColors->size());
+    
+    const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);  // PS2 uses 0-128 for alpha
+    
+    for (size_t i = 0; i < inColors->size(); i++) {
+      fadedColors[i] = (*inColors)[i];
+      fadedColors[i].a = alphaValue;
+    }
+    
+    colorBag.many = fadedColors.data();
+  } else {
+    colorBag.many = inColors->data();
+  }
 
   // Initialize texture bag
   StaPipTextureBag textureBag;
@@ -881,6 +913,11 @@ void Chunk::clear() {
   clearDrawData();
   visibilityGraph = 0;
   visibilityGraphDirty = true;
+  
+  // Reset fade state
+  isFadingIn = false;
+  fadeAlpha = 0.0f;
+  
   state = ChunkState::Clean;
   markDistanceDirty();  // Phase 1: Invalidate cache on clear
 }
@@ -950,6 +987,10 @@ void Chunk::build() {
     }
 
     state = ChunkState::Loaded;
+
+    // Start fade-in animation for smooth chunk appearance
+    isFadingIn = true;
+    fadeAlpha = 0.0f;  // Start transparent
 
     // Phase 1: Invalidate distance cache after build
     markDistanceDirty();
