@@ -150,6 +150,7 @@ class Chunk {
   // Fade-in state for smooth chunk transitions (fade-out not needed - chunks unload outside view)
   float fadeAlpha = 0.0f;      // Current fade opacity (0.0 = transparent, 1.0 = opaque)
   bool isFadingIn = false;     // Whether chunk is fading in
+  bool isLODRebuild = false;   // True when rebuild is due to LOD change (skip fade reset)
 
   // Configurable fade-in duration (in seconds)
   static constexpr float FADE_IN_DURATION = 0.5f;

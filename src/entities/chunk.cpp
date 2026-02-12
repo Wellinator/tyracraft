@@ -988,9 +988,13 @@ void Chunk::build() {
 
     state = ChunkState::Loaded;
 
-    // Start fade-in animation for smooth chunk appearance
-    isFadingIn = true;
-    fadeAlpha = 0.0f;  // Start transparent
+    // Start fade-in animation only for NEW chunks (not LOD rebuilds)
+    // For LOD changes, keep full opacity to avoid blink
+    if (!isLODRebuild) {
+      isFadingIn = true;
+      fadeAlpha = 0.0f;  // Start transparent
+    }
+    isLODRebuild = false;  // Reset flag after use
 
     // Phase 1: Invalidate distance cache after build
     markDistanceDirty();

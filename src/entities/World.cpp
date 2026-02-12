@@ -537,6 +537,8 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
     }
   }
 
+  // Track if this is an LOD rebuild (already loaded, just dirty)
+  t_chunk->isLODRebuild = t_chunk->isLoaded();
   t_chunk->state = ChunkState::Building;
   tempChunksToLoad.push_back(t_chunk);
   chunksInLoadQueue.set(chunkId);  // Mark as queued
