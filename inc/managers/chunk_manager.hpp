@@ -50,6 +50,9 @@ class ChunkManager : public Singleton<ChunkManager> {
 
   std::vector<Chunk*>* getLoadedChunks() { return &loadedChunks; };
   std::vector<Chunk*>* getVisibleChunks() { return &visibleChunks; };
+#ifdef DEBUG_MODE
+  std::vector<Chunk*>* getCulledChunks() { return &culledChunks; };
+#endif
 
   void enqueueChunkToReloadLight(Chunk* chunk);  // Single chunk enqueue
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
@@ -98,6 +101,9 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::vector<Chunk*> loadedChunks;
   std::vector<Chunk*> visibleChunks;
   std::vector<Chunk*> activeChunks;  // Phase 2: Chunks with state == Loaded for faster tick
+#ifdef DEBUG_MODE
+  std::vector<Chunk*> culledChunks;  // Chunks removed by cave culling
+#endif
 
   // Phase 1: Spatial grid for optimized radius queries (16x16 horizontal grid)
   // Each cell contains pointers to the 8 vertical chunks in that XZ column

@@ -50,6 +50,7 @@ struct DebugMenu {
   u8 noclipMode = false;
   u8 logChunkMemoryUsage = false;
   u8 enableCaveCulling = true;
+  u8 showCulledChunks = false;
 
   // Post FX
   u8 enablePostFx = false;

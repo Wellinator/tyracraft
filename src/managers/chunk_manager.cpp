@@ -52,6 +52,9 @@ void ChunkManager::updateLoadedChunks() {
 
 void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
   visibleChunks.clear();
+#ifdef DEBUG_MODE
+  culledChunks.clear();  // No culling in standard mode
+#endif
 
   // TODO: refactore to fast index by offset
   for (size_t i = 0; i < loadedChunks.size(); i++) {
@@ -108,8 +111,16 @@ void ChunkManager::rendererOpaque(Renderer* t_renderer,
       t_renderer->renderer3D.utility.drawBBox(*visibleChunks[i]->bbox,
                                               Color(50, 50, 200));
     }
-#endif  // end if DEBUG_MODE
   }
+  
+  // Render culled chunks bounding boxes in red
+  if (g_debug_menu.showCulledChunks) {
+    for (u16 i = 0; i < culledChunks.size(); i++) {
+      t_renderer->renderer3D.utility.drawBBox(*culledChunks[i]->bbox,
+                                              Color(255, 0, 0));
+    }
+  }
+#endif  // end if DEBUG_MODE
 }
 
 void ChunkManager::rendererTransparent(Renderer* t_renderer,
@@ -121,8 +132,16 @@ void ChunkManager::rendererTransparent(Renderer* t_renderer,
       t_renderer->renderer3D.utility.drawBBox(*visibleChunks[i]->bbox,
                                               Color(50, 50, 200));
     }
-#endif  // end if DEBUG_MODE
   }
+  
+  // Render culled chunks bounding boxes in red
+  if (g_debug_menu.showCulledChunks) {
+    for (u16 i = 0; i < culledChunks.size(); i++) {
+      t_renderer->renderer3D.utility.drawBBox(*culledChunks[i]->bbox,
+                                              Color(255, 0, 0));
+    }
+  }
+#endif  // end if DEBUG_MODE
 }
 
 void ChunkManager::generateChunks() {
@@ -374,6 +393,17 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
                                               const Vec4& camForward) {
   visibleChunks.clear();
 
+#ifdef DEBUG_MODE
+  // Start with all loaded chunks as potentially culled
+  culledChunks.clear();
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    Chunk* chk = loadedChunks[i];
+    if (chk->isLoaded()) {
+      culledChunks.push_back(chk);
+    }
+  }
+#endif
+
   // First, update frustum check for all loaded chunks (needed for filtering)
   for (size_t i = 0; i < loadedChunks.size(); i++) {
     Chunk* chk = loadedChunks[i];
@@ -475,4 +505,16 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       qCount++;
     }
   }
+
+#ifdef DEBUG_MODE
+  // Rebuild culledChunks to contain only chunks that were NOT visited
+  std::vector<Chunk*> actualCulledChunks;
+  actualCulledChunks.reserve(culledChunks.size());
+  for (Chunk* chunk : culledChunks) {
+    if (!visited.test(chunk->id)) {
+      actualCulledChunks.push_back(chunk);
+    }
+  }
+  culledChunks = std::move(actualCulledChunks);
+#endif
 }
