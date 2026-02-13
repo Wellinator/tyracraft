@@ -275,8 +275,11 @@ const int Chunk::getLODFromDistance(const int distance) {
 void Chunk::compress(const bool staticBackFaceCulling) {
   // Safety: Don't compress if chunk is unloading or clean (no data)
   // Allow both Building and Loaded states since compress is called during build
-  if (state == ChunkState::Unloading || state == ChunkState::Clean) return;
+  if (state == ChunkState::Unloading || state == ChunkState::Clean) {
+    return;
+  }
   
+  // Safety: Don't compress if no data exists
   if (vertices.empty() && transpVertices.empty()) {
     isCompressed = true;  // Mark as compressed even if empty to avoid re-processing
     return;
@@ -451,7 +454,10 @@ void Chunk::invalidateOptimization() {
 void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                        std::vector<Vec4>* inVertices,
                        std::vector<Color>* inColors, std::vector<Vec4>* inUVs) {
+  // Validation: Ensure all pointers are valid
   if (!outQuadsData || !inVertices || !inColors || !inUVs) return;
+  
+  // Validation: Ensure input vectors have matching sizes and are not empty
   if (inVertices->empty() || inVertices->size() != inColors->size() ||
       inVertices->size() != inUVs->size())
     return;

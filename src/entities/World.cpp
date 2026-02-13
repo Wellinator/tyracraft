@@ -531,7 +531,12 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
     // Find and remove from unload deque (rare case, so linear search acceptable)
     for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
       if (tempChunksToUnLoad[i]->id == chunkId) {
-        tempChunksToUnLoad[i]->state = ChunkState::Clean;  // Reset state
+        Chunk* removedChunk = tempChunksToUnLoad[i];
+        // Clear any pending unload data to prevent memory leak
+        // Only clear if chunk was in Unloading state
+        if (removedChunk->state == ChunkState::Unloading) {
+          removedChunk->state = ChunkState::Clean;
+        }
         tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
         chunksInUnloadQueue.reset(chunkId);  // Clear bitset
         break;
@@ -563,8 +568,17 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
     // Find and remove from load deque (rare case, so linear search acceptable)
     for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
       if (tempChunksToLoad[i]->id == chunkId) {
-        tempChunksToLoad[i]->state = ChunkState::Clean;  // Reset state
-        tempChunksToLoad[i]->isLODRebuild = false;       // Reset LOD flag
+        Chunk* removedChunk = tempChunksToLoad[i];
+        
+        // Clear draw data if chunk was building to prevent memory leak
+        // Only clear if chunk has draw data that won't be used
+        if (removedChunk->state == ChunkState::Building && !removedChunk->isLoaded()) {
+          // Chunk never finished building, clear any partial data
+          removedChunk->clearDrawDataWithoutShrink();
+        }
+        
+        removedChunk->state = ChunkState::Clean;  // Reset state
+        removedChunk->isLODRebuild = false;       // Reset LOD flag
         tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
         chunksInLoadQueue.reset(chunkId);  // Clear bitset
         break;
@@ -750,11 +764,24 @@ void World::setDrawDistance(const u8& drawDistanceInChunks) {
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;
     
-    // Clear async queues and reset chunk states
-    for (auto chunk : tempChunksToLoad) chunk->state = ChunkState::Clean;
-    for (auto chunk : tempChunksToUnLoad) chunk->state = ChunkState::Clean;
+    // Clear async queues and properly clean up chunk states
+    // Memory leak fix: Clear draw data for chunks that were building but never loaded
+    for (auto chunk : tempChunksToLoad) {
+      if (chunk->state == ChunkState::Building && !chunk->isLoaded()) {
+        chunk->clearDrawDataWithoutShrink();
+      }
+      chunk->state = ChunkState::Clean;
+      chunk->isLODRebuild = false;
+    }
+    for (auto chunk : tempChunksToUnLoad) {
+      chunk->state = ChunkState::Clean;
+    }
     tempChunksToLoad.clear();
     tempChunksToUnLoad.clear();
+    
+    // Clear the bitsets as well
+    chunksInLoadQueue.reset();
+    chunksInUnloadQueue.reset();
     
     Chunk* currentChunk =
         chunkManager.getChunkByWorldPosition(lastPlayerPosition);
