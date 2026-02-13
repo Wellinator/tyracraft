@@ -1083,10 +1083,24 @@ void Chunk::buildCompressed() {
 };
 
 void Chunk::rebuild() {
+  // Preserve fade state - this chunk is already visible, no blink needed
+  const float savedFadeAlpha = fadeAlpha;
+  const bool wasFadingIn = isFadingIn;
+
   clearDrawDataWithoutShrink();
-  // Reset state to allow build() to proceed
-  state = ChunkState::Clean;
+  // Mark as LOD rebuild to tell build() not to reset fade
+  // (build() already allows Loaded state through when isLODRebuild is true)
+  isLODRebuild = true;
   build();
+
+  // Restore fade state so the chunk doesn't flash transparent
+  if (savedFadeAlpha >= 1.0f) {
+    fadeAlpha = 1.0f;
+    isFadingIn = false;
+  } else {
+    fadeAlpha = savedFadeAlpha;
+    isFadingIn = wasFadingIn;
+  }
 }
 
 void Chunk::updateLOD() {
