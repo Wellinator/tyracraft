@@ -851,8 +851,16 @@ void Chunk::expandQuadGeometry(ChunkQuadData& target,
   // Update target vertices with expanded geometry
   target.vertices = std::move(newVertices);
 
-  // Keep original UV and color data - these represent the texture mapping
-  // and lighting for the original block face, which should be preserved
+  // Average colors from both quads to produce more representative lighting
+  // for the merged face instead of arbitrarily keeping only target's colors
+  for (size_t i = 0; i < 6; ++i) {
+    target.colors[i].r = (target.colors[i].r + source.colors[i].r) / 2;
+    target.colors[i].g = (target.colors[i].g + source.colors[i].g) / 2;
+    target.colors[i].b = (target.colors[i].b + source.colors[i].b) / 2;
+    // Preserve alpha channel from target
+  }
+
+  // Keep original UV data - these represent the texture mapping
   // The UV coordinates will be stretched across the larger face automatically
 }
 
@@ -1149,13 +1157,13 @@ void Chunk::buildNormaly() {
 
 void Chunk::buildCompressed() {
   buildNormaly();
-  compress();
+  compress(false, 5, 0.01f, 0.99f, false, true);  // Tightened colorTolerance from 10 to 5
   isUltraCompressed = false;
 };
 
 void Chunk::buildUltraCompressed() {
   buildNormaly();
-  compress(false, 30, 0.1f, 0.95f, true, false);
+  compress(false, 15, 0.1f, 0.95f, true, false);  // Tightened colorTolerance from 30 to 15
   isUltraCompressed = true;
 }
 
@@ -1215,6 +1223,31 @@ void Chunk::reloadLightData() {
   if (!isLoaded()) return;
   if (isEmpty) return;
 
+  // For compressed chunks, we need to rebuild geometry then recompress
+  // because greedy meshing restructures vertex arrays - color indices
+  // won't align with merged vertices if we just regenerate colors
+  if (isCompressed) {
+    // Save compression state
+    const bool wasUltraCompressed = isUltraCompressed;
+    
+    // Clear and rebuild geometry with fresh lighting
+    clearDrawDataWithoutShrink();
+    buildNormaly();
+    
+    // Recompress with appropriate settings
+    if (wasUltraCompressed) {
+      compress(false, 15, 0.1f, 0.95f, true, false);  // Tightened from 30 to 15
+      isUltraCompressed = true;
+    } else {
+      compress(false, 5, 0.01f, 0.99f, false, true);  // Tightened from 10 to 5
+      isUltraCompressed = false;
+    }
+    
+    isCompressed = true;
+    return;
+  }
+
+  // For uncompressed chunks, just regenerate colors (original behavior)
   colors.clear();
   transpColors.clear();
 
