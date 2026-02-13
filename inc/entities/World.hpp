@@ -199,6 +199,7 @@ class World {
   u8 _updateDayNightCycle = true;
 
   WorldLightModel worldLightModel;
+  float lastSunLightIntensity = 0.0f;  // Track sun intensity for delta guard
 
   void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
   void scheduleChunksNeighbors(Chunk* t_chunk, const Vec4 currentPlayerPos,

@@ -73,10 +73,8 @@ void ChunkManager::tick() {
     if (chunksToUpdateLight.empty() == false) reloadLightDataAsync();
   }
 
-  // This tick time must be in sync with World::updateLightModel()
-  if (isTicksCounterAt(250) && chunksToUpdateLight.empty() == false) {
-    enqueueChunksToReloadLight();
-  }
+  // Note: enqueueChunksToReloadLight() is called from World::tick() at tick 250
+  // Removed duplicate call here to prevent queue overflow
 
   // Phase 2: Only tick active (loaded) chunks instead of all 2048
   // Reduces from 2048 virtual calls to ~100-500 (80-95% reduction)
@@ -175,36 +173,53 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  // Phase 2: Use loadedChunks instead of all chunks (already filtered)
-  // Eliminates redundant isLoaded() check since loadedChunks is maintained
-  for (size_t i = 0; i < loadedChunks.size(); i++) {
-    chunksToUpdateLight.push(loadedChunks[i]);
+  // Only enqueue visible chunks — invisible chunks will get updated
+  // via onLoadedCallback when they become visible/loaded again.
+  // This reduces queue input from ~305 (all loaded) to ~40 (visible).
+  for (size_t i = 0; i < visibleChunks.size(); i++) {
+    Chunk* chunk = visibleChunks[i];
+    // Use bitset for O(1) duplicate check
+    if (!chunksInLightQueue.test(chunk->id)) {
+      chunksToUpdateLight.push(chunk);
+      chunksInLightQueue.set(chunk->id);
+    }
   }
 }
 
 void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk) {
   if (chunk && chunk->isLoaded()) {
-    chunksToUpdateLight.push(chunk);
+    // Use bitset for O(1) duplicate check
+    if (!chunksInLightQueue.test(chunk->id)) {
+      chunksToUpdateLight.push(chunk);
+      chunksInLightQueue.set(chunk->id);
+    }
   }
 }
 
 void ChunkManager::reloadLightDataAsync() {
   if (chunksToUpdateLight.empty()) return;
-  
-  auto chunk = chunksToUpdateLight.front();
-  chunksToUpdateLight.pop();
-  
-  // Validate chunk pointer and state before updating
-  // Check if chunk still exists in chunks vector (not deleted)
-  if (chunk == nullptr) return;
-  
-  auto it = std::find(chunks.begin(), chunks.end(), chunk);
-  if (it == chunks.end()) return;  // Chunk was deleted
-  
-  // Validate state (chunk may have been unloaded)
-  if (!chunk->isLoaded()) return;
-  
-  chunk->reloadLightData();
+
+  // Process up to LIGHT_UPDATE_BATCH_SIZE chunks per call
+  // With ~40 visible chunks enqueued per cycle and processing every 2 ticks,
+  // a batch of 4 drains the queue quickly
+  constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
+  int processed = 0;
+
+  while (!chunksToUpdateLight.empty() && processed < LIGHT_UPDATE_BATCH_SIZE) {
+    auto chunk = chunksToUpdateLight.front();
+    chunksToUpdateLight.pop();
+    chunksInLightQueue.reset(chunk->id);  // Clear bitset entry
+
+    // Validate using direct ID lookup — O(1) instead of O(n) std::find
+    if (chunk == nullptr || chunk->id >= chunks.size()) continue;
+    if (chunks[chunk->id] != chunk) continue;  // Pointer mismatch = stale
+
+    // Validate state (chunk may have been unloaded)
+    if (!chunk->isLoaded()) continue;
+
+    chunk->reloadLightData();
+    processed++;
+  }
 }
 
 void ChunkManager::reloadLightData() {

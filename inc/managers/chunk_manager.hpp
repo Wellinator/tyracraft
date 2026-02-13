@@ -97,6 +97,10 @@ class ChunkManager : public Singleton<ChunkManager> {
   Level* pLevel;
 
   std::queue<Chunk*> chunksToUpdateLight;
+  // Bitset to track which chunks are already in the light update queue
+  // Prevents duplicate entries and infinite queue growth
+  std::bitset<OVERWORLD_SIZE_IN_CHUNKS> chunksInLightQueue;
+  
   std::vector<Chunk*> chunks;
   std::vector<Chunk*> loadedChunks;
   std::vector<Chunk*> visibleChunks;
@@ -115,6 +119,7 @@ class ChunkManager : public Singleton<ChunkManager> {
   void reloadLightDataAsync();
   void clearLightDataQueue() {
     while (!chunksToUpdateLight.empty()) chunksToUpdateLight.pop();
+    chunksInLightQueue.reset();  // Clear the bitset as well
   };
 
   const uint16_t getChunkIdByPosition(const Vec4& chunkMinPosition);

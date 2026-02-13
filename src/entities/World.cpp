@@ -218,11 +218,20 @@ void World::tick(Player* t_player, Camera* t_camera) {
 
   if (isTicksCounterAt(250)) {
     updateLightModel();
+
+    // Track previous intensity to detect actual light changes
+    const float prevIntensity = lastSunLightIntensity;
+    lastSunLightIntensity = worldLightModel.sunLightIntensity;
+
     lightPropagation.updateSunlight();
     lightPropagation.updateBlockLights();
-    
-    // Enqueue loaded chunks to reload light (uses internal validation)
-    chunkManager.enqueueChunksToReloadLight();
+
+    // Only reload chunk light data when illumination values actually change
+    // This avoids re-enqueuing all chunks during steady day or night
+    const float intensityDelta = fabsf(lastSunLightIntensity - prevIntensity);
+    if (intensityDelta > 0.01f) {
+      chunkManager.enqueueChunksToReloadLight();
+    }
   }
 
   if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {

@@ -1116,45 +1116,41 @@ bool Chunk::hasDrawData() {
   return !vertices.empty() && !transpVertices.empty();
 }
 
-// TODO: refactore to update the colors directly instead of rebuilding all
-// mesh. Maybe use the worldLightModel
 void Chunk::reloadLightData() {
-  // verticesColors.clear();
-  // transpColors.clear();
+  if (!isLoaded()) return;
 
-  // const lod = getLODFromDistance();
-  // if (lod == 0) {
-  //   buildNormaly();
-  // } else {
-  //   buildCompressed();
-  // }
+  colors.clear();
+  transpColors.clear();
 
-  // for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-  //   for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-  //     for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-  //       Vec4 offset = Vec4(x, y, z);
-  //       Level* pLevel = Level::getInstance();
-  //       const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-  //       const Blocks block_type = static_cast<Blocks>(blockId);
+  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
+  BlockManager* blockMgr = BlockManager::getInstance();
 
-  //       if (blockId > (u8)Blocks::AIR_BLOCK) {
-  //         u8 visibleFaces =
-  //             VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
-  //                 offset);
+  // Must iterate in the SAME order as buildNormaly() (X→Z→Y)
+  // so that color indices stay in sync with existing vertices
+  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
 
-  //         if (visibleFaces == 0) continue;
+        Vec4 offset(x, y, z);
+        const u8 visibleFaces =
+            visibleFacesMgr->getVisibleFacesByOffset(offset);
+        if (visibleFaces == 0) continue;
 
-  //         Block* pBlockTemplate =
-  //             BlockManager::getInstance()->getBlockTemplateByType(block_type);
+        const Blocks block_type = static_cast<Blocks>(blockId);
+        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
 
-  //         MeshBuilder_BuildLightData(
-  //             const_cast<Vec4*>(&offset), visibleFaces,
-  //             pBlockTemplate->hasTransparency() ? &transpColors : &colors,
-  //             t_worldLightModel, pLevel);
-  //       }
-  //     }
-  //   }
-  // }
+        std::vector<Color>* targetColors =
+            pBlockTemplate->hasTransparency() ? &transpColors : &colors;
+
+        MeshBuilder_BuildLightData(&offset, visibleFaces, targetColors,
+                                   t_worldLightModel, pLevel);
+      }
+    }
+  }
+
+  invalidateOptimization();
 }
 
 void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {
