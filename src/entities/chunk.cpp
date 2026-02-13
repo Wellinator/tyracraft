@@ -873,7 +873,7 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   // Initialize info bag
   StaPipInfoBag infoBag;
   infoBag.model = &identityMatrix;
-  infoBag.blendingEnabled = !isCompressed;
+  infoBag.blendingEnabled = !isCompressed || fadeAlpha < 1.0f;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
   infoBag.shadingType = isCompressed
                             ? Tyra::PipelineShadingType::TyraShadingFlat
