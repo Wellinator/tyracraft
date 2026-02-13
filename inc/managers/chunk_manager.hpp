@@ -92,6 +92,13 @@ class ChunkManager : public Singleton<ChunkManager> {
   void getChunksInRadius(const Vec4& center, float radiusInChunks,
                          std::vector<Chunk*>& outChunks);
 
+  // Async light update for block changes - spatially filtered to affected area
+  // Enqueues only chunks within radius of changed block for async light reload
+  // Optionally updates immediate chunk synchronously for instant visual feedback
+  void enqueueAffectedChunksForLightReload(const Vec4& blockPos, 
+                                           float radiusInChunks = 8.0f,
+                                           bool immediateUpdate = true);
+
   void getColumnHeightInfo(int chunkX, int chunkZ, u8& outTopChunkY,
                            bool& outHasBlocks);
 

@@ -201,7 +201,10 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
   pLightPropagation->updateSunlight();
   pLightPropagation->updateBlockLights();
 
-  pChunkManager->reloadLightData();
+  // Async light reload: only affects chunks within 8-chunk radius
+  // Immediate update on player chunk for instant feedback (~1-2ms)
+  // Rest propagate smoothly over 1-2 seconds (4 chunks/tick)
+  pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 8.0f, true);
 
   const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
   const u8 isPlacingLiquid =
@@ -237,7 +240,9 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
                                      offsetToRemove.z);
   pLightPropagation->updateSunlight();
   pLightPropagation->updateBlockLights();
-  pChunkManager->reloadLightData();
+  
+  // Async light reload: spatially filtered to affected area
+  pChunkManager->enqueueAffectedChunksForLightReload(offsetToRemove, 8.0f, true);
 
   // Update liquid at position
   pLiquidPropagation->checkLiquidPropagation(offsetToRemove.x,
@@ -385,7 +390,8 @@ bool WorldBlockInteraction::putTorchBlock() {
     pLightPropagation->updateSunlight();
     pLightPropagation->updateBlockLights();
 
-    pChunkManager->reloadLightData();
+    // Async light reload for torch placement
+    pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 8.0f, true);
     updateNeighBorsChunksByAddedBlock(&blockOffset);
 
     return true;

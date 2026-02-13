@@ -235,6 +235,30 @@ void ChunkManager::reloadLightData() {
   clearLightDataQueue();
 }
 
+void ChunkManager::enqueueAffectedChunksForLightReload(const Vec4& blockPos,
+                                                        float radiusInChunks,
+                                                        bool immediateUpdate) {
+  // Get chunk containing the changed block
+  Chunk* immediateChunk = getChunkByBlockOffset(blockPos);
+  
+  // Optional: Immediate update for instant visual feedback (1-2ms, imperceptible)
+  if (immediateUpdate && immediateChunk && immediateChunk->isLoaded()) {
+    immediateChunk->reloadLightData();
+  }
+  
+  // Get all chunks within radius (light propagation range)
+  std::vector<Chunk*> affectedChunks;
+  getChunksInRadius(blockPos, radiusInChunks, affectedChunks);
+  
+  // Enqueue affected chunks for async light reload (4 per tick)
+  for (Chunk* chunk : affectedChunks) {
+    // Skip the immediate chunk if we already updated it
+    if (immediateUpdate && chunk == immediateChunk) continue;
+    
+    enqueueChunkToReloadLight(chunk);
+  }
+}
+
 // Needed to initiate light in all chunks. The visibleChunks will be available
 // after the first update...
 void ChunkManager::reloadLightDataOfAllChunks() {
