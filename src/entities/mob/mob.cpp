@@ -6,7 +6,12 @@ Mob::Mob(Level* level) : Entity(level, EntityType::Mob) {
   currentState = new WanderState();
 };
 
-Mob::~Mob() {};
+Mob::~Mob() {
+  if (currentState != nullptr) {
+    delete currentState;
+    currentState = nullptr;
+  }
+};
 
 void Mob::fixedUpdate(const float& fixedDeltaTime) {
   if (currentState != nullptr) {

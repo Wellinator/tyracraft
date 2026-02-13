@@ -76,4 +76,9 @@ class MobManager {
   Mob* _createMobAtPosition(const MobType type, const Vec4& position);
 
   void _destroyUnspownedMobs();
+
+  // Shared rendering pipeline to avoid repeated initialization
+  Tyra::StaPipOptions sharedStatPipOptions;
+  Tyra::StaticPipeline sharedStatPip;
+  bool pipelineInitialized = false;
 };

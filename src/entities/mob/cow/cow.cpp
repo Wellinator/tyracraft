@@ -18,13 +18,13 @@ using Tyra::Renderer3D;
 // ----
 
 Cow::Cow(Level* level, Renderer* pRenderer, Texture* pTexture,
-         Tyra::Mesh** framesArray, const int size)
+         Tyra::Mesh** framesArray, const int size, Tyra::StaticPipeline* sharedPipeline)
     : Mob(level), Animated(framesArray, size) {
   pLevel = level;
   t_renderer = pRenderer;
   texture = pTexture;
+  statPip = sharedPipeline;  // Use shared pipeline instead of creating new one
 
-  statPip.setRenderer(&t_renderer->core);
   loadStaticBBox();
 
   std::vector<u8> standStillSequence = {0};
@@ -132,8 +132,8 @@ void Cow::render() {
   bag.info = &infoBag;
   bag.texture = &textureBag;
 
-  t_renderer->renderer3D.usePipeline(statPip);
-  statPip.core.render(&bag);
+  t_renderer->renderer3D.usePipeline(*statPip);  // Dereference pointer
+  statPip->core.render(&bag);
 }
 
 void Cow::tick() {

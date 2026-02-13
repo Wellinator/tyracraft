@@ -18,13 +18,13 @@ using Tyra::Renderer3D;
 // ----
 
 Pig::Pig(Level* level, Renderer* pRenderer, Texture* pigTexture,
-         Tyra::Mesh** framesArray, const int size)
+         Tyra::Mesh** framesArray, const int size, Tyra::StaticPipeline* sharedPipeline)
     : Mob(level), Animated(framesArray, size) {
   pLevel = level;
   t_renderer = pRenderer;
   texture = pigTexture;
+  statPip = sharedPipeline;  // Use shared pipeline instead of creating new one
 
-  statPip.setRenderer(&t_renderer->core);
   loadStaticBBox();
 
   std::vector<u8> standStillSequence = {0};
@@ -135,8 +135,8 @@ void Pig::render() {
   bag.info = &infoBag;
   bag.texture = &textureBag;
 
-  t_renderer->renderer3D.usePipeline(statPip);
-  statPip.core.render(&bag);
+  t_renderer->renderer3D.usePipeline(*statPip);  // Dereference pointer
+  statPip->core.render(&bag);
 }
 
 void Pig::tick() {

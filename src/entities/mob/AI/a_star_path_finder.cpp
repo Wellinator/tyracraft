@@ -17,11 +17,24 @@ void AStarPathFinder::TracePath(const Vec4& start, const Vec4& goal,
   // at bottom
   const Vec4 FixHeight(0.0f, 0.5f, 0.0f);
 
-  while (current.x != start.x || current.y != start.y || current.z != start.z) {
-    current = (*parents)[HashOffset(current)];
+  size_t safetyLimit = 200;
+  while ((current.x != start.x || current.y != start.y ||
+          current.z != start.z) &&
+         safetyLimit > 0) {
+    int hash = HashOffset(current);
+    auto it = parents->find(hash);
+    if (it == parents->end()) break;  // No parent found, stop tracing
+
+    Vec4 prev = current;
+    current = it->second;
+
+    // Detect cycle: if parent points to itself
+    if (current.x == prev.x && current.y == prev.y && current.z == prev.z)
+      break;
 
     fixedWorldPos = ((current - FixHeight) * DOUBLE_BLOCK_SIZE);
     list->emplace(list->begin(), fixedWorldPos);
+    safetyLimit--;
   }
 
   fixedWorldPos = ((goal - FixHeight) * DOUBLE_BLOCK_SIZE);

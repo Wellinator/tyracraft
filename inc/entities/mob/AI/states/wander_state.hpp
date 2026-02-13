@@ -31,6 +31,11 @@ class WanderState : public MobState {
         StateResolver::SetState(pMob, MobStateType::Idle);
       }
     } else {
+      // Add cooldown to avoid running A* pathfinding every frame
+      pathfindCooldown -= fixedDeltaTime;
+      if (pathfindCooldown > 0.0f) return;
+      pathfindCooldown = PATHFIND_COOLDOWN_TIME;
+
       Level* pLevel = Level::getInstance();
       Vec4 offsetStart = pLevel->worldPosToOffset(pMob->position);
 
@@ -68,4 +73,8 @@ class WanderState : public MobState {
   //  Limit in seconds to reach the goal
   float timerCounter = 0.0f;
   const float LIMIT_TO_GOAL = 15.0f;
+
+  // Cooldown between pathfinding attempts to avoid CPU spikes
+  float pathfindCooldown = 0.0f;
+  const float PATHFIND_COOLDOWN_TIME = 0.5f;
 };

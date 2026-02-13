@@ -275,19 +275,32 @@ void World::tick(Player* t_player, Camera* t_camera) {
           mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType,
                                               tempPos);
           spawnedPack = true;
-        } else {
-          // Update next position by triangular distribution
-          const int max_dist = OVERWORLD_MAX_DISTANCE - 1;
-        define_triangular_distribution:
-          const int offsetX = Tyra::Math::randomi(-5, 5);
-          randomX += offsetX;
-          const int offsetZ = Tyra::Math::randomi(-5, 5);
-          randomZ += offsetZ;
+        }
 
-          if (randomX >= max_dist || randomX < 0 || randomZ >= max_dist ||
-              randomZ < 0) {
-            goto define_triangular_distribution;
+        // Update next position by triangular distribution
+        const int max_dist = OVERWORLD_MAX_DISTANCE - 1;
+        int retriesLeft = 10;
+        bool validPosition = false;
+        while (retriesLeft > 0) {
+          const int offsetX = Tyra::Math::randomi(-5, 5);
+          const int offsetZ = Tyra::Math::randomi(-5, 5);
+          int candidateX = randomX + offsetX;
+          int candidateZ = randomZ + offsetZ;
+
+          if (candidateX >= 0 && candidateX < max_dist &&
+              candidateZ >= 0 && candidateZ < max_dist) {
+            randomX = candidateX;
+            randomZ = candidateZ;
+            validPosition = true;
+            break;
           }
+          retriesLeft--;
+        }
+
+        // If no valid position found, clamp to valid range
+        if (!validPosition) {
+          randomX = std::max(0, std::min(randomX, max_dist - 1));
+          randomZ = std::max(0, std::min(randomZ, max_dist - 1));
         }
       }
 

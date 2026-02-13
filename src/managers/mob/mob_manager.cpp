@@ -36,6 +36,10 @@ void MobManager::init(Renderer* renderer, WorldLightModel* t_worldLightModel,
 
   _loadMobTextures();
   _loadMobFrames();
+
+  // Initialize shared rendering pipeline once
+  sharedStatPip.setRenderer(&t_renderer->core);
+  pipelineInitialized = true;
 }
 
 void MobManager::fixedUpdate(const float& fixedDeltaTime) {
@@ -226,14 +230,14 @@ Mob* MobManager::_createMob(const MobType type) {
         rawFrames.emplace_back(pigFrames[i].get());
 
       mob = new Pig(pLevel, t_renderer, pigTexture, rawFrames.data(),
-                    rawFrames.size());
+                    rawFrames.size(), &sharedStatPip);
       break;
     case MobType::Cow:
       // Convert smart pointers to raw pointers for Animated constructor
       for (size_t i = 0; i < cowFrames.size(); i++)
         rawFrames.emplace_back(cowFrames[i].get());
       mob = new Cow(pLevel, t_renderer, cowTexture, rawFrames.data(),
-                    rawFrames.size());
+                    rawFrames.size(), &sharedStatPip);
       break;
 
     default:
@@ -254,11 +258,18 @@ Mob* MobManager::_createMobAtPosition(const MobType type,
 }
 
 void MobManager::unspawnMob(const uint32_t id) {
-  for (size_t i = 0; i < mobs.size(); i++)
+  for (size_t i = 0; i < mobs.size(); i++) {
     if (mobs[i]->id == id) {
+      MobCategory cat = mobs[i]->getCategory();
+      if (cat != MobCategory::Invalid) {
+        int idx = static_cast<int>(cat);
+        if (MOB_CAPS[idx] > 0) MOB_CAPS[idx]--;
+      }
       delete mobs[i];
+      mobs.erase(mobs.begin() + i);
       break;
     }
+  }
 }
 
 const int MobManager::getMobCountByCategory(const MobCategory category) {
@@ -282,9 +293,16 @@ const int MobManager::getMobCapByCategory(const MobCategory category) {
 
 void MobManager::_destroyUnspownedMobs() {
   mobs.erase(std::remove_if(mobs.begin(), mobs.end(),
-                            [](Mob* m) {
+                            [this](Mob* m) {
                               const auto _shouldUnspawn = m->shouldUnspawn;
-                              if (_shouldUnspawn) delete m;
+                              if (_shouldUnspawn) {
+                                MobCategory cat = m->getCategory();
+                                if (cat != MobCategory::Invalid) {
+                                  int idx = static_cast<int>(cat);
+                                  if (MOB_CAPS[idx] > 0) MOB_CAPS[idx]--;
+                                }
+                                delete m;
+                              }
 
                               return _shouldUnspawn;
                             }),

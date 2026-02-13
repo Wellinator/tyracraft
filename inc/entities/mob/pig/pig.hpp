@@ -50,7 +50,7 @@ using Tyra::Vec4;
 class Pig : public Mob, public Animated {
  public:
   Pig(Level* level, Renderer* pRenderer, Texture* pigTexture,
-      Tyra::Mesh** framesArray, const int size);
+      Tyra::Mesh** framesArray, const int size, Tyra::StaticPipeline* sharedPipeline);
   ~Pig();
 
   // Override Mob
@@ -129,8 +129,7 @@ class Pig : public Mob, public Animated {
   void updateStateInWater();
 
  private:
-  StaPipOptions statPipOptions;
-  StaticPipeline statPip;
+  StaticPipeline* statPip;  // Pointer to shared pipeline
 
   const u8 IDLE_ANIMATION = 0;
   const u8 WALK_ANIMATION = 1;
