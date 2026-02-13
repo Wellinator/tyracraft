@@ -412,7 +412,10 @@ Covers the **Z-buffer fog** and **depth of field** post-processing techniques.
 | `OVERWORLD_SIZE` | 1,048,576 | Total blocks (128×128×64) |
 | `CHUNK_SIZE` | 8 | Blocks per chunk axis |
 | `BLOCK_SIZE` | 8.0f | Block scale unit |
-| `MAX_DRAW_DISTANCE` | 10 | In chunks |
+| `MAX_DRAW_DISTANCE` | 16 | In chunks |
+| `DRAW_DISTANCE_SAFETY_MARGIN_MB` | 2 | RAM safety margin for loading |
+| `DRAW_DISTANCE_BACKWARD_RATIO` | 0.5 | Backward distance vs forward |
+| `DRAW_DISTANCE_SIDE_RATIO` | 0.7 | Side distance vs forward |
 | `HOT_INVENTORY_SIZE` | 9 | Player hotbar slots |
 | `MAX_ADPCM_CH` | 23 | Audio channels |
 | `MAX_SAFE_MEMORY_ALLOCATION` | 29 MB | Memory safety threshold |

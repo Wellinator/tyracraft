@@ -3,6 +3,7 @@
 #include "math/plane.hpp"
 #include "debug.hpp"
 #include <algorithm>
+#include <cmath>
 
 using Tyra::M4x4;
 using Tyra::Plane;
@@ -28,6 +29,11 @@ ChunkManager::~ChunkManager() {
 void ChunkManager::init(WorldLightModel* t_worldLightModel, Level* level) {
   worldLightModel = t_worldLightModel;
   pLevel = level;
+  for (size_t i = 0; i < columnHeightMap.size(); i++) {
+    columnHeightMap[i].valid = false;
+    columnHeightMap[i].hasBlocks = false;
+    columnHeightMap[i].topChunkY = 0;
+  }
   this->generateChunks();
 }
 
@@ -332,6 +338,47 @@ float ChunkManager::getHeightAtPosition(const Vec4& position) {
   return getHeightAtOffset(offset) * DOUBLE_BLOCK_SIZE;
 }
 
+void ChunkManager::getColumnHeightInfo(int chunkX, int chunkZ,
+                                       u8& outTopChunkY,
+                                       bool& outHasBlocks) {
+  const int clampedX = std::max(0, std::min(chunkX,
+                                            static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
+  const int clampedZ = std::max(0, std::min(chunkZ,
+                                            static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
+  const size_t gridIndex =
+      clampedX * OVERWORLD_H_DISTANCE_IN_CHUNKS + clampedZ;
+
+  ColumnHeightInfo& info = columnHeightMap[gridIndex];
+  if (!info.valid) {
+    const int startX = clampedX * CHUNK_SIZE;
+    const int startZ = clampedZ * CHUNK_SIZE;
+    bool found = false;
+    int highestBlockY = 0;
+
+    for (int y = OVERWORLD_V_DISTANCE - 1; y >= 0; y--) {
+      for (int z = startZ; z < startZ + CHUNK_SIZE; z++) {
+        for (int x = startX; x < startX + CHUNK_SIZE; x++) {
+          const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+          if (blockId > static_cast<u8>(Blocks::AIR_BLOCK)) {
+            found = true;
+            highestBlockY = y;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) break;
+    }
+
+    info.valid = true;
+    info.hasBlocks = found;
+    info.topChunkY = found ? static_cast<u8>(highestBlockY / CHUNK_SIZE) : 0;
+  }
+
+  outTopChunkY = info.topChunkY;
+  outHasBlocks = info.hasBlocks;
+}
+
 void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
                                      std::vector<Chunk*>& outChunks) {
   outChunks.clear();
@@ -406,7 +453,9 @@ struct VisBfsEntry {
 void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
                                               Vec4* camPos,
                                               const Vec4& camForward) {
+  static_cast<void>(camForward);
   visibleChunks.clear();
+  occludedChunksToUnload.clear();
 
 #ifdef DEBUG_MODE
   // Start with all loaded chunks as potentially culled
@@ -518,6 +567,39 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       bfsQueue[qTail] = {neighbor->id, OppositeFace(exitFace), newSteps};
       qTail = (qTail + 1) % BFS_QUEUE_SIZE;
       qCount++;
+    }
+  }
+
+  static constexpr u8 OCCLUDED_FRAMES_TO_UNLOAD = 60;
+  static constexpr int HALO_DISTANCE = 1;
+
+  for (Chunk* chunk : loadedChunks) {
+    if (!chunk->isLoaded()) continue;
+
+    if (chunk->id == cameraChunk->id) {
+      chunk->consecutiveOccludedFrames = 0;
+      continue;
+    }
+
+    const int dx = static_cast<int>((chunk->minOffset.x - cameraChunk->minOffset.x) / CHUNK_SIZE);
+    const int dz = static_cast<int>((chunk->minOffset.z - cameraChunk->minOffset.z) / CHUNK_SIZE);
+    if (std::abs(dx) <= HALO_DISTANCE && std::abs(dz) <= HALO_DISTANCE) {
+      chunk->consecutiveOccludedFrames = 0;
+      continue;
+    }
+
+    if (visited.test(chunk->id) || chunk->isVisible()) {
+      chunk->consecutiveOccludedFrames = 0;
+      continue;
+    }
+
+    if (chunk->consecutiveOccludedFrames < 255) {
+      chunk->consecutiveOccludedFrames++;
+    }
+
+    if (chunk->consecutiveOccludedFrames >= OCCLUDED_FRAMES_TO_UNLOAD) {
+      occludedChunksToUnload.push_back(chunk);
+      chunk->consecutiveOccludedFrames = 0;
     }
   }
 

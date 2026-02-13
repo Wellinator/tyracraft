@@ -5,6 +5,7 @@
 #include "managers/mazecraft_generator.hpp"
 #include "debug.hpp"
 #include <tyra>
+#include <cmath>
 
 // From CrossCraft
 #include <stdio.h>
@@ -19,6 +20,7 @@ World::World(const NewGameOptions& options, Level* level)
   printf("|------------------------|\n\n");
 
   worldOptions = options;
+  drawDistanceController.init(worldOptions.drawDistance);
   _updateDayNightCycle = options.type != WorldType::WORLD_MINI_GAME_MAZECRAFT;
   setIntialTime();
 
@@ -174,12 +176,18 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
   } else {
     chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
                         &t_camera->looksAt);
+    chunkManager.clearOccludedChunksToUnload();
   }
 #else
   chunkManager.updateWithVisibilityGraph(
       t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
       t_camera->unitCirclePosition);
 #endif
+
+  auto occludedChunks = chunkManager.getOccludedChunksToUnload();
+  for (Chunk* chunk : *occludedChunks) {
+    addChunkToUnloadAsync(chunk);
+  }
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
   if (liquidPropagation.hasAffectedChunks())
@@ -343,7 +351,8 @@ void World::buildInitialPosition() {
   if (initialChunk != nullptr) {
     initialChunk->clear();
     initialChunk->build();
-    scheduleChunksNeighbors(initialChunk, lastPlayerPosition, true);
+    scheduleChunksNeighbors(initialChunk, lastPlayerPosition,
+                            drawDistanceController.getSmoothedForward(), true);
   }
 };
 
@@ -352,9 +361,22 @@ void World::resetWorldData() { chunkManager.clearAllChunks(); }
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   Chunk* currentChunk = chunkManager.getChunkByWorldPosition(t_camera->looksAt);
 
-  if (currentChunk && t_player->currentChunkId != currentChunk->id) {
+  if (!currentChunk) return;
+
+  drawDistanceController.update(t_camera->unitCirclePosition);
+  const Vec4& smoothedForward = drawDistanceController.getSmoothedForward();
+
+  const bool chunkChanged = t_player->currentChunkId != currentChunk->id;
+  const float forwardDot =
+      (smoothedForward.x * lastScheduledForward.x) +
+      (smoothedForward.z * lastScheduledForward.z);
+  const bool forwardChanged = !hasScheduledForward || forwardDot < 0.96f;
+
+  if (chunkChanged || forwardChanged) {
     t_player->currentChunkId = currentChunk->id;
-    scheduleChunksNeighbors(currentChunk, t_player->position);
+    scheduleChunksNeighbors(currentChunk, t_player->position, smoothedForward);
+    lastScheduledForward = smoothedForward;
+    hasScheduledForward = true;
   }
 }
 
@@ -367,13 +389,15 @@ void World::reloadWorldArea(const Vec4& position) {
       currentChunk->build();
     }
 
-    scheduleChunksNeighbors(currentChunk, position, true);
+    scheduleChunksNeighbors(currentChunk, position,
+                            drawDistanceController.getSmoothedForward(), true);
   }
 }
 
 // Phase 1: Optimized chunk scheduling using spatial grid and squared distances
 void World::scheduleChunksNeighbors(Chunk* origin_chunk,
                                     const Vec4 currentPlayerPos,
+                                    const Vec4& camForward,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
 
@@ -384,36 +408,63 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   totalScheduleCalls++;
 #endif
 
-  const float maxDistance = static_cast<float>(worldOptions.drawDistance);
-  const float maxDistanceSquared = maxDistance * maxDistance;
+  drawDistanceController.update(camForward);
+
+  const float forwardDistance =
+      static_cast<float>(drawDistanceController.getForwardDistance());
+  const float backwardDistance =
+      static_cast<float>(drawDistanceController.getBackwardDistance());
+  const float sideDistance = drawDistanceController.getSideDistance();
+  const float maxQueryDistance = std::max(forwardDistance, sideDistance);
+
+  const float forwardDistanceSquared = forwardDistance * forwardDistance;
+  const float backwardDistanceSquared = backwardDistance * backwardDistance;
+  const float sideDistanceSquared = sideDistance * sideDistance;
+
+  const Vec4& forwardDir = drawDistanceController.getSmoothedForward();
+  const int playerChunkY = static_cast<int>(
+      std::floor((currentPlayerPos.y / DOUBLE_BLOCK_SIZE) / CHUNK_SIZE));
 
   // Vector to collect chunks needing loading/sorting
-  std::vector<std::pair<Chunk*, float>> chunksToLoad;
+  struct LoadCandidate {
+    Chunk* chunk;
+    float distanceSquared;
+    float forwardDot;
+  };
+  std::vector<LoadCandidate> chunksToLoad;
 
   // Phase 1: Use spatial grid to query only chunks within radius
   // This reduces from 2048 iterations to ~100-400 (80-95% reduction)
   std::vector<Chunk*> nearbyChunks;
-  chunkManager.getChunksInRadius(origin_chunk->center, maxDistance + 1.0f, nearbyChunks);
+  chunkManager.getChunksInRadius(origin_chunk->center,
+                                 maxQueryDistance + 1.0f, nearbyChunks);
 
 #ifdef DEBUG_MODE
   totalChunksProcessed += nearbyChunks.size();
   if (totalScheduleCalls % 100 == 0) {
-    float avgChunksPerCall = static_cast<float>(totalChunksProcessed) / totalScheduleCalls;
-    TYRA_LOG("[Chunk Optimization] Avg chunks processed per schedule:", 
+    float avgChunksPerCall =
+        static_cast<float>(totalChunksProcessed) / totalScheduleCalls;
+    TYRA_LOG("[Chunk Optimization] Avg chunks processed per schedule:",
              static_cast<int>(avgChunksPerCall), " / 2048 (",
-             static_cast<int>((1.0f - avgChunksPerCall / 2048.0f) * 100.0f), "% reduction)");
+             static_cast<int>((1.0f - avgChunksPerCall / 2048.0f) * 100.0f),
+             "% reduction)");
   }
 #endif
 
-  // Process chunks within draw distance
-  for (Chunk* t_chunk : nearbyChunks) {
-    // Use squared distance to avoid sqrt (preserves ordering for sorting)
-    const float distanceSquared2D = 
-        ChunkManager::horizontalDistance2DSquared(origin_chunk->center, t_chunk->center) /
-        (CHUNK_SIZE * CHUNK_SIZE);
+  // Phase 3: Use bitset for O(1) lookup instead of O(n) search
+  static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> processedChunks;
+  processedChunks.reset();
 
-    // Chunk is outside draw distance (safety check, should be rare)
-    if (distanceSquared2D > maxDistanceSquared) {
+  for (Chunk* t_chunk : nearbyChunks) {
+    const int chunkX = static_cast<int>(t_chunk->minOffset.x / CHUNK_SIZE);
+    const int chunkZ = static_cast<int>(t_chunk->minOffset.z / CHUNK_SIZE);
+    const int chunkY = static_cast<int>(t_chunk->minOffset.y / CHUNK_SIZE);
+
+    u8 topChunkY = 0;
+    bool columnHasBlocks = false;
+    chunkManager.getColumnHeightInfo(chunkX, chunkZ, topChunkY, columnHasBlocks);
+
+    if (!columnHasBlocks) {
       if (force_loading) {
         t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
@@ -423,62 +474,114 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       continue;
     }
 
-    // Calculate actual distance for LOD (only when needed)
+    if (chunkY > static_cast<int>(topChunkY)) {
+      if (force_loading) {
+        t_chunk->clear();
+      } else if (t_chunk->isLoaded()) {
+        addChunkToUnloadAsync(t_chunk);
+      }
+      t_chunk->setDistanceFromPlayerInChunks(-1);
+      continue;
+    }
+
+    if (chunkY + 2 < static_cast<int>(topChunkY)) {
+      if (std::abs(playerChunkY - chunkY) > 2) {
+        if (force_loading) {
+          t_chunk->clear();
+        } else if (t_chunk->isLoaded()) {
+          addChunkToUnloadAsync(t_chunk);
+        }
+        t_chunk->setDistanceFromPlayerInChunks(-1);
+        continue;
+      }
+    }
+
+    const float dx = (t_chunk->center.x - origin_chunk->center.x) / CHUNK_SIZE;
+    const float dz = (t_chunk->center.z - origin_chunk->center.z) / CHUNK_SIZE;
+    const float distanceSquared2D = dx * dx + dz * dz;
+    if (distanceSquared2D <= 0.0001f) {
+      processedChunks.set(t_chunk->id);
+    }
+
+    const float forwardDot = (dx * forwardDir.x) + (dz * forwardDir.z);
+    const float forwardAbs = fabsf(forwardDot);
+    const float forwardDistanceLimitSquared =
+        (forwardDot >= 0.0f) ? forwardDistanceSquared : backwardDistanceSquared;
+
+    const float perpSquared =
+        std::max(0.0f, distanceSquared2D - (forwardDot * forwardDot));
+
+    const float ellipseValue =
+        (forwardAbs * forwardAbs) / forwardDistanceLimitSquared +
+        (perpSquared / sideDistanceSquared);
+
+    if (ellipseValue > 1.0f) {
+      if (force_loading) {
+        t_chunk->clear();
+      } else if (t_chunk->isLoaded()) {
+        addChunkToUnloadAsync(t_chunk);
+      }
+      t_chunk->setDistanceFromPlayerInChunks(-1);
+      continue;
+    }
+
+    processedChunks.set(t_chunk->id);
+
     const int distance = static_cast<int>(sqrtf(distanceSquared2D));
 
     if (force_loading) {
-      // Synchronous mode: load/rebuild immediately
       if (t_chunk->isLoaded())
         t_chunk->rebuild();
       else
         t_chunk->build();
       t_chunk->setDistanceFromPlayerInChunks(distance);
     } else {
-      // Asynchronous mode: schedule loading
       t_chunk->setDistanceFromPlayerInChunks(distance);
-      
-      // Only add if needs loading AND not already in a queue
-      if ((t_chunk->isDirty() || !t_chunk->isLoaded()) && 
+
+      if ((t_chunk->isDirty() || !t_chunk->isLoaded()) &&
           !t_chunk->isBuilding() && !t_chunk->isUnloading()) {
-        chunksToLoad.push_back(std::make_pair(t_chunk, distanceSquared2D));
+        chunksToLoad.push_back({t_chunk, distanceSquared2D, forwardDot});
       }
     }
   }
 
-  // Unload chunks outside draw distance (check only currently loaded chunks)
-  // This is much more efficient than checking all 2048 chunks
   if (!force_loading) {
-    // Phase 3: Use bitset for O(1) lookup instead of O(n) search
-    static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> processedChunks;
-    processedChunks.reset();  // Clear all bits
-    
-    // Mark all nearby chunks as processed using O(1) bitset set
-    for (const Chunk* nearby : nearbyChunks) {
-      processedChunks.set(nearby->id);
-    }
-    
+    std::vector<std::pair<Chunk*, float>> unloadCandidates;
     auto loadedChunks = chunkManager.getLoadedChunks();
+    unloadCandidates.reserve(loadedChunks->size());
+
     for (Chunk* t_chunk : *loadedChunks) {
-      // O(1) bitset test instead of O(n) linear search
       if (processedChunks.test(t_chunk->id)) continue;
 
-      // This chunk is loaded but outside draw distance
-      addChunkToUnloadAsync(t_chunk);
+      const float dx = (t_chunk->center.x - origin_chunk->center.x) / CHUNK_SIZE;
+      const float dz = (t_chunk->center.z - origin_chunk->center.z) / CHUNK_SIZE;
+      const float dot = (dx * forwardDir.x) + (dz * forwardDir.z);
+      unloadCandidates.push_back(std::make_pair(t_chunk, dot));
       t_chunk->setDistanceFromPlayerInChunks(-1);
+    }
+
+    std::sort(unloadCandidates.begin(), unloadCandidates.end(),
+              [](const std::pair<Chunk*, float>& a,
+                 const std::pair<Chunk*, float>& b) {
+                return a.second < b.second;
+              });
+
+    for (auto it = unloadCandidates.rbegin(); it != unloadCandidates.rend();
+         ++it) {
+      addChunkToUnloadAsync(it->first);
     }
   }
 
-  // Sort and schedule chunks by proximity (only in async mode)
   if (!force_loading && !chunksToLoad.empty()) {
-    // Sort by squared distance (avoids sqrt, preserves ordering)
-    std::sort(
-        chunksToLoad.begin(), chunksToLoad.end(),
-        [](const std::pair<Chunk*, float>& a,
-           const std::pair<Chunk*, float>& b) { return a.second < b.second; });
+    std::sort(chunksToLoad.begin(), chunksToLoad.end(),
+              [](const LoadCandidate& a, const LoadCandidate& b) {
+                if (a.forwardDot != b.forwardDot)
+                  return a.forwardDot > b.forwardDot;
+                return a.distanceSquared < b.distanceSquared;
+              });
 
-    // Add to load queue in sorted order
-    for (const auto& pair : chunksToLoad) {
-      addChunkToLoadAsync(pair.first);
+    for (const auto& candidate : chunksToLoad) {
+      addChunkToLoadAsync(candidate.chunk);
     }
   }
 
@@ -493,6 +596,13 @@ void World::loadScheduledChunks() {
   Chunk* chunk = tempChunksToLoad.front();
   tempChunksToLoad.pop_front();
   chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
+
+  if (!drawDistanceController.canLoadMoreChunks()) {
+    unloadScheduledChunks();
+    tempChunksToLoad.push_front(chunk);
+    chunksInLoadQueue.set(chunk->id);
+    return;
+  }
   
   // Validate state before building:
   // - New chunks should be in Building state
@@ -544,6 +654,8 @@ void World::renderBlockDamageOverlay() {
 
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
   const u16 chunkId = t_chunk->id;
+
+  if (!drawDistanceController.canLoadMoreChunks()) return;
 
   // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
   if (chunksInLoadQueue.test(chunkId)) return;
@@ -785,6 +897,7 @@ void World::setDrawDistance(const u8& drawDistanceInChunks) {
   if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
       drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
     worldOptions.drawDistance = drawDistanceInChunks;
+    drawDistanceController.setMinimumForwardDistance(drawDistanceInChunks);
     
     // Clear async queues and properly clean up chunk states
     // Memory leak fix: Clear draw data for chunks that were building but never loaded
@@ -809,7 +922,8 @@ void World::setDrawDistance(const u8& drawDistanceInChunks) {
         chunkManager.getChunkByWorldPosition(lastPlayerPosition);
     TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
     if (currentChunk) {
-      scheduleChunksNeighbors(currentChunk, lastPlayerPosition, true);
+      scheduleChunksNeighbors(currentChunk, lastPlayerPosition,
+                              drawDistanceController.getSmoothedForward(), true);
       delete targetBlock;
       targetBlock = nullptr;
     }

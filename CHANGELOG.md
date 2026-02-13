@@ -1,5 +1,9 @@
 # v0.86.140-pre-alpha 12/08/2024
 
+- feat: add RAM-adaptive directional draw distance
+- feat: unload occluded chunks after visibility culling
+- feat: add LOD2 ultra compression and empty-chunk fast path
+- perf: apply vertical column culling for chunk scheduling
 - chore: updates version
 - chore: updates CHANGELOG
 - fix: char position over the label

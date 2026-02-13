@@ -245,11 +245,10 @@ void Chunk::tickRandomBlock() {
 }
 
 void Chunk::setDistanceFromPlayerInChunks(const int distance) {
-  // Check if LOD changed
-  const int currentLOD = getLODFromDistance();
   const int newLOD = getLODFromDistance(distance);
-  if (currentLOD != newLOD) dirty = true;
+  if (_lod != newLOD) dirty = true;
 
+  _lod = newLOD;
   this->_distanceFromPlayerInChunks = distance;
 }
 
@@ -268,11 +267,17 @@ const int Chunk::getLODFromDistance() {
 const int Chunk::getLODFromDistance(const int distance) {
   if (distance < 3)
     return 0;
-  else
+  else if (distance < 8)
     return 1;
+  else
+    return 2;
 }
 
-void Chunk::compress(const bool staticBackFaceCulling) {
+void Chunk::compress(const bool staticBackFaceCulling,
+                     const u8 colorTolerance, const float uvTolerance,
+                     const float normalDotThreshold,
+                     const bool mergeAcrossUvs,
+                     const bool includeTransparent) {
   // Safety: Don't compress if chunk is unloading or clean (no data)
   // Allow both Building and Loaded states since compress is called during build
   if (state == ChunkState::Unloading || state == ChunkState::Clean) {
@@ -285,15 +290,18 @@ void Chunk::compress(const bool staticBackFaceCulling) {
     return;
   }
   
-  // Already compressed, nothing to do
-  if (isCompressed) return;
+  const bool targetUltra = mergeAcrossUvs || !includeTransparent;
+
+  // Already compressed to requested level, nothing to do
+  if (isCompressed && isUltraCompressed == targetUltra) return;
   
   // Cache camera position pointer to avoid repeated address calculations
   const Vec4* camPosPtr = staticBackFaceCulling ? &camPositon : nullptr;
 
   // Process opaque geometry
   std::vector<ChunkQuadData> quadsData;
-  mergeFaces(&quadsData, &vertices, &colors, &UV);
+  mergeFaces(&quadsData, &vertices, &colors, &UV, colorTolerance, uvTolerance,
+             normalDotThreshold, mergeAcrossUvs);
 
   const size_t maxOpaqueVerts = quadsData.size() * 6;
   vertices.clear();
@@ -336,52 +344,59 @@ void Chunk::compress(const bool staticBackFaceCulling) {
     colors.emplace_back(quad.colors[5]);
   }
 
-  // Process transparent geometry
-  std::vector<ChunkQuadData> transparentQuadsData;
-  mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV);
+  if (includeTransparent) {
+    std::vector<ChunkQuadData> transparentQuadsData;
+    mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV,
+               colorTolerance, uvTolerance, normalDotThreshold, mergeAcrossUvs);
 
-  const size_t maxTranspVerts = transparentQuadsData.size() * 6;
-  transpVertices.clear();
-  transpUV.clear();
-  transpColors.clear();
-  transpVertices.reserve(maxTranspVerts);
-  transpUV.reserve(maxTranspVerts);
-  transpColors.reserve(maxTranspVerts);
+    const size_t maxTranspVerts = transparentQuadsData.size() * 6;
+    transpVertices.clear();
+    transpUV.clear();
+    transpColors.clear();
+    transpVertices.reserve(maxTranspVerts);
+    transpUV.reserve(maxTranspVerts);
+    transpColors.reserve(maxTranspVerts);
 
-  // Process the merged transparent quads into mesh
-  for (size_t i = 0; i < transparentQuadsData.size(); i++) {
-    const ChunkQuadData& quad = transparentQuadsData[i];
+    // Process the merged transparent quads into mesh
+    for (size_t i = 0; i < transparentQuadsData.size(); i++) {
+      const ChunkQuadData& quad = transparentQuadsData[i];
 
-    if (staticBackFaceCulling &&
-        Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
-                                     &quad.vertices[1], &quad.vertices[0])) {
-      continue;
+      if (staticBackFaceCulling &&
+          Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
+                                       &quad.vertices[1], &quad.vertices[0])) {
+        continue;
+      }
+
+      // Unrolled loop for better instruction pipelining on EE
+      transpVertices.emplace_back(quad.vertices[0]);
+      transpVertices.emplace_back(quad.vertices[1]);
+      transpVertices.emplace_back(quad.vertices[2]);
+      transpVertices.emplace_back(quad.vertices[3]);
+      transpVertices.emplace_back(quad.vertices[4]);
+      transpVertices.emplace_back(quad.vertices[5]);
+
+      transpUV.emplace_back(quad.uv[0]);
+      transpUV.emplace_back(quad.uv[1]);
+      transpUV.emplace_back(quad.uv[2]);
+      transpUV.emplace_back(quad.uv[3]);
+      transpUV.emplace_back(quad.uv[4]);
+      transpUV.emplace_back(quad.uv[5]);
+
+      transpColors.emplace_back(quad.colors[0]);
+      transpColors.emplace_back(quad.colors[1]);
+      transpColors.emplace_back(quad.colors[2]);
+      transpColors.emplace_back(quad.colors[3]);
+      transpColors.emplace_back(quad.colors[4]);
+      transpColors.emplace_back(quad.colors[5]);
     }
-
-    // Unrolled loop for better instruction pipelining on EE
-    transpVertices.emplace_back(quad.vertices[0]);
-    transpVertices.emplace_back(quad.vertices[1]);
-    transpVertices.emplace_back(quad.vertices[2]);
-    transpVertices.emplace_back(quad.vertices[3]);
-    transpVertices.emplace_back(quad.vertices[4]);
-    transpVertices.emplace_back(quad.vertices[5]);
-
-    transpUV.emplace_back(quad.uv[0]);
-    transpUV.emplace_back(quad.uv[1]);
-    transpUV.emplace_back(quad.uv[2]);
-    transpUV.emplace_back(quad.uv[3]);
-    transpUV.emplace_back(quad.uv[4]);
-    transpUV.emplace_back(quad.uv[5]);
-
-    transpColors.emplace_back(quad.colors[0]);
-    transpColors.emplace_back(quad.colors[1]);
-    transpColors.emplace_back(quad.colors[2]);
-    transpColors.emplace_back(quad.colors[3]);
-    transpColors.emplace_back(quad.colors[4]);
-    transpColors.emplace_back(quad.colors[5]);
+  } else {
+    transpVertices.clear();
+    transpUV.clear();
+    transpColors.clear();
   }
 
   isCompressed = true;
+  isUltraCompressed = mergeAcrossUvs || !includeTransparent;
 }
 
 void Chunk::markDirty() { dirty = true; }
@@ -453,7 +468,10 @@ void Chunk::invalidateOptimization() {
  */
 void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                        std::vector<Vec4>* inVertices,
-                       std::vector<Color>* inColors, std::vector<Vec4>* inUVs) {
+                       std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
+                       const u8 colorTolerance, const float uvTolerance,
+                       const float normalDotThreshold,
+                       const bool mergeAcrossUvs) {
   // Validation: Ensure all pointers are valid
   if (!outQuadsData || !inVertices || !inColors || !inUVs) return;
   
@@ -559,21 +577,27 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
   if (faces.empty()) return;
 
   auto materialsMatch = [](const ChunkQuadData& a,
-                           const ChunkQuadData& b) -> bool {
-    if (a.normal.dot3(b.normal) < 0.99F) return false;
+                           const ChunkQuadData& b, const u8 colorTolerance,
+                           const float uvTolerance,
+                           const float normalDotThreshold,
+                           const bool mergeAcrossUvs) -> bool {
+    if (a.normal.dot3(b.normal) < normalDotThreshold) return false;
 
     for (size_t i = 0; i < a.colors.size(); ++i) {
       const Color& c1 = a.colors[i];
       const Color& c2 = b.colors[i];
-      if (abs(c1.r - c2.r) > 10 || abs(c1.g - c2.g) > 10 ||
-          abs(c1.b - c2.b) > 10) {
+      if (abs(c1.r - c2.r) > colorTolerance ||
+          abs(c1.g - c2.g) > colorTolerance ||
+          abs(c1.b - c2.b) > colorTolerance) {
         return false;
       }
 
+      if (mergeAcrossUvs) continue;
+
       const Vec4& uv1 = a.uv[i];
       const Vec4& uv2 = b.uv[i];
-      if (Utils::Abs(uv1.x - uv2.x) > 0.01F ||
-          Utils::Abs(uv1.y - uv2.y) > 0.01F) {
+      if (Utils::Abs(uv1.x - uv2.x) > uvTolerance ||
+          Utils::Abs(uv1.y - uv2.y) > uvTolerance) {
         return false;
       }
     }
@@ -637,7 +661,8 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
       for (size_t pos = 1; pos < indices.size(); ++pos) {
         FaceInfo& candidate = input[indices[pos]];
         if (getMin(candidate) == getMax(current) &&
-            materialsMatch(current.quad, candidate.quad)) {
+          materialsMatch(current.quad, candidate.quad, colorTolerance,
+                   uvTolerance, normalDotThreshold, mergeAcrossUvs)) {
           // Merge preserves original winding order for backface culling
           // expandQuadGeometry maintains vertex ordering
           mergeQuadPair(current.quad, candidate.quad);
@@ -919,6 +944,9 @@ void Chunk::clear() {
   clearDrawData();
   visibilityGraph = 0;
   visibilityGraphDirty = true;
+  isEmpty = false;
+  isUltraCompressed = false;
+  consecutiveOccludedFrames = 0;
   
   // Reset fade state
   isFadingIn = false;
@@ -945,6 +973,7 @@ void Chunk::clearDrawData() {
   transpUV.shrink_to_fit();
 
   isCompressed = false;
+  isUltraCompressed = false;
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -957,6 +986,7 @@ void Chunk::clearDrawDataWithoutShrink() {
   transpColors.clear();
 
   isCompressed = false;
+  isUltraCompressed = false;
 }
 
 void Chunk::build() {
@@ -989,12 +1019,52 @@ void Chunk::build() {
     dirty = false;
   }
 
+  bool allAir = true;
+  for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+      for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+        if (blockId > static_cast<u8>(Blocks::AIR_BLOCK)) {
+          allAir = false;
+          break;
+        }
+      }
+      if (!allAir) break;
+    }
+    if (!allAir) break;
+  }
+
+  if (allAir) {
+    clearDrawDataWithoutShrink();
+    isCompressed = false;
+    isUltraCompressed = false;
+    isEmpty = true;
+    state = ChunkState::Loaded;
+
+    if (!isLODRebuild) {
+      isFadingIn = true;
+      fadeAlpha = 0.0f;
+    }
+    isLODRebuild = false;
+
+    markDistanceDirty();
+    visibilityGraph = 0x7FFF;
+    visibilityGraphDirty = false;
+
+    if (onLoadedCallback) onLoadedCallback(this);
+    return;
+  }
+  isEmpty = false;
+
   try {
     const int lod = getLODFromDistance();
+    _lod = lod;
     if (lod == 0) {
       buildNormaly();
-    } else {
+    } else if (lod == 1) {
       buildCompressed();
+    } else {
+      buildUltraCompressed();
     }
 
     state = ChunkState::Loaded;
@@ -1080,7 +1150,14 @@ void Chunk::buildNormaly() {
 void Chunk::buildCompressed() {
   buildNormaly();
   compress();
+  isUltraCompressed = false;
 };
+
+void Chunk::buildUltraCompressed() {
+  buildNormaly();
+  compress(false, 30, 0.1f, 0.95f, true, false);
+  isUltraCompressed = true;
+}
 
 void Chunk::rebuild() {
   // Preserve fade state - this chunk is already visible, no blink needed
@@ -1116,11 +1193,15 @@ void Chunk::updateLOD() {
     // Player is near, need high detail - mark for rebuild
     dirty = true;
     // Will be rebuilt on next scheduleChunksNeighbors() pass
-  } else if (currentLOD == 1 && !isCompressed) {
+  } else if (currentLOD == 1 && (!isCompressed || isUltraCompressed)) {
     // Player is far, can compress to reduce LOD
     // Only compress if we have valid draw data
     if (!vertices.empty() || !transpVertices.empty()) {
       compress();
+    }
+  } else if (currentLOD == 2 && (!isCompressed || !isUltraCompressed)) {
+    if (!vertices.empty() || !transpVertices.empty()) {
+      compress(false, 30, 0.1f, 0.95f, true, false);
     }
   }
   // If LOD matches current state, do nothing
@@ -1132,6 +1213,7 @@ bool Chunk::hasDrawData() {
 
 void Chunk::reloadLightData() {
   if (!isLoaded()) return;
+  if (isEmpty) return;
 
   colors.clear();
   transpColors.clear();
@@ -1182,6 +1264,11 @@ u8 Chunk::containsBlock(Vec4* offset) {
 }
 
 void Chunk::rebuildVisibilityGraph() {
+  if (isEmpty) {
+    visibilityGraph = 0x7FFF;
+    visibilityGraphDirty = false;
+    return;
+  }
   visibilityGraph = BuildVisibilityGraph(
       pLevel, static_cast<int>(minOffset.x), static_cast<int>(minOffset.y),
       static_cast<int>(minOffset.z));

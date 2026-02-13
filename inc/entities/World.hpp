@@ -26,6 +26,7 @@
 #include "managers/world_light_propagation.hpp"
 #include "managers/world_liquid_propagation.hpp"
 #include "managers/world_block_interaction.hpp"
+#include "managers/draw_distance_controller.hpp"
 #include "memory-monitor/memory_monitor.hpp"
 #include "models/world_light_model.hpp"
 #include "models/new_game_model.hpp"
@@ -185,8 +186,11 @@ class World {
   Vec4 lastPlayerPosition;
   int currentChunkId = -1;
   float playerDeltaDistance = 0.0f;
+  Vec4 lastScheduledForward = Vec4(0.0f, 0.0f, -1.0f);
+  bool hasScheduledForward = false;
 
   NewGameOptions worldOptions = NewGameOptions();
+  DrawDistanceController drawDistanceController;
 
   std::deque<Chunk*> tempChunksToLoad;
   std::deque<Chunk*> tempChunksToUnLoad;
@@ -203,6 +207,7 @@ class World {
 
   void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
   void scheduleChunksNeighbors(Chunk* t_chunk, const Vec4 currentPlayerPos,
+                               const Vec4& camForward,
                                u8 force_loading = 0);
   void loadScheduledChunks();
   void unloadScheduledChunks();

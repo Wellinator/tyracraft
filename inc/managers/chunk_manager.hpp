@@ -92,6 +92,14 @@ class ChunkManager : public Singleton<ChunkManager> {
   void getChunksInRadius(const Vec4& center, float radiusInChunks,
                          std::vector<Chunk*>& outChunks);
 
+  void getColumnHeightInfo(int chunkX, int chunkZ, u8& outTopChunkY,
+                           bool& outHasBlocks);
+
+  std::vector<Chunk*>* getOccludedChunksToUnload() {
+    return &occludedChunksToUnload;
+  }
+  void clearOccludedChunksToUnload() { occludedChunksToUnload.clear(); }
+
  private:
   WorldLightModel* worldLightModel;
   Level* pLevel;
@@ -108,11 +116,19 @@ class ChunkManager : public Singleton<ChunkManager> {
 #ifdef DEBUG_MODE
   std::vector<Chunk*> culledChunks;  // Chunks removed by cave culling
 #endif
+  std::vector<Chunk*> occludedChunksToUnload;
+
+  struct ColumnHeightInfo {
+    u8 topChunkY = 0;
+    bool hasBlocks = false;
+    bool valid = false;
+  };
 
   // Phase 1: Spatial grid for optimized radius queries (16x16 horizontal grid)
   // Each cell contains pointers to the 8 vertical chunks in that XZ column
   static constexpr size_t SPATIAL_GRID_SIZE = OVERWORLD_H_DISTANCE_IN_CHUNKS * OVERWORLD_H_DISTANCE_IN_CHUNKS;
   std::array<std::vector<Chunk*>, SPATIAL_GRID_SIZE> spatialGrid;
+  std::array<ColumnHeightInfo, SPATIAL_GRID_SIZE> columnHeightMap;
 
   void generateChunks();
 

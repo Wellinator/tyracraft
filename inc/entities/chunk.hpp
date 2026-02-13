@@ -132,7 +132,11 @@ class Chunk {
   const int getLODFromDistance(const int distance);
 
   void updateLOD();
-  void compress(const bool staticBackFaceCulling = false);
+  void compress(const bool staticBackFaceCulling = false,
+                const u8 colorTolerance = 10, const float uvTolerance = 0.01f,
+                const float normalDotThreshold = 0.99f,
+                const bool mergeAcrossUvs = false,
+                const bool includeTransparent = true);
   void optimize();
   void markDirty();
   inline bool isDirty() { return dirty; }
@@ -151,6 +155,8 @@ class Chunk {
   float fadeAlpha = 0.0f;      // Current fade opacity (0.0 = transparent, 1.0 = opaque)
   bool isFadingIn = false;     // Whether chunk is fading in
   bool isLODRebuild = false;   // True when rebuild is due to LOD change (skip fade reset)
+  bool isEmpty = false;        // True when chunk contains only air blocks
+  u8 consecutiveOccludedFrames = 0;
 
   // Configurable fade-in duration (in seconds)
   static constexpr float FADE_IN_DURATION = 0.5f;
@@ -162,8 +168,10 @@ class Chunk {
   void tickRandomBlock();
 
   bool isCompressed = false;
+  bool isUltraCompressed = false;
   void buildNormaly();
   void buildCompressed();
+  void buildUltraCompressed();
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
@@ -202,7 +210,9 @@ class Chunk {
 
   void mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                   std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
-                  std::vector<Vec4>* inUVs);
+                  std::vector<Vec4>* inUVs, const u8 colorTolerance,
+                  const float uvTolerance, const float normalDotThreshold,
+                  const bool mergeAcrossUvs);
 
   // Helper methods for face merging
   void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,

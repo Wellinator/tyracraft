@@ -55,7 +55,10 @@
 
 // Defines how many chunks will be loaded from player position
 #define MIN_DRAW_DISTANCE 2
-#define MAX_DRAW_DISTANCE 10
+#define MAX_DRAW_DISTANCE 16
+#define DRAW_DISTANCE_SAFETY_MARGIN_MB 5
+#define DRAW_DISTANCE_BACKWARD_RATIO 0.4f
+#define DRAW_DISTANCE_SIDE_RATIO 0.7f
 
 // Define how many blocks will be loaded/unloaded from chunk per step in async
 // loading
