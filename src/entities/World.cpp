@@ -184,6 +184,7 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
       t_camera->unitCirclePosition);
 #endif
 
+  // Occluded chunk unload (with recently-loaded protection applied in addChunkToUnloadAsync)
   auto occludedChunks = chunkManager.getOccludedChunksToUnload();
   for (Chunk* chunk : *occludedChunks) {
     addChunkToUnloadAsync(chunk);
@@ -370,7 +371,9 @@ void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   const float forwardDot =
       (smoothedForward.x * lastScheduledForward.x) +
       (smoothedForward.z * lastScheduledForward.z);
-  const bool forwardChanged = !hasScheduledForward || forwardDot < 0.96f;
+  // Increased threshold from 0.96 to 0.90 (~16° to ~26° rotation required)
+  // to reduce excessive rescheduling from minor camera movement
+  const bool forwardChanged = !hasScheduledForward || forwardDot < 0.90f;
 
   if (chunkChanged || forwardChanged) {
     t_player->currentChunkId = currentChunk->id;
@@ -408,7 +411,8 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   totalScheduleCalls++;
 #endif
 
-  drawDistanceController.update(camForward);
+  // NOTE: drawDistanceController.update() removed from here to prevent double-update
+  // It's already called in updateChunkByPlayerPosition() before scheduling is triggered
 
   const float forwardDistance =
       static_cast<float>(drawDistanceController.getForwardDistance());
@@ -573,11 +577,15 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   }
 
   if (!force_loading && !chunksToLoad.empty()) {
+    // Fixed: Use stable sort by distance (primary) and forward dot (secondary with epsilon)
+    // Previous float equality comparison caused unstable ordering
     std::sort(chunksToLoad.begin(), chunksToLoad.end(),
               [](const LoadCandidate& a, const LoadCandidate& b) {
-                if (a.forwardDot != b.forwardDot)
-                  return a.forwardDot > b.forwardDot;
-                return a.distanceSquared < b.distanceSquared;
+                // Primary: distance (closer chunks first)
+                if (fabsf(a.distanceSquared - b.distanceSquared) > 0.1f)
+                  return a.distanceSquared < b.distanceSquared;
+                // Secondary: forward alignment (more aligned first)
+                return a.forwardDot > b.forwardDot;
               });
 
     for (const auto& candidate : chunksToLoad) {
@@ -613,6 +621,9 @@ void World::loadScheduledChunks() {
   }
 
   chunk->build();
+  
+  // Mark when this chunk was loaded for recently-loaded protection
+  chunk->loadedAtTick = g_ticksCounter;
 
   if (g_debug_mode) {
     chunk->timeToBuild =
@@ -696,6 +707,14 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
 
   // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
   if (chunksInUnloadQueue.test(chunkId)) return;
+  
+  // Protect recently-loaded chunks from immediate unload (prevents oscillation)
+  // Minimum 30 ticks (~1.5 sec) must elapse before chunk can be unloaded
+  constexpr u16 MIN_LOADED_TICKS = 30;
+  if (t_chunk->loadedAtTick > 0 && 
+      (g_ticksCounter - t_chunk->loadedAtTick) < MIN_LOADED_TICKS) {
+    return;
+  }
 
   // Remove from load queue if present (prioritize unloading)
   if (chunksInLoadQueue.test(chunkId)) {

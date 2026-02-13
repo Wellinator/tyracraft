@@ -55,6 +55,7 @@ class DrawDistanceController {
   u8 currentForwardDistance = MIN_DRAW_DISTANCE;
   Vec4 smoothedForward = Vec4(0.0f, 0.0f, -1.0f);
   bool hasSmoothedForward = false;
+  u16 cooldownTicksRemaining = 0;
 
   inline size_t getUsedMemoryMb() const { return (get_used_memory() >> 20); }
 
@@ -87,17 +88,40 @@ class DrawDistanceController {
   }
 
   void updateDistanceByMemory() {
+    // Hysteresis band + cooldown to prevent oscillation
+    // Only adjust distance if cooldown has expired AND memory is outside comfort zone
+    if (cooldownTicksRemaining > 0) {
+      cooldownTicksRemaining--;
+      return;
+    }
+
     const size_t usedMb = getUsedMemoryMb();
     const size_t thresholdMb = getMemoryThresholdMb();
+    
+    // Hysteresis: 2 MB band below threshold for growing, at threshold for shrinking
+    const size_t growThreshold = (thresholdMb >= 2) ? (thresholdMb - 2) : thresholdMb;
+    const size_t shrinkThreshold = thresholdMb;
 
-    if (usedMb < thresholdMb) {
+    bool changed = false;
+
+    if (usedMb < growThreshold) {
+      // Well below threshold — safe to grow
       if (currentForwardDistance < MAX_DRAW_DISTANCE) {
         currentForwardDistance++;
+        changed = true;
       }
-    } else {
+    } else if (usedMb >= shrinkThreshold) {
+      // At or above threshold — must shrink
       if (currentForwardDistance > minimumForwardDistance) {
         currentForwardDistance--;
+        changed = true;
       }
+    }
+    // else: in the dead zone (growThreshold <= usedMb < shrinkThreshold) — do nothing
+
+    if (changed) {
+      // Set cooldown period: 50 ticks = ~2.5 seconds at 20 TPS
+      cooldownTicksRemaining = 50;
     }
   }
 };

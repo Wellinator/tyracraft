@@ -157,6 +157,7 @@ class Chunk {
   bool isLODRebuild = false;   // True when rebuild is due to LOD change (skip fade reset)
   bool isEmpty = false;        // True when chunk contains only air blocks
   u8 consecutiveOccludedFrames = 0;
+  u16 loadedAtTick = 0;  // Tick counter when chunk was loaded (for recently-loaded protection)
 
   // Configurable fade-in duration (in seconds)
   static constexpr float FADE_IN_DURATION = 0.5f;
