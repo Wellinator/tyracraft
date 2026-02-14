@@ -8,6 +8,7 @@
 #include <limits>
 #include <unordered_map>
 #include <cstdint>
+#include <cstdio>
 
 extern "C" {
 #include <math3d.h>
@@ -178,6 +179,10 @@ Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
 Chunk::~Chunk() {
   clear();
   delete bbox;
+  
+  // Ensure compressed data is freed
+  std::vector<CompressedVertex>().swap(compressedVertices);
+  std::vector<CompressedVertex>().swap(compressedTransparentVertices);
 };
 
 void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
@@ -938,13 +943,33 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
-  flushDrawData(t_renderer, stapip, &vertices, &colors, &UV, vertexCutLimit);
+  if (vertices.empty() && !compressedVertices.empty()) {
+     // Decompress on-the-fly for rendering
+     // Use static buffers to avoid allocation
+     static std::vector<Vec4> tempVertices;
+     static std::vector<Color> tempColors;
+     static std::vector<Vec4> tempUV;
+     
+     decompressData(&tempVertices, &tempColors, &tempUV, compressedVertices);
+     flushDrawData(t_renderer, stapip, &tempVertices, &tempColors, &tempUV, vertexCutLimit);
+  } else {
+     flushDrawData(t_renderer, stapip, &vertices, &colors, &UV, vertexCutLimit);
+  }
 };
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
-  flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV,
-                transpVertexCutLimit);
+  if (transpVertices.empty() && !compressedTransparentVertices.empty()) {
+     // Decompress on-the-fly for rendering
+     static std::vector<Vec4> tempTranspVertices;
+     static std::vector<Color> tempTranspColors;
+     static std::vector<Vec4> tempTranspUV;
+     
+     decompressData(&tempTranspVertices, &tempTranspColors, &tempTranspUV, compressedTransparentVertices);
+     flushDrawData(t_renderer, stapip, &tempTranspVertices, &tempTranspColors, &tempTranspUV, transpVertexCutLimit);
+  } else {
+     flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV, transpVertexCutLimit);
+  }
 };
 
 void Chunk::clear() {
@@ -995,6 +1020,10 @@ void Chunk::clearDrawDataWithoutShrink() {
 
   isCompressed = false;
   isUltraCompressed = false;
+  
+  // Clear compressed data
+  std::vector<CompressedVertex>().swap(compressedVertices);
+  std::vector<CompressedVertex>().swap(compressedTransparentVertices);
 }
 
 void Chunk::build() {
@@ -1090,6 +1119,9 @@ void Chunk::build() {
 
     // Build visibility graph for cave culling
     rebuildVisibilityGraph();
+
+    // Compress data to save RAM
+    compressData();
 
     // Notify that chunk is ready for lighting updates
     if (onLoadedCallback) onLoadedCallback(this);
@@ -1206,6 +1238,11 @@ void Chunk::updateLOD() {
     // Only compress if we have valid draw data
     if (!vertices.empty() || !transpVertices.empty()) {
       compress();
+    } else if (!compressedVertices.empty()) {
+      // If vertices are empty but compressedVertices are not, we are in LOD 0 (High Detail)
+      // but storage-compressed. We can't inplace compress to LOD 1.
+      // Mark dirty to force Full Rebuild to LOD 1.
+      dirty = true;
     }
   } else if (currentLOD == 2 && (!isCompressed || !isUltraCompressed)) {
     if (!vertices.empty() || !transpVertices.empty()) {
@@ -1244,7 +1281,20 @@ void Chunk::reloadLightData() {
     }
     
     isCompressed = true;
+    isCompressed = true;
+    
+    // Re-compress storage after geometry rebuild
+    compressData();
     return;
+  }
+  
+  // If not geometrically compressed (LOD 0) but STORAGE compressed (packed),
+  // we must rebuild to update lighting because we don't have unpacked colors.
+  if (!compressedVertices.empty()) {
+      clearDrawDataWithoutShrink();
+      buildNormaly();
+      compressData();
+      return;
   }
 
   // For uncompressed chunks, just regenerate colors (original behavior)
@@ -1310,4 +1360,109 @@ void Chunk::rebuildVisibilityGraph() {
 
 bool Chunk::isConnected(u8 faceA, u8 faceB) const {
   return IsConnected(visibilityGraph, faceA, faceB);
+}
+
+// -----------------------------------------------------------------------------
+// Compression Implementation
+// -----------------------------------------------------------------------------
+
+void Chunk::compressData() {
+  if (vertices.empty() && transpVertices.empty()) return;
+
+  // Compress opaque vertices
+  compressedVertices.clear();
+  compressedVertices.reserve(vertices.size()); // Reserve exact size
+
+  for (size_t i = 0; i < vertices.size(); i++) {
+    CompressedVertex cv;
+    cv.pos.fromVec4(vertices[i]);
+    packUV(UV[i], cv.u, cv.v);
+    cv.color = packColor(colors[i]);
+    compressedVertices.push_back(cv);
+  }
+
+  // Compress transparent vertices
+  compressedTransparentVertices.clear();
+  compressedTransparentVertices.reserve(transpVertices.size());
+
+  for (size_t i = 0; i < transpVertices.size(); i++) {
+    CompressedVertex cv;
+    cv.pos.fromVec4(transpVertices[i]);
+    packUV(transpUV[i], cv.u, cv.v);
+    cv.color = packColor(transpColors[i]);
+    compressedTransparentVertices.push_back(cv);
+  }
+
+  // Clear original data to save RAM
+  // Using swap to force memory deallocation immediately
+  std::vector<Vec4>().swap(vertices);
+  std::vector<Vec4>().swap(UV);
+  std::vector<Color>().swap(colors);
+
+  std::vector<Vec4>().swap(transpVertices);
+  std::vector<Vec4>().swap(transpUV);
+  std::vector<Color>().swap(transpColors);
+  
+  std::vector<Color>().swap(transpColors);
+  
+  // Do NOT set isCompressed = true here.
+  // isCompressed tracks GEOMETRIC compression (greedy meshing),
+  // whereas this method performs STORAGE compression (bit packing).
+  // This prevents LOD 0 chunks (storage compressed, but geometrically raw)
+  // from being flagged as low-detail and constantly rebuilt.
+}
+
+void Chunk::decompressData(std::vector<Vec4>* outVertices,
+                           std::vector<Color>* outColors,
+                           std::vector<Vec4>* outUV,
+                           const std::vector<CompressedVertex>& inData) {
+  outVertices->clear();
+  outColors->clear();
+  outUV->clear();
+
+  if (inData.empty()) return;
+
+  // Reserve to avoid reallocations during decompression
+  outVertices->reserve(inData.size());
+  outColors->reserve(inData.size());
+  outUV->reserve(inData.size());
+
+  for (const auto& cv : inData) {
+    outVertices->emplace_back(cv.pos.toVec4());
+    outColors->emplace_back(unpackColor(cv.color));
+    
+    Vec4 uv;
+    unpackUV(uv, cv.u, cv.v);
+    outUV->emplace_back(uv);
+  }
+}
+
+u32 Chunk::packColor(const Color& color) {
+  // Pack RGBA into 32-bit integer
+  return (static_cast<u32>(color.r) << 24) |
+         (static_cast<u32>(color.g) << 16) |
+         (static_cast<u32>(color.b) << 8) |
+         static_cast<u32>(color.a);
+}
+
+Color Chunk::unpackColor(const u32& packed) {
+  return Color(
+      static_cast<float>((packed >> 24) & 0xFF),
+      static_cast<float>((packed >> 16) & 0xFF),
+      static_cast<float>((packed >> 8) & 0xFF),
+      static_cast<float>(packed & 0xFF));
+}
+
+void Chunk::packUV(const Vec4& uv, u16& u, u16& v) {
+  // Scale UV by 1024.0f to preserve precision in u16
+  // Range 0-64.0 becomes 0-65536
+  u = static_cast<u16>(uv.x * 1024.0f);
+  v = static_cast<u16>(uv.y * 1024.0f);
+}
+
+void Chunk::unpackUV(Vec4& uv, const u16& u, const u16& v) {
+  uv.x = static_cast<float>(u) / 1024.0f;
+  uv.y = static_cast<float>(v) / 1024.0f;
+  uv.z = 1.0f;
+  uv.w = 0.0f;
 }

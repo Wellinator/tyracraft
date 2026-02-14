@@ -56,6 +56,13 @@ struct ChunkQuadData {
   std::array<Color, 6> colors;
 };
 
+// 16 bytes per vertex (was 48 bytes)
+struct CompressedVertex {
+  Block::CompressedVec4 pos;  // 8 bytes
+  u16 u, v;                   // 4 bytes
+  u32 color;                  // 4 bytes
+};
+
 class Chunk {
  public:
   Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id);
@@ -177,6 +184,20 @@ class Chunk {
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
                      int limit = -1);
+  
+  // Compression helpers
+  void compressData();
+  void decompressData(std::vector<Vec4>* outVertices,
+                      std::vector<Color>* outColors, std::vector<Vec4>* outUV,
+                      const std::vector<CompressedVertex>& inData);
+  
+  static inline u32 packColor(const Color& color);
+  static inline Color unpackColor(const u32& color);
+  static inline void packUV(const Vec4& uv, u16& u, u16& v);
+  static inline void unpackUV(Vec4& out, const u16& u, const u16& v);
+
+  std::vector<CompressedVertex> compressedVertices;
+  std::vector<CompressedVertex> compressedTransparentVertices;
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
