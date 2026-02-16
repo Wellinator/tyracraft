@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[]) {
   Tyra::EngineOptions options;
-  options.loadUsbDriver = false;
+  options.loadUsbDriver = true;
   options.loadMemoryCardDriver = false;
   options.customGraphycsSettings = Tyra::RendererSettings(
       SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_NEAR_PLANE, SCREEN_FAR_PLANE);
