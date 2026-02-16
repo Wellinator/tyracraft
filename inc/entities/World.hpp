@@ -213,6 +213,7 @@ class World {
   void unloadScheduledChunks();
   void addChunkToLoadAsync(Chunk* t_chunk);
   void addChunkToUnloadAsync(Chunk* t_chunk);
+  void cancelChunkUnload(Chunk* t_chunk);
   void updateLightModel();
   void sortChunksToLoad(const Vec4& currentPlayerPos);
 

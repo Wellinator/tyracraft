@@ -299,11 +299,14 @@ Vec4 ChunkManager::getChunkPosById(const uint16_t& id) {
 }
 
 void ChunkManager::getChunkPosById(const uint16_t& id, Vec4* result) {
-  result->x = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS) * CHUNK_SIZE;
-  result->z = static_cast<int>((id - (result->x * OVERWORLD_PAGE_IN_CHUNKS)) /
-                               OVERWORLD_V_DISTANCE_IN_CHUNKS) *
-              CHUNK_SIZE;
-  result->y = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS) * CHUNK_SIZE;
+  const int offsetX = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS);
+  const int offsetZ = static_cast<int>((id - (offsetX * OVERWORLD_PAGE_IN_CHUNKS)) /
+                                       OVERWORLD_V_DISTANCE_IN_CHUNKS);
+  const int offsetY = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS);
+
+  result->x = offsetX * CHUNK_SIZE;
+  result->y = offsetY * CHUNK_SIZE;
+  result->z = offsetZ * CHUNK_SIZE;
 }
 
 Chunk* ChunkManager::getChunkByPosition(const Vec4& chunkMinPosition) {
@@ -431,11 +434,7 @@ void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
       for (Chunk* chunk : spatialGrid[gridIndex]) {
         // Validate chunk pointer
         if (chunk == nullptr) continue;
-        
-        // Skip only Unloading chunks - Building chunks need to be returned
-        // so scheduleChunksNeighbors can process them
-        if (chunk->getState() == ChunkState::Unloading) continue;
-        
+
         // 2D distance check (XZ plane only, ignoring Y)
         const float distSquared = horizontalDistance2DSquared(center, chunk->center);
         const float distInChunksSquared = distSquared / (CHUNK_SIZE * CHUNK_SIZE);

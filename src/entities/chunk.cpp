@@ -250,7 +250,12 @@ void Chunk::tickRandomBlock() {
 }
 
 void Chunk::setDistanceFromPlayerInChunks(const int distance) {
-  const int newLOD = getLODFromDistance(distance);
+  if (distance < 0) {
+    this->_distanceFromPlayerInChunks = distance;
+    return;
+  }
+
+  const int newLOD = getLODFromDistanceWithHysteresis(distance, _lod);
   if (_lod != newLOD) dirty = true;
 
   _lod = newLOD;
@@ -276,6 +281,26 @@ const int Chunk::getLODFromDistance(const int distance) {
     return 1;
   else
     return 2;
+}
+
+const int Chunk::getLODFromDistanceWithHysteresis(const int distance,
+                                                  const int currentLOD) {
+  switch (currentLOD) {
+    case 0:
+      if (distance >= 4) return (distance >= 9) ? 2 : 1;
+      return 0;
+    case 1:
+      if (distance < 2) return 0;
+      if (distance >= 9) return 2;
+      return 1;
+    case 2:
+      if (distance < 7) return (distance < 2) ? 0 : 1;
+      return 2;
+    default:
+      if (distance < 3) return 0;
+      else if (distance < 8) return 1;
+      else return 2;
+  }
 }
 
 void Chunk::compress(const bool staticBackFaceCulling,

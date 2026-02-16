@@ -137,6 +137,8 @@ class Chunk {
 
   const int getLODFromDistance();
   const int getLODFromDistance(const int distance);
+  static const int getLODFromDistanceWithHysteresis(const int distance,
+                                                    const int currentLOD);
 
   void updateLOD();
   void compress(const bool staticBackFaceCulling = false,

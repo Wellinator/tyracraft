@@ -540,6 +540,11 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
         t_chunk->build();
       t_chunk->setDistanceFromPlayerInChunks(distance);
     } else {
+      // Rescue chunks that were queued for unload but are still in range
+      if (t_chunk->isUnloading()) {
+        cancelChunkUnload(t_chunk);
+      }
+
       t_chunk->setDistanceFromPlayerInChunks(distance);
 
       if ((t_chunk->isDirty() || !t_chunk->isLoaded()) &&
@@ -742,6 +747,23 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
   t_chunk->state = ChunkState::Unloading;
   tempChunksToUnLoad.push_front(t_chunk);
   chunksInUnloadQueue.set(chunkId);  // Mark as queued
+}
+
+void World::cancelChunkUnload(Chunk* t_chunk) {
+  const u16 chunkId = t_chunk->id;
+  if (!chunksInUnloadQueue.test(chunkId)) return;
+
+  for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
+    if (tempChunksToUnLoad[i]->id == chunkId) {
+      tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
+      chunksInUnloadQueue.reset(chunkId);
+      break;
+    }
+  }
+
+  if (t_chunk->state == ChunkState::Unloading) {
+    t_chunk->state = ChunkState::Loaded;
+  }
 }
 
 void World::updateLightModel() {
