@@ -179,9 +179,14 @@ class Chunk {
 
   bool isCompressed = false;
   bool isUltraCompressed = false;
+  bool isMerged = false;
   void buildNormaly();
+  void buildMerged();
   void buildCompressed();
   void buildUltraCompressed();
+  void mergeGeometry(const u8 colorTolerance, const float uvTolerance,
+                     const float normalDotThreshold, const bool mergeAcrossUvs,
+                     const bool includeTransparent);
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
@@ -212,6 +217,7 @@ class Chunk {
   Plane* frustumPlanes = nullptr;
 
   int _lod = 0;
+  int _geometryLod = -1;  // LOD level the geometry was actually built at (-1 = not built)
   bool dirty = false;
 
   OnLoadedCallback onLoadedCallback;

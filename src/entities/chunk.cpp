@@ -275,9 +275,9 @@ const int Chunk::getLODFromDistance() {
 }
 
 const int Chunk::getLODFromDistance(const int distance) {
-  if (distance < 3)
+  if (distance < 5)
     return 0;
-  else if (distance < 8)
+  else if (distance < 10)
     return 1;
   else
     return 2;
@@ -287,46 +287,27 @@ const int Chunk::getLODFromDistanceWithHysteresis(const int distance,
                                                   const int currentLOD) {
   switch (currentLOD) {
     case 0:
-      if (distance >= 4) return (distance >= 9) ? 2 : 1;
+      if (distance >= 6) return (distance >= 11) ? 2 : 1;
       return 0;
     case 1:
-      if (distance < 2) return 0;
-      if (distance >= 9) return 2;
+      if (distance < 4) return 0;
+      if (distance >= 11) return 2;
       return 1;
     case 2:
-      if (distance < 7) return (distance < 2) ? 0 : 1;
+      if (distance < 9) return (distance < 4) ? 0 : 1;
       return 2;
     default:
-      if (distance < 3) return 0;
-      else if (distance < 8) return 1;
+      if (distance < 5) return 0;
+      else if (distance < 10) return 1;
       else return 2;
   }
 }
 
-void Chunk::compress(const bool staticBackFaceCulling,
-                     const u8 colorTolerance, const float uvTolerance,
-                     const float normalDotThreshold,
-                     const bool mergeAcrossUvs,
-                     const bool includeTransparent) {
-  // Safety: Don't compress if chunk is unloading or clean (no data)
-  // Allow both Building and Loaded states since compress is called during build
-  if (state == ChunkState::Unloading || state == ChunkState::Clean) {
-    return;
-  }
-  
-  // Safety: Don't compress if no data exists
-  if (vertices.empty() && transpVertices.empty()) {
-    isCompressed = true;  // Mark as compressed even if empty to avoid re-processing
-    return;
-  }
-  
-  const bool targetUltra = mergeAcrossUvs || !includeTransparent;
-
-  // Already compressed to requested level, nothing to do
-  if (isCompressed && isUltraCompressed == targetUltra) return;
-  
-  // Cache camera position pointer to avoid repeated address calculations
-  const Vec4* camPosPtr = staticBackFaceCulling ? &camPositon : nullptr;
+void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
+                          const float normalDotThreshold,
+                          const bool mergeAcrossUvs,
+                          const bool includeTransparent) {
+  if (vertices.empty() && transpVertices.empty()) return;
 
   // Process opaque geometry
   std::vector<ChunkQuadData> quadsData;
@@ -341,15 +322,9 @@ void Chunk::compress(const bool staticBackFaceCulling,
   UV.reserve(maxOpaqueVerts);
   colors.reserve(maxOpaqueVerts);
 
-  // Process the merged quads into mesh
+  // Rebuild vertex arrays from merged quads
   for (size_t i = 0; i < quadsData.size(); i++) {
     const ChunkQuadData& quad = quadsData[i];
-
-    if (staticBackFaceCulling &&
-        Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
-                                     &quad.vertices[1], &quad.vertices[0])) {
-      continue;
-    }
 
     // Unrolled loop for better instruction pipelining on EE
     vertices.emplace_back(quad.vertices[0]);
@@ -387,17 +362,10 @@ void Chunk::compress(const bool staticBackFaceCulling,
     transpUV.reserve(maxTranspVerts);
     transpColors.reserve(maxTranspVerts);
 
-    // Process the merged transparent quads into mesh
+    // Rebuild transparent vertex arrays from merged quads
     for (size_t i = 0; i < transparentQuadsData.size(); i++) {
       const ChunkQuadData& quad = transparentQuadsData[i];
 
-      if (staticBackFaceCulling &&
-          Vec4::shouldBeBackfaceCulled(camPosPtr, &quad.vertices[2],
-                                       &quad.vertices[1], &quad.vertices[0])) {
-        continue;
-      }
-
-      // Unrolled loop for better instruction pipelining on EE
       transpVertices.emplace_back(quad.vertices[0]);
       transpVertices.emplace_back(quad.vertices[1]);
       transpVertices.emplace_back(quad.vertices[2]);
@@ -424,6 +392,31 @@ void Chunk::compress(const bool staticBackFaceCulling,
     transpUV.clear();
     transpColors.clear();
   }
+}
+
+void Chunk::compress(const bool staticBackFaceCulling,
+                     const u8 colorTolerance, const float uvTolerance,
+                     const float normalDotThreshold,
+                     const bool mergeAcrossUvs,
+                     const bool includeTransparent) {
+  // Safety: Don't compress if chunk is unloading or clean (no data)
+  if (state == ChunkState::Unloading || state == ChunkState::Clean) {
+    return;
+  }
+
+  // Safety: Don't compress if no data exists
+  if (vertices.empty() && transpVertices.empty()) {
+    isCompressed = true;
+    return;
+  }
+
+  const bool targetUltra = mergeAcrossUvs || !includeTransparent;
+
+  // Already compressed to requested level, nothing to do
+  if (isCompressed && isUltraCompressed == targetUltra) return;
+
+  mergeGeometry(colorTolerance, uvTolerance, normalDotThreshold,
+                mergeAcrossUvs, includeTransparent);
 
   isCompressed = true;
   isUltraCompressed = mergeAcrossUvs || !includeTransparent;
@@ -936,15 +929,15 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   // Initialize texture bag
   StaPipTextureBag textureBag;
   textureBag.coordinates = inUVs->data();
-  textureBag.texture = isCompressed ? blockMgr->getBlocksTextureLowRes()
-                                    : blockMgr->getBlocksTexture();
+  textureBag.texture = (_lod > 0) ? blockMgr->getBlocksTextureLowRes()
+                                  : blockMgr->getBlocksTexture();
 
   // Initialize info bag
   StaPipInfoBag infoBag;
   infoBag.model = &identityMatrix;
-  infoBag.blendingEnabled = !isCompressed || fadeAlpha < 1.0f;
+  infoBag.blendingEnabled = (_lod == 0) || fadeAlpha < 1.0f;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = isCompressed
+  infoBag.shadingType = (_lod > 0)
                             ? Tyra::PipelineShadingType::TyraShadingFlat
                             : Tyra::PipelineShadingType::TyraShadingGouraud;
 
@@ -1004,8 +997,9 @@ void Chunk::clear() {
   visibilityGraphDirty = true;
   isEmpty = false;
   isUltraCompressed = false;
+  isMerged = false;
   consecutiveOccludedFrames = 0;
-  
+
   // Reset fade state
   isFadingIn = false;
   fadeAlpha = 0.0f;
@@ -1032,6 +1026,8 @@ void Chunk::clearDrawData() {
 
   isCompressed = false;
   isUltraCompressed = false;
+  isMerged = false;
+  _geometryLod = -1;
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -1045,7 +1041,9 @@ void Chunk::clearDrawDataWithoutShrink() {
 
   isCompressed = false;
   isUltraCompressed = false;
-  
+  isMerged = false;
+  _geometryLod = -1;
+
   // Clear compressed data
   std::vector<CompressedVertex>().swap(compressedVertices);
   std::vector<CompressedVertex>().swap(compressedTransparentVertices);
@@ -1122,12 +1120,13 @@ void Chunk::build() {
     const int lod = getLODFromDistance();
     _lod = lod;
     if (lod == 0) {
-      buildNormaly();
+      buildMerged();
     } else if (lod == 1) {
       buildCompressed();
     } else {
       buildUltraCompressed();
     }
+    _geometryLod = lod;
 
     state = ChunkState::Loaded;
 
@@ -1145,8 +1144,11 @@ void Chunk::build() {
     // Build visibility graph for cave culling
     rebuildVisibilityGraph();
 
-    // Compress data to save RAM
-    compressData();
+    // Only storage-compress LOD 1+ chunks.
+    // LOD 0 keeps uncompressed data in memory to avoid per-frame decompression.
+    if (_lod > 0) {
+      compressData();
+    }
 
     // Notify that chunk is ready for lighting updates
     if (onLoadedCallback) onLoadedCallback(this);
@@ -1212,9 +1214,18 @@ void Chunk::buildNormaly() {
   }
 };
 
+void Chunk::buildMerged() {
+  buildNormaly();
+  // LOD 0 (near chunks): No geometry merging. UV mapping must stay correct.
+  // Greedy meshing is only applied at LOD 2 (distant chunks) where UV
+  // stretching is acceptable and not noticeable at that distance.
+  isMerged = false;
+}
+
 void Chunk::buildCompressed() {
   buildNormaly();
-  compress(false, 5, 0.01f, 0.99f, false, true);  // Tightened colorTolerance from 10 to 5
+  // LOD 1 (medium distance): No geometry merging, UV stays correct.
+  // Storage compression (compressData) is applied in build() for _lod > 0.
   isUltraCompressed = false;
 };
 
@@ -1247,34 +1258,38 @@ void Chunk::rebuild() {
 
 void Chunk::updateLOD() {
   if (!isLoaded()) return;  // Safety check
-  
+
   // Safety: prevent updateLOD during building or unloading
   if (state == ChunkState::Building || state == ChunkState::Unloading) return;
-  
+
   const int currentLOD = getLODFromDistance();
-  
-  // LOD 0 = high detail (uncompressed), LOD 1 = low detail (compressed)
-  if (currentLOD == 0 && isCompressed) {
-    // Player is near, need high detail - mark for rebuild
+
+  // LOD 0 = near: no geometry merge, full-res, uncompressed in RAM
+  // LOD 1 = mid:  no geometry merge, UV correct, storage compressed
+  // LOD 2 = far:  greedy mesh (UV stretching OK at distance), storage compressed
+  //
+  // isCompressed is TRUE only for LOD 2 (the only LOD that applies greedy meshing).
+  // LOD 0 and LOD 1 share the same unmerged geometry; transitions between them
+  // don't require a geometry rebuild.
+
+  if (currentLOD <= 1 && isCompressed) {
+    // Transitioning from LOD 2 → LOD 0/1: merged geometry must be discarded
     dirty = true;
-    // Will be rebuilt on next scheduleChunksNeighbors() pass
-  } else if (currentLOD == 1 && (!isCompressed || isUltraCompressed)) {
-    // Player is far, can compress to reduce LOD
-    // Only compress if we have valid draw data
+  } else if (currentLOD == 2 && !isCompressed) {
+    // Transitioning to LOD 2: need to apply greedy meshing
     if (!vertices.empty() || !transpVertices.empty()) {
-      compress();
-    } else if (!compressedVertices.empty()) {
-      // If vertices are empty but compressedVertices are not, we are in LOD 0 (High Detail)
-      // but storage-compressed. We can't inplace compress to LOD 1.
-      // Mark dirty to force Full Rebuild to LOD 1.
+      // LOD 0 has uncompressed vertices in RAM - can compress in-place
+      compress(false, 15, 0.1f, 0.95f, true, false);
+      _geometryLod = 2;
+      compressData();
+    } else {
+      // LOD 1 is storage-compressed (no vertices in RAM) - force full rebuild
       dirty = true;
     }
-  } else if (currentLOD == 2 && (!isCompressed || !isUltraCompressed)) {
-    if (!vertices.empty() || !transpVertices.empty()) {
-      compress(false, 30, 0.1f, 0.95f, true, false);
-    }
   }
-  // If LOD matches current state, do nothing
+  // LOD 0 ↔ LOD 1: geometry is identical (unmerged), no rebuild needed.
+  // Visual difference (Gouraud vs Flat shading, texture resolution) is
+  // handled at render time via _lod in flushDrawData().
 }
 
 bool Chunk::hasDrawData() {
@@ -1291,28 +1306,36 @@ void Chunk::reloadLightData() {
   if (isCompressed) {
     // Save compression state
     const bool wasUltraCompressed = isUltraCompressed;
-    
+
     // Clear and rebuild geometry with fresh lighting
     clearDrawDataWithoutShrink();
     buildNormaly();
-    
+
     // Recompress with appropriate settings
     if (wasUltraCompressed) {
-      compress(false, 15, 0.1f, 0.95f, true, false);  // Tightened from 30 to 15
+      compress(false, 15, 0.1f, 0.95f, true, false);
       isUltraCompressed = true;
     } else {
-      compress(false, 5, 0.01f, 0.99f, false, true);  // Tightened from 10 to 5
+      compress(false, 5, 0.01f, 0.99f, false, true);
       isUltraCompressed = false;
     }
-    
+
     isCompressed = true;
-    isCompressed = true;
-    
+
     // Re-compress storage after geometry rebuild
     compressData();
     return;
   }
-  
+
+  // For LOD 0 merged chunks, vertex arrays are restructured by merging,
+  // so we must rebuild + re-merge to update lighting correctly
+  if (isMerged) {
+    clearDrawDataWithoutShrink();
+    buildMerged();
+    // LOD 0 stays uncompressed - no compressData() call
+    return;
+  }
+
   // If not geometrically compressed (LOD 0) but STORAGE compressed (packed),
   // we must rebuild to update lighting because we don't have unpacked colors.
   if (!compressedVertices.empty()) {
