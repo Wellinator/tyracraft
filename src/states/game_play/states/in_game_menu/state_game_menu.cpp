@@ -45,20 +45,6 @@ void StateGameMenu::init() {
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
 
-  horizontalScrollArea.mode = Tyra::MODE_STRETCH;
-  horizontalScrollArea.size.set(SLOT_WIDTH, 32);
-  horizontalScrollArea.position.set(halfWidth - SLOT_WIDTH / 2, 215);
-  textureRepo
-      ->add(FileUtils::fromCwd("textures/gui/horizontal_scroll_area.png"))
-      ->addLink(horizontalScrollArea.id);
-
-  horizontalScrollHandler.mode = Tyra::MODE_STRETCH;
-  horizontalScrollHandler.size.set(16, 16);
-  horizontalScrollHandler.position.set(halfWidth - SLOT_WIDTH / 2, 215);
-  textureRepo
-      ->add(FileUtils::fromCwd("textures/gui/horizontal_scroll_handler.png"))
-      ->addLink(horizontalScrollHandler.id);
-
   active_slot.mode = Tyra::MODE_STRETCH;
   active_slot.size.set(SLOT_WIDTH, 35);
   active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
@@ -93,8 +79,6 @@ void StateGameMenu::init() {
                         this->t_renderer->core.getSettings().getHeight() - 40);
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_start.png"))
       ->addLink(btnStart.id);
-
-  updateDrawDistanceScroll();
 }
 
 void StateGameMenu::update(const float& deltaTime) {
@@ -116,9 +100,8 @@ void StateGameMenu::render() {
 
   if (activeOption == GameMenuOptions::DrawDistance)
     drawDistanceLabel.color.set(128, 128, 0);
-  fm.printText(Label_DrawDistance, drawDistanceLabel);
-  t_renderer->renderer2D.render(horizontalScrollArea);
-  t_renderer->renderer2D.render(horizontalScrollHandler);
+  fm.printText(Label_DrawDistance + ": " + getDrawDistanceModeLabel(),
+               drawDistanceLabel);
 
   t_renderer->renderer2D.render(raw_slot[0]);
   t_renderer->renderer2D.render(raw_slot[1]);
@@ -160,13 +143,13 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   if (needSaveOverwriteConfirmation) {
     if (clicked.Cross) {
       this->playClickSound();
-      const auto oldDrawDistance = stateGamePlay->world->getDrawDistace();
-      stateGamePlay->world->setDrawDistance(MIN_DRAW_DISTANCE);
+      const auto oldMode = stateGamePlay->world->getDrawDistanceMode();
+      stateGamePlay->world->setDrawDistanceMode(DrawDistanceMode::Low);
 
       stateGamePlay->saveGame();
       needSaveOverwriteConfirmation = false;
 
-      stateGamePlay->world->setDrawDistance(oldDrawDistance);
+      stateGamePlay->world->setDrawDistanceMode(oldMode);
     } else if (clicked.Triangle) {
       needSaveOverwriteConfirmation = false;
     }
@@ -198,9 +181,9 @@ void StateGameMenu::handleInput(const float& deltaTime) {
 
   if (activeOption == GameMenuOptions::DrawDistance) {
     if (clicked.DpadLeft)
-      decreaseDrawDistance();
+      cycleDrawDistanceMode(-1);
     else if (clicked.DpadRight)
-      increaseDrawDistance();
+      cycleDrawDistanceMode(1);
   }
 
   if (clicked.Cross) {
@@ -242,8 +225,6 @@ void StateGameMenu::unloadTextures() {
   textureRepository->freeBySprite(active_slot);
   textureRepository->freeBySprite(btnCross);
   textureRepository->freeBySprite(btnTriangle);
-  textureRepository->freeBySprite(horizontalScrollArea);
-  textureRepository->freeBySprite(horizontalScrollHandler);
   textureRepository->freeBySprite(dialogWindow);
   textureRepository->freeBySprite(btnStart);
 }
@@ -271,30 +252,28 @@ void StateGameMenu::hightLightActiveOption() {
   }
 }
 
-void StateGameMenu::increaseDrawDistance() {
-  stateGamePlay->world->setDrawDistance(stateGamePlay->world->getDrawDistace() +
-                                       1);
-  updateDrawDistanceScroll();
+void StateGameMenu::cycleDrawDistanceMode(int direction) {
+  int current = static_cast<int>(stateGamePlay->world->getDrawDistanceMode());
+  current += direction;
+  if (current > static_cast<int>(DrawDistanceMode::High))
+    current = static_cast<int>(DrawDistanceMode::Auto);
+  else if (current < static_cast<int>(DrawDistanceMode::Auto))
+    current = static_cast<int>(DrawDistanceMode::High);
+  stateGamePlay->world->setDrawDistanceMode(
+      static_cast<DrawDistanceMode>(current));
 }
 
-void StateGameMenu::decreaseDrawDistance() {
-  stateGamePlay->world->setDrawDistance(stateGamePlay->world->getDrawDistace() -
-                                       1);
-  updateDrawDistanceScroll();
-}
-
-void StateGameMenu::updateDrawDistanceScroll() {
-  const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
-  const float min = halfWidth - (SLOT_WIDTH / 2);
-  const float distance =
-      stateGamePlay->world->getDrawDistace() - MIN_DRAW_DISTANCE;
-
-  float porcentage = distance / (MAX_DRAW_DISTANCE - MIN_DRAW_DISTANCE);
-
-  float value =
-      (porcentage * SLOT_WIDTH) - (porcentage * horizontalScrollHandler.size.x);
-
-  horizontalScrollHandler.position.x = min + value;
+const std::string& StateGameMenu::getDrawDistanceModeLabel() const {
+  switch (stateGamePlay->world->getDrawDistanceMode()) {
+    case DrawDistanceMode::Low:
+      return Label_ModeLow;
+    case DrawDistanceMode::Medium:
+      return Label_ModeMedium;
+    case DrawDistanceMode::High:
+      return Label_ModeHigh;
+    default:
+      return Label_ModeAuto;
+  }
 }
 
 void StateGameMenu::renderSaveOverwritingDialog() {

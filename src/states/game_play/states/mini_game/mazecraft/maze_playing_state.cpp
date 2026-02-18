@@ -58,7 +58,7 @@ void MazePlayingState::afterInit() {
   stateGamePlay->player->fillInventoryWithItem(ItemId::torch);
   stateGamePlay->player->updateHandledItem();
   stateGamePlay->player->unFly();
-  stateGamePlay->world->setDrawDistance(4);
+  stateGamePlay->world->setDrawDistanceMode(DrawDistanceMode::Low);
 }
 
 void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
@@ -453,7 +453,7 @@ void MazePlayingState::loadNextLevel() {
   stateGamePlay->player->spawnArea.set(spawnPos);
   stateGamePlay->context->t_camera->setFirstPerson();
 
-  stateGamePlay->world->setDrawDistance(4);
+  stateGamePlay->world->setDrawDistanceMode(DrawDistanceMode::Low);
 
   shouldRenderLevelDoneDialog = false;
   shouldLoadNextLevel = false;

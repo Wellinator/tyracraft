@@ -24,6 +24,7 @@ class SaveManager {
   static void LoadSavedGame(StateGamePlay* state, const char* fullPath);
   static void LoadSavedGameV1(StateGamePlay* state, const gzFile& save_file);
   static void LoadSavedGameV2(StateGamePlay* state, const gzFile& save_file);
+  static void LoadSavedGameV3(StateGamePlay* state, const gzFile& save_file);
 
   static NewGameOptions* GetNewGameOptionsFromSaveFile(const char* fullPath);
 

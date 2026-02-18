@@ -5,6 +5,7 @@
 #include <cmath>
 #include "constants.hpp"
 #include "memory-monitor/memory_monitor.hpp"
+#include "timer.hpp"
 
 using Tyra::Vec4;
 
@@ -13,23 +14,27 @@ class DrawDistanceController {
   DrawDistanceController() = default;
   ~DrawDistanceController() = default;
 
-  void init(const u8 minForwardDistance) {
-    minimumForwardDistance = minForwardDistance;
-    currentForwardDistance = minForwardDistance;
+  void init(DrawDistanceMode mode) {
+    currentMode = mode;
+    minimumForwardDistance = MIN_DRAW_DISTANCE;
+    currentForwardDistance = MIN_DRAW_DISTANCE;
     smoothedForward = Vec4(0.0f, 0.0f, -1.0f);
     hasSmoothedForward = false;
   }
 
-  void setMinimumForwardDistance(const u8 minForwardDistance) {
-    minimumForwardDistance = minForwardDistance;
-    if (currentForwardDistance < minimumForwardDistance) {
-      currentForwardDistance = minimumForwardDistance;
+  void setMode(DrawDistanceMode mode) {
+    currentMode = mode;
+    const u8 cap = getDrawDistanceCap(mode);
+    if (currentForwardDistance > cap) {
+      currentForwardDistance = cap;
     }
   }
 
+  inline DrawDistanceMode getMode() const { return currentMode; }
+
   void update(const Vec4& camForward) {
     updateSmoothedForward(camForward);
-    updateDistanceByMemory();
+    updateDistance();
   }
 
   inline u8 getForwardDistance() const { return currentForwardDistance; }
@@ -44,6 +49,10 @@ class DrawDistanceController {
     return static_cast<float>(currentForwardDistance) * DRAW_DISTANCE_SIDE_RATIO;
   }
 
+  inline u8 getUnloadDistance() const {
+    return currentForwardDistance + DRAW_DISTANCE_UNLOAD_MARGIN;
+  }
+
   inline bool canLoadMoreChunks() const {
     return getUsedMemoryMb() < getMemoryThresholdMb();
   }
@@ -51,6 +60,7 @@ class DrawDistanceController {
   inline const Vec4& getSmoothedForward() const { return smoothedForward; }
 
  private:
+  DrawDistanceMode currentMode = DrawDistanceMode::Auto;
   u8 minimumForwardDistance = MIN_DRAW_DISTANCE;
   u8 currentForwardDistance = MIN_DRAW_DISTANCE;
   Vec4 smoothedForward = Vec4(0.0f, 0.0f, -1.0f);
@@ -87,9 +97,7 @@ class DrawDistanceController {
     smoothedForward.y = 0.0f;
   }
 
-  void updateDistanceByMemory() {
-    // Hysteresis band + cooldown to prevent oscillation
-    // Only adjust distance if cooldown has expired AND memory is outside comfort zone
+  void updateDistance() {
     if (cooldownTicksRemaining > 0) {
       cooldownTicksRemaining--;
       return;
@@ -97,31 +105,33 @@ class DrawDistanceController {
 
     const size_t usedMb = getUsedMemoryMb();
     const size_t thresholdMb = getMemoryThresholdMb();
-    
-    // Hysteresis: 2 MB band below threshold for growing, at threshold for shrinking
     const size_t growThreshold = (thresholdMb >= 2) ? (thresholdMb - 2) : thresholdMb;
     const size_t shrinkThreshold = thresholdMb;
 
+    const u32 fps = TyraCraft::Timer::getInstance()->getUpdateTime();
+    const u8 maxDistance = getDrawDistanceCap(currentMode);
+
     bool changed = false;
 
-    if (usedMb < growThreshold) {
-      // Well below threshold — safe to grow
-      if (currentForwardDistance < MAX_DRAW_DISTANCE) {
-        currentForwardDistance++;
-        changed = true;
-      }
-    } else if (usedMb >= shrinkThreshold) {
-      // At or above threshold — must shrink
-      if (currentForwardDistance > minimumForwardDistance) {
+    // Shrink: high memory OR low FPS
+    if (usedMb >= shrinkThreshold ||
+        fps < DRAW_DISTANCE_FPS_SHRINK_THRESHOLD) {
+      if (currentForwardDistance > MIN_DRAW_DISTANCE) {
         currentForwardDistance--;
         changed = true;
       }
     }
-    // else: in the dead zone (growThreshold <= usedMb < shrinkThreshold) — do nothing
+    // Grow: memory OK AND FPS good AND below mode cap
+    else if (usedMb < growThreshold &&
+             fps > DRAW_DISTANCE_FPS_GROW_THRESHOLD) {
+      if (currentForwardDistance < maxDistance) {
+        currentForwardDistance++;
+        changed = true;
+      }
+    }
 
     if (changed) {
-      // Set cooldown period: 50 ticks = ~2.5 seconds at 20 TPS
-      cooldownTicksRemaining = 50;
+      cooldownTicksRemaining = 50;  // ~2.5s at 20 TPS
     }
   }
 };

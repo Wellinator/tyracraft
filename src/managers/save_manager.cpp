@@ -1,7 +1,18 @@
 #include "managers/save_manager.hpp"
 #include "entities/level.hpp"
 
-const int SaveManager::CurrentSaveVersion = 2;
+const int SaveManager::CurrentSaveVersion = 3;
+
+static DrawDistanceMode mapLegacyDrawDistance(u8 legacyDistance) {
+  if (legacyDistance <= DRAW_DISTANCE_LOW_CAP)
+    return DrawDistanceMode::Low;
+  else if (legacyDistance <= DRAW_DISTANCE_MEDIUM_CAP)
+    return DrawDistanceMode::Medium;
+  else if (legacyDistance <= DRAW_DISTANCE_HIGH_CAP)
+    return DrawDistanceMode::High;
+  else
+    return DrawDistanceMode::Auto;
+}
 
 void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   gzFile save_file = gzopen(fullPath, "wb");
@@ -25,8 +36,8 @@ void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     gzwrite(save_file, state->world->getWorldOptions()->name.data(),
             worldNameSize);
 
-    // World draw distance
-    gzwrite(save_file, &state->world->getWorldOptions()->drawDistance,
+    // World draw distance mode
+    gzwrite(save_file, &state->world->getWorldOptions()->drawDistanceMode,
             sizeof(u8));
 
     // World initial time
@@ -94,6 +105,8 @@ void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
       SaveManager::LoadSavedGameV1(state, save_file);
     } else if (version == 2) {
       SaveManager::LoadSavedGameV2(state, save_file);
+    } else if (version == 3) {
+      SaveManager::LoadSavedGameV3(state, save_file);
     }
 
     gzclose(save_file);
@@ -122,8 +135,10 @@ void SaveManager::LoadSavedGameV1(StateGamePlay* state,
   gameOptions->name.resize(worldNameSize / sizeof(char));
   gzread(save_file, gameOptions->name.data(), worldNameSize);
 
-  // World draw distance
-  gzread(save_file, &gameOptions->drawDistance, sizeof(u8));
+  // World draw distance (legacy — map to nearest mode)
+  u8 legacyDrawDistance;
+  gzread(save_file, &legacyDrawDistance, sizeof(u8));
+  gameOptions->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
 
   // World initial time
   gzread(save_file, &gameOptions->initialTime, sizeof(float));
@@ -198,8 +213,82 @@ void SaveManager::LoadSavedGameV2(StateGamePlay* state,
   gameOptions->name.resize(worldNameSize / sizeof(char));
   gzread(save_file, gameOptions->name.data(), worldNameSize);
 
-  // World draw distance
-  gzread(save_file, &gameOptions->drawDistance, sizeof(u8));
+  // World draw distance (legacy — map to nearest mode)
+  u8 legacyDrawDistance;
+  gzread(save_file, &legacyDrawDistance, sizeof(u8));
+  gameOptions->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
+
+  // World initial time
+  gzread(save_file, &gameOptions->initialTime, sizeof(float));
+
+  // World type
+  uint8_t worldType;
+  gzread(save_file, &worldType, sizeof(uint8_t));
+  gameOptions->type = static_cast<WorldType>(worldType);
+
+  // Texture Pack
+  uint16_t texturePackSize = 0;
+  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
+  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
+  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
+
+  // Player position
+  Vec4 playerPos;
+  gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
+  state->player->setPosition(Vec4(playerPos.xyzw));
+  state->world->setSavedSpawnArea(playerPos);
+
+  // TODO: add hot inventory state to save file;
+
+  // Camera direction
+  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
+  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
+
+  // Tick State
+  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
+  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
+  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
+
+  // World State
+  LevelMap* t_map = &state->plevel->map;
+  gzread(save_file, &t_map->width, sizeof(t_map->width));
+  gzread(save_file, &t_map->length, sizeof(t_map->length));
+  gzread(save_file, &t_map->height, sizeof(t_map->height));
+  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
+  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
+  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
+
+  uint32_t worldSize = 0;
+  gzread(save_file, &worldSize, sizeof(worldSize));
+  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
+  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
+  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+}
+
+void SaveManager::LoadSavedGameV3(StateGamePlay* state,
+                                  const gzFile& save_file) {
+  gzrewind(save_file);
+
+  // Save Version
+  int version = 0;
+  gzread(save_file, &version, sizeof(int));
+
+  NewGameOptions* gameOptions = state->world->getWorldOptions();
+
+  // World seed
+  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
+
+  // Game mode
+  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
+
+  // World name
+  uint16_t worldNameSize;
+  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
+  gameOptions->name.resize(worldNameSize / sizeof(char));
+  gzread(save_file, gameOptions->name.data(), worldNameSize);
+
+  // World draw distance mode
+  gzread(save_file, &gameOptions->drawDistanceMode, sizeof(u8));
 
   // World initial time
   gzread(save_file, &gameOptions->initialTime, sizeof(float));
@@ -273,8 +362,15 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     model->name.resize(worldNameSize / sizeof(char));
     gzread(save_file, model->name.data(), worldNameSize);
 
-    // World draw distance
-    gzread(save_file, &model->drawDistance, sizeof(u8));
+    // World draw distance mode
+    if (version <= 2) {
+      // Legacy: read old drawDistance byte and map to mode
+      u8 legacyDrawDistance;
+      gzread(save_file, &legacyDrawDistance, sizeof(u8));
+      model->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
+    } else {
+      gzread(save_file, &model->drawDistanceMode, sizeof(u8));
+    }
 
     // World initial time
     gzread(save_file, &model->initialTime, sizeof(float));
@@ -311,7 +407,7 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
       target->version = 0;
       target->name = std::string(FileUtils::getFilenameWithoutExtension(
           FileUtils::getFilenameFromPath(fullPath)));
-    } else if (version == 1 || version == 2) {
+    } else if (version >= 1 && version <= 3) {
       target->version = version;
 
       // World seed

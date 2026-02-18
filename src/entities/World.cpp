@@ -20,7 +20,7 @@ World::World(const NewGameOptions& options, Level* level)
   printf("|------------------------|\n\n");
 
   worldOptions = options;
-  drawDistanceController.init(worldOptions.drawDistance);
+  drawDistanceController.init(worldOptions.drawDistanceMode);
   _updateDayNightCycle = options.type != WorldType::WORLD_MINI_GAME_MAZECRAFT;
   setIntialTime();
 
@@ -419,8 +419,16 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   const float backwardDistance =
       static_cast<float>(drawDistanceController.getBackwardDistance());
   const float sideDistance = drawDistanceController.getSideDistance();
-  const float maxQueryDistance = std::max(forwardDistance, sideDistance);
 
+  // Circular unload zone (non-directional) prevents oscillation on rotation
+  const float unloadDistance =
+      static_cast<float>(drawDistanceController.getUnloadDistance());
+  const float unloadDistanceSquared = unloadDistance * unloadDistance;
+
+  // Query radius must cover the full unload zone
+  const float maxQueryDistance = unloadDistance;
+
+  // Elliptical load zone (forward-biased) for memory-efficient new loads
   const float forwardDistanceSquared = forwardDistance * forwardDistance;
   const float backwardDistanceSquared = backwardDistance * backwardDistance;
   const float sideDistanceSquared = sideDistance * sideDistance;
@@ -507,19 +515,9 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
       processedChunks.set(t_chunk->id);
     }
 
-    const float forwardDot = (dx * forwardDir.x) + (dz * forwardDir.z);
-    const float forwardAbs = fabsf(forwardDot);
-    const float forwardDistanceLimitSquared =
-        (forwardDot >= 0.0f) ? forwardDistanceSquared : backwardDistanceSquared;
-
-    const float perpSquared =
-        std::max(0.0f, distanceSquared2D - (forwardDot * forwardDot));
-
-    const float ellipseValue =
-        (forwardAbs * forwardAbs) / forwardDistanceLimitSquared +
-        (perpSquared / sideDistanceSquared);
-
-    if (ellipseValue > 1.0f) {
+    // Circular unload check (non-directional) — prevents oscillation on rotation
+    // Chunks beyond the unload radius are unloaded regardless of camera direction
+    if (distanceSquared2D > unloadDistanceSquared) {
       if (force_loading) {
         t_chunk->clear();
       } else if (t_chunk->isLoaded()) {
@@ -533,21 +531,41 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
 
     const int distance = static_cast<int>(sqrtf(distanceSquared2D));
 
+    // Elliptical load zone (forward-biased) for memory-efficient new loads
+    const float forwardDot = (dx * forwardDir.x) + (dz * forwardDir.z);
+    const float forwardAbs = fabsf(forwardDot);
+    const float forwardDistanceLimitSquared =
+        (forwardDot >= 0.0f) ? forwardDistanceSquared : backwardDistanceSquared;
+    const float perpSquared =
+        std::max(0.0f, distanceSquared2D - (forwardDot * forwardDot));
+    const float ellipseValue =
+        (forwardAbs * forwardAbs) / forwardDistanceLimitSquared +
+        (perpSquared / sideDistanceSquared);
+    const bool insideLoadZone = (ellipseValue <= 1.0f);
+
     if (force_loading) {
-      if (t_chunk->isLoaded())
-        t_chunk->rebuild();
-      else
-        t_chunk->build();
-      t_chunk->setDistanceFromPlayerInChunks(distance);
+      if (insideLoadZone) {
+        if (t_chunk->isLoaded())
+          t_chunk->rebuild();
+        else
+          t_chunk->build();
+        t_chunk->setDistanceFromPlayerInChunks(distance);
+      } else {
+        t_chunk->clear();
+        t_chunk->setDistanceFromPlayerInChunks(-1);
+      }
     } else {
-      // Rescue chunks that were queued for unload but are still in range
+      // Rescue chunks queued for unload that are still within range
       if (t_chunk->isUnloading()) {
         cancelChunkUnload(t_chunk);
       }
 
       t_chunk->setDistanceFromPlayerInChunks(distance);
 
-      if ((t_chunk->isDirty() || !t_chunk->isLoaded()) &&
+      // Only queue NEW loads within the elliptical load zone
+      // Chunks between ellipse and unload circle: keep current state
+      if (insideLoadZone &&
+          (t_chunk->isDirty() || !t_chunk->isLoaded()) &&
           !t_chunk->isBuilding() && !t_chunk->isUnloading()) {
         chunksToLoad.push_back({t_chunk, distanceSquared2D, forwardDot});
       }
@@ -714,8 +732,8 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
   if (chunksInUnloadQueue.test(chunkId)) return;
   
   // Protect recently-loaded chunks from immediate unload (prevents oscillation)
-  // Minimum 30 ticks (~1.5 sec) must elapse before chunk can be unloaded
-  constexpr u16 MIN_LOADED_TICKS = 30;
+  // Minimum 60 ticks (~3 sec) must elapse before chunk can be unloaded
+  constexpr u32 MIN_LOADED_TICKS = 60;
   if (t_chunk->loadedAtTick > 0 && 
       (g_ticksCounter - t_chunk->loadedAtTick) < MIN_LOADED_TICKS) {
     return;
@@ -932,42 +950,38 @@ const bool World::getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                targetChunk->maxOffset);
 }
 
-void World::setDrawDistance(const u8& drawDistanceInChunks) {
-  TYRA_LOG("Setting draw distance to ", static_cast<int>(drawDistanceInChunks),
-           " chunks");
-  if (drawDistanceInChunks >= MIN_DRAW_DISTANCE &&
-      drawDistanceInChunks <= MAX_DRAW_DISTANCE) {
-    worldOptions.drawDistance = drawDistanceInChunks;
-    drawDistanceController.setMinimumForwardDistance(drawDistanceInChunks);
-    
-    // Clear async queues and properly clean up chunk states
-    // Memory leak fix: Clear draw data for chunks that were building but never loaded
-    for (auto chunk : tempChunksToLoad) {
-      if (chunk->state == ChunkState::Building && !chunk->isLoaded()) {
-        chunk->clearDrawDataWithoutShrink();
-      }
-      chunk->state = ChunkState::Clean;
-      chunk->isLODRebuild = false;
+void World::setDrawDistanceMode(DrawDistanceMode mode) {
+  TYRA_LOG("Setting draw distance mode to ", static_cast<int>(mode));
+  worldOptions.drawDistanceMode = mode;
+  drawDistanceController.setMode(mode);
+
+  // Clear async queues and properly clean up chunk states
+  // Memory leak fix: Clear draw data for chunks that were building but never loaded
+  for (auto chunk : tempChunksToLoad) {
+    if (chunk->state == ChunkState::Building && !chunk->isLoaded()) {
+      chunk->clearDrawDataWithoutShrink();
     }
-    for (auto chunk : tempChunksToUnLoad) {
-      chunk->state = ChunkState::Clean;
-    }
-    tempChunksToLoad.clear();
-    tempChunksToUnLoad.clear();
-    
-    // Clear the bitsets as well
-    chunksInLoadQueue.reset();
-    chunksInUnloadQueue.reset();
-    
-    Chunk* currentChunk =
-        chunkManager.getChunkByWorldPosition(lastPlayerPosition);
-    TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
-    if (currentChunk) {
-      scheduleChunksNeighbors(currentChunk, lastPlayerPosition,
-                              drawDistanceController.getSmoothedForward(), true);
-      delete targetBlock;
-      targetBlock = nullptr;
-    }
+    chunk->state = ChunkState::Clean;
+    chunk->isLODRebuild = false;
+  }
+  for (auto chunk : tempChunksToUnLoad) {
+    chunk->state = ChunkState::Clean;
+  }
+  tempChunksToLoad.clear();
+  tempChunksToUnLoad.clear();
+
+  // Clear the bitsets as well
+  chunksInLoadQueue.reset();
+  chunksInUnloadQueue.reset();
+
+  Chunk* currentChunk =
+      chunkManager.getChunkByWorldPosition(lastPlayerPosition);
+  TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
+  if (currentChunk) {
+    scheduleChunksNeighbors(currentChunk, lastPlayerPosition,
+                            drawDistanceController.getSmoothedForward(), true);
+    delete targetBlock;
+    targetBlock = nullptr;
   }
 }
 

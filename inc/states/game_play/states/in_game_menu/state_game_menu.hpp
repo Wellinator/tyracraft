@@ -41,8 +41,6 @@ class StateGameMenu : public PlayingStateBase {
   Sprite active_slot;
   Sprite btnCross;
   Sprite btnTriangle;
-  Sprite horizontalScrollArea;
-  Sprite horizontalScrollHandler;
   Sprite dialogWindow;
   Sprite btnStart;
   Sprite background;
@@ -79,12 +77,17 @@ class StateGameMenu : public PlayingStateBase {
   const std::string Label_AreYouSure                        = LanguageManager::Translate("/state_game_menu/are_you_sure_ask");
   const std::string Label_AllUnsavedProgressWillBeLost      = LanguageManager::Translate("/state_game_menu/all_unsaved_progress_will_be_lost");
 
+  // Draw distance mode labels
+  const std::string Label_ModeAuto   = LanguageManager::Translate("/state_game_menu/draw_distance_auto");
+  const std::string Label_ModeLow    = LanguageManager::Translate("/state_game_menu/draw_distance_low");
+  const std::string Label_ModeMedium = LanguageManager::Translate("/state_game_menu/draw_distance_medium");
+  const std::string Label_ModeHigh   = LanguageManager::Translate("/state_game_menu/draw_distance_high");
+
   void hightLightActiveOption();
   void navigate();
   void unloadTextures();
-  void increaseDrawDistance();
-  void decreaseDrawDistance();
-  void updateDrawDistanceScroll();
+  void cycleDrawDistanceMode(int direction);
+  const std::string& getDrawDistanceModeLabel() const;
   void renderSaveOverwritingDialog();
   void renderSaveAndQuitDialog();
   void renderQuitWithoutSavingDialog();

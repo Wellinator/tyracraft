@@ -148,8 +148,9 @@ class World {
   }
   void stopBreakTargetBlock() { blockInteraction.stopBreakTargetBlock(); }
 
-  void setDrawDistance(const u8& drawDistanceInChunks);
-  inline const u8 getDrawDistace() { return worldOptions.drawDistance; };
+  void setDrawDistanceMode(DrawDistanceMode mode);
+  inline DrawDistanceMode getDrawDistanceMode() { return worldOptions.drawDistanceMode; }
+  inline u8 getDrawDistance() { return drawDistanceController.getForwardDistance(); }
 
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
