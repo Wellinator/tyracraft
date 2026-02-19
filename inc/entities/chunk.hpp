@@ -141,12 +141,10 @@ class Chunk {
                                                     const int currentLOD);
 
   void updateLOD();
-  void compress(const bool staticBackFaceCulling = false,
-                const u8 colorTolerance = 10, const float uvTolerance = 0.01f,
+  void compress(const u8 colorTolerance = 10, const float uvTolerance = 0.01f,
                 const float normalDotThreshold = 0.99f,
                 const bool mergeAcrossUvs = false,
                 const bool includeTransparent = true);
-  void optimize();
   void markDirty();
   inline bool isDirty() { return dirty; }
 
@@ -190,7 +188,9 @@ class Chunk {
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
-                     int limit = -1);
+                     int offset, int count);
+  void sortFacesByNormal(std::vector<Vec4>& verts, std::vector<Vec4>& uvs,
+                         std::vector<Color>& cols, int boundaries[7]);
   
   // Compression helpers
   void compressData();
@@ -222,18 +222,17 @@ class Chunk {
 
   OnLoadedCallback onLoadedCallback;
 
-  bool isDrawDataOptimized = false;
-  void invalidateOptimization();
-  void applyBackFaceCulling(int* targetLimit, std::vector<Vec4>* pVertex,
-                            std::vector<Vec4>* pUV,
-                            std::vector<Color>* pColors);
+  // Face-direction group boundaries for back face culling
+  // vertices[faceGroupBoundaries[i]..faceGroupBoundaries[i+1]) = group i
+  // Groups: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
+  static constexpr int kFaceGroupCount = 6;
+  int faceGroupBoundaries[7] = {};
+  int transpFaceGroupBoundaries[7] = {};
 
-  int vertexCutLimit = -1;
   std::vector<Vec4> vertices;
   std::vector<Vec4> UV;
   std::vector<Color> colors;
 
-  int transpVertexCutLimit = -1;
   std::vector<Vec4> transpVertices;
   std::vector<Vec4> transpUV;
   std::vector<Color> transpColors;

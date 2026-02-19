@@ -55,6 +55,7 @@ static MenuItem g_all_menu_items[] = {
     // GAMEPLAY tab
     
     // PERFORMANCE tab
+    {"Backface Culling", &g_debug_menu.enableBackfaceCulling, DebugMenuTab::PERFORMANCE},
     {"Cave Culling", &g_debug_menu.enableCaveCulling, DebugMenuTab::PERFORMANCE},
     {"Show Culled Chunks", &g_debug_menu.showCulledChunks, DebugMenuTab::PERFORMANCE},
     {"Log Pathfinding", &g_debug_menu.logPathfinding, DebugMenuTab::PERFORMANCE},

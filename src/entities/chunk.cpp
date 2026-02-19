@@ -202,9 +202,6 @@ void Chunk::update(const Plane* frustumPlanes) {
     }
   }
 
-  // Disabled for testing
-  // TODO: add an option at debug menu to toggle optimization
-  // optimize();
 }
 
 void Chunk::tick() {
@@ -394,8 +391,7 @@ void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
   }
 }
 
-void Chunk::compress(const bool staticBackFaceCulling,
-                     const u8 colorTolerance, const float uvTolerance,
+void Chunk::compress(const u8 colorTolerance, const float uvTolerance,
                      const float normalDotThreshold,
                      const bool mergeAcrossUvs,
                      const bool includeTransparent) {
@@ -424,62 +420,48 @@ void Chunk::compress(const bool staticBackFaceCulling,
 
 void Chunk::markDirty() { dirty = true; }
 
-void Chunk::optimize() {
-  if (isDrawDataOptimized) return;
-  if (!vertices.empty())
-    applyBackFaceCulling(&vertexCutLimit, &vertices, &UV, &colors);
-
-  if (!transpVertices.empty())
-    applyBackFaceCulling(&transpVertexCutLimit, &transpVertices, &transpUV,
-                         &transpColors);
-
-  isDrawDataOptimized = true;
+// Classify a face (first triangle v0,v1,v2) into one of 6 axis-aligned groups:
+// 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
+static int faceNormalGroup(const Vec4& v0, const Vec4& v1, const Vec4& v2) {
+  const float ex = v1.x - v0.x, ey = v1.y - v0.y, ez = v1.z - v0.z;
+  const float fx = v2.x - v0.x, fy = v2.y - v0.y, fz = v2.z - v0.z;
+  const float nx = ey * fz - ez * fy;
+  const float ny = ez * fx - ex * fz;
+  const float nz = ex * fy - ey * fx;
+  const float ax = fabsf(nx), ay = fabsf(ny), az = fabsf(nz);
+  // Winding order is CW from outside, so the cross product points INWARD.
+  // Signs are therefore inverted relative to the face's outward normal.
+  if (ay >= ax && ay >= az) return (ny < 0.f) ? 0 : 1;  // ny<0 = inward→outward +Y = TOP
+  if (ax >= az)              return (nx < 0.f) ? 2 : 3;  // nx<0 = inward→outward +X = LEFT
+  return                            (nz > 0.f) ? 4 : 5;  // nz>0 = inward→outward -Z = FRONT
 }
 
-void Chunk::applyBackFaceCulling(int* targetLimit, std::vector<Vec4>* pVertex,
-                                 std::vector<Vec4>* pUV,
-                                 std::vector<Color>* pColors) {
-  *targetLimit = static_cast<int>(pVertex->size());
+void Chunk::sortFacesByNormal(std::vector<Vec4>& verts, std::vector<Vec4>& uvs,
+                              std::vector<Color>& cols, int boundaries[7]) {
+  constexpr size_t stride = 6;
+  const size_t faceCount = verts.size() / stride;
 
-  constexpr size_t kFaceStride = 6;
-  size_t activeVertexCount = pVertex->size();
-  size_t i = 0;
+  std::vector<Vec4>  gv[kFaceGroupCount], gu[kFaceGroupCount];
+  std::vector<Color> gc[kFaceGroupCount];
 
-  // Cache pointers to avoid repeated vtable lookups and address calculations
-  const Vec4* camPosPtr = &camPositon;
-  Vec4* vertexData = pVertex->data();
-  Vec4* uvData = pUV->data();
-  Color* colorData = pColors->data();
-
-  while (i + 2 < activeVertexCount) {
-    // Check if the face can be culled by backface culling
-    // If so, move the face data to the end of the array and update the
-    // active vertex count
-    if (Vec4::shouldBeBackfaceCulled(camPosPtr, &vertexData[i],
-                                     &vertexData[i + 1], &vertexData[i + 2])) {
-      activeVertexCount -= kFaceStride;
-
-      // Swap face data using raw pointer operations
-      for (size_t j = 0; j < kFaceStride; ++j) {
-        std::swap(vertexData[i + j], vertexData[activeVertexCount + j]);
-        std::swap(uvData[i + j], uvData[activeVertexCount + j]);
-        std::swap(colorData[i + j], colorData[activeVertexCount + j]);
-      }
-
-      // Re-evaluate the swapped face at the current index
-      continue;
+  for (size_t i = 0; i < faceCount; ++i) {
+    const int g = faceNormalGroup(verts[i * stride], verts[i * stride + 1],
+                                  verts[i * stride + 2]);
+    for (size_t j = 0; j < stride; ++j) {
+      gv[g].push_back(verts[i * stride + j]);
+      gu[g].push_back(uvs[i * stride + j]);
+      gc[g].push_back(cols[i * stride + j]);
     }
-
-    i += kFaceStride;
   }
 
-  *targetLimit = static_cast<int>(activeVertexCount);
-}
-
-void Chunk::invalidateOptimization() {
-  isDrawDataOptimized = false;
-  vertexCutLimit = -1;
-  transpVertexCutLimit = -1;
+  verts.clear(); uvs.clear(); cols.clear();
+  boundaries[0] = 0;
+  for (int g = 0; g < kFaceGroupCount; ++g) {
+    verts.insert(verts.end(), gv[g].begin(), gv[g].end());
+    uvs.insert(uvs.end(),   gu[g].begin(), gu[g].end());
+    cols.insert(cols.end(), gc[g].begin(), gc[g].end());
+    boundaries[g + 1] = static_cast<int>(verts.size());
+  }
 }
 
 /**
@@ -894,7 +876,7 @@ Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
 void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                           std::vector<Vec4>* inVertices,
                           std::vector<Color>* inColors,
-                          std::vector<Vec4>* inUVs, int limit) {
+                          std::vector<Vec4>* inUVs, int offset, int count) {
   t_renderer->renderer3D.usePipeline(stapip);
 
   // Static identity matrix to avoid repeated allocation
@@ -905,30 +887,26 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 
   // Initialize color bag
   StaPipColorBag colorBag;
-  
+
   // Static buffer for faded colors to avoid repeated allocations on PS2
   static std::vector<Color> fadedColors;
-  
+
   // Apply fade alpha if chunk is fading
   if (fadeAlpha < 1.0f) {
-    // Create temporary color buffer with adjusted alpha
-    fadedColors.resize(inColors->size());
-    
+    fadedColors.resize(count);
     const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);  // PS2 uses 0-128 for alpha
-    
-    for (size_t i = 0; i < inColors->size(); i++) {
-      fadedColors[i] = (*inColors)[i];
+    for (int i = 0; i < count; i++) {
+      fadedColors[i] = (*inColors)[offset + i];
       fadedColors[i].a = alphaValue;
     }
-    
     colorBag.many = fadedColors.data();
   } else {
-    colorBag.many = inColors->data();
+    colorBag.many = inColors->data() + offset;
   }
 
   // Initialize texture bag
   StaPipTextureBag textureBag;
-  textureBag.coordinates = inUVs->data();
+  textureBag.coordinates = inUVs->data() + offset;
   textureBag.texture = (_lod > 0) ? blockMgr->getBlocksTextureLowRes()
                                   : blockMgr->getBlocksTexture();
 
@@ -946,9 +924,8 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   bag.color = &colorBag;
   bag.info = &infoBag;
   bag.texture = &textureBag;
-  bag.vertices = inVertices->data();
-  bag.count = isDrawDataOptimized ? static_cast<u32>(limit)
-                                  : static_cast<u32>(inVertices->size());
+  bag.vertices = inVertices->data() + offset;
+  bag.count = static_cast<u32>(count);
 
   // Check if clipping is needed based on distance
   const float normalizedDistance =
@@ -961,34 +938,95 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+  std::vector<Vec4>*  pVerts  = &vertices;
+  std::vector<Vec4>*  pUV     = &UV;
+  std::vector<Color>* pColors = &colors;
+
+  static std::vector<Vec4>  tempVertices;
+  static std::vector<Color> tempColors;
+  static std::vector<Vec4>  tempUV;
+
   if (vertices.empty() && !compressedVertices.empty()) {
-     // Decompress on-the-fly for rendering
-     // Use static buffers to avoid allocation
-     static std::vector<Vec4> tempVertices;
-     static std::vector<Color> tempColors;
-     static std::vector<Vec4> tempUV;
-     
-     decompressData(&tempVertices, &tempColors, &tempUV, compressedVertices);
-     flushDrawData(t_renderer, stapip, &tempVertices, &tempColors, &tempUV, vertexCutLimit);
-  } else {
-     flushDrawData(t_renderer, stapip, &vertices, &colors, &UV, vertexCutLimit);
+    decompressData(&tempVertices, &tempColors, &tempUV, compressedVertices);
+    pVerts = &tempVertices; pColors = &tempColors; pUV = &tempUV;
   }
-};
+
+  if (pVerts->empty()) return;
+
+#ifdef DEBUG_MODE
+  if (!g_debug_menu.enableBackfaceCulling) {
+    const int totalCount = faceGroupBoundaries[kFaceGroupCount];
+    if (totalCount > 0)
+      flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, totalCount);
+    return;
+  }
+#endif
+
+  // Group-level back face culling: O(6) comparisons per chunk.
+  // Uses AABB min/max edges instead of center to avoid incorrect culling
+  // when camera is near or inside the chunk.
+  // Groups: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
+  const float px = camPositon.x, py = camPositon.y, pz = camPositon.z;
+  const bool groupVisible[kFaceGroupCount] = {
+    py >= scaledMinOffset.y,   // 0: TOP    +Y — visible if camera above chunk bottom
+    py <= scaledMaxOffset.y,   // 1: BOTTOM -Y — visible if camera below chunk top
+    px >= scaledMinOffset.x,   // 2: LEFT   +X — visible if camera right of chunk left edge
+    px <= scaledMaxOffset.x,   // 3: RIGHT  -X — visible if camera left of chunk right edge
+    pz <= scaledMaxOffset.z,   // 4: FRONT  -Z — visible if camera in front of chunk back
+    pz >= scaledMinOffset.z,   // 5: BACK   +Z — visible if camera behind chunk front
+  };
+
+  for (int g = 0; g < kFaceGroupCount; ++g) {
+    if (!groupVisible[g]) continue;
+    const int start = faceGroupBoundaries[g];
+    const int count = faceGroupBoundaries[g + 1] - start;
+    if (count <= 0) continue;
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, start, count);
+  }
+}
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
+  std::vector<Vec4>*  pVerts  = &transpVertices;
+  std::vector<Vec4>*  pUV     = &transpUV;
+  std::vector<Color>* pColors = &transpColors;
+
+  static std::vector<Vec4>  tempTranspVertices;
+  static std::vector<Color> tempTranspColors;
+  static std::vector<Vec4>  tempTranspUV;
+
   if (transpVertices.empty() && !compressedTransparentVertices.empty()) {
-     // Decompress on-the-fly for rendering
-     static std::vector<Vec4> tempTranspVertices;
-     static std::vector<Color> tempTranspColors;
-     static std::vector<Vec4> tempTranspUV;
-     
-     decompressData(&tempTranspVertices, &tempTranspColors, &tempTranspUV, compressedTransparentVertices);
-     flushDrawData(t_renderer, stapip, &tempTranspVertices, &tempTranspColors, &tempTranspUV, transpVertexCutLimit);
-  } else {
-     flushDrawData(t_renderer, stapip, &transpVertices, &transpColors, &transpUV, transpVertexCutLimit);
+    decompressData(&tempTranspVertices, &tempTranspColors, &tempTranspUV,
+                   compressedTransparentVertices);
+    pVerts = &tempTranspVertices; pColors = &tempTranspColors; pUV = &tempTranspUV;
   }
-};
+
+  if (pVerts->empty()) return;
+
+#ifdef DEBUG_MODE
+  if (!g_debug_menu.enableBackfaceCulling) {
+    const int totalCount = transpFaceGroupBoundaries[kFaceGroupCount];
+    if (totalCount > 0)
+      flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, totalCount);
+    return;
+  }
+#endif
+
+  const float px = camPositon.x, py = camPositon.y, pz = camPositon.z;
+  const bool groupVisible[kFaceGroupCount] = {
+    py >= scaledMinOffset.y, py <= scaledMaxOffset.y,
+    px >= scaledMinOffset.x, px <= scaledMaxOffset.x,
+    pz <= scaledMaxOffset.z, pz >= scaledMinOffset.z,
+  };
+
+  for (int g = 0; g < kFaceGroupCount; ++g) {
+    if (!groupVisible[g]) continue;
+    const int start = transpFaceGroupBoundaries[g];
+    const int count = transpFaceGroupBoundaries[g + 1] - start;
+    if (count <= 0) continue;
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, start, count);
+  }
+}
 
 void Chunk::clear() {
   state = ChunkState::Unloading;
@@ -1028,6 +1066,9 @@ void Chunk::clearDrawData() {
   isUltraCompressed = false;
   isMerged = false;
   _geometryLod = -1;
+
+  std::fill(faceGroupBoundaries, faceGroupBoundaries + 7, 0);
+  std::fill(transpFaceGroupBoundaries, transpFaceGroupBoundaries + 7, 0);
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -1047,6 +1088,9 @@ void Chunk::clearDrawDataWithoutShrink() {
   // Clear compressed data
   std::vector<CompressedVertex>().swap(compressedVertices);
   std::vector<CompressedVertex>().swap(compressedTransparentVertices);
+
+  std::fill(faceGroupBoundaries, faceGroupBoundaries + 7, 0);
+  std::fill(transpFaceGroupBoundaries, transpFaceGroupBoundaries + 7, 0);
 }
 
 void Chunk::build() {
@@ -1219,6 +1263,10 @@ void Chunk::buildMerged() {
   // LOD 0 (near chunks): No geometry merging. UV mapping must stay correct.
   // Greedy meshing is only applied at LOD 2 (distant chunks) where UV
   // stretching is acceptable and not noticeable at that distance.
+  if (!vertices.empty())
+    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+  if (!transpVertices.empty())
+    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
   isMerged = false;
 }
 
@@ -1226,12 +1274,21 @@ void Chunk::buildCompressed() {
   buildNormaly();
   // LOD 1 (medium distance): No geometry merging, UV stays correct.
   // Storage compression (compressData) is applied in build() for _lod > 0.
+  if (!vertices.empty())
+    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+  if (!transpVertices.empty())
+    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
   isUltraCompressed = false;
 };
 
 void Chunk::buildUltraCompressed() {
   buildNormaly();
-  compress(false, 15, 0.1f, 0.95f, true, false);  // Tightened colorTolerance from 30 to 15
+  compress(15, 0.1f, 0.95f, true, false);  // Tightened colorTolerance from 30 to 15
+  // Sort AFTER compress() because mergeGeometry() reshuffles faces
+  if (!vertices.empty())
+    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+  if (!transpVertices.empty())
+    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
   isUltraCompressed = true;
 }
 
@@ -1279,7 +1336,11 @@ void Chunk::updateLOD() {
     // Transitioning to LOD 2: need to apply greedy meshing
     if (!vertices.empty() || !transpVertices.empty()) {
       // LOD 0 has uncompressed vertices in RAM - can compress in-place
-      compress(false, 15, 0.1f, 0.95f, true, false);
+      compress(15, 0.1f, 0.95f, true, false);
+      if (!vertices.empty())
+        sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+      if (!transpVertices.empty())
+        sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
       _geometryLod = 2;
       compressData();
     } else {
@@ -1313,14 +1374,19 @@ void Chunk::reloadLightData() {
 
     // Recompress with appropriate settings
     if (wasUltraCompressed) {
-      compress(false, 15, 0.1f, 0.95f, true, false);
+      compress(15, 0.1f, 0.95f, true, false);
       isUltraCompressed = true;
     } else {
-      compress(false, 5, 0.01f, 0.99f, false, true);
+      compress(5, 0.01f, 0.99f, false, true);
       isUltraCompressed = false;
     }
 
     isCompressed = true;
+
+    if (!vertices.empty())
+      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+    if (!transpVertices.empty())
+      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
 
     // Re-compress storage after geometry rebuild
     compressData();
@@ -1339,45 +1405,24 @@ void Chunk::reloadLightData() {
   // If not geometrically compressed (LOD 0) but STORAGE compressed (packed),
   // we must rebuild to update lighting because we don't have unpacked colors.
   if (!compressedVertices.empty()) {
-      clearDrawDataWithoutShrink();
-      buildNormaly();
-      compressData();
-      return;
+    clearDrawDataWithoutShrink();
+    buildNormaly();
+    if (!vertices.empty())
+      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+    if (!transpVertices.empty())
+      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+    compressData();
+    return;
   }
 
-  // For uncompressed chunks, just regenerate colors (original behavior)
-  colors.clear();
-  transpColors.clear();
-
-  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
-  BlockManager* blockMgr = BlockManager::getInstance();
-
-  // Must iterate in the SAME order as buildNormaly() (X→Z→Y)
-  // so that color indices stay in sync with existing vertices
-  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
-
-        Vec4 offset(x, y, z);
-        const u8 visibleFaces =
-            visibleFacesMgr->getVisibleFacesByOffset(offset);
-        if (visibleFaces == 0) continue;
-
-        const Blocks block_type = static_cast<Blocks>(blockId);
-        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
-
-        std::vector<Color>* targetColors =
-            pBlockTemplate->hasTransparency() ? &transpColors : &colors;
-
-        MeshBuilder_BuildLightData(&offset, visibleFaces, targetColors,
-                                   t_worldLightModel, pLevel);
-      }
-    }
-  }
-
-  invalidateOptimization();
+  // For uncompressed chunks (LOD 0, not storage-compressed): full rebuild to
+  // keep color indices aligned with sorted vertex order.
+  clearDrawDataWithoutShrink();
+  buildNormaly();
+  if (!vertices.empty())
+    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+  if (!transpVertices.empty())
+    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
 }
 
 void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {
