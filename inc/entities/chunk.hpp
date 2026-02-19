@@ -148,7 +148,8 @@ class Chunk {
   void compress(const u8 colorTolerance = 10, const float uvTolerance = 0.01f,
                 const float normalDotThreshold = 0.99f,
                 const bool mergeAcrossUvs = false,
-                const bool includeTransparent = true);
+                const bool includeTransparent = true,
+                const int maxMergeCount = 0);
   void markDirty();
   inline bool isDirty() { return dirty; }
 
@@ -183,12 +184,13 @@ class Chunk {
   bool isUltraCompressed = false;
   bool isMerged = false;
   void buildNormaly();
-  void buildMerged();
-  void buildCompressed();
-  void buildUltraCompressed();
+  void buildMerged();       // LOD 0: no merge
+  void buildLOD1();         // LOD 1: merge max 2 faces
+  void buildLOD2();         // LOD 2: merge max 3 faces
+  void buildUltraCompressed(); // LOD 3: unlimited greedy merge
   void mergeGeometry(const u8 colorTolerance, const float uvTolerance,
                      const float normalDotThreshold, const bool mergeAcrossUvs,
-                     const bool includeTransparent);
+                     const bool includeTransparent, const int maxMergeCount = 0);
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
@@ -245,7 +247,7 @@ class Chunk {
                   std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
                   std::vector<Vec4>* inUVs, const u8 colorTolerance,
                   const float uvTolerance, const float normalDotThreshold,
-                  const bool mergeAcrossUvs);
+                  const bool mergeAcrossUvs, const int maxMergeCount = 0);
 
   // Helper methods for face merging
   void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,

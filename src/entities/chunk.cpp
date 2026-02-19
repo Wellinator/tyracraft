@@ -272,44 +272,53 @@ const int Chunk::getLODFromDistance() {
 }
 
 const int Chunk::getLODFromDistance(const int distance) {
-  if (distance < 5)
+  if (distance < 3)
     return 0;
-  else if (distance < 10)
+  else if (distance < 6)
     return 1;
-  else
+  else if (distance < 10)
     return 2;
+  else
+    return 3;
 }
 
 const int Chunk::getLODFromDistanceWithHysteresis(const int distance,
                                                   const int currentLOD) {
+  // Hysteresis bands: upgrade threshold = base+1, downgrade threshold = base-1
   switch (currentLOD) {
     case 0:
-      if (distance >= 6) return (distance >= 11) ? 2 : 1;
+      if (distance >= 4) return (distance >= 7) ? (distance >= 11 ? 3 : 2) : 1;
       return 0;
     case 1:
-      if (distance < 4) return 0;
-      if (distance >= 11) return 2;
+      if (distance < 2) return 0;
+      if (distance >= 7) return (distance >= 11) ? 3 : 2;
       return 1;
     case 2:
-      if (distance < 9) return (distance < 4) ? 0 : 1;
+      if (distance < 5) return (distance < 2) ? 0 : 1;
+      if (distance >= 11) return 3;
       return 2;
+    case 3:
+      if (distance < 9) return (distance < 5) ? (distance < 2 ? 0 : 1) : 2;
+      return 3;
     default:
-      if (distance < 5) return 0;
-      else if (distance < 10) return 1;
-      else return 2;
+      if (distance < 3) return 0;
+      else if (distance < 6) return 1;
+      else if (distance < 10) return 2;
+      else return 3;
   }
 }
 
 void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
                           const float normalDotThreshold,
                           const bool mergeAcrossUvs,
-                          const bool includeTransparent) {
+                          const bool includeTransparent,
+                          const int maxMergeCount) {
   if (vertices.empty() && transpVertices.empty()) return;
 
   // Process opaque geometry
   std::vector<ChunkQuadData> quadsData;
   mergeFaces(&quadsData, &vertices, &colors, &UV, colorTolerance, uvTolerance,
-             normalDotThreshold, mergeAcrossUvs);
+             normalDotThreshold, mergeAcrossUvs, maxMergeCount);
 
   const size_t maxOpaqueVerts = quadsData.size() * 6;
   vertices.clear();
@@ -349,7 +358,8 @@ void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
   if (includeTransparent) {
     std::vector<ChunkQuadData> transparentQuadsData;
     mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV,
-               colorTolerance, uvTolerance, normalDotThreshold, mergeAcrossUvs);
+               colorTolerance, uvTolerance, normalDotThreshold, mergeAcrossUvs,
+               maxMergeCount);
 
     const size_t maxTranspVerts = transparentQuadsData.size() * 6;
     transpVertices.clear();
@@ -394,7 +404,8 @@ void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
 void Chunk::compress(const u8 colorTolerance, const float uvTolerance,
                      const float normalDotThreshold,
                      const bool mergeAcrossUvs,
-                     const bool includeTransparent) {
+                     const bool includeTransparent,
+                     const int maxMergeCount) {
   // Safety: Don't compress if chunk is unloading or clean (no data)
   if (state == ChunkState::Unloading || state == ChunkState::Clean) {
     return;
@@ -412,7 +423,7 @@ void Chunk::compress(const u8 colorTolerance, const float uvTolerance,
   if (isCompressed && isUltraCompressed == targetUltra) return;
 
   mergeGeometry(colorTolerance, uvTolerance, normalDotThreshold,
-                mergeAcrossUvs, includeTransparent);
+                mergeAcrossUvs, includeTransparent, maxMergeCount);
 
   isCompressed = true;
   isUltraCompressed = mergeAcrossUvs || !includeTransparent;
@@ -476,7 +487,7 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
                        std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
                        const u8 colorTolerance, const float uvTolerance,
                        const float normalDotThreshold,
-                       const bool mergeAcrossUvs) {
+                       const bool mergeAcrossUvs, const int maxMergeCount) {
   // Validation: Ensure all pointers are valid
   if (!outQuadsData || !inVertices || !inColors || !inUVs) return;
   
@@ -662,12 +673,16 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
       });
 
       FaceInfo current = std::move(input[indices[0]]);
+      int mergedCount = 1;  // Start counting from 1 (the current face itself)
 
       for (size_t pos = 1; pos < indices.size(); ++pos) {
         FaceInfo& candidate = input[indices[pos]];
-        if (getMin(candidate) == getMax(current) &&
-          materialsMatch(current.quad, candidate.quad, colorTolerance,
-                   uvTolerance, normalDotThreshold, mergeAcrossUvs)) {
+        // Check merge limit: maxMergeCount==0 means unlimited
+        const bool withinLimit = (maxMergeCount == 0) || (mergedCount < maxMergeCount);
+        if (withinLimit &&
+            getMin(candidate) == getMax(current) &&
+            materialsMatch(current.quad, candidate.quad, colorTolerance,
+                     uvTolerance, normalDotThreshold, mergeAcrossUvs)) {
           // Merge preserves original winding order for backface culling
           // expandQuadGeometry maintains vertex ordering
           mergeQuadPair(current.quad, candidate.quad);
@@ -676,9 +691,11 @@ void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
           } else {
             current.maxB = candidate.maxB;
           }
+          ++mergedCount;
         } else {
           output.push_back(std::move(current));
           current = std::move(candidate);
+          mergedCount = 1;  // Reset count for next group
         }
       }
 
@@ -1197,7 +1214,9 @@ void Chunk::build() {
     if (lod == 0) {
       buildMerged();
     } else if (lod == 1) {
-      buildCompressed();
+      buildLOD1();
+    } else if (lod == 2) {
+      buildLOD2();
     } else {
       buildUltraCompressed();
     }
@@ -1301,20 +1320,36 @@ void Chunk::buildMerged() {
   isMerged = false;
 }
 
-void Chunk::buildCompressed() {
+void Chunk::buildLOD1() {
   buildNormaly();
-  // LOD 1 (medium distance): No geometry merging, UV stays correct.
-  // Storage compression (compressData) is applied in build() for _lod > 0.
+  // LOD 1 (3-5 chunks): Light face merging, max 2 faces per merge.
+  // UV stretching is minimal since merges are small.
+  compress(15, 0.1f, 0.95f, false, true, 2);
+  // Sort AFTER compress() because mergeGeometry() reshuffles faces
   if (!vertices.empty())
     sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
   if (!transpVertices.empty())
     sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
   isUltraCompressed = false;
-};
+}
+
+void Chunk::buildLOD2() {
+  buildNormaly();
+  // LOD 2 (6-9 chunks): Moderate face merging, max 3 faces per merge.
+  // Merge across UVs for more aggressive reduction at this distance.
+  compress(15, 0.1f, 0.95f, true, true, 3);
+  // Sort AFTER compress() because mergeGeometry() reshuffles faces
+  if (!vertices.empty())
+    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+  if (!transpVertices.empty())
+    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+  isUltraCompressed = false;
+}
 
 void Chunk::buildUltraCompressed() {
   buildNormaly();
-  compress(15, 0.1f, 0.95f, true, false);  // Tightened colorTolerance from 30 to 15
+  // LOD 3 (10+ chunks): Unlimited greedy merge. UV stretching OK at distance.
+  compress(15, 0.1f, 0.95f, true, false, 0);
   // Sort AFTER compress() because mergeGeometry() reshuffles faces
   if (!vertices.empty())
     sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
@@ -1352,36 +1387,46 @@ void Chunk::updateLOD() {
 
   const int currentLOD = getLODFromDistance();
 
-  // LOD 0 = near: no geometry merge, full-res, uncompressed in RAM
-  // LOD 1 = mid:  no geometry merge, UV correct, storage compressed
-  // LOD 2 = far:  greedy mesh (UV stretching OK at distance), storage compressed
+  // LOD 0 = <3 chunks:   no merge, full-res, uncompressed in RAM
+  // LOD 1 = 3-5 chunks:  max 2-face merge, UV correct, storage compressed
+  // LOD 2 = 6-9 chunks:  max 3-face merge, UV stretch OK, storage compressed
+  // LOD 3 = 10+ chunks:  unlimited greedy merge, storage compressed
   //
-  // isCompressed is TRUE only for LOD 2 (the only LOD that applies greedy meshing).
-  // LOD 0 and LOD 1 share the same unmerged geometry; transitions between them
-  // don't require a geometry rebuild.
+  // Geometry rebuild is required when:
+  //   - Moving to a lower LOD (higher detail = less/no merging)
+  //   - Moving to a higher LOD requiring more merging than current geometry has
+  //
+  // If vertices are still in RAM (LOD 0 → LOD 1/2/3), we can re-compress
+  // in-place without a full rebuild. Otherwise, force dirty.
 
-  if (currentLOD <= 1 && isCompressed) {
-    // Transitioning from LOD 2 → LOD 0/1: merged geometry must be discarded
+  if (currentLOD == _geometryLod) return;  // No change, nothing to do
+
+  if (currentLOD < _geometryLod) {
+    // Moving to lower LOD (less merging) — must rebuild from scratch
     dirty = true;
-  } else if (currentLOD == 2 && !isCompressed) {
-    // Transitioning to LOD 2: need to apply greedy meshing
-    if (!vertices.empty() || !transpVertices.empty()) {
-      // LOD 0 has uncompressed vertices in RAM - can compress in-place
-      compress(15, 0.1f, 0.95f, true, false);
-      if (!vertices.empty())
-        sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-      if (!transpVertices.empty())
-        sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
-      _geometryLod = 2;
-      compressData();
-    } else {
-      // LOD 1 is storage-compressed (no vertices in RAM) - force full rebuild
-      dirty = true;
-    }
+    return;
   }
-  // LOD 0 ↔ LOD 1: geometry is identical (unmerged), no rebuild needed.
-  // Visual difference (Gouraud vs Flat shading, texture resolution) is
-  // handled at render time via _lod in flushDrawData().
+
+  // Moving to higher LOD (more merging)
+  if (!vertices.empty() || !transpVertices.empty()) {
+    // Vertices still in RAM — compress in-place with new LOD parameters
+    if (currentLOD == 1) {
+      compress(15, 0.1f, 0.95f, false, true, 2);
+    } else if (currentLOD == 2) {
+      compress(15, 0.1f, 0.95f, true, true, 3);
+    } else /*LOD 3*/ {
+      compress(15, 0.1f, 0.95f, true, false, 0);
+    }
+    if (!vertices.empty())
+      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
+    if (!transpVertices.empty())
+      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+    _geometryLod = currentLOD;
+    compressData();
+  } else {
+    // Vertices already storage-compressed — force full rebuild
+    dirty = true;
+  }
 }
 
 bool Chunk::hasDrawData() {
