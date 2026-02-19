@@ -1,85 +1,123 @@
 #include "timer.hpp"
 #include "managers/settings_manager.hpp"
-#include <numeric>
-#include <iostream>
 #include <graph.h>
 
 namespace TyraCraft {
 
 float Timer::stateLerp = 0.0f;
 
-void Timer::update() {
-  // Calc real delta time - usando multiplicação ao invés de divisão
-  const clock_t end = clock();
-  realDeltaTime = static_cast<float>(end - begin) * INV_CLOCKS_PER_SEC;
-  begin = end;
-
-  // Track the number of timer iterations per second
-  iteratorAcc += realDeltaTime;
-  ++tempTimerIterationsCounter;
-  if (iteratorAcc >= 1.0f) {
-    iteratorAcc -= 1.0f;  // Preserva o excesso ao invés de zerar
-    timerIterationsCounter = tempTimerIterationsCounter;
-    tempTimerIterationsCounter = 0;
-  }
-
-  // Calc delta time average usando buffer circular (muito mais rápido que deque)
-  dtSum -= dtSamples[dtIndex];  // Remove valor antigo da soma
-  dtSamples[dtIndex] = realDeltaTime;  // Adiciona novo valor
-  dtSum += realDeltaTime;  // Atualiza soma
-  dtIndex = (dtIndex + 1) % 10;  // Avança índice circular
-  avgDeltaTime = dtSum * INV_DT_SAMPLES;  // Multiplicação ao invés de divisão
-
-  physicsAcc += realDeltaTime;
-  renderAcc += realDeltaTime;
-
-  Timer::stateLerp = physicsAcc * (1.0f / targetUpdateFrame);  // Pré-calcular se possível
+void Timer::init() {
+    lastCpuCount = getCpuCycles();
+    renderAcc = TARGET_RENDER_CYCLES / 2; // Offset start
+    physicsAcc = TARGET_PHYSICS_CYCLES / 2;
+    
+    // Initialize start times for the first frame interval measurement
+    u32 now = getCpuCycles();
+    renderBeginCpuCount = now;
+    physicsBeginCpuCount = now;
 }
 
-// Calc delta time to fixed update
-bool Timer::updateFrame() {
-  const bool result = physicsAcc >= targetUpdateFrame;
-  if (result) {
-    physicsAcc -= targetUpdateFrame;
-    const clock_t physicsEnd = clock();
-    physicsMs = static_cast<float>(physicsEnd - physicsBegin) * INV_CLOCKS_PER_SEC * 1000.0f;
-    physicsBegin = physicsEnd;
+void Timer::update() {
+    u32 currentCpuCount = getCpuCycles();
+    
+    // Calculate cycles passed since last update
+    // Handles 32-bit overflow naturally with unsigned arithmetic
+    u32 cyclesPassed = currentCpuCount - lastCpuCount;
+    lastCpuCount = currentCpuCount;
 
-    // Skip frames if the physics accumulator is too high - usando multiplicação
-    if (physicsAcc * (1.0f / targetUpdateFrame) > MAX_FRAME_SKIP) {
-      physicsAcc = targetUpdateFrame * 0.5f;
+    // --- Stats & Getters Update ---
+    
+    // Convert current delta to seconds (float) for gameplay usage
+    static constexpr float INV_CYCLES_PER_SEC = 1.0f / static_cast<float>(EE_CYCLES_PER_SEC);
+    realDeltaTime = static_cast<float>(cyclesPassed) * INV_CYCLES_PER_SEC;
+
+    // Clean average calculation using integer sum
+    dtSum -= dtSamples[dtIndex];
+    dtSamples[dtIndex] = cyclesPassed;
+    dtSum += cyclesPassed;
+    dtIndex = (dtIndex + 1) % 10;
+    
+    // Avg in seconds
+    static constexpr float INV_SAMPLES_COUNT = 1.0f / 10.0f;
+    avgDeltaTime = (static_cast<float>(dtSum) * INV_SAMPLES_COUNT) * INV_CYCLES_PER_SEC;
+
+    // FPS Counter
+    fpsCycleAccumulator += cyclesPassed;
+    tempTimerIterationsCounter++;
+    if (fpsCycleAccumulator >= EE_CYCLES_PER_SEC) {
+        fpsCycleAccumulator -= EE_CYCLES_PER_SEC;
+        timerIterationsCounter = tempTimerIterationsCounter;
+        tempTimerIterationsCounter = 0;
+
     }
-  }
-  return result;
-};
 
-// Calc delta time to render update
+    // --- Accumulate ---
+    physicsAcc += cyclesPassed;
+    renderAcc += cyclesPassed;
+
+    // Pre-calculate lerp for rendering interpolation
+    stateLerp = static_cast<float>(physicsAcc) * INV_TARGET_PHYSICS;
+    if (stateLerp > 1.0f) stateLerp = 1.0f;
+}
+
+bool Timer::updateFrame() {
+    if (physicsAcc >= TARGET_PHYSICS_CYCLES) {
+        physicsAcc -= TARGET_PHYSICS_CYCLES;
+        
+        // Measure interval since last updateFrame return
+        u32 current = getCpuCycles();
+        u32 diff = current - physicsBeginCpuCount;
+        static constexpr float MS_FACTOR = 1000.0f / (float)EE_CYCLES_PER_SEC;
+        physicsMs = (float)diff * MS_FACTOR;
+        physicsBeginCpuCount = current;
+        
+        // Spiral of death prevention
+        // If we are too far behind, clamp the accumulator
+        if (physicsAcc > TARGET_PHYSICS_CYCLES * MAX_FRAME_SKIP) {
+            physicsAcc = 0;
+        }
+
+        // Recalculate stateLerp with the drained accumulator so renderFrame()
+        // uses the correct interpolation factor for this physics step
+        stateLerp = static_cast<float>(physicsAcc) * INV_TARGET_PHYSICS;
+        if (stateLerp > 1.0f) stateLerp = 1.0f;
+
+        return true;
+    }
+    return false;
+}
+
 bool Timer::renderFrame() {
-  bool result;
+  bool result = false;
 
   if (g_settings.vsync) {
-    if (!is_waiting_vsync) {
-      graph_start_vsync();
-      is_waiting_vsync = true;
-    }
-    result = graph_check_vsync() != 0;
+    graph_wait_vsync();
+    
+    // When VSync is enabled, we always render after the wait
+    result = true;
+    renderAcc = 0; // Reset accumulator since we rely on hardware sync
   } else {
-    result = renderAcc >= targetRenderFrame;
+    // When VSync is disabled, we rely on the accumulator
+    if (renderAcc >= TARGET_RENDER_CYCLES) {
+        renderAcc -= TARGET_RENDER_CYCLES;
+        result = true;
+    }
+    
+    // Spiral prevention for Render (only needed when unlimited/accumulating)
+    if (renderAcc > TARGET_RENDER_CYCLES * MAX_FRAME_SKIP) {
+        renderAcc = TARGET_RENDER_CYCLES;
+    }
   }
 
   if (result) {
-    is_waiting_vsync = false;
-    renderAcc -= targetRenderFrame;
-    const clock_t renderEnd = clock();
-    renderMs = static_cast<float>(renderEnd - renderBegin) * INV_CLOCKS_PER_SEC * 1000.0f;
-    renderBegin = renderEnd;
-
-    // Skip frames if the render accumulator is too high - usando multiplicação
-    if (renderAcc * (1.0f / targetRenderFrame) > MAX_FRAME_SKIP) {
-      renderAcc = targetRenderFrame * 0.5f;
-    }
+    u32 current = getCpuCycles();
+    u32 diff = current - renderBeginCpuCount;
+    static constexpr float MS_FACTOR = 1000.0f / (float)EE_CYCLES_PER_SEC;
+    renderMs = (float)diff * MS_FACTOR;
+    renderBeginCpuCount = current;
   }
   return result;
-};
+}
 
-}  // namespace TyraCraft
+
+} // namespace TyraCraft

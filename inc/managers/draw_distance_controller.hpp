@@ -112,6 +112,7 @@ class DrawDistanceController {
     const u8 maxDistance = getDrawDistanceCap(currentMode);
 
     bool changed = false;
+    bool shrank = false;
 
     // Shrink: high memory OR low FPS
     if (usedMb >= shrinkThreshold ||
@@ -119,6 +120,7 @@ class DrawDistanceController {
       if (currentForwardDistance > MIN_DRAW_DISTANCE) {
         currentForwardDistance--;
         changed = true;
+        shrank = true;
       }
     }
     // Grow: memory OK AND FPS good AND below mode cap
@@ -131,7 +133,8 @@ class DrawDistanceController {
     }
 
     if (changed) {
-      cooldownTicksRemaining = 50;  // ~2.5s at 20 TPS
+      cooldownTicksRemaining = shrank ? DRAW_DISTANCE_SHRINK_COOLDOWN
+                                      : DRAW_DISTANCE_GROW_COOLDOWN;
     }
   }
 };

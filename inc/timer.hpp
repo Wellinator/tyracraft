@@ -1,63 +1,117 @@
 #pragma once
 
 #include "tyra"
-#include "constants.hpp"
 #include "singleton.hpp"
 #include <tamtypes.h>
-#include <time.h>
-#include <deque>
-
-using Tyra::Engine;
 
 namespace TyraCraft {
 
+/**
+ * @brief High precision timer using EE Cycle Counter (COP0 Count)
+ *
+ * PS2 EE CPU Frequency: ~294.912 MHz
+ * COP0 Count increments at Bus Clock (1/2 CPU Clock approx? No, actually:
+ * The R5900 Count register increments at half the CPU frequency.
+ * F_CPU = 294912000 Hz
+ * F_COUNT = 147456000 Hz
+ */
 class Timer : public Singleton<Timer> {
  public:
+  void init();
   void update();
+  
+  /**
+   * @brief Checks if it's time to render a frame.
+   * Handles VSync waiting if enabled.
+   */
   bool renderFrame();
+
+  /**
+   * @brief Checks if it's time to run a physics/logic update.
+   * Consumes accumulated time in fixed steps.
+   */
   bool updateFrame();
 
+  // Const getters (computed from internal integer state)
   inline u32 getUpdateTime() const { return timerIterationsCounter; }
+  
+  // Returns time in seconds (float) for compatibility
   inline float getDeltaTime() const { return realDeltaTime; }
-  inline float getFixedDeltaTime() const { return targetUpdateFrame; }
+  inline float getFixedDeltaTime() const { return fixedDeltaTimeF; }
+  
+  // Returns average delta time in seconds
   inline float getDeltaTimeAvg() const { return avgDeltaTime; }
+  
+  // Debug/Profile Stats (in milliseconds)
   inline float getRenderMs() const { return renderMs; }
   inline float getPhysicsUpdateMs() const { return physicsMs; }
 
+  // Interpolation factor for rendering [0.0, 1.0]
   static float stateLerp;
 
  private:
-  // Constantes pré-calculadas
-  static constexpr float INV_CLOCKS_PER_SEC = 1.0f / CLOCKS_PER_SEC;
-  static constexpr float INV_DT_SAMPLES = 1.0f / 10.0f;
+  // --- Constants (EE Cycle Counts) ---
+  // 147,456,000 cycles per second
+  static constexpr u32 EE_CYCLES_PER_SEC = 147456000;
+  
+  // Helpers to convert seconds/ms to cycles
+  static constexpr u32 MS_TO_CYCLES(float ms) {
+    return static_cast<u32>(ms * (static_cast<float>(EE_CYCLES_PER_SEC) / 1000.0f));
+  }
+  
+  static constexpr u32 SEC_TO_CYCLES(float sec) {
+      return static_cast<u32>(sec * static_cast<float>(EE_CYCLES_PER_SEC));
+  }
+
+  // Target cycles for 60 FPS update (Render) -> ~16.66ms
+  // We use slightly less than actual 60HZ (1/60s) to ensure we don't miss vsync due to rounding? 
+  // actually standard 60fps is fine: 147456000 / 60 = 2,457,600
+  static constexpr u32 TARGET_RENDER_CYCLES = 2457600; 
+
+  // Target cycles for 20 TPS update (Physics) -> ~50ms (Minecraft tick rate)
+  static constexpr u32 TARGET_PHYSICS_CYCLES = EE_CYCLES_PER_SEC / 20;
+
+  // Inverse of physics target (precomputed for stateLerp, shared by update() and updateFrame())
+  static constexpr float INV_TARGET_PHYSICS = 1.0f / static_cast<float>(TARGET_PHYSICS_CYCLES);
+
+  // Max skip to prevent spiral of death
   static constexpr u8 MAX_FRAME_SKIP = 2;
+
+  // --- State ---
   
-  // Membros ordenados por tamanho para melhor cache alignment
-  clock_t begin = clock();
-  clock_t renderBegin = clock();
-  clock_t physicsBegin = clock();
+  u32 lastCpuCount = 0;       // Snapshot of COUNT register
+  u32 renderAcc = 0;          // Accumulated cycles for rendering
+  u32 physicsAcc = 0;         // Accumulated cycles for physics
   
-  float targetRenderFrame = FIXED_60_FRAME_MS;
-  float targetUpdateFrame = FIXED_30_FRAME_MS;
-  float renderAcc = FIXED_60_FRAME_MS * 0.5f;
-  float physicsAcc = FIXED_30_FRAME_MS * 0.5f;
-  
-  float iteratorAcc = 0.0f;
+  // Timing data for getters
   float realDeltaTime = 0.0f;
   float avgDeltaTime = 0.0f;
+  float fixedDeltaTimeF = 1.0f / 20.0f; // 0.05s — Minecraft tick rate
+
+  // Profiling data
+  u32 renderBeginCpuCount = 0;
   float renderMs = 0.0f;
-  float physicsMs = 0.0f;
-  float dtSum = 0.0f;  // Cache para soma ao invés de recalcular
   
+  u32 physicsBeginCpuCount = 0;
+  float physicsMs = 0.0f;
+
+  // FPS Counter helpers
+  u32 fpsCycleAccumulator = 0; // Accumulates cycles to count 1 second
   u32 timerIterationsCounter = 0;
   u32 tempTimerIterationsCounter = 0;
-  u8 dtIndex = 0;  // Índice circular para array ao invés de deque
+
+  // Average Delta Time helpers
+  u32 dtSamples[10] = {0};
+  u8 dtIndex = 0;
+  u32 dtSum = 0; // Sum of cycles in buffer
   
-  bool is_waiting_vsync = false;
-  
-  // Array ao invés de deque para melhor performance
-  float dtSamples[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                         0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+  // --- Internal Helpers ---
+  inline u32 getCpuCycles() const {
+      u32 count;
+      asm volatile ("mfc0 %0, $9" : "=r" (count));
+      return count;
+  }
 };
 
 }  // namespace TyraCraft

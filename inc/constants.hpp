@@ -72,6 +72,11 @@ enum class DrawDistanceMode : u8 { Auto = 0, Low = 1, Medium = 2, High = 3 };
 #define DRAW_DISTANCE_FPS_SHRINK_THRESHOLD 25
 #define DRAW_DISTANCE_FPS_GROW_THRESHOLD 30
 
+// Cooldown ticks between draw distance adjustments (main-loop iterations)
+// Shrink reacts fast (~0.5s at 14 FPS); grow is conservative (~3s at 20 TPS)
+#define DRAW_DISTANCE_SHRINK_COOLDOWN 8
+#define DRAW_DISTANCE_GROW_COOLDOWN 60
+
 inline u8 getDrawDistanceCap(DrawDistanceMode mode) {
   switch (mode) {
     case DrawDistanceMode::Low:

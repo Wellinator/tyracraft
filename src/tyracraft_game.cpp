@@ -32,13 +32,15 @@ void TyraCraftGame::init() {
 void TyraCraftGame::loop() {
   timer.update();
 
-  const double smoothedDeltaTime = timer.getDeltaTimeAvg();
-  stateManager.update(smoothedDeltaTime);
-  notificationManger.update(smoothedDeltaTime);
-
-  if (timer.updateFrame()) {
+  // Physics first (fixed timestep) - must run before variable update
+  while (timer.updateFrame()) {
     stateManager.fixedUpdate(timer.getFixedDeltaTime());
   }
+
+  // Variable update runs every iteration, after physics so state is up-to-date
+  const float deltaTime = timer.getDeltaTime();
+  stateManager.update(deltaTime);
+  notificationManger.update(deltaTime);
 
   // Control render calls
   if (timer.renderFrame()) {
@@ -47,29 +49,32 @@ void TyraCraftGame::loop() {
     stateManager.render();
     notificationManger.render();
 
+#ifdef DEBUG_MODE
     // Draw FPS:
+    const float renderFps =
+        timer.getRenderMs() > 0.0f ? 1000.0f / timer.getRenderMs() : 0.0f;
+
     std::stringstream stream;
-    stream << "FPS: " << std::fixed << std::setprecision(2)
-           << timer.getUpdateTime();
+    stream << "Render: " << std::fixed << std::setprecision(1) << renderFps
+           << " fps  Physics: 20 TPS";
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.6F));
     stream.str("");
     stream.clear();
 
-    stream << "Physics: " << std::fixed << std::setprecision(2)
-           << timer.getPhysicsUpdateMs() << "ms Render: " << std::fixed
-           << std::setprecision(2) << timer.getRenderMs() << "ms";
+    stream << "R: " << std::fixed << std::setprecision(2) << timer.getRenderMs()
+           << "ms  P: " << std::fixed << std::setprecision(2)
+           << timer.getPhysicsUpdateMs() << "ms";
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.6F));
 
-#ifdef DEBUG_MODE
     // Draw Memory Usage:
     stream.str("");
     stream.clear();
     stream << "Memory : " << std::fixed << std::setprecision(3)
            << get_used_memory() / 1024.0f / 1024.0f << "MB / 32MB";
     fontManager.printText(stream.str(),
-                          FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.6F));
+                          FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.6F));
 #endif
 
     engine->renderer.endFrame();
