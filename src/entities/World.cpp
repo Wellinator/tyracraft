@@ -447,11 +447,14 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
     float distanceSquared;
     float forwardDot;
   };
-  std::vector<LoadCandidate> chunksToLoad;
+  // Phase 6 optimization: static vectors avoid heap allocation every 250ms
+  static std::vector<LoadCandidate> chunksToLoad;
+  chunksToLoad.clear();
 
   // Phase 1: Use spatial grid to query only chunks within radius
   // This reduces from 2048 iterations to ~100-400 (80-95% reduction)
-  std::vector<Chunk*> nearbyChunks;
+  static std::vector<Chunk*> nearbyChunks;
+  nearbyChunks.clear();
   chunkManager.getChunksInRadius(origin_chunk->center,
                                  maxQueryDistance + 1.0f, nearbyChunks);
 
@@ -577,7 +580,9 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   }
 
   if (!force_loading) {
-    std::vector<std::pair<Chunk*, float>> unloadCandidates;
+    // Phase 6 optimization: static vector avoids heap allocation every call
+    static std::vector<std::pair<Chunk*, float>> unloadCandidates;
+    unloadCandidates.clear();
     auto loadedChunks = chunkManager.getLoadedChunks();
     unloadCandidates.reserve(loadedChunks->size());
 
@@ -628,45 +633,60 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
 void World::loadScheduledChunks() {
   if (tempChunksToLoad.empty()) return;
 
-  Chunk* chunk = tempChunksToLoad.front();
-  tempChunksToLoad.pop_front();
-  chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
+  // Phase 5: Time-budget approach — build as many chunks as possible within
+  // ~2ms limit to avoid frame stalls from expensive (5-15ms) chunk builds.
+  // Budget: 2ms = 2 * 147456 EE count-register cycles (counts at ~147.456 MHz)
+  static constexpr u32 BUILD_BUDGET_CYCLES = 294912u;  // 2ms
 
-  if (!drawDistanceController.canLoadMoreChunks()) {
-    unloadScheduledChunks();
-    tempChunksToLoad.push_front(chunk);
-    chunksInLoadQueue.set(chunk->id);
-    return;
-  }
-  
-  // Validate state before building:
-  // - New chunks should be in Building state
-  // - LOD rebuilds stay in Loaded state until build() runs
-  if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
-    TYRA_LOG("Warning: chunk ", chunk->id, " not in expected state for build");
-    return;
-  }
+  u32 budgetStart;
+  asm volatile ("mfc0 %0, $9" : "=r" (budgetStart));
 
-  chunk->build();
-  
-  // Mark when this chunk was loaded for recently-loaded protection
-  chunk->loadedAtTick = g_ticksCounter;
+  while (!tempChunksToLoad.empty()) {
+    Chunk* chunk = tempChunksToLoad.front();
+    tempChunksToLoad.pop_front();
+    chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
 
-  if (g_debug_mode) {
-    chunk->timeToBuild =
-        ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
-    printf("Time to async build chunk %i: %f\n", chunk->id,
-           chunk->timeToBuild);
-  }
-
-  if (Utils::Probability(0.01F, worldOptions.seed)) {
-    Vec4 _spawnPosition;
-    if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-      mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+    if (!drawDistanceController.canLoadMoreChunks()) {
+      unloadScheduledChunks();
+      tempChunksToLoad.push_front(chunk);
+      chunksInLoadQueue.set(chunk->id);
+      break;
     }
-  }
 
-  chunkManager.updateLoadedChunks();
+    // Validate state before building:
+    // - New chunks should be in Building state
+    // - LOD rebuilds stay in Loaded state until build() runs
+    if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
+      TYRA_LOG("Warning: chunk ", chunk->id, " not in expected state for build");
+      continue;
+    }
+
+    chunk->build();
+
+    // Mark when this chunk was loaded for recently-loaded protection
+    chunk->loadedAtTick = g_ticksCounter;
+
+    if (g_debug_mode) {
+      chunk->timeToBuild =
+          ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+      printf("Time to async build chunk %i: %f\n", chunk->id,
+             chunk->timeToBuild);
+    }
+
+    if (Utils::Probability(0.01F, worldOptions.seed)) {
+      Vec4 _spawnPosition;
+      if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+        mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+      }
+    }
+
+    chunkManager.updateLoadedChunks();
+
+    // Check budget after each build and stop if over limit
+    u32 now;
+    asm volatile ("mfc0 %0, $9" : "=r" (now));
+    if ((now - budgetStart) >= BUILD_BUDGET_CYCLES) break;
+  }
 }
 
 void World::unloadScheduledChunks() {

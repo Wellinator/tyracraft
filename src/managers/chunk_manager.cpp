@@ -39,6 +39,7 @@ void ChunkManager::init(WorldLightModel* t_worldLightModel, Level* level) {
     columnHeightMap[i].topChunkY = 0;
   }
   this->generateChunks();
+  this->populateNeighborCache();  // Phase 4: pre-compute O(1) neighbor lookups for BFS
 }
 
 void ChunkManager::clearAllChunks() {
@@ -472,6 +473,18 @@ Chunk* ChunkManager::getNeighborChunk(Chunk* chunk, u8 face) {
   return getChunkByPosition(neighborOffset);
 }
 
+void ChunkManager::populateNeighborCache() {
+  // Phase 4: For every chunk, fill neighbors[6] with direct pointers.
+  // Called once after generateChunks(). O(N*6) time, O(1) per BFS lookup thereafter.
+  // Face indices: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
+  for (size_t i = 0; i < chunks.size(); i++) {
+    Chunk* chunk = chunks[i];
+    for (u8 face = 0; face < FACE_COUNT; face++) {
+      chunk->neighbors[face] = getNeighborChunk(chunk, face);
+    }
+  }
+}
+
 // BFS queue element for visibility graph traversal
 struct VisBfsEntry {
   u16 chunkId;
@@ -542,7 +555,7 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
   // Queue neighbors from camera chunk directly (no connectivity filter for
   // camera chunk)
   for (u8 face = 0; face < FACE_COUNT; face++) {
-    Chunk* neighbor = getNeighborChunk(cameraChunk, face);
+    Chunk* neighbor = cameraChunk->neighbors[face];  // Phase 4: O(1) pointer lookup
     if (!neighbor || !neighbor->isLoaded()) continue;
     if (visited.test(neighbor->id)) continue;
 
@@ -579,7 +592,7 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       // Filter 2: No backtracking — don't go back the way we came
       if (exitFace == entry.entryFace) continue;
 
-      Chunk* neighbor = getNeighborChunk(current, exitFace);
+      Chunk* neighbor = current->neighbors[exitFace];  // Phase 4: O(1) pointer lookup
       if (!neighbor || !neighbor->isLoaded()) continue;
       if (visited.test(neighbor->id)) continue;
 

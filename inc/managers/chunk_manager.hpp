@@ -145,6 +145,7 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::array<ColumnHeightInfo, SPATIAL_GRID_SIZE> columnHeightMap;
 
   void generateChunks();
+  void populateNeighborCache();  // Phase 4: pre-compute neighbors[6] for O(1) BFS lookup
 
   void reloadLightDataAsync();
   void clearLightDataQueue() {

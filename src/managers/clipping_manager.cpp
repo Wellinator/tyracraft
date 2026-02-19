@@ -56,12 +56,14 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
 
   std::array<PlanesClipVertexPtrs, 3> inputTriangle;
 
-  std::vector<PlanesClipVertex> clippedTriangle;
-  clippedTriangle.reserve(
-      9);  // Clipping pode gerar até 9 vértices por triângulo
-
-  std::vector<PlanesClipVertex> clippedVertices;
-  clippedVertices.reserve(vertexCount * 2);  // Reserve para reduzir realocações
+  // Static buffers: allocated once, never freed — eliminates malloc/free per draw call on PS2
+  static std::vector<PlanesClipVertex> clippedTriangle;
+  static std::vector<PlanesClipVertex> clippedVertices;
+  clippedTriangle.clear();
+  clippedVertices.clear();
+  // Pre-reserve on first use; subsequent frames reuse the same memory
+  if (clippedTriangle.capacity() < 9) clippedTriangle.reserve(9);
+  if (clippedVertices.capacity() < 128) clippedVertices.reserve(128);
 
   // Pre-cast colors para evitar cast repetido (seguro mesmo se nullptr)
   Vec4* colorsVec4 = reinterpret_cast<Vec4*>(in_colors);
@@ -137,12 +139,10 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
                            clippedTriangle.end());
   }
 
-  if (clippedVertices.size() > 0) {
+  if (!clippedVertices.empty()) {
     const size_t numClipped = clippedVertices.size();
-    out_vertex.reserve(numClipped);
-    out_uv.reserve(numClipped);
-    out_colors.reserve(numClipped);
-
+    // Note: out_vertex/uv/colors are the global static buffers pre-reserved by
+    // ClippingManager_ClipAndRenderBag — do NOT reserve again here.
     for (size_t i = 0; i < numClipped; i++) {
       out_vertex.emplace_back(clippedVertices[i].position);
       out_uv.emplace_back(clippedVertices[i].st);

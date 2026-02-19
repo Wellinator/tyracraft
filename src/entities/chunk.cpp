@@ -963,25 +963,40 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 #endif
 
   // Group-level back face culling: O(6) comparisons per chunk.
-  // Uses AABB min/max edges instead of center to avoid incorrect culling
-  // when camera is near or inside the chunk.
   // Groups: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
   const float px = camPositon.x, py = camPositon.y, pz = camPositon.z;
   const bool groupVisible[kFaceGroupCount] = {
-    py >= scaledMinOffset.y,   // 0: TOP    +Y — visible if camera above chunk bottom
-    py <= scaledMaxOffset.y,   // 1: BOTTOM -Y — visible if camera below chunk top
-    px >= scaledMinOffset.x,   // 2: LEFT   +X — visible if camera right of chunk left edge
-    px <= scaledMaxOffset.x,   // 3: RIGHT  -X — visible if camera left of chunk right edge
-    pz <= scaledMaxOffset.z,   // 4: FRONT  -Z — visible if camera in front of chunk back
-    pz >= scaledMinOffset.z,   // 5: BACK   +Z — visible if camera behind chunk front
+    py >= scaledMinOffset.y,   // 0: TOP    +Y
+    py <= scaledMaxOffset.y,   // 1: BOTTOM -Y
+    px >= scaledMinOffset.x,   // 2: LEFT   +X
+    px <= scaledMaxOffset.x,   // 3: RIGHT  -X
+    pz <= scaledMaxOffset.z,   // 4: FRONT  -Z
+    pz >= scaledMinOffset.z,   // 5: BACK   +Z
   };
 
+  // Phase 2: Merge contiguous visible groups into a single draw call.
+  // Instead of up to 6 flushDrawData() calls, emit 1-2 batched calls.
+  int rangeStart = -1;
+  int rangeEnd   = 0;
   for (int g = 0; g < kFaceGroupCount; ++g) {
-    if (!groupVisible[g]) continue;
     const int start = faceGroupBoundaries[g];
-    const int count = faceGroupBoundaries[g + 1] - start;
-    if (count <= 0) continue;
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, start, count);
+    const int end   = faceGroupBoundaries[g + 1];
+    const bool hasVerts = (end - start) > 0;
+
+    if (groupVisible[g] && hasVerts) {
+      if (rangeStart < 0) rangeStart = start;  // Open a new range
+      rangeEnd = end;                           // Extend range
+    } else {
+      if (rangeStart >= 0) {  // Flush accumulated range
+        flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
+                      rangeStart, rangeEnd - rangeStart);
+        rangeStart = -1;
+      }
+    }
+  }
+  if (rangeStart >= 0) {  // Flush final range
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
+                  rangeStart, rangeEnd - rangeStart);
   }
 }
 
@@ -1019,12 +1034,28 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     pz <= scaledMaxOffset.z, pz >= scaledMinOffset.z,
   };
 
+  // Phase 2: Merge contiguous visible groups into a single draw call.
+  int rangeStart = -1;
+  int rangeEnd   = 0;
   for (int g = 0; g < kFaceGroupCount; ++g) {
-    if (!groupVisible[g]) continue;
     const int start = transpFaceGroupBoundaries[g];
-    const int count = transpFaceGroupBoundaries[g + 1] - start;
-    if (count <= 0) continue;
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, start, count);
+    const int end   = transpFaceGroupBoundaries[g + 1];
+    const bool hasVerts = (end - start) > 0;
+
+    if (groupVisible[g] && hasVerts) {
+      if (rangeStart < 0) rangeStart = start;
+      rangeEnd = end;
+    } else {
+      if (rangeStart >= 0) {
+        flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
+                      rangeStart, rangeEnd - rangeStart);
+        rangeStart = -1;
+      }
+    }
+  }
+  if (rangeStart >= 0) {
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
+                  rangeStart, rangeEnd - rangeStart);
   }
 }
 

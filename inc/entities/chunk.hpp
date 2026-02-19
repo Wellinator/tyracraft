@@ -102,6 +102,10 @@ class Chunk {
   bool hasDrawData();
   void reloadLightData();
 
+  // Pre-computed neighbor pointers for O(1) BFS lookup (populated by ChunkManager::populateNeighborCache())
+  // Index = face id (0=TOP, 1=BOTTOM, 2=LEFT, 3=RIGHT, 4=FRONT, 5=BACK); nullptr = world boundary
+  Chunk* neighbors[6] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+
   // Visibility graph for cave culling (15-bit face-pair connectivity)
   u16 visibilityGraph = 0;
   bool visibilityGraphDirty = true;
