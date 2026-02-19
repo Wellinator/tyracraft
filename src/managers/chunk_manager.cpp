@@ -571,7 +571,7 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       if (!current->isConnected(entry.entryFace, exitFace)) continue;
 
       // Filter 2: No backtracking — don't go back the way we came
-      if (exitFace == OppositeFace(entry.entryFace)) continue;
+      if (exitFace == entry.entryFace) continue;
 
       Chunk* neighbor = getNeighborChunk(current, exitFace);
       if (!neighbor || !neighbor->isLoaded()) continue;
@@ -583,7 +583,7 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       visited.set(neighbor->id);
 
       // Step cost: 1 for straight movement, 2 for turns
-      u8 stepCost = (exitFace == entry.entryFace) ? 1 : 2;
+      u8 stepCost = (exitFace == OppositeFace(entry.entryFace)) ? 1 : 2;
       u8 newSteps = entry.steps + stepCost;
 
       // Filter 4: Step budget
