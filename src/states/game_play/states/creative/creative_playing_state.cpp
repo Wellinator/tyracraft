@@ -13,6 +13,9 @@ CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
+#ifdef DEBUG_MODE
+  g_debug_tick_scheduler = nullptr;
+#endif
 }
 
 void CreativePlayingState::init() {
@@ -21,6 +24,23 @@ void CreativePlayingState::init() {
       &creativeAudioListener);
 
   tickManager.onTick = [this]() { tick(); };
+}
+
+void CreativePlayingState::afterInit() {
+  // World and player are fully initialized at this point
+  stateGamePlay->world->setTickContext(stateGamePlay->player,
+                                       stateGamePlay->context->t_camera);
+  stateGamePlay->world->registerTickCallbacks(tickManager.scheduler);
+  stateGamePlay->player->registerTickCallbacks(tickManager.scheduler);
+
+  // RAII handle — auto-cancelled when CreativePlayingState is destroyed
+  tickHandles.add(tickManager.scheduler.everyHandle(200, [this]() {
+    if (!isSongPlaying()) playNewRandomSong();
+  }));
+
+#ifdef DEBUG_MODE
+  g_debug_tick_scheduler = &tickManager.scheduler;
+#endif
 }
 
 void CreativePlayingState::fixedUpdate(const float& fixedDeltaTime) {
@@ -52,12 +72,9 @@ void CreativePlayingState::update(const float& deltaTime) {
 }
 
 void CreativePlayingState::tick() {
-  stateGamePlay->world->tick(stateGamePlay->player,
-                             stateGamePlay->context->t_camera);
+  stateGamePlay->world->tick();
   stateGamePlay->player->tick();
   stateGamePlay->ui->update();
-
-  if (!isSongPlaying() && isTicksCounterAt(200)) playNewRandomSong();
 }
 
 void CreativePlayingState::render() {

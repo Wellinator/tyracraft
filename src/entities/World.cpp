@@ -3,6 +3,7 @@
 #include "managers/collision_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
 #include "managers/mazecraft_generator.hpp"
+#include "managers/tick_scheduler.hpp"
 #include "debug.hpp"
 #include <tyra>
 #include <cmath>
@@ -14,6 +15,7 @@ World::World(const NewGameOptions& options, Level* level)
     : targetBlock(blockInteraction.targetBlock) {
   seed = options.seed;
   pLevel = level;
+  tickHandles = new TickTaskHandles();
 
   printf("\n\n|-----------SEED---------|");
   printf("\n%lu\n", seed);
@@ -30,6 +32,8 @@ World::World(const NewGameOptions& options, Level* level)
 }
 
 World::~World() {
+  delete tickHandles;
+  tickHandles = nullptr;
   CrossCraft_World_Deinit();
   MeshBuilder_UnregisterBuilders();
 }
@@ -207,7 +211,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 };
 
 // Tick based logics
-void World::tick(Player* t_player, Camera* t_camera) {
+void World::tick() {
   particlesManager.tick();
   chunkManager.tick();
   mobManager.tick();
@@ -217,48 +221,44 @@ void World::tick(Player* t_player, Camera* t_camera) {
       blockInteraction.targetBlock->damage > 0)
     blockInteraction.updateBlockDamage();
 
-  if (isTicksCounterAt(CLOUDS_TICKS_UPDATE)) {
-    cloudsManager.tick();
-  }
+  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+}
 
-  if (isTicksCounterAt(DAY_NIGHT_TICKS_UPDATE)) {
+void World::setTickContext(Player* t_player, Camera* t_camera) {
+  cachedPlayer = t_player;
+  cachedCamera = t_camera;
+}
+
+void World::registerTickCallbacks(TickScheduler& scheduler) {
+  tickHandles->add(scheduler.everyHandle(
+      CLOUDS_TICKS_UPDATE, [this]() { cloudsManager.tick(); }));
+
+  tickHandles->add(scheduler.everyHandle(DAY_NIGHT_TICKS_UPDATE, [this]() {
     if (_updateDayNightCycle) dayNightCycleManager.tick();
-  }
+  }));
 
-  if (isTicksCounterAt(250)) {
+  tickHandles->add(scheduler.everyHandle(250, [this]() {
     updateLightModel();
-
-    // Track previous intensity to detect actual light changes
-    const float prevIntensity = lastSunLightIntensity;
+    const float prev = lastSunLightIntensity;
     lastSunLightIntensity = worldLightModel.sunLightIntensity;
-
     lightPropagation.updateSunlight();
     lightPropagation.updateBlockLights();
-
-    // Only reload chunk light data when illumination values actually change
-    // This avoids re-enqueuing all chunks during steady day or night
-    const float intensityDelta = fabsf(lastSunLightIntensity - prevIntensity);
-    if (intensityDelta > 0.01f) {
+    if (fabsf(lastSunLightIntensity - prev) > 0.01f)
       chunkManager.enqueueChunksToReloadLight();
-    }
-  }
+  }));
 
-  if (isTicksCounterAt(WATER_PROPAGATION_PER_TICKS)) {
-    liquidPropagation.updateLiquidWater();
-  }
+  tickHandles->add(scheduler.everyHandle(
+      WATER_PROPAGATION_PER_TICKS,
+      [this]() { liquidPropagation.updateLiquidWater(); }));
 
-  if (isTicksCounterAt(LAVA_PROPAGATION_PER_TICKS)) {
-    liquidPropagation.updateLiquidLava();
-  }
+  tickHandles->add(scheduler.everyHandle(
+      LAVA_PROPAGATION_PER_TICKS,
+      [this]() { liquidPropagation.updateLiquidLava(); }));
 
-  // Update scheduled data every 4 ticks
-  if (isTicksCounterAt(5)) {
-    updateChunkByPlayerPosition(t_player, t_camera);
-  }
+  tickHandles->add(scheduler.everyHandle(
+      5, [this]() { updateChunkByPlayerPosition(cachedPlayer, cachedCamera); }));
 
-  // Try to spawn a passive mob every 20 seconds (400 ticks)
-  // Based on https://minecraft.wiki/w/Mob_spawning
-  if (isTicksCounterAt(400)) {
+  tickHandles->add(scheduler.everyHandle(400, [this]() {
     const u8 shouldSpawnMob = Utils::Probability(0.1F);
 
     // Try to spawn a mob pack
@@ -325,9 +325,13 @@ void World::tick(Player* t_player, Camera* t_camera) {
         }
       }
     }
-  }
+  }));
 
-  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+  // Register chunk manager callbacks
+  chunkManager.registerTickCallbacks(scheduler);
+
+  // Register mob manager callbacks
+  mobManager.registerTickCallbacks(scheduler);
 }
 
 void World::renderOpaque() {

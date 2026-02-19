@@ -57,6 +57,13 @@ class ChunkManager : public Singleton<ChunkManager> {
   void enqueueChunkToReloadLight(Chunk* chunk);  // Single chunk enqueue
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 
+  // TickScheduler integration
+  void registerTickCallbacks(class TickScheduler& scheduler);
+
+ private:
+  class TickTaskHandles* tickHandles;
+
+ public:
   Chunk* getChunkById(const u16& id);
   Chunk* getChunkByBlockOffset(const Vec4& offset);
   Chunk* getChunkByPosition(const Vec4& chunkMinPosition);

@@ -39,7 +39,11 @@ class MobManager {
   const int getMobCountByCategory(const MobCategory category);
   const int getMobCapByCategory(const MobCategory category);
 
+  // TickScheduler integration
+  void registerTickCallbacks(class TickScheduler& scheduler);
+
  private:
+  class TickTaskHandles* tickHandles;
   // TODO: should be test to check PS2 limits
   const u8 GLOBAL_MOB_CAP = 40;
   std::array<u8, 3> MOB_CAPS = {0, 0, 0};  // Passive, Neutral, Hostile

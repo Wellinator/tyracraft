@@ -42,9 +42,12 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
 
   // Set render pip
   renderPip = std::make_unique<PlayerRenderArmPip>(this);
+  tickHandles = new TickTaskHandles();
 }
 
 Player::~Player() {
+  delete tickHandles;
+  tickHandles = nullptr;
   delete bbox;
 
   t_renderer->getTextureRepository().free(playerTexture);
@@ -114,11 +117,12 @@ void Player::update(const float& deltaTime, Camera* t_camera) {
 }
 
 void Player::tick() {
-  // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater();
-
   // Update base color after updating position
   updateItemColorByCurrentPosition();
+}
+
+void Player::registerTickCallbacks(TickScheduler& scheduler) {
+  tickHandles->add(scheduler.everyHandle(5, [this]() { updateStateInWater(); }));
 }
 
 void Player::render() {

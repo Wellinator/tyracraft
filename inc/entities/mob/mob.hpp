@@ -19,6 +19,7 @@ class Mob : public Entity {
   virtual void render() = 0;
 
   virtual void jump();
+  virtual void updateStateInWater() {};
   virtual void onMoved() = 0;
   virtual void onStopMoving() = 0;
   virtual Vec4 getNextXZPosition(const float& fixedDeltaTime,

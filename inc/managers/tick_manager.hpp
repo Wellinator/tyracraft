@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include "tyra"
 #include "constants.hpp"
+#include "managers/tick_scheduler.hpp"
 #include <functional>
 #include <deque>
 
@@ -25,7 +26,6 @@
 extern double elapsedRealTime;
 extern uint32_t g_ticksCounter;
 extern u16 ticksDayCounter;
-extern u8 isTicksCounterAt(const uint32_t ticks);
 extern std::deque<float> tickAverageQueue;
 
 class TickManager {
@@ -43,4 +43,6 @@ class TickManager {
   inline void setDaySunset() { g_ticksCounter = DAY_SUNSET; }
 
   std::function<void()> onTick = std::function<void()>{};
+
+  TickScheduler scheduler;
 };

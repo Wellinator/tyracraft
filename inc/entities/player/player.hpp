@@ -160,7 +160,11 @@ class Player : public Entity, public Animated {
 
   inline Color* getBaseColorAtPlayerPos() { return &_baseColorAtPlayerPos; };
 
+  // TickScheduler integration
+  void registerTickCallbacks(class TickScheduler& scheduler);
+
  private:
+  class TickTaskHandles* tickHandles;
   Vec4 getNextXZPosition(const float& deltaTime, const Vec4& sensibility,
                          const Vec4& camDir);
   Audio* t_audio;

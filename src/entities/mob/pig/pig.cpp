@@ -140,8 +140,7 @@ void Pig::render() {
 }
 
 void Pig::tick() {
-  // Update updateStateInWater every 5 ticks
-  if (isTicksCounterAt(5)) updateStateInWater();
+  // updateStateInWater is now called by MobManager via scheduled callback
 }
 
 float Pig::getNextVrticalPosition(const float& fixedDeltaTime) {

@@ -95,7 +95,7 @@ class World {
   void fixedUpdate(Player* t_player, Camera* t_camera,
                    const float fixedDeltaTime);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
-  void tick(Player* t_player, Camera* t_camera);
+  void tick();
   void renderOpaque();
   void renderTransparent();
   void renderBlockDamageOverlay();
@@ -181,7 +181,12 @@ class World {
     worldOptions = options;
   };
 
+  // TickScheduler integration
+  void setTickContext(Player* t_player, Camera* t_camera);
+  void registerTickCallbacks(class TickScheduler& scheduler);
+
  private:
+  class TickTaskHandles* tickHandles;
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
   Vec4 lastPlayerPosition;
@@ -189,6 +194,10 @@ class World {
   float playerDeltaDistance = 0.0f;
   Vec4 lastScheduledForward = Vec4(0.0f, 0.0f, -1.0f);
   bool hasScheduledForward = false;
+
+  // Cached context for tick callbacks
+  Player* cachedPlayer = nullptr;
+  Camera* cachedCamera = nullptr;
 
   NewGameOptions worldOptions = NewGameOptions();
   DrawDistanceController drawDistanceController;

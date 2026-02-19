@@ -24,7 +24,7 @@ class CreativePlayingState : public PlayingStateBase {
   ~CreativePlayingState();
 
   void init();
-  void afterInit(){};
+  void afterInit();
   void handleAction(MenuAction action);
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
@@ -59,6 +59,7 @@ class CreativePlayingState : public PlayingStateBase {
   u32 audioListenerId;
   float elapsedTimeInSec;
   TickManager tickManager;
+  TickTaskHandles tickHandles;
 
   Vec4 playerMovementDirection;
 

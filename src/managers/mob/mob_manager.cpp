@@ -9,9 +9,13 @@ using Tyra::MeshBuilderData;
 using Tyra::ObjLoader;
 using Tyra::ObjLoaderOptions;
 
-MobManager::MobManager() {};
+MobManager::MobManager() {
+  tickHandles = new TickTaskHandles();
+};
 
 MobManager::~MobManager() {
+  delete tickHandles;
+  tickHandles = nullptr;
   for (size_t i = 0; i < mobs.size(); i++) {
     delete mobs[i];
     mobs[i] = nullptr;
@@ -62,10 +66,17 @@ void MobManager::update(const float& deltaTime) {
 
 void MobManager::tick() {
   for (size_t i = 0; i < mobs.size(); i++) mobs[i]->tick();
+}
 
-  if (_mobsHasChanged && isTicksCounterAt(15)) {
-    _destroyUnspownedMobs();
-  }
+void MobManager::registerTickCallbacks(TickScheduler& scheduler) {
+  tickHandles->add(scheduler.everyHandle(5, [this]() {
+    for (size_t i = 0; i < mobs.size(); i++)
+      mobs[i]->updateStateInWater();
+  }));
+
+  tickHandles->add(scheduler.everyHandle(15, [this]() {
+    if (_mobsHasChanged) _destroyUnspownedMobs();
+  }));
 }
 
 void MobManager::render() {

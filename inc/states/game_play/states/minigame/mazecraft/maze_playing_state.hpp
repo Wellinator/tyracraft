@@ -76,6 +76,7 @@ class MazePlayingState : public PlayingStateBase {
   u32 audioListenerId;
   float elapsedTimeInSec;
   TickManager tickManager;
+  TickTaskHandles tickHandles;
 
   Vec4 playerMovementDirection;
 };

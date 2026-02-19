@@ -17,6 +17,9 @@ MazePlayingState::MazePlayingState(StateGamePlay* t_context)
 MazePlayingState::~MazePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
       this->audioListenerId);
+#ifdef DEBUG_MODE
+  g_debug_tick_scheduler = nullptr;
+#endif
 
   Renderer* t_renderer = &stateGamePlay->context->t_engine->renderer;
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
@@ -54,11 +57,27 @@ void MazePlayingState::init() {
 }
 
 void MazePlayingState::afterInit() {
+  // World and player are fully initialized at this point
+  stateGamePlay->world->setTickContext(stateGamePlay->player,
+                                       stateGamePlay->context->t_camera);
+  stateGamePlay->world->registerTickCallbacks(tickManager.scheduler);
+  stateGamePlay->player->registerTickCallbacks(tickManager.scheduler);
+
+  // RAII handle — auto-cancelled when MazePlayingState is destroyed
+  tickHandles.add(tickManager.scheduler.everyHandle(200, [this]() {
+    if (!mazeAudioListener.t_song->isPlaying())
+      mazeAudioListener.playRandomMazeSound();
+  }));
+
   setDarkTheme();
   stateGamePlay->player->fillInventoryWithItem(ItemId::torch);
   stateGamePlay->player->updateHandledItem();
   stateGamePlay->player->unFly();
   stateGamePlay->world->setDrawDistanceMode(DrawDistanceMode::Low);
+
+#ifdef DEBUG_MODE
+  g_debug_tick_scheduler = &tickManager.scheduler;
+#endif
 }
 
 void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
@@ -102,15 +121,9 @@ void MazePlayingState::update(const float& deltaTime) {
 }
 
 void MazePlayingState::tick() {
-  stateGamePlay->world->tick(stateGamePlay->player,
-                             stateGamePlay->context->t_camera);
+  stateGamePlay->world->tick();
   stateGamePlay->player->tick();
   stateGamePlay->ui->update();
-
-  if (isTicksCounterAt(200)) {
-    if (mazeAudioListener.t_song->isPlaying()) return;
-    mazeAudioListener.playRandomMazeSound();
-  }
 }
 
 void MazePlayingState::render() {

@@ -2,6 +2,7 @@
 #include "managers/font/font_options.hpp"
 #include "managers/font/font_manager.hpp"
 #include "managers/post-fx/post_fx_manager.hpp"
+#include "managers/tick_scheduler.hpp"
 #include <string>
 #include <cstdio>
 
@@ -10,6 +11,7 @@ u8 g_debug_mode = false;
 #ifdef DEBUG_MODE
 
 DebugMenu g_debug_menu;
+TickScheduler* g_debug_tick_scheduler = nullptr;
 int g_selected_debug_menu_item = 0;
 
 // Helper struct to organize menu items by tab
@@ -72,6 +74,7 @@ const char* getTabName(DebugMenuTab tab) {
     case DebugMenuTab::WORLD_INFO: return "WORLD INFO";
     case DebugMenuTab::GAMEPLAY: return "GAMEPLAY";
     case DebugMenuTab::PERFORMANCE: return "PERFORMANCE";
+    case DebugMenuTab::TASKS: return "TASKS";
     default: return "UNKNOWN";
   }
 }
@@ -163,6 +166,51 @@ void renderDebugMenu() {
     itemIndexInTab++;
   }
 
+  // TASKS tab: display-only tick scheduler summary (no toggles)
+  if (g_debug_menu.currentTab == DebugMenuTab::TASKS) {
+    if (g_debug_tick_scheduler == nullptr) {
+      labelOptions.position = Vec2(currentX, currentY);
+      fm.printText("No scheduler (not in gameplay)", labelOptions);
+      currentY += lineHeight;
+    } else {
+      char buf[48];
+      int total = g_debug_tick_scheduler->getTaskCount();
+      int active = g_debug_tick_scheduler->getActiveTaskCount();
+      snprintf(buf, sizeof(buf), "Tasks: %d total, %d active", total, active);
+      labelOptions.position = Vec2(currentX, currentY);
+      fm.printText(buf, labelOptions);
+      currentY += lineHeight * 1.5F;
+
+      // Column header
+      FontOptions headerOpts(Vec2(currentX, currentY),
+                             Color(200.0F, 200.0F, 200.0F),
+                             defaultFontSize, TextAlignment::Left);
+      fm.printText("ID   INT   CNT   TYPE  STATUS", headerOpts);
+      currentY += lineHeight;
+
+      // One row per task
+      TickScheduler::TaskInfo info;
+      for (int i = 0; i < total; i++) {
+        if (!g_debug_tick_scheduler->getTaskInfo(i, info)) continue;
+        if (currentY > 400.0F) {
+          labelOptions.position = Vec2(currentX, currentY);
+          fm.printText("... (more)", labelOptions);
+          break;
+        }
+        char row[48];
+        snprintf(row, sizeof(row), "%-4d %-5d %-5d %-5s %s",
+                 (int)info.id, (int)info.interval, (int)info.counter,
+                 info.oneShot ? "ONE" : "REC",
+                 info.active ? "ON" : "OFF");
+        FontOptions* rowOpts =
+            info.active ? &turnedOnOptions : &turnedOffOptions;
+        rowOpts->position = Vec2(currentX, currentY);
+        fm.printText(row, *rowOpts);
+        currentY += lineHeight;
+      }
+    }
+  }
+
   // Render instructions
   const float instructionOffset = 10.0F;
   currentY += instructionOffset;
@@ -213,38 +261,41 @@ void handleDebugInput(Pad* pPad) {
   // Get number of items in current tab
   int itemsInCurrentTab = getItemCountForTab(g_debug_menu.currentTab);
 
-  // Navigate up (sempre permitido)
-  if (clicked.DpadUp) {
-    g_selected_debug_menu_item--;
-    if (g_selected_debug_menu_item < 0) {
-      g_selected_debug_menu_item = itemsInCurrentTab - 1;
-    }
-  }
-
-  // Navigate down (sempre permitido)
-  if (clicked.DpadDown) {
-    g_selected_debug_menu_item++;
-    if (g_selected_debug_menu_item >= itemsInCurrentTab) {
-      g_selected_debug_menu_item = 0;
-    }
-  }
-
-  // Toggle option
-  if (clicked.Cross) {
-    // Find the selected item in the current tab
-    int itemIndexInTab = 0;
-    for (int i = 0; i < g_total_menu_items; i++) {
-      if (g_all_menu_items[i].tab != g_debug_menu.currentTab) {
-        continue;
+  // Navigate and toggle only when the tab has selectable items
+  if (itemsInCurrentTab > 0) {
+    // Navigate up
+    if (clicked.DpadUp) {
+      g_selected_debug_menu_item--;
+      if (g_selected_debug_menu_item < 0) {
+        g_selected_debug_menu_item = itemsInCurrentTab - 1;
       }
-      
-      if (itemIndexInTab == g_selected_debug_menu_item) {
-        // Toggle the value
-        *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
-        break;
+    }
+
+    // Navigate down
+    if (clicked.DpadDown) {
+      g_selected_debug_menu_item++;
+      if (g_selected_debug_menu_item >= itemsInCurrentTab) {
+        g_selected_debug_menu_item = 0;
       }
-      
-      itemIndexInTab++;
+    }
+
+    // Toggle option
+    if (clicked.Cross) {
+      // Find the selected item in the current tab
+      int itemIndexInTab = 0;
+      for (int i = 0; i < g_total_menu_items; i++) {
+        if (g_all_menu_items[i].tab != g_debug_menu.currentTab) {
+          continue;
+        }
+
+        if (itemIndexInTab == g_selected_debug_menu_item) {
+          // Toggle the value
+          *(g_all_menu_items[i].value) = !(*(g_all_menu_items[i].value));
+          break;
+        }
+
+        itemIndexInTab++;
+      }
     }
   }
 

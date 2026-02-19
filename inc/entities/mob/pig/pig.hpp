@@ -126,7 +126,7 @@ class Pig : public Mob, public Animated {
   // Animations
   const float ANIMATION_SPEED_FACT = 0.2f;
 
-  void updateStateInWater();
+  void updateStateInWater() override;
 
  private:
   StaticPipeline* statPip;  // Pointer to shared pipeline

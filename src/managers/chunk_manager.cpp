@@ -9,9 +9,13 @@ using Tyra::M4x4;
 using Tyra::Plane;
 using Tyra::Vec4;
 
-ChunkManager::ChunkManager() : Singleton<ChunkManager>() {}
+ChunkManager::ChunkManager() : Singleton<ChunkManager>() {
+  tickHandles = new TickTaskHandles();
+}
 
 ChunkManager::~ChunkManager() {
+  delete tickHandles;
+  tickHandles = nullptr;
   for (u16 i = 0; i < chunks.size(); i++) {
     delete chunks[i];
     chunks[i] = NULL;
@@ -75,10 +79,6 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
 }
 
 void ChunkManager::tick() {
-  if (isTicksCounterAt(2)) {
-    if (chunksToUpdateLight.empty() == false) reloadLightDataAsync();
-  }
-
   // Note: enqueueChunksToReloadLight() is called from World::tick() at tick 250
   // Removed duplicate call here to prevent queue overflow
 
@@ -87,6 +87,12 @@ void ChunkManager::tick() {
   for (size_t i = 0; i < activeChunks.size(); i++) {
     activeChunks[i]->tick();
   }
+}
+
+void ChunkManager::registerTickCallbacks(TickScheduler& scheduler) {
+  tickHandles->add(scheduler.everyHandle(2, [this]() {
+    if (!chunksToUpdateLight.empty()) reloadLightDataAsync();
+  }));
 }
 
 void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {

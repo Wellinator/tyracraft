@@ -58,11 +58,11 @@ class StateGamePlay : public GameState {
   StaticMesh* menuSkybox;
 
   StaticBlockRepository staticBlockRepository;
-  Level* plevel;
-  World* world;
-  Ui* ui;
-  Player* player;
-  ItemRepository* itemRepository;
+  Level* plevel = nullptr;
+  World* world = nullptr;
+  Ui* ui = nullptr;
+  Player* player = nullptr;
+  ItemRepository* itemRepository = nullptr;
 
  private:
   PlayingStateBase* state = nullptr;

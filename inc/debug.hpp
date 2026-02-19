@@ -16,6 +16,7 @@ enum class DebugMenuTab {
   WORLD_INFO,
   GAMEPLAY,
   PERFORMANCE,
+  TASKS,
   COUNT  // Always keep this last
 };
 
@@ -60,6 +61,10 @@ struct DebugMenu {
 };
 
 extern DebugMenu g_debug_menu;
+
+// Active tick scheduler exposed for the TASKS debug tab
+// Set by the playing state in afterInit(), cleared in destructor
+extern class TickScheduler* g_debug_tick_scheduler;
 
 void renderDebugMenu();
 void handleDebugInput(Pad* pPad);

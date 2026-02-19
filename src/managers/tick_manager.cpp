@@ -25,6 +25,7 @@ void TickManager::update(const float& deltaTime) {
       g_ticksCounter++;
       g_ticksFraftion -= TICKS_IN_SECONDS;
       onTick();
+      scheduler.tick();
 
       if (g_debug_mode) {
         if (tickAverageQueue.size() > 10) {
@@ -58,8 +59,4 @@ float TickManager::getTickTimeAverage() {
   } else {
     return 0.00f;
   }
-}
-
-u8 isTicksCounterAt(const uint32_t ticks) {
-  return (g_ticksCounter % ticks) == 0;
 }
