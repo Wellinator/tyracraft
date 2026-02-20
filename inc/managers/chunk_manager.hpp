@@ -31,9 +31,11 @@ class ChunkManager : public Singleton<ChunkManager> {
   inline std::vector<Chunk*>* getChunks() { return &chunks; };
 
   void init(WorldLightModel* worldLightModel, Level* Level);
-  void update(const Plane* frustumPlanes, Vec4* camPos);
+  void update(const Plane* frustumPlanes, Vec4* camPos,
+             u8 maxRenderDistance = MAX_DRAW_DISTANCE);
   void updateWithVisibilityGraph(const Plane* frustumPlanes, Vec4* camPos,
-                                  const Vec4& camForward);
+                                  const Vec4& camForward,
+                                  u8 maxRenderDistance = MAX_DRAW_DISTANCE);
   void tick();
 
   inline u8 isChunkVisible(Chunk* chunk) { return chunk->isVisible(); };

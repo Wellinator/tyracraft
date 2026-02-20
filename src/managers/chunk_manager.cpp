@@ -61,11 +61,17 @@ void ChunkManager::updateLoadedChunks() {
   }
 }
 
-void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
+void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos,
+                          u8 maxRenderDistance) {
   visibleChunks.clear();
 #ifdef DEBUG_MODE
   culledChunks.clear();  // No culling in standard mode
 #endif
+
+  Chunk* cameraChunk = getChunkByWorldPosition(*camPos);
+  const float maxDistSq =
+      static_cast<float>((maxRenderDistance + 1) * (maxRenderDistance + 1)) *
+      (CHUNK_SIZE * CHUNK_SIZE);
 
   // TODO: refactore to fast index by offset
   for (size_t i = 0; i < loadedChunks.size(); i++) {
@@ -74,7 +80,15 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos) {
       chk->setCamPosition(camPos);
       chk->update(frustumPlanes);
 
-      if (chk->isVisible()) visibleChunks.emplace_back(chk);
+      if (chk->isVisible()) {
+        // Distance filter: skip chunks beyond draw distance
+        if (cameraChunk) {
+          float distSq = horizontalDistance2DSquared(
+              cameraChunk->center, chk->center);
+          if (distSq > maxDistSq) continue;
+        }
+        visibleChunks.emplace_back(chk);
+      }
     }
   }
 }
@@ -218,6 +232,11 @@ void ChunkManager::reloadLightDataAsync() {
   constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
   int processed = 0;
 
+  // Time budget: 2ms to prevent frame stalls from expensive light reloads
+  static constexpr u32 LIGHT_BUDGET_CYCLES = 294912u;  // 2ms
+  u32 lightStart;
+  asm volatile("mfc0 %0, $9" : "=r"(lightStart));
+
   while (!chunksToUpdateLight.empty() && processed < LIGHT_UPDATE_BATCH_SIZE) {
     auto chunk = chunksToUpdateLight.front();
     chunksToUpdateLight.pop();
@@ -232,6 +251,11 @@ void ChunkManager::reloadLightDataAsync() {
 
     chunk->reloadLightData();
     processed++;
+
+    // Check time budget after each reload
+    u32 lightNow;
+    asm volatile("mfc0 %0, $9" : "=r"(lightNow));
+    if ((lightNow - lightStart) >= LIGHT_BUDGET_CYCLES) break;
   }
 }
 
@@ -494,10 +518,16 @@ struct VisBfsEntry {
 
 void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
                                               Vec4* camPos,
-                                              const Vec4& camForward) {
-  static_cast<void>(camForward);
+                                              const Vec4& camForward,
+                                              u8 maxRenderDistance) {
+  // camForward is used for N·V directional filtering in BFS expansion
   visibleChunks.clear();
   occludedChunksToUnload.clear();
+
+  // Pre-compute distance limit for render culling (with +1 margin to avoid pop-in)
+  const float maxRenderDistSq =
+      static_cast<float>((maxRenderDistance + 1) * (maxRenderDistance + 1)) *
+      (CHUNK_SIZE * CHUNK_SIZE);
 
 #ifdef DEBUG_MODE
   // Start with all loaded chunks as potentially culled
@@ -526,16 +556,21 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
     for (size_t i = 0; i < loadedChunks.size(); i++) {
       Chunk* chk = loadedChunks[i];
       if (chk->isLoaded() && chk->isVisible()) {
-        visibleChunks.emplace_back(chk);
+        // Distance filter in fallback path too
+        float distSq = horizontalDistance2DSquared(
+            chk->center, Vec4(camPos->x / DOUBLE_BLOCK_SIZE,
+                              0, camPos->z / DOUBLE_BLOCK_SIZE));
+        if (distSq <= maxRenderDistSq)
+          visibleChunks.emplace_back(chk);
       }
     }
     return;
   }
 
   // BFS traversal using visibility graph
-  // Increased MAX_STEPS from 16 to 24 to prevent culling forward chunks with turns
-  // With MAX_DRAW_DISTANCE=16 and turn cost=2, 16 steps is too restrictive
-  static constexpr u8 MAX_STEPS = 12;
+  // Link MAX_STEPS to actual draw distance to prevent over-traversal
+  const u8 MAX_STEPS = static_cast<u8>(
+      std::min(static_cast<int>(maxRenderDistance) + 2, 16));
   static constexpr u16 BFS_QUEUE_SIZE = OVERWORLD_SIZE_IN_CHUNKS;
 
   // Visited bitset — one bit per chunk ID
@@ -562,13 +597,23 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
     // Frustum check
     if (!neighbor->isVisible()) continue;
 
+    // Distance filter
+    float distSq = horizontalDistance2DSquared(
+        cameraChunk->center, neighbor->center);
+    if (distSq > maxRenderDistSq) continue;
+
     visited.set(neighbor->id);
     bfsQueue[qTail] = {neighbor->id, OppositeFace(face), 1};
     qTail = (qTail + 1) % BFS_QUEUE_SIZE;
     qCount++;
   }
 
-  // BFS traversal
+  // BFS traversal with time budget to prevent frame stalls
+  static constexpr u32 BFS_BUDGET_CYCLES = 294912u;  // 2ms
+  u32 bfsStart;
+  asm volatile("mfc0 %0, $9" : "=r"(bfsStart));
+  u8 bfsIterCount = 0;
+
   while (qCount > 0) {
     VisBfsEntry entry = bfsQueue[qHead];
     qHead = (qHead + 1) % BFS_QUEUE_SIZE;
@@ -576,6 +621,11 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
 
     Chunk* current = chunks[entry.chunkId];
     if (!current->isLoaded()) continue;
+
+    // Distance filter: skip chunks beyond draw distance
+    float distSq = horizontalDistance2DSquared(
+        cameraChunk->center, current->center);
+    if (distSq > maxRenderDistSq) continue;
 
     // Add to visible chunks
     visibleChunks.emplace_back(current);
@@ -585,32 +635,63 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
 
     // Try to expand to all 6 neighbors
     for (u8 exitFace = 0; exitFace < FACE_COUNT; exitFace++) {
-      // Filter 1: Connectivity test — can we see through this chunk from
+      // Filter 1: No backtracking — don't go back the way we came
+      if (exitFace == entry.entryFace) continue;
+
+      // Filter 2: N·V directional check (horizontal only).
+      // The article's N·V < 0 filter prevents BFS from expanding backward.
+      // We only apply this to horizontal faces (NORTH/SOUTH/EAST/WEST).
+      // Vertical faces (TOP/BOTTOM) are exempt because with only 4 vertical
+      // chunk layers, blocking vertical expansion causes missing terrain.
+      if (exitFace < FACE_TOP) {  // NORTH=0, SOUTH=1, EAST=2, WEST=3
+        float fnx, fny, fnz;
+        GetFaceNormalVec(exitFace, fnx, fny, fnz);
+        float dot = fnx * camForward.x + fnz * camForward.z;
+        if (dot < 0.0f) continue;  // Exit direction opposes camera = going backward
+      }
+
+      // Filter 3: Connectivity test — can we see through this chunk from
       // entryFace to exitFace?
       if (!current->isConnected(entry.entryFace, exitFace)) continue;
-
-      // Filter 2: No backtracking — don't go back the way we came
-      if (exitFace == entry.entryFace) continue;
 
       Chunk* neighbor = current->neighbors[exitFace];  // Phase 4: O(1) pointer lookup
       if (!neighbor || !neighbor->isLoaded()) continue;
       if (visited.test(neighbor->id)) continue;
 
-      // Filter 3: Frustum check
+      // Filter 4: Frustum check
       if (!neighbor->isVisible()) continue;
 
-      visited.set(neighbor->id);
+      // Filter 5: Distance check — skip chunks beyond draw distance
+      float neighborDistSq = horizontalDistance2DSquared(
+          cameraChunk->center, neighbor->center);
+      if (neighborDistSq > maxRenderDistSq) continue;
 
-      // Step cost: 1 for straight movement, 2 for turns
-      u8 stepCost = (exitFace == OppositeFace(entry.entryFace)) ? 1 : 2;
+      // Step cost with heuristic penalties (from Tomcc's "More filters!" section)
+      u8 stepCost = 1;
+
+      // Heuristic: Going down below sea level costs +1 step
+      // Underground chunks are likely cave paths that should be pruned earlier
+      if (exitFace == FACE_BOTTOM && neighbor->minOffset.y < SEA_LEVEL_Y) {
+        stepCost += 1;
+      }
+
       u8 newSteps = entry.steps + stepCost;
 
-      // Filter 4: Step budget
+      // Filter 6: Step budget
       if (newSteps > MAX_STEPS) continue;
 
+      visited.set(neighbor->id);
       bfsQueue[qTail] = {neighbor->id, OppositeFace(exitFace), newSteps};
       qTail = (qTail + 1) % BFS_QUEUE_SIZE;
       qCount++;
+    }
+
+    // Check time budget every 8 iterations to avoid BFS stalls
+    if (++bfsIterCount >= 8) {
+      bfsIterCount = 0;
+      u32 bfsNow;
+      asm volatile("mfc0 %0, $9" : "=r"(bfsNow));
+      if ((bfsNow - bfsStart) >= BFS_BUDGET_CYCLES) break;
     }
   }
 

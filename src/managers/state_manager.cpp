@@ -16,3 +16,5 @@ void StateManager::update(const float& deltaTime) {
 }
 
 void StateManager::render() { context->render(); }
+
+void StateManager::processIdleWork() { context->processIdleWork(); }

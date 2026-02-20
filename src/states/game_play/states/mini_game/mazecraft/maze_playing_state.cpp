@@ -80,6 +80,10 @@ void MazePlayingState::afterInit() {
 #endif
 }
 
+void MazePlayingState::processIdleWork() {
+  stateGamePlay->world->processIdleWork();
+}
+
 void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
   stateGamePlay->world->fixedUpdate(
       stateGamePlay->player, stateGamePlay->context->t_camera, fixedDeltaTime);

@@ -11,6 +11,7 @@ class GameState {
   virtual void fixedUpdate(const float& fixedDeltaTime){};
   virtual void update(const float& deltaTime) = 0;
   virtual void render() = 0;
+  virtual void processIdleWork(){};
 
   Context* context;
 };

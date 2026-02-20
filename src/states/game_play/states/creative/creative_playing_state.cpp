@@ -71,6 +71,10 @@ void CreativePlayingState::update(const float& deltaTime) {
                                            stateGamePlay->player->isMoving);
 }
 
+void CreativePlayingState::processIdleWork() {
+  stateGamePlay->world->processIdleWork();
+}
+
 void CreativePlayingState::tick() {
   stateGamePlay->world->tick();
   stateGamePlay->player->tick();

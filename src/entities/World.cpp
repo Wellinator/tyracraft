@@ -172,21 +172,24 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
   mobManager.fixedUpdate(fixedDeltaTime);
 
   cloudsManager.update(fixedDeltaTime);
+{
+  const u8 renderDist = drawDistanceController.getForwardDistance();
 #ifdef DEBUG_MODE
   if (g_debug_menu.enableCaveCulling) {
     chunkManager.updateWithVisibilityGraph(
         t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
-        t_camera->unitCirclePosition);
+        t_camera->unitCirclePosition, renderDist);
   } else {
     chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                        &t_camera->looksAt);
+                        &t_camera->looksAt, renderDist);
     chunkManager.clearOccludedChunksToUnload();
   }
 #else
   chunkManager.updateWithVisibilityGraph(
       t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
-      t_camera->unitCirclePosition);
+      t_camera->unitCirclePosition, renderDist);
 #endif
+}
 
   // Occluded chunk unload (with recently-loaded protection applied in addChunkToUnloadAsync)
   auto occludedChunks = chunkManager.getOccludedChunksToUnload();
@@ -204,11 +207,61 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   playerDeltaDistance = lastPlayerPosition.distanceTo(t_player->position);
   lastPlayerPosition.set(t_player->position);
 
-  dispatchChunkBatch();
+  unloadScheduledChunks();
 
   particlesManager.update(deltaTime, t_camera);
   mobManager.update(deltaTime);
 };
+
+void World::processIdleWork() {
+  if (tempChunksToLoad.empty()) return;
+
+  // Budget: 5ms = 5 * 147456 EE count-register cycles
+  static constexpr u32 IDLE_BUDGET_CYCLES = 737280u;
+
+  u32 start;
+  asm volatile("mfc0 %0, $9" : "=r"(start));
+
+  while (!tempChunksToLoad.empty()) {
+    Chunk* chunk = tempChunksToLoad.front();
+    tempChunksToLoad.pop_front();
+    chunksInLoadQueue.reset(chunk->id);
+
+    if (!drawDistanceController.canLoadMoreChunks()) {
+      unloadScheduledChunks();
+      tempChunksToLoad.push_front(chunk);
+      chunksInLoadQueue.set(chunk->id);
+      break;
+    }
+
+    if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
+      continue;
+    }
+
+    chunk->build();
+    chunk->loadedAtTick = g_ticksCounter;
+
+    if (g_debug_mode) {
+      chunk->timeToBuild =
+          ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+      printf("Time to async build chunk %i: %f\n", chunk->id,
+             chunk->timeToBuild);
+    }
+
+    if (Utils::Probability(0.01F, worldOptions.seed)) {
+      Vec4 _spawnPosition;
+      if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+        mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+      }
+    }
+
+    chunkManager.updateLoadedChunks();
+
+    u32 now;
+    asm volatile("mfc0 %0, $9" : "=r"(now));
+    if ((now - start) >= IDLE_BUDGET_CYCLES) break;
+  }
+}
 
 // Tick based logics
 void World::tick() {
@@ -692,18 +745,27 @@ void World::loadScheduledChunks() {
 void World::unloadScheduledChunks() {
   if (tempChunksToUnLoad.empty()) return;
 
-  Chunk* chunk = tempChunksToUnLoad.front();
-  tempChunksToUnLoad.pop_front();
-  chunksInUnloadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
+  // Unload up to 4 chunks per frame when the queue is large to prevent
+  // "zombie" chunks (loaded but beyond draw distance) from being rendered
+  const int maxUnloads = (tempChunksToUnLoad.size() > 8) ? 4 : 1;
+  int unloaded = 0;
 
-  // Validate state before clearing
-  if (chunk->state != ChunkState::Unloading) {
-    TYRA_LOG("Warning: chunk ", chunk->id, " not in Unloading state");
-    return;
+  while (!tempChunksToUnLoad.empty() && unloaded < maxUnloads) {
+    Chunk* chunk = tempChunksToUnLoad.front();
+    tempChunksToUnLoad.pop_front();
+    chunksInUnloadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
+
+    // Validate state before clearing
+    if (chunk->state != ChunkState::Unloading) {
+      TYRA_LOG("Warning: chunk ", chunk->id, " not in Unloading state");
+      continue;
+    }
+
+    chunk->clear();
+    unloaded++;
   }
 
-  chunk->clear();
-  chunkManager.updateLoadedChunks();
+  if (unloaded > 0) chunkManager.updateLoadedChunks();
 }
 
 void World::renderBlockDamageOverlay() {

@@ -10,8 +10,13 @@
 #include "entities/level.hpp"
 #include <cstring>
 
+// Bits needed per axis: log2(CHUNK_SIZE)
+// CHUNK_SIZE=16 → 4 bits per axis, 12 bits total → max index 4095
+static constexpr int CHUNK_BITS = 4;  // log2(16) = 4
+static constexpr int CHUNK_MASK = CHUNK_SIZE - 1;  // 0xF for 16
+
 // Stack-allocated circular buffer queue for flood fill BFS
-// Max capacity = CHUNK_LENGTH (512 for 8x8x8)
+// Max capacity = CHUNK_LENGTH (4096 for 16x16x16)
 struct FloodQueue {
   u16 data[CHUNK_LENGTH];
   u16 head;
@@ -37,19 +42,19 @@ struct FloodQueue {
   }
 };
 
-// Encode local coordinates (0-7 each) into a single u16 index
+// Encode local coordinates (0..CHUNK_SIZE-1 each) into a single u16 index
 static inline u16 encodeLocal(int lx, int ly, int lz) {
-  return (u16)((lx << 6) | (lz << 3) | ly);
+  return (u16)((lx << (CHUNK_BITS * 2)) | (lz << CHUNK_BITS) | ly);
 }
 
 // Decode local index back to coordinates
 static inline void decodeLocal(u16 idx, int& lx, int& ly, int& lz) {
-  ly = idx & 7;
-  lz = (idx >> 3) & 7;
-  lx = (idx >> 6) & 7;
+  ly = idx & CHUNK_MASK;
+  lz = (idx >> CHUNK_BITS) & CHUNK_MASK;
+  lx = (idx >> (CHUNK_BITS * 2)) & CHUNK_MASK;
 }
 
-// Bit manipulation for visited array (64 bytes = 512 bits)
+// Bit manipulation for visited array (CHUNK_LENGTH/8 bytes = CHUNK_LENGTH bits)
 static inline bool isVisited(const u8* visited, u16 idx) {
   return (visited[idx >> 3] >> (idx & 7)) & 1;
 }
@@ -69,19 +74,22 @@ bool IsBlockTransparentForFlood(u8 blockType) {
          blockType == (u8)Blocks::GRASS ||
          blockType == (u8)Blocks::WATER_BLOCK ||
          blockType == (u8)Blocks::LAVA_BLOCK ||
-         blockType == (u8)Blocks::TORCH;
+         blockType == (u8)Blocks::TORCH ||
+         blockType == (u8)Blocks::OAK_LEAVES_BLOCK ||
+         blockType == (u8)Blocks::BIRCH_LEAVES_BLOCK;
 }
 
 u16 BuildVisibilityGraph(Level* pLevel, int chunkMinX, int chunkMinY,
                          int chunkMinZ) {
   u16 connectivity = 0;
 
-  // Visited bitset: 512 bits = 64 bytes, one bit per block in chunk
-  u8 visited[64];
+  // Visited bitset: CHUNK_LENGTH bits = CHUNK_LENGTH/8 bytes, one bit per block
+  // Static to avoid ~512 bytes stack allocation each call (PS2 stack is limited)
+  static u8 visited[CHUNK_LENGTH / 8];
   memset(visited, 0, sizeof(visited));
 
-  // Static flood queue (on stack)
-  FloodQueue queue;
+  // Static flood queue to avoid ~8KB stack allocation (PS2 stack is limited)
+  static FloodQueue queue;
 
   // 6 neighbor offsets in local space: +x, -x, +z, -z, +y, -y
   static const int dx[6] = {1, -1, 0, 0, 0, 0};

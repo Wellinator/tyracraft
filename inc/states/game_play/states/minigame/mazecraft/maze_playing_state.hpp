@@ -31,6 +31,7 @@ class MazePlayingState : public PlayingStateBase {
   void update(const float& deltaTime);
   void tick();
   void render();
+  void processIdleWork();
 
  private:
   void handleInput(const float& deltaTime);

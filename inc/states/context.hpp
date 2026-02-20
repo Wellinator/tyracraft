@@ -17,6 +17,7 @@ class Context {
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void render();
+  void processIdleWork();
   void setState(GameState* newState);
 
   SoundManager soundManager;

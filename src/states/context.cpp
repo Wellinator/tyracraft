@@ -18,6 +18,8 @@ void Context::update(const float& deltaTime) { state->update(deltaTime); }
 
 void Context::render() { state->render(); }
 
+void Context::processIdleWork() { state->processIdleWork(); }
+
 void Context::setState(GameState* newState) {
   if (state) delete state;
   state = newState;

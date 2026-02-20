@@ -107,6 +107,22 @@ inline void GetFaceDirection(u8 face, int& dx, int& dy, int& dz) {
 }
 
 /**
+ * @brief Get the face normal as a Vec4 unit vector.
+ * Used for the N·V directional filter in BFS traversal.
+ */
+inline void GetFaceNormalVec(u8 face, float& nx, float& ny, float& nz) {
+  nx = ny = nz = 0.0f;
+  switch (face) {
+    case FACE_NORTH:  nx =  1.0f; break;  // +X
+    case FACE_SOUTH:  nx = -1.0f; break;  // -X
+    case FACE_EAST:   nz =  1.0f; break;  // +Z
+    case FACE_WEST:   nz = -1.0f; break;  // -Z
+    case FACE_TOP:    ny =  1.0f; break;  // +Y
+    case FACE_BOTTOM: ny = -1.0f; break;  // -Y
+  }
+}
+
+/**
  * @brief Build the visibility graph for the chunk at the given block-space
  * origin. Uses flood fill through non-opaque blocks to determine which chunk
  * faces can see each other.

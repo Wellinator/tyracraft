@@ -95,6 +95,7 @@ class World {
   void fixedUpdate(Player* t_player, Camera* t_camera,
                    const float fixedDeltaTime);
   void update(Player* t_player, Camera* t_camera, const float deltaTime);
+  void processIdleWork();
   void tick();
   void renderOpaque();
   void renderTransparent();

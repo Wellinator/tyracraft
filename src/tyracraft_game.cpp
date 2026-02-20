@@ -53,10 +53,19 @@ void TyraCraftGame::loop() {
     // Draw FPS:
     const float renderFps =
         timer.getRenderMs() > 0.0f ? 1000.0f / timer.getRenderMs() : 0.0f;
+    const float physicsFps = timer.getPhysicsUpdateMs() > 0.0f
+                                 ? 1000.0f / timer.getPhysicsUpdateMs()
+                                 : 0.0f;
+    const float mainLoopFps = timer.getDeltaTimeAvg() > 0.0f
+                                  ? 1000.0f / timer.getDeltaTimeAvg()
+                                  : 0.0f;
 
     std::stringstream stream;
     stream << "Render: " << std::fixed << std::setprecision(1) << renderFps
-           << " fps  Physics: 20 TPS";
+           << " fps  Physics: " << std::fixed << std::setprecision(1)
+           << physicsFps << " fps  Main Loop: " << std::fixed
+           << std::setprecision(1) << mainLoopFps << " fps";
+
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.6F));
     stream.str("");
@@ -79,6 +88,9 @@ void TyraCraftGame::loop() {
 
     engine->renderer.endFrame();
   }
+
+  // Use remaining idle CPU cycles for chunk loading work
+  stateManager.processIdleWork();
 }
 
 void TyraCraftGame::loadSavedSettings() {

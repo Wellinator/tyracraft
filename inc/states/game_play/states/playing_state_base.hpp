@@ -16,6 +16,8 @@ class PlayingStateBase {
   virtual void update(const float& deltaTime) = 0;
   virtual void tick() = 0;
   virtual void render() = 0;
+  virtual void processIdleWork(){};
+
   virtual void handleInput(const float& deltaTime) = 0;
   StateGamePlay* stateGamePlay;
 };

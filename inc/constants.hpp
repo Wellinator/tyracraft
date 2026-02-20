@@ -22,6 +22,8 @@
 #define OVERWORLD_MIN_HEIGH 0  // Min overworld layer for badblock;
 #define OVERWORLD_MAX_HEIGH OVERWORLD_V_DISTANCE  // Max overworld heigh layer;
 
+#define SEA_LEVEL_Y 32  // Sea level for heuristic cave culling step penalty
+
 #define OVERWORLD_SIZE \
   (OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)
 
@@ -73,8 +75,8 @@ enum class DrawDistanceMode : u8 { Auto = 0, Low = 1, Medium = 2, High = 3 };
 #define DRAW_DISTANCE_FPS_GROW_THRESHOLD 30
 
 // Cooldown ticks between draw distance adjustments (main-loop iterations)
-// Shrink reacts fast (~0.5s at 14 FPS); grow is conservative (~3s at 20 TPS)
-#define DRAW_DISTANCE_SHRINK_COOLDOWN 8
+// Shrink reacts fast (~0.25s); grow is conservative (~3s at 20 TPS)
+#define DRAW_DISTANCE_SHRINK_COOLDOWN 2
 #define DRAW_DISTANCE_GROW_COOLDOWN 60
 
 inline u8 getDrawDistanceCap(DrawDistanceMode mode) {

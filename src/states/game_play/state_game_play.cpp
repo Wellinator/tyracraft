@@ -88,6 +88,8 @@ void StateGamePlay::update(const float& deltaTime) {
 
 void StateGamePlay::render() { this->state->render(); }
 
+void StateGamePlay::processIdleWork() { this->state->processIdleWork(); }
+
 void StateGamePlay::setPlayingState(PlayingStateBase* t_playingState) {
   delete this->state;
   this->state = t_playingState;

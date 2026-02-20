@@ -43,6 +43,7 @@ class StateGamePlay : public GameState {
   void fixedUpdate(const float& fixedDeltaTime);
   void update(const float& deltaTime);
   void render();
+  void processIdleWork();
 
   void inline hideWelcomeMessage() { this->hideWelcome(); };
   void inline backToGame() { this->unpauseGame(); };

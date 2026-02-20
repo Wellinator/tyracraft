@@ -15,6 +15,7 @@ class StateManager {
   void fixedUpdate(const float& deltaTime);
   void update(const float& deltaTime);
   void render();
+  void processIdleWork();
 
   Context* context;
 };
