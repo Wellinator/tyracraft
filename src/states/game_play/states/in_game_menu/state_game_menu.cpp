@@ -31,23 +31,27 @@ void StateGameMenu::init() {
   textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
       ->addLink(overlay.id);
 
-  // Load slots
+  // Load slots: row0=DrawDistance(text only), row1=FpsMode, row2=SaveGame, row3=Quit
   raw_slot[0].mode = Tyra::MODE_STRETCH;
   raw_slot[0].size.set(SLOT_WIDTH, 35);
-  raw_slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 240);
+  raw_slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 200);
   raw_slot[1].mode = Tyra::MODE_STRETCH;
   raw_slot[1].size.set(SLOT_WIDTH, 35);
-  raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240 + 40);
+  raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240);
+  raw_slot[2].mode = Tyra::MODE_STRETCH;
+  raw_slot[2].size.set(SLOT_WIDTH, 35);
+  raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 280);
 
   this->textureRawSlot =
       textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
 
   this->textureRawSlot->addLink(raw_slot[0].id);
   this->textureRawSlot->addLink(raw_slot[1].id);
+  this->textureRawSlot->addLink(raw_slot[2].id);
 
   active_slot.mode = Tyra::MODE_STRETCH;
   active_slot.size.set(SLOT_WIDTH, 35);
-  active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 240);
+  active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 200);
   textureRepo->add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
 
@@ -95,7 +99,7 @@ void StateGameMenu::render() {
   t_renderer->renderer2D.render(background);
 
   FontOptions drawDistanceLabel;
-  drawDistanceLabel.position.set(248, 180);
+  drawDistanceLabel.position.set(248, 155);
   drawDistanceLabel.alignment = TextAlignment::Center;
 
   if (activeOption == GameMenuOptions::DrawDistance)
@@ -103,9 +107,19 @@ void StateGameMenu::render() {
   fm.printText(Label_DrawDistance + ": " + getDrawDistanceModeLabel(),
                drawDistanceLabel);
 
+  // FPS Mode row
   t_renderer->renderer2D.render(raw_slot[0]);
+  FontOptions fpsModeLabel;
+  fpsModeLabel.position.set(248, 200 + 3);
+  fpsModeLabel.alignment = TextAlignment::Center;
+  if (activeOption == GameMenuOptions::FpsModeOption)
+    fpsModeLabel.color.set(128, 128, 0);
+  fm.printText(Label_FpsMode + ": " + getFpsModeLabel(), fpsModeLabel);
+
   t_renderer->renderer2D.render(raw_slot[1]);
-  if (activeOption != GameMenuOptions::DrawDistance)
+  t_renderer->renderer2D.render(raw_slot[2]);
+  if (activeOption != GameMenuOptions::DrawDistance &&
+      activeOption != GameMenuOptions::FpsModeOption)
     t_renderer->renderer2D.render(active_slot);
 
   fm.printText(Label_GameMenu, halfWidth - 64, halfHeight - 200);
@@ -118,7 +132,7 @@ void StateGameMenu::render() {
   fm.printText(Label_Save, saveGameLabel);
 
   FontOptions quitToTitleLabel;
-  quitToTitleLabel.position.set(246, 240 + 43);
+  quitToTitleLabel.position.set(246, 280 + 3);
   quitToTitleLabel.alignment = TextAlignment::Center;
   if (activeOption == GameMenuOptions::Quit)
     quitToTitleLabel.color.set(128, 128, 0);
@@ -184,6 +198,11 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       cycleDrawDistanceMode(-1);
     else if (clicked.DpadRight)
       cycleDrawDistanceMode(1);
+  } else if (activeOption == GameMenuOptions::FpsModeOption) {
+    if (clicked.DpadLeft)
+      cycleFpsMode(-1);
+    else if (clicked.DpadRight)
+      cycleFpsMode(1);
   }
 
   if (clicked.Cross) {
@@ -238,17 +257,10 @@ void StateGameMenu::playClickSound() {
 }
 
 void StateGameMenu::hightLightActiveOption() {
-  Sprite* t_selectedOptionSprite = nullptr;
   if (this->activeOption == GameMenuOptions::SaveGame) {
-    this->active_slot.position.y =
-        (0 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
+    this->active_slot.position.y = (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
   } else if (this->activeOption == GameMenuOptions::Quit) {
-    this->active_slot.position.y =
-        (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  }
-
-  if (t_selectedOptionSprite) {
-    t_selectedOptionSprite->color = Tyra::Color(255, 255, 0);
+    this->active_slot.position.y = (2 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
   }
 }
 
@@ -261,6 +273,27 @@ void StateGameMenu::cycleDrawDistanceMode(int direction) {
     current = static_cast<int>(DrawDistanceMode::High);
   stateGamePlay->world->setDrawDistanceMode(
       static_cast<DrawDistanceMode>(current));
+}
+
+void StateGameMenu::cycleFpsMode(int direction) {
+  int current = static_cast<int>(g_settings.fps_mode);
+  current += direction;
+  if (current > static_cast<int>(FpsMode::FPS_60))
+    current = static_cast<int>(FpsMode::VSync);
+  else if (current < static_cast<int>(FpsMode::VSync))
+    current = static_cast<int>(FpsMode::FPS_60);
+  g_settings.fps_mode = static_cast<FpsMode>(current);
+  // Apply immediately
+  TyraCraft::Timer::getInstance()->setFpsMode(g_settings.fps_mode);
+  SettingsManager::Save();
+}
+
+const std::string& StateGameMenu::getFpsModeLabel() const {
+  switch (g_settings.fps_mode) {
+    case FpsMode::VSync:  return Label_FpsVSync;
+    case FpsMode::FPS_30: return Label_Fps30;
+    default:              return Label_Fps60;
+  }
 }
 
 const std::string& StateGameMenu::getDrawDistanceModeLabel() const {

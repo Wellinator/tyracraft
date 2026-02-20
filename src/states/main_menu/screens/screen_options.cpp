@@ -40,18 +40,17 @@ void ScreenOptions::render() {
   auto baseY = SLOT_HIGHT_OFFSET + 6;
   ;
 
-  // Vsync
+  // FPS Mode
   {
     FontOptions fontOptions;
     fontOptions.scale = 0.8F;
     fontOptions.position.set(Vec2(baseX, baseY));
     fontOptions.alignment = TextAlignment::Center;
-    fontOptions.color.set(activeOption == OptionsScreenOptions::VSyncOnOff
+    fontOptions.color.set(activeOption == OptionsScreenOptions::FpsModeOption
                               ? Tyra::Color(255, 255, 0)
                               : Tyra::Color(255, 255, 255));
 
-    std::string _state = tempSettings.vsync ? Label_On : Label_Off;
-    fm.printText(Label_UseVsync + std::string(": ") + _state, fontOptions);
+    fm.printText(Label_FpsMode + std::string(": ") + getFpsModeLabel(), fontOptions);
   }
 
   // Camera
@@ -279,13 +278,13 @@ void ScreenOptions::handleInput() {
     if (context->context->t_engine->pad.getClicked().DpadDown) {
       int nextOption = (u8)activeOption + 1;
       if (nextOption > static_cast<u8>(OptionsScreenOptions::RStickDeadZoneV))
-        activeOption = OptionsScreenOptions::VSyncOnOff;
+        activeOption = OptionsScreenOptions::FpsModeOption;
       else
         activeOption = static_cast<OptionsScreenOptions>(nextOption);
     } else if (context->context->t_engine->pad.getClicked().DpadUp) {
       int nextOption = (u8)activeOption - 1;
       if (nextOption < 0)
-        activeOption = OptionsScreenOptions::VSyncOnOff;
+        activeOption = OptionsScreenOptions::FpsModeOption;
       else
         activeOption = static_cast<OptionsScreenOptions>(nextOption);
     }
@@ -306,10 +305,10 @@ void ScreenOptions::handleInput() {
     }
 
   } else if (context->context->t_engine->pad.getClicked().DpadLeft) {
-    if (activeOption == OptionsScreenOptions::VSyncOnOff) {
-      tempSettings.vsync = !tempSettings.vsync;
+    if (activeOption == OptionsScreenOptions::FpsModeOption) {
+      cycleFpsMode(-1);
     } else if (activeOption == OptionsScreenOptions::ReverseCamY) {
-      tempSettings.invert_cam_y = !tempSettings.vsync;
+      tempSettings.invert_cam_y = !tempSettings.invert_cam_y;
     } else if (activeOption == OptionsScreenOptions::CamSensitivityH) {
       tempSettings.cam_h_sensitivity -= 1;
       if (tempSettings.cam_h_sensitivity <= 0)
@@ -332,8 +331,8 @@ void ScreenOptions::handleInput() {
       if (tempSettings.r_stick_V < 0) tempSettings.r_stick_V = 0;
     }
   } else if (context->context->t_engine->pad.getClicked().DpadRight) {
-    if (activeOption == OptionsScreenOptions::VSyncOnOff) {
-      tempSettings.vsync = !tempSettings.vsync;
+    if (activeOption == OptionsScreenOptions::FpsModeOption) {
+      cycleFpsMode(1);
     } else if (activeOption == OptionsScreenOptions::ReverseCamY) {
       tempSettings.invert_cam_y = !tempSettings.invert_cam_y;
     } else if (activeOption == OptionsScreenOptions::CamSensitivityH) {
@@ -356,4 +355,22 @@ void ScreenOptions::hightLightActiveOption() {
   u8 option = (int)activeOption;
   active_slot.position.y =
       (option * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
+}
+
+void ScreenOptions::cycleFpsMode(int direction) {
+  int current = static_cast<int>(tempSettings.fps_mode);
+  current += direction;
+  if (current > static_cast<int>(FpsMode::FPS_60))
+    current = static_cast<int>(FpsMode::VSync);
+  else if (current < static_cast<int>(FpsMode::VSync))
+    current = static_cast<int>(FpsMode::FPS_60);
+  tempSettings.fps_mode = static_cast<FpsMode>(current);
+}
+
+const std::string& ScreenOptions::getFpsModeLabel() const {
+  switch (tempSettings.fps_mode) {
+    case FpsMode::VSync: return Label_FpsVSync;
+    case FpsMode::FPS_30: return Label_Fps30;
+    default: return Label_Fps60;
+  }
 }

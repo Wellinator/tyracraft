@@ -3,6 +3,7 @@
 #include "tyra"
 #include "singleton.hpp"
 #include <tamtypes.h>
+#include "managers/settings_manager.hpp"
 
 namespace TyraCraft {
 
@@ -20,6 +21,12 @@ class Timer : public Singleton<Timer> {
   void init();
   void update();
   
+  /**
+   * @brief Sets the FPS mode, updating the render cycle target.
+   * Resets the render accumulator to avoid stale values.
+   */
+  void setFpsMode(FpsMode mode);
+
   /**
    * @brief Checks if it's time to render a frame.
    * Handles VSync waiting if enabled.
@@ -63,10 +70,9 @@ class Timer : public Singleton<Timer> {
       return static_cast<u32>(sec * static_cast<float>(EE_CYCLES_PER_SEC));
   }
 
-  // Target cycles for 60 FPS update (Render) -> ~16.66ms
-  // We use slightly less than actual 60HZ (1/60s) to ensure we don't miss vsync due to rounding? 
-  // actually standard 60fps is fine: 147456000 / 60 = 2,457,600
-  static constexpr u32 TARGET_RENDER_CYCLES = 2457600; 
+  // FPS target cycle counts
+  static constexpr u32 RENDER_CYCLES_60FPS = EE_CYCLES_PER_SEC / 60; // 2,457,600
+  static constexpr u32 RENDER_CYCLES_30FPS = EE_CYCLES_PER_SEC / 30; // 4,915,200
 
   // Target cycles for 20 TPS update (Physics) -> ~50ms (Minecraft tick rate)
   static constexpr u32 TARGET_PHYSICS_CYCLES = EE_CYCLES_PER_SEC / 20;
@@ -82,6 +88,7 @@ class Timer : public Singleton<Timer> {
   u32 lastCpuCount = 0;       // Snapshot of COUNT register
   u32 renderAcc = 0;          // Accumulated cycles for rendering
   u32 physicsAcc = 0;         // Accumulated cycles for physics
+  u32 targetRenderCycles = RENDER_CYCLES_60FPS; // Current FPS target
   
   // Timing data for getters
   float realDeltaTime = 0.0f;

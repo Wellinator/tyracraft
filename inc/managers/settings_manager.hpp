@@ -14,9 +14,11 @@
 using Tyra::Engine;
 using Tyra::FileUtils;
 
+enum class FpsMode : u8 { VSync = 0, FPS_30, FPS_60 };
+
 struct settings_file {
-  // VSync control
-  bool vsync = false;
+  // FPS / VSync control
+  FpsMode fps_mode = FpsMode::FPS_60;
 
   // Ambient occlusion illumination
   bool ambient_occlusion = false;

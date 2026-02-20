@@ -10,7 +10,7 @@ using Tyra::Renderer;
 using Tyra::Sprite;
 
 enum class OptionsScreenOptions {
-  VSyncOnOff,
+  FpsModeOption,
   ReverseCamY,
   CamSensitivityH,
   CamSensitivityV,
@@ -45,13 +45,16 @@ class ScreenOptions : public ScreenBase {
 
   settings_file tempSettings = g_settings;
 
-  OptionsScreenOptions activeOption = OptionsScreenOptions::VSyncOnOff;
+  OptionsScreenOptions activeOption = OptionsScreenOptions::FpsModeOption;
 
   const float SLOT_WIDTH = 315;
   const float SLOT_HIGHT_OFFSET = 30;
   const float SLOT_HIGHT_OPTION_OFFSET = 40;
 
-  const std::string Label_UseVsync          = LanguageManager::Translate("/options_menu/use_vsync");
+  const std::string Label_FpsMode         = LanguageManager::Translate("/options_menu/fps_mode");
+  const std::string Label_FpsVSync        = LanguageManager::Translate("/options_menu/fps_vsync");
+  const std::string Label_Fps30           = LanguageManager::Translate("/options_menu/fps_30");
+  const std::string Label_Fps60           = LanguageManager::Translate("/options_menu/fps_60");
   const std::string Label_ReverseCameraY    = LanguageManager::Translate("/options_menu/reverse_camera_y");
   const std::string Label_CamSensitivityH   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "  H: ";
   const std::string Label_CamSensitivityV   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "   V: ";
@@ -71,4 +74,6 @@ class ScreenOptions : public ScreenBase {
   void hightLightActiveOption();
   void handleInput();
   void navigate();
+  void cycleFpsMode(int direction);
+  const std::string& getFpsModeLabel() const;
 };

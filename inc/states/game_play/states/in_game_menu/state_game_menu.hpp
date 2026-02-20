@@ -3,8 +3,10 @@
 #include "states/game_play/states/playing_state_base.hpp"
 #include "managers/font/font_manager.hpp"
 #include "managers/language_manager.hpp"
+#include "managers/settings_manager.hpp"
 #include "constants.hpp"
 #include "entities/World.hpp"
+#include "timer.hpp"
 #include <string>
 #include <tamtypes.h>
 #include <tyra>
@@ -15,7 +17,7 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions { DrawDistance, SaveGame, Quit, None };
+enum class GameMenuOptions { DrawDistance, FpsModeOption, SaveGame, Quit, None };
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -88,7 +90,15 @@ class StateGameMenu : public PlayingStateBase {
   void unloadTextures();
   void cycleDrawDistanceMode(int direction);
   const std::string& getDrawDistanceModeLabel() const;
+  void cycleFpsMode(int direction);
+  const std::string& getFpsModeLabel() const;
   void renderSaveOverwritingDialog();
   void renderSaveAndQuitDialog();
   void renderQuitWithoutSavingDialog();
+
+  // FPS Mode labels
+  const std::string Label_FpsMode    = LanguageManager::Translate("/state_game_menu/fps_mode");
+  const std::string Label_FpsVSync   = LanguageManager::Translate("/state_game_menu/fps_vsync");
+  const std::string Label_Fps30      = LanguageManager::Translate("/state_game_menu/fps_30");
+  const std::string Label_Fps60      = LanguageManager::Translate("/state_game_menu/fps_60");
 };

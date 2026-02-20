@@ -1,6 +1,7 @@
 #include "timer.hpp"
 #include "managers/settings_manager.hpp"
 #include <graph.h>
+#include <gs_privileged.h>
 
 namespace TyraCraft {
 
@@ -8,7 +9,10 @@ float Timer::stateLerp = 0.0f;
 
 void Timer::init() {
     lastCpuCount = getCpuCycles();
-    renderAcc = TARGET_RENDER_CYCLES / 2; // Offset start
+    
+    // Set initial target based on persisted setting
+    setFpsMode(g_settings.fps_mode);
+    
     physicsAcc = TARGET_PHYSICS_CYCLES / 2;
     
     // Initialize start times for the first frame interval measurement
@@ -90,22 +94,22 @@ bool Timer::updateFrame() {
 bool Timer::renderFrame() {
   bool result = false;
 
-  if (g_settings.vsync) {
-    graph_wait_vsync();
-    
-    // When VSync is enabled, we always render after the wait
-    result = true;
-    renderAcc = 0; // Reset accumulator since we rely on hardware sync
+  if (g_settings.fps_mode == FpsMode::VSync) {
+   if (*GS_REG_CSR & 8) {           // VSync ready?
+        *GS_REG_CSR = 8;             // Clear flag (write-1-to-clear)
+        result = true;
+        renderAcc = 0;
+    }
   } else {
     // When VSync is disabled, we rely on the accumulator
-    if (renderAcc >= TARGET_RENDER_CYCLES) {
-        renderAcc -= TARGET_RENDER_CYCLES;
+    if (renderAcc >= targetRenderCycles) {
+        renderAcc -= targetRenderCycles;
         result = true;
     }
     
     // Spiral prevention for Render (only needed when unlimited/accumulating)
-    if (renderAcc > TARGET_RENDER_CYCLES * MAX_FRAME_SKIP) {
-        renderAcc = TARGET_RENDER_CYCLES;
+    if (renderAcc > targetRenderCycles * MAX_FRAME_SKIP) {
+        renderAcc = targetRenderCycles;
     }
   }
 
@@ -117,6 +121,20 @@ bool Timer::renderFrame() {
     renderBeginCpuCount = current;
   }
   return result;
+}
+
+void Timer::setFpsMode(FpsMode mode) {
+  switch (mode) {
+    case FpsMode::FPS_30:
+      targetRenderCycles = RENDER_CYCLES_30FPS;
+      break;
+    case FpsMode::FPS_60:
+    default:
+      targetRenderCycles = RENDER_CYCLES_60FPS;
+      break;
+  }
+  // Reset accumulator so we don't service a huge backlog after switching
+  renderAcc = targetRenderCycles / 2;
 }
 
 
