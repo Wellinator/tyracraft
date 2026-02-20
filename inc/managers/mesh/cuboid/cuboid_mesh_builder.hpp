@@ -42,6 +42,9 @@ void CuboidMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      WorldLightModel* t_worldLightModel,
                                      Level* pLevel);
 
+// Pre-compute UV cache (call once at init)
+void CuboidMeshBuilder_InitUVCache();
+
 /**
  * @brief Return an array with the correct face by rotation
  * This function basicaly reverse the getBlockVisibleFaces orientation for

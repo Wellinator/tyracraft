@@ -33,6 +33,19 @@ class LightManager {
   static void ApplyLightToFace(Color* baseColor, Vec4* offset, Level* pLevel,
                                const float sunlightIntensity);
 
+  // Batch version: computes light for all visible faces in one call.
+  // faceSides[6] maps each BlockFace index to its world FACE_SIDE.
+  // TOP/BOTTOM are always direct; LEFT/RIGHT/BACK/FRONT use rotation mapping.
+  // outColors[6] receives the lit Color for each visible face.
+  static void ApplyLightToAllFaces(const Color& baseFaceColor,
+                                   const Vec4* offset,
+                                   u8 visibleFaces,
+                                   const FACE_SIDE faceSides[6],
+                                   const float faceIntensities[6],
+                                   Level* pLevel,
+                                   float sunlightIntensity,
+                                   Color outColors[6]);
+
  private:
   Level* pLevel = nullptr;
 };

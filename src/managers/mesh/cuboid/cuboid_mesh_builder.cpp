@@ -7,6 +7,38 @@
 #include "managers/settings_manager.hpp"
 #include "utils.hpp"
 
+// ---------------------------------------------------------------------------
+// Pre-computed UV lookup table (256 texture indices × 6 vertices per face)
+// Eliminates per-face float division, modulo, and Vec4 construction.
+// ---------------------------------------------------------------------------
+struct UVFaceCache {
+  Vec4 uvs[6];
+};
+
+static UVFaceCache s_uvCache[256];
+static bool s_uvCacheInitialized = false;
+
+void CuboidMeshBuilder_InitUVCache() {
+  constexpr float scale = 1.0F / 16.0F;
+  for (int index = 0; index < 256; ++index) {
+    const int X = index % MAX_TEX_COLS;
+    const int Y = index / MAX_TEX_COLS;
+    const float x0 = X * scale;
+    const float x1 = (X + 1) * scale;
+    const float y0 = Y * scale;
+    const float y1 = (Y + 1) * scale;
+
+    // Same vertex order as the original CuboidMeshBuilder_loadUVFaceData
+    s_uvCache[index].uvs[0] = Vec4(x0, y1, 1.0F, 0.0F);
+    s_uvCache[index].uvs[1] = Vec4(x1, y0, 1.0F, 0.0F);
+    s_uvCache[index].uvs[2] = Vec4(x1, y1, 1.0F, 0.0F);
+    s_uvCache[index].uvs[3] = Vec4(x0, y1, 1.0F, 0.0F);
+    s_uvCache[index].uvs[4] = Vec4(x0, y0, 1.0F, 0.0F);
+    s_uvCache[index].uvs[5] = Vec4(x1, y0, 1.0F, 0.0F);
+  }
+  s_uvCacheInitialized = true;
+}
+
 void CuboidMeshBuilder_GenerateMesh(const Vec4* offset, const u8 visibleFaces,
                                     const int lod,
                                     std::vector<Vec4>* t_vertices,
@@ -120,18 +152,14 @@ void CuboidMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
 
 void CuboidMeshBuilder_loadUVFaceData(const u8& index,
                                       std::vector<Vec4>* t_uv_map) {
-  const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
-  const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
-  const float scale = 1.0F / 16.0F;
-  const Vec4 scaleVec = Vec4(scale, scale, 1.0F, 0.0F);
-
-  t_uv_map->emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
-  t_uv_map->emplace_back(Vec4((X + 1.0F), (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-
-  t_uv_map->emplace_back(Vec4(X, (Y + 1.0F), 1.0F, 0.0F) * scaleVec);
-  t_uv_map->emplace_back(Vec4(X, Y, 1.0F, 0.0F) * scaleVec);
-  t_uv_map->emplace_back(Vec4((X + 1.0F), Y, 1.0F, 0.0F) * scaleVec);
+  if (!s_uvCacheInitialized) CuboidMeshBuilder_InitUVCache();
+  const UVFaceCache& cached = s_uvCache[index];
+  t_uv_map->emplace_back(cached.uvs[0]);
+  t_uv_map->emplace_back(cached.uvs[1]);
+  t_uv_map->emplace_back(cached.uvs[2]);
+  t_uv_map->emplace_back(cached.uvs[3]);
+  t_uv_map->emplace_back(cached.uvs[4]);
+  t_uv_map->emplace_back(cached.uvs[5]);
 }
 
 std::array<FACE_SIDE, 4> CuboidMeshBuilder_getFaceByRotation(const Vec4* offset,
@@ -187,125 +215,52 @@ void CuboidMeshBuilder_loadLightData(const Vec4* offset, const u8 visibleFaces,
                                      std::vector<Color>* t_vertices_colors,
                                      WorldLightModel* t_worldLightModel,
                                      Level* pLevel) {
-  auto baseFaceColor = Color(120, 120, 120, 128);
-  Vec4 tempColor;
+  const auto baseFaceColor = Color(120, 120, 120, 128);
   const std::array<FACE_SIDE, 4> faceByRotation =
       CuboidMeshBuilder_getFaceByRotation(offset, pLevel);
 
-  if (visibleFaces & (int)BlockFace::TOP) {
-    //   Top face 100% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 1.0F);
+  // Map face index → world FACE_SIDE (rotation-corrected for side faces)
+  // Index: 0=TOP, 1=BOTTOM, 2=LEFT, 3=RIGHT, 4=BACK, 5=FRONT
+  const FACE_SIDE faceSides[6] = {
+      FACE_SIDE::TOP,     // TOP - always direct
+      FACE_SIDE::BOTTOM,  // BOTTOM - always direct
+      faceByRotation[0],  // LEFT → rotated
+      faceByRotation[3],  // RIGHT → rotated
+      faceByRotation[2],  // BACK → rotated
+      faceByRotation[1]   // FRONT → rotated
+  };
 
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   FACE_SIDE::TOP, pLevel,
-                                   t_worldLightModel->sunLightIntensity);
+  // Face shading intensities (same as original per-face values)
+  static const float faceIntensities[6] = {
+      1.0F,  // TOP = 100%
+      0.5F,  // BOTTOM = 50%
+      0.6F,  // LEFT = 60%
+      0.6F,  // RIGHT = 60%
+      0.8F,  // BACK = 80%
+      0.8F   // FRONT = 80%
+  };
 
-    Vec4::copy(&tempColor, faceColor.rgba);
+  // Batch compute all face light colors in one call
+  Color faceColors[6];
+  LightManager::ApplyLightToAllFaces(baseFaceColor, offset, visibleFaces,
+                                     faceSides, faceIntensities, pLevel,
+                                     t_worldLightModel->sunLightIntensity,
+                                     faceColors);
 
-    if (g_settings.ambient_occlusion) {
-      auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(FACE_SIDE::TOP, offset, pLevel);
-      CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
-                                                t_vertices_colors);
-    } else {
-      CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-    }
-  }
+  // BlockFace bit flags matching the face index order
+  static const u8 faceBits[6] = {
+      (u8)BlockFace::TOP, (u8)BlockFace::BOTTOM, (u8)BlockFace::LEFT,
+      (u8)BlockFace::RIGHT, (u8)BlockFace::BACK, (u8)BlockFace::FRONT};
 
-  if (visibleFaces & (int)BlockFace::BOTTOM) {
-    //   Top face 50% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.5F);
+  // Emit vertex colors for each visible face (with AO if enabled)
+  for (int f = 0; f < 6; ++f) {
+    if (!(visibleFaces & faceBits[f])) continue;
 
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   FACE_SIDE::BOTTOM, pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-
-    if (g_settings.ambient_occlusion) {
-      auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(FACE_SIDE::BOTTOM, offset, pLevel);
-      CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
-                                                t_vertices_colors);
-    } else {
-      CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-    }
-  }
-
-  if (visibleFaces & (int)BlockFace::LEFT) {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   faceByRotation[0], pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
+    Color faceColor = faceColors[f];
 
     if (g_settings.ambient_occlusion) {
       auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(faceByRotation[0], offset, pLevel);
-      CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
-                                                t_vertices_colors);
-    } else {
-      CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-    }
-  }
-
-  if (visibleFaces & (int)BlockFace::RIGHT) {
-    // X-side faces 60% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.6F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   faceByRotation[3], pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-
-    if (g_settings.ambient_occlusion) {
-      auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(faceByRotation[3], offset, pLevel);
-      CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
-                                                t_vertices_colors);
-    } else {
-      CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-    }
-  }
-
-  if (visibleFaces & (int)BlockFace::BACK) {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   faceByRotation[2], pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-
-    if (g_settings.ambient_occlusion) {
-      auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(faceByRotation[2], offset, pLevel);
-      CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
-                                                t_vertices_colors);
-    } else {
-      CuboidMeshBuilder_loadLightFaceData(&faceColor, t_vertices_colors);
-    }
-  }
-
-  if (visibleFaces & (int)BlockFace::FRONT) {
-    // Z-side faces 80% of the base color
-    Color faceColor = LightManager::IntensifyColor(baseFaceColor, 0.8F);
-
-    // Apply sunlight and block light to face
-    LightManager::ApplyLightToFace(&faceColor, const_cast<Vec4*>(offset),
-                                   faceByRotation[1], pLevel,
-                                   t_worldLightModel->sunLightIntensity);
-    Vec4::copy(&tempColor, faceColor.rgba);
-
-    if (g_settings.ambient_occlusion) {
-      auto faceNeighbors =
-          CuboidMeshBuilder_getFaceNeighbors(faceByRotation[1], offset, pLevel);
+          CuboidMeshBuilder_getFaceNeighbors(faceSides[f], offset, pLevel);
       CuboidMeshBuilder_loadLightFaceDataWithAO(&faceColor, faceNeighbors,
                                                 t_vertices_colors);
     } else {

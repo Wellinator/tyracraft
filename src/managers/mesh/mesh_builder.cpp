@@ -24,6 +24,9 @@ std::map<Blocks,
     light_builders;
 
 void MeshBuilder_RegisterBuilders() {
+  // Pre-compute UV lookup table for cuboid faces
+  CuboidMeshBuilder_InitUVCache();
+
   builders = {
       // Vegetation
       {Blocks::GRASS, CrossedMeshBuilder_GenerateMesh},

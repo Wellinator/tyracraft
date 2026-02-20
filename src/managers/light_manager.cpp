@@ -161,6 +161,63 @@ void LightManager::ApplyLightToFace(Color* baseColor, Vec4* offset,
       *baseColor, std::max(sunLightFactor, lightLevelFactor));
 }
 
+void LightManager::ApplyLightToAllFaces(const Color& baseFaceColor,
+                                        const Vec4* offset,
+                                        u8 visibleFaces,
+                                        const FACE_SIDE faceSides[6],
+                                        const float faceIntensities[6],
+                                        Level* pLevel,
+                                        float sunlightIntensity,
+                                        Color outColors[6]) {
+  const float MAX_LIGHT_VALUE = 15.0F;
+  const float MIN_LIGHT_FACTOR = 0.15F;
+
+  // Neighbor offsets indexed by FACE_SIDE enum value.
+  // FACE_SIDE: FRONT=0, BACK=1, LEFT=2, RIGHT=3, TOP=4, BOTTOM=5
+  // Directions from original ApplyLightToFace switch/case:
+  //   FRONT → z-1, BACK → z+1, LEFT → x+1, RIGHT → x-1, TOP → y+1, BOTTOM → y-1
+  static const int dx[6] = {0, 0, 1, -1, 0, 0};
+  static const int dy[6] = {0, 0, 0, 0, 1, -1};
+  static const int dz[6] = {-1, 1, 0, 0, 0, 0};
+
+  // BlockFace bit flags for each face index (0=TOP, 1=BOTTOM, 2=LEFT, 3=RIGHT,
+  // 4=BACK, 5=FRONT)
+  // These match the order used in CuboidMeshBuilder_loadLightData
+  static const u8 faceBits[6] = {
+      0b000010,  // TOP
+      0b000001,  // BOTTOM
+      0b001000,  // LEFT
+      0b000100,  // RIGHT
+      0b010000,  // BACK
+      0b100000   // FRONT
+  };
+
+  const int bx = (int)offset->x;
+  const int by = (int)offset->y;
+  const int bz = (int)offset->z;
+
+  for (int f = 0; f < 6; ++f) {
+    if (!(visibleFaces & faceBits[f])) continue;
+
+    // Apply face shading intensity
+    Color faceColor = IntensifyColor(baseFaceColor, faceIntensities[f]);
+
+    // Lookup light data from the neighbor in the face direction
+    const int side = static_cast<int>(faceSides[f]);
+    u8 lightData =
+        pLevel->GetLightDataFromMap(bx + dx[side], by + dy[side], bz + dz[side]);
+    u8 sunLightLevel = (lightData >> 4) & 0xF;
+    u8 lightLevel = lightData & 0x0F;
+
+    const float sunLightFactor = std::max(
+        (sunLightLevel * sunlightIntensity) / MAX_LIGHT_VALUE, MIN_LIGHT_FACTOR);
+    const float lightLevelFactor = lightLevel / MAX_LIGHT_VALUE;
+
+    outColors[f] =
+        IntensifyColor(faceColor, std::max(sunLightFactor, lightLevelFactor));
+  }
+}
+
 Color LightManager::GetLightColorAt(const Vec4& offset, TargetedFace face,
                                     const float sunlightIntensity) {
   const float MAX_LIGHT_VALUE = 15.0F;
