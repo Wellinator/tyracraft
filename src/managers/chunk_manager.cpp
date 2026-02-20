@@ -535,7 +535,7 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
   // BFS traversal using visibility graph
   // Increased MAX_STEPS from 16 to 24 to prevent culling forward chunks with turns
   // With MAX_DRAW_DISTANCE=16 and turn cost=2, 16 steps is too restrictive
-  static constexpr u8 MAX_STEPS = 24;
+  static constexpr u8 MAX_STEPS = 12;
   static constexpr u16 BFS_QUEUE_SIZE = OVERWORLD_SIZE_IN_CHUNKS;
 
   // Visited bitset — one bit per chunk ID

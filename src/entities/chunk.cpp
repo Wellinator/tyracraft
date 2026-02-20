@@ -272,11 +272,11 @@ const int Chunk::getLODFromDistance() {
 }
 
 const int Chunk::getLODFromDistance(const int distance) {
-  if (distance < 3)
+  if (distance < 2)
     return 0;
-  else if (distance < 6)
+  else if (distance < 3)
     return 1;
-  else if (distance < 10)
+  else if (distance < 5)
     return 2;
   else
     return 3;
@@ -287,23 +287,23 @@ const int Chunk::getLODFromDistanceWithHysteresis(const int distance,
   // Hysteresis bands: upgrade threshold = base+1, downgrade threshold = base-1
   switch (currentLOD) {
     case 0:
-      if (distance >= 4) return (distance >= 7) ? (distance >= 11 ? 3 : 2) : 1;
+      if (distance >= 3) return (distance >= 4) ? (distance >= 6 ? 3 : 2) : 1;
       return 0;
     case 1:
-      if (distance < 2) return 0;
-      if (distance >= 7) return (distance >= 11) ? 3 : 2;
+      if (distance < 1) return 0;
+      if (distance >= 4) return (distance >= 6) ? 3 : 2;
       return 1;
     case 2:
-      if (distance < 5) return (distance < 2) ? 0 : 1;
-      if (distance >= 11) return 3;
+      if (distance < 2) return (distance < 1) ? 0 : 1;
+      if (distance >= 6) return 3;
       return 2;
     case 3:
-      if (distance < 9) return (distance < 5) ? (distance < 2 ? 0 : 1) : 2;
+      if (distance < 4) return (distance < 2) ? (distance < 1 ? 0 : 1) : 2;
       return 3;
     default:
-      if (distance < 3) return 0;
-      else if (distance < 6) return 1;
-      else if (distance < 10) return 2;
+      if (distance < 2) return 0;
+      else if (distance < 3) return 1;
+      else if (distance < 5) return 2;
       else return 3;
   }
 }

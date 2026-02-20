@@ -26,7 +26,7 @@
   (OVERWORLD_H_DISTANCE * OVERWORLD_H_DISTANCE * OVERWORLD_V_DISTANCE)
 
 // Define static chunk size CHUNK_SIZE x CHUNK_SIZE x OVERWORLD_V_DISTANCE
-#define CHUNK_SIZE 8
+#define CHUNK_SIZE 16
 #define CHUNK_LENGTH (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 #define HALF_CHUNK_SIZE (CHUNK_SIZE / 2)
 #define BLOCK_SIZE 8.0F
@@ -54,19 +54,19 @@
                                     // chunks;
 
 // Defines how many chunks will be loaded from player position
-#define MIN_DRAW_DISTANCE 2
-#define MAX_DRAW_DISTANCE 24
+#define MIN_DRAW_DISTANCE 1
+#define MAX_DRAW_DISTANCE 12
 #define DRAW_DISTANCE_SAFETY_MARGIN_MB 5
 #define DRAW_DISTANCE_BACKWARD_RATIO 0.4f
 #define DRAW_DISTANCE_SIDE_RATIO 0.7f
-#define DRAW_DISTANCE_UNLOAD_MARGIN 2  // Extra chunks before unloading (hysteresis)
+#define DRAW_DISTANCE_UNLOAD_MARGIN 1  // Extra chunks before unloading (hysteresis)
 
 // Draw distance mode presets
 enum class DrawDistanceMode : u8 { Auto = 0, Low = 1, Medium = 2, High = 3 };
 
-#define DRAW_DISTANCE_LOW_CAP 5
-#define DRAW_DISTANCE_MEDIUM_CAP 9
-#define DRAW_DISTANCE_HIGH_CAP 14
+#define DRAW_DISTANCE_LOW_CAP 3
+#define DRAW_DISTANCE_MEDIUM_CAP 5
+#define DRAW_DISTANCE_HIGH_CAP 7
 
 // FPS thresholds for auto-adjustment
 #define DRAW_DISTANCE_FPS_SHRINK_THRESHOLD 25
