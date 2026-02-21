@@ -48,16 +48,35 @@ void ChunkManager::clearAllChunks() {
 
 void ChunkManager::updateLoadedChunks() {
   loadedChunks.clear();
-  activeChunks.clear();  // Phase 2: Maintain activeChunks list
-  
-  // Phase 1: spatialGrid is STATIC - never remove chunks from it
-  // It's populated once in generateChunks() and stays constant
-  // Validation happens at usage time in getChunksInRadius()
-  
+  activeChunks.clear();
+
   for (u16 i = 0; i < chunks.size(); i++) {
     if (chunks[i]->isLoaded() == false) continue;
     loadedChunks.emplace_back(chunks[i]);
-    activeChunks.emplace_back(chunks[i]);  // Phase 2: Same as loadedChunks for now
+    activeChunks.emplace_back(chunks[i]);
+  }
+}
+
+void ChunkManager::addToLoadedChunks(Chunk* chunk) {
+  loadedChunks.push_back(chunk);
+  activeChunks.push_back(chunk);
+}
+
+void ChunkManager::removeFromLoadedChunks(Chunk* chunk) {
+  // Swap-and-pop for O(1) removal (order doesn't matter for these lists)
+  for (size_t i = 0; i < loadedChunks.size(); i++) {
+    if (loadedChunks[i] == chunk) {
+      loadedChunks[i] = loadedChunks.back();
+      loadedChunks.pop_back();
+      break;
+    }
+  }
+  for (size_t i = 0; i < activeChunks.size(); i++) {
+    if (activeChunks[i] == chunk) {
+      activeChunks[i] = activeChunks.back();
+      activeChunks.pop_back();
+      break;
+    }
   }
 }
 

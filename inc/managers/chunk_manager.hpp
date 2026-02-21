@@ -50,6 +50,10 @@ class ChunkManager : public Singleton<ChunkManager> {
   void reloadLightDataOfAllChunks();
   void updateLoadedChunks();
 
+  // Incremental O(1) chunk list management (avoids full rebuild)
+  void addToLoadedChunks(Chunk* chunk);
+  void removeFromLoadedChunks(Chunk* chunk);
+
   std::vector<Chunk*>* getLoadedChunks() { return &loadedChunks; };
   std::vector<Chunk*>* getVisibleChunks() { return &visibleChunks; };
 #ifdef DEBUG_MODE

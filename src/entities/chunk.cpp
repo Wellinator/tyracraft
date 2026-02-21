@@ -902,24 +902,9 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   // Cache BlockManager instance to avoid repeated singleton lookups
   BlockManager* blockMgr = BlockManager::getInstance();
 
-  // Initialize color bag
+  // Colors are pre-faded by renderer()/rendererTransparentData() if needed
   StaPipColorBag colorBag;
-
-  // Static buffer for faded colors to avoid repeated allocations on PS2
-  static std::vector<Color> fadedColors;
-
-  // Apply fade alpha if chunk is fading
-  if (fadeAlpha < 1.0f) {
-    fadedColors.resize(count);
-    const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);  // PS2 uses 0-128 for alpha
-    for (int i = 0; i < count; i++) {
-      fadedColors[i] = (*inColors)[offset + i];
-      fadedColors[i].a = alphaValue;
-    }
-    colorBag.many = fadedColors.data();
-  } else {
-    colorBag.many = inColors->data() + offset;
-  }
+  colorBag.many = inColors->data() + offset;
 
   // Initialize texture bag
   StaPipTextureBag textureBag;
@@ -959,16 +944,34 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   std::vector<Vec4>*  pUV     = &UV;
   std::vector<Color>* pColors = &colors;
 
-  static std::vector<Vec4>  tempVertices;
-  static std::vector<Color> tempColors;
-  static std::vector<Vec4>  tempUV;
-
   if (vertices.empty() && !compressedVertices.empty()) {
-    decompressData(&tempVertices, &tempColors, &tempUV, compressedVertices);
-    pVerts = &tempVertices; pColors = &tempColors; pUV = &tempUV;
+    if (!decompCacheValid) {
+      cachedDecompVertices.clear();
+      cachedDecompColors.clear();
+      cachedDecompUV.clear();
+      decompressData(&cachedDecompVertices, &cachedDecompColors,
+                     &cachedDecompUV, compressedVertices);
+      decompCacheValid = true;
+    }
+    pVerts = &cachedDecompVertices;
+    pColors = &cachedDecompColors;
+    pUV = &cachedDecompUV;
   }
 
   if (pVerts->empty()) return;
+
+  // Pre-apply fade alpha to colors once per chunk, not per draw call
+  static std::vector<Color> fadedColors;
+  if (fadeAlpha < 1.0f) {
+    const size_t totalVerts = pColors->size();
+    fadedColors.resize(totalVerts);
+    const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
+    for (size_t i = 0; i < totalVerts; i++) {
+      fadedColors[i] = (*pColors)[i];
+      fadedColors[i].a = alphaValue;
+    }
+    pColors = &fadedColors;
+  }
 
 #ifdef DEBUG_MODE
   if (!g_debug_menu.enableBackfaceCulling) {
@@ -1023,17 +1026,34 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   std::vector<Vec4>*  pUV     = &transpUV;
   std::vector<Color>* pColors = &transpColors;
 
-  static std::vector<Vec4>  tempTranspVertices;
-  static std::vector<Color> tempTranspColors;
-  static std::vector<Vec4>  tempTranspUV;
-
   if (transpVertices.empty() && !compressedTransparentVertices.empty()) {
-    decompressData(&tempTranspVertices, &tempTranspColors, &tempTranspUV,
-                   compressedTransparentVertices);
-    pVerts = &tempTranspVertices; pColors = &tempTranspColors; pUV = &tempTranspUV;
+    if (!decompTranspCacheValid) {
+      cachedDecompTranspVertices.clear();
+      cachedDecompTranspColors.clear();
+      cachedDecompTranspUV.clear();
+      decompressData(&cachedDecompTranspVertices, &cachedDecompTranspColors,
+                     &cachedDecompTranspUV, compressedTransparentVertices);
+      decompTranspCacheValid = true;
+    }
+    pVerts = &cachedDecompTranspVertices;
+    pColors = &cachedDecompTranspColors;
+    pUV = &cachedDecompTranspUV;
   }
 
   if (pVerts->empty()) return;
+
+  // Pre-apply fade alpha to transparent colors once per chunk
+  static std::vector<Color> fadedTranspColors;
+  if (fadeAlpha < 1.0f) {
+    const size_t totalVerts = pColors->size();
+    fadedTranspColors.resize(totalVerts);
+    const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
+    for (size_t i = 0; i < totalVerts; i++) {
+      fadedTranspColors[i] = (*pColors)[i];
+      fadedTranspColors[i].a = alphaValue;
+    }
+    pColors = &fadedTranspColors;
+  }
 
 #ifdef DEBUG_MODE
   if (!g_debug_menu.enableBackfaceCulling) {
@@ -1110,6 +1130,9 @@ void Chunk::clearDrawData() {
   transpUV.clear();
   transpUV.shrink_to_fit();
 
+  // Invalidate decompression cache
+  invalidateDecompCache();
+
   isCompressed = false;
   isUltraCompressed = false;
   isMerged = false;
@@ -1128,6 +1151,9 @@ void Chunk::clearDrawDataWithoutShrink() {
   transpUV.clear();
   transpColors.clear();
 
+  // Invalidate decompression cache
+  invalidateDecompCache();
+
   isCompressed = false;
   isUltraCompressed = false;
   isMerged = false;
@@ -1139,6 +1165,27 @@ void Chunk::clearDrawDataWithoutShrink() {
 
   std::fill(faceGroupBoundaries, faceGroupBoundaries + 7, 0);
   std::fill(transpFaceGroupBoundaries, transpFaceGroupBoundaries + 7, 0);
+}
+
+void Chunk::invalidateDecompCache() {
+  if (decompCacheValid) {
+    cachedDecompVertices.clear();
+    cachedDecompVertices.shrink_to_fit();
+    cachedDecompColors.clear();
+    cachedDecompColors.shrink_to_fit();
+    cachedDecompUV.clear();
+    cachedDecompUV.shrink_to_fit();
+    decompCacheValid = false;
+  }
+  if (decompTranspCacheValid) {
+    cachedDecompTranspVertices.clear();
+    cachedDecompTranspVertices.shrink_to_fit();
+    cachedDecompTranspColors.clear();
+    cachedDecompTranspColors.shrink_to_fit();
+    cachedDecompTranspUV.clear();
+    cachedDecompTranspUV.shrink_to_fit();
+    decompTranspCacheValid = false;
+  }
 }
 
 void Chunk::build() {
@@ -1571,9 +1618,10 @@ void Chunk::compressData() {
   std::vector<Vec4>().swap(transpVertices);
   std::vector<Vec4>().swap(transpUV);
   std::vector<Color>().swap(transpColors);
-  
-  std::vector<Color>().swap(transpColors);
-  
+
+  // Invalidate decompression cache since compressed data changed
+  invalidateDecompCache();
+
   // Do NOT set isCompressed = true here.
   // isCompressed tracks GEOMETRIC compression (greedy meshing),
   // whereas this method performs STORAGE compression (bit packing).

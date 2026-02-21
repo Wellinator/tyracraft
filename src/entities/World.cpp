@@ -207,13 +207,16 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
   playerDeltaDistance = lastPlayerPosition.distanceTo(t_player->position);
   lastPlayerPosition.set(t_player->position);
 
-  unloadScheduledChunks();
-
   particlesManager.update(deltaTime, t_camera);
   mobManager.update(deltaTime);
 };
 
 void World::processIdleWork() {
+  // Handle pending unloads first (they free memory for new loads)
+  if (!tempChunksToUnLoad.empty()) {
+    unloadScheduledChunks();
+  }
+
   if (tempChunksToLoad.empty()) return;
 
   // Budget: 5ms = 5 * 147456 EE count-register cycles
@@ -221,6 +224,8 @@ void World::processIdleWork() {
 
   u32 start;
   asm volatile("mfc0 %0, $9" : "=r"(start));
+
+  bool anyBuilt = false;
 
   while (!tempChunksToLoad.empty()) {
     Chunk* chunk = tempChunksToLoad.front();
@@ -238,8 +243,14 @@ void World::processIdleWork() {
       continue;
     }
 
+    const bool wasLoaded = chunk->isLoaded();
     chunk->build();
     chunk->loadedAtTick = g_ticksCounter;
+
+    // Incremental list update: only add newly loaded chunks
+    if (!wasLoaded && chunk->isLoaded()) {
+      chunkManager.addToLoadedChunks(chunk);
+    }
 
     if (g_debug_mode) {
       chunk->timeToBuild =
@@ -254,8 +265,6 @@ void World::processIdleWork() {
         mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
       }
     }
-
-    chunkManager.updateLoadedChunks();
 
     u32 now;
     asm volatile("mfc0 %0, $9" : "=r"(now));
@@ -683,65 +692,6 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   }
 }
 
-void World::loadScheduledChunks() {
-  if (tempChunksToLoad.empty()) return;
-
-  // Phase 5: Time-budget approach — build as many chunks as possible within
-  // ~2ms limit to avoid frame stalls from expensive (5-15ms) chunk builds.
-  // Budget: 2ms = 2 * 147456 EE count-register cycles (counts at ~147.456 MHz)
-  static constexpr u32 BUILD_BUDGET_CYCLES = 294912u;  // 2ms
-
-  u32 budgetStart;
-  asm volatile ("mfc0 %0, $9" : "=r" (budgetStart));
-
-  while (!tempChunksToLoad.empty()) {
-    Chunk* chunk = tempChunksToLoad.front();
-    tempChunksToLoad.pop_front();
-    chunksInLoadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
-
-    if (!drawDistanceController.canLoadMoreChunks()) {
-      unloadScheduledChunks();
-      tempChunksToLoad.push_front(chunk);
-      chunksInLoadQueue.set(chunk->id);
-      break;
-    }
-
-    // Validate state before building:
-    // - New chunks should be in Building state
-    // - LOD rebuilds stay in Loaded state until build() runs
-    if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
-      TYRA_LOG("Warning: chunk ", chunk->id, " not in expected state for build");
-      continue;
-    }
-
-    chunk->build();
-
-    // Mark when this chunk was loaded for recently-loaded protection
-    chunk->loadedAtTick = g_ticksCounter;
-
-    if (g_debug_mode) {
-      chunk->timeToBuild =
-          ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
-      printf("Time to async build chunk %i: %f\n", chunk->id,
-             chunk->timeToBuild);
-    }
-
-    if (Utils::Probability(0.01F, worldOptions.seed)) {
-      Vec4 _spawnPosition;
-      if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-        mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
-      }
-    }
-
-    chunkManager.updateLoadedChunks();
-
-    // Check budget after each build and stop if over limit
-    u32 now;
-    asm volatile ("mfc0 %0, $9" : "=r" (now));
-    if ((now - budgetStart) >= BUILD_BUDGET_CYCLES) break;
-  }
-}
-
 void World::unloadScheduledChunks() {
   if (tempChunksToUnLoad.empty()) return;
 
@@ -753,7 +703,7 @@ void World::unloadScheduledChunks() {
   while (!tempChunksToUnLoad.empty() && unloaded < maxUnloads) {
     Chunk* chunk = tempChunksToUnLoad.front();
     tempChunksToUnLoad.pop_front();
-    chunksInUnloadQueue.reset(chunk->id);  // Phase 3: Clear bitset when dequeuing
+    chunksInUnloadQueue.reset(chunk->id);
 
     // Validate state before clearing
     if (chunk->state != ChunkState::Unloading) {
@@ -761,11 +711,11 @@ void World::unloadScheduledChunks() {
       continue;
     }
 
+    // Remove from loaded lists before clearing (incremental O(1) removal)
+    chunkManager.removeFromLoadedChunks(chunk);
     chunk->clear();
     unloaded++;
   }
-
-  if (unloaded > 0) chunkManager.updateLoadedChunks();
 }
 
 void World::renderBlockDamageOverlay() {

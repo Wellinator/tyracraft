@@ -220,13 +220,11 @@ class World {
   void scheduleChunksNeighbors(Chunk* t_chunk, const Vec4 currentPlayerPos,
                                const Vec4& camForward,
                                u8 force_loading = 0);
-  void loadScheduledChunks();
   void unloadScheduledChunks();
   void addChunkToLoadAsync(Chunk* t_chunk);
   void addChunkToUnloadAsync(Chunk* t_chunk);
   void cancelChunkUnload(Chunk* t_chunk);
   void updateLightModel();
-  void sortChunksToLoad(const Vec4& currentPlayerPos);
 
   const bool getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                             Vec4* result);
@@ -255,11 +253,6 @@ class World {
   inline u8 isLiquidAtPosition(const u8 x, const u8 y, const u8 z);
 
   void initWorldLightModel();
-
-  inline void dispatchChunkBatch() {
-    unloadScheduledChunks();
-    loadScheduledChunks();
-  }
 
   // FROM CrossCraft
   void CrossCraft_World_Init(const uint32_t& seed);

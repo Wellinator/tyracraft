@@ -113,6 +113,7 @@ class Chunk {
   bool isConnected(u8 faceA, u8 faceB) const;
   void clearDrawData();
   void clearDrawDataWithoutShrink();
+  void invalidateDecompCache();
 
   u8 containsBlock(Vec4* offset);
 
@@ -211,6 +212,16 @@ class Chunk {
 
   std::vector<CompressedVertex> compressedVertices;
   std::vector<CompressedVertex> compressedTransparentVertices;
+
+  // Cached decompressed data for render (avoids per-frame decompression)
+  std::vector<Vec4> cachedDecompVertices;
+  std::vector<Color> cachedDecompColors;
+  std::vector<Vec4> cachedDecompUV;
+  std::vector<Vec4> cachedDecompTranspVertices;
+  std::vector<Color> cachedDecompTranspColors;
+  std::vector<Vec4> cachedDecompTranspUV;
+  bool decompCacheValid = false;
+  bool decompTranspCacheValid = false;
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
