@@ -431,50 +431,6 @@ void Chunk::compress(const u8 colorTolerance, const float uvTolerance,
 
 void Chunk::markDirty() { dirty = true; }
 
-// Classify a face (first triangle v0,v1,v2) into one of 6 axis-aligned groups:
-// 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
-static int faceNormalGroup(const Vec4& v0, const Vec4& v1, const Vec4& v2) {
-  const float ex = v1.x - v0.x, ey = v1.y - v0.y, ez = v1.z - v0.z;
-  const float fx = v2.x - v0.x, fy = v2.y - v0.y, fz = v2.z - v0.z;
-  const float nx = ey * fz - ez * fy;
-  const float ny = ez * fx - ex * fz;
-  const float nz = ex * fy - ey * fx;
-  const float ax = fabsf(nx), ay = fabsf(ny), az = fabsf(nz);
-  // Winding order is CW from outside, so the cross product points INWARD.
-  // Signs are therefore inverted relative to the face's outward normal.
-  if (ay >= ax && ay >= az) return (ny < 0.f) ? 0 : 1;  // ny<0 = inward→outward +Y = TOP
-  if (ax >= az)              return (nx < 0.f) ? 2 : 3;  // nx<0 = inward→outward +X = LEFT
-  return                            (nz > 0.f) ? 4 : 5;  // nz>0 = inward→outward -Z = FRONT
-}
-
-void Chunk::sortFacesByNormal(std::vector<Vec4>& verts, std::vector<Vec4>& uvs,
-                              std::vector<Color>& cols, int boundaries[7]) {
-  constexpr size_t stride = 6;
-  const size_t faceCount = verts.size() / stride;
-
-  std::vector<Vec4>  gv[kFaceGroupCount], gu[kFaceGroupCount];
-  std::vector<Color> gc[kFaceGroupCount];
-
-  for (size_t i = 0; i < faceCount; ++i) {
-    const int g = faceNormalGroup(verts[i * stride], verts[i * stride + 1],
-                                  verts[i * stride + 2]);
-    for (size_t j = 0; j < stride; ++j) {
-      gv[g].push_back(verts[i * stride + j]);
-      gu[g].push_back(uvs[i * stride + j]);
-      gc[g].push_back(cols[i * stride + j]);
-    }
-  }
-
-  verts.clear(); uvs.clear(); cols.clear();
-  boundaries[0] = 0;
-  for (int g = 0; g < kFaceGroupCount; ++g) {
-    verts.insert(verts.end(), gv[g].begin(), gv[g].end());
-    uvs.insert(uvs.end(),   gu[g].begin(), gu[g].end());
-    cols.insert(cols.end(), gc[g].begin(), gc[g].end());
-    boundaries[g + 1] = static_cast<int>(verts.size());
-  }
-}
-
 /**
  * @brief Merge the faces (quad of two triangles) that are
  * adjacent, faces to the same direction, has the same UV and Colors into larger
@@ -973,51 +929,7 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     pColors = &fadedColors;
   }
 
-#ifdef DEBUG_MODE
-  if (!g_debug_menu.enableBackfaceCulling) {
-    const int totalCount = faceGroupBoundaries[kFaceGroupCount];
-    if (totalCount > 0)
-      flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, totalCount);
-    return;
-  }
-#endif
-
-  // Group-level back face culling: O(6) comparisons per chunk.
-  // Groups: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
-  const float px = camPositon.x, py = camPositon.y, pz = camPositon.z;
-  const bool groupVisible[kFaceGroupCount] = {
-    py >= scaledMinOffset.y,   // 0: TOP    +Y
-    py <= scaledMaxOffset.y,   // 1: BOTTOM -Y
-    px >= scaledMinOffset.x,   // 2: LEFT   +X
-    px <= scaledMaxOffset.x,   // 3: RIGHT  -X
-    pz <= scaledMaxOffset.z,   // 4: FRONT  -Z
-    pz >= scaledMinOffset.z,   // 5: BACK   +Z
-  };
-
-  // Phase 2: Merge contiguous visible groups into a single draw call.
-  // Instead of up to 6 flushDrawData() calls, emit 1-2 batched calls.
-  int rangeStart = -1;
-  int rangeEnd   = 0;
-  for (int g = 0; g < kFaceGroupCount; ++g) {
-    const int start = faceGroupBoundaries[g];
-    const int end   = faceGroupBoundaries[g + 1];
-    const bool hasVerts = (end - start) > 0;
-
-    if (groupVisible[g] && hasVerts) {
-      if (rangeStart < 0) rangeStart = start;  // Open a new range
-      rangeEnd = end;                           // Extend range
-    } else {
-      if (rangeStart >= 0) {  // Flush accumulated range
-        flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                      rangeStart, rangeEnd - rangeStart);
-        rangeStart = -1;
-      }
-    }
-  }
-  if (rangeStart >= 0) {  // Flush final range
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                  rangeStart, rangeEnd - rangeStart);
-  }
+  flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
 }
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
@@ -1055,45 +967,7 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     pColors = &fadedTranspColors;
   }
 
-#ifdef DEBUG_MODE
-  if (!g_debug_menu.enableBackfaceCulling) {
-    const int totalCount = transpFaceGroupBoundaries[kFaceGroupCount];
-    if (totalCount > 0)
-      flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, totalCount);
-    return;
-  }
-#endif
-
-  const float px = camPositon.x, py = camPositon.y, pz = camPositon.z;
-  const bool groupVisible[kFaceGroupCount] = {
-    py >= scaledMinOffset.y, py <= scaledMaxOffset.y,
-    px >= scaledMinOffset.x, px <= scaledMaxOffset.x,
-    pz <= scaledMaxOffset.z, pz >= scaledMinOffset.z,
-  };
-
-  // Phase 2: Merge contiguous visible groups into a single draw call.
-  int rangeStart = -1;
-  int rangeEnd   = 0;
-  for (int g = 0; g < kFaceGroupCount; ++g) {
-    const int start = transpFaceGroupBoundaries[g];
-    const int end   = transpFaceGroupBoundaries[g + 1];
-    const bool hasVerts = (end - start) > 0;
-
-    if (groupVisible[g] && hasVerts) {
-      if (rangeStart < 0) rangeStart = start;
-      rangeEnd = end;
-    } else {
-      if (rangeStart >= 0) {
-        flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                      rangeStart, rangeEnd - rangeStart);
-        rangeStart = -1;
-      }
-    }
-  }
-  if (rangeStart >= 0) {
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                  rangeStart, rangeEnd - rangeStart);
-  }
+  flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
 }
 
 void Chunk::clear() {
@@ -1137,9 +1011,6 @@ void Chunk::clearDrawData() {
   isUltraCompressed = false;
   isMerged = false;
   _geometryLod = -1;
-
-  std::fill(faceGroupBoundaries, faceGroupBoundaries + 7, 0);
-  std::fill(transpFaceGroupBoundaries, transpFaceGroupBoundaries + 7, 0);
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -1162,9 +1033,6 @@ void Chunk::clearDrawDataWithoutShrink() {
   // Clear compressed data
   std::vector<CompressedVertex>().swap(compressedVertices);
   std::vector<CompressedVertex>().swap(compressedTransparentVertices);
-
-  std::fill(faceGroupBoundaries, faceGroupBoundaries + 7, 0);
-  std::fill(transpFaceGroupBoundaries, transpFaceGroupBoundaries + 7, 0);
 }
 
 void Chunk::invalidateDecompCache() {
@@ -1355,15 +1223,43 @@ void Chunk::buildNormaly() {
   }
 };
 
+void Chunk::buildLightOnly() {
+  // Generate only color data - skip vertex/UV generation.
+  // Must iterate blocks in the SAME XZY order as buildNormaly() so colors
+  // align with the existing vertex array.
+  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
+  BlockManager* blockMgr = BlockManager::getInstance();
+
+  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
+
+        Vec4 offset(x, y, z);
+        const u8 visibleFaces =
+            visibleFacesMgr->getVisibleFacesByOffset(offset);
+        if (visibleFaces == 0) continue;
+
+        const Blocks block_type = static_cast<Blocks>(blockId);
+        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
+        const bool hasTransparency = pBlockTemplate->hasTransparency();
+
+        std::vector<Color>* targetColors =
+            hasTransparency ? &transpColors : &colors;
+
+        MeshBuilder_BuildLightData(&offset, visibleFaces, targetColors,
+                                   t_worldLightModel, pLevel);
+      }
+    }
+  }
+}
+
 void Chunk::buildMerged() {
   buildNormaly();
   // LOD 0 (near chunks): No geometry merging. UV mapping must stay correct.
   // Greedy meshing is only applied at LOD 2 (distant chunks) where UV
   // stretching is acceptable and not noticeable at that distance.
-  if (!vertices.empty())
-    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-  if (!transpVertices.empty())
-    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
   isMerged = false;
 }
 
@@ -1372,11 +1268,7 @@ void Chunk::buildLOD1() {
   // LOD 1 (3-5 chunks): Light face merging, max 2 faces per merge.
   // UV stretching is minimal since merges are small.
   compress(15, 0.1f, 0.95f, false, true, 2);
-  // Sort AFTER compress() because mergeGeometry() reshuffles faces
-  if (!vertices.empty())
-    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-  if (!transpVertices.empty())
-    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+
   isUltraCompressed = false;
 }
 
@@ -1385,11 +1277,7 @@ void Chunk::buildLOD2() {
   // LOD 2 (6-9 chunks): Moderate face merging, max 3 faces per merge.
   // Merge across UVs for more aggressive reduction at this distance.
   compress(15, 0.1f, 0.95f, true, true, 3);
-  // Sort AFTER compress() because mergeGeometry() reshuffles faces
-  if (!vertices.empty())
-    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-  if (!transpVertices.empty())
-    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+
   isUltraCompressed = false;
 }
 
@@ -1397,11 +1285,7 @@ void Chunk::buildUltraCompressed() {
   buildNormaly();
   // LOD 3 (10+ chunks): Unlimited greedy merge. UV stretching OK at distance.
   compress(15, 0.1f, 0.95f, true, false, 0);
-  // Sort AFTER compress() because mergeGeometry() reshuffles faces
-  if (!vertices.empty())
-    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-  if (!transpVertices.empty())
-    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+
   isUltraCompressed = true;
 }
 
@@ -1464,10 +1348,6 @@ void Chunk::updateLOD() {
     } else /*LOD 3*/ {
       compress(15, 0.1f, 0.95f, true, false, 0);
     }
-    if (!vertices.empty())
-      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-    if (!transpVertices.empty())
-      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
     _geometryLod = currentLOD;
     compressData();
   } else {
@@ -1506,11 +1386,6 @@ void Chunk::reloadLightData() {
 
     isCompressed = true;
 
-    if (!vertices.empty())
-      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-    if (!transpVertices.empty())
-      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
-
     // Re-compress storage after geometry rebuild
     compressData();
     return;
@@ -1530,22 +1405,18 @@ void Chunk::reloadLightData() {
   if (!compressedVertices.empty()) {
     clearDrawDataWithoutShrink();
     buildNormaly();
-    if (!vertices.empty())
-      sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-    if (!transpVertices.empty())
-      sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
     compressData();
     return;
   }
 
-  // For uncompressed chunks (LOD 0, not storage-compressed): full rebuild to
-  // keep color indices aligned with sorted vertex order.
+  // For uncompressed chunks (LOD 0, not storage-compressed): full rebuild.
   clearDrawDataWithoutShrink();
   buildNormaly();
-  if (!vertices.empty())
-    sortFacesByNormal(vertices, UV, colors, faceGroupBoundaries);
-  if (!transpVertices.empty())
-    sortFacesByNormal(transpVertices, transpUV, transpColors, transpFaceGroupBoundaries);
+}
+
+void Chunk::reloadLightColorsOnly() {
+  // Delegate to the full rebuild which regenerates vertices+colors together.
+  reloadLightData();
 }
 
 void Chunk::updateFrustumCheck(const Plane* frustumPlanes) {

@@ -59,13 +59,10 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
                         &particlesManager, &lightPropagation,
                         &liquidPropagation, &worldLightModel);
 
-  // Register lighting callbacks for all chunks
-  auto chunks = chunkManager.getChunks();
-  for (auto chunk : *chunks) {
-    chunk->setOnLoadedCallback([this](Chunk* c) {
-      this->chunkManager.enqueueChunkToReloadLight(c);
-    });
-  }
+  // Note: onLoadedCallback for light enqueue was removed as an optimization.
+  // build() already generates correct light data via buildNormaly() ->
+  // MeshBuilder_BuildMesh() -> CuboidMeshBuilder_loadLightData().
+  // The 250-tick periodic callback handles day/night sun drift.
 };
 
 void World::generate() {

@@ -50,7 +50,6 @@ struct DebugMenu {
   u8 godMode = false;
   u8 noclipMode = false;
   u8 logChunkMemoryUsage = false;
-  u8 enableBackfaceCulling = true;
   u8 enableCaveCulling = true;
   u8 showCulledChunks = false;
 

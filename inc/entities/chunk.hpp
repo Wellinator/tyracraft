@@ -101,6 +101,7 @@ class Chunk {
 
   bool hasDrawData();
   void reloadLightData();
+  void reloadLightColorsOnly();  // Fast path: only regenerate colors for day/night
 
   // Pre-computed neighbor pointers for O(1) BFS lookup (populated by ChunkManager::populateNeighborCache())
   // Index = face id (0=TOP, 1=BOTTOM, 2=LEFT, 3=RIGHT, 4=FRONT, 5=BACK); nullptr = world boundary
@@ -185,6 +186,7 @@ class Chunk {
   bool isUltraCompressed = false;
   bool isMerged = false;
   void buildNormaly();
+  void buildLightOnly();  // Generate only color data (skip vertex/UV generation)
   void buildMerged();       // LOD 0: no merge
   void buildLOD1();         // LOD 1: merge max 2 faces
   void buildLOD2();         // LOD 2: merge max 3 faces
@@ -196,9 +198,6 @@ class Chunk {
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
                      int offset, int count);
-  void sortFacesByNormal(std::vector<Vec4>& verts, std::vector<Vec4>& uvs,
-                         std::vector<Color>& cols, int boundaries[7]);
-  
   // Compression helpers
   void compressData();
   void decompressData(std::vector<Vec4>* outVertices,
@@ -238,13 +237,6 @@ class Chunk {
   bool dirty = false;
 
   OnLoadedCallback onLoadedCallback;
-
-  // Face-direction group boundaries for back face culling
-  // vertices[faceGroupBoundaries[i]..faceGroupBoundaries[i+1]) = group i
-  // Groups: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
-  static constexpr int kFaceGroupCount = 6;
-  int faceGroupBoundaries[7] = {};
-  int transpFaceGroupBoundaries[7] = {};
 
   std::vector<Vec4> vertices;
   std::vector<Vec4> UV;

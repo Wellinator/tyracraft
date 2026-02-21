@@ -88,9 +88,6 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
     }
 
     // Back face culling - skip se triângulo está de costas
-#ifdef DEBUG_MODE
-    if (g_debug_menu.enableBackfaceCulling)
-#endif
     if (Vec4::shouldBeBackfaceCulled(&camLooksAt, in_vertex + baseIdx + 2,
                                      in_vertex + baseIdx + 1,
                                      in_vertex + baseIdx + 0)) {

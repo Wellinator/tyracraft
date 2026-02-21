@@ -124,7 +124,9 @@ void ChunkManager::tick() {
 }
 
 void ChunkManager::registerTickCallbacks(TickScheduler& scheduler) {
-  tickHandles->add(scheduler.everyHandle(2, [this]() {
+  // Process every tick (was every 2) - safe with reduced queue size from
+  // LOD filtering + removed onLoadedCallback + color-only fast path
+  tickHandles->add(scheduler.everyHandle(1, [this]() {
     if (!chunksToUpdateLight.empty()) reloadLightDataAsync();
   }));
 }
@@ -219,24 +221,26 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  // Only enqueue visible chunks — invisible chunks will get updated
-  // via onLoadedCallback when they become visible/loaded again.
-  // This reduces queue input from ~305 (all loaded) to ~40 (visible).
+  // Only enqueue visible chunks with LOD <= 1.
+  // LOD 2+ chunks are distant (5+ chunks away) where day/night color changes
+  // are imperceptible. This reduces queue from ~40 to ~15-20 chunks.
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     Chunk* chunk = visibleChunks[i];
+    // Skip distant chunks - day/night light changes imperceptible at LOD 2+
+    if (chunk->getLODFromDistance() >= 2) continue;
     // Use bitset for O(1) duplicate check
     if (!chunksInLightQueue.test(chunk->id)) {
-      chunksToUpdateLight.push(chunk);
+      chunksToUpdateLight.push({chunk, true});  // colors-only for day/night
       chunksInLightQueue.set(chunk->id);
     }
   }
 }
 
-void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk) {
+void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk, bool colorsOnly) {
   if (chunk && chunk->isLoaded()) {
     // Use bitset for O(1) duplicate check
     if (!chunksInLightQueue.test(chunk->id)) {
-      chunksToUpdateLight.push(chunk);
+      chunksToUpdateLight.push({chunk, colorsOnly});
       chunksInLightQueue.set(chunk->id);
     }
   }
@@ -257,9 +261,11 @@ void ChunkManager::reloadLightDataAsync() {
   asm volatile("mfc0 %0, $9" : "=r"(lightStart));
 
   while (!chunksToUpdateLight.empty() && processed < LIGHT_UPDATE_BATCH_SIZE) {
-    auto chunk = chunksToUpdateLight.front();
+    auto entry = chunksToUpdateLight.front();
     chunksToUpdateLight.pop();
-    chunksInLightQueue.reset(chunk->id);  // Clear bitset entry
+    chunksInLightQueue.reset(entry.chunk->id);  // Clear bitset entry
+
+    Chunk* chunk = entry.chunk;
 
     // Validate using direct ID lookup — O(1) instead of O(n) std::find
     if (chunk == nullptr || chunk->id >= chunks.size()) continue;
@@ -268,7 +274,16 @@ void ChunkManager::reloadLightDataAsync() {
     // Validate state (chunk may have been unloaded)
     if (!chunk->isLoaded()) continue;
 
-    chunk->reloadLightData();
+    // Skip recently-built chunks - they already have fresh light from build()
+    if (g_ticksCounter >= chunk->loadedAtTick &&
+        (g_ticksCounter - chunk->loadedAtTick) < 10) continue;
+
+    // Dispatch: colors-only (day/night) vs full rebuild (block change)
+    if (entry.colorsOnly) {
+      chunk->reloadLightColorsOnly();
+    } else {
+      chunk->reloadLightData();
+    }
     processed++;
 
     // Check time budget after each reload
@@ -305,7 +320,7 @@ void ChunkManager::enqueueAffectedChunksForLightReload(const Vec4& blockPos,
     // Skip the immediate chunk if we already updated it
     if (immediateUpdate && chunk == immediateChunk) continue;
     
-    enqueueChunkToReloadLight(chunk);
+    enqueueChunkToReloadLight(chunk, false);  // block change = full rebuild
   }
 }
 

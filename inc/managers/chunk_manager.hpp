@@ -60,7 +60,7 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::vector<Chunk*>* getCulledChunks() { return &culledChunks; };
 #endif
 
-  void enqueueChunkToReloadLight(Chunk* chunk);  // Single chunk enqueue
+  void enqueueChunkToReloadLight(Chunk* chunk, bool colorsOnly = false);
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
 
   // TickScheduler integration
@@ -124,7 +124,11 @@ class ChunkManager : public Singleton<ChunkManager> {
   WorldLightModel* worldLightModel;
   Level* pLevel;
 
-  std::queue<Chunk*> chunksToUpdateLight;
+  struct LightUpdateEntry {
+    Chunk* chunk;
+    bool colorsOnly;  // true = day/night (colors only), false = block change (full)
+  };
+  std::queue<LightUpdateEntry> chunksToUpdateLight;
   // Bitset to track which chunks are already in the light update queue
   // Prevents duplicate entries and infinite queue growth
   std::bitset<OVERWORLD_SIZE_IN_CHUNKS> chunksInLightQueue;
