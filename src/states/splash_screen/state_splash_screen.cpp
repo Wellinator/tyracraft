@@ -34,7 +34,16 @@ void StateSplashScreen::init() {
 };
 
 void StateSplashScreen::update(const float& deltaTime) {
-  if (hasFinished()) this->nextState();
+  if (hasFinished()) {
+    this->nextState();
+    return;
+  }
+
+  const auto& clicked = this->context->t_engine->pad.getClicked();
+  if (clicked.Start || clicked.Cross) {
+    this->nextState();
+    return;
+  }
 
   if (wait) {
     timeout += deltaTime;
