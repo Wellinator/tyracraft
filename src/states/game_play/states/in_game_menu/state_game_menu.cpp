@@ -14,8 +14,10 @@ void StateGameMenu::init() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
+  const float screenWidth = this->t_renderer->core.getSettings().getWidth();
+  const float screenHeight = this->t_renderer->core.getSettings().getHeight();
 
-  // Backgrund
+  // Background
   background.mode = Tyra::MODE_STRETCH;
   background.size.set(512, 512);
   background.position.set(0, 0);
@@ -23,7 +25,7 @@ void StateGameMenu::init() {
       ->add(FileUtils::fromCwd("textures/gui/menu/load_game_background.png"))
       ->addLink(background.id);
 
-  // OverlayL
+  // Overlay
   overlay.mode = Tyra::MODE_STRETCH;
   overlay.size.set(halfWidth * 2, halfHeight * 2);
   overlay.position.set(0, 0);
@@ -31,30 +33,57 @@ void StateGameMenu::init() {
   textureRepo->add(FileUtils::fromCwd("textures/gui/game_menu_overlay.png"))
       ->addLink(overlay.id);
 
-  // Load slots: row0=DrawDistance(text only), row1=FpsMode, row2=SaveGame, row3=Quit
-  raw_slot[0].mode = Tyra::MODE_STRETCH;
-  raw_slot[0].size.set(SLOT_WIDTH, 35);
-  raw_slot[0].position.set(halfWidth - SLOT_WIDTH / 2, 200);
-  raw_slot[1].mode = Tyra::MODE_STRETCH;
-  raw_slot[1].size.set(SLOT_WIDTH, 35);
-  raw_slot[1].position.set(halfWidth - SLOT_WIDTH / 2, 240);
-  raw_slot[2].mode = Tyra::MODE_STRETCH;
-  raw_slot[2].size.set(SLOT_WIDTH, 35);
-  raw_slot[2].position.set(halfWidth - SLOT_WIDTH / 2, 280);
+  // Row 1: Two half-width slots side by side
+  const float gridTotalWidth = SLOT_HALF_WIDTH * 2 + SLOT_GAP;
+  const float gridStartX = halfWidth - gridTotalWidth / 2;
+
+  raw_slot_half[0].mode = Tyra::MODE_STRETCH;
+  raw_slot_half[0].size.set(SLOT_HALF_WIDTH, SLOT_HEIGHT);
+  raw_slot_half[0].position.set(gridStartX, GRID_START_Y);
+
+  raw_slot_half[1].mode = Tyra::MODE_STRETCH;
+  raw_slot_half[1].size.set(SLOT_HALF_WIDTH, SLOT_HEIGHT);
+  raw_slot_half[1].position.set(gridStartX + SLOT_HALF_WIDTH + SLOT_GAP,
+                                GRID_START_Y);
+
+  // Row 2: Save (full-width centered)
+  raw_slot_full[0].mode = Tyra::MODE_STRETCH;
+  raw_slot_full[0].size.set(SLOT_FULL_WIDTH, SLOT_HEIGHT);
+  raw_slot_full[0].position.set(halfWidth - SLOT_FULL_WIDTH / 2,
+                                GRID_START_Y + ROW_SPACING);
+
+  // Row 3: Back to Game (full-width centered)
+  raw_slot_full[1].mode = Tyra::MODE_STRETCH;
+  raw_slot_full[1].size.set(SLOT_FULL_WIDTH, SLOT_HEIGHT);
+  raw_slot_full[1].position.set(halfWidth - SLOT_FULL_WIDTH / 2,
+                                GRID_START_Y + ROW_SPACING * 2);
 
   this->textureRawSlot =
       textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
 
-  this->textureRawSlot->addLink(raw_slot[0].id);
-  this->textureRawSlot->addLink(raw_slot[1].id);
-  this->textureRawSlot->addLink(raw_slot[2].id);
+  this->textureRawSlot->addLink(raw_slot_half[0].id);
+  this->textureRawSlot->addLink(raw_slot_half[1].id);
+  this->textureRawSlot->addLink(raw_slot_full[0].id);
+  this->textureRawSlot->addLink(raw_slot_full[1].id);
 
+  // Quit button in the bottom-right corner
+  raw_slot_quit.mode = Tyra::MODE_STRETCH;
+  raw_slot_quit.size.set(SLOT_QUIT_WIDTH, SLOT_HEIGHT);
+  raw_slot_quit.position.set(screenWidth - SLOT_QUIT_WIDTH - 10,
+                             screenHeight - SLOT_HEIGHT - 10);
+
+  this->textureRawSlotQuit =
+      textureRepo->add(FileUtils::fromCwd("textures/gui/slot.png"));
+  this->textureRawSlotQuit->addLink(raw_slot_quit.id);
+
+  // Active slot (will be resized dynamically)
   active_slot.mode = Tyra::MODE_STRETCH;
-  active_slot.size.set(SLOT_WIDTH, 35);
-  active_slot.position.set(halfWidth - SLOT_WIDTH / 2, 200);
+  active_slot.size.set(SLOT_HALF_WIDTH, SLOT_HEIGHT);
+  active_slot.position.set(gridStartX, GRID_START_Y);
   textureRepo->add(FileUtils::fromCwd("textures/gui/slot_active.png"))
       ->addLink(active_slot.id);
 
+  // Dialog window
   dialogWindow.mode = Tyra::MODE_STRETCH;
   dialogWindow.size.set(260, 260);
   dialogWindow.position.set(halfWidth - 130, 120);
@@ -76,13 +105,6 @@ void StateGameMenu::init() {
                            t_renderer->core.getSettings().getHeight() - 40);
   textureRepo->add(FileUtils::fromCwd("textures/gui/btn_triangle.png"))
       ->addLink(btnTriangle.id);
-
-  btnStart.mode = Tyra::MODE_STRETCH;
-  btnStart.size.set(25, 25);
-  btnStart.position.set(185,
-                        this->t_renderer->core.getSettings().getHeight() - 40);
-  textureRepo->add(FileUtils::fromCwd("textures/gui/btn_start.png"))
-      ->addLink(btnStart.id);
 }
 
 void StateGameMenu::update(const float& deltaTime) {
@@ -93,50 +115,85 @@ void StateGameMenu::update(const float& deltaTime) {
 
 void StateGameMenu::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
-  const float halfHeight = this->t_renderer->core.getSettings().getHeight() / 2;
   FontManager& fm = FontManager::getInstanceRef();
 
   t_renderer->renderer2D.render(background);
 
-  FontOptions drawDistanceLabel;
-  drawDistanceLabel.position.set(248, 155);
-  drawDistanceLabel.alignment = TextAlignment::Center;
+  // Title: "Menu do Jogo"
+  fm.printText(Label_GameMenu, halfWidth - 64, GRID_START_Y - 40);
 
-  if (activeOption == GameMenuOptions::DrawDistance)
-    drawDistanceLabel.color.set(128, 128, 0);
-  fm.printText(Label_DrawDistance + ": " + getDrawDistanceModeLabel(),
-               drawDistanceLabel);
+  // Row 1: Draw Distance (left) and FPS Mode (right)
+  t_renderer->renderer2D.render(raw_slot_half[0]);
+  t_renderer->renderer2D.render(raw_slot_half[1]);
 
-  // FPS Mode row
-  t_renderer->renderer2D.render(raw_slot[0]);
-  FontOptions fpsModeLabel;
-  fpsModeLabel.position.set(248, 200 + 3);
-  fpsModeLabel.alignment = TextAlignment::Center;
-  if (activeOption == GameMenuOptions::FpsModeOption)
-    fpsModeLabel.color.set(128, 128, 0);
-  fm.printText(Label_FpsMode + ": " + getFpsModeLabel(), fpsModeLabel);
+  // Row 2-3: Save and Back to Game
+  t_renderer->renderer2D.render(raw_slot_full[0]);
+  t_renderer->renderer2D.render(raw_slot_full[1]);
 
-  t_renderer->renderer2D.render(raw_slot[1]);
-  t_renderer->renderer2D.render(raw_slot[2]);
-  if (activeOption != GameMenuOptions::DrawDistance &&
-      activeOption != GameMenuOptions::FpsModeOption)
-    t_renderer->renderer2D.render(active_slot);
+  // Quit button in corner
+  t_renderer->renderer2D.render(raw_slot_quit);
 
-  fm.printText(Label_GameMenu, halfWidth - 64, halfHeight - 200);
+  // Active slot highlight
+  t_renderer->renderer2D.render(active_slot);
 
-  FontOptions saveGameLabel;
-  saveGameLabel.position.set(246, 240 + 3);
-  saveGameLabel.alignment = TextAlignment::Center;
-  if (activeOption == GameMenuOptions::SaveGame)
-    saveGameLabel.color.set(128, 128, 0);
-  fm.printText(Label_Save, saveGameLabel);
+  // Draw Distance label (left slot, row 1)
+  {
+    FontOptions fontOpts;
+    fontOpts.position.set(raw_slot_half[0].position.x + SLOT_HALF_WIDTH / 2,
+                          GRID_START_Y + 8);
+    fontOpts.alignment = TextAlignment::Center;
+    fontOpts.scale = 0.7F;
+    if (activeOption == GameMenuOptions::DrawDistance)
+      fontOpts.color.set(128, 128, 0);
+    fm.printText(Label_DrawDistance + ": " + getDrawDistanceModeLabel(),
+                 fontOpts);
+  }
 
-  FontOptions quitToTitleLabel;
-  quitToTitleLabel.position.set(246, 280 + 3);
-  quitToTitleLabel.alignment = TextAlignment::Center;
-  if (activeOption == GameMenuOptions::Quit)
-    quitToTitleLabel.color.set(128, 128, 0);
-  fm.printText(Label_Quit, quitToTitleLabel);
+  // FPS Mode label (right slot, row 1)
+  {
+    FontOptions fontOpts;
+    fontOpts.position.set(raw_slot_half[1].position.x + SLOT_HALF_WIDTH / 2,
+                          GRID_START_Y + 8);
+    fontOpts.alignment = TextAlignment::Center;
+    fontOpts.scale = 0.7F;
+    if (activeOption == GameMenuOptions::FpsModeOption)
+      fontOpts.color.set(128, 128, 0);
+    fm.printText(Label_FpsMode + ": " + getFpsModeLabel(), fontOpts);
+  }
+
+  // Save label (full-width, row 2)
+  {
+    FontOptions fontOpts;
+    fontOpts.position.set(halfWidth, GRID_START_Y + ROW_SPACING + 3);
+    fontOpts.alignment = TextAlignment::Center;
+    if (activeOption == GameMenuOptions::SaveGame)
+      fontOpts.color.set(128, 128, 0);
+    fm.printText(Label_Save, fontOpts);
+  }
+
+  // Back to Game label (full-width, row 3)
+  {
+    FontOptions fontOpts;
+    fontOpts.position.set(halfWidth, GRID_START_Y + ROW_SPACING * 2 + 3);
+    fontOpts.alignment = TextAlignment::Center;
+    if (activeOption == GameMenuOptions::BackToGame)
+      fontOpts.color.set(128, 128, 0);
+    fm.printText(Label_BackToGame, fontOpts);
+  }
+
+  // Quit label (corner button)
+  {
+    const float screenWidth = this->t_renderer->core.getSettings().getWidth();
+    const float screenHeight = this->t_renderer->core.getSettings().getHeight();
+    FontOptions fontOpts;
+    fontOpts.position.set(screenWidth - SLOT_QUIT_WIDTH / 2 - 10,
+                          screenHeight - SLOT_HEIGHT - 10 + 3);
+    fontOpts.alignment = TextAlignment::Center;
+    fontOpts.scale = 0.8F;
+    if (activeOption == GameMenuOptions::Quit)
+      fontOpts.color.set(128, 128, 0);
+    fm.printText(Label_Quit, fontOpts);
+  }
 
   if (needSaveOverwriteConfirmation) {
     renderSaveOverwritingDialog();
@@ -145,8 +202,6 @@ void StateGameMenu::render() {
   } else {
     t_renderer->renderer2D.render(btnCross);
     fm.printText(Label_Select, 40, 407);
-    t_renderer->renderer2D.render(btnStart);
-    fm.printText(Label_BackToGame, 205, 407);
   }
 }
 
@@ -178,38 +233,58 @@ void StateGameMenu::handleInput(const float& deltaTime) {
     return;
   }
 
+  // 2D Grid navigation
   if (clicked.DpadDown) {
-    int nextOption = (int)this->activeOption + 1;
-    if (nextOption > (int)GameMenuOptions::Quit)
-      this->activeOption = GameMenuOptions::DrawDistance;
-    else
-      this->activeOption = static_cast<GameMenuOptions>(nextOption);
-
+    switch (activeOption) {
+      case GameMenuOptions::DrawDistance:
+      case GameMenuOptions::FpsModeOption:
+        activeOption = GameMenuOptions::SaveGame;
+        break;
+      case GameMenuOptions::SaveGame:
+        activeOption = GameMenuOptions::BackToGame;
+        break;
+      case GameMenuOptions::BackToGame:
+        activeOption = GameMenuOptions::Quit;
+        break;
+      case GameMenuOptions::Quit:
+        activeOption = GameMenuOptions::DrawDistance;
+        break;
+      default:
+        break;
+    }
   } else if (clicked.DpadUp) {
-    int nextOption = (int)this->activeOption - 1;
-    if (nextOption < 0)
-      this->activeOption = GameMenuOptions::Quit;
-    else
-      this->activeOption = static_cast<GameMenuOptions>(nextOption);
-  }
-
-  if (activeOption == GameMenuOptions::DrawDistance) {
-    if (clicked.DpadLeft)
-      cycleDrawDistanceMode(-1);
-    else if (clicked.DpadRight)
-      cycleDrawDistanceMode(1);
-  } else if (activeOption == GameMenuOptions::FpsModeOption) {
-    if (clicked.DpadLeft)
-      cycleFpsMode(-1);
-    else if (clicked.DpadRight)
-      cycleFpsMode(1);
+    switch (activeOption) {
+      case GameMenuOptions::DrawDistance:
+      case GameMenuOptions::FpsModeOption:
+        activeOption = GameMenuOptions::Quit;
+        break;
+      case GameMenuOptions::SaveGame:
+        activeOption = GameMenuOptions::DrawDistance;
+        break;
+      case GameMenuOptions::BackToGame:
+        activeOption = GameMenuOptions::SaveGame;
+        break;
+      case GameMenuOptions::Quit:
+        activeOption = GameMenuOptions::BackToGame;
+        break;
+      default:
+        break;
+    }
+  } else if (clicked.DpadLeft) {
+    if (activeOption == GameMenuOptions::FpsModeOption)
+      activeOption = GameMenuOptions::DrawDistance;
+  } else if (clicked.DpadRight) {
+    if (activeOption == GameMenuOptions::DrawDistance)
+      activeOption = GameMenuOptions::FpsModeOption;
   }
 
   if (clicked.Cross) {
     this->playClickSound();
-    if (activeOption == GameMenuOptions::SaveGame) {
-      this->playClickSound();
-
+    if (activeOption == GameMenuOptions::DrawDistance) {
+      cycleDrawDistanceMode(1);
+    } else if (activeOption == GameMenuOptions::FpsModeOption) {
+      cycleFpsMode(1);
+    } else if (activeOption == GameMenuOptions::SaveGame) {
       std::string saveFileName = FileUtils::fromCwd(
           "saves/" + this->stateGamePlay->world->getWorldOptions()->name +
           ".tcw");
@@ -219,8 +294,10 @@ void StateGameMenu::handleInput(const float& deltaTime) {
       } else {
         stateGamePlay->saveGame();
       }
+    } else if (activeOption == GameMenuOptions::BackToGame) {
+      stateGamePlay->backToGame();
+      return;
     } else if (activeOption == GameMenuOptions::Quit) {
-      this->playClickSound();
       needQuitConfirmation = true;
     }
 
@@ -239,13 +316,13 @@ void StateGameMenu::unloadTextures() {
       &this->t_renderer->getTextureRepository();
 
   textureRepository->free(this->textureRawSlot->id);
+  textureRepository->free(this->textureRawSlotQuit->id);
   textureRepository->freeBySprite(background);
   textureRepository->freeBySprite(overlay);
   textureRepository->freeBySprite(active_slot);
   textureRepository->freeBySprite(btnCross);
   textureRepository->freeBySprite(btnTriangle);
   textureRepository->freeBySprite(dialogWindow);
-  textureRepository->freeBySprite(btnStart);
 }
 
 void StateGameMenu::playClickSound() {
@@ -257,10 +334,39 @@ void StateGameMenu::playClickSound() {
 }
 
 void StateGameMenu::hightLightActiveOption() {
-  if (this->activeOption == GameMenuOptions::SaveGame) {
-    this->active_slot.position.y = (1 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
-  } else if (this->activeOption == GameMenuOptions::Quit) {
-    this->active_slot.position.y = (2 * SLOT_HIGHT_OPTION_OFFSET) + SLOT_HIGHT_OFFSET;
+  const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
+  const float gridTotalWidth = SLOT_HALF_WIDTH * 2 + SLOT_GAP;
+  const float gridStartX = halfWidth - gridTotalWidth / 2;
+  const float screenWidth = this->t_renderer->core.getSettings().getWidth();
+  const float screenHeight = this->t_renderer->core.getSettings().getHeight();
+
+  switch (activeOption) {
+    case GameMenuOptions::DrawDistance:
+      active_slot.size.set(SLOT_HALF_WIDTH, SLOT_HEIGHT);
+      active_slot.position.set(gridStartX, GRID_START_Y);
+      break;
+    case GameMenuOptions::FpsModeOption:
+      active_slot.size.set(SLOT_HALF_WIDTH, SLOT_HEIGHT);
+      active_slot.position.set(gridStartX + SLOT_HALF_WIDTH + SLOT_GAP,
+                               GRID_START_Y);
+      break;
+    case GameMenuOptions::SaveGame:
+      active_slot.size.set(SLOT_FULL_WIDTH, SLOT_HEIGHT);
+      active_slot.position.set(halfWidth - SLOT_FULL_WIDTH / 2,
+                               GRID_START_Y + ROW_SPACING);
+      break;
+    case GameMenuOptions::BackToGame:
+      active_slot.size.set(SLOT_FULL_WIDTH, SLOT_HEIGHT);
+      active_slot.position.set(halfWidth - SLOT_FULL_WIDTH / 2,
+                               GRID_START_Y + ROW_SPACING * 2);
+      break;
+    case GameMenuOptions::Quit:
+      active_slot.size.set(SLOT_QUIT_WIDTH, SLOT_HEIGHT);
+      active_slot.position.set(screenWidth - SLOT_QUIT_WIDTH - 10,
+                               screenHeight - SLOT_HEIGHT - 10);
+      break;
+    default:
+      break;
   }
 }
 

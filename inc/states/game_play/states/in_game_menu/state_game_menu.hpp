@@ -17,7 +17,14 @@ using Tyra::Texture;
 using Tyra::TextureRepository;
 using Tyra::Threading;
 
-enum class GameMenuOptions { DrawDistance, FpsModeOption, SaveGame, Quit, None };
+enum class GameMenuOptions {
+  DrawDistance,
+  FpsModeOption,
+  SaveGame,
+  BackToGame,
+  Quit,
+  None
+};
 
 class StateGameMenu : public PlayingStateBase {
  public:
@@ -38,24 +45,34 @@ class StateGameMenu : public PlayingStateBase {
   Renderer* t_renderer;
 
   Texture* textureRawSlot;
+  Texture* textureRawSlotQuit;
   Sprite overlay;
-  Sprite raw_slot[3];
+  // Row 1: half-width slots side by side
+  Sprite raw_slot_half[2];
+  // Row 2-3: full-width centered slots (Save, Back to Game)
+  Sprite raw_slot_full[2];
+  // Corner: small quit button
+  Sprite raw_slot_quit;
   Sprite active_slot;
   Sprite btnCross;
   Sprite btnTriangle;
   Sprite dialogWindow;
-  Sprite btnStart;
   Sprite background;
 
   GameMenuOptions selectedOption = GameMenuOptions::None;
-  GameMenuOptions activeOption = GameMenuOptions::SaveGame;
+  GameMenuOptions activeOption = GameMenuOptions::DrawDistance;
 
   u8 needSaveOverwriteConfirmation = false;
   u8 needQuitConfirmation = false;
 
-  const float SLOT_WIDTH = 230;
-  const float SLOT_HIGHT_OFFSET = 240;
-  const float SLOT_HIGHT_OPTION_OFFSET = 40;
+  // Layout constants for 2-column grid
+  const float SLOT_HALF_WIDTH = 155.0f;
+  const float SLOT_FULL_WIDTH = 320.0f;
+  const float SLOT_QUIT_WIDTH = 100.0f;
+  const float SLOT_HEIGHT = 35.0f;
+  const float SLOT_GAP = 6.0f;
+  const float ROW_SPACING = 42.0f;
+  const float GRID_START_Y = 200.0f;
   const u8 MENU_SFX_CH = 1;
 
   // Gui
