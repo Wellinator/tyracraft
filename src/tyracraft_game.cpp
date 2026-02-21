@@ -21,12 +21,35 @@ TyraCraftGame::TyraCraftGame(Engine* t_engine)
 #endif
 }
 
-TyraCraftGame::~TyraCraftGame() {}
+TyraCraftGame::~TyraCraftGame() {
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) delete bgService;
+}
 
 void TyraCraftGame::init() {
   loadSavedSettings();
   checkNeededDirectories();
   engine->renderer.core.setFrameLimit(false);
+
+  // Initialize background task service
+  new BackgroundTaskService();
+
+  // Test background task: simulates work on worker thread
+  auto* bgService = BackgroundTaskService::getInstance();
+  bgService->submit(
+      []() {
+        // Runs on worker thread
+        printf("[BgTask Worker] Starting test task on thread %d\n",
+               GetThreadId());
+        volatile int sum = 0;
+        for (int i = 0; i < 100000; i++) sum += i;
+        printf("[BgTask Worker] Test task done. Result: %d\n", (int)sum);
+      },
+      []() {
+        // Runs on main thread via pollCompletions()
+        printf("[BgTask Main] Completion callback fired on thread %d\n",
+               GetThreadId());
+      });
 }
 
 void TyraCraftGame::loop() {
@@ -88,6 +111,10 @@ void TyraCraftGame::loop() {
 
     engine->renderer.endFrame();
   }
+
+  // Poll background task completions
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) bgService->pollCompletions();
 
   // Use remaining idle CPU cycles for chunk loading work
   stateManager.processIdleWork();

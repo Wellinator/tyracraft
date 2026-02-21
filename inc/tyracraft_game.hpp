@@ -12,7 +12,7 @@
 #include "managers/language_manager.hpp"
 #include "managers/state_manager.hpp"
 #include "managers/notification/notification_manager.hpp"
-#include "managers/task_manager.hpp"
+#include "managers/background_task_service.hpp"
 #include "renderer/3d/pipeline/static/static_pipeline.hpp"
 
 namespace TyraCraft {
