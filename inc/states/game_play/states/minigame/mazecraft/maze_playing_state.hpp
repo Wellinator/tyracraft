@@ -7,6 +7,8 @@
 #include "managers/tick_manager.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/inventory.hpp"
+#include "timer.hpp"
+#include "managers/notification/notification.hpp"
 #include <tamtypes.h>
 #include <string>
 #include <tyra>
@@ -40,6 +42,7 @@ class MazePlayingState : public PlayingStateBase {
   void drawDebugInfo();
   void gamePlayInputHandler(const float& deltaTime);
   void saveProgress();
+  void autoSave();
   void loadNextLevel();
 
   u8 hasReachedTargetBlock();
@@ -61,9 +64,23 @@ class MazePlayingState : public PlayingStateBase {
   const std::string Label_Interact =
       LanguageManager::Translate("/minigame/common/interact");
 
+  const std::string Message_Saved_Successfully =
+      LanguageManager::Translate("/state_game_menu/saved_successfully");
+  const std::string Message_Progress_Has_Been_Saved =
+      LanguageManager::Translate("/state_game_menu/progress_saved");
+
   inline const u8 isSongPlaying() {
     return mazeAudioListener.t_song->isPlaying();
   };
+
+  const std::string Label_AutoSaveIn = LanguageManager::Translate("/state_game_menu/auto_save_in");
+  const std::string Label_Seconds = LanguageManager::Translate("/state_game_menu/seconds");
+  const std::string Label_PressSelectToCancel = LanguageManager::Translate("/state_game_menu/press_select_to_cancel");
+  const std::string Label_AutoSaveCancelled = LanguageManager::Translate("/state_game_menu/auto_save_cancelled");
+  const std::string Label_SkippedThisAutoSave = LanguageManager::Translate("/state_game_menu/skipped_this_auto_save");
+  const std::string Label_AutoSave = LanguageManager::Translate("/state_game_menu/auto_save");
+  const std::string Label_Saving = LanguageManager::Translate("/state_game_menu/saving");
+  const std::string Label_SavingDoNotTurnOff = LanguageManager::Translate("/state_game_menu/saving_do_not_turn_off");
 
   /**
    * @brief Print RAM memory info to log
@@ -76,6 +93,12 @@ class MazePlayingState : public PlayingStateBase {
   MazeAudioListener mazeAudioListener;
   u32 audioListenerId;
   float elapsedTimeInSec;
+  TyraCraft::Timer::ElapsedTimer autoSaveTimer;
+  TyraCraft::Timer::ElapsedTimer autoSaveWarningTimer;
+  bool isAutoSaveWarningActive = false;
+  int autoSaveLastSecondsLeft = 0;
+  Notification* autoSaveWarningNotification = nullptr;
+  
   TickManager tickManager;
   TickTaskHandles tickHandles;
 

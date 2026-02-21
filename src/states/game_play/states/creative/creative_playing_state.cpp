@@ -5,10 +5,13 @@
 #include "managers/post-fx/post_fx_manager.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
+#include "managers/background_task_service.hpp"
 
 CreativePlayingState::CreativePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
-      postFxManager(&t_context->context->t_engine->renderer) {}
+      postFxManager(&t_context->context->t_engine->renderer),
+      autoSaveTimer(g_settings.auto_save_interval),
+      autoSaveWarningTimer(10.0f) {}
 
 CreativePlayingState::~CreativePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -55,6 +58,36 @@ void CreativePlayingState::fixedUpdate(const float& fixedDeltaTime) {
 
 void CreativePlayingState::update(const float& deltaTime) {
   elapsedTimeInSec += deltaTime;
+  
+  if (!isAutoSaveWarningActive && autoSaveTimer.update(deltaTime)) {
+      isAutoSaveWarningActive = true;
+      autoSaveWarningTimer.reset();
+      autoSaveLastSecondsLeft = 5;
+      autoSaveWarningNotification = NotificationManager::getInstance()->notify(Label_AutoSaveIn + std::to_string(5) + Label_Seconds, Label_PressSelectToCancel);
+      if (autoSaveWarningNotification) {
+          autoSaveWarningNotification->timeout = 10.0F;
+      }
+  }
+
+  if (isAutoSaveWarningActive) {
+      if (autoSaveWarningTimer.update(deltaTime)) {
+          isAutoSaveWarningActive = false;
+          if (autoSaveWarningNotification) {
+              autoSaveWarningNotification->destroy = true;
+              autoSaveWarningNotification = nullptr;
+          }
+          autoSave();
+      } else {
+          int secondsLeft = 5 - (int)autoSaveWarningTimer.current;
+          if (secondsLeft != autoSaveLastSecondsLeft && secondsLeft >= 0) {
+              autoSaveLastSecondsLeft = secondsLeft;
+              if (autoSaveWarningNotification) {
+                  autoSaveWarningNotification->title = Label_AutoSaveIn + std::to_string(secondsLeft) + Label_Seconds;
+              }
+          }
+      }
+  }
+
   tickManager.update(deltaTime);
 
   handleInput(deltaTime);
@@ -110,8 +143,19 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
   const auto& pressed = stateGamePlay->context->t_engine->pad.getPressed();
 
   if (clicked.Select) {
-    g_debug_mode = !g_debug_mode;
-    TYRA_LOG("Debug mode: ", g_debug_mode ? "ON" : "OFF");
+    if (isAutoSaveWarningActive) {
+      isAutoSaveWarningActive = false;
+      autoSaveWarningTimer.reset();
+      autoSaveTimer.reset();
+      if (autoSaveWarningNotification) {
+          autoSaveWarningNotification->destroy = true;
+          autoSaveWarningNotification = nullptr;
+      }
+      NotificationManager::getInstance()->notify(Label_AutoSaveCancelled, Label_SkippedThisAutoSave);
+    } else {
+      g_debug_mode = !g_debug_mode;
+      TYRA_LOG("Debug mode: ", g_debug_mode ? "ON" : "OFF");
+    }
   }
 
   if (g_debug_mode) {
@@ -444,10 +488,43 @@ void CreativePlayingState::saveProgress() {
   std::string saveFileName = FileUtils::fromCwd(
       "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
       SAVE_FILE_EXTENSION);
+
   SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
   TYRA_LOG("Saving at: ", saveFileName.c_str());
 
   NotificationManager* instance = NotificationManager::getInstance();
   instance->notify(Message_Saved_Successfully.c_str(),
                    Message_Progress_Has_Been_Saved.c_str());
+}
+
+void CreativePlayingState::autoSave() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      SAVE_FILE_EXTENSION);
+
+  // Status notification during save
+  NotificationManager::getInstance()->notify(Label_AutoSave, Label_SavingDoNotTurnOff);
+
+  std::string msgSaved = Message_Saved_Successfully;
+  std::string msgProgress = Message_Progress_Has_Been_Saved;
+
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) {
+    auto state = stateGamePlay;
+    bgService->submit(
+        [state, saveFileName]() {
+          SaveManager::SaveGame(state, saveFileName.c_str());
+          TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+        },
+        [msgSaved, msgProgress]() {
+          NotificationManager* instance = NotificationManager::getInstance();
+          instance->notify(msgSaved.c_str(), msgProgress.c_str());
+        });
+  } else {
+    // Fallback sync save
+    SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+    TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+    NotificationManager* instance = NotificationManager::getInstance();
+    instance->notify(msgSaved.c_str(), msgProgress.c_str());
+  }
 }

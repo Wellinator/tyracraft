@@ -39,6 +39,9 @@ struct settings_file {
 
   // Language options
   std::string skin = "steve";
+
+  // Auto-save interval in seconds (advanced)
+  float auto_save_interval = 300.0f;
 };
 
 /**

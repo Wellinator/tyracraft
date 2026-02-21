@@ -28,6 +28,7 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Camera"]["cam_h_sensitivity"] = settings.cam_h_sensitivity;
   _settings["Camera"]["cam_v_sensitivity"] = settings.cam_v_sensitivity;
   _settings["Player"]["skin"] = settings.skin;
+  _settings["AutoSave"]["interval"] = settings.auto_save_interval;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -47,6 +48,7 @@ void SettingsManager::Save() {
   _settings["Camera"]["cam_h_sensitivity"] = g_settings.cam_h_sensitivity;
   _settings["Camera"]["cam_v_sensitivity"] = g_settings.cam_v_sensitivity;
   _settings["Player"]["skin"] = g_settings.skin;
+  _settings["AutoSave"]["interval"] = g_settings.auto_save_interval;
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -83,6 +85,14 @@ settings_file SettingsManager::Load() {
     g_settings.skin = std::string("steve");
   } else {
     g_settings.skin = skinName;
+  }
+
+  // Auto-save interval (minimum 30 seconds)
+  try {
+    float interval = _settings["AutoSave"]["interval"].as<float>();
+    g_settings.auto_save_interval = (interval >= 30.0f) ? interval : 60.0f;
+  } catch (...) {
+    g_settings.auto_save_interval = 60.0f;
   }
 
   return g_settings;

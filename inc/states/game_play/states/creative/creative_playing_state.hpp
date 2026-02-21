@@ -1,4 +1,5 @@
 #pragma once
+
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
 #include "states/game_play/states/creative/creative_audio_listener.hpp"
@@ -10,6 +11,8 @@
 #include "managers/language_manager.hpp"
 #include "models/terrain_height_model.hpp"
 #include "entities/inventory.hpp"
+#include "timer.hpp"
+#include "managers/notification/notification.hpp"
 #include <tamtypes.h>
 #include <string>
 #include <tyra>
@@ -43,10 +46,20 @@ class CreativePlayingState : public PlayingStateBase {
   void gamePlayInputHandler(const float& deltaTime);
   void inventoryInputHandler(const float& deltaTime);
   void saveProgress();
+  void autoSave();
 
   inline const u8 isSongPlaying() {
     return creativeAudioListener.t_song->isPlaying();
   };
+
+  const std::string Label_AutoSaveIn = LanguageManager::Translate("/state_game_menu/auto_save_in");
+  const std::string Label_Seconds = LanguageManager::Translate("/state_game_menu/seconds");
+  const std::string Label_PressSelectToCancel = LanguageManager::Translate("/state_game_menu/press_select_to_cancel");
+  const std::string Label_AutoSaveCancelled = LanguageManager::Translate("/state_game_menu/auto_save_cancelled");
+  const std::string Label_SkippedThisAutoSave = LanguageManager::Translate("/state_game_menu/skipped_this_auto_save");
+  const std::string Label_AutoSave = LanguageManager::Translate("/state_game_menu/auto_save");
+  const std::string Label_Saving = LanguageManager::Translate("/state_game_menu/saving");
+  const std::string Label_SavingDoNotTurnOff = LanguageManager::Translate("/state_game_menu/saving_do_not_turn_off");
 
   /**
    * @brief Print RAM memory info to log
@@ -59,6 +72,12 @@ class CreativePlayingState : public PlayingStateBase {
   CreativeAudioListener creativeAudioListener;
   u32 audioListenerId;
   float elapsedTimeInSec;
+  TyraCraft::Timer::ElapsedTimer autoSaveTimer;
+  TyraCraft::Timer::ElapsedTimer autoSaveWarningTimer;
+  bool isAutoSaveWarningActive = false;
+  int autoSaveLastSecondsLeft = 0;
+  Notification* autoSaveWarningNotification = nullptr;
+  
   TickManager tickManager;
   TickTaskHandles tickHandles;
 

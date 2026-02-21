@@ -6,13 +6,16 @@
 #include "managers/font/font_options.hpp"
 #include "debug.hpp"
 #include "utils.hpp"
+#include "managers/notification/notification_manager.hpp"
 
 using Tyra::Color;
 using Tyra::PadButtons;
 
 MazePlayingState::MazePlayingState(StateGamePlay* t_context)
     : PlayingStateBase(t_context),
-      postFxManager(&t_context->context->t_engine->renderer) {}
+      postFxManager(&t_context->context->t_engine->renderer),
+      autoSaveTimer(g_settings.auto_save_interval),
+      autoSaveWarningTimer(10.0f) {}
 
 MazePlayingState::~MazePlayingState() {
   stateGamePlay->context->t_engine->audio.song.removeListener(
@@ -95,6 +98,36 @@ void MazePlayingState::fixedUpdate(const float& fixedDeltaTime) {
 void MazePlayingState::update(const float& deltaTime) {
   if (deltaTime <= 0.0F) return;
   elapsedTimeInSec += deltaTime;
+  
+  if (!isAutoSaveWarningActive && autoSaveTimer.update(deltaTime)) {
+      isAutoSaveWarningActive = true;
+      autoSaveWarningTimer.reset();
+      autoSaveLastSecondsLeft = 5;
+      autoSaveWarningNotification = NotificationManager::getInstance()->notify(Label_AutoSaveIn + std::to_string(5) + Label_Seconds, Label_PressSelectToCancel);
+      if (autoSaveWarningNotification) {
+          autoSaveWarningNotification->timeout = 10.0F;
+      }
+  }
+
+  if (isAutoSaveWarningActive) {
+      if (autoSaveWarningTimer.update(deltaTime)) {
+          isAutoSaveWarningActive = false;
+          if (autoSaveWarningNotification) {
+              autoSaveWarningNotification->destroy = true;
+              autoSaveWarningNotification = nullptr;
+          }
+          autoSave();
+      } else {
+          int secondsLeft = 5 - (int)autoSaveWarningTimer.current;
+          if (secondsLeft != autoSaveLastSecondsLeft && secondsLeft >= 0) {
+              autoSaveLastSecondsLeft = secondsLeft;
+              if (autoSaveWarningNotification) {
+                  autoSaveWarningNotification->title = Label_AutoSaveIn + std::to_string(secondsLeft) + Label_Seconds;
+              }
+          }
+      }
+  }
+
   tickManager.update(deltaTime);
 
   if (shouldRenderLevelDoneDialog) {
@@ -158,7 +191,21 @@ void MazePlayingState::handleInput(const float& deltaTime) {
   const PadButtons& clicked =
       stateGamePlay->context->t_engine->pad.getClicked();
 
-  if (clicked.Select) g_debug_mode = !g_debug_mode;
+  if (clicked.Select) {
+      if (isAutoSaveWarningActive) {
+          isAutoSaveWarningActive = false;
+          autoSaveWarningTimer.reset();
+          autoSaveTimer.reset();
+          if (autoSaveWarningNotification) {
+              autoSaveWarningNotification->destroy = true;
+              autoSaveWarningNotification = nullptr;
+          }
+          NotificationManager::getInstance()->notify(Label_AutoSaveCancelled, Label_SkippedThisAutoSave);
+      } else {
+          g_debug_mode = !g_debug_mode;
+      }
+  }
+
   if (g_debug_mode) {
 #ifdef DEBUG_MODE
     if (clicked.L1 && clicked.R1) {
@@ -440,10 +487,30 @@ void MazePlayingState::saveProgress() {
   TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
 }
 
+void MazePlayingState::autoSave() {
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      MINIGAME_FILE_EXTENSION);
+
+  NotificationManager::getInstance()->notify(Label_AutoSave, Label_SavingDoNotTurnOff);
+
+  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  TYRA_LOG("Auto-saving mazecraft at: ", saveFileName.c_str());
+
+  NotificationManager::getInstance()->notify(
+      Message_Saved_Successfully.c_str(),
+      Message_Progress_Has_Been_Saved.c_str());
+}
+
 void MazePlayingState::loadNextLevel() {
   mazeAudioListener.stopPlayingAll();
 
-  saveProgress();
+  // Synchronous save before overwriting level data
+  std::string saveFileName = FileUtils::fromCwd(
+      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
+      MINIGAME_FILE_EXTENSION);
+  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
 
   NewGameOptions model = *stateGamePlay->world->getWorldOptions();
   model.seed += 1;

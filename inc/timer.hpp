@@ -39,6 +39,29 @@ class Timer : public Singleton<Timer> {
    */
   bool updateFrame();
 
+  /**
+   * @brief Helper to track elapsed time locally (in seconds).
+   * Useful for events that happen after N seconds.
+   */
+  struct ElapsedTimer {
+      float limit;
+      float current;
+
+      ElapsedTimer(float limitInSec = 0.0f) : limit(limitInSec), current(0.0f) {}
+
+      // Returns true if the limit has been reached, and resets the timer
+      inline bool update(float dt) {
+          current += dt;
+          if (current >= limit) {
+              current = 0.0f; // loop
+              return true;
+          }
+          return false;
+      }
+
+      inline void reset() { current = 0.0f; }
+  };
+
   // Const getters (computed from internal integer state)
   inline u32 getUpdateTime() const { return timerIterationsCounter; }
   
