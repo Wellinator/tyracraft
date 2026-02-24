@@ -1182,6 +1182,210 @@ void Chunk::build() {
 #endif  // end if DEBUG_MODE
 }
 
+// =============================================================================
+//  INCREMENTAL BUILD PIPELINE
+//  beginBuild() ──▶ buildStep() × N ──▶ done (returns true)
+//  cancelBuild() can abort at any point.
+// =============================================================================
+
+void Chunk::beginBuild() {
+  // Same safety guards as the synchronous build().
+  if (state == ChunkState::Unloading) {
+    buildPhase = BuildPhase::Idle;
+    return;
+  }
+  if (state == ChunkState::Loaded && !isLODRebuild) {
+    buildPhase = BuildPhase::Idle;
+    return;
+  }
+  if (state != ChunkState::Building) {
+    state = ChunkState::Building;
+  }
+
+  if (dirty) {
+    clearDrawDataWithoutShrink();
+    dirty = false;
+  }
+
+  // Pre-reserve geometry vectors to reduce reallocs during MeshGen.
+  // Heuristic: ~1/8 of CHUNK_LENGTH blocks have visible faces, each emits
+  // up to 6 quads × 6 vertices = 36 vertices. Size CHUNK_SIZE³/8×6 ≈ 3072.
+  const size_t reserveHint = (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) / 8 * 6;
+  if (vertices.capacity() < reserveHint) vertices.reserve(reserveHint);
+  if (UV.capacity() < reserveHint) UV.reserve(reserveHint);
+  if (colors.capacity() < reserveHint) colors.reserve(reserveHint);
+
+  // Snapshot build parameters.
+  pendingLod           = getLODFromDistance();
+  _lod                 = pendingLod;
+  pendingIsLODRebuild  = isLODRebuild;
+  meshGenSliceX        = minOffset.x;
+  buildPhase           = BuildPhase::AirCheck;
+}
+
+bool Chunk::buildStep() {
+  switch (buildPhase) {
+    // ------------------------------------------------------------------
+    case BuildPhase::Idle:
+      return true;  // Nothing to do
+
+    // ------------------------------------------------------------------
+    case BuildPhase::AirCheck: {
+      bool allAir = true;
+      for (uint16_t y = minOffset.y; y < maxOffset.y && allAir; y++) {
+        for (uint16_t z = minOffset.z; z < maxOffset.z && allAir; z++) {
+          for (uint16_t x = minOffset.x; x < maxOffset.x && allAir; x++) {
+            if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK) {
+              allAir = false;
+            }
+          }
+        }
+      }
+      if (allAir) {
+        clearDrawDataWithoutShrink();
+        isCompressed     = false;
+        isUltraCompressed = false;
+        isMerged         = false;
+        isEmpty          = true;
+        buildPhase       = BuildPhase::Finalize;  // Skip mesh generation
+      } else {
+        isEmpty    = false;
+        buildPhase = BuildPhase::MeshGen;
+      }
+      return false;
+    }
+
+    // ------------------------------------------------------------------
+    case BuildPhase::MeshGen: {
+      // Process a single X-slice (CHUNK_SIZE × CHUNK_SIZE blocks).
+      // This is the fine-grained unit that keeps individual steps short.
+      buildNormalySlice(meshGenSliceX);
+      meshGenSliceX++;
+
+      if (meshGenSliceX >= maxOffset.x) {
+        // All slices done — choose next phase based on LOD.
+        if (pendingLod == 0) {
+          isMerged   = false;  // LOD 0: no greedy merge
+          buildPhase = BuildPhase::VisGraph;
+        } else {
+          buildPhase = BuildPhase::Merge;
+        }
+      }
+      return false;
+    }
+
+    // ------------------------------------------------------------------
+    case BuildPhase::Merge: {
+      // Apply greedy face merge with LOD-specific parameters.
+      // compress() sets isCompressed + isUltraCompressed internally.
+      if (pendingLod == 1) {
+        compress(15, 0.1f, 0.95f, false, true, 2);
+        isUltraCompressed = false;
+      } else if (pendingLod == 2) {
+        compress(15, 0.1f, 0.95f, true, true, 3);
+        isUltraCompressed = false;
+      } else {
+        // LOD 3: unlimited greedy merge
+        compress(15, 0.1f, 0.95f, true, false, 0);
+        isUltraCompressed = true;
+      }
+      buildPhase = BuildPhase::StorageCmp;
+      return false;
+    }
+
+    // ------------------------------------------------------------------
+    case BuildPhase::StorageCmp: {
+      // Pack Vec4+Color vertices to CompressedVertex (48 → 16 bytes).
+      compressData();
+      buildPhase = BuildPhase::VisGraph;
+      return false;
+    }
+
+    // ------------------------------------------------------------------
+    case BuildPhase::VisGraph: {
+      rebuildVisibilityGraph();
+      buildPhase = BuildPhase::Finalize;
+      return false;
+    }
+
+    // ------------------------------------------------------------------
+    case BuildPhase::Finalize: {
+      _geometryLod = pendingLod;
+      state        = ChunkState::Loaded;
+
+      // All-air chunks need explicit visibility graph (VisGraph was skipped).
+      if (isEmpty) {
+        visibilityGraph      = 0x7FFF;
+        visibilityGraphDirty = false;
+      }
+
+      // Start fade-in only for genuinely new chunks, not LOD rebuilds.
+      if (!pendingIsLODRebuild) {
+        isFadingIn = true;
+        fadeAlpha  = 0.0f;
+      }
+      isLODRebuild = false;
+
+      markDistanceDirty();
+      buildPhase = BuildPhase::Idle;
+
+      if (onLoadedCallback) onLoadedCallback(this);
+      return true;  // ← build complete
+    }
+  }
+
+  // Unreachable — be safe.
+  return true;
+}
+
+void Chunk::cancelBuild() {
+  if (buildPhase == BuildPhase::Idle) return;
+
+  // Release any partial geometry that was generated so far.
+  clearDrawData();
+
+  buildPhase        = BuildPhase::Idle;
+  isEmpty           = false;
+  isCompressed      = false;
+  isUltraCompressed = false;
+  isMerged          = false;
+  isLODRebuild      = false;
+  state             = ChunkState::Clean;
+}
+
+// =============================================================================
+//  buildNormalySlice — generate geometry for a single X-slice.
+//  Identical to the inner body of buildNormaly() but scoped to one x value.
+//  This is the granular unit used by the incremental MeshGen phase.
+// =============================================================================
+
+void Chunk::buildNormalySlice(uint16_t x) {
+  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
+  BlockManager*        blockMgr        = BlockManager::getInstance();
+
+  for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+    for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+      const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+      if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
+
+      Vec4        offset(x, y, z);
+      const u8    visibleFaces = visibleFacesMgr->getVisibleFacesByOffset(offset);
+      if (visibleFaces == 0) continue;
+
+      const Blocks block_type    = static_cast<Blocks>(blockId);
+      Block*       pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
+      const bool   hasTransparency = pBlockTemplate->hasTransparency();
+
+      std::vector<Vec4>*  targetVertices = hasTransparency ? &transpVertices : &vertices;
+      std::vector<Color>* targetColors   = hasTransparency ? &transpColors   : &colors;
+      std::vector<Vec4>*  targetUV       = hasTransparency ? &transpUV       : &UV;
+
+      MeshBuilder_BuildMesh(&offset, visibleFaces, _lod, targetVertices,
+                            targetColors, targetUV, t_worldLightModel, pLevel);
+    }
+  }
+}
+
 void Chunk::buildNormaly() {
   // Cache singleton instances to avoid repeated lookups
   VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();

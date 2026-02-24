@@ -47,6 +47,28 @@ enum class ChunkState {
   Unloading   // Chunk em fila de descarregamento
 };
 
+/**
+ * Phases used by the incremental build pipeline (beginBuild / buildStep).
+ * Each phase does a bounded unit of work so the frame budget is respected.
+ *
+ *  Idle ──[beginBuild]──▶ AirCheck ──▶ MeshGen (16 X-slice steps)
+ *                              │               │
+ *                         all-air           LOD 0 ──▶ VisGraph ──▶ Finalize
+ *                              │               │
+ *                              │           LOD 1+ ──▶ Merge ──▶ StorageCmp
+ *                              │                                     │
+ *                              └──────────── Finalize ◀─── VisGraph ◀┘
+ */
+enum class BuildPhase : u8 {
+  Idle       = 0,  // No incremental build in progress
+  AirCheck   = 1,  // Detecting whether the chunk is entirely air
+  MeshGen    = 2,  // Generating mesh geometry, one X-slice per step
+  Merge      = 3,  // Greedy face merge via compress() (LOD 1+)
+  StorageCmp = 4,  // Pack vertices to CompressedVertex (LOD 1+)
+  VisGraph   = 5,  // Rebuild BFS visibility graph
+  Finalize   = 6,  // Transition to Loaded, fire callbacks
+};
+
 struct ChunkQuadData {
   // How many blocks this quad is spanning in X, Y and Z axis
   Vec4 span = Vec4(1, 1, 1);
@@ -96,8 +118,33 @@ class Chunk {
   void update(const Plane* frustumPlanes);
   void tick();
   void clear();
+
+  // -----------------------------------------------------------------------
+  // Synchronous build (used for force-load, block placement, initial spawn)
+  // -----------------------------------------------------------------------
   void build();
   void rebuild();
+
+  // -----------------------------------------------------------------------
+  // Incremental build pipeline — distributes work across multiple frames.
+  //
+  //   beginBuild()  — initialise phases; call once when chunk is dequeued.
+  //   buildStep()   — advance exactly one phase; returns true when complete.
+  //   cancelBuild() — abort a build-in-progress and reset to Clean state.
+  //
+  // Typical caller loop (in World::processIdleWork):
+  //   chunk->beginBuild();
+  //   while (!chunk->buildStep()) { /* check time budget */ }
+  // -----------------------------------------------------------------------
+  void beginBuild();
+  bool buildStep();
+  void cancelBuild();
+
+  /** True while an incremental build is active (not Idle). */
+  inline bool isBuildingIncrementally() const {
+    return buildPhase != BuildPhase::Idle;
+  }
+  inline BuildPhase getBuildPhase() const { return buildPhase; }
 
   bool hasDrawData();
   void reloadLightData();
@@ -181,6 +228,17 @@ class Chunk {
  private:
   int randomTickSpeed = DEFAULT_TICK_SPEED;
   void tickRandomBlock();
+
+  // -----------------------------------------------------------------------
+  // Incremental build state (used by beginBuild / buildStep)
+  // -----------------------------------------------------------------------
+  BuildPhase buildPhase      = BuildPhase::Idle;
+  uint16_t   meshGenSliceX   = 0;   // Current X-slice being processed in MeshGen
+  int        pendingLod      = 0;   // LOD level determined at the start of the build
+  bool       pendingIsLODRebuild = false; // Saved isLODRebuild flag for Finalize
+
+  /** Process one X-slice (z×y plane) during the MeshGen phase. */
+  void buildNormalySlice(uint16_t x);
 
   bool isCompressed = false;
   bool isUltraCompressed = false;

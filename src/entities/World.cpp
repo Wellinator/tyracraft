@@ -209,60 +209,94 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 };
 
 void World::processIdleWork() {
-  // Handle pending unloads first (they free memory for new loads)
+  // Handle pending unloads first (they free memory for new loads).
   if (!tempChunksToUnLoad.empty()) {
     unloadScheduledChunks();
   }
 
-  if (tempChunksToLoad.empty()) return;
+  // Nothing to do if no chunk is in progress and the queue is empty.
+  if (currentBuildChunk == nullptr && tempChunksToLoad.empty()) return;
 
-  // Budget: 5ms = 5 * 147456 EE count-register cycles
+  // Budget: 5 ms expressed in EE COP0 Count-register ticks
+  // (Count increments at ~147.456 MHz, so 5 ms ≈ 737 280 ticks).
   static constexpr u32 IDLE_BUDGET_CYCLES = 737280u;
 
   u32 start;
   asm volatile("mfc0 %0, $9" : "=r"(start));
 
-  bool anyBuilt = false;
+  while (true) {
+    // ----------------------------------------------------------------
+    // If no chunk is currently being built incrementally, dequeue one.
+    // ----------------------------------------------------------------
+    if (currentBuildChunk == nullptr) {
+      if (tempChunksToLoad.empty()) break;
 
-  while (!tempChunksToLoad.empty()) {
-    Chunk* chunk = tempChunksToLoad.front();
-    tempChunksToLoad.pop_front();
-    chunksInLoadQueue.reset(chunk->id);
+      Chunk* chunk = tempChunksToLoad.front();
+      tempChunksToLoad.pop_front();
+      chunksInLoadQueue.reset(chunk->id);
 
-    if (!drawDistanceController.canLoadMoreChunks()) {
-      unloadScheduledChunks();
-      tempChunksToLoad.push_front(chunk);
-      chunksInLoadQueue.set(chunk->id);
-      break;
+      // Pause loading if we're running low on RAM.
+      if (!drawDistanceController.canLoadMoreChunks()) {
+        unloadScheduledChunks();
+        tempChunksToLoad.push_front(chunk);
+        chunksInLoadQueue.set(chunk->id);
+        break;
+      }
+
+      // Stale entry (state changed between enqueue and dequeue) — skip.
+      if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
+        continue;
+      }
+
+      // Track whether this is a brand-new chunk (not already in loadedChunks).
+      currentBuildIsNewChunk = !chunk->isLODRebuild;
+
+#ifdef DEBUG_MODE
+      chunk->buildingTimeStart = clock();
+#endif
+
+      // Initialise incremental build phases.
+      chunk->beginBuild();
+      currentBuildChunk = chunk;
     }
 
-    if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
-      continue;
-    }
+    // ----------------------------------------------------------------
+    // Advance the current chunk by exactly one build phase.
+    // ----------------------------------------------------------------
+    const bool done = currentBuildChunk->buildStep();
 
-    const bool wasLoaded = chunk->isLoaded();
-    chunk->build();
-    chunk->loadedAtTick = g_ticksCounter;
+    if (done) {
+      Chunk* chunk    = currentBuildChunk;
+      currentBuildChunk = nullptr;
 
-    // Incremental list update: only add newly loaded chunks
-    if (!wasLoaded && chunk->isLoaded()) {
-      chunkManager.addToLoadedChunks(chunk);
-    }
+      chunk->loadedAtTick = g_ticksCounter;
 
-    if (g_debug_mode) {
-      chunk->timeToBuild =
-          ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
-      printf("Time to async build chunk %i: %f\n", chunk->id,
-             chunk->timeToBuild);
-    }
+      // Only add to loadedChunks when it's a genuinely new chunk.
+      if (currentBuildIsNewChunk && chunk->isLoaded()) {
+        chunkManager.addToLoadedChunks(chunk);
+      }
 
-    if (Utils::Probability(0.01F, worldOptions.seed)) {
-      Vec4 _spawnPosition;
-      if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
-        mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+#ifdef DEBUG_MODE
+      if (g_debug_mode) {
+        chunk->timeToBuild =
+            ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
+        printf("Time to async build chunk %i: %f\n", chunk->id,
+               chunk->timeToBuild);
+      }
+#endif
+
+      // Random mob spawn opportunity (1 % per newly built chunk).
+      if (Utils::Probability(0.01F, worldOptions.seed)) {
+        Vec4 _spawnPosition;
+        if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
+          mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
+        }
       }
     }
 
+    // ----------------------------------------------------------------
+    // Check frame budget after each phase step (not each full build).
+    // ----------------------------------------------------------------
     u32 now;
     asm volatile("mfc0 %0, $9" : "=r"(now));
     if ((now - start) >= IDLE_BUDGET_CYCLES) break;
@@ -420,7 +454,23 @@ void World::buildInitialPosition() {
   }
 };
 
-void World::resetWorldData() { chunkManager.clearAllChunks(); }
+void World::resetWorldData() {
+  // Cancel any in-progress incremental build before wiping chunks, otherwise
+  // processIdleWork() would try to advance a build on a cleared chunk.
+  if (currentBuildChunk != nullptr) {
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk      = nullptr;
+    currentBuildIsNewChunk = false;
+  }
+
+  // Drain async queues so stale entries don't re-trigger on the new world.
+  tempChunksToLoad.clear();
+  tempChunksToUnLoad.clear();
+  chunksInLoadQueue.reset();
+  chunksInUnloadQueue.reset();
+
+  chunkManager.clearAllChunks();
+}
 
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   Chunk* currentChunk = chunkManager.getChunkByWorldPosition(t_camera->looksAt);
@@ -466,6 +516,17 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
                                     const Vec4& camForward,
                                     u8 force_loading) {
   if (!canBuildChunk()) return;
+
+  // When force-loading the chunk manager will call build()/rebuild() directly
+  // (synchronously) on individual chunks. If currentBuildChunk is in the set
+  // we must cancel its incremental build first to avoid double-work / state
+  // corruption. For async scheduling this is addressed per-chunk in
+  // addChunkToUnloadAsync().
+  if (force_loading && currentBuildChunk != nullptr) {
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk      = nullptr;
+    currentBuildIsNewChunk = false;
+  }
 
 #ifdef DEBUG_MODE
   // Phase 4: Profiling metrics for optimization validation
@@ -763,7 +824,19 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
 
   // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
   if (chunksInUnloadQueue.test(chunkId)) return;
-  
+
+  // -----------------------------------------------------------------------
+  // If this chunk is the one currently being built incrementally, cancel it.
+  // It has already been dequeued from tempChunksToLoad, so the bitset check
+  // above would miss it — we must handle it explicitly here.
+  // -----------------------------------------------------------------------
+  if (t_chunk == currentBuildChunk) {
+    currentBuildChunk->cancelBuild();  // → state = Clean, frees partial data
+    currentBuildChunk     = nullptr;
+    currentBuildIsNewChunk = false;
+    // cancelBuild() already set state to Clean, so fall through to Unloading.
+  }
+
   // Protect recently-loaded chunks from immediate unload (prevents oscillation)
   // Minimum 60 ticks (~3 sec) must elapse before chunk can be unloaded
   constexpr u32 MIN_LOADED_TICKS = 60;
@@ -987,6 +1060,13 @@ void World::setDrawDistanceMode(DrawDistanceMode mode) {
   TYRA_LOG("Setting draw distance mode to ", static_cast<int>(mode));
   worldOptions.drawDistanceMode = mode;
   drawDistanceController.setMode(mode);
+
+  // Cancel any in-progress incremental build first.
+  if (currentBuildChunk != nullptr) {
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk      = nullptr;
+    currentBuildIsNewChunk = false;
+  }
 
   // Clear async queues and properly clean up chunk states
   // Memory leak fix: Clear draw data for chunks that were building but never loaded

@@ -206,6 +206,12 @@ class World {
   std::deque<Chunk*> tempChunksToLoad;
   std::deque<Chunk*> tempChunksToUnLoad;
 
+  // Chunk currently being built incrementally across frames (nullptr = none).
+  // This chunk has already been dequeued from tempChunksToLoad and has had
+  // beginBuild() called. buildStep() is invoked on it each processIdleWork().
+  Chunk* currentBuildChunk     = nullptr;
+  bool   currentBuildIsNewChunk = false;  // true iff the chunk was not in loadedChunks before this build
+
   // Phase 3: Bitsets for O(1) queue deduplication (768 bytes total)
   // Chunk IDs are 0-2047, so std::bitset<2048> is perfect
   std::bitset<2048> chunksInLoadQueue;
