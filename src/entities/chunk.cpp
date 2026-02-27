@@ -183,10 +183,6 @@ Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
 Chunk::~Chunk() {
   clear();
   delete bbox;
-  
-  // Ensure compressed data is freed
-  std::vector<CompressedVertex>().swap(compressedVertices);
-  std::vector<CompressedVertex>().swap(compressedTransparentVertices);
 };
 
 void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
@@ -406,28 +402,13 @@ void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+  if (vertices.empty()) return;
+
   std::vector<Vec4>*  pVerts  = &vertices;
   std::vector<Vec4>*  pUV     = &UV;
   std::vector<Color>* pColors = &colors;
 
-  if (vertices.empty() && !compressedVertices.empty()) {
-    if (!decompCacheValid) {
-      cachedDecompVertices.clear();
-      cachedDecompColors.clear();
-      cachedDecompUV.clear();
-      decompressData(&cachedDecompVertices, &cachedDecompColors,
-                     &cachedDecompUV, compressedVertices);
-      decompCacheValid = true;
-    }
-    pVerts = &cachedDecompVertices;
-    pColors = &cachedDecompColors;
-    pUV = &cachedDecompUV;
-  }
-
-  if (pVerts->empty()) return;
-
   // Pre-apply fade alpha to colors once per chunk, not per draw call
-  // Use a local vector (not static) to avoid accumulating memory over time
   std::vector<Color> fadedColors;
   if (fadeAlpha < 1.0f) {
     const size_t totalVerts = pColors->size();
@@ -444,7 +425,6 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   // Use grouped rendering if we have TileGroups AND all verts are covered by groups
   bool useGrouped = false;
   if (!mergedOpaqueGroups.empty()) {
-    // Verify all vertices are covered by groups (check last group's coverage)
     const TileGroup& lastGroup = mergedOpaqueGroups.back();
     if (lastGroup.start + lastGroup.count == (u32)pVerts->size()) {
       useGrouped = true;
@@ -460,28 +440,13 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
+  if (transpVertices.empty()) return;
+
   std::vector<Vec4>*  pVerts  = &transpVertices;
   std::vector<Vec4>*  pUV     = &transpUV;
   std::vector<Color>* pColors = &transpColors;
 
-  if (transpVertices.empty() && !compressedTransparentVertices.empty()) {
-    if (!decompTranspCacheValid) {
-      cachedDecompTranspVertices.clear();
-      cachedDecompTranspColors.clear();
-      cachedDecompTranspUV.clear();
-      decompressData(&cachedDecompTranspVertices, &cachedDecompTranspColors,
-                     &cachedDecompTranspUV, compressedTransparentVertices);
-      decompTranspCacheValid = true;
-    }
-    pVerts = &cachedDecompTranspVertices;
-    pColors = &cachedDecompTranspColors;
-    pUV = &cachedDecompTranspUV;
-  }
-
-  if (pVerts->empty()) return;
-
   // Pre-apply fade alpha to transparent colors once per chunk
-  // Use a local vector (not static) to avoid accumulating memory over time
   std::vector<Color> fadedTranspColors;
   if (fadeAlpha < 1.0f) {
     const size_t totalVerts = pColors->size();
@@ -498,7 +463,6 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   // Use grouped rendering if we have TileGroups AND all verts are covered by groups
   bool useGrouped = false;
   if (!mergedTranspGroups.empty()) {
-    // Verify all vertices are covered by groups (check last group's coverage)
     const TileGroup& lastGroup = mergedTranspGroups.back();
     if (lastGroup.start + lastGroup.count == (u32)pVerts->size()) {
       useGrouped = true;
@@ -543,9 +507,6 @@ void Chunk::clearDrawData() {
   transpUV.clear();
   transpUV.shrink_to_fit();
 
-  // Invalidate decompression cache
-  invalidateDecompCache();
-
   mergedOpaqueGroups.clear();
   mergedOpaqueGroups.shrink_to_fit();
   mergedTranspGroups.clear();
@@ -561,37 +522,11 @@ void Chunk::clearDrawDataWithoutShrink() {
   transpUV.clear();
   transpColors.clear();
 
-  // Invalidate decompression cache
-  invalidateDecompCache();
-
   mergedOpaqueGroups.clear();
   mergedTranspGroups.clear();
-
-  // Clear compressed data
-  std::vector<CompressedVertex>().swap(compressedVertices);
-  std::vector<CompressedVertex>().swap(compressedTransparentVertices);
 }
 
-void Chunk::invalidateDecompCache() {
-  if (decompCacheValid) {
-    cachedDecompVertices.clear();
-    cachedDecompVertices.shrink_to_fit();
-    cachedDecompColors.clear();
-    cachedDecompColors.shrink_to_fit();
-    cachedDecompUV.clear();
-    cachedDecompUV.shrink_to_fit();
-    decompCacheValid = false;
-  }
-  if (decompTranspCacheValid) {
-    cachedDecompTranspVertices.clear();
-    cachedDecompTranspVertices.shrink_to_fit();
-    cachedDecompTranspColors.clear();
-    cachedDecompTranspColors.shrink_to_fit();
-    cachedDecompTranspUV.clear();
-    cachedDecompTranspUV.shrink_to_fit();
-    decompTranspCacheValid = false;
-  }
-}
+
 
 void Chunk::build() {
 #ifdef DEBUG_MODE
@@ -657,7 +592,7 @@ void Chunk::build() {
 #ifdef DEBUG_MODE
   if (g_debug_menu.logChunkMemoryUsage) {
     const size_t totalVerts =
-        compressedVertices.size() + compressedTransparentVertices.size();
+        vertices.size() + transpVertices.size();
     if (totalVerts > 0) {
       const size_t finalMem = get_used_memory();
       printf("Chunk %d memory: %.2f KB (%zu verts)\n", id,
@@ -778,22 +713,27 @@ void Chunk::buildBGM() {
   BinaryGreedyMesher::Output output;
   bgm.meshChunk(pLevel, minOffset, t_worldLightModel, output);
 
-  compressedVertices             = std::move(output.opaqueVerts);
-  mergedOpaqueGroups             = std::move(output.opaqueGroups);
-  compressedTransparentVertices  = std::move(output.transpVerts);
-  mergedTranspGroups             = std::move(output.transpGroups);
+  // Move BGM results directly into persistent draw data buffers
+  vertices           = std::move(output.opaqueVertices);
+  colors             = std::move(output.opaqueColors);
+  UV                 = std::move(output.opaqueUV);
+  mergedOpaqueGroups = std::move(output.opaqueGroups);
+
+  transpVertices     = std::move(output.transpVertices);
+  transpColors       = std::move(output.transpColors);
+  transpUV           = std::move(output.transpUV);
+  mergedTranspGroups = std::move(output.transpGroups);
 
   // ---- Legacy pass: special-shaped blocks (torches, plants, liquids)
   // Note: slabs are now handled by BGM's processSlabs()
   VisibleFacesManager* vfm = VisibleFacesManager::getInstance();
   BlockManager*        bm  = BlockManager::getInstance();
 
-  vertices.clear();
-  UV.clear();
-  colors.clear();
-  transpVertices.clear();
-  transpUV.clear();
-  transpColors.clear();
+  // Legacy blocks append directly to the persistent buffers
+  bool hasLegacyOpaque = false;
+  bool hasLegacyTransp = false;
+  const u32 legacyOpaqueStart = (u32)vertices.size();
+  const u32 legacyTranspStart = (u32)transpVertices.size();
 
   for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
     for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
@@ -817,69 +757,30 @@ void Chunk::buildBGM() {
 
         MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu,
                               t_worldLightModel, pLevel);
+
+        if (transp) hasLegacyTransp = true;
+        else        hasLegacyOpaque = true;
       }
     }
   }
 
-  // Pack legacy geometry into CompressedVertex and append to the BGM output.
-  // Using compressData() which writes into compressedVertices etc. and then
-  // clears the Vec4 temp buffers — but it overwrites, so we merge manually.
-  if (!vertices.empty() || !transpVertices.empty()) {
-    // Opaque legacy verts — create a TileGroup for them if any already exist
-    if (!vertices.empty()) {
-      u32 legacyOpaqueStart = (u32)compressedVertices.size();
-      compressedVertices.reserve(compressedVertices.size() + vertices.size());
-      for (size_t i = 0; i < vertices.size(); i++) {
-        CompressedVertex cv;
-        cv.pos.fromVec4(vertices[i]);
-        packUV(UV[i], cv.u, cv.v);
-        cv.color = packColor(colors[i]);
-        compressedVertices.push_back(cv);
-      }
-      
-      // If BGM created any groups, append a catch-all group for legacy vertices.
-      // If no BGM groups, we'll use normal rendering (no groups).
-      if (!mergedOpaqueGroups.empty()) {
-        TileGroup legacyGroup;
-        legacyGroup.start = legacyOpaqueStart;
-        legacyGroup.count = (u32)vertices.size();
-        legacyGroup.col   = TileGroup::LEGACY_TILE;
-        legacyGroup.row   = TileGroup::LEGACY_TILE;
-        mergedOpaqueGroups.push_back(legacyGroup);
-      }
-    }
+  // Create TileGroups for legacy vertices if BGM groups exist
+  if (hasLegacyOpaque && !mergedOpaqueGroups.empty()) {
+    TileGroup legacyGroup;
+    legacyGroup.start = legacyOpaqueStart;
+    legacyGroup.count = (u32)vertices.size() - legacyOpaqueStart;
+    legacyGroup.col   = TileGroup::LEGACY_TILE;
+    legacyGroup.row   = TileGroup::LEGACY_TILE;
+    mergedOpaqueGroups.push_back(legacyGroup);
+  }
 
-    // Transparent legacy verts — create a TileGroup for them if any already exist
-    if (!transpVertices.empty()) {
-      u32 legacyTranspStart = (u32)compressedTransparentVertices.size();
-      compressedTransparentVertices.reserve(
-          compressedTransparentVertices.size() + transpVertices.size());
-      for (size_t i = 0; i < transpVertices.size(); i++) {
-        CompressedVertex cv;
-        cv.pos.fromVec4(transpVertices[i]);
-        packUV(transpUV[i], cv.u, cv.v);
-        cv.color = packColor(transpColors[i]);
-        compressedTransparentVertices.push_back(cv);
-      }
-
-      // If BGM created any groups, append a catch-all group for legacy vertices.
-      if (!mergedTranspGroups.empty()) {
-        TileGroup legacyGroup;
-        legacyGroup.start = legacyTranspStart;
-        legacyGroup.count = (u32)transpVertices.size();
-        legacyGroup.col   = TileGroup::LEGACY_TILE;
-        legacyGroup.row   = TileGroup::LEGACY_TILE;
-        mergedTranspGroups.push_back(legacyGroup);
-      }
-    }
-
-    // Free the temporary Vec4 buffers
-    std::vector<Vec4>().swap(vertices);
-    std::vector<Vec4>().swap(UV);
-    std::vector<Color>().swap(colors);
-    std::vector<Vec4>().swap(transpVertices);
-    std::vector<Vec4>().swap(transpUV);
-    std::vector<Color>().swap(transpColors);
+  if (hasLegacyTransp && !mergedTranspGroups.empty()) {
+    TileGroup legacyGroup;
+    legacyGroup.start = legacyTranspStart;
+    legacyGroup.count = (u32)transpVertices.size() - legacyTranspStart;
+    legacyGroup.col   = TileGroup::LEGACY_TILE;
+    legacyGroup.row   = TileGroup::LEGACY_TILE;
+    mergedTranspGroups.push_back(legacyGroup);
   }
 }
 
@@ -895,7 +796,7 @@ void Chunk::cancelBuild() {
 }
 
 bool Chunk::hasDrawData() {
-  return !compressedVertices.empty() || !compressedTransparentVertices.empty();
+  return !vertices.empty() || !transpVertices.empty();
 }
 
 void Chunk::reloadLightData() {
@@ -952,108 +853,3 @@ bool Chunk::isConnected(u8 faceA, u8 faceB) const {
   return IsConnected(visibilityGraph, faceA, faceB);
 }
 
-// -----------------------------------------------------------------------------
-// Compression Implementation
-// -----------------------------------------------------------------------------
-
-void Chunk::compressData() {
-  if (vertices.empty() && transpVertices.empty()) return;
-
-  // Compress opaque vertices
-  compressedVertices.clear();
-  compressedVertices.reserve(vertices.size()); // Reserve exact size
-
-  for (size_t i = 0; i < vertices.size(); i++) {
-    CompressedVertex cv;
-    cv.pos.fromVec4(vertices[i]);
-    packUV(UV[i], cv.u, cv.v);
-    cv.color = packColor(colors[i]);
-    compressedVertices.push_back(cv);
-  }
-
-  // Compress transparent vertices
-  compressedTransparentVertices.clear();
-  compressedTransparentVertices.reserve(transpVertices.size());
-
-  for (size_t i = 0; i < transpVertices.size(); i++) {
-    CompressedVertex cv;
-    cv.pos.fromVec4(transpVertices[i]);
-    packUV(transpUV[i], cv.u, cv.v);
-    cv.color = packColor(transpColors[i]);
-    compressedTransparentVertices.push_back(cv);
-  }
-
-  // Clear original data to save RAM
-  // Using swap to force memory deallocation immediately
-  std::vector<Vec4>().swap(vertices);
-  std::vector<Vec4>().swap(UV);
-  std::vector<Color>().swap(colors);
-
-  std::vector<Vec4>().swap(transpVertices);
-  std::vector<Vec4>().swap(transpUV);
-  std::vector<Color>().swap(transpColors);
-
-  // Invalidate decompression cache since compressed data changed
-  invalidateDecompCache();
-
-  // Do NOT set isCompressed = true here.
-  // isCompressed tracks GEOMETRIC compression (greedy meshing),
-  // whereas this method performs STORAGE compression (bit packing).
-  // This prevents LOD 0 chunks (storage compressed, but geometrically raw)
-  // from being flagged as low-detail and constantly rebuilt.
-}
-
-void Chunk::decompressData(std::vector<Vec4>* outVertices,
-                           std::vector<Color>* outColors,
-                           std::vector<Vec4>* outUV,
-                           const std::vector<CompressedVertex>& inData) {
-  outVertices->clear();
-  outColors->clear();
-  outUV->clear();
-
-  if (inData.empty()) return;
-
-  // Reserve to avoid reallocations during decompression
-  outVertices->reserve(inData.size());
-  outColors->reserve(inData.size());
-  outUV->reserve(inData.size());
-
-  for (const auto& cv : inData) {
-    outVertices->emplace_back(cv.pos.toVec4());
-    outColors->emplace_back(unpackColor(cv.color));
-    
-    Vec4 uv;
-    unpackUV(uv, cv.u, cv.v);
-    outUV->emplace_back(uv);
-  }
-}
-
-u32 Chunk::packColor(const Color& color) {
-  // Pack RGBA into 32-bit integer
-  return (static_cast<u32>(color.r) << 24) |
-         (static_cast<u32>(color.g) << 16) |
-         (static_cast<u32>(color.b) << 8) |
-         static_cast<u32>(color.a);
-}
-
-Color Chunk::unpackColor(const u32& packed) {
-  return Color(
-      static_cast<float>((packed >> 24) & 0xFF),
-      static_cast<float>((packed >> 16) & 0xFF),
-      static_cast<float>((packed >> 8) & 0xFF),
-      static_cast<float>(packed & 0xFF));
-}
-
-void Chunk::packUV(const Vec4& uv, u16& u, u16& v) {
-  // Scale UV by 1024.0f to preserve precision in u16
-  // Range 0-64.0 becomes 0-65536
-  u = static_cast<u16>(uv.x * 1024.0f);
-  v = static_cast<u16>(uv.y * 1024.0f);
-}
-
-void Chunk::unpackUV(Vec4& uv, const u16& u, const u16& v) {
-  uv.x = static_cast<float>(u) / 1024.0f;
-  uv.y = static_cast<float>(v) / 1024.0f;
-  uv.z = 1.0f;
-  uv.w = 0.0f;
-}

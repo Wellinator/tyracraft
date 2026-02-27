@@ -1,7 +1,7 @@
 #include "managers/mesh/binary_greedy_mesher.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/block/StaticBlockRepository.hpp"
-#include "entities/chunk.hpp"  // for CompressedVertex, TileGroup
+#include "entities/chunk.hpp"  // for TileGroup
 
 const Tyra::Color BinaryGreedyMesher::kBaseColor = Tyra::Color(120.0f, 120.0f, 120.0f, 128.0f);
 
@@ -104,16 +104,24 @@ void BinaryGreedyMesher::meshChunk(Level* pLevel,
                                    const Vec4& chunkMin,
                                    WorldLightModel* lightModel,
                                    Output& out) {
-  out.opaqueVerts.clear();
+  out.opaqueVertices.clear();
+  out.opaqueColors.clear();
+  out.opaqueUV.clear();
   out.opaqueGroups.clear();
-  out.transpVerts.clear();
+  out.transpVertices.clear();
+  out.transpColors.clear();
+  out.transpUV.clear();
   out.transpGroups.clear();
 
   // Reserve a reasonable initial capacity to reduce re-allocations.
   // A 16³ chunk can have at most 6×16×16 = 1536 quads (all border blocks
   // worst case), but after greedy merge typically far fewer.
-  out.opaqueVerts.reserve(384);
-  out.transpVerts.reserve(64);
+  out.opaqueVertices.reserve(384);
+  out.opaqueColors.reserve(384);
+  out.opaqueUV.reserve(384);
+  out.transpVertices.reserve(64);
+  out.transpColors.reserve(64);
+  out.transpUV.reserve(64);
 
   for (int d = 0; d < 6; ++d) {
     processFaceDir(pLevel, chunkMin, static_cast<FaceDir>(d), lightModel, out);
@@ -431,25 +439,8 @@ void BinaryGreedyMesher::emitQuadsForSlice(u16 masks[CHUNK_SIZE],
 }
 
 // ---------------------------------------------------------------------------
-// Pack helpers (mirrors Chunk's existing static helpers)
-// ---------------------------------------------------------------------------
-static inline u32 bgmPackColor(const Color& c) {
-  // Byte order must match Chunk::unpackColor():
-  //   unpackColor reads R=(>>24), G=(>>16), B=(>>8), A=(& 0xFF)
-  return (static_cast<u32>((u8)c.r) << 24) |
-         (static_cast<u32>((u8)c.g) << 16) |
-         (static_cast<u32>((u8)c.b) << 8)  |
-          static_cast<u32>((u8)c.a);
-}
-
-static inline void bgmPackUV(float u, float v, u16& pu, u16& pv) {
-  pu = (u16)(u * 1024.0f);
-  pv = (u16)(v * 1024.0f);
-}
-
-// ---------------------------------------------------------------------------
 // emitQuad
-// Builds 6 CompressedVertex entries (2 triangles, CCW winding) for a
+// Builds 6 vertices (2 triangles, CCW winding) for a
 // rectangular quad defined by its slice plane, row/col corner, and span dims.
 //
 // Coordinate mapping (world space = block offset × DOUBLE_BLOCK_SIZE):
@@ -544,8 +535,8 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       break;
   }
 
-  // Build the 4 corners as s16 packed positions.
-  Block::CompressedVec4 corners[4];
+  // Build the 4 corners as Vec4 positions.
+  Vec4 corners[4];
   float uvCorners[4][2];  // [u, v] per corner
 
   // Corner convention: A=bottom-left, B=bottom-right, C=top-right, D=top-left
@@ -570,10 +561,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal points -X (LEFT face).  Winding: viewed from -X.
       // When looking at face from -X direction: +Y is up, +Z is right
       // CCW order: bottom-left, bottom-right, top-right, top-left
-      corners[0].fromVec4(Vec4(x0, y0, z0));  // A: bottom-front (y0, z0)
-      corners[1].fromVec4(Vec4(x0, y0, z1));  // B: bottom-back  (y0, z1)
-      corners[2].fromVec4(Vec4(x0, y1, z1));  // C: top-back     (y1, z1)
-      corners[3].fromVec4(Vec4(x0, y1, z0));  // D: top-front    (y1, z0)
+      corners[0] = Vec4(x0, y0, z0);  // A: bottom-front (y0, z0)
+      corners[1] = Vec4(x0, y0, z1);  // B: bottom-back  (y0, z1)
+      corners[2] = Vec4(x0, y1, z1);  // C: top-back     (y1, z1)
+      corners[3] = Vec4(x0, y1, z0);  // D: top-front    (y1, z0)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -584,10 +575,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal +X (RIGHT face).  Winding: viewed from +X.
       // When looking at face from +X direction: +Y is up, -Z is right (mirror of NegX)
       // CCW order: bottom-back, bottom-front, top-front, top-back
-      corners[0].fromVec4(Vec4(x0, y0, z1));  // A: bottom-back  (y0, z1)
-      corners[1].fromVec4(Vec4(x0, y0, z0));  // B: bottom-front (y0, z0)
-      corners[2].fromVec4(Vec4(x0, y1, z0));  // C: top-front    (y1, z0)
-      corners[3].fromVec4(Vec4(x0, y1, z1));  // D: top-back     (y1, z1)
+      corners[0] = Vec4(x0, y0, z1);  // A: bottom-back  (y0, z1)
+      corners[1] = Vec4(x0, y0, z0);  // B: bottom-front (y0, z0)
+      corners[2] = Vec4(x0, y1, z0);  // C: top-front    (y1, z0)
+      corners[3] = Vec4(x0, y1, z1);  // D: top-back     (y1, z1)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -598,10 +589,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal +Y (TOP face).  Winding: viewed from +Y looking down.
       // When looking at face from +Y direction: +X is right, +Z is down (away)
       // CCW order: front-left, front-right, back-right, back-left
-      corners[0].fromVec4(Vec4(x0, y0, z0));  // A: front-left  (x0, z0)
-      corners[1].fromVec4(Vec4(x1, y0, z0));  // B: front-right (x1, z0)
-      corners[2].fromVec4(Vec4(x1, y0, z1));  // C: back-right  (x1, z1)
-      corners[3].fromVec4(Vec4(x0, y0, z1));  // D: back-left   (x0, z1)
+      corners[0] = Vec4(x0, y0, z0);  // A: front-left  (x0, z0)
+      corners[1] = Vec4(x1, y0, z0);  // B: front-right (x1, z0)
+      corners[2] = Vec4(x1, y0, z1);  // C: back-right  (x1, z1)
+      corners[3] = Vec4(x0, y0, z1);  // D: back-left   (x0, z1)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -612,10 +603,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal -Y (BOTTOM face).  Winding: viewed from -Y looking up.
       // When looking at face from -Y direction: +X is left, +Z is down (flipped vs TOP)
       // CCW order: back-left, back-right, front-right, front-left
-      corners[0].fromVec4(Vec4(x0, y0, z1));  // A: back-left   (x0, z1)
-      corners[1].fromVec4(Vec4(x1, y0, z1));  // B: back-right  (x1, z1)
-      corners[2].fromVec4(Vec4(x1, y0, z0));  // C: front-right (x1, z0)
-      corners[3].fromVec4(Vec4(x0, y0, z0));  // D: front-left  (x0, z0)
+      corners[0] = Vec4(x0, y0, z1);  // A: back-left   (x0, z1)
+      corners[1] = Vec4(x1, y0, z1);  // B: back-right  (x1, z1)
+      corners[2] = Vec4(x1, y0, z0);  // C: front-right (x1, z0)
+      corners[3] = Vec4(x0, y0, z0);  // D: front-left  (x0, z0)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -626,10 +617,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal +Z (BACK face).  Winding: viewed from +Z looking forward.
       // When looking at face from +Z direction: -X is right, +Y is up
       // CCW order: right-bottom, left-bottom, left-top, right-top
-      corners[0].fromVec4(Vec4(x1, y0, z0));  // A: right-bottom (x1, y0)
-      corners[1].fromVec4(Vec4(x0, y0, z0));  // B: left-bottom  (x0, y0)
-      corners[2].fromVec4(Vec4(x0, y1, z0));  // C: left-top     (x0, y1)
-      corners[3].fromVec4(Vec4(x1, y1, z0));  // D: right-top    (x1, y1)
+      corners[0] = Vec4(x1, y0, z0);  // A: right-bottom (x1, y0)
+      corners[1] = Vec4(x0, y0, z0);  // B: left-bottom  (x0, y0)
+      corners[2] = Vec4(x0, y1, z0);  // C: left-top     (x0, y1)
+      corners[3] = Vec4(x1, y1, z0);  // D: right-top    (x1, y1)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -640,10 +631,10 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       // Normal -Z (FRONT face).  Winding: viewed from -Z looking back.
       // When looking at face from -Z direction: +X is left, +Y is up (mirror of BACK)
       // CCW order: left-bottom, right-bottom, right-top, left-top
-      corners[0].fromVec4(Vec4(x0, y0, z0));  // A: left-bottom  (x0, y0)
-      corners[1].fromVec4(Vec4(x1, y0, z0));  // B: right-bottom (x1, y0)
-      corners[2].fromVec4(Vec4(x1, y1, z0));  // C: right-top    (x1, y1)
-      corners[3].fromVec4(Vec4(x0, y1, z0));  // D: left-top     (x0, y1)
+      corners[0] = Vec4(x0, y0, z0);  // A: left-bottom  (x0, y0)
+      corners[1] = Vec4(x1, y0, z0);  // B: right-bottom (x1, y0)
+      corners[2] = Vec4(x1, y1, z0);  // C: right-top    (x1, y1)
+      corners[3] = Vec4(x0, y1, z0);  // D: left-top     (x0, y1)
       uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
       uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
       uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
@@ -665,18 +656,18 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
   }
 
 
-  const u32 packedColor = bgmPackColor(lightColor);
-
   // Determine transparency — split opaque and transparent cuboid blocks into
   // separate output streams for correct rendering order. Legacy special blocks
   // (slabs, plants, liquids) are processed separately and appended post-BGM.
   const bool  bTransp    = isTransparent;
-  auto&       verts      = bTransp ? out.transpVerts  : out.opaqueVerts;
-  auto&       groups     = bTransp ? out.transpGroups : out.opaqueGroups;
+  auto&       outVerts   = bTransp ? out.transpVertices : out.opaqueVertices;
+  auto&       outColors  = bTransp ? out.transpColors   : out.opaqueColors;
+  auto&       outUV      = bTransp ? out.transpUV       : out.opaqueUV;
+  auto&       groups     = bTransp ? out.transpGroups   : out.opaqueGroups;
 
   const u8  tileCol = texIndex % MAX_TEX_COLS;
   const u8  tileRow = texIndex / MAX_TEX_COLS;
-  const u32 startIdx = (u32)verts.size();
+  const u32 startIdx = (u32)outVerts.size();
 
   // Open or extend TileGroup
   if (groups.empty() ||
@@ -690,13 +681,12 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
     groups.push_back(g);
   }
 
-  // Emit 6 vertices
+  // Emit 6 vertices directly as Vec4/Color/Vec4
   for (int i = 0; i < 6; ++i) {
-    CompressedVertex cv;
-    cv.pos = corners[triIdx[i]];
-    bgmPackUV(uvCorners[triIdx[i]][0], uvCorners[triIdx[i]][1], cv.u, cv.v);
-    cv.color = packedColor;
-    verts.push_back(cv);
+    const int ci = triIdx[i];
+    outVerts.push_back(corners[ci]);
+    outColors.push_back(lightColor);
+    outUV.emplace_back(uvCorners[ci][0], uvCorners[ci][1], 1.0f, 0.0f);
   }
 
   groups.back().count += 6;
@@ -779,7 +769,7 @@ void BinaryGreedyMesher::processSlabs(Level* pLevel,
 
 // ---------------------------------------------------------------------------
 // emitSlabQuad
-// Emits a single half-height slab face as 6 CompressedVertex entries.
+// Emits a single half-height slab face as 6 vertex entries.
 // Side faces use half-height UVs (V spans 0.5 tile), top/bottom use full UVs.
 // ---------------------------------------------------------------------------
 void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
@@ -816,7 +806,7 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
   const float v1 = (atlasRow + 1.0f) * kTile;
   const float vHalf = v0 + (v1 - v0) * 0.5f;  // Half-tile V for side faces
 
-  Block::CompressedVec4 corners[4];
+  Vec4 corners[4];
   float uvCorners[4][2];
 
   // Determine if this is a side face (needs half-height UV) or top/bottom (full UV)
@@ -825,10 +815,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
 
   switch (dir) {
     case FaceDir::NegX: {
-      corners[0].fromVec4(Vec4(xLo, yLo, zLo));
-      corners[1].fromVec4(Vec4(xLo, yLo, zHi));
-      corners[2].fromVec4(Vec4(xLo, yHi, zHi));
-      corners[3].fromVec4(Vec4(xLo, yHi, zLo));
+      corners[0] = Vec4(xLo, yLo, zLo);
+      corners[1] = Vec4(xLo, yLo, zHi);
+      corners[2] = Vec4(xLo, yHi, zHi);
+      corners[3] = Vec4(xLo, yHi, zLo);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
@@ -836,10 +826,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       break;
     }
     case FaceDir::PosX: {
-      corners[0].fromVec4(Vec4(xHi, yLo, zHi));
-      corners[1].fromVec4(Vec4(xHi, yLo, zLo));
-      corners[2].fromVec4(Vec4(xHi, yHi, zLo));
-      corners[3].fromVec4(Vec4(xHi, yHi, zHi));
+      corners[0] = Vec4(xHi, yLo, zHi);
+      corners[1] = Vec4(xHi, yLo, zLo);
+      corners[2] = Vec4(xHi, yHi, zLo);
+      corners[3] = Vec4(xHi, yHi, zHi);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
@@ -847,10 +837,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       break;
     }
     case FaceDir::PosY: {
-      corners[0].fromVec4(Vec4(xLo, yHi, zLo));
-      corners[1].fromVec4(Vec4(xHi, yHi, zLo));
-      corners[2].fromVec4(Vec4(xHi, yHi, zHi));
-      corners[3].fromVec4(Vec4(xLo, yHi, zHi));
+      corners[0] = Vec4(xLo, yHi, zLo);
+      corners[1] = Vec4(xHi, yHi, zLo);
+      corners[2] = Vec4(xHi, yHi, zHi);
+      corners[3] = Vec4(xLo, yHi, zHi);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = v1;
@@ -858,10 +848,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       break;
     }
     case FaceDir::NegY: {
-      corners[0].fromVec4(Vec4(xLo, yLo, zHi));
-      corners[1].fromVec4(Vec4(xHi, yLo, zHi));
-      corners[2].fromVec4(Vec4(xHi, yLo, zLo));
-      corners[3].fromVec4(Vec4(xLo, yLo, zLo));
+      corners[0] = Vec4(xLo, yLo, zHi);
+      corners[1] = Vec4(xHi, yLo, zHi);
+      corners[2] = Vec4(xHi, yLo, zLo);
+      corners[3] = Vec4(xLo, yLo, zLo);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = v1;
@@ -869,10 +859,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       break;
     }
     case FaceDir::PosZ: {
-      corners[0].fromVec4(Vec4(xHi, yLo, zHi));
-      corners[1].fromVec4(Vec4(xLo, yLo, zHi));
-      corners[2].fromVec4(Vec4(xLo, yHi, zHi));
-      corners[3].fromVec4(Vec4(xHi, yHi, zHi));
+      corners[0] = Vec4(xHi, yLo, zHi);
+      corners[1] = Vec4(xLo, yLo, zHi);
+      corners[2] = Vec4(xLo, yHi, zHi);
+      corners[3] = Vec4(xHi, yHi, zHi);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
@@ -880,10 +870,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       break;
     }
     default: { // NegZ — FRONT face
-      corners[0].fromVec4(Vec4(xLo, yLo, zLo));
-      corners[1].fromVec4(Vec4(xHi, yLo, zLo));
-      corners[2].fromVec4(Vec4(xHi, yHi, zLo));
-      corners[3].fromVec4(Vec4(xLo, yHi, zLo));
+      corners[0] = Vec4(xLo, yLo, zLo);
+      corners[1] = Vec4(xHi, yLo, zLo);
+      corners[2] = Vec4(xHi, yHi, zLo);
+      corners[3] = Vec4(xLo, yHi, zLo);
       uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
       uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
       uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
@@ -893,14 +883,15 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
   }
 
   const int triIdx[6] = {0, 1, 2, 0, 2, 3};
-  const u32 packedColor = bgmPackColor(lightColor);
 
-  auto& verts  = isTransparent ? out.transpVerts  : out.opaqueVerts;
-  auto& groups = isTransparent ? out.transpGroups : out.opaqueGroups;
+  auto& outVerts  = isTransparent ? out.transpVertices : out.opaqueVertices;
+  auto& outColors = isTransparent ? out.transpColors   : out.opaqueColors;
+  auto& outUV     = isTransparent ? out.transpUV       : out.opaqueUV;
+  auto& groups    = isTransparent ? out.transpGroups   : out.opaqueGroups;
 
   const u8  tileCol = texIndex % MAX_TEX_COLS;
   const u8  tileRow = texIndex / MAX_TEX_COLS;
-  const u32 startIdx = (u32)verts.size();
+  const u32 startIdx = (u32)outVerts.size();
 
   if (groups.empty() ||
       groups.back().col != tileCol ||
@@ -914,11 +905,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
   }
 
   for (int i = 0; i < 6; ++i) {
-    CompressedVertex cv;
-    cv.pos = corners[triIdx[i]];
-    bgmPackUV(uvCorners[triIdx[i]][0], uvCorners[triIdx[i]][1], cv.u, cv.v);
-    cv.color = packedColor;
-    verts.push_back(cv);
+    const int ci = triIdx[i];
+    outVerts.push_back(corners[ci]);
+    outColors.push_back(lightColor);
+    outUV.emplace_back(uvCorners[ci][0], uvCorners[ci][1], 1.0f, 0.0f);
   }
 
   groups.back().count += 6;

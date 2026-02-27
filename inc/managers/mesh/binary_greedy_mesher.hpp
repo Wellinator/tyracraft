@@ -14,7 +14,6 @@ using Tyra::Vec4;
 
 // Forward declaration
 struct TileGroup;
-struct CompressedVertex;
 
 /**
  * @brief Binary Greedy Meshing (BGM) for cuboid blocks within a chunk.
@@ -39,9 +38,9 @@ struct CompressedVertex;
  * existing MeshBuilder dispatch.  Slabs are handled by a dedicated
  * second pass within meshChunk() (processSlabs).
  *
- * Output vertices are stored directly as CompressedVertex (16 bytes each),
- * avoiding the old intermediate Vec4 buffers.  TileGroup boundaries are
- * built in parallel so renderGrouped() can use RegionRepeat tiling.
+ * Output vertices are stored directly as Vec4/Color/Vec4 arrays, ready for
+ * immediate rendering without any decompression step.  TileGroup boundaries
+ * are built in parallel so renderGrouped() can use RegionRepeat tiling.
  */
 class BinaryGreedyMesher {
  public:
@@ -49,10 +48,14 @@ class BinaryGreedyMesher {
   ~BinaryGreedyMesher() = default;
 
   struct Output {
-    std::vector<CompressedVertex> opaqueVerts;
-    std::vector<TileGroup>       opaqueGroups;
-    std::vector<CompressedVertex> transpVerts;
-    std::vector<TileGroup>        transpGroups;
+    std::vector<Vec4>       opaqueVertices;
+    std::vector<Color>      opaqueColors;
+    std::vector<Vec4>       opaqueUV;
+    std::vector<TileGroup>  opaqueGroups;
+    std::vector<Vec4>       transpVertices;
+    std::vector<Color>      transpColors;
+    std::vector<Vec4>       transpUV;
+    std::vector<TileGroup>  transpGroups;
   };
 
   /**
@@ -65,7 +68,7 @@ class BinaryGreedyMesher {
    *
    * Blocks that are not "pure cuboids" are skipped; the caller is responsible
    * for processing them via the legacy MeshBuilder dispatch and appending to
-   * the same output vectors before compressing to CompressedVertex.
+   * the same output vectors and appending directly.
    */
   void meshChunk(Level* pLevel,
                  const Vec4& chunkMin,

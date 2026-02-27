@@ -84,12 +84,7 @@ struct TileGroup {
   u8  row;    // Atlas row (0-15), or LEGACY_TILE for non-BGM blocks
 };
 
-// 16 bytes per vertex (was 48 bytes)
-struct CompressedVertex {
-  Block::CompressedVec4 pos;  // 8 bytes
-  u16 u, v;                   // 4 bytes
-  u32 color;                  // 4 bytes
-};
+
 
 class Chunk {
  public:
@@ -167,7 +162,6 @@ class Chunk {
   bool isConnected(u8 faceA, u8 faceB) const;
   void clearDrawData();
   void clearDrawDataWithoutShrink();
-  void invalidateDecompCache();
 
   u8 containsBlock(Vec4* offset);
 
@@ -238,38 +232,15 @@ class Chunk {
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
                      int offset, int count);
 
-  /** Render merged geometry grouped by atlas tile using RegionRepeat. */
+  // Render merged geometry grouped by atlas tile using RegionRepeat.
   void renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* pVerts, std::vector<Color>* pColors,
                      std::vector<Vec4>* pUV,
                      const std::vector<TileGroup>& groups);
-  // Compression helpers
-  void compressData();
-  void decompressData(std::vector<Vec4>* outVertices,
-                      std::vector<Color>* outColors, std::vector<Vec4>* outUV,
-                      const std::vector<CompressedVertex>& inData);
-  
-  static inline u32 packColor(const Color& color);
-  static inline Color unpackColor(const u32& color);
-  static inline void packUV(const Vec4& uv, u16& u, u16& v);
-  static inline void unpackUV(Vec4& out, const u16& u, const u16& v);
-
-  std::vector<CompressedVertex> compressedVertices;
-  std::vector<CompressedVertex> compressedTransparentVertices;
 
   // Per-tile vertex groups for RegionRepeat rendering
   std::vector<TileGroup> mergedOpaqueGroups;
   std::vector<TileGroup> mergedTranspGroups;
-
-  // Cached decompressed data for render (avoids per-frame decompression)
-  std::vector<Vec4> cachedDecompVertices;
-  std::vector<Color> cachedDecompColors;
-  std::vector<Vec4> cachedDecompUV;
-  std::vector<Vec4> cachedDecompTranspVertices;
-  std::vector<Color> cachedDecompTranspColors;
-  std::vector<Vec4> cachedDecompTranspUV;
-  bool decompCacheValid = false;
-  bool decompTranspCacheValid = false;
 
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
@@ -284,11 +255,12 @@ class Chunk {
 
   OnLoadedCallback onLoadedCallback;
 
-  // Temporary Vec4 buffers — used only during buildBGM() for special (non-BGM)
-  // blocks that still use legacy MeshBuilder dispatch. Cleared after buildBGM().
+  // Draw data buffers — persistent storage, populated by buildBGM().
+  // Opaque geometry:
   std::vector<Vec4>  vertices;
   std::vector<Vec4>  UV;
   std::vector<Color> colors;
+  // Transparent geometry:
   std::vector<Vec4>  transpVertices;
   std::vector<Vec4>  transpUV;
   std::vector<Color> transpColors;
