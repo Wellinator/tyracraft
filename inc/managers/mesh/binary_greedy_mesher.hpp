@@ -99,8 +99,8 @@ class BinaryGreedyMesher {
 
   /**
    * Emit all quads for one face direction across the entire chunk.
-   * Iterates slices perpendicular to that direction, builds per-texture
-   * bitmasks, and calls emitQuadsForSlice().
+   * For each slice, builds a per-block 2D light grid and groups visible faces
+   * by (texIdx, lightKey) to prevent merging blocks with different light levels.
    */
   void processFaceDir(Level* pLevel,
                       const Vec4& chunkMin,
@@ -109,41 +109,22 @@ class BinaryGreedyMesher {
                       Output& out);
 
   /**
-   * Given a flat bitmask array (CHUNK_SIZE rows, each row a u16 of
-   * CHUNK_SIZE bits), find all maximal rectangles via greedy scan and
-   * call emitQuad() for each. Uses per-row light sampling for better quality.
+   * Greedy rectangle scan with a uniform light color.
+   * Given a flat bitmask array (CHUNK_SIZE rows, each a u16), find all maximal
+   * rectangles via greedy scan and emit one quad per rectangle.
    *
-   * @param masks           Row bitmasks for this slice + texture.  Modified
-   *                        in-place (bits are cleared as rectangles are claimed).
-   * @param sliceCoord      World-block coordinate of the slice plane.
-   * @param rowBase         World-block coordinate of row 0 of the mask.
-   * @param colBase         World-block coordinate of col 0 of the mask.
-   * @param dir             Face direction.
-   * @param texIndex        Atlas texture index.
-   * @param rowLightColors  Per-row light colors (better quality than single slice color).
-   * @param isTransparent   True if this texture comes from transparent blocks.
-   * @param out             Output buffer.
-   */
-  void emitQuadsForSlicePerRow(u16 masks[CHUNK_SIZE],
-                               int sliceCoord, int rowBase, int colBase,
-                               FaceDir dir, u8 texIndex,
-                               const std::array<Color, CHUNK_SIZE>& rowLightColors,
-                               bool isTransparent,
-                               Output& out);
-
-  /**
-   * Legacy single-color greedy scan (less common path, but kept for compatibility).
-   * Given a flat bitmask array, find maximal rectangles and emit quads with uniform lighting.
+   * Called once per (texIdx, lightKey) group \u2014 all faces in a group share the
+   * same texture and identical lighting, so the uniform color is correct.
    *
-   * @param masks           Row bitmasks for this slice + texture.  Modified in-place.
-   * @param sliceCoord      World-block coordinate of the slice plane.
-   * @param rowBase         World-block coordinate of row 0 of the mask.
-   * @param colBase         World-block coordinate of col 0 of the mask.
-   * @param dir             Face direction.
-   * @param texIndex        Atlas texture index.
-   * @param lightColor      Single light color for all quads in this call.
-   * @param isTransparent   True if this texture comes from transparent blocks.
-   * @param out             Output buffer.
+   * @param masks         Row bitmasks.  Modified in-place (bits cleared as claimed).
+   * @param sliceCoord    World-block coordinate of the slice plane.
+   * @param rowBase       World-block coordinate of row 0.
+   * @param colBase       World-block coordinate of col 0.
+   * @param dir           Face direction.
+   * @param texIndex      Atlas texture index.
+   * @param lightColor    Uniform light color for all quads in this call.
+   * @param isTransparent True if this texture comes from transparent blocks.
+   * @param out           Output buffer.
    */
   void emitQuadsForSlice(u16 masks[CHUNK_SIZE],
                          int sliceCoord, int rowBase, int colBase,

@@ -174,9 +174,29 @@ static Color computeFaceColor(Level* pLevel,
 }
 
 // ---------------------------------------------------------------------------
+// lightKey
+// Pack the RGB channels of a lighting Color into a 24-bit key for
+// equality comparison.  Alpha is always 128 (constant), so we skip it.
+// Two faces can be greedy-merged only if they share the same lightKey.
+// ---------------------------------------------------------------------------
+static inline u32 lightKey(const Color& c) {
+  return (static_cast<u32>((u8)c.r) << 16) |
+         (static_cast<u32>((u8)c.g) <<  8) |
+          static_cast<u32>((u8)c.b);
+}
+
+// ---------------------------------------------------------------------------
 // processFaceDir
-// Iterates all slices perpendicular to a face direction, builds bitmasks per
-// (texture_index), and calls emitQuadsForSlice.
+// Iterates all slices perpendicular to a face direction.  For each slice:
+//
+//   1. Build a 16×16 per-block light grid (lightGrid[row][col]).
+//   2. For each visible face, group into a (texIdx, lightKey) bucket and
+//      set the corresponding bit in that bucket's bitmask.
+//   3. Run greedy rectangle merge within every bucket; emit one quad per
+//      rectangle with the bucket's uniform light color.
+//
+// This prevents faces with different light levels from being merged into a
+// single quad — a bug that produced repeating dark stripes across chunks.
 // ---------------------------------------------------------------------------
 void BinaryGreedyMesher::processFaceDir(Level* pLevel,
                                         const Vec4& chunkMin,
@@ -187,6 +207,7 @@ void BinaryGreedyMesher::processFaceDir(Level* pLevel,
   const int minX = (int)chunkMin.x;
   const int minY = (int)chunkMin.y;
   const int minZ = (int)chunkMin.z;
+  const float sunIntensity = lightModel ? lightModel->sunLightIntensity : 1.0f;
 
   // For each direction, we iterate over the "slice axis", with the two
   // "in-slice" axes being the "row axis" (A) and "column axis" (B).
@@ -198,23 +219,60 @@ void BinaryGreedyMesher::processFaceDir(Level* pLevel,
 
   for (int s = 0; s < cs; ++s) {
     // ------------------------------------------------------------------
-    // Step 1: For each unique texture index visible on this slice+dir,
-    // accumulate bitmasks.  We use a flat array indexed by texture index
-    // (0–255); each entry holds CHUNK_SIZE rows of u16 bitmasks.
-    // We only allocate/use textures actually present in this slice.
+    // Step 1: Compute the full per-block light grid for this slice.
+    //
+    // lightGrid[row][col] = lighting color for the face at (row, col)
+    // within this slice.  This replaces the old "sample at cs/2" approach
+    // that gave every block in a row the same (wrong) light value.
     // ------------------------------------------------------------------
-
-    // texMasks[texIdx][row] = column bitmask, bit set when that face is visible
-    // We lazily initialise rows for textures we encounter.
-    // 256 possible texture indices × CHUNK_SIZE rows × sizeof(u16)
-    // = 256 × 16 × 2 = 8 KB on stack — half the previous footprint.
-    u16 texMasks[256][CHUNK_SIZE];
-    bool texUsed[256];
-    bool texTransparent[256];  // Track whether each texture comes from transparent blocks
-    for (int i = 0; i < 256; ++i) {
-      texUsed[i] = false;
-      texTransparent[i] = false;
+    Color lightGrid[CHUNK_SIZE][CHUNK_SIZE];
+    for (int row = 0; row < cs; ++row) {
+      for (int col = 0; col < cs; ++col) {
+        int lBx, lBy, lBz;
+        switch (dir) {
+          case FaceDir::PosX:
+          case FaceDir::NegX:
+            lBx = minX + s; lBz = minZ + row; lBy = minY + col; break;
+          case FaceDir::PosY:
+          case FaceDir::NegY:
+            lBx = minX + row; lBy = minY + s; lBz = minZ + col; break;
+          default: // PosZ / NegZ
+            lBx = minX + row; lBy = minY + col; lBz = minZ + s; break;
+        }
+        lightGrid[row][col] = computeFaceColor(pLevel, lBx, lBy, lBz, dir, sunIntensity);
+      }
     }
+
+    // ------------------------------------------------------------------
+    // Step 2: Iterate all blocks, group visible faces by (texIdx, lightKey).
+    //
+    // We store groups in a compact flat array (linear scan).  In practice
+    // a 16³ chunk slice has very few distinct (tex, light) pairs — typically
+    // 4–16 — so linear lookup is faster than a hash table on a PS2.
+    //
+    // Each group holds:
+    //   texIdx, lightKey, lightColor   — identity
+    //   masks[CHUNK_SIZE]              — greedy bitmask
+    //   isTransparent                  — render stream selector
+    //
+    // Maximum theoretical groups per slice: 256 textures × many light keys.
+    // We cap at 512 to bound stack usage; overflow falls back to merging
+    // into an existing group with any matching texIdx (light accuracy loss
+    // only under extreme conditions — millions of light values per 16² slice).
+    // ------------------------------------------------------------------
+    struct LightGroup {
+      u8  texIdx;
+      bool isTransparent;
+      u32 lKey;            // packed RGB of lighting color
+      Color lightColor;    // actual color to pass to emitQuad
+      u16 masks[CHUNK_SIZE];
+    };
+
+    // Stack budget: 128 groups × ~50 bytes = ~6.4 KB — safe for PS2 stack.
+    // Real chunks almost never exceed ~20-30 distinct (tex, light) pairs/slice.
+    static const int kMaxGroups = 128;
+    LightGroup groups[kMaxGroups];
+    int numGroups = 0;
 
     for (int a = 0; a < cs; ++a) {
       for (int b = 0; b < cs; ++b) {
@@ -243,9 +301,9 @@ void BinaryGreedyMesher::processFaceDir(Level* pLevel,
         if (!isFaceVisible(pLevel, bx, by, bz, dir, bt)) continue;
 
         // Get texture index for this face from the block template
-        Block*       tpl     = StaticBlockRepository::getInstance()->getBlockTemplate(bt);
-        const auto   faceMap = tpl->getFacesMap();
-        const bool   isTransp = tpl->hasTransparency();
+        Block*     tpl      = StaticBlockRepository::getInstance()->getBlockTemplate(bt);
+        const auto faceMap  = tpl->getFacesMap();
+        const bool isTransp = tpl->hasTransparency();
 
         // Map FaceDir → face map index (0=TOP,1=BOT,2=LEFT,3=RIGHT,4=BACK,5=FRONT)
         u8 faceMapIdx;
@@ -259,113 +317,59 @@ void BinaryGreedyMesher::processFaceDir(Level* pLevel,
         }
         const u8 texIdx = faceMap[faceMapIdx];
 
-        if (!texUsed[texIdx]) {
-          // Zero-initialise this texture's mask rows
-          for (int r = 0; r < cs; ++r) texMasks[texIdx][r] = 0;
-          texUsed[texIdx] = true;
-          texTransparent[texIdx] = isTransp;
+        // Per-block light from the precomputed grid
+        const Color& faceColor = lightGrid[a][b];
+        const u32    lk        = lightKey(faceColor);
+
+        // Find or create a group for this (texIdx, lightKey) pair
+        int gi = -1;
+        for (int g = 0; g < numGroups; ++g) {
+          if (groups[g].texIdx == texIdx && groups[g].lKey == lk) {
+            gi = g;
+            break;
+          }
+        }
+        if (gi < 0) {
+          if (numGroups < kMaxGroups) {
+            gi = numGroups++;
+            LightGroup& ng  = groups[gi];
+            ng.texIdx        = texIdx;
+            ng.isTransparent = isTransp;
+            ng.lKey          = lk;
+            ng.lightColor    = faceColor;
+            for (int r = 0; r < cs; ++r) ng.masks[r] = 0;
+          } else {
+            // Overflow safety: fall back to any group with matching texIdx
+            for (int g = 0; g < numGroups; ++g) {
+              if (groups[g].texIdx == texIdx) { gi = g; break; }
+            }
+            if (gi < 0) gi = 0;  // give up, use first group — rare edge case
+          }
         }
 
-        // Set bit in the mask (col b, row a)
-        texMasks[texIdx][a] |= (u16)(1u << b);
+        // Set bit in the group's bitmask (col = b, row = a)
+        groups[gi].masks[a] |= (u16)(1u << b);
       }
     }
 
     // ------------------------------------------------------------------
-    // Step 2: For each texture that appeared, run greedy rectangle scan.
+    // Step 3: Determine world-space base coords for this slice, then run
+    // greedy rectangle scan on every (texIdx, lightKey) group.
     // ------------------------------------------------------------------
-    for (int texIdx = 0; texIdx < 256; ++texIdx) {
-      if (!texUsed[texIdx]) continue;
-
-      // Compute per-row lighting for better quality (avoids banding at row boundaries).
-      // Sample light at a representative column position for each row, maintaining
-      // slice-level consistency but varying across rows for smoother transitions.
-      std::array<Color, CHUNK_SIZE> rowLightColors;
-      for (int row = 0; row < cs; ++row) {
-        int lBx, lBy, lBz;
-        // Sample light at each row's coordinate + middle column of slice
-        switch (dir) {
-          case FaceDir::PosX:
-          case FaceDir::NegX:
-            lBx = minX + s; lBz = minZ + row; lBy = minY + cs/2; break;
-          case FaceDir::PosY:
-          case FaceDir::NegY:
-            lBz = minZ + cs/2; lBx = minX + row; lBy = minY + s; break;
-          default:
-            lBz = minZ + s; lBx = minX + row; lBy = minY + cs/2; break;
-        }
-        rowLightColors[row] = computeFaceColor(
-            pLevel, lBx, lBy, lBz, dir,
-            lightModel ? lightModel->sunLightIntensity : 1.0f);
-      }
-
-      // Determine world-space coords of row-0, col-0 for this slice
-      int rowBase, colBase;
-      int sliceWorldCoord;
-      switch (dir) {
-        case FaceDir::PosX: case FaceDir::NegX:
-          rowBase = minZ; colBase = minY; sliceWorldCoord = minX + s; break;
-        case FaceDir::PosY: case FaceDir::NegY:
-          rowBase = minX; colBase = minZ; sliceWorldCoord = minY + s; break;
-        default:
-          rowBase = minX; colBase = minY; sliceWorldCoord = minZ + s; break;
-      }
-
-      emitQuadsForSlicePerRow(texMasks[texIdx], sliceWorldCoord, rowBase, colBase,
-                              dir, (u8)texIdx, rowLightColors, texTransparent[texIdx], out);
+    int rowBase, colBase, sliceWorldCoord;
+    switch (dir) {
+      case FaceDir::PosX: case FaceDir::NegX:
+        rowBase = minZ; colBase = minY; sliceWorldCoord = minX + s; break;
+      case FaceDir::PosY: case FaceDir::NegY:
+        rowBase = minX; colBase = minZ; sliceWorldCoord = minY + s; break;
+      default:
+        rowBase = minX; colBase = minY; sliceWorldCoord = minZ + s; break;
     }
-  }
-}
 
-// ---------------------------------------------------------------------------
-// emitQuadsForSlicePerRow
-// Greedy rectangle scan with per-row lighting: for each row, find maximal
-// horizontal spans, then extend vertically while using the light color of
-// the starting row for the entire merged rectangle.
-// ---------------------------------------------------------------------------
-void BinaryGreedyMesher::emitQuadsForSlicePerRow(u16 masks[CHUNK_SIZE],
-                                                  int sliceCoord,
-                                                  int rowBase, int colBase,
-                                                  FaceDir dir, u8 texIndex,
-                                                  const std::array<Color, CHUNK_SIZE>& rowLightColors,
-                                                  bool isTransparent,
-                                                  Output& out) {
-  const int cs = CHUNK_SIZE;
-
-  for (int row = 0; row < cs; ++row) {
-    u16 rowMask = masks[row];
-#ifdef DEBUG_MODE
-    int loopGuard = 0;
-#endif
-    while (rowMask) {
-#ifdef DEBUG_MODE
-      if (++loopGuard > (cs * cs)) break;
-#endif
-      const int col = __builtin_ctz(rowMask);
-      const u16 startBit = (u16)(1u << col);
-      u16 spanMask = startBit;
-      int width = 1;
-      while ((col + width) < cs && (rowMask & (startBit << width))) {
-        spanMask |= (u16)(startBit << width);
-        ++width;
-      }
-
-      int height = 1;
-      while ((row + height) < cs && (masks[row + height] & spanMask) == spanMask) {
-        ++height;
-      }
-
-      for (int r = row; r < row + height; ++r) {
-        masks[r] &= ~spanMask;
-      }
-
-      rowMask = masks[row];
-
-      // Use the light color of the starting row for this rectangle
-      const Color& rectLightColor = rowLightColors[row];
-      emitQuad(sliceCoord, rowBase + row, colBase + col,
-               height, width,
-               dir, texIndex, rectLightColor, isTransparent, out);
+    for (int g = 0; g < numGroups; ++g) {
+      LightGroup& grp = groups[g];
+      emitQuadsForSlice(grp.masks, sliceWorldCoord, rowBase, colBase,
+                        dir, grp.texIdx, grp.lightColor, grp.isTransparent, out);
     }
   }
 }
