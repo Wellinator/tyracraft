@@ -12,7 +12,6 @@ void CollisionManager_initTree() {
 };
 
 void CollisionManager_unloadTree() {
-  g_AABBTree->clear();
   delete g_AABBTree;
   g_AABBTree = nullptr;
 };

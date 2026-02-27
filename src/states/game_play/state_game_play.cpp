@@ -33,6 +33,9 @@ StateGamePlay::~StateGamePlay() {
   delete this->state;
   TYRA_LOG("freeing previousState...");
   delete this->previousState;
+
+  CollisionManager_unloadTree();
+
   TYRA_LOG("freeing world...");
   delete this->world;
   TYRA_LOG("freeing ui...");
@@ -44,8 +47,6 @@ StateGamePlay::~StateGamePlay() {
   TYRA_LOG("freeing level...");
   delete plevel;
   TYRA_LOG("freeing completed!");
-
-  CollisionManager_unloadTree();
 }
 
 void StateGamePlay::handleGameMode(const GameMode& gameMode) {
