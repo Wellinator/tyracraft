@@ -244,12 +244,12 @@ void World::processIdleWork() {
       }
 
       // Stale entry (state changed between enqueue and dequeue) — skip.
-      if (chunk->state != ChunkState::Building && !chunk->isLODRebuild) {
+      if (chunk->state != ChunkState::Building) {
         continue;
       }
 
       // Track whether this is a brand-new chunk (not already in loadedChunks).
-      currentBuildIsNewChunk = !chunk->isLODRebuild;
+      currentBuildIsNewChunk = !chunk->isLoaded();
 
 #ifdef DEBUG_MODE
       chunk->buildingTimeStart = clock();
@@ -689,12 +689,14 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
 
       t_chunk->setDistanceFromPlayerInChunks(distance);
 
-      // Only queue NEW loads within the elliptical load zone
-      // Chunks between ellipse and unload circle: keep current state
-      if (insideLoadZone &&
-          (t_chunk->isDirty() || !t_chunk->isLoaded()) &&
-          !t_chunk->isBuilding() && !t_chunk->isUnloading()) {
-        chunksToLoad.push_back({t_chunk, distanceSquared2D, forwardDot});
+      if (!t_chunk->isBuilding() && !t_chunk->isUnloading()) {
+        // LOD rebuild: dirty loaded chunks are queued regardless of load zone
+        // (they're already in memory, just need geometry rebuild)
+        // New loads: only within the elliptical load zone
+        if ((t_chunk->isLoaded() && t_chunk->isDirty()) ||
+            (insideLoadZone && !t_chunk->isLoaded())) {
+          chunksToLoad.push_back({t_chunk, distanceSquared2D, forwardDot});
+        }
       }
     }
   }
@@ -806,12 +808,9 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
     }
   }
 
-  // Track if this is an LOD rebuild (already loaded, just dirty)
-  t_chunk->isLODRebuild = t_chunk->isLoaded();
-  
-  // For LOD rebuilds, keep the Loaded state so old geometry remains visible
-  // State will transition to Building only when build() actually runs
-  if (!t_chunk->isLODRebuild) {
+  // Mark as Building if not already loaded (dirty rebuild keeps Loaded state
+  // so old geometry remains visible until the new build completes).
+  if (!t_chunk->isLoaded()) {
     t_chunk->state = ChunkState::Building;
   }
   
@@ -860,7 +859,6 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
         }
         
         removedChunk->state = ChunkState::Clean;  // Reset state
-        removedChunk->isLODRebuild = false;       // Reset LOD flag
         tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
         chunksInLoadQueue.reset(chunkId);  // Clear bitset
         break;
@@ -1075,7 +1073,6 @@ void World::setDrawDistanceMode(DrawDistanceMode mode) {
       chunk->clearDrawDataWithoutShrink();
     }
     chunk->state = ChunkState::Clean;
-    chunk->isLODRebuild = false;
   }
   for (auto chunk : tempChunksToUnLoad) {
     chunk->state = ChunkState::Clean;

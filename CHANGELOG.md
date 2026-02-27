@@ -1,3 +1,21 @@
+# v0.87.0-pre-alpha (WIP)
+
+- perf: replace LOD/compress pipeline with Binary Greedy Meshing (BGM)
+  - removed 4-level LOD system (LOD1_DIST/LOD2_DIST/LOD3_DIST constants)
+  - removed mergeFaces/mergeGeometry/compress/buildNormaly methods (~500 LOC)
+  - removed BuildPhase::Merge and BuildPhase::StorageCmp states
+  - added BinaryGreedyMesher class (inc/managers/mesh/binary_greedy_mesher.hpp)
+  - BGM uses O(n) bitwise slice scanning — replaces O(n²) quad-merge pass
+  - special-shaped blocks (slabs, torches, plants, liquids) still use legacy MeshBuilder
+  - single uniform geometry quality for all draw distances; no LOD rebuild flicker
+  - ~98% vertex reduction for surface chunks vs per-block unmerged geometry
+- fix: BGM winding order and vertex coordinate mapping
+  - corrected triangle indices from {0,2,1, 0,3,2} to {0,1,2, 0,2,3} for consistent CCW winding
+  - fixed UV corner assignments to match CCW vertex order for all 6 face directions
+  - corrected world coordinate calculation to center blocks on grid (subtract BLOCK_SIZE offset)
+  - resolves deformed textures, misaligned vertices, and incorrect face normals
+  - BGM rendering now matches legacy CuboidMeshBuilder coordinate system
+
 # v0.86.140-pre-alpha 12/08/2024
 
 - feat: add RAM-adaptive directional draw distance

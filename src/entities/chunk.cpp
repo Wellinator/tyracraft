@@ -16,6 +16,7 @@ extern "C" {
 #include "debug.hpp"
 #include "managers/light_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
+#include "managers/mesh/binary_greedy_mesher.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/clipping_manager.hpp"
 #include "managers/particle/particle_manager.hpp"
@@ -25,6 +26,9 @@ extern "C" {
 #include "managers/block_manager.hpp"
 #include "managers/visible_faces_manager.hpp"
 #include "managers/model_builder.hpp"
+#include "managers/dma_gif_builder.hpp"
+#include <draw_sampling.h>
+#include <gif_tags.h>
 
 #ifdef DEBUG_MODE
 #include "memory-monitor/memory_monitor.hpp"
@@ -247,15 +251,6 @@ void Chunk::tickRandomBlock() {
 }
 
 void Chunk::setDistanceFromPlayerInChunks(const int distance) {
-  if (distance < 0) {
-    this->_distanceFromPlayerInChunks = distance;
-    return;
-  }
-
-  const int newLOD = getLODFromDistanceWithHysteresis(distance, _lod);
-  if (_lod != newLOD) dirty = true;
-
-  _lod = newLOD;
   this->_distanceFromPlayerInChunks = distance;
 }
 
@@ -267,584 +262,9 @@ void Chunk::updateDistanceCache(const Vec4& playerPos) {
   distanceCacheDirty = false;
 }
 
-const int Chunk::getLODFromDistance() {
-  return getLODFromDistance(getDistanceFromPlayerInChunks());
-}
-
-const int Chunk::getLODFromDistance(const int distance) {
-  if (distance < 2)
-    return 0;
-  else if (distance < 3)
-    return 1;
-  else if (distance < 5)
-    return 2;
-  else
-    return 3;
-}
-
-const int Chunk::getLODFromDistanceWithHysteresis(const int distance,
-                                                  const int currentLOD) {
-  // Hysteresis bands: upgrade threshold = base+1, downgrade threshold = base-1
-  switch (currentLOD) {
-    case 0:
-      if (distance >= 3) return (distance >= 4) ? (distance >= 6 ? 3 : 2) : 1;
-      return 0;
-    case 1:
-      if (distance < 1) return 0;
-      if (distance >= 4) return (distance >= 6) ? 3 : 2;
-      return 1;
-    case 2:
-      if (distance < 2) return (distance < 1) ? 0 : 1;
-      if (distance >= 6) return 3;
-      return 2;
-    case 3:
-      if (distance < 4) return (distance < 2) ? (distance < 1 ? 0 : 1) : 2;
-      return 3;
-    default:
-      if (distance < 2) return 0;
-      else if (distance < 3) return 1;
-      else if (distance < 5) return 2;
-      else return 3;
-  }
-}
-
-void Chunk::mergeGeometry(const u8 colorTolerance, const float uvTolerance,
-                          const float normalDotThreshold,
-                          const bool mergeAcrossUvs,
-                          const bool includeTransparent,
-                          const int maxMergeCount) {
-  if (vertices.empty() && transpVertices.empty()) return;
-
-  // Process opaque geometry
-  std::vector<ChunkQuadData> quadsData;
-  mergeFaces(&quadsData, &vertices, &colors, &UV, colorTolerance, uvTolerance,
-             normalDotThreshold, mergeAcrossUvs, maxMergeCount);
-
-  const size_t maxOpaqueVerts = quadsData.size() * 6;
-  vertices.clear();
-  UV.clear();
-  colors.clear();
-  vertices.reserve(maxOpaqueVerts);
-  UV.reserve(maxOpaqueVerts);
-  colors.reserve(maxOpaqueVerts);
-
-  // Rebuild vertex arrays from merged quads
-  for (size_t i = 0; i < quadsData.size(); i++) {
-    const ChunkQuadData& quad = quadsData[i];
-
-    // Unrolled loop for better instruction pipelining on EE
-    vertices.emplace_back(quad.vertices[0]);
-    vertices.emplace_back(quad.vertices[1]);
-    vertices.emplace_back(quad.vertices[2]);
-    vertices.emplace_back(quad.vertices[3]);
-    vertices.emplace_back(quad.vertices[4]);
-    vertices.emplace_back(quad.vertices[5]);
-
-    UV.emplace_back(quad.uv[0]);
-    UV.emplace_back(quad.uv[1]);
-    UV.emplace_back(quad.uv[2]);
-    UV.emplace_back(quad.uv[3]);
-    UV.emplace_back(quad.uv[4]);
-    UV.emplace_back(quad.uv[5]);
-
-    colors.emplace_back(quad.colors[0]);
-    colors.emplace_back(quad.colors[1]);
-    colors.emplace_back(quad.colors[2]);
-    colors.emplace_back(quad.colors[3]);
-    colors.emplace_back(quad.colors[4]);
-    colors.emplace_back(quad.colors[5]);
-  }
-
-  if (includeTransparent) {
-    std::vector<ChunkQuadData> transparentQuadsData;
-    mergeFaces(&transparentQuadsData, &transpVertices, &transpColors, &transpUV,
-               colorTolerance, uvTolerance, normalDotThreshold, mergeAcrossUvs,
-               maxMergeCount);
-
-    const size_t maxTranspVerts = transparentQuadsData.size() * 6;
-    transpVertices.clear();
-    transpUV.clear();
-    transpColors.clear();
-    transpVertices.reserve(maxTranspVerts);
-    transpUV.reserve(maxTranspVerts);
-    transpColors.reserve(maxTranspVerts);
-
-    // Rebuild transparent vertex arrays from merged quads
-    for (size_t i = 0; i < transparentQuadsData.size(); i++) {
-      const ChunkQuadData& quad = transparentQuadsData[i];
-
-      transpVertices.emplace_back(quad.vertices[0]);
-      transpVertices.emplace_back(quad.vertices[1]);
-      transpVertices.emplace_back(quad.vertices[2]);
-      transpVertices.emplace_back(quad.vertices[3]);
-      transpVertices.emplace_back(quad.vertices[4]);
-      transpVertices.emplace_back(quad.vertices[5]);
-
-      transpUV.emplace_back(quad.uv[0]);
-      transpUV.emplace_back(quad.uv[1]);
-      transpUV.emplace_back(quad.uv[2]);
-      transpUV.emplace_back(quad.uv[3]);
-      transpUV.emplace_back(quad.uv[4]);
-      transpUV.emplace_back(quad.uv[5]);
-
-      transpColors.emplace_back(quad.colors[0]);
-      transpColors.emplace_back(quad.colors[1]);
-      transpColors.emplace_back(quad.colors[2]);
-      transpColors.emplace_back(quad.colors[3]);
-      transpColors.emplace_back(quad.colors[4]);
-      transpColors.emplace_back(quad.colors[5]);
-    }
-  } else {
-    transpVertices.clear();
-    transpUV.clear();
-    transpColors.clear();
-  }
-}
-
-void Chunk::compress(const u8 colorTolerance, const float uvTolerance,
-                     const float normalDotThreshold,
-                     const bool mergeAcrossUvs,
-                     const bool includeTransparent,
-                     const int maxMergeCount) {
-  // Safety: Don't compress if chunk is unloading or clean (no data)
-  if (state == ChunkState::Unloading || state == ChunkState::Clean) {
-    return;
-  }
-
-  // Safety: Don't compress if no data exists
-  if (vertices.empty() && transpVertices.empty()) {
-    isCompressed = true;
-    return;
-  }
-
-  const bool targetUltra = mergeAcrossUvs || !includeTransparent;
-
-  // Already compressed to requested level, nothing to do
-  if (isCompressed && isUltraCompressed == targetUltra) return;
-
-  mergeGeometry(colorTolerance, uvTolerance, normalDotThreshold,
-                mergeAcrossUvs, includeTransparent, maxMergeCount);
-
-  isCompressed = true;
-  isUltraCompressed = mergeAcrossUvs || !includeTransparent;
-}
+// LOD functions removed — BGM uses a single quality level for all chunks.
 
 void Chunk::markDirty() { dirty = true; }
-
-/**
- * @brief Merge the faces (quad of two triangles) that are
- * adjacent, faces to the same direction, has the same UV and Colors into larger
- * quads. The quad expansion must be tracked into units, and stored at span
- * properties of the quad. It's similar to greedy meshing, but in world level.
- * This optimization can reduce the number of vertices and faces to render.
- */
-void Chunk::mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
-                       std::vector<Vec4>* inVertices,
-                       std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
-                       const u8 colorTolerance, const float uvTolerance,
-                       const float normalDotThreshold,
-                       const bool mergeAcrossUvs, const int maxMergeCount) {
-  // Validation: Ensure all pointers are valid
-  if (!outQuadsData || !inVertices || !inColors || !inUVs) return;
-  
-  // Validation: Ensure input vectors have matching sizes and are not empty
-  if (inVertices->empty() || inVertices->size() != inColors->size() ||
-      inVertices->size() != inUVs->size())
-    return;
-
-  outQuadsData->clear();
-  const size_t quadCount = inVertices->size() / 6;
-  if (quadCount == 0) return;
-
-  outQuadsData->reserve(quadCount);
-
-  struct FaceInfo {
-    ChunkQuadData quad;
-    u8 orientation = 0;  // 0 = X, 1 = Y, 2 = Z
-    s16 planeCoord = 0;
-    s16 minA = 0;
-    s16 maxA = 0;
-    s16 minB = 0;
-    s16 maxB = 0;
-  };
-
-  std::vector<FaceInfo> faces;
-  faces.reserve(quadCount);
-
-  // Cache raw pointers for faster access - avoids repeated vtable lookups
-  const Vec4* vertData = inVertices->data();
-  const Color* colorData = inColors->data();
-  const Vec4* uvData = inUVs->data();
-
-  auto normalizeRange = [](s16& minVal, s16& maxVal) {
-    if (maxVal < minVal) std::swap(minVal, maxVal);
-    if (maxVal == minVal) ++maxVal;
-  };
-
-  for (size_t quadIdx = 0; quadIdx < quadCount; ++quadIdx) {
-    FaceInfo info;
-    const size_t baseIndex = quadIdx * 6;
-
-    // Unrolled loop for better EE pipeline - preserves vertex order for
-    // backface culling
-    info.quad.vertices[0] = vertData[baseIndex];
-    info.quad.vertices[1] = vertData[baseIndex + 1];
-    info.quad.vertices[2] = vertData[baseIndex + 2];
-    info.quad.vertices[3] = vertData[baseIndex + 3];
-    info.quad.vertices[4] = vertData[baseIndex + 4];
-    info.quad.vertices[5] = vertData[baseIndex + 5];
-
-    info.quad.colors[0] = colorData[baseIndex];
-    info.quad.colors[1] = colorData[baseIndex + 1];
-    info.quad.colors[2] = colorData[baseIndex + 2];
-    info.quad.colors[3] = colorData[baseIndex + 3];
-    info.quad.colors[4] = colorData[baseIndex + 4];
-    info.quad.colors[5] = colorData[baseIndex + 5];
-
-    info.quad.uv[0] = uvData[baseIndex];
-    info.quad.uv[1] = uvData[baseIndex + 1];
-    info.quad.uv[2] = uvData[baseIndex + 2];
-    info.quad.uv[3] = uvData[baseIndex + 3];
-    info.quad.uv[4] = uvData[baseIndex + 4];
-    info.quad.uv[5] = uvData[baseIndex + 5];
-
-    computeQuadNormalVU(info.quad);
-
-    Vec4 minBounds, maxBounds;
-    computeQuadBoundsVU(info.quad, minBounds, maxBounds);
-
-    const float absX = Utils::Abs(info.quad.normal.x);
-    const float absY = Utils::Abs(info.quad.normal.y);
-    const float absZ = Utils::Abs(info.quad.normal.z);
-
-    if (absX >= absY && absX >= absZ) {
-      info.orientation = 0;
-      info.planeCoord = fastFloatToS16((minBounds.x + maxBounds.x) * 0.5F);
-      info.minA = fastFloatToS16(minBounds.y);
-      info.maxA = fastFloatToS16(maxBounds.y);
-      info.minB = fastFloatToS16(minBounds.z);
-      info.maxB = fastFloatToS16(maxBounds.z);
-    } else if (absY >= absZ) {
-      info.orientation = 1;
-      info.planeCoord = fastFloatToS16((minBounds.y + maxBounds.y) * 0.5F);
-      info.minA = fastFloatToS16(minBounds.x);
-      info.maxA = fastFloatToS16(maxBounds.x);
-      info.minB = fastFloatToS16(minBounds.z);
-      info.maxB = fastFloatToS16(maxBounds.z);
-    } else {
-      info.orientation = 2;
-      info.planeCoord = fastFloatToS16((minBounds.z + maxBounds.z) * 0.5F);
-      info.minA = fastFloatToS16(minBounds.x);
-      info.maxA = fastFloatToS16(maxBounds.x);
-      info.minB = fastFloatToS16(minBounds.y);
-      info.maxB = fastFloatToS16(maxBounds.y);
-    }
-
-    normalizeRange(info.minA, info.maxA);
-    normalizeRange(info.minB, info.maxB);
-
-    faces.emplace_back(std::move(info));
-  }
-
-  if (faces.empty()) return;
-
-  auto materialsMatch = [](const ChunkQuadData& a,
-                           const ChunkQuadData& b, const u8 colorTolerance,
-                           const float uvTolerance,
-                           const float normalDotThreshold,
-                           const bool mergeAcrossUvs) -> bool {
-    if (a.normal.dot3(b.normal) < normalDotThreshold) return false;
-
-    for (size_t i = 0; i < a.colors.size(); ++i) {
-      const Color& c1 = a.colors[i];
-      const Color& c2 = b.colors[i];
-      if (abs(c1.r - c2.r) > colorTolerance ||
-          abs(c1.g - c2.g) > colorTolerance ||
-          abs(c1.b - c2.b) > colorTolerance) {
-        return false;
-      }
-
-      if (mergeAcrossUvs) continue;
-
-      const Vec4& uv1 = a.uv[i];
-      const Vec4& uv2 = b.uv[i];
-      if (Utils::Abs(uv1.x - uv2.x) > uvTolerance ||
-          Utils::Abs(uv1.y - uv2.y) > uvTolerance) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  enum class MergePhase : uint8_t { AxisA = 0, AxisB = 1 };
-
-  auto makeKey = [](const FaceInfo& face, MergePhase phase) -> uint64_t {
-    const uint16_t plane = static_cast<uint16_t>(face.planeCoord);
-    uint16_t first = 0;
-    uint16_t second = 0;
-
-    if (phase == MergePhase::AxisA) {
-      first = static_cast<uint16_t>(face.minB);
-      second = static_cast<uint16_t>(face.maxB);
-    } else {
-      first = static_cast<uint16_t>(face.minA);
-      second = static_cast<uint16_t>(face.maxA);
-    }
-
-    uint64_t key = static_cast<uint64_t>(face.orientation);
-    key = (key << 16) | plane;
-    key = (key << 16) | first;
-    key = (key << 16) | second;
-    return key;
-  };
-
-  auto mergeAlongAxis = [&](std::vector<FaceInfo>& input,
-                            MergePhase phase) -> std::vector<FaceInfo> {
-    if (input.empty()) return {};
-
-    // Pre-allocate with load factor consideration to avoid rehashing
-    std::unordered_map<uint64_t, std::vector<size_t>> groups;
-    groups.reserve(input.size() / 2);  // Heuristic: expect ~50% unique keys
-
-    for (size_t idx = 0; idx < input.size(); ++idx) {
-      groups[makeKey(input[idx], phase)].push_back(idx);
-    }
-
-    std::vector<FaceInfo> output;
-    output.reserve(input.size());
-
-    auto getMin = [&](const FaceInfo& face) -> s16 {
-      return (phase == MergePhase::AxisA) ? face.minA : face.minB;
-    };
-
-    auto getMax = [&](const FaceInfo& face) -> s16 {
-      return (phase == MergePhase::AxisA) ? face.maxA : face.maxB;
-    };
-
-    for (auto& entry : groups) {
-      auto& indices = entry.second;
-      std::sort(indices.begin(), indices.end(), [&](size_t lhs, size_t rhs) {
-        return getMin(input[lhs]) < getMin(input[rhs]);
-      });
-
-      FaceInfo current = std::move(input[indices[0]]);
-      int mergedCount = 1;  // Start counting from 1 (the current face itself)
-
-      for (size_t pos = 1; pos < indices.size(); ++pos) {
-        FaceInfo& candidate = input[indices[pos]];
-        // Check merge limit: maxMergeCount==0 means unlimited
-        const bool withinLimit = (maxMergeCount == 0) || (mergedCount < maxMergeCount);
-        if (withinLimit &&
-            getMin(candidate) == getMax(current) &&
-            materialsMatch(current.quad, candidate.quad, colorTolerance,
-                     uvTolerance, normalDotThreshold, mergeAcrossUvs)) {
-          // Merge preserves original winding order for backface culling
-          // expandQuadGeometry maintains vertex ordering
-          mergeQuadPair(current.quad, candidate.quad);
-          if (phase == MergePhase::AxisA) {
-            current.maxA = candidate.maxA;
-          } else {
-            current.maxB = candidate.maxB;
-          }
-          ++mergedCount;
-        } else {
-          output.push_back(std::move(current));
-          current = std::move(candidate);
-          mergedCount = 1;  // Reset count for next group
-        }
-      }
-
-      output.push_back(std::move(current));
-    }
-
-    return output;
-  };
-
-  faces = mergeAlongAxis(faces, MergePhase::AxisA);
-  faces = mergeAlongAxis(faces, MergePhase::AxisB);
-
-  outQuadsData->reserve(outQuadsData->size() + faces.size());
-  for (auto& face : faces) {
-    outQuadsData->push_back(std::move(face.quad));
-  }
-}
-
-void Chunk::getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
-                          Vec4& maxBounds) {
-  computeQuadBoundsVU(quad, minBounds, maxBounds);
-}
-
-void Chunk::mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source) {
-  // Assume normal is already computed from mergeFaces - skip validation
-  Vec4 normal = target.normal;
-
-  const float epsilon = 0.01F;
-  Vec4 minTarget, maxTarget, minSource, maxSource;
-  getQuadBounds(target, minTarget, maxTarget);
-  getQuadBounds(source, minSource, maxSource);
-
-  // Calculate direction only for fallback heuristic
-  Vec4 targetCenter = calculateQuadCenter(target);
-  Vec4 sourceCenter = calculateQuadCenter(source);
-  Vec4 direction = sourceCenter - targetCenter;
-
-  std::array<float, 3> minA = {minTarget.x, minTarget.y, minTarget.z};
-  std::array<float, 3> maxA = {maxTarget.x, maxTarget.y, maxTarget.z};
-  std::array<float, 3> minB = {minSource.x, minSource.y, minSource.z};
-  std::array<float, 3> maxB = {maxSource.x, maxSource.y, maxSource.z};
-
-  // Inline lambdas as they're called once - reduces function call overhead
-  auto rangesEqual = [&](int axis) -> bool {
-    return Utils::Abs(minA[axis] - minB[axis]) < epsilon &&
-           Utils::Abs(maxA[axis] - maxB[axis]) < epsilon;
-  };
-
-  auto rangesContiguous = [&](int axis) -> bool {
-    return (Utils::Abs(maxA[axis] - minB[axis]) < epsilon) ||
-           (Utils::Abs(maxB[axis] - minA[axis]) < epsilon);
-  };
-
-  float absX = Utils::Abs(normal.x);
-  float absY = Utils::Abs(normal.y);
-  float absZ = Utils::Abs(normal.z);
-
-  int normalAxis = 0;
-  if (absY > absX && absY >= absZ)
-    normalAxis = 1;
-  else if (absZ > absX && absZ > absY)
-    normalAxis = 2;
-
-  std::array<int, 2> planeAxes;
-  if (normalAxis == 0) {
-    planeAxes = {1, 2};
-  } else if (normalAxis == 1) {
-    planeAxes = {0, 2};
-  } else {
-    planeAxes = {0, 1};
-  }
-
-  int expansionAxis = -1;
-  if (rangesEqual(planeAxes[0]) && rangesContiguous(planeAxes[1])) {
-    expansionAxis = planeAxes[1];
-  } else if (rangesEqual(planeAxes[1]) && rangesContiguous(planeAxes[0])) {
-    expansionAxis = planeAxes[0];
-  }
-
-  if (expansionAxis == -1) {
-    // Fallback to directional heuristic if numerical issues prevented detection
-    if (normalAxis == 0) {
-      expansionAxis =
-          (Utils::Abs(direction.y) >= Utils::Abs(direction.z)) ? 1 : 2;
-    } else if (normalAxis == 1) {
-      expansionAxis =
-          (Utils::Abs(direction.x) >= Utils::Abs(direction.z)) ? 0 : 2;
-    } else {
-      expansionAxis =
-          (Utils::Abs(direction.x) >= Utils::Abs(direction.y)) ? 0 : 1;
-    }
-  }
-
-  if (expansionAxis != planeAxes[0] && expansionAxis != planeAxes[1]) {
-    expansionAxis = planeAxes[0];
-  }
-
-  int alignAxis = (planeAxes[0] == expansionAxis) ? planeAxes[1] : planeAxes[0];
-
-  // Direct access to span members instead of lambda calls
-  float* targetSpan = &target.span.x;
-  const float* sourceSpan = &source.span.x;
-
-  targetSpan[expansionAxis] += sourceSpan[expansionAxis];
-  targetSpan[alignAxis] =
-      std::max(targetSpan[alignAxis], sourceSpan[alignAxis]);
-
-  int remainingAxis = normalAxis;
-  if (remainingAxis != expansionAxis && remainingAxis != alignAxis) {
-    targetSpan[remainingAxis] =
-        std::max(targetSpan[remainingAxis], sourceSpan[remainingAxis]);
-  }
-
-  // Expand the quad geometry by recalculating vertices
-  expandQuadGeometry(target, source, direction, expansionAxis);
-}
-
-void Chunk::expandQuadGeometry(ChunkQuadData& target,
-                               const ChunkQuadData& source,
-                               const Vec4& direction, int expansionAxis) {
-  static_cast<void>(direction);
-  static_cast<void>(expansionAxis);
-  // Size check removed - guaranteed by caller in mergeFaces
-
-  // Find the bounding box of both quads combined
-  Vec4 targetMin, targetMax, sourceMin, sourceMax;
-  getQuadBounds(target, targetMin, targetMax);
-  getQuadBounds(source, sourceMin, sourceMax);
-
-  Vec4 minBounds;
-  Vec4 maxBounds;
-  minBounds.x = std::min(targetMin.x, sourceMin.x);
-  minBounds.y = std::min(targetMin.y, sourceMin.y);
-  minBounds.z = std::min(targetMin.z, sourceMin.z);
-  maxBounds.x = std::max(targetMax.x, sourceMax.x);
-  maxBounds.y = std::max(targetMax.y, sourceMax.y);
-  maxBounds.z = std::max(targetMax.z, sourceMax.z);
-
-  // Normal is already computed and valid from mergeFaces - reuse it
-  const Vec4& normal = target.normal;
-
-  // Create new expanded quad vertices
-  std::array<Vec4, 6> newVertices = {};
-
-  // Determine which face we're dealing with based on normal
-  if (Utils::Abs(normal.x) > 0.9F) {  // X-facing quad (left/right)
-    float x = (normal.x > 0) ? maxBounds.x : minBounds.x;
-    // Two triangles forming a quad on YZ plane
-    newVertices[0] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 1
-    newVertices[1] = Vec4(x, maxBounds.y, minBounds.z);
-    newVertices[2] = Vec4(x, maxBounds.y, maxBounds.z);
-    newVertices[3] = Vec4(x, minBounds.y, minBounds.z);  // Triangle 2
-    newVertices[4] = Vec4(x, maxBounds.y, maxBounds.z);
-    newVertices[5] = Vec4(x, minBounds.y, maxBounds.z);
-  } else if (Utils::Abs(normal.y) > 0.9F) {  // Y-facing quad (top/bottom)
-    float y = (normal.y > 0) ? maxBounds.y : minBounds.y;
-    // Two triangles forming a quad on XZ plane
-    newVertices[0] = (Vec4(minBounds.x, y, minBounds.z));  // Triangle 1
-    newVertices[1] = (Vec4(maxBounds.x, y, minBounds.z));
-    newVertices[2] = (Vec4(maxBounds.x, y, maxBounds.z));
-    newVertices[3] = (Vec4(minBounds.x, y, minBounds.z));  // Triangle 2
-    newVertices[4] = (Vec4(maxBounds.x, y, maxBounds.z));
-    newVertices[5] = (Vec4(minBounds.x, y, maxBounds.z));
-  } else {  // Z-facing quad (front/back)
-    float z = (normal.z > 0) ? maxBounds.z : minBounds.z;
-    // Two triangles forming a quad on XY plane
-    newVertices[0] = (Vec4(minBounds.x, minBounds.y, z));  // Triangle 1
-    newVertices[1] = (Vec4(maxBounds.x, minBounds.y, z));
-    newVertices[2] = (Vec4(maxBounds.x, maxBounds.y, z));
-    newVertices[3] = (Vec4(minBounds.x, minBounds.y, z));  // Triangle 2
-    newVertices[4] = (Vec4(maxBounds.x, maxBounds.y, z));
-    newVertices[5] = (Vec4(minBounds.x, maxBounds.y, z));
-  }
-
-  // Update target vertices with expanded geometry
-  target.vertices = std::move(newVertices);
-
-  // Average colors from both quads to produce more representative lighting
-  // for the merged face instead of arbitrarily keeping only target's colors
-  for (size_t i = 0; i < 6; ++i) {
-    target.colors[i].r = (target.colors[i].r + source.colors[i].r) / 2;
-    target.colors[i].g = (target.colors[i].g + source.colors[i].g) / 2;
-    target.colors[i].b = (target.colors[i].b + source.colors[i].b) / 2;
-    // Preserve alpha channel from target
-  }
-
-  // Keep original UV data - these represent the texture mapping
-  // The UV coordinates will be stretched across the larger face automatically
-}
-
-Vec4 Chunk::calculateQuadCenter(const ChunkQuadData& quad) {
-  return computeCenterVU(quad.vertices);
-}
 
 void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                           std::vector<Vec4>* inVertices,
@@ -865,17 +285,14 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   // Initialize texture bag
   StaPipTextureBag textureBag;
   textureBag.coordinates = inUVs->data() + offset;
-  textureBag.texture = (_lod > 0) ? blockMgr->getBlocksTextureLowRes()
-                                  : blockMgr->getBlocksTexture();
+  textureBag.texture = blockMgr->getBlocksTexture();
 
   // Initialize info bag
   StaPipInfoBag infoBag;
   infoBag.model = &identityMatrix;
-  infoBag.blendingEnabled = (_lod == 0) || fadeAlpha < 1.0f;
+  infoBag.blendingEnabled = fadeAlpha < 1.0f;
   infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.shadingType = (_lod > 0)
-                            ? Tyra::PipelineShadingType::TyraShadingFlat
-                            : Tyra::PipelineShadingType::TyraShadingGouraud;
+  infoBag.shadingType = Tyra::PipelineShadingType::TyraShadingGouraud;
 
   // Initialize main bag
   StaPipBag bag;
@@ -893,6 +310,99 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
   } else {
     stapip->core.render(&bag);
   }
+}
+
+// ---------------------------------------------------------------------------
+// sendClampRegister — Send ONLY the GS CLAMP register via a minimal GIF
+// packet (2 qwords).  This avoids the expensive full texture re-upload that
+// updateTextureInfo() performs, and keeps the CLAMP write on the same DMA
+// channel (GIF / PATH3) with proper synchronization.
+// ---------------------------------------------------------------------------
+static void sendClampRegister(DmaGifBuilder& builder,
+                              const texwrap_t* wrap) {
+  builder.begin();
+  builder.addGifTag(GIF_REG_AD);
+  builder.addAd(
+      GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
+                   wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
+      GS_REG_CLAMP_1);
+  builder.send();
+}
+
+void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
+                          std::vector<Vec4>* pVerts, std::vector<Color>* pColors,
+                          std::vector<Vec4>* pUV,
+                          const std::vector<TileGroup>& groups) {
+  BlockManager* blockMgr = BlockManager::getInstance();
+  Tyra::Texture* tex = blockMgr->getBlocksTexture();
+  t_renderer->core.texture.useTexture(tex);
+
+  const int texW   = tex->getWidth();
+  const int texH   = tex->getHeight();
+  const int tileW  = texW / 16;  // texels per tile (U axis)
+  const int tileH  = texH / 16;  // texels per tile (V axis)
+
+  // Sort groups by tile to minimise CLAMP register changes.
+  // Build a sorted index list to avoid copying TileGroup structs.
+  std::vector<u32> sortedIdx(groups.size());
+  for (u32 i = 0; i < (u32)groups.size(); ++i) sortedIdx[i] = i;
+  std::sort(sortedIdx.begin(), sortedIdx.end(), [&](u32 a, u32 b) {
+    // LEGACY_TILE (255) sorts last so default-wrap groups render at the end
+    const TileGroup& ga = groups[a];
+    const TileGroup& gb = groups[b];
+    if (ga.row != gb.row) return ga.row < gb.row;
+    return ga.col < gb.col;
+  });
+
+  static DmaGifBuilder clampBuilder;
+  u8 prevCol = 255;
+  u8 prevRow = 254;  // Distinct from any valid tile or LEGACY_TILE
+
+  for (u32 si = 0; si < (u32)sortedIdx.size(); ++si) {
+    const TileGroup& group = groups[sortedIdx[si]];
+
+    // Only update CLAMP when the tile actually changes
+    if (group.col != prevCol || group.row != prevRow) {
+      // Synchronise: wait for previous VIF1 (geometry) and GIF (PATH3) DMA
+      // to complete so the GS finishes rendering the prior group before we
+      // change the CLAMP register.
+      dma_channel_wait(DMA_CHANNEL_VIF1, 0);
+      dma_channel_wait(DMA_CHANNEL_GIF, 0);
+
+      if (group.col == TileGroup::LEGACY_TILE &&
+          group.row == TileGroup::LEGACY_TILE) {
+        tex->setDefaultWrapSettings();
+      } else {
+        const u8 col = group.col < 16 ? group.col : (u8)15u;
+        const u8 row = group.row < 16 ? group.row : (u8)15u;
+
+        const int minu = tileW - 1;
+        const int maxu = col * tileW;
+        const int minv = tileH - 1;
+        const int maxv = row * tileH;
+
+        tex->setWrapSettings(Tyra::TextureWrap::RegionRepeat,
+                             Tyra::TextureWrap::RegionRepeat,
+                             minu, minv, maxu, maxv);
+      }
+
+      // Send only the CLAMP register — no full texture re-upload
+      sendClampRegister(clampBuilder, tex->getWrapSettings());
+
+      prevCol = group.col;
+      prevRow = group.row;
+    }
+
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
+                  static_cast<int>(group.start),
+                  static_cast<int>(group.count));
+  }
+
+  // Restore default wrap so subsequent renders are unaffected
+  dma_channel_wait(DMA_CHANNEL_VIF1, 0);
+  dma_channel_wait(DMA_CHANNEL_GIF, 0);
+  tex->setDefaultWrapSettings();
+  sendClampRegister(clampBuilder, tex->getWrapSettings());
 }
 
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
@@ -917,19 +427,35 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (pVerts->empty()) return;
 
   // Pre-apply fade alpha to colors once per chunk, not per draw call
-  static std::vector<Color> fadedColors;
+  // Use a local vector (not static) to avoid accumulating memory over time
+  std::vector<Color> fadedColors;
   if (fadeAlpha < 1.0f) {
     const size_t totalVerts = pColors->size();
-    fadedColors.resize(totalVerts);
+    fadedColors.reserve(totalVerts);
     const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
     for (size_t i = 0; i < totalVerts; i++) {
-      fadedColors[i] = (*pColors)[i];
-      fadedColors[i].a = alphaValue;
+      Color faded = (*pColors)[i];
+      faded.a = alphaValue;
+      fadedColors.push_back(faded);
     }
     pColors = &fadedColors;
   }
 
-  flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
+  // Use grouped rendering if we have TileGroups AND all verts are covered by groups
+  bool useGrouped = false;
+  if (!mergedOpaqueGroups.empty()) {
+    // Verify all vertices are covered by groups (check last group's coverage)
+    const TileGroup& lastGroup = mergedOpaqueGroups.back();
+    if (lastGroup.start + lastGroup.count == (u32)pVerts->size()) {
+      useGrouped = true;
+    }
+  }
+
+  if (useGrouped) {
+    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV, mergedOpaqueGroups);
+  } else {
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
+  }
 }
 
 void Chunk::rendererTransparentData(Renderer* t_renderer,
@@ -955,19 +481,35 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   if (pVerts->empty()) return;
 
   // Pre-apply fade alpha to transparent colors once per chunk
-  static std::vector<Color> fadedTranspColors;
+  // Use a local vector (not static) to avoid accumulating memory over time
+  std::vector<Color> fadedTranspColors;
   if (fadeAlpha < 1.0f) {
     const size_t totalVerts = pColors->size();
-    fadedTranspColors.resize(totalVerts);
+    fadedTranspColors.reserve(totalVerts);
     const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
     for (size_t i = 0; i < totalVerts; i++) {
-      fadedTranspColors[i] = (*pColors)[i];
-      fadedTranspColors[i].a = alphaValue;
+      Color faded = (*pColors)[i];
+      faded.a = alphaValue;
+      fadedTranspColors.push_back(faded);
     }
     pColors = &fadedTranspColors;
   }
 
-  flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
+  // Use grouped rendering if we have TileGroups AND all verts are covered by groups
+  bool useGrouped = false;
+  if (!mergedTranspGroups.empty()) {
+    // Verify all vertices are covered by groups (check last group's coverage)
+    const TileGroup& lastGroup = mergedTranspGroups.back();
+    if (lastGroup.start + lastGroup.count == (u32)pVerts->size()) {
+      useGrouped = true;
+    }
+  }
+
+  if (useGrouped) {
+    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV, mergedTranspGroups);
+  } else {
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size());
+  }
 }
 
 void Chunk::clear() {
@@ -976,14 +518,11 @@ void Chunk::clear() {
   visibilityGraph = 0;
   visibilityGraphDirty = true;
   isEmpty = false;
-  isUltraCompressed = false;
-  isMerged = false;
   consecutiveOccludedFrames = 0;
 
   // Reset fade state
   isFadingIn = false;
   fadeAlpha = 0.0f;
-  isLODRebuild = false;
   
   state = ChunkState::Clean;
   markDistanceDirty();  // Phase 1: Invalidate cache on clear
@@ -1007,10 +546,10 @@ void Chunk::clearDrawData() {
   // Invalidate decompression cache
   invalidateDecompCache();
 
-  isCompressed = false;
-  isUltraCompressed = false;
-  isMerged = false;
-  _geometryLod = -1;
+  mergedOpaqueGroups.clear();
+  mergedOpaqueGroups.shrink_to_fit();
+  mergedTranspGroups.clear();
+  mergedTranspGroups.shrink_to_fit();
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -1025,10 +564,8 @@ void Chunk::clearDrawDataWithoutShrink() {
   // Invalidate decompression cache
   invalidateDecompCache();
 
-  isCompressed = false;
-  isUltraCompressed = false;
-  isMerged = false;
-  _geometryLod = -1;
+  mergedOpaqueGroups.clear();
+  mergedTranspGroups.clear();
 
   // Clear compressed data
   std::vector<CompressedVertex>().swap(compressedVertices);
@@ -1062,124 +599,72 @@ void Chunk::build() {
   if (g_debug_menu.logChunkMemoryUsage) {
     initialMemoryUsage = get_used_memory();
   }
+#endif
 
-#endif  // end if DEBUG_MODE
+  if (state == ChunkState::Unloading) return;
+  if (state == ChunkState::Loaded) return;
+  if (state != ChunkState::Building) state = ChunkState::Building;
 
-  // Safety: Prevent build if unloading or already loaded
-  // Note: Building state is ALLOWED for new chunks
-  // Loaded state is ALLOWED for LOD rebuilds (old geometry still visible)
-  if (state == ChunkState::Unloading) {
-    return;
-  }
-  if (state == ChunkState::Loaded && !isLODRebuild) {
-    return;
-  }
-
-  // Transition to Building state if not already (handles direct build() calls)
-  if (state != ChunkState::Building) {
-    state = ChunkState::Building;
-  }
-
-  // If dirty, force complete rebuild instead of early return
   if (dirty) {
     clearDrawDataWithoutShrink();
     dirty = false;
   }
 
   bool allAir = true;
-  for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-        if (blockId > static_cast<u8>(Blocks::AIR_BLOCK)) {
+  for (uint16_t y = minOffset.y; y < maxOffset.y && allAir; y++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z && allAir; z++) {
+      for (uint16_t x = minOffset.x; x < maxOffset.x && allAir; x++) {
+        if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK)
           allAir = false;
-          break;
-        }
       }
-      if (!allAir) break;
     }
-    if (!allAir) break;
   }
 
   if (allAir) {
     clearDrawDataWithoutShrink();
-    isCompressed = false;
-    isUltraCompressed = false;
     isEmpty = true;
-    state = ChunkState::Loaded;
-
-    if (!isLODRebuild) {
-      isFadingIn = true;
-      fadeAlpha = 0.0f;
-    }
-    isLODRebuild = false;
-
+    state   = ChunkState::Loaded;
+    isFadingIn = true;
+    fadeAlpha  = 0.0f;
     markDistanceDirty();
-    visibilityGraph = 0x7FFF;
+    visibilityGraph      = 0x7FFF;
     visibilityGraphDirty = false;
-
     if (onLoadedCallback) onLoadedCallback(this);
     return;
   }
+
   isEmpty = false;
 
   try {
-    const int lod = getLODFromDistance();
-    _lod = lod;
-    if (lod == 0) {
-      buildMerged();
-    } else if (lod == 1) {
-      buildLOD1();
-    } else if (lod == 2) {
-      buildLOD2();
-    } else {
-      buildUltraCompressed();
-    }
-    _geometryLod = lod;
-
+    buildBGM();
+    rebuildVisibilityGraph();
     state = ChunkState::Loaded;
 
-    // Start fade-in animation only for NEW chunks (not LOD rebuilds)
-    // For LOD changes, keep full opacity to avoid blink
-    if (!isLODRebuild) {
+    if (pendingIsNewChunk) {
       isFadingIn = true;
-      fadeAlpha = 0.0f;  // Start transparent
+      fadeAlpha  = 0.0f;
+      pendingIsNewChunk = false;
     }
-    isLODRebuild = false;  // Reset flag after use
 
-    // Phase 1: Invalidate distance cache after build
     markDistanceDirty();
-
-    // Build visibility graph for cave culling
-    rebuildVisibilityGraph();
-
-    // Only storage-compress LOD 1+ chunks.
-    // LOD 0 keeps uncompressed data in memory to avoid per-frame decompression.
-    if (_lod > 0) {
-      compressData();
-    }
-
-    // Notify that chunk is ready for lighting updates
     if (onLoadedCallback) onLoadedCallback(this);
   } catch (...) {
-    // On error, revert to clean state and clear partial data
     state = ChunkState::Clean;
     clearDrawData();
-    throw;  // Re-throw to let caller handle error
+    throw;
   }
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.logChunkMemoryUsage) {
-    size_t totalVertices = vertices.size() + transpVertices.size();
-    if (totalVertices > 0) {
-      size_t finalMemoryUsage = get_used_memory();
-      float memoryUsage =
-          static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
-      printf("Chunk %d memory usage: %.2f KB (Total of vertices: %d)\n", id,
-             memoryUsage, totalVertices);
+    const size_t totalVerts =
+        compressedVertices.size() + compressedTransparentVertices.size();
+    if (totalVerts > 0) {
+      const size_t finalMem = get_used_memory();
+      printf("Chunk %d memory: %.2f KB (%zu verts)\n", id,
+             (float)(finalMem - initialMemoryUsage) / 1024.f, totalVerts);
     }
   }
-#endif  // end if DEBUG_MODE
+#endif
 }
 
 // =============================================================================
@@ -1189,12 +674,11 @@ void Chunk::build() {
 // =============================================================================
 
 void Chunk::beginBuild() {
-  // Same safety guards as the synchronous build().
   if (state == ChunkState::Unloading) {
     buildPhase = BuildPhase::Idle;
     return;
   }
-  if (state == ChunkState::Loaded && !isLODRebuild) {
+  if (state == ChunkState::Loaded) {
     buildPhase = BuildPhase::Idle;
     return;
   }
@@ -1207,27 +691,19 @@ void Chunk::beginBuild() {
     dirty = false;
   }
 
-  // Pre-reserve geometry vectors to reduce reallocs during MeshGen.
-  // Heuristic: ~1/8 of CHUNK_LENGTH blocks have visible faces, each emits
-  // up to 6 quads × 6 vertices = 36 vertices. Size CHUNK_SIZE³/8×6 ≈ 3072.
-  const size_t reserveHint = (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) / 8 * 6;
-  if (vertices.capacity() < reserveHint) vertices.reserve(reserveHint);
-  if (UV.capacity() < reserveHint) UV.reserve(reserveHint);
-  if (colors.capacity() < reserveHint) colors.reserve(reserveHint);
+  // Snapshot whether this is the first time this chunk is being built.
+  // Used by Finalize to decide whether to trigger the fade-in animation.
+  pendingIsNewChunk = !isLoaded();
 
-  // Snapshot build parameters.
-  pendingLod           = getLODFromDistance();
-  _lod                 = pendingLod;
-  pendingIsLODRebuild  = isLODRebuild;
-  meshGenSliceX        = minOffset.x;
-  buildPhase           = BuildPhase::AirCheck;
+  meshGenFaceDir = 0;
+  buildPhase     = BuildPhase::AirCheck;
 }
 
 bool Chunk::buildStep() {
   switch (buildPhase) {
     // ------------------------------------------------------------------
     case BuildPhase::Idle:
-      return true;  // Nothing to do
+      return true;
 
     // ------------------------------------------------------------------
     case BuildPhase::AirCheck: {
@@ -1235,19 +711,15 @@ bool Chunk::buildStep() {
       for (uint16_t y = minOffset.y; y < maxOffset.y && allAir; y++) {
         for (uint16_t z = minOffset.z; z < maxOffset.z && allAir; z++) {
           for (uint16_t x = minOffset.x; x < maxOffset.x && allAir; x++) {
-            if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK) {
+            if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK)
               allAir = false;
-            }
           }
         }
       }
       if (allAir) {
         clearDrawDataWithoutShrink();
-        isCompressed     = false;
-        isUltraCompressed = false;
-        isMerged         = false;
-        isEmpty          = true;
-        buildPhase       = BuildPhase::Finalize;  // Skip mesh generation
+        isEmpty    = true;
+        buildPhase = BuildPhase::Finalize;
       } else {
         isEmpty    = false;
         buildPhase = BuildPhase::MeshGen;
@@ -1257,46 +729,8 @@ bool Chunk::buildStep() {
 
     // ------------------------------------------------------------------
     case BuildPhase::MeshGen: {
-      // Process a single X-slice (CHUNK_SIZE × CHUNK_SIZE blocks).
-      // This is the fine-grained unit that keeps individual steps short.
-      buildNormalySlice(meshGenSliceX);
-      meshGenSliceX++;
-
-      if (meshGenSliceX >= maxOffset.x) {
-        // All slices done — choose next phase based on LOD.
-        if (pendingLod == 0) {
-          isMerged   = false;  // LOD 0: no greedy merge
-          buildPhase = BuildPhase::VisGraph;
-        } else {
-          buildPhase = BuildPhase::Merge;
-        }
-      }
-      return false;
-    }
-
-    // ------------------------------------------------------------------
-    case BuildPhase::Merge: {
-      // Apply greedy face merge with LOD-specific parameters.
-      // compress() sets isCompressed + isUltraCompressed internally.
-      if (pendingLod == 1) {
-        compress(15, 0.1f, 0.95f, false, true, 2);
-        isUltraCompressed = false;
-      } else if (pendingLod == 2) {
-        compress(15, 0.1f, 0.95f, true, true, 3);
-        isUltraCompressed = false;
-      } else {
-        // LOD 3: unlimited greedy merge
-        compress(15, 0.1f, 0.95f, true, false, 0);
-        isUltraCompressed = true;
-      }
-      buildPhase = BuildPhase::StorageCmp;
-      return false;
-    }
-
-    // ------------------------------------------------------------------
-    case BuildPhase::StorageCmp: {
-      // Pack Vec4+Color vertices to CompressedVertex (48 → 16 bytes).
-      compressData();
+      // Run the full BGM in one step (it is already O(n) bitwise — fast).
+      buildBGM();
       buildPhase = BuildPhase::VisGraph;
       return false;
     }
@@ -1310,32 +744,143 @@ bool Chunk::buildStep() {
 
     // ------------------------------------------------------------------
     case BuildPhase::Finalize: {
-      _geometryLod = pendingLod;
-      state        = ChunkState::Loaded;
+      state = ChunkState::Loaded;
 
-      // All-air chunks need explicit visibility graph (VisGraph was skipped).
       if (isEmpty) {
         visibilityGraph      = 0x7FFF;
         visibilityGraphDirty = false;
       }
 
-      // Start fade-in only for genuinely new chunks, not LOD rebuilds.
-      if (!pendingIsLODRebuild) {
-        isFadingIn = true;
-        fadeAlpha  = 0.0f;
+      if (pendingIsNewChunk) {
+        isFadingIn        = true;
+        fadeAlpha         = 0.0f;
+        pendingIsNewChunk = false;
       }
-      isLODRebuild = false;
 
       markDistanceDirty();
       buildPhase = BuildPhase::Idle;
 
       if (onLoadedCallback) onLoadedCallback(this);
-      return true;  // ← build complete
+      return true;
     }
   }
 
-  // Unreachable — be safe.
-  return true;
+  return true;  // Unreachable — be safe.
+}
+
+// =============================================================================
+//  buildBGM — Binary Greedy Meshing full chunk build
+// =============================================================================
+
+void Chunk::buildBGM() {
+  // ---- BGM pass: cuboid blocks -----------------------------------------
+  static BinaryGreedyMesher bgm;
+  BinaryGreedyMesher::Output output;
+  bgm.meshChunk(pLevel, minOffset, t_worldLightModel, output);
+
+  compressedVertices             = std::move(output.opaqueVerts);
+  mergedOpaqueGroups             = std::move(output.opaqueGroups);
+  compressedTransparentVertices  = std::move(output.transpVerts);
+  mergedTranspGroups             = std::move(output.transpGroups);
+
+  // ---- Legacy pass: special-shaped blocks (torches, plants, liquids)
+  // Note: slabs are now handled by BGM's processSlabs()
+  VisibleFacesManager* vfm = VisibleFacesManager::getInstance();
+  BlockManager*        bm  = BlockManager::getInstance();
+
+  vertices.clear();
+  UV.clear();
+  colors.clear();
+  transpVertices.clear();
+  transpUV.clear();
+  transpColors.clear();
+
+  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
+    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
+      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
+        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
+        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
+        const Blocks bt = static_cast<Blocks>(blockId);
+        if (BinaryGreedyMesher::isCuboidBlock(bt)) continue;
+        if (BinaryGreedyMesher::isSlabBlock(bt)) continue;  // Handled by BGM
+
+        Vec4     offset(x, y, z);
+        const u8 vf = vfm->getVisibleFacesByOffset(offset);
+        if (!vf) continue;
+
+        Block*       tpl   = bm->getBlockTemplateByType(bt);
+        const bool   transp = tpl->hasTransparency();
+
+        std::vector<Vec4>*  tv = transp ? &transpVertices : &vertices;
+        std::vector<Color>* tc = transp ? &transpColors   : &colors;
+        std::vector<Vec4>*  tu = transp ? &transpUV       : &UV;
+
+        MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu,
+                              t_worldLightModel, pLevel);
+      }
+    }
+  }
+
+  // Pack legacy geometry into CompressedVertex and append to the BGM output.
+  // Using compressData() which writes into compressedVertices etc. and then
+  // clears the Vec4 temp buffers — but it overwrites, so we merge manually.
+  if (!vertices.empty() || !transpVertices.empty()) {
+    // Opaque legacy verts — create a TileGroup for them if any already exist
+    if (!vertices.empty()) {
+      u32 legacyOpaqueStart = (u32)compressedVertices.size();
+      compressedVertices.reserve(compressedVertices.size() + vertices.size());
+      for (size_t i = 0; i < vertices.size(); i++) {
+        CompressedVertex cv;
+        cv.pos.fromVec4(vertices[i]);
+        packUV(UV[i], cv.u, cv.v);
+        cv.color = packColor(colors[i]);
+        compressedVertices.push_back(cv);
+      }
+      
+      // If BGM created any groups, append a catch-all group for legacy vertices.
+      // If no BGM groups, we'll use normal rendering (no groups).
+      if (!mergedOpaqueGroups.empty()) {
+        TileGroup legacyGroup;
+        legacyGroup.start = legacyOpaqueStart;
+        legacyGroup.count = (u32)vertices.size();
+        legacyGroup.col   = TileGroup::LEGACY_TILE;
+        legacyGroup.row   = TileGroup::LEGACY_TILE;
+        mergedOpaqueGroups.push_back(legacyGroup);
+      }
+    }
+
+    // Transparent legacy verts — create a TileGroup for them if any already exist
+    if (!transpVertices.empty()) {
+      u32 legacyTranspStart = (u32)compressedTransparentVertices.size();
+      compressedTransparentVertices.reserve(
+          compressedTransparentVertices.size() + transpVertices.size());
+      for (size_t i = 0; i < transpVertices.size(); i++) {
+        CompressedVertex cv;
+        cv.pos.fromVec4(transpVertices[i]);
+        packUV(transpUV[i], cv.u, cv.v);
+        cv.color = packColor(transpColors[i]);
+        compressedTransparentVertices.push_back(cv);
+      }
+
+      // If BGM created any groups, append a catch-all group for legacy vertices.
+      if (!mergedTranspGroups.empty()) {
+        TileGroup legacyGroup;
+        legacyGroup.start = legacyTranspStart;
+        legacyGroup.count = (u32)transpVertices.size();
+        legacyGroup.col   = TileGroup::LEGACY_TILE;
+        legacyGroup.row   = TileGroup::LEGACY_TILE;
+        mergedTranspGroups.push_back(legacyGroup);
+      }
+    }
+
+    // Free the temporary Vec4 buffers
+    std::vector<Vec4>().swap(vertices);
+    std::vector<Vec4>().swap(UV);
+    std::vector<Color>().swap(colors);
+    std::vector<Vec4>().swap(transpVertices);
+    std::vector<Vec4>().swap(transpUV);
+    std::vector<Color>().swap(transpColors);
+  }
 }
 
 void Chunk::cancelBuild() {
@@ -1344,282 +889,36 @@ void Chunk::cancelBuild() {
   // Release any partial geometry that was generated so far.
   clearDrawData();
 
-  buildPhase        = BuildPhase::Idle;
-  isEmpty           = false;
-  isCompressed      = false;
-  isUltraCompressed = false;
-  isMerged          = false;
-  isLODRebuild      = false;
-  state             = ChunkState::Clean;
-}
-
-// =============================================================================
-//  buildNormalySlice — generate geometry for a single X-slice.
-//  Identical to the inner body of buildNormaly() but scoped to one x value.
-//  This is the granular unit used by the incremental MeshGen phase.
-// =============================================================================
-
-void Chunk::buildNormalySlice(uint16_t x) {
-  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
-  BlockManager*        blockMgr        = BlockManager::getInstance();
-
-  for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-    for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-      const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-      if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
-
-      Vec4        offset(x, y, z);
-      const u8    visibleFaces = visibleFacesMgr->getVisibleFacesByOffset(offset);
-      if (visibleFaces == 0) continue;
-
-      const Blocks block_type    = static_cast<Blocks>(blockId);
-      Block*       pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
-      const bool   hasTransparency = pBlockTemplate->hasTransparency();
-
-      std::vector<Vec4>*  targetVertices = hasTransparency ? &transpVertices : &vertices;
-      std::vector<Color>* targetColors   = hasTransparency ? &transpColors   : &colors;
-      std::vector<Vec4>*  targetUV       = hasTransparency ? &transpUV       : &UV;
-
-      MeshBuilder_BuildMesh(&offset, visibleFaces, _lod, targetVertices,
-                            targetColors, targetUV, t_worldLightModel, pLevel);
-    }
-  }
-}
-
-void Chunk::buildNormaly() {
-  // Cache singleton instances to avoid repeated lookups
-  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
-  BlockManager* blockMgr = BlockManager::getInstance();
-
-  // Y as outer loop provides better cache locality for vertical column access
-  // This matches how the level data is typically accessed
-  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-
-        // Early exit for air blocks - most common case
-        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
-
-        Vec4 offset(x, y, z);
-        const u8 visibleFaces =
-            visibleFacesMgr->getVisibleFacesByOffset(offset);
-
-        // Skip blocks with no visible faces
-        if (visibleFaces == 0) continue;
-
-        const Blocks block_type = static_cast<Blocks>(blockId);
-        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
-        const bool hasTransparency = pBlockTemplate->hasTransparency();
-
-        // Select appropriate buffers based on transparency
-        std::vector<Vec4>* targetVertices =
-            hasTransparency ? &transpVertices : &vertices;
-        std::vector<Color>* targetColors =
-            hasTransparency ? &transpColors : &colors;
-        std::vector<Vec4>* targetUV = hasTransparency ? &transpUV : &UV;
-
-        MeshBuilder_BuildMesh(&offset, visibleFaces, _lod, targetVertices,
-                              targetColors, targetUV, t_worldLightModel,
-                              pLevel);
-      }
-    }
-  }
-};
-
-void Chunk::buildLightOnly() {
-  // Generate only color data - skip vertex/UV generation.
-  // Must iterate blocks in the SAME XZY order as buildNormaly() so colors
-  // align with the existing vertex array.
-  VisibleFacesManager* visibleFacesMgr = VisibleFacesManager::getInstance();
-  BlockManager* blockMgr = BlockManager::getInstance();
-
-  for (uint16_t x = minOffset.x; x < maxOffset.x; x++) {
-    for (uint16_t z = minOffset.z; z < maxOffset.z; z++) {
-      for (uint16_t y = minOffset.y; y < maxOffset.y; y++) {
-        const u8 blockId = pLevel->GetBlockFromMap(x, y, z);
-        if (blockId <= (u8)Blocks::AIR_BLOCK) continue;
-
-        Vec4 offset(x, y, z);
-        const u8 visibleFaces =
-            visibleFacesMgr->getVisibleFacesByOffset(offset);
-        if (visibleFaces == 0) continue;
-
-        const Blocks block_type = static_cast<Blocks>(blockId);
-        Block* pBlockTemplate = blockMgr->getBlockTemplateByType(block_type);
-        const bool hasTransparency = pBlockTemplate->hasTransparency();
-
-        std::vector<Color>* targetColors =
-            hasTransparency ? &transpColors : &colors;
-
-        MeshBuilder_BuildLightData(&offset, visibleFaces, targetColors,
-                                   t_worldLightModel, pLevel);
-      }
-    }
-  }
-}
-
-void Chunk::buildMerged() {
-  buildNormaly();
-  // LOD 0 (near chunks): No geometry merging. UV mapping must stay correct.
-  // Greedy meshing is only applied at LOD 2 (distant chunks) where UV
-  // stretching is acceptable and not noticeable at that distance.
-  isMerged = false;
-}
-
-void Chunk::buildLOD1() {
-  buildNormaly();
-  // LOD 1 (3-5 chunks): Light face merging, max 2 faces per merge.
-  // UV stretching is minimal since merges are small.
-  compress(15, 0.1f, 0.95f, false, true, 2);
-
-  isUltraCompressed = false;
-}
-
-void Chunk::buildLOD2() {
-  buildNormaly();
-  // LOD 2 (6-9 chunks): Moderate face merging, max 3 faces per merge.
-  // Merge across UVs for more aggressive reduction at this distance.
-  compress(15, 0.1f, 0.95f, true, true, 3);
-
-  isUltraCompressed = false;
-}
-
-void Chunk::buildUltraCompressed() {
-  buildNormaly();
-  // LOD 3 (10+ chunks): Unlimited greedy merge. UV stretching OK at distance.
-  compress(15, 0.1f, 0.95f, true, false, 0);
-
-  isUltraCompressed = true;
-}
-
-void Chunk::rebuild() {
-  // Preserve fade state - this chunk is already visible, no blink needed
-  const float savedFadeAlpha = fadeAlpha;
-  const bool wasFadingIn = isFadingIn;
-
-  clearDrawDataWithoutShrink();
-  // Mark as LOD rebuild to tell build() not to reset fade
-  // (build() already allows Loaded state through when isLODRebuild is true)
-  isLODRebuild = true;
-  build();
-
-  // Restore fade state so the chunk doesn't flash transparent
-  if (savedFadeAlpha >= 1.0f) {
-    fadeAlpha = 1.0f;
-    isFadingIn = false;
-  } else {
-    fadeAlpha = savedFadeAlpha;
-    isFadingIn = wasFadingIn;
-  }
-}
-
-void Chunk::updateLOD() {
-  if (!isLoaded()) return;  // Safety check
-
-  // Safety: prevent updateLOD during building or unloading
-  if (state == ChunkState::Building || state == ChunkState::Unloading) return;
-
-  const int currentLOD = getLODFromDistance();
-
-  // LOD 0 = <3 chunks:   no merge, full-res, uncompressed in RAM
-  // LOD 1 = 3-5 chunks:  max 2-face merge, UV correct, storage compressed
-  // LOD 2 = 6-9 chunks:  max 3-face merge, UV stretch OK, storage compressed
-  // LOD 3 = 10+ chunks:  unlimited greedy merge, storage compressed
-  //
-  // Geometry rebuild is required when:
-  //   - Moving to a lower LOD (higher detail = less/no merging)
-  //   - Moving to a higher LOD requiring more merging than current geometry has
-  //
-  // If vertices are still in RAM (LOD 0 → LOD 1/2/3), we can re-compress
-  // in-place without a full rebuild. Otherwise, force dirty.
-
-  if (currentLOD == _geometryLod) return;  // No change, nothing to do
-
-  if (currentLOD < _geometryLod) {
-    // Moving to lower LOD (less merging) — must rebuild from scratch
-    dirty = true;
-    return;
-  }
-
-  // Moving to higher LOD (more merging)
-  if (!vertices.empty() || !transpVertices.empty()) {
-    // Vertices still in RAM — compress in-place with new LOD parameters
-    if (currentLOD == 1) {
-      compress(15, 0.1f, 0.95f, false, true, 2);
-    } else if (currentLOD == 2) {
-      compress(15, 0.1f, 0.95f, true, true, 3);
-    } else /*LOD 3*/ {
-      compress(15, 0.1f, 0.95f, true, false, 0);
-    }
-    _geometryLod = currentLOD;
-    compressData();
-  } else {
-    // Vertices already storage-compressed — force full rebuild
-    dirty = true;
-  }
+  buildPhase       = BuildPhase::Idle;
+  isEmpty          = false;
+  state            = ChunkState::Clean;
 }
 
 bool Chunk::hasDrawData() {
-  return !vertices.empty() && !transpVertices.empty();
+  return !compressedVertices.empty() || !compressedTransparentVertices.empty();
 }
 
 void Chunk::reloadLightData() {
   if (!isLoaded()) return;
   if (isEmpty) return;
 
-  // For compressed chunks, we need to rebuild geometry then recompress
-  // because greedy meshing restructures vertex arrays - color indices
-  // won't align with merged vertices if we just regenerate colors
-  if (isCompressed) {
-    // Save compression state
-    const bool wasUltraCompressed = isUltraCompressed;
-
-    // Clear and rebuild geometry with fresh lighting
-    clearDrawDataWithoutShrink();
-    buildNormaly();
-
-    // Recompress with appropriate settings
-    if (wasUltraCompressed) {
-      compress(15, 0.1f, 0.95f, true, false);
-      isUltraCompressed = true;
-    } else {
-      compress(5, 0.01f, 0.99f, false, true);
-      isUltraCompressed = false;
-    }
-
-    isCompressed = true;
-
-    // Re-compress storage after geometry rebuild
-    compressData();
-    return;
-  }
-
-  // For LOD 0 merged chunks, vertex arrays are restructured by merging,
-  // so we must rebuild + re-merge to update lighting correctly
-  if (isMerged) {
-    clearDrawDataWithoutShrink();
-    buildMerged();
-    // LOD 0 stays uncompressed - no compressData() call
-    return;
-  }
-
-  // If not geometrically compressed (LOD 0) but STORAGE compressed (packed),
-  // we must rebuild to update lighting because we don't have unpacked colors.
-  if (!compressedVertices.empty()) {
-    clearDrawDataWithoutShrink();
-    buildNormaly();
-    compressData();
-    return;
-  }
-
-  // For uncompressed chunks (LOD 0, not storage-compressed): full rebuild.
+  // BGM fully repackages colour data alongside geometry, so a full rebuild
+  // is always required to update lighting.
   clearDrawDataWithoutShrink();
-  buildNormaly();
+  state = ChunkState::Building;
+  buildBGM();
+  rebuildVisibilityGraph();
+  state = ChunkState::Loaded;
 }
 
 void Chunk::reloadLightColorsOnly() {
   // Delegate to the full rebuild which regenerates vertices+colors together.
+  reloadLightData();
+}
+
+void Chunk::rebuild() {
+  // Triggered by block edits on neighbour chunks — full geometry + lighting
+  // rebuild via BGM, same as reloadLightData().
   reloadLightData();
 }
 

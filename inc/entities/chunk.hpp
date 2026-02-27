@@ -2,6 +2,7 @@
 
 // Forward declaration for visibility graph
 #include "managers/visibility_graph.hpp"
+#include "managers/mesh/binary_greedy_mesher.hpp"
 
 #include <vector>
 #include <math/vec4.hpp>
@@ -51,22 +52,16 @@ enum class ChunkState {
  * Phases used by the incremental build pipeline (beginBuild / buildStep).
  * Each phase does a bounded unit of work so the frame budget is respected.
  *
- *  Idle ──[beginBuild]──▶ AirCheck ──▶ MeshGen (16 X-slice steps)
+ *  Idle ──[beginBuild]──▶ AirCheck ──▶ MeshGen (BGM, one face-dir per step)
  *                              │               │
- *                         all-air           LOD 0 ──▶ VisGraph ──▶ Finalize
- *                              │               │
- *                              │           LOD 1+ ──▶ Merge ──▶ StorageCmp
- *                              │                                     │
- *                              └──────────── Finalize ◀─── VisGraph ◀┘
+ *                         all-air           Done ──▶ VisGraph ──▶ Finalize
  */
 enum class BuildPhase : u8 {
   Idle       = 0,  // No incremental build in progress
   AirCheck   = 1,  // Detecting whether the chunk is entirely air
-  MeshGen    = 2,  // Generating mesh geometry, one X-slice per step
-  Merge      = 3,  // Greedy face merge via compress() (LOD 1+)
-  StorageCmp = 4,  // Pack vertices to CompressedVertex (LOD 1+)
-  VisGraph   = 5,  // Rebuild BFS visibility graph
-  Finalize   = 6,  // Transition to Loaded, fire callbacks
+  MeshGen    = 2,  // BGM meshing: one FaceDir per step (6 total)
+  VisGraph   = 3,  // Rebuild BFS visibility graph
+  Finalize   = 4,  // Transition to Loaded, fire callbacks
 };
 
 struct ChunkQuadData {
@@ -76,6 +71,17 @@ struct ChunkQuadData {
   std::array<Vec4, 6> vertices;
   std::array<Vec4, 6> uv;
   std::array<Color, 6> colors;
+};
+
+/** One group of merged quads sharing the same atlas tile.
+ *  Used for per-tile RegionRepeat rendering in LOD > 0. */
+struct TileGroup {
+  static constexpr u8 LEGACY_TILE = 255;  // Sentinel: use default wrap (no RegionRepeat)
+
+  u32 start;  // Vertex start index in the flat array
+  u32 count;  // Number of vertices (multiple of 6)
+  u8  col;    // Atlas column (0-15), or LEGACY_TILE for non-BGM blocks
+  u8  row;    // Atlas row (0-15), or LEGACY_TILE for non-BGM blocks
 };
 
 // 16 bytes per vertex (was 48 bytes)
@@ -188,17 +194,6 @@ class Chunk {
            (z * pLevel->map.width) + x;
   }
 
-  const int getLODFromDistance();
-  const int getLODFromDistance(const int distance);
-  static const int getLODFromDistanceWithHysteresis(const int distance,
-                                                    const int currentLOD);
-
-  void updateLOD();
-  void compress(const u8 colorTolerance = 10, const float uvTolerance = 0.01f,
-                const float normalDotThreshold = 0.99f,
-                const bool mergeAcrossUvs = false,
-                const bool includeTransparent = true,
-                const int maxMergeCount = 0);
   void markDirty();
   inline bool isDirty() { return dirty; }
 
@@ -215,7 +210,6 @@ class Chunk {
   // Fade-in state for smooth chunk transitions (fade-out not needed - chunks unload outside view)
   float fadeAlpha = 0.0f;      // Current fade opacity (0.0 = transparent, 1.0 = opaque)
   bool isFadingIn = false;     // Whether chunk is fading in
-  bool isLODRebuild = false;   // True when rebuild is due to LOD change (skip fade reset)
   bool isEmpty = false;        // True when chunk contains only air blocks
   u8 consecutiveOccludedFrames = 0;
   u32 loadedAtTick = 0;  // Tick counter when chunk was loaded (for recently-loaded protection)
@@ -232,30 +226,23 @@ class Chunk {
   // -----------------------------------------------------------------------
   // Incremental build state (used by beginBuild / buildStep)
   // -----------------------------------------------------------------------
-  BuildPhase buildPhase      = BuildPhase::Idle;
-  uint16_t   meshGenSliceX   = 0;   // Current X-slice being processed in MeshGen
-  int        pendingLod      = 0;   // LOD level determined at the start of the build
-  bool       pendingIsLODRebuild = false; // Saved isLODRebuild flag for Finalize
+  BuildPhase buildPhase    = BuildPhase::Idle;
+  u8         meshGenFaceDir = 0;  // Current FaceDir being processed (0-5)
+  bool       pendingIsNewChunk = true;  // False when rebuild is triggered by block edit
 
-  /** Process one X-slice (z×y plane) during the MeshGen phase. */
-  void buildNormalySlice(uint16_t x);
+  // BGM-based mesh generation (replaces buildNormaly + compress pipeline)
+  void buildBGM();
 
-  bool isCompressed = false;
-  bool isUltraCompressed = false;
-  bool isMerged = false;
-  void buildNormaly();
-  void buildLightOnly();  // Generate only color data (skip vertex/UV generation)
-  void buildMerged();       // LOD 0: no merge
-  void buildLOD1();         // LOD 1: merge max 2 faces
-  void buildLOD2();         // LOD 2: merge max 3 faces
-  void buildUltraCompressed(); // LOD 3: unlimited greedy merge
-  void mergeGeometry(const u8 colorTolerance, const float uvTolerance,
-                     const float normalDotThreshold, const bool mergeAcrossUvs,
-                     const bool includeTransparent, const int maxMergeCount = 0);
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
                      int offset, int count);
+
+  /** Render merged geometry grouped by atlas tile using RegionRepeat. */
+  void renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
+                     std::vector<Vec4>* pVerts, std::vector<Color>* pColors,
+                     std::vector<Vec4>* pUV,
+                     const std::vector<TileGroup>& groups);
   // Compression helpers
   void compressData();
   void decompressData(std::vector<Vec4>* outVertices,
@@ -270,6 +257,10 @@ class Chunk {
   std::vector<CompressedVertex> compressedVertices;
   std::vector<CompressedVertex> compressedTransparentVertices;
 
+  // Per-tile vertex groups for RegionRepeat rendering
+  std::vector<TileGroup> mergedOpaqueGroups;
+  std::vector<TileGroup> mergedTranspGroups;
+
   // Cached decompressed data for render (avoids per-frame decompression)
   std::vector<Vec4> cachedDecompVertices;
   std::vector<Color> cachedDecompColors;
@@ -283,38 +274,22 @@ class Chunk {
   Vec4 camPositon = Vec4(0, 0, 0);
   int _distanceFromPlayerInChunks = -1;
 
-  // Phase 1: Distance cache optimization
-  float cachedDistanceSquared = -1.0f;  // Cached squared distance to player
-  bool distanceCacheDirty = true;        // Cache invalidation flag
+  // Distance cache optimization
+  float cachedDistanceSquared = -1.0f;
+  bool distanceCacheDirty = true;
 
-  // Refactore the clipped blocks for not using blocks array
   Plane* frustumPlanes = nullptr;
 
-  int _lod = 0;
-  int _geometryLod = -1;  // LOD level the geometry was actually built at (-1 = not built)
   bool dirty = false;
 
   OnLoadedCallback onLoadedCallback;
 
-  std::vector<Vec4> vertices;
-  std::vector<Vec4> UV;
+  // Temporary Vec4 buffers — used only during buildBGM() for special (non-BGM)
+  // blocks that still use legacy MeshBuilder dispatch. Cleared after buildBGM().
+  std::vector<Vec4>  vertices;
+  std::vector<Vec4>  UV;
   std::vector<Color> colors;
-
-  std::vector<Vec4> transpVertices;
-  std::vector<Vec4> transpUV;
+  std::vector<Vec4>  transpVertices;
+  std::vector<Vec4>  transpUV;
   std::vector<Color> transpColors;
-
-  void mergeFaces(std::vector<ChunkQuadData>* outQuadsData,
-                  std::vector<Vec4>* inVertices, std::vector<Color>* inColors,
-                  std::vector<Vec4>* inUVs, const u8 colorTolerance,
-                  const float uvTolerance, const float normalDotThreshold,
-                  const bool mergeAcrossUvs, const int maxMergeCount = 0);
-
-  // Helper methods for face merging
-  void getQuadBounds(const ChunkQuadData& quad, Vec4& minBounds,
-                     Vec4& maxBounds);
-  void mergeQuadPair(ChunkQuadData& target, const ChunkQuadData& source);
-  void expandQuadGeometry(ChunkQuadData& target, const ChunkQuadData& source,
-                          const Vec4& direction, int expansionAxis);
-  Vec4 calculateQuadCenter(const ChunkQuadData& quad);
 };

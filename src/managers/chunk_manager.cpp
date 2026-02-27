@@ -221,13 +221,10 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 };
 
 void ChunkManager::enqueueChunksToReloadLight() {
-  // Only enqueue visible chunks with LOD <= 1.
-  // LOD 2+ chunks are distant (5+ chunks away) where day/night color changes
-  // are imperceptible. This reduces queue from ~40 to ~15-20 chunks.
+  // Enqueue all visible chunks for light reload.
+  // BGM rebuilds are fast enough that distance-based skipping is no longer needed.
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     Chunk* chunk = visibleChunks[i];
-    // Skip distant chunks - day/night light changes imperceptible at LOD 2+
-    if (chunk->getLODFromDistance() >= 2) continue;
     // Use bitset for O(1) duplicate check
     if (!chunksInLightQueue.test(chunk->id)) {
       chunksToUpdateLight.push({chunk, true});  // colors-only for day/night

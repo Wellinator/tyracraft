@@ -87,7 +87,11 @@ int ClippingManager_ClipMesh(const u32 vertexCount, Vec4* in_vertex,
       inputTriangle[j].color = hasValidColors ? &colorsVec4[idx] : &dummyVec4;
     }
 
-    // Back face culling - skip se triângulo está de costas
+    // Software backface culling — skip triangles that face away from the camera.
+    // Convention: shouldBeBackfaceCulled(cam, v2, v1, v0) computes the face
+    // normal as (v1-v2)×(v0-v2) and returns true when dot(normal, cam-v2) ≤ 0.
+    // All mesh builders (CuboidMeshBuilder and BinaryGreedyMesher) must emit
+    // triangles with winding that produces an outward normal under this formula.
     if (Vec4::shouldBeBackfaceCulled(&camLooksAt, in_vertex + baseIdx + 2,
                                      in_vertex + baseIdx + 1,
                                      in_vertex + baseIdx + 0)) {
