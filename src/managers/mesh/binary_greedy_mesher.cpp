@@ -565,10 +565,11 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       corners[1] = Vec4(x0, y0, z1);  // B: bottom-back  (y0, z1)
       corners[2] = Vec4(x0, y1, z1);  // C: top-back     (y1, z1)
       corners[3] = Vec4(x0, y1, z0);  // D: top-front    (y1, z0)
-      uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
-      uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
-      uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
-      uvCorners[3][0] = u0;   uvCorners[3][1] = vMax;
+      // V is inverted: bottom corners get vMax, top corners get v0
+      uvCorners[0][0] = u0;   uvCorners[0][1] = vMax;
+      uvCorners[1][0] = uMax; uvCorners[1][1] = vMax;
+      uvCorners[2][0] = uMax; uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;   uvCorners[3][1] = v0;
       break;
     }
     case FaceDir::PosX: {
@@ -579,10 +580,11 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       corners[1] = Vec4(x0, y0, z0);  // B: bottom-front (y0, z0)
       corners[2] = Vec4(x0, y1, z0);  // C: top-front    (y1, z0)
       corners[3] = Vec4(x0, y1, z1);  // D: top-back     (y1, z1)
-      uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
-      uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
-      uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
-      uvCorners[3][0] = u0;   uvCorners[3][1] = vMax;
+      // V is inverted: bottom corners get vMax, top corners get v0
+      uvCorners[0][0] = u0;   uvCorners[0][1] = vMax;
+      uvCorners[1][0] = uMax; uvCorners[1][1] = vMax;
+      uvCorners[2][0] = uMax; uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;   uvCorners[3][1] = v0;
       break;
     }
     case FaceDir::PosY: {
@@ -621,10 +623,11 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       corners[1] = Vec4(x0, y0, z0);  // B: left-bottom  (x0, y0)
       corners[2] = Vec4(x0, y1, z0);  // C: left-top     (x0, y1)
       corners[3] = Vec4(x1, y1, z0);  // D: right-top    (x1, y1)
-      uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
-      uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
-      uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
-      uvCorners[3][0] = u0;   uvCorners[3][1] = vMax;
+      // V is inverted: bottom corners get vMax, top corners get v0
+      uvCorners[0][0] = u0;   uvCorners[0][1] = vMax;
+      uvCorners[1][0] = uMax; uvCorners[1][1] = vMax;
+      uvCorners[2][0] = uMax; uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;   uvCorners[3][1] = v0;
       break;
     }
     default: { // NegZ — FRONT face
@@ -635,10 +638,11 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
       corners[1] = Vec4(x1, y0, z0);  // B: right-bottom (x1, y0)
       corners[2] = Vec4(x1, y1, z0);  // C: right-top    (x1, y1)
       corners[3] = Vec4(x0, y1, z0);  // D: left-top     (x0, y1)
-      uvCorners[0][0] = u0;   uvCorners[0][1] = v0;
-      uvCorners[1][0] = uMax; uvCorners[1][1] = v0;
-      uvCorners[2][0] = uMax; uvCorners[2][1] = vMax;
-      uvCorners[3][0] = u0;   uvCorners[3][1] = vMax;
+      // V is inverted: bottom corners get vMax, top corners get v0
+      uvCorners[0][0] = u0;   uvCorners[0][1] = vMax;
+      uvCorners[1][0] = uMax; uvCorners[1][1] = vMax;
+      uvCorners[2][0] = uMax; uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;   uvCorners[3][1] = v0;
       break;
     }
   }
@@ -819,10 +823,11 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       corners[1] = Vec4(xLo, yLo, zHi);
       corners[2] = Vec4(xLo, yHi, zHi);
       corners[3] = Vec4(xLo, yHi, zLo);
-      uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
-      uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
-      uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
-      uvCorners[3][0] = u0;  uvCorners[3][1] = vEnd;
+      // V is inverted: bottom corners get vEnd, top corners get v0
+      uvCorners[0][0] = u0;  uvCorners[0][1] = vEnd;
+      uvCorners[1][0] = u1;  uvCorners[1][1] = vEnd;
+      uvCorners[2][0] = u1;  uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;  uvCorners[3][1] = v0;
       break;
     }
     case FaceDir::PosX: {
@@ -830,10 +835,11 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       corners[1] = Vec4(xHi, yLo, zLo);
       corners[2] = Vec4(xHi, yHi, zLo);
       corners[3] = Vec4(xHi, yHi, zHi);
-      uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
-      uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
-      uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
-      uvCorners[3][0] = u0;  uvCorners[3][1] = vEnd;
+      // V is inverted: bottom corners get vEnd, top corners get v0
+      uvCorners[0][0] = u0;  uvCorners[0][1] = vEnd;
+      uvCorners[1][0] = u1;  uvCorners[1][1] = vEnd;
+      uvCorners[2][0] = u1;  uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;  uvCorners[3][1] = v0;
       break;
     }
     case FaceDir::PosY: {
@@ -863,10 +869,11 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       corners[1] = Vec4(xLo, yLo, zHi);
       corners[2] = Vec4(xLo, yHi, zHi);
       corners[3] = Vec4(xHi, yHi, zHi);
-      uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
-      uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
-      uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
-      uvCorners[3][0] = u0;  uvCorners[3][1] = vEnd;
+      // V is inverted: bottom corners get vEnd, top corners get v0
+      uvCorners[0][0] = u0;  uvCorners[0][1] = vEnd;
+      uvCorners[1][0] = u1;  uvCorners[1][1] = vEnd;
+      uvCorners[2][0] = u1;  uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;  uvCorners[3][1] = v0;
       break;
     }
     default: { // NegZ — FRONT face
@@ -874,10 +881,11 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
       corners[1] = Vec4(xHi, yLo, zLo);
       corners[2] = Vec4(xHi, yHi, zLo);
       corners[3] = Vec4(xLo, yHi, zLo);
-      uvCorners[0][0] = u0;  uvCorners[0][1] = v0;
-      uvCorners[1][0] = u1;  uvCorners[1][1] = v0;
-      uvCorners[2][0] = u1;  uvCorners[2][1] = vEnd;
-      uvCorners[3][0] = u0;  uvCorners[3][1] = vEnd;
+      // V is inverted: bottom corners get vEnd, top corners get v0
+      uvCorners[0][0] = u0;  uvCorners[0][1] = vEnd;
+      uvCorners[1][0] = u1;  uvCorners[1][1] = vEnd;
+      uvCorners[2][0] = u1;  uvCorners[2][1] = v0;
+      uvCorners[3][0] = u0;  uvCorners[3][1] = v0;
       break;
     }
   }
