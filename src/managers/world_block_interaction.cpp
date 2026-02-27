@@ -201,10 +201,9 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
   pLightPropagation->updateSunlight();
   pLightPropagation->updateBlockLights();
 
-  // Async light reload: only affects chunks within 8-chunk radius
-  // Immediate update on player chunk for instant feedback (~1-2ms)
-  // Rest propagate smoothly over 1-2 seconds (4 chunks/tick)
-  pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 8.0f, true);
+  // Async light reload: enqueue affected chunks — no sync rebuild
+  // Processes 4 chunks/tick with 2ms budget to avoid frame stalls
+  pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 2.0f, false);
 
   const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
   const u8 isPlacingLiquid =
@@ -241,8 +240,8 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
   pLightPropagation->updateSunlight();
   pLightPropagation->updateBlockLights();
   
-  // Async light reload: spatially filtered to affected area
-  pChunkManager->enqueueAffectedChunksForLightReload(offsetToRemove, 8.0f, true);
+  // Async light reload: spatially filtered to affected area (no sync rebuild)
+  pChunkManager->enqueueAffectedChunksForLightReload(offsetToRemove, 2.0f, false);
 
   // Update liquid at position
   pLiquidPropagation->checkLiquidPropagation(offsetToRemove.x,
@@ -390,8 +389,8 @@ bool WorldBlockInteraction::putTorchBlock() {
     pLightPropagation->updateSunlight();
     pLightPropagation->updateBlockLights();
 
-    // Async light reload for torch placement
-    pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 8.0f, true);
+    // Async light reload for torch placement (no sync rebuild)
+    pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 2.0f, false);
     updateNeighBorsChunksByAddedBlock(&blockOffset);
 
     return true;
@@ -840,52 +839,43 @@ void WorldBlockInteraction::clearTargetBlockDrawData() {
 
 void WorldBlockInteraction::rebuildChunkNeighbors(Chunk* t_chunk,
                                                   Vec4* moddedOffset) {
-  if (g_debug_mode) t_chunk->buildingTimeStart = clock();
+  // Enqueue the modified chunk itself for async rebuild — no sync BGM run.
+  // Chunk::reloadLightData() is processed by reloadLightDataAsync() at
+  // 4 chunks/tick with a 2ms frame budget, keeping the main thread responsive.
+  if (t_chunk && t_chunk->isLoaded()) {
+    pChunkManager->enqueueChunkToReloadLight(t_chunk, false);
+  }
+
+  // Enqueue only border-touching neighbors (block on chunk boundary).
+  // Fixed: was using containsBlock() instead of !containsBlock() for lateral sides,
+  // causing all 4 lateral neighbors to be rebuilt even for interior blocks.
+  auto enqueueIfLoaded = [this](Chunk* c) {
+    if (c && c->isLoaded()) pChunkManager->enqueueChunkToReloadLight(c, false);
+  };
 
   Vec4 bottom = *moddedOffset + DOWN_VEC;
-  if (!t_chunk->containsBlock(&bottom)) {
-    Chunk* bottomChunk = pChunkManager->getChunkByBlockOffset(bottom);
-    if (bottomChunk && bottomChunk->isLoaded()) bottomChunk->rebuild();
-  }
+  if (!t_chunk->containsBlock(&bottom))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(bottom));
 
   Vec4 top = *moddedOffset + UP_VEC;
-  if (!t_chunk->containsBlock(&top)) {
-    Chunk* topChunk = pChunkManager->getChunkByBlockOffset(top);
-    if (topChunk && topChunk->isLoaded()) topChunk->rebuild();
-  }
+  if (!t_chunk->containsBlock(&top))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(top));
 
   Vec4 right = *moddedOffset + RIGHT_VEC;
-  if (t_chunk->containsBlock(&right)) {
-    Chunk* rightChunk = pChunkManager->getChunkByBlockOffset(right);
-    if (rightChunk && rightChunk->isLoaded()) rightChunk->rebuild();
-  }
+  if (!t_chunk->containsBlock(&right))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(right));
 
   Vec4 left = *moddedOffset + LEFT_VEC;
-  if (t_chunk->containsBlock(&left)) {
-    Chunk* leftChunk = pChunkManager->getChunkByBlockOffset(left);
-    if (leftChunk && leftChunk->isLoaded()) leftChunk->rebuild();
-  }
+  if (!t_chunk->containsBlock(&left))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(left));
 
   Vec4 front = *moddedOffset + FRONT_VEC;
-  if (t_chunk->containsBlock(&front)) {
-    Chunk* frontChunk = pChunkManager->getChunkByBlockOffset(front);
-    if (frontChunk && frontChunk->isLoaded()) frontChunk->rebuild();
-  }
+  if (!t_chunk->containsBlock(&front))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(front));
 
   Vec4 back = *moddedOffset + BACK_VEC;
-  if (t_chunk->containsBlock(&back)) {
-    Chunk* backChunk = pChunkManager->getChunkByBlockOffset(back);
-    if (backChunk && backChunk->isLoaded()) backChunk->rebuild();
-  }
-
-  t_chunk->rebuild();
-
-  if (g_debug_mode) {
-    t_chunk->timeToBuild =
-        ((float)(clock() - t_chunk->buildingTimeStart)) / CLOCKS_PER_SEC;
-    printf("Time to sync build chunk fragment %i: %f\n", t_chunk->id,
-           t_chunk->timeToBuild);
-  }
+  if (!t_chunk->containsBlock(&back))
+    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(back));
 }
 
 void WorldBlockInteraction::updateNeighBorsChunksByAddedBlock(Vec4* offset) {

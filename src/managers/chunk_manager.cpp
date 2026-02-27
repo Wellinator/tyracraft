@@ -246,13 +246,13 @@ void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk, bool colorsOnly) {
 void ChunkManager::reloadLightDataAsync() {
   if (chunksToUpdateLight.empty()) return;
 
-  // Process up to LIGHT_UPDATE_BATCH_SIZE chunks per call
-  // With ~40 visible chunks enqueued per cycle and processing every 2 ticks,
-  // a batch of 4 drains the queue quickly
+  // Process up to LIGHT_UPDATE_BATCH_SIZE chunks per call.
+  // A batch of 4 with 2ms budget keeps block-edit feedback snappy (1-2 ticks
+  // for nearby chunks) while not stalling the frame.
   constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
   int processed = 0;
 
-  // Time budget: 2ms to prevent frame stalls from expensive light reloads
+  // Time budget: 2ms expressed in EE COP0 Count ticks (~147.456 MHz)
   static constexpr u32 LIGHT_BUDGET_CYCLES = 294912u;  // 2ms
   u32 lightStart;
   asm volatile("mfc0 %0, $9" : "=r"(lightStart));
@@ -271,12 +271,13 @@ void ChunkManager::reloadLightDataAsync() {
     // Validate state (chunk may have been unloaded)
     if (!chunk->isLoaded()) continue;
 
-    // Skip recently-built chunks - they already have fresh light from build()
-    if (g_ticksCounter >= chunk->loadedAtTick &&
-        (g_ticksCounter - chunk->loadedAtTick) < 10) continue;
-
-    // Dispatch: colors-only (day/night) vs full rebuild (block change)
+    // For day/night color-only updates: skip chunks built very recently since
+    // they already have correct light data from the build pass.
+    // For block-change full rebuilds: always process immediately so the player
+    // sees the geometry update within 1-2 ticks.
     if (entry.colorsOnly) {
+      if (g_ticksCounter >= chunk->loadedAtTick &&
+          (g_ticksCounter - chunk->loadedAtTick) < 10) continue;
       chunk->reloadLightColorsOnly();
     } else {
       chunk->reloadLightData();
@@ -299,24 +300,14 @@ void ChunkManager::reloadLightData() {
 
 void ChunkManager::enqueueAffectedChunksForLightReload(const Vec4& blockPos,
                                                         float radiusInChunks,
-                                                        bool immediateUpdate) {
-  // Get chunk containing the changed block
-  Chunk* immediateChunk = getChunkByBlockOffset(blockPos);
-  
-  // Optional: Immediate update for instant visual feedback (1-2ms, imperceptible)
-  if (immediateUpdate && immediateChunk && immediateChunk->isLoaded()) {
-    immediateChunk->reloadLightData();
-  }
-  
-  // Get all chunks within radius (light propagation range)
+                                                        bool /*immediateUpdate*/) {
+  // All chunks are enqueued for async processing — no synchronous BGM runs.
+  // reloadLightDataAsync() processes up to 4 chunks/tick with a 2ms frame
+  // budget, keeping frame times stable during block edits.
   std::vector<Chunk*> affectedChunks;
   getChunksInRadius(blockPos, radiusInChunks, affectedChunks);
-  
-  // Enqueue affected chunks for async light reload (4 per tick)
+
   for (Chunk* chunk : affectedChunks) {
-    // Skip the immediate chunk if we already updated it
-    if (immediateUpdate && chunk == immediateChunk) continue;
-    
     enqueueChunkToReloadLight(chunk, false);  // block change = full rebuild
   }
 }
