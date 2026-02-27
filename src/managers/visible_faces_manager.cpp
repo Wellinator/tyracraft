@@ -5,277 +5,246 @@ VisibleFacesManager::VisibleFacesManager() : Singleton<VisibleFacesManager>() {}
 
 VisibleFacesManager::~VisibleFacesManager() {}
 
+// ---------------------------------------------------------------------------
+// Public entry point — resolves Level* once and dispatches by block type.
+// ---------------------------------------------------------------------------
 u8 VisibleFacesManager::getVisibleFacesByOffset(const Vec4& offset) {
-  u8 visibleFaces = 0;
-  Level* pLevel = Level::getInstance();
-  const Blocks block_type = static_cast<Blocks>(
-      pLevel->SafeGetBlockFromMap(offset.x, offset.y, offset.z));
+  const uint16_t x = static_cast<uint16_t>(offset.x);
+  const uint16_t y = static_cast<uint16_t>(offset.y);
+  const uint16_t z = static_cast<uint16_t>(offset.z);
+
+  Level* pLevel        = Level::getInstance();
+  const LevelMap* map  = &pLevel->map;
+
+  const Blocks block_type =
+      static_cast<Blocks>(map->blocks[x + static_cast<uint32_t>(y) *
+                                                map->length * map->width +
+                                            static_cast<uint32_t>(z) *
+                                                map->width]);
 
   if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
-    visibleFaces = getLiquidBlockVisibleFaces(offset);
-  } else if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
-             (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
-    visibleFaces = getSlabVisibleFaces(offset);
-  } else if (block_type == Blocks::OAK_LEAVES_BLOCK ||
-             block_type == Blocks::BIRCH_LEAVES_BLOCK) {
-    visibleFaces = getLeavesVisibleFaces(offset);
-  } else {
-    visibleFaces = getDefaultVisibleFaces(offset);
+    return getLiquidBlockVisibleFaces(x, y, z, map);
   }
-
-  return visibleFaces;
+  if ((u8)block_type >= (u8)Blocks::STONE_SLAB &&
+      (u8)block_type <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+    return getSlabVisibleFaces(x, y, z, pLevel, map);
+  }
+  if (block_type == Blocks::OAK_LEAVES_BLOCK ||
+      block_type == Blocks::BIRCH_LEAVES_BLOCK) {
+    return getLeavesVisibleFaces(x, y, z, map);
+  }
+  return getDefaultVisibleFaces(x, y, z, pLevel, map);
 }
 
-u8 VisibleFacesManager::getLiquidBlockVisibleFaces(const Vec4& offset) {
-  u8 result = 0b000000;
+// ---------------------------------------------------------------------------
+// Liquid blocks — reads all 6 neighbours once, checks same-liquid adjacency
+// and out-of-bounds (VOID) inline, then uses transparency table for the rest.
+// ---------------------------------------------------------------------------
+u8 VisibleFacesManager::getLiquidBlockVisibleFaces(const uint16_t x,
+                                                   const uint16_t y,
+                                                   const uint16_t z,
+                                                   const LevelMap* map) {
+  const uint32_t W = map->width;
+  const uint32_t L = map->length;
 
-  const auto x = offset.x;
-  const auto y = offset.y;
-  const auto z = offset.z;
+  // Helper lambda: safe block read (returns VOID ID = 0 if out of bounds).
+  auto safeBlock = [&](uint16_t bx, uint16_t by, uint16_t bz) -> u8 {
+    if (bx >= W || by >= map->height || bz >= L) return (u8)Blocks::VOID;
+    return map->blocks[bx + static_cast<uint32_t>(by) * L * W +
+                       static_cast<uint32_t>(bz) * W];
+  };
 
-  Level* pLevel = Level::getInstance();
-  const u8 currentLevel = pLevel->GetLiquidDataFromMap(x, y, z);
+  const u8 bFront  = safeBlock(x,     y,     z - 1);
+  const u8 bBack   = safeBlock(x,     y,     z + 1);
+  const u8 bRight  = safeBlock(x - 1, y,     z    );
+  const u8 bLeft   = safeBlock(x + 1, y,     z    );
+  const u8 bTop    = safeBlock(x,     y + 1, z    );
+  const u8 bBottom = safeBlock(x,     y - 1, z    );
 
-  const Blocks bFront =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z - 1));
-  const Blocks bBack =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z + 1));
-  const Blocks bRight =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x - 1, y, z));
-  const Blocks bLeft =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x + 1, y, z));
-  const Blocks bTop =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y + 1, z));
-  const Blocks bBottom =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y - 1, z));
+  // Current liquid level for the top-face partial-fill check.
+  const uint32_t metaIdx = x + static_cast<uint32_t>(y) * L * W +
+                           static_cast<uint32_t>(z) * W;
+  const u8 currentLevel =
+      (map->metaData[metaIdx] & LIQUID_LEVEL_MASK) >> 2;
 
-  BlockManager* pBlockManager = BlockManager::getInstance();
+  // A liquid face is visible when the neighbour is NOT the same liquid type
+  // AND is not VOID AND is transparent (air, glass, etc.).
+  // We use s_transparencyTable for the final transparent check — O(1).
+  const u8* T = StaticBlockRepository::s_transparencyTable;
 
-  // TODO: refactor face visibility checks for liquid blocks
-  // Front
-  if (bFront != Blocks::LAVA_BLOCK && bFront != Blocks::WATER_BLOCK &&
-      bFront != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bFront ||
-       pBlockManager->isBlockTransparent(bFront)))
-    result = result | FRONT_VISIBLE;
-  // Back
-  if (bBack != Blocks::LAVA_BLOCK && bBack != Blocks::WATER_BLOCK &&
-      bBack != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bBack || pBlockManager->isBlockTransparent(bBack)))
-    result = result | BACK_VISIBLE;
-  // Right
-  if (bRight != Blocks::LAVA_BLOCK && bRight != Blocks::WATER_BLOCK &&
-      bRight != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bRight ||
-       pBlockManager->isBlockTransparent(bRight)))
-    result = result | RIGHT_VISIBLE;
-  // Left
-  if (bLeft != Blocks::LAVA_BLOCK && bLeft != Blocks::WATER_BLOCK &&
-      bLeft != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bLeft || pBlockManager->isBlockTransparent(bLeft)))
-    result = result | LEFT_VISIBLE;
+  u8 result = 0;
 
-  // Top
-  if (bTop != Blocks::LAVA_BLOCK && bTop != Blocks::WATER_BLOCK &&
-      bTop != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bTop || pBlockManager->isBlockTransparent(bTop) ||
-       currentLevel < (u8)LiquidLevel::Percent100))
-    result = result | TOP_VISIBLE;
-  // Bottom
-  if (bBottom != Blocks::LAVA_BLOCK && bBottom != Blocks::WATER_BLOCK &&
-      bBottom != Blocks::VOID &&
-      (Blocks::AIR_BLOCK == bBottom ||
-       pBlockManager->isBlockTransparent(bBottom)))
-    result = result | BOTTOM_VISIBLE;
+  auto liquidFaceVisible = [&](u8 nb) -> bool {
+    const Blocks nbt = static_cast<Blocks>(nb);
+    return nbt != Blocks::LAVA_BLOCK && nbt != Blocks::WATER_BLOCK &&
+           nbt != Blocks::VOID && (nbt == Blocks::AIR_BLOCK || T[nb]);
+  };
+
+  if (liquidFaceVisible(bFront )) result |= FRONT_VISIBLE;
+  if (liquidFaceVisible(bBack  )) result |= BACK_VISIBLE;
+  if (liquidFaceVisible(bRight )) result |= RIGHT_VISIBLE;
+  if (liquidFaceVisible(bLeft  )) result |= LEFT_VISIBLE;
+
+  // Top face: also visible when the liquid is not full.
+  {
+    const Blocks nbt = static_cast<Blocks>(bTop);
+    if (nbt != Blocks::LAVA_BLOCK && nbt != Blocks::WATER_BLOCK &&
+        nbt != Blocks::VOID &&
+        (nbt == Blocks::AIR_BLOCK || T[bTop] ||
+         currentLevel < (u8)LiquidLevel::Percent100))
+      result |= TOP_VISIBLE;
+  }
+  if (liquidFaceVisible(bBottom)) result |= BOTTOM_VISIBLE;
 
   return result;
 }
 
-u8 VisibleFacesManager::getSlabVisibleFaces(const Vec4& offset) {
-  Level* pLevel = Level::getInstance();
+// ---------------------------------------------------------------------------
+// Slab blocks — orientation remapping from getDefaultVisibleFaces.
+// Level* is needed only for orientation metadata reads.
+// ---------------------------------------------------------------------------
+u8 VisibleFacesManager::getSlabVisibleFaces(const uint16_t x,
+                                            const uint16_t y,
+                                            const uint16_t z,
+                                            Level* pLevel,
+                                            const LevelMap* map) {
   const BlockOrientation orientationXZ =
-      pLevel->GetBlockOrientationDataFromMap(offset.x, offset.y, offset.z);
+      pLevel->GetBlockOrientationDataFromMap(x, y, z);
   const SlabOrientation orientationY =
-      pLevel->GetSlabOrientationDataFromMap(offset.x, offset.y, offset.z);
+      pLevel->GetSlabOrientationDataFromMap(x, y, z);
 
-  u8 result = 0b000000;
+  u8 result = 0;
 
   switch (orientationXZ) {
     case BlockOrientation::North:
-      // Will be rotated by 90deg
-      // Left turns Back & Right turns Front
-      if (isLeftFaceVisible(&offset)) result = result | BACK_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result = result | LEFT_VISIBLE;
-      if (isBackFaceVisible(&offset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result = result | FRONT_VISIBLE;
+      // Rotated 90°: Left→Back, Front→Left, Back→Right, Right→Front
+      if (isLeftVisible  (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= LEFT_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= FRONT_VISIBLE;
       break;
     case BlockOrientation::South:
-      // Will be rotated by 270deg
-      // Left turns Front & Right turns Back
-      if (isLeftFaceVisible(&offset)) result = result | FRONT_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result = result | RIGHT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(&offset)) result = result | LEFT_VISIBLE;
+      // Rotated 270°: Left→Front, Front→Right, Right→Back, Back→Left
+      if (isLeftVisible  (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::West:
-      // Will be rotated by 180deg
-      // Left turns Right & Front turns Back
-      if (isLeftFaceVisible(&offset)) result = result | RIGHT_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result = result | BACK_VISIBLE;
-      if (isBackFaceVisible(&offset)) result = result | FRONT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result = result | LEFT_VISIBLE;
+      // Rotated 180°: Left→Right, Front→Back, Back→Front, Right→Left
+      if (isLeftVisible  (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::East:
     default:
-      if (isFrontFaceVisible(&offset)) result = result | FRONT_VISIBLE;
-      if (isBackFaceVisible(&offset)) result = result | BACK_VISIBLE;
-      if (isRightFaceVisible(&offset)) result = result | RIGHT_VISIBLE;
-      if (isLeftFaceVisible(&offset)) result = result | LEFT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isLeftVisible  (x, y, z, map)) result |= LEFT_VISIBLE;
       break;
   }
 
   if (orientationY == SlabOrientation::Top) {
-    if (isTopFaceVisible(&offset)) result = result | TOP_VISIBLE;
-    result = result | BOTTOM_VISIBLE;
+    if (isTopVisible   (x, y, z, map)) result |= TOP_VISIBLE;
+    result |= BOTTOM_VISIBLE;
   } else if (orientationY == SlabOrientation::Bottom) {
-    result = result | TOP_VISIBLE;
-    if (isBottomFaceVisible(&offset)) result = result | BOTTOM_VISIBLE;
+    result |= TOP_VISIBLE;
+    if (isBottomVisible(x, y, z, map)) result |= BOTTOM_VISIBLE;
   }
 
   return result;
 }
 
-u8 VisibleFacesManager::getLeavesVisibleFaces(const Vec4& offset) {
-  u8 result = 0b000000;
-  Level* pLevel = Level::getInstance();
+// ---------------------------------------------------------------------------
+// Leaves — special rules: only AIR or log blocks reveal a face.
+// All 6 neighbours are read in one pass to keep the map pointer hot.
+// ---------------------------------------------------------------------------
+u8 VisibleFacesManager::getLeavesVisibleFaces(const uint16_t x,
+                                              const uint16_t y,
+                                              const uint16_t z,
+                                              const LevelMap* map) {
+  const uint32_t W = map->width;
+  const uint32_t L = map->length;
 
-  const uint16_t x = offset.x;
-  const uint16_t y = offset.y;
-  const uint16_t z = offset.z;
+  auto safeBlock = [&](uint16_t bx, uint16_t by, uint16_t bz) -> u8 {
+    if (bx >= W || by >= map->height || bz >= L) return (u8)Blocks::VOID;
+    return map->blocks[bx + static_cast<uint32_t>(by) * L * W +
+                       static_cast<uint32_t>(bz) * W];
+  };
 
-  const Blocks bFront =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z - 1));
-  const Blocks bBlack =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z + 1));
-  const Blocks bRight =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x - 1, y, z));
-  const Blocks bLeft =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x + 1, y, z));
-  const Blocks bTop =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y + 1, z));
-  const Blocks bBottom =
-      static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y - 1, z));
+  const u8 bFront  = safeBlock(x,     y,     z - 1);
+  const u8 bBack   = safeBlock(x,     y,     z + 1);
+  const u8 bRight  = safeBlock(x - 1, y,     z    );
+  const u8 bLeft   = safeBlock(x + 1, y,     z    );
+  const u8 bTop    = safeBlock(x,     y + 1, z    );
+  const u8 bBottom = safeBlock(x,     y - 1, z    );
 
-  if (Blocks::AIR_BLOCK == bFront || Blocks::OAK_LOG_BLOCK == bFront ||
-      Blocks::BIRCH_LOG_BLOCK == bFront)
-    result = result | FRONT_VISIBLE;
-  if (Blocks::AIR_BLOCK == bBlack || Blocks::OAK_LOG_BLOCK == bBlack ||
-      Blocks::BIRCH_LOG_BLOCK == bBlack)
-    result = result | BACK_VISIBLE;
-  if (Blocks::AIR_BLOCK == bRight || Blocks::OAK_LOG_BLOCK == bRight ||
-      Blocks::BIRCH_LOG_BLOCK == bRight)
-    result = result | RIGHT_VISIBLE;
-  if (Blocks::AIR_BLOCK == bLeft || Blocks::OAK_LOG_BLOCK == bLeft ||
-      Blocks::BIRCH_LOG_BLOCK == bLeft)
-    result = result | LEFT_VISIBLE;
-  if (Blocks::AIR_BLOCK == bTop || Blocks::OAK_LOG_BLOCK == bTop ||
-      Blocks::BIRCH_LOG_BLOCK == bTop)
-    result = result | TOP_VISIBLE;
-  if (Blocks::AIR_BLOCK == bBottom || Blocks::OAK_LOG_BLOCK == bBottom ||
-      Blocks::BIRCH_LOG_BLOCK == bBottom)
-    result = result | BOTTOM_VISIBLE;
+  auto leavesVisible = [](u8 nb) -> bool {
+    const Blocks nbt = static_cast<Blocks>(nb);
+    return nbt == Blocks::AIR_BLOCK || nbt == Blocks::OAK_LOG_BLOCK ||
+           nbt == Blocks::BIRCH_LOG_BLOCK;
+  };
+
+  u8 result = 0;
+  if (leavesVisible(bFront )) result |= FRONT_VISIBLE;
+  if (leavesVisible(bBack  )) result |= BACK_VISIBLE;
+  if (leavesVisible(bRight )) result |= RIGHT_VISIBLE;
+  if (leavesVisible(bLeft  )) result |= LEFT_VISIBLE;
+  if (leavesVisible(bTop   )) result |= TOP_VISIBLE;
+  if (leavesVisible(bBottom)) result |= BOTTOM_VISIBLE;
 
   return result;
 }
 
-u8 VisibleFacesManager::getDefaultVisibleFaces(const Vec4& offset) {
-  Level* pLevel = Level::getInstance();
+// ---------------------------------------------------------------------------
+// Default (standard cuboid blocks) — uses transparency table for all 6 faces.
+// Level* is needed only for orientation metadata reads.
+// ---------------------------------------------------------------------------
+u8 VisibleFacesManager::getDefaultVisibleFaces(const uint16_t x,
+                                               const uint16_t y,
+                                               const uint16_t z,
+                                               Level* pLevel,
+                                               const LevelMap* map) {
   const BlockOrientation orientation =
-      pLevel->GetBlockOrientationDataFromMap(offset.x, offset.y, offset.z);
+      pLevel->GetBlockOrientationDataFromMap(x, y, z);
 
-  u8 result = 0b000000;
+  u8 result = 0;
 
   switch (orientation) {
     case BlockOrientation::North:
-      // Will be rotated by 90deg
-      // Left turns Back & Right turns Front
-      if (isLeftFaceVisible(&offset)) result |= BACK_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result |= LEFT_VISIBLE;
-      if (isBackFaceVisible(&offset)) result |= RIGHT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result |= FRONT_VISIBLE;
+      // Rotated 90°: Left→Back, Front→Left, Back→Right, Right→Front
+      if (isLeftVisible  (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= LEFT_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= FRONT_VISIBLE;
       break;
     case BlockOrientation::South:
-      // Will be rotated by 270deg
-      // Left turns Front & Right turns Back
-      if (isLeftFaceVisible(&offset)) result |= FRONT_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result |= RIGHT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result |= BACK_VISIBLE;
-      if (isBackFaceVisible(&offset)) result |= LEFT_VISIBLE;
+      // Rotated 270°: Left→Front, Front→Right, Right→Back, Back→Left
+      if (isLeftVisible  (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::West:
-      // Will be rotated by 180deg
-      // Left turns Right & Front turns Back
-      if (isLeftFaceVisible(&offset)) result |= RIGHT_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result |= BACK_VISIBLE;
-      if (isBackFaceVisible(&offset)) result |= FRONT_VISIBLE;
-      if (isRightFaceVisible(&offset)) result |= LEFT_VISIBLE;
+      // Rotated 180°: Left→Right, Front→Back, Back→Front, Right→Left
+      if (isLeftVisible  (x, y, z, map)) result |= RIGHT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= LEFT_VISIBLE;
       break;
     case BlockOrientation::East:
     default:
-      if (isLeftFaceVisible(&offset)) result |= LEFT_VISIBLE;
-      if (isFrontFaceVisible(&offset)) result |= FRONT_VISIBLE;
-      if (isBackFaceVisible(&offset)) result |= BACK_VISIBLE;
-      if (isRightFaceVisible(&offset)) result |= RIGHT_VISIBLE;
+      if (isLeftVisible  (x, y, z, map)) result |= LEFT_VISIBLE;
+      if (isFrontVisible (x, y, z, map)) result |= FRONT_VISIBLE;
+      if (isBackVisible  (x, y, z, map)) result |= BACK_VISIBLE;
+      if (isRightVisible (x, y, z, map)) result |= RIGHT_VISIBLE;
       break;
   }
 
-  if (isTopFaceVisible(&offset)) result |= TOP_VISIBLE;
-  if (isBottomFaceVisible(&offset)) result |= BOTTOM_VISIBLE;
+  if (isTopVisible   (x, y, z, map)) result |= TOP_VISIBLE;
+  if (isBottomVisible(x, y, z, map)) result |= BOTTOM_VISIBLE;
 
   return result;
-}
-
-u8 VisibleFacesManager::isTopFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y + 1,
-                                      t_blockOffset->z);
-}
-
-u8 VisibleFacesManager::isBottomFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y - 1,
-                                      t_blockOffset->z);
-}
-
-u8 VisibleFacesManager::isFrontFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
-                                      t_blockOffset->z - 1);
-}
-
-u8 VisibleFacesManager::isBackFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x, t_blockOffset->y,
-                                      t_blockOffset->z + 1);
-}
-
-u8 VisibleFacesManager::isLeftFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x + 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-u8 VisibleFacesManager::isRightFaceVisible(const Vec4* t_blockOffset) {
-  return isBlockTransparentAtPosition(t_blockOffset->x - 1, t_blockOffset->y,
-                                      t_blockOffset->z);
-}
-
-u8 VisibleFacesManager::isBlockTransparentAtPosition(const uint16_t x,
-                                                     const uint16_t y,
-                                                     const uint16_t z) {
-  Level* pLevel = Level::getInstance();
-  const Blocks blk = static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z));
-
-  if (blk == Blocks::AIR_BLOCK) return 1;
-  if (blk == Blocks::VOID) return 0;
-
-  Block* blockTemplate =
-      BlockManager::getInstance()->getBlockTemplateByType(blk);
-  return blockTemplate->hasTransparency() || blk == Blocks::LAVA_BLOCK ||
-         blk == Blocks::WATER_BLOCK;
 }

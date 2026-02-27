@@ -29,13 +29,23 @@ class StaticBlockRepository : public Singleton<StaticBlockRepository> {
   Block* createBlock(Blocks blockType);
 
   /**
-   * Check if a block type is transparent
+   * Check if a block type is transparent (via template vtable — prefer
+   * isBlockTransparentFast() for hot paths inside chunk build loops).
    */
   bool isBlockTransparent(Blocks blockType);
 
- private:
   /**
-   * Get the singleton instance of the StaticBlockRepository.
+   * O(1) transparency lookup — no singleton chain, no virtual dispatch.
+   * Safe to call with any u8 block ID including VOID (0) and AIR (1).
+   *   VOID (0)      → 0   (opaque — treat as solid boundary)
+   *   AIR_BLOCK (1) → 1   (transparent)
+   *   others        → 0 or 1 from the block template
+   *
+   * Populated once in initializeBlocks().  Read-only after construction.
    */
+  static u8 s_transparencyTable[256];
+
+ private:
   void initializeBlocks();
+  void buildTransparencyTable();
 };

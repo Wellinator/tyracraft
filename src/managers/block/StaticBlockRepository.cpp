@@ -5,9 +5,13 @@
 #include "entities/blocks/ExtendedBlocks.hpp"
 #include "entities/blocks/SpecialBlocks.hpp"
 #include "entities/blocks/SlabBlocks.hpp"
+#include <cstring>
 
 std::array<std::unique_ptr<Block>, static_cast<size_t>(Blocks::TOTAL_OF_BLOCKS)>
     blockTemplates{nullptr};
+
+// Definition of the static transparency look-up table.
+u8 StaticBlockRepository::s_transparencyTable[256];
 
 StaticBlockRepository::StaticBlockRepository()
     : Singleton<StaticBlockRepository>() {
@@ -150,6 +154,34 @@ void StaticBlockRepository::initializeBlocks() {
       std::make_unique<StoneBrickSlab>();
   blockTemplates[static_cast<size_t>(Blocks::MOSSY_STONE_BRICKS_SLAB)] =
       std::make_unique<MossyStoneBricksSlab>();
+
+  // Build the flat transparency table now that all templates are ready.
+  buildTransparencyTable();
+}
+
+void StaticBlockRepository::buildTransparencyTable() {
+  // Zero-fill the whole table (covers IDs >= TOTAL_OF_BLOCKS too).
+  memset(s_transparencyTable, 0, sizeof(s_transparencyTable));
+
+  // VOID (0) -> 0: out-of-bounds boundary, treat as solid.
+  // AIR_BLOCK (1) -> 1: always transparent.
+  s_transparencyTable[static_cast<u8>(Blocks::VOID)]      = 0;
+  s_transparencyTable[static_cast<u8>(Blocks::AIR_BLOCK)] = 1;
+
+  // Populate from block templates (single hasTransparency() vtable call
+  // per block type at startup, not once per face during every chunk build).
+  for (size_t i = static_cast<size_t>(Blocks::STONE_BLOCK);
+       i < static_cast<size_t>(Blocks::TOTAL_OF_BLOCKS); ++i) {
+    if (blockTemplates[i]) {
+      s_transparencyTable[i] = blockTemplates[i]->hasTransparency() ? 1u : 0u;
+    }
+  }
+
+  // LAVA and WATER are handled as transparent for neighbour visibility so that
+  // faces between two different liquid types are shown. The liquid-specific
+  // face function already deals with same-type adjacency independently.
+  s_transparencyTable[static_cast<u8>(Blocks::LAVA_BLOCK)]  = 1;
+  s_transparencyTable[static_cast<u8>(Blocks::WATER_BLOCK)] = 1;
 }
 
 Block* StaticBlockRepository::getBlockTemplate(Blocks blockType) {
