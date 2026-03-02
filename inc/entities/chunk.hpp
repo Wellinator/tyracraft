@@ -221,8 +221,11 @@ class Chunk {
   // Incremental build state (used by beginBuild / buildStep)
   // -----------------------------------------------------------------------
   BuildPhase buildPhase    = BuildPhase::Idle;
-  u8         meshGenFaceDir = 0;  // Current FaceDir being processed (0-5)
+  u8         meshGenFaceDir = 0;  // Current FaceDir being processed (0-6; 6=slabs+legacy)
   bool       pendingIsNewChunk = true;  // False when rebuild is triggered by block edit
+  // BGM output accumulated across incremental MeshGen steps.
+  // Lives here so it survives between buildStep() calls (one face-dir per call).
+  BinaryGreedyMesher::Output bgmOutput;
 
   // BGM-based mesh generation (replaces buildNormaly + compress pipeline)
   void buildBGM();
@@ -230,13 +233,13 @@ class Chunk {
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
-                     int offset, int count);
+                     int offset, int count, bool needsClipping);
 
   // Render merged geometry grouped by atlas tile using RegionRepeat.
   void renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* pVerts, std::vector<Color>* pColors,
                      std::vector<Vec4>* pUV,
-                     const std::vector<TileGroup>& groups);
+                     const std::vector<TileGroup>& groups, bool needsClipping);
 
   // Per-tile vertex groups for RegionRepeat rendering
   std::vector<TileGroup> mergedOpaqueGroups;

@@ -98,12 +98,11 @@ bool BinaryGreedyMesher::isFaceVisible(Level* pLevel,
 }
 
 // ---------------------------------------------------------------------------
-// meshChunk — main entry point
+// beginMeshChunk — initialise Output for incremental (per-direction) meshing.
+// Call this once, then call processFaceDir() for each of the 6 directions,
+// then call processSlabs().  The full meshChunk() combines all these steps.
 // ---------------------------------------------------------------------------
-void BinaryGreedyMesher::meshChunk(Level* pLevel,
-                                   const Vec4& chunkMin,
-                                   WorldLightModel* lightModel,
-                                   Output& out) {
+void BinaryGreedyMesher::beginMeshChunk(Output& out) {
   out.opaqueVertices.clear();
   out.opaqueColors.clear();
   out.opaqueUV.clear();
@@ -113,15 +112,22 @@ void BinaryGreedyMesher::meshChunk(Level* pLevel,
   out.transpUV.clear();
   out.transpGroups.clear();
 
-  // Reserve a reasonable initial capacity to reduce re-allocations.
-  // A 16³ chunk can have at most 6×16×16 = 1536 quads (all border blocks
-  // worst case), but after greedy merge typically far fewer.
   out.opaqueVertices.reserve(384);
   out.opaqueColors.reserve(384);
   out.opaqueUV.reserve(384);
   out.transpVertices.reserve(64);
   out.transpColors.reserve(64);
   out.transpUV.reserve(64);
+}
+
+// ---------------------------------------------------------------------------
+// meshChunk — full synchronous build (used by build() / reloadLightData())
+// ---------------------------------------------------------------------------
+void BinaryGreedyMesher::meshChunk(Level* pLevel,
+                                   const Vec4& chunkMin,
+                                   WorldLightModel* lightModel,
+                                   Output& out) {
+  beginMeshChunk(out);
 
   for (int d = 0; d < 6; ++d) {
     processFaceDir(pLevel, chunkMin, static_cast<FaceDir>(d), lightModel, out);

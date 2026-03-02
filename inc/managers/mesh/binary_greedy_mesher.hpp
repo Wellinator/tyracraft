@@ -58,22 +58,53 @@ class BinaryGreedyMesher {
     std::vector<TileGroup>  transpGroups;
   };
 
+  /** Face direction enum — maps to axis + sign.
+   *  Declared before any public method that uses it. */
+  enum class FaceDir : u8 {
+    PosX = 0,  // RIGHT face (+X neighbour must be transparent)
+    NegX = 1,  // LEFT  face (-X neighbour)
+    PosY = 2,  // TOP   face (+Y neighbour)
+    NegY = 3,  // BOTTOM face (-Y neighbour)
+    PosZ = 4,  // BACK  face (+Z neighbour)
+    NegZ = 5,  // FRONT face (-Z neighbour)
+  };
+
+  /** Number of face directions (6). */
+  static constexpr int MAX_FACE_DIRS = 6;
+
   /**
    * Build all cuboid-block geometry for the given chunk region.
-   *
-   * @param pLevel      World data (block types + light data)
-   * @param chunkMin    Minimum block-offset corner (inclusive)
-   * @param lightModel  World light model for sun intensity
-   * @param out         Result — populated by this call (cleared first)
-   *
-   * Blocks that are not "pure cuboids" are skipped; the caller is responsible
-   * for processing them via the legacy MeshBuilder dispatch and appending to
-   * the same output vectors and appending directly.
+   * Full synchronous build — used by build() / reloadLightData().
    */
   void meshChunk(Level* pLevel,
                  const Vec4& chunkMin,
                  WorldLightModel* lightModel,
                  Output& out);
+
+  /**
+   * Initialise an Output struct for incremental meshing via
+   * processFaceDir() + processSlabs().  Call once before the first
+   * processFaceDir() call for a chunk build.
+   */
+  void beginMeshChunk(Output& out);
+
+  /**
+   * Process one face direction (0–5) into @p out.
+   * Call beginMeshChunk() first, then processSlabs() after all 6 dirs.
+   */
+  void processFaceDir(Level* pLevel,
+                      const Vec4& chunkMin,
+                      FaceDir dir,
+                      WorldLightModel* lightModel,
+                      Output& out);
+
+  /**
+   * Process slab blocks.  Call after all 6 processFaceDir() calls.
+   */
+  void processSlabs(Level* pLevel,
+                    const Vec4& chunkMin,
+                    WorldLightModel* lightModel,
+                    Output& out);
 
   /**
    * Test whether a block type should be processed by the BGM greedy pass
@@ -84,39 +115,17 @@ class BinaryGreedyMesher {
   /** Test whether a block type is a slab (processed by the BGM slab pass). */
   static bool isSlabBlock(Blocks blockType);
 
- public:
-  /** Face direction enum — maps to axis + sign. */
-  enum class FaceDir : u8 {
-    PosX = 0,  // RIGHT face (+X neighbour must be transparent)
-    NegX = 1,  // LEFT  face (-X neighbour)
-    PosY = 2,  // TOP   face (+Y neighbour)
-    NegY = 3,  // BOTTOM face (-Y neighbour)
-    PosZ = 4,  // BACK  face (+Z neighbour)
-    NegZ = 5,  // FRONT face (-Z neighbour)
-  };
-
  private:
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
 
   /**
-   * Emit all quads for one face direction across the entire chunk.
-   * For each slice, builds a per-block 2D light grid and groups visible faces
-   * by (texIdx, lightKey) to prevent merging blocks with different light levels.
-   */
-  void processFaceDir(Level* pLevel,
-                      const Vec4& chunkMin,
-                      FaceDir dir,
-                      WorldLightModel* lightModel,
-                      Output& out);
-
-  /**
    * Greedy rectangle scan with a uniform light color.
    * Given a flat bitmask array (CHUNK_SIZE rows, each a u16), find all maximal
    * rectangles via greedy scan and emit one quad per rectangle.
    *
-   * Called once per (texIdx, lightKey) group \u2014 all faces in a group share the
+   * Called once per (texIdx, lightKey) group — all faces in a group share the
    * same texture and identical lighting, so the uniform color is correct.
    *
    * @param masks         Row bitmasks.  Modified in-place (bits cleared as claimed).
@@ -144,13 +153,6 @@ class BinaryGreedyMesher {
                 const Color& lightColor,
                 bool isTransparent,
                 Output& out);
-
-  /** Process all slab blocks in the chunk, emitting individual quads
-   *  (no greedy merge) directly into the BGM output. */
-  void processSlabs(Level* pLevel,
-                    const Vec4& chunkMin,
-                    WorldLightModel* lightModel,
-                    Output& out);
 
   /** Emit a single slab face quad (half-height cuboid). */
   void emitSlabQuad(int bx, int by, int bz,

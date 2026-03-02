@@ -1,9 +1,12 @@
 #include "managers/chunk_manager.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/block_manager.hpp"
+#include "managers/dma_gif_builder.hpp"
 #include "math/plane.hpp"
 #include "debug.hpp"
 #include <algorithm>
 #include <cmath>
+#include <dma.h>
 
 using Tyra::M4x4;
 using Tyra::Plane;
@@ -166,7 +169,29 @@ void ChunkManager::rendererOpaque(Renderer* t_renderer,
                                               Color(255, 0, 0));
     }
   }
+#else
+  }
 #endif  // end if DEBUG_MODE
+
+  // Phase 2 optimisation: renderGrouped() defers the default-wrap restore
+  // to avoid one dma_channel_wait per chunk. We do a single restore here
+  // after all opaque chunks have been drawn.
+  if (!visibleChunks.empty()) {
+    dma_channel_wait(DMA_CHANNEL_VIF1, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    Tyra::Texture* tex = BlockManager::getInstance()->getBlocksTexture();
+    tex->setDefaultWrapSettings();
+    static DmaGifBuilder clampRestoreBuilder;
+    // Build a minimal GIF packet for the CLAMP register restore
+    const texwrap_t* wrap = tex->getWrapSettings();
+    clampRestoreBuilder.begin();
+    clampRestoreBuilder.addGifTag(GIF_REG_AD);
+    clampRestoreBuilder.addAd(
+        GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
+                     wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
+        GS_REG_CLAMP_1);
+    clampRestoreBuilder.send();
+  }
 }
 
 void ChunkManager::rendererTransparent(Renderer* t_renderer,
@@ -187,7 +212,26 @@ void ChunkManager::rendererTransparent(Renderer* t_renderer,
                                               Color(255, 0, 0));
     }
   }
+#else
+  }
 #endif  // end if DEBUG_MODE
+
+  // Phase 2 optimisation: same deferred CLAMP restore for transparent pass.
+  if (!visibleChunks.empty()) {
+    dma_channel_wait(DMA_CHANNEL_VIF1, 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    Tyra::Texture* tex = BlockManager::getInstance()->getBlocksTexture();
+    tex->setDefaultWrapSettings();
+    static DmaGifBuilder clampRestoreBuilder;
+    const texwrap_t* wrap = tex->getWrapSettings();
+    clampRestoreBuilder.begin();
+    clampRestoreBuilder.addGifTag(GIF_REG_AD);
+    clampRestoreBuilder.addAd(
+        GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
+                     wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
+        GS_REG_CLAMP_1);
+    clampRestoreBuilder.send();
+  }
 }
 
 void ChunkManager::generateChunks() {
