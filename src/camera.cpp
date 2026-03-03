@@ -86,11 +86,14 @@ void Camera::update() {
 }
 
 void Camera::update(const float& deltaTime, const u8 isWalking) {
+  // Clamp deltatime to prevent death loop when FPS drops
+  const float clampedDeltaTime = (deltaTime > MAX_DELTA_TIME) ? MAX_DELTA_TIME : deltaTime;
+  
   // Apply smooth movement (base rotation + base position)
-  applySmoothMovement(deltaTime);
+  applySmoothMovement(clampedDeltaTime);
 
   // Handle camera bob before calculating unit circle position
-  shakeCamera(deltaTime, isWalking);
+  shakeCamera(clampedDeltaTime, isWalking);
 
   const float effectivePitch = smoothPitch + bobPitchOffset;
 
@@ -192,8 +195,10 @@ void Camera::setPosition(Vec4 newPosition) {
 }
 
 void Camera::setLookDirectionByPad(Pad* t_pad, const float deltatime) {
-  calculatePitch(t_pad, deltatime);
-  calculateYaw(t_pad, deltatime);
+  // Clamp deltatime to prevent death loop when FPS drops
+  const float clampedDeltaTime = (deltatime > MAX_DELTA_TIME) ? MAX_DELTA_TIME : deltatime;
+  calculatePitch(t_pad, clampedDeltaTime);
+  calculateYaw(t_pad, clampedDeltaTime);
 }
 
 void Camera::reset() {
@@ -378,7 +383,9 @@ void Camera::shakeCamera(const float deltaTime, const bool isWalking) {
 }
 
 void Camera::applySmoothMovement(const float deltaTime) {
-  const float rotationLerpFactor = smoothFactorRotation * deltaTime;
+  // Clamp lerp factors to [0, 1] to prevent overshoot on low FPS
+  float rotationLerpFactor = smoothFactorRotation * deltaTime;
+  if (rotationLerpFactor > 1.0f) rotationLerpFactor = 1.0f;
 
   // Optimize yaw smoothing with threshold check
   float yawDiff = targetYaw - smoothYaw;
@@ -398,14 +405,18 @@ void Camera::applySmoothMovement(const float deltaTime) {
     }
   }
 
-  // Optimize pitch smoothing with threshold
+  // Optimize pitch smoothing with threshold and validation
   const float pitchDiff = targetPitch - smoothPitch;
   if (Utils::Abs(pitchDiff) > SMOOTH_THRESHOLD) {
     smoothPitch += pitchDiff * rotationLerpFactor;
+    // Safety clamp for pitch extremes
+    if (smoothPitch > 89.0f) smoothPitch = 89.0f;
+    if (smoothPitch < -89.0f) smoothPitch = -89.0f;
   }
 
   // Optimize position smoothing
-  const float positionLerpFactor = smoothFactorPosition * deltaTime;
+  float positionLerpFactor = smoothFactorPosition * deltaTime;
+  if (positionLerpFactor > 1.0f) positionLerpFactor = 1.0f;
 
   // Fast squared distance check to avoid sqrt
   const Vec4 positionDiff = targetPosition - smoothPosition;
@@ -428,6 +439,12 @@ void Camera::applySmoothMovement(const float deltaTime) {
     smoothPosition.z +=
         (targetPosition.z - smoothPosition.z) * positionLerpFactor;
   }
+
+  // Final safety validation of extremes to catch any edge cases
+  if (smoothPitch > 89.0f) smoothPitch = 89.0f;
+  if (smoothPitch < -89.0f) smoothPitch = -89.0f;
+  if (smoothYaw < 0.0f) smoothYaw += 360.0f;
+  if (smoothYaw >= 360.0f) smoothYaw -= 360.0f;
 
   // Update actual values for compatibility
   yaw = smoothYaw;

@@ -27,6 +27,7 @@
 #define INV_128 (1.0F / 128.0F)       // Cached division constant
 #define TWO_PI_CONST 6.28318530717958647692F
 #define MAX_SMOOTH_DISTANCE_SQR (200.0F * 200.0F)  // Squared for fast comparison
+#define MAX_DELTA_TIME 0.05F           // Maximum 50ms per frame (20 FPS minimum) - prevents death loop on low FPS
 
 using Tyra::CameraInfo3D;
 using Tyra::Pad;
