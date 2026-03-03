@@ -151,7 +151,7 @@ class World {
 
   void setDrawDistanceMode(DrawDistanceMode mode);
   inline DrawDistanceMode getDrawDistanceMode() { return worldOptions.drawDistanceMode; }
-  inline u8 getDrawDistance() { return drawDistanceController.getForwardDistance(); }
+  inline u8 getDrawDistance() { return getDrawDistanceCap(worldOptions.drawDistanceMode); }
 
   void resetWorldData();
   void reloadWorldArea(const Vec4& position);
@@ -191,10 +191,10 @@ class World {
   Vec4 worldSpawnArea;
   Vec4 spawnArea;
   Vec4 lastPlayerPosition;
+  Vec4 lastSchedulePosition = Vec4(0.0f, 0.0f, 0.0f);
   int currentChunkId = -1;
   float playerDeltaDistance = 0.0f;
-  Vec4 lastScheduledForward = Vec4(0.0f, 0.0f, -1.0f);
-  bool hasScheduledForward = false;
+  bool hasScheduledInitialChunks = false;
 
   // Cached context for tick callbacks
   Player* cachedPlayer = nullptr;
@@ -212,10 +212,10 @@ class World {
   Chunk* currentBuildChunk     = nullptr;
   bool   currentBuildIsNewChunk = false;  // true iff the chunk was not in loadedChunks before this build
 
-  // Phase 3: Bitsets for O(1) queue deduplication (768 bytes total)
-  // Chunk IDs are 0-2047, so std::bitset<2048> is perfect
-  std::bitset<2048> chunksInLoadQueue;
-  std::bitset<2048> chunksInUnloadQueue;
+  // Phase 3: Bitsets for O(1) queue deduplication (64 bytes total)
+  // Chunk IDs map to [0, OVERWORLD_SIZE_IN_CHUNKS - 1] (currently 0-255).
+  std::bitset<OVERWORLD_SIZE_IN_CHUNKS> chunksInLoadQueue;
+  std::bitset<OVERWORLD_SIZE_IN_CHUNKS> chunksInUnloadQueue;
 
   u8 _updateDayNightCycle = true;
 
@@ -223,14 +223,17 @@ class World {
   float lastSunLightIntensity = 0.0f;  // Track sun intensity for delta guard
 
   void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
-  void scheduleChunksNeighbors(Chunk* t_chunk, const Vec4 currentPlayerPos,
-                               const Vec4& camForward,
-                               u8 force_loading = 0);
+  void scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward);
+  void forceLoadArea(const Vec4& centerPos);
   void unloadScheduledChunks();
   void addChunkToLoadAsync(Chunk* t_chunk);
   void addChunkToUnloadAsync(Chunk* t_chunk);
   void cancelChunkUnload(Chunk* t_chunk);
   void updateLightModel();
+
+  // Phase 3: Extracted idle work pipeline helpers
+  void processUnloads();
+  void processBuildQueue(u32 budgetCycles);
 
   const bool getOptimalSpawnPositionInChunk(const Chunk* targetChunk,
                                             Vec4* result);

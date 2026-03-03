@@ -9,132 +9,110 @@
 
 using Tyra::Vec4;
 
+/**
+ * DrawDistanceController — Central authority for directional chunk loading.
+ *
+ * Implements an elliptical loading area around the player using directional
+ * ratios to modulate load distance:
+ *   - Forward (facing): 100% of base radius
+ *   - Sides: 70% of base radius
+ *   - Behind: 40% of base radius
+ *
+ * Hysteresis prevents load/unload oscillation:
+ *   - Load threshold: effectiveRadius
+ *   - Unload threshold: effectiveRadius + DRAW_DISTANCE_UNLOAD_MARGIN
+ *   - Chunks in the dead zone (between thresholds) are kept as-is.
+ */
 class DrawDistanceController {
  public:
   DrawDistanceController() = default;
   ~DrawDistanceController() = default;
 
-  void init(DrawDistanceMode mode) {
-    currentMode = mode;
-    minimumForwardDistance = MIN_DRAW_DISTANCE;
-    currentForwardDistance = MIN_DRAW_DISTANCE;
-    smoothedForward = Vec4(0.0f, 0.0f, -1.0f);
-    hasSmoothedForward = false;
-  }
+  // ---- Lifecycle ----
+  void init(DrawDistanceMode mode);
+  void setMode(DrawDistanceMode mode);
+  DrawDistanceMode getMode() const;
 
-  void setMode(DrawDistanceMode mode) {
-    currentMode = mode;
-    const u8 cap = getDrawDistanceCap(mode);
-    if (currentForwardDistance > cap) {
-      currentForwardDistance = cap;
-    }
-  }
+  // ---- Memory check ----
+  /**
+   * Check if RAM budget allows more chunk loading.
+   * @return true if used memory < threshold
+   */
+  bool canLoadMoreChunks() const;
 
-  inline DrawDistanceMode getMode() const { return currentMode; }
+  // ---- Directional area queries ----
+  /**
+   * Check if chunk center is within the loadable area (elliptical region).
+   * Uses hysteresis: load threshold = effectiveRadius.
+   *
+   * @param chunkCenter Center position of the chunk (in world coordinates)
+   * @param playerPos Current player position
+   * @param cameraForward Camera facing direction (should be normalized)
+   * @return true if chunk distance <= loadable threshold
+   */
+  bool isInLoadableArea(const Vec4& chunkCenter, const Vec4& playerPos,
+                        const Vec4& cameraForward) const;
 
-  void update(const Vec4& camForward) {
-    updateSmoothedForward(camForward);
-    updateDistance();
-  }
+  /**
+   * Check if chunk center is outside the loadable area (too far to keep).
+   * Uses hysteresis: unload threshold = effectiveRadius + DRAW_DISTANCE_UNLOAD_MARGIN.
+   *
+   * @param chunkCenter Center position of the chunk (in world coordinates)
+   * @param playerPos Current player position
+   * @param cameraForward Camera facing direction (should be normalized)
+   * @return true if chunk distance > unload threshold
+   */
+  bool isInUnloadableArea(const Vec4& chunkCenter, const Vec4& playerPos,
+                          const Vec4& cameraForward) const;
 
-  inline u8 getForwardDistance() const { return currentForwardDistance; }
+  /**
+   * Compute directional distance squared for sorting (nearest chunks first).
+   * This accounts for the elliptical modulation (forward/side/back ratios).
+   *
+   * @param chunkCenter Center position of the chunk (in world coordinates)
+   * @param playerPos Current player position
+   * @param cameraForward Camera facing direction (should be normalized)
+   * @return Distance squared in the directional space
+   */
+  float getDirectionalDistanceSq(const Vec4& chunkCenter, const Vec4& playerPos,
+                                 const Vec4& cameraForward) const;
 
-  inline u8 getBackwardDistance() const {
-    const float back = static_cast<float>(currentForwardDistance) *
-                       DRAW_DISTANCE_BACKWARD_RATIO;
-    return static_cast<u8>(back < 1.0f ? 1 : back);
-  }
-
-  inline float getSideDistance() const {
-    return static_cast<float>(currentForwardDistance) * DRAW_DISTANCE_SIDE_RATIO;
-  }
-
-  inline u8 getUnloadDistance() const {
-    return currentForwardDistance + DRAW_DISTANCE_UNLOAD_MARGIN;
-  }
-
-  inline bool canLoadMoreChunks() const {
-    return getUsedMemoryMb() < getMemoryThresholdMb();
-  }
-
-  inline const Vec4& getSmoothedForward() const { return smoothedForward; }
+  /**
+   * Get the effective load radius in chunks, accounting for mode/RAM limits.
+   * This is the base radius before directional modulation.
+   *
+   * @return Effective radius in chunks
+   */
+  u8 getEffectiveRadius() const;
 
  private:
   DrawDistanceMode currentMode = DrawDistanceMode::Auto;
-  u8 minimumForwardDistance = MIN_DRAW_DISTANCE;
-  u8 currentForwardDistance = MIN_DRAW_DISTANCE;
-  Vec4 smoothedForward = Vec4(0.0f, 0.0f, -1.0f);
-  bool hasSmoothedForward = false;
-  u16 cooldownTicksRemaining = 0;
 
-  inline size_t getUsedMemoryMb() const { return (get_used_memory() >> 20); }
+  // ---- Memory helpers ----
+  size_t getUsedMemoryMb() const;
+  size_t getMemoryThresholdMb() const;
 
-  inline size_t getMemoryThresholdMb() const {
-    return MAX_SAFE_MEMORY_ALLOCATION - DRAW_DISTANCE_SAFETY_MARGIN_MB;
-  }
+  // ---- Directional math helpers ----
+  /**
+   * Compute the directional ratio [0.4, 0.7, 1.0] based on angle.
+   * Maps the dot product between direction-to-chunk and camera forward
+   * to a ratio that scales the base radius.
+   *
+   * Interpolation:
+   *   t = (dot + 1) / 2  →  [0, 1]  (0=behind, 0.5=side, 1=forward)
+   *   ratio = BACK_RATIO + t * (1.0 - BACK_RATIO)
+   *
+   * @param directionToChunk Normalized direction from player to chunk (XZ plane)
+   * @param cameraForward Normalized camera forward (XZ plane)
+   * @return Ratio in [BACK_RATIO, 1.0]
+   */
+  float getDirectionalRatio(const Vec4& directionToChunk,
+                            const Vec4& cameraForward) const;
 
-  void updateSmoothedForward(const Vec4& camForward) {
-    Vec4 target = camForward;
-    target.y = 0.0f;
-    const float lenSq = target.x * target.x + target.z * target.z;
-    if (lenSq < 0.0001f) {
-      target = Vec4(0.0f, 0.0f, -1.0f);
-    } else {
-      const float invLen = 1.0f / sqrtf(lenSq);
-      target.x *= invLen;
-      target.z *= invLen;
-    }
-
-    if (!hasSmoothedForward) {
-      smoothedForward = target;
-      hasSmoothedForward = true;
-      return;
-    }
-
-    const float blend = 0.05f;
-    smoothedForward.x = smoothedForward.x + (target.x - smoothedForward.x) * blend;
-    smoothedForward.z = smoothedForward.z + (target.z - smoothedForward.z) * blend;
-    smoothedForward.y = 0.0f;
-  }
-
-  void updateDistance() {
-    if (cooldownTicksRemaining > 0) {
-      cooldownTicksRemaining--;
-      return;
-    }
-
-    const size_t usedMb = getUsedMemoryMb();
-    const size_t thresholdMb = getMemoryThresholdMb();
-    const size_t growThreshold = (thresholdMb >= 2) ? (thresholdMb - 2) : thresholdMb;
-    const size_t shrinkThreshold = thresholdMb;
-
-    const u32 fps = TyraCraft::Timer::getInstance()->getUpdateTime();
-    const u8 maxDistance = getDrawDistanceCap(currentMode);
-
-    bool changed = false;
-    bool shrank = false;
-
-    // Shrink: high memory OR low FPS
-    if (usedMb >= shrinkThreshold ||
-        fps < DRAW_DISTANCE_FPS_SHRINK_THRESHOLD) {
-      if (currentForwardDistance > MIN_DRAW_DISTANCE) {
-        currentForwardDistance--;
-        changed = true;
-        shrank = true;
-      }
-    }
-    // Grow: memory OK AND FPS good AND below mode cap
-    else if (usedMb < growThreshold &&
-             fps > DRAW_DISTANCE_FPS_GROW_THRESHOLD) {
-      if (currentForwardDistance < maxDistance) {
-        currentForwardDistance++;
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      cooldownTicksRemaining = shrank ? DRAW_DISTANCE_SHRINK_COOLDOWN
-                                      : DRAW_DISTANCE_GROW_COOLDOWN;
-    }
-  }
+  /**
+   * Compute effective load distance considering directional ratio.
+   * @return Effective radius (base radius × directional ratio)
+   */
+  float getEffectiveLoadDistanceSq(const Vec4& directionToChunk,
+                                   const Vec4& cameraForward) const;
 };

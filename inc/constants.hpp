@@ -57,18 +57,18 @@
 
 // Defines how many chunks will be loaded from player position
 #define MIN_DRAW_DISTANCE 1
-#define MAX_DRAW_DISTANCE 12
-#define DRAW_DISTANCE_SAFETY_MARGIN_MB 5
+#define MAX_DRAW_DISTANCE 8
+#define DRAW_DISTANCE_SAFETY_MARGIN_MB 3
 #define DRAW_DISTANCE_BACKWARD_RATIO 0.4f
 #define DRAW_DISTANCE_SIDE_RATIO 0.7f
-#define DRAW_DISTANCE_UNLOAD_MARGIN 1  // Extra chunks before unloading (hysteresis)
+#define DRAW_DISTANCE_UNLOAD_MARGIN 2  // Extra chunks before unloading (hysteresis)
 
 // Draw distance mode presets
 enum class DrawDistanceMode : u8 { Auto = 0, Low = 1, Medium = 2, High = 3 };
 
-#define DRAW_DISTANCE_LOW_CAP 3
-#define DRAW_DISTANCE_MEDIUM_CAP 5
-#define DRAW_DISTANCE_HIGH_CAP 7
+#define DRAW_DISTANCE_LOW_CAP 2
+#define DRAW_DISTANCE_MEDIUM_CAP 3
+#define DRAW_DISTANCE_HIGH_CAP 5
 
 // FPS thresholds for auto-adjustment
 #define DRAW_DISTANCE_FPS_SHRINK_THRESHOLD 25

@@ -170,7 +170,7 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
 
   cloudsManager.update(fixedDeltaTime);
 {
-  const u8 renderDist = drawDistanceController.getForwardDistance();
+  const u8 renderDist = getDrawDistanceCap(worldOptions.drawDistanceMode);
 #ifdef DEBUG_MODE
   if (g_debug_menu.enableCaveCulling) {
     chunkManager.updateWithVisibilityGraph(
@@ -188,11 +188,8 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
 #endif
 }
 
-  // Occluded chunk unload (with recently-loaded protection applied in addChunkToUnloadAsync)
-  auto occludedChunks = chunkManager.getOccludedChunksToUnload();
-  for (Chunk* chunk : *occludedChunks) {
-    addChunkToUnloadAsync(chunk);
-  }
+  // Keep cave culling only for rendering visibility; unloading is handled
+  // exclusively by directional distance in scheduleChunks().
   if (_updateDayNightCycle)
     dayNightCycleManager.update(fixedDeltaTime, &t_camera->position);
   if (liquidPropagation.hasAffectedChunks())
@@ -210,9 +207,7 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
 void World::processIdleWork() {
   // Handle pending unloads first (they free memory for new loads).
-  if (!tempChunksToUnLoad.empty()) {
-    unloadScheduledChunks();
-  }
+  processUnloads();
 
   // Nothing to do if no chunk is in progress and the queue is empty.
   if (currentBuildChunk == nullptr && tempChunksToLoad.empty()) return;
@@ -221,41 +216,54 @@ void World::processIdleWork() {
   // (Count increments at ~147.456 MHz, so 5 ms ≈ 737 280 ticks).
   static constexpr u32 IDLE_BUDGET_CYCLES = 737280u;
 
+  processBuildQueue(IDLE_BUDGET_CYCLES);
+}
+
+void World::processUnloads() {
+  if (tempChunksToUnLoad.empty()) return;
+  unloadScheduledChunks();
+}
+
+void World::processBuildQueue(u32 budgetCycles) {
   u32 start;
   asm volatile("mfc0 %0, $9" : "=r"(start));
 
+  // Process chunks until budget is exhausted or queue is empty
   while (true) {
     // ----------------------------------------------------------------
-    // If no chunk is currently being built incrementally, dequeue one.
+    // If no chunk is currently being built, dequeue the next one.
     // ----------------------------------------------------------------
     if (currentBuildChunk == nullptr) {
-      if (tempChunksToLoad.empty()) break;
+      // Early exit: queue is empty
+      if (tempChunksToLoad.empty()) return;
 
       Chunk* chunk = tempChunksToLoad.front();
       tempChunksToLoad.pop_front();
       chunksInLoadQueue.reset(chunk->id);
 
-      // Pause loading if we're running low on RAM.
+      // Memory check: pause loading if RAM is low
       if (!drawDistanceController.canLoadMoreChunks()) {
+        // Free memory by unloading scheduled chunks
         unloadScheduledChunks();
+        // Re-enqueue this chunk for later
         tempChunksToLoad.push_front(chunk);
         chunksInLoadQueue.set(chunk->id);
-        break;
+        return;
       }
 
-      // Stale entry (state changed between enqueue and dequeue) — skip.
+      // Skip stale entries (state changed between enqueue and dequeue)
       if (chunk->state != ChunkState::Building) {
         continue;
       }
 
-      // Track whether this is a brand-new chunk (not already in loadedChunks).
+      // Track whether this is a brand-new chunk (not already in loadedChunks)
       currentBuildIsNewChunk = !chunk->isLoaded();
 
 #ifdef DEBUG_MODE
       chunk->buildingTimeStart = clock();
 #endif
 
-      // Initialise incremental build phases.
+      // Initialize incremental build phases
       chunk->beginBuild();
       currentBuildChunk = chunk;
     }
@@ -266,12 +274,12 @@ void World::processIdleWork() {
     const bool done = currentBuildChunk->buildStep();
 
     if (done) {
-      Chunk* chunk    = currentBuildChunk;
+      Chunk* chunk = currentBuildChunk;
       currentBuildChunk = nullptr;
 
       chunk->loadedAtTick = g_ticksCounter;
 
-      // Only add to loadedChunks when it's a genuinely new chunk.
+      // Only add to loadedChunks when it's a genuinely new chunk
       if (currentBuildIsNewChunk && chunk->isLoaded()) {
         chunkManager.addToLoadedChunks(chunk);
       }
@@ -285,7 +293,7 @@ void World::processIdleWork() {
       }
 #endif
 
-      // Random mob spawn opportunity (1 % per newly built chunk).
+      // Random mob spawn opportunity (1% per newly built chunk)
       if (Utils::Probability(0.01F, worldOptions.seed)) {
         Vec4 _spawnPosition;
         if (getOptimalSpawnPositionInChunk(chunk, &_spawnPosition)) {
@@ -295,11 +303,11 @@ void World::processIdleWork() {
     }
 
     // ----------------------------------------------------------------
-    // Check frame budget after each phase step (not each full build).
+    // Check frame budget after each phase step.
     // ----------------------------------------------------------------
     u32 now;
     asm volatile("mfc0 %0, $9" : "=r"(now));
-    if ((now - start) >= IDLE_BUDGET_CYCLES) break;
+    if ((now - start) >= budgetCycles) return;
   }
 }
 
@@ -349,7 +357,7 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
       [this]() { liquidPropagation.updateLiquidLava(); }));
 
   tickHandles->add(scheduler.everyHandle(
-      5, [this]() { updateChunkByPlayerPosition(cachedPlayer, cachedCamera); }));
+      2, [this]() { updateChunkByPlayerPosition(cachedPlayer, cachedCamera); }));
 
   tickHandles->add(scheduler.everyHandle(400, [this]() {
     const u8 shouldSpawnMob = Utils::Probability(0.1F);
@@ -449,8 +457,11 @@ void World::buildInitialPosition() {
   if (initialChunk != nullptr) {
     initialChunk->clear();
     initialChunk->build();
-    scheduleChunksNeighbors(initialChunk, lastPlayerPosition,
-                            drawDistanceController.getSmoothedForward(), true);
+    // Register the built chunk in loadedChunks so it can be rendered
+    if (initialChunk->isLoaded()) {
+      chunkManager.addToLoadedChunks(initialChunk);
+    }
+    forceLoadArea(worldSpawnArea);
   }
 };
 
@@ -469,6 +480,10 @@ void World::resetWorldData() {
   chunksInLoadQueue.reset();
   chunksInUnloadQueue.reset();
 
+  // Reset scheduling state to force initial chunk load on next update
+  hasScheduledInitialChunks = false;
+  lastSchedulePosition.set(0.0f, 0.0f, 0.0f);
+
   chunkManager.clearAllChunks();
 }
 
@@ -477,22 +492,20 @@ void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
 
   if (!currentChunk) return;
 
-  drawDistanceController.update(t_camera->unitCirclePosition);
-  const Vec4& smoothedForward = drawDistanceController.getSmoothedForward();
-
   const bool chunkChanged = t_player->currentChunkId != currentChunk->id;
-  const float forwardDot =
-      (smoothedForward.x * lastScheduledForward.x) +
-      (smoothedForward.z * lastScheduledForward.z);
-  // Increased threshold from 0.96 to 0.90 (~16° to ~26° rotation required)
-  // to reduce excessive rescheduling from minor camera movement
-  const bool forwardChanged = !hasScheduledForward || forwardDot < 0.90f;
+  
+  // Calculate distance traveled since last schedule
+  const float distanceSinceLastSchedule = lastSchedulePosition.distanceTo(t_player->position);
+  // Reschedule every 2 chunks (16 blocks) of movement to keep chunks loading ahead
+  const float scheduleDistanceThreshold = static_cast<float>(CHUNK_SIZE * 2);
+  const bool movedSignificantly = distanceSinceLastSchedule >= scheduleDistanceThreshold;
 
-  if (chunkChanged || forwardChanged) {
+  // Schedule on: initial load, chunk change, or significant movement
+  if (!hasScheduledInitialChunks || chunkChanged || movedSignificantly) {
     t_player->currentChunkId = currentChunk->id;
-    scheduleChunksNeighbors(currentChunk, t_player->position, smoothedForward);
-    lastScheduledForward = smoothedForward;
-    hasScheduledForward = true;
+    scheduleChunks(t_player->position, t_camera->unitCirclePosition);
+    lastSchedulePosition.set(t_player->position);
+    hasScheduledInitialChunks = true;
   }
 }
 
@@ -505,28 +518,13 @@ void World::reloadWorldArea(const Vec4& position) {
       currentChunk->build();
     }
 
-    scheduleChunksNeighbors(currentChunk, position,
-                            drawDistanceController.getSmoothedForward(), true);
+    forceLoadArea(position);
   }
 }
 
-// Phase 1: Optimized chunk scheduling using spatial grid and squared distances
-void World::scheduleChunksNeighbors(Chunk* origin_chunk,
-                                    const Vec4 currentPlayerPos,
-                                    const Vec4& camForward,
-                                    u8 force_loading) {
+// Phase 2: New pipeline-based chunk scheduling with directional ellipse + hysteresis
+void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
   if (!canBuildChunk()) return;
-
-  // When force-loading the chunk manager will call build()/rebuild() directly
-  // (synchronously) on individual chunks. If currentBuildChunk is in the set
-  // we must cancel its incremental build first to avoid double-work / state
-  // corruption. For async scheduling this is addressed per-chunk in
-  // addChunkToUnloadAsync().
-  if (force_loading && currentBuildChunk != nullptr) {
-    currentBuildChunk->cancelBuild();
-    currentBuildChunk      = nullptr;
-    currentBuildIsNewChunk = false;
-  }
 
 #ifdef DEBUG_MODE
   // Phase 4: Profiling metrics for optimization validation
@@ -535,48 +533,38 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
   totalScheduleCalls++;
 #endif
 
-  // NOTE: drawDistanceController.update() removed from here to prevent double-update
-  // It's already called in updateChunkByPlayerPosition() before scheduling is triggered
+  // Convert player position from world coordinates to block-grid coordinates
+  // (block-grid is 0-127 per axis, world-coords are 16x larger)
+  const Vec4 playerBlockPos(
+      playerPos.x / DOUBLE_BLOCK_SIZE,
+      playerPos.y / DOUBLE_BLOCK_SIZE,
+      playerPos.z / DOUBLE_BLOCK_SIZE);
 
-  const float forwardDistance =
-      static_cast<float>(drawDistanceController.getForwardDistance());
-  const float backwardDistance =
-      static_cast<float>(drawDistanceController.getBackwardDistance());
-  const float sideDistance = drawDistanceController.getSideDistance();
+  // Get base radius capped to MAX_DRAW_DISTANCE
+  const u8 baseRadius = drawDistanceController.getEffectiveRadius();
 
-  // Circular unload zone (non-directional) prevents oscillation on rotation
-  const float unloadDistance =
-      static_cast<float>(drawDistanceController.getUnloadDistance());
-  const float unloadDistanceSquared = unloadDistance * unloadDistance;
-
-  // Query radius must cover the full unload zone
-  const float maxQueryDistance = unloadDistance;
-
-  // Elliptical load zone (forward-biased) for memory-efficient new loads
-  const float forwardDistanceSquared = forwardDistance * forwardDistance;
-  const float backwardDistanceSquared = backwardDistance * backwardDistance;
-  const float sideDistanceSquared = sideDistance * sideDistance;
-
-  const Vec4& forwardDir = drawDistanceController.getSmoothedForward();
-  const int playerChunkY = static_cast<int>(
-      std::floor((currentPlayerPos.y / DOUBLE_BLOCK_SIZE) / CHUNK_SIZE));
-
-  // Vector to collect chunks needing loading/sorting
+  // Helper struct for candidates
   struct LoadCandidate {
     Chunk* chunk;
-    float distanceSquared;
-    float forwardDot;
+    float directionalDistanceSq;
   };
-  // Phase 6 optimization: static vectors avoid heap allocation every 250ms
-  static std::vector<LoadCandidate> chunksToLoad;
-  chunksToLoad.clear();
+  struct UnloadCandidate {
+    Chunk* chunk;
+    float directionalDistanceSq;
+  };
 
-  // Phase 1: Use spatial grid to query only chunks within radius
-  // This reduces from 2048 iterations to ~100-400 (80-95% reduction)
+  static std::vector<LoadCandidate> loadCandidates;
+  static std::vector<UnloadCandidate> unloadCandidates;
+  loadCandidates.clear();
+  unloadCandidates.clear();
+
+  // PASSO 1: CLASSIFICAR chunks como loadable/unloadable usando histerese
+  // -----------------------------------------------------------------------
   static std::vector<Chunk*> nearbyChunks;
   nearbyChunks.clear();
-  chunkManager.getChunksInRadius(origin_chunk->center,
-                                 maxQueryDistance + 1.0f, nearbyChunks);
+  // Query chunks within a slightly expanded radius to capture edge cases
+  const float queryRadius = static_cast<float>(baseRadius) + 2.0f;
+  chunkManager.getChunksInRadius(playerBlockPos, queryRadius, nearbyChunks);
 
 #ifdef DEBUG_MODE
   totalChunksProcessed += nearbyChunks.size();
@@ -584,171 +572,157 @@ void World::scheduleChunksNeighbors(Chunk* origin_chunk,
     float avgChunksPerCall =
         static_cast<float>(totalChunksProcessed) / totalScheduleCalls;
     TYRA_LOG("[Chunk Optimization] Avg chunks processed per schedule:",
-             static_cast<int>(avgChunksPerCall), " / 2048 (",
-             static_cast<int>((1.0f - avgChunksPerCall / 2048.0f) * 100.0f),
+             static_cast<int>(avgChunksPerCall), " / ",
+             OVERWORLD_SIZE_IN_CHUNKS, " (",
+             static_cast<int>((1.0f - avgChunksPerCall /
+                               static_cast<float>(OVERWORLD_SIZE_IN_CHUNKS)) *
+                              100.0f),
              "% reduction)");
   }
 #endif
 
-  // Phase 3: Use bitset for O(1) lookup instead of O(n) search
+  // Bitset to track which chunks we've seen (for single-pass processing)
   static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> processedChunks;
   processedChunks.reset();
 
+  // Classify chunks from spatial grid query
   for (Chunk* t_chunk : nearbyChunks) {
-    const int chunkX = static_cast<int>(t_chunk->minOffset.x / CHUNK_SIZE);
-    const int chunkZ = static_cast<int>(t_chunk->minOffset.z / CHUNK_SIZE);
-    const int chunkY = static_cast<int>(t_chunk->minOffset.y / CHUNK_SIZE);
-
-    u8 topChunkY = 0;
-    bool columnHasBlocks = false;
-    chunkManager.getColumnHeightInfo(chunkX, chunkZ, topChunkY, columnHasBlocks);
-
-    if (!columnHasBlocks) {
-      if (force_loading) {
-        t_chunk->clear();
-      } else if (t_chunk->isLoaded()) {
-        addChunkToUnloadAsync(t_chunk);
-      }
-      t_chunk->setDistanceFromPlayerInChunks(-1);
-      continue;
-    }
-
-    if (chunkY > static_cast<int>(topChunkY)) {
-      if (force_loading) {
-        t_chunk->clear();
-      } else if (t_chunk->isLoaded()) {
-        addChunkToUnloadAsync(t_chunk);
-      }
-      t_chunk->setDistanceFromPlayerInChunks(-1);
-      continue;
-    }
-
-    if (chunkY + 2 < static_cast<int>(topChunkY)) {
-      if (std::abs(playerChunkY - chunkY) > 2) {
-        if (force_loading) {
-          t_chunk->clear();
-        } else if (t_chunk->isLoaded()) {
-          addChunkToUnloadAsync(t_chunk);
-        }
-        t_chunk->setDistanceFromPlayerInChunks(-1);
-        continue;
-      }
-    }
-
-    const float dx = (t_chunk->center.x - origin_chunk->center.x) / CHUNK_SIZE;
-    const float dz = (t_chunk->center.z - origin_chunk->center.z) / CHUNK_SIZE;
-    const float distanceSquared2D = dx * dx + dz * dz;
-    if (distanceSquared2D <= 0.0001f) {
-      processedChunks.set(t_chunk->id);
-    }
-
-    // Circular unload check (non-directional) — prevents oscillation on rotation
-    // Chunks beyond the unload radius are unloaded regardless of camera direction
-    if (distanceSquared2D > unloadDistanceSquared) {
-      if (force_loading) {
-        t_chunk->clear();
-      } else if (t_chunk->isLoaded()) {
-        addChunkToUnloadAsync(t_chunk);
-      }
-      t_chunk->setDistanceFromPlayerInChunks(-1);
-      continue;
-    }
-
     processedChunks.set(t_chunk->id);
 
-    const int distance = static_cast<int>(sqrtf(distanceSquared2D));
+    const float dx = playerBlockPos.x - t_chunk->center.x;
+    const float dz = playerBlockPos.z - t_chunk->center.z;
+    const int distance = static_cast<int>(
+        sqrtf(dx * dx + dz * dz) / CHUNK_SIZE);
+    t_chunk->setDistanceFromPlayerInChunks(distance);
 
-    // Elliptical load zone (forward-biased) for memory-efficient new loads
-    const float forwardDot = (dx * forwardDir.x) + (dz * forwardDir.z);
-    const float forwardAbs = fabsf(forwardDot);
-    const float forwardDistanceLimitSquared =
-        (forwardDot >= 0.0f) ? forwardDistanceSquared : backwardDistanceSquared;
-    const float perpSquared =
-        std::max(0.0f, distanceSquared2D - (forwardDot * forwardDot));
-    const float ellipseValue =
-        (forwardAbs * forwardAbs) / forwardDistanceLimitSquared +
-        (perpSquared / sideDistanceSquared);
-    const bool insideLoadZone = (ellipseValue <= 1.0f);
+    // Rescue chunks queued for unload that are still within range (histerese)
+    if (t_chunk->isUnloading()) {
+      cancelChunkUnload(t_chunk);
+    }
 
-    if (force_loading) {
-      if (insideLoadZone) {
-        if (t_chunk->isLoaded())
-          t_chunk->rebuild();
-        else
-          t_chunk->build();
-        t_chunk->setDistanceFromPlayerInChunks(distance);
-      } else {
-        t_chunk->clear();
-        t_chunk->setDistanceFromPlayerInChunks(-1);
-      }
-    } else {
-      // Rescue chunks queued for unload that are still within range
-      if (t_chunk->isUnloading()) {
-        cancelChunkUnload(t_chunk);
-      }
-
-      t_chunk->setDistanceFromPlayerInChunks(distance);
-
-      if (!t_chunk->isBuilding() && !t_chunk->isUnloading()) {
-        // LOD rebuild: dirty loaded chunks are queued regardless of load zone
-        // (they're already in memory, just need geometry rebuild)
-        // New loads: only within the elliptical load zone
-        if ((t_chunk->isLoaded() && t_chunk->isDirty()) ||
-            (insideLoadZone && !t_chunk->isLoaded())) {
-          chunksToLoad.push_back({t_chunk, distanceSquared2D, forwardDot});
+    // Classification logic using directional distance + hysteresis
+    if (!t_chunk->isBuilding() && !t_chunk->isUnloading()) {
+      if (drawDistanceController.isInLoadableArea(t_chunk->center, playerBlockPos,
+                                                   cameraForward)) {
+        // LOADABLE: candidate for loading if not already loaded/dirty
+        if (!t_chunk->isLoaded() || 
+            (t_chunk->isLoaded() && t_chunk->isDirty())) {
+          float dirDist = 
+              drawDistanceController.getDirectionalDistanceSq(
+                  t_chunk->center, playerBlockPos, cameraForward);
+          loadCandidates.push_back({t_chunk, dirDist});
+          // Mark as processed to prevent dual-queueing in unload pass
+          processedChunks.set(t_chunk->id);
         }
       }
     }
   }
 
-  if (!force_loading) {
-    // Phase 6 optimization: static vector avoids heap allocation every call
-    static std::vector<std::pair<Chunk*, float>> unloadCandidates;
-    unloadCandidates.clear();
-    auto loadedChunks = chunkManager.getLoadedChunks();
-    unloadCandidates.reserve(loadedChunks->size());
+  // Classify chunks outside grid that might need unloading (farthest first)
+  // Single pass: only look at loaded chunks not yet processed
+  auto loadedChunks = chunkManager.getLoadedChunks();
+  for (Chunk* t_chunk : *loadedChunks) {
+    // Skip if already processed in grid query
+    if (processedChunks.test(t_chunk->id)) continue;
 
-    for (Chunk* t_chunk : *loadedChunks) {
-      if (processedChunks.test(t_chunk->id)) continue;
+    // Check unload condition (apply histerese)
+    if (drawDistanceController.isInUnloadableArea(t_chunk->center, playerBlockPos,
+                                                   cameraForward)) {
+      t_chunk->setDistanceFromPlayerInChunks(-1);
+      float dirDist = 
+          drawDistanceController.getDirectionalDistanceSq(
+              t_chunk->center, playerBlockPos, cameraForward);
+      unloadCandidates.push_back({t_chunk, dirDist});
+    }
+  }
 
-      const float dx = (t_chunk->center.x - origin_chunk->center.x) / CHUNK_SIZE;
-      const float dz = (t_chunk->center.z - origin_chunk->center.z) / CHUNK_SIZE;
-      const float dot = (dx * forwardDir.x) + (dz * forwardDir.z);
-      unloadCandidates.push_back(std::make_pair(t_chunk, dot));
+  // PASSO 2: ORDENAR candidates para otimizar carregamento/liberação
+  // -----------------------------------------------------------------------
+  // Load: nearest-first (prioritize closer chunks)
+  std::sort(loadCandidates.begin(), loadCandidates.end(),
+            [](const LoadCandidate& a, const LoadCandidate& b) {
+              return a.directionalDistanceSq < b.directionalDistanceSq;
+            });
+
+  // Unload: farthest-first (free RAM from distant chunks first)
+  std::sort(unloadCandidates.begin(), unloadCandidates.end(),
+            [](const UnloadCandidate& a, const UnloadCandidate& b) {
+              return a.directionalDistanceSq > b.directionalDistanceSq;
+            });
+
+  // PASSO 3: ENFILEIRAR chunks nas filas de load/unload
+  // -----------------------------------------------------------------------
+  for (const auto& candidate : loadCandidates) {
+    addChunkToLoadAsync(candidate.chunk);
+  }
+
+  for (const auto& candidate : unloadCandidates) {
+    addChunkToUnloadAsync(candidate.chunk);
+  }
+
+  chunkManager.updateLoadedChunks();
+}
+
+// Force-load an area around a position (used for spawn/reload)
+void World::forceLoadArea(const Vec4& centerPos) {
+  if (!canBuildChunk()) return;
+
+  // Cancel any in-progress incremental build to avoid corruption
+  if (currentBuildChunk != nullptr) {
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk = nullptr;
+    currentBuildIsNewChunk = false;
+  }
+
+  // Convert center position from world coordinates to block-grid coordinates
+  const Vec4 centerBlockPos(
+      centerPos.x / DOUBLE_BLOCK_SIZE,
+      centerPos.y / DOUBLE_BLOCK_SIZE,
+      centerPos.z / DOUBLE_BLOCK_SIZE);
+
+  const u8 baseRadius = drawDistanceController.getEffectiveRadius();
+  // Note: getChunksInRadius expects radius in chunk-count, not block-count
+  const float radiusInChunks = static_cast<float>(baseRadius);
+
+  // Get all chunks within force-load radius
+  static std::vector<Chunk*> forceLoadChunks;
+  forceLoadChunks.clear();
+  chunkManager.getChunksInRadius(centerBlockPos, radiusInChunks, forceLoadChunks);
+
+  // Force build/rebuild synchronously for all chunks in radius
+  for (Chunk* t_chunk : forceLoadChunks) {
+    const float dx = centerBlockPos.x - t_chunk->center.x;
+    const float dz = centerBlockPos.z - t_chunk->center.z;
+    const int distance = static_cast<int>(
+        sqrtf(dx * dx + dz * dz) / CHUNK_SIZE);
+
+    if (distance <= static_cast<int>(baseRadius)) {
+      // Inside force-load radius: ensure built
+      // Check memory before building new chunk (graceful degradation if memory exceeded)
+      if (!t_chunk->isLoaded() && !canBuildChunk()) {
+        // Memory exhausted during force-load; stop preemptively
+        TYRA_LOG("Warning: Memory threshold reached during forceLoadArea spawn load. " 
+                 "Chunk at distance %d will load asynchronously.", distance);
+        break;
+      }
+      
+      if (t_chunk->isLoaded()) {
+        t_chunk->rebuild();
+      } else {
+        t_chunk->build();
+        // Register in loadedChunks only if newly built (not already loaded)
+        chunkManager.addToLoadedChunks(t_chunk);
+      }
+      t_chunk->setDistanceFromPlayerInChunks(distance);
+    } else {
+      // Outside force-load radius: clear
+      // Remove from loadedChunks before clearing if it was loaded
+      if (t_chunk->isLoaded()) {
+        chunkManager.removeFromLoadedChunks(t_chunk);
+      }
+      t_chunk->clear();
       t_chunk->setDistanceFromPlayerInChunks(-1);
     }
-
-    std::sort(unloadCandidates.begin(), unloadCandidates.end(),
-              [](const std::pair<Chunk*, float>& a,
-                 const std::pair<Chunk*, float>& b) {
-                return a.second < b.second;
-              });
-
-    for (auto it = unloadCandidates.rbegin(); it != unloadCandidates.rend();
-         ++it) {
-      addChunkToUnloadAsync(it->first);
-    }
-  }
-
-  if (!force_loading && !chunksToLoad.empty()) {
-    // Fixed: Use stable sort by distance (primary) and forward dot (secondary with epsilon)
-    // Previous float equality comparison caused unstable ordering
-    std::sort(chunksToLoad.begin(), chunksToLoad.end(),
-              [](const LoadCandidate& a, const LoadCandidate& b) {
-                // Primary: distance (closer chunks first)
-                if (fabsf(a.distanceSquared - b.distanceSquared) > 0.1f)
-                  return a.distanceSquared < b.distanceSquared;
-                // Secondary: forward alignment (more aligned first)
-                return a.forwardDot > b.forwardDot;
-              });
-
-    for (const auto& candidate : chunksToLoad) {
-      addChunkToLoadAsync(candidate.chunk);
-    }
-  }
-
-  if (!force_loading) {
-    chunkManager.updateLoadedChunks();
   }
 }
 
@@ -785,24 +759,18 @@ void World::renderBlockDamageOverlay() {
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
   const u16 chunkId = t_chunk->id;
 
+  // Early return: can't load if over budget
   if (!drawDistanceController.canLoadMoreChunks()) return;
 
-  // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
+  // Early return: already queued for loading
   if (chunksInLoadQueue.test(chunkId)) return;
 
-  // Remove from unload queue if present (prioritize loading)
+  // Phase 2 optimization: Remove from unload queue if present (rare case)
   if (chunksInUnloadQueue.test(chunkId)) {
-    // Find and remove from unload deque (rare case, so linear search acceptable)
     for (size_t i = 0; i < tempChunksToUnLoad.size(); i++) {
       if (tempChunksToUnLoad[i]->id == chunkId) {
-        Chunk* removedChunk = tempChunksToUnLoad[i];
-        // Clear any pending unload data to prevent memory leak
-        // Only clear if chunk was in Unloading state
-        if (removedChunk->state == ChunkState::Unloading) {
-          removedChunk->state = ChunkState::Clean;
-        }
         tempChunksToUnLoad.erase(tempChunksToUnLoad.begin() + i);
-        chunksInUnloadQueue.reset(chunkId);  // Clear bitset
+        chunksInUnloadQueue.reset(chunkId);
         break;
       }
     }
@@ -815,25 +783,20 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
   }
   
   tempChunksToLoad.push_back(t_chunk);
-  chunksInLoadQueue.set(chunkId);  // Mark as queued
+  chunksInLoadQueue.set(chunkId);
 }
 
 void World::addChunkToUnloadAsync(Chunk* t_chunk) {
   const u16 chunkId = t_chunk->id;
 
-  // Phase 3: O(1) duplicate check using bitset instead of O(n) linear search
+  // Early return: already queued for unload
   if (chunksInUnloadQueue.test(chunkId)) return;
 
-  // -----------------------------------------------------------------------
-  // If this chunk is the one currently being built incrementally, cancel it.
-  // It has already been dequeued from tempChunksToLoad, so the bitset check
-  // above would miss it — we must handle it explicitly here.
-  // -----------------------------------------------------------------------
+  // If this chunk is currently building incrementally, cancel it.
   if (t_chunk == currentBuildChunk) {
-    currentBuildChunk->cancelBuild();  // → state = Clean, frees partial data
-    currentBuildChunk     = nullptr;
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk = nullptr;
     currentBuildIsNewChunk = false;
-    // cancelBuild() already set state to Clean, so fall through to Unloading.
   }
 
   // Protect recently-loaded chunks from immediate unload (prevents oscillation)
@@ -844,23 +807,20 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
     return;
   }
 
-  // Remove from load queue if present (prioritize unloading)
+  // Phase 2 optimization: Remove from load queue if present (rare case)
   if (chunksInLoadQueue.test(chunkId)) {
-    // Find and remove from load deque (rare case, so linear search acceptable)
     for (size_t i = 0; i < tempChunksToLoad.size(); i++) {
       if (tempChunksToLoad[i]->id == chunkId) {
         Chunk* removedChunk = tempChunksToLoad[i];
         
-        // Clear draw data if chunk was building to prevent memory leak
-        // Only clear if chunk has draw data that won't be used
+        // Clear partial data if chunk was building
         if (removedChunk->state == ChunkState::Building && !removedChunk->isLoaded()) {
-          // Chunk never finished building, clear any partial data
           removedChunk->clearDrawDataWithoutShrink();
         }
         
-        removedChunk->state = ChunkState::Clean;  // Reset state
+        removedChunk->state = ChunkState::Clean;
         tempChunksToLoad.erase(tempChunksToLoad.begin() + i);
-        chunksInLoadQueue.reset(chunkId);  // Clear bitset
+        chunksInLoadQueue.reset(chunkId);
         break;
       }
     }
@@ -868,7 +828,7 @@ void World::addChunkToUnloadAsync(Chunk* t_chunk) {
 
   t_chunk->state = ChunkState::Unloading;
   tempChunksToUnLoad.push_front(t_chunk);
-  chunksInUnloadQueue.set(chunkId);  // Mark as queued
+  chunksInUnloadQueue.set(chunkId);
 }
 
 void World::cancelChunkUnload(Chunk* t_chunk) {
@@ -1084,12 +1044,12 @@ void World::setDrawDistanceMode(DrawDistanceMode mode) {
   chunksInLoadQueue.reset();
   chunksInUnloadQueue.reset();
 
+  // Force-reload chunks around last player position
   Chunk* currentChunk =
       chunkManager.getChunkByWorldPosition(lastPlayerPosition);
   TYRA_ASSERT(currentChunk, "Invalid chunk pointer");
   if (currentChunk) {
-    scheduleChunksNeighbors(currentChunk, lastPlayerPosition,
-                            drawDistanceController.getSmoothedForward(), true);
+    forceLoadArea(lastPlayerPosition);
     delete targetBlock;
     targetBlock = nullptr;
   }
