@@ -59,7 +59,7 @@ void CrossedMeshBuilder_loadCrossedUVData(const Vec4* offset,
       pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
   Block* blockTemplate =
       StaticBlockRepository::getInstance()->getBlockTemplate(block_type);
-  u8* facesMap = blockTemplate->getFacesMap().data();
+    const auto facesMap = blockTemplate->getFacesMap();
   CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
   CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
 }

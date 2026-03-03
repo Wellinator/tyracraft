@@ -42,7 +42,8 @@ void ChunkManager::init(WorldLightModel* t_worldLightModel, Level* level) {
     columnHeightMap[i].topChunkY = 0;
   }
   this->generateChunks();
-  this->populateNeighborCache();  // Phase 4: pre-compute O(1) neighbor lookups for BFS
+  this->populateNeighborCache();  // Phase 4: pre-compute O(1) neighbor lookups
+                                  // for BFS
 }
 
 void ChunkManager::clearAllChunks() {
@@ -105,8 +106,8 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos,
       if (chk->isVisible()) {
         // Distance filter: skip chunks beyond draw distance
         if (cameraChunk) {
-          float distSq = horizontalDistance2DSquared(
-              cameraChunk->center, chk->center);
+          float distSq =
+              horizontalDistance2DSquared(cameraChunk->center, chk->center);
           if (distSq > maxDistSq) continue;
         }
         visibleChunks.emplace_back(chk);
@@ -135,6 +136,11 @@ void ChunkManager::registerTickCallbacks(TickScheduler& scheduler) {
 }
 
 void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
+  // Ensure blocks texture is bound before rendering any chunks, since chunk
+  BlockManager* blockMgr = BlockManager::getInstance();
+  Tyra::Texture* tex = blockMgr->getBlocksTexture();
+  t_renderer->core.texture.useTexture(tex);
+
   for (u16 i = 0; i < visibleChunks.size(); i++)
     visibleChunks[i]->renderer(t_renderer, stapip);
   for (u16 i = 0; i < visibleChunks.size(); i++)
@@ -161,7 +167,7 @@ void ChunkManager::rendererOpaque(Renderer* t_renderer,
                                               Color(50, 50, 200));
     }
   }
-  
+
   // Render culled chunks bounding boxes in red
   if (g_debug_menu.showCulledChunks) {
     for (u16 i = 0; i < culledChunks.size(); i++) {
@@ -187,8 +193,8 @@ void ChunkManager::rendererOpaque(Renderer* t_renderer,
     clampRestoreBuilder.begin();
     clampRestoreBuilder.addGifTag(GIF_REG_AD);
     clampRestoreBuilder.addAd(
-        GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
-                     wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
+        GS_SET_CLAMP(wrap->horizontal, wrap->vertical, wrap->minu, wrap->maxu,
+                     wrap->minv, wrap->maxv),
         GS_REG_CLAMP_1);
     clampRestoreBuilder.send();
   }
@@ -204,7 +210,7 @@ void ChunkManager::rendererTransparent(Renderer* t_renderer,
                                               Color(50, 50, 200));
     }
   }
-  
+
   // Render culled chunks bounding boxes in red
   if (g_debug_menu.showCulledChunks) {
     for (u16 i = 0; i < culledChunks.size(); i++) {
@@ -227,8 +233,8 @@ void ChunkManager::rendererTransparent(Renderer* t_renderer,
     clampRestoreBuilder.begin();
     clampRestoreBuilder.addGifTag(GIF_REG_AD);
     clampRestoreBuilder.addAd(
-        GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
-                     wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
+        GS_SET_CLAMP(wrap->horizontal, wrap->vertical, wrap->minu, wrap->maxu,
+                     wrap->minv, wrap->maxv),
         GS_REG_CLAMP_1);
     clampRestoreBuilder.send();
   }
@@ -266,7 +272,8 @@ Chunk* ChunkManager::getChunkById(const u16& id) {
 
 void ChunkManager::enqueueChunksToReloadLight() {
   // Enqueue all visible chunks for light reload.
-  // BGM rebuilds are fast enough that distance-based skipping is no longer needed.
+  // BGM rebuilds are fast enough that distance-based skipping is no longer
+  // needed.
   for (size_t i = 0; i < visibleChunks.size(); i++) {
     Chunk* chunk = visibleChunks[i];
     // Use bitset for O(1) duplicate check
@@ -321,7 +328,8 @@ void ChunkManager::reloadLightDataAsync() {
     // sees the geometry update within 1-2 ticks.
     if (entry.colorsOnly) {
       if (g_ticksCounter >= chunk->loadedAtTick &&
-          (g_ticksCounter - chunk->loadedAtTick) < 10) continue;
+          (g_ticksCounter - chunk->loadedAtTick) < 10)
+        continue;
       chunk->reloadLightColorsOnly();
     } else {
       chunk->reloadLightData();
@@ -342,9 +350,8 @@ void ChunkManager::reloadLightData() {
   clearLightDataQueue();
 }
 
-void ChunkManager::enqueueAffectedChunksForLightReload(const Vec4& blockPos,
-                                                        float radiusInChunks,
-                                                        bool /*immediateUpdate*/) {
+void ChunkManager::enqueueAffectedChunksForLightReload(
+    const Vec4& blockPos, float radiusInChunks, bool /*immediateUpdate*/) {
   // All chunks are enqueued for async processing — no synchronous BGM runs.
   // reloadLightDataAsync() processes up to 4 chunks/tick with a 2ms frame
   // budget, keeping frame times stable during block edits.
@@ -397,8 +404,9 @@ Vec4 ChunkManager::getChunkPosById(const uint16_t& id) {
 
 void ChunkManager::getChunkPosById(const uint16_t& id, Vec4* result) {
   const int offsetX = static_cast<int>(id / OVERWORLD_PAGE_IN_CHUNKS);
-  const int offsetZ = static_cast<int>((id - (offsetX * OVERWORLD_PAGE_IN_CHUNKS)) /
-                                       OVERWORLD_V_DISTANCE_IN_CHUNKS);
+  const int offsetZ =
+      static_cast<int>((id - (offsetX * OVERWORLD_PAGE_IN_CHUNKS)) /
+                       OVERWORLD_V_DISTANCE_IN_CHUNKS);
   const int offsetY = (id % OVERWORLD_V_DISTANCE_IN_CHUNKS);
 
   result->x = offsetX * CHUNK_SIZE;
@@ -462,15 +470,15 @@ float ChunkManager::getHeightAtPosition(const Vec4& position) {
   return getHeightAtOffset(offset) * DOUBLE_BLOCK_SIZE;
 }
 
-void ChunkManager::getColumnHeightInfo(int chunkX, int chunkZ,
-                                       u8& outTopChunkY,
+void ChunkManager::getColumnHeightInfo(int chunkX, int chunkZ, u8& outTopChunkY,
                                        bool& outHasBlocks) {
-  const int clampedX = std::max(0, std::min(chunkX,
-                                            static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
-  const int clampedZ = std::max(0, std::min(chunkZ,
-                                            static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
-  const size_t gridIndex =
-      clampedX * OVERWORLD_H_DISTANCE_IN_CHUNKS + clampedZ;
+  const int clampedX = std::max(
+      0,
+      std::min(chunkX, static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
+  const int clampedZ = std::max(
+      0,
+      std::min(chunkZ, static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1)));
+  const size_t gridIndex = clampedX * OVERWORLD_H_DISTANCE_IN_CHUNKS + clampedZ;
 
   ColumnHeightInfo& info = columnHeightMap[gridIndex];
   if (!info.valid) {
@@ -512,12 +520,16 @@ void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
   const float centerChunkZ = center.z / CHUNK_SIZE;
 
   // Calculate grid bounds to check (with safety clamping)
-  const int minGridX = std::max(0, static_cast<int>(centerChunkX - radiusInChunks - 1));
-  const int maxGridX = std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
-                                 static_cast<int>(centerChunkX + radiusInChunks + 1));
-  const int minGridZ = std::max(0, static_cast<int>(centerChunkZ - radiusInChunks - 1));
-  const int maxGridZ = std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
-                                 static_cast<int>(centerChunkZ + radiusInChunks + 1));
+  const int minGridX =
+      std::max(0, static_cast<int>(centerChunkX - radiusInChunks - 1));
+  const int maxGridX =
+      std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
+               static_cast<int>(centerChunkX + radiusInChunks + 1));
+  const int minGridZ =
+      std::max(0, static_cast<int>(centerChunkZ - radiusInChunks - 1));
+  const int maxGridZ =
+      std::min(static_cast<int>(OVERWORLD_H_DISTANCE_IN_CHUNKS - 1),
+               static_cast<int>(centerChunkZ + radiusInChunks + 1));
 
   // Squared radius for distance comparisons (avoids sqrt)
   const float radiusSquared = radiusInChunks * radiusInChunks;
@@ -533,8 +545,10 @@ void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
         if (chunk == nullptr) continue;
 
         // 2D distance check (XZ plane only, ignoring Y)
-        const float distSquared = horizontalDistance2DSquared(center, chunk->center);
-        const float distInChunksSquared = distSquared / (CHUNK_SIZE * CHUNK_SIZE);
+        const float distSquared =
+            horizontalDistance2DSquared(center, chunk->center);
+        const float distInChunksSquared =
+            distSquared / (CHUNK_SIZE * CHUNK_SIZE);
 
         if (distInChunksSquared <= radiusSquared) {
           outChunks.push_back(chunk);
@@ -553,7 +567,8 @@ Chunk* ChunkManager::getNeighborChunk(Chunk* chunk, u8 face) {
   float ny = chunk->minOffset.y + dy;
   float nz = chunk->minOffset.z + dz;
 
-  // Bounds check — world is [0, OVERWORLD_H_DISTANCE) × [0, OVERWORLD_V_DISTANCE) × [0, OVERWORLD_H_DISTANCE)
+  // Bounds check — world is [0, OVERWORLD_H_DISTANCE) × [0,
+  // OVERWORLD_V_DISTANCE) × [0, OVERWORLD_H_DISTANCE)
   if (nx < 0 || nx >= OVERWORLD_H_DISTANCE || ny < 0 ||
       ny >= OVERWORLD_V_DISTANCE || nz < 0 || nz >= OVERWORLD_H_DISTANCE) {
     return nullptr;
@@ -565,8 +580,9 @@ Chunk* ChunkManager::getNeighborChunk(Chunk* chunk, u8 face) {
 
 void ChunkManager::populateNeighborCache() {
   // Phase 4: For every chunk, fill neighbors[6] with direct pointers.
-  // Called once after generateChunks(). O(N*6) time, O(1) per BFS lookup thereafter.
-  // Face indices: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X), 4=FRONT(-Z), 5=BACK(+Z)
+  // Called once after generateChunks(). O(N*6) time, O(1) per BFS lookup
+  // thereafter. Face indices: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X),
+  // 4=FRONT(-Z), 5=BACK(+Z)
   for (size_t i = 0; i < chunks.size(); i++) {
     Chunk* chunk = chunks[i];
     for (u8 face = 0; face < FACE_COUNT; face++) {
@@ -583,14 +599,15 @@ struct VisBfsEntry {
 };
 
 void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
-                                              Vec4* camPos,
-                                              const Vec4& camForward,
-                                              u8 maxRenderDistance) {
+                                             Vec4* camPos,
+                                             const Vec4& camForward,
+                                             u8 maxRenderDistance) {
   // camForward is used for N·V directional filtering in BFS expansion
   visibleChunks.clear();
   occludedChunksToUnload.clear();
 
-  // Pre-compute distance limit for render culling (with +1 margin to avoid pop-in)
+  // Pre-compute distance limit for render culling (with +1 margin to avoid
+  // pop-in)
   const float maxRenderDistSq =
       static_cast<float>((maxRenderDistance + 1) * (maxRenderDistance + 1)) *
       (CHUNK_SIZE * CHUNK_SIZE);
@@ -624,10 +641,9 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       if (chk->isLoaded() && chk->isVisible()) {
         // Distance filter in fallback path too
         float distSq = horizontalDistance2DSquared(
-            chk->center, Vec4(camPos->x / DOUBLE_BLOCK_SIZE,
-                              0, camPos->z / DOUBLE_BLOCK_SIZE));
-        if (distSq <= maxRenderDistSq)
-          visibleChunks.emplace_back(chk);
+            chk->center, Vec4(camPos->x / DOUBLE_BLOCK_SIZE, 0,
+                              camPos->z / DOUBLE_BLOCK_SIZE));
+        if (distSq <= maxRenderDistSq) visibleChunks.emplace_back(chk);
       }
     }
     return;
@@ -635,8 +651,8 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
 
   // BFS traversal using visibility graph
   // Link MAX_STEPS to actual draw distance to prevent over-traversal
-  const u8 MAX_STEPS = static_cast<u8>(
-      std::min(static_cast<int>(maxRenderDistance) + 2, 16));
+  const u8 MAX_STEPS =
+      static_cast<u8>(std::min(static_cast<int>(maxRenderDistance) + 2, 16));
   static constexpr u16 BFS_QUEUE_SIZE = OVERWORLD_SIZE_IN_CHUNKS;
 
   // Visited bitset — one bit per chunk ID
@@ -656,7 +672,8 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
   // Queue neighbors from camera chunk directly (no connectivity filter for
   // camera chunk)
   for (u8 face = 0; face < FACE_COUNT; face++) {
-    Chunk* neighbor = cameraChunk->neighbors[face];  // Phase 4: O(1) pointer lookup
+    Chunk* neighbor =
+        cameraChunk->neighbors[face];  // Phase 4: O(1) pointer lookup
     if (!neighbor || !neighbor->isLoaded()) continue;
     if (visited.test(neighbor->id)) continue;
 
@@ -664,8 +681,8 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
     if (!neighbor->isVisible()) continue;
 
     // Distance filter
-    float distSq = horizontalDistance2DSquared(
-        cameraChunk->center, neighbor->center);
+    float distSq =
+        horizontalDistance2DSquared(cameraChunk->center, neighbor->center);
     if (distSq > maxRenderDistSq) continue;
 
     visited.set(neighbor->id);
@@ -689,8 +706,8 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
     if (!current->isLoaded()) continue;
 
     // Distance filter: skip chunks beyond draw distance
-    float distSq = horizontalDistance2DSquared(
-        cameraChunk->center, current->center);
+    float distSq =
+        horizontalDistance2DSquared(cameraChunk->center, current->center);
     if (distSq > maxRenderDistSq) continue;
 
     // Add to visible chunks
@@ -713,14 +730,16 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
         float fnx, fny, fnz;
         GetFaceNormalVec(exitFace, fnx, fny, fnz);
         float dot = fnx * camForward.x + fnz * camForward.z;
-        if (dot < 0.0f) continue;  // Exit direction opposes camera = going backward
+        if (dot < 0.0f)
+          continue;  // Exit direction opposes camera = going backward
       }
 
       // Filter 3: Connectivity test — can we see through this chunk from
       // entryFace to exitFace?
       if (!current->isConnected(entry.entryFace, exitFace)) continue;
 
-      Chunk* neighbor = current->neighbors[exitFace];  // Phase 4: O(1) pointer lookup
+      Chunk* neighbor =
+          current->neighbors[exitFace];  // Phase 4: O(1) pointer lookup
       if (!neighbor || !neighbor->isLoaded()) continue;
       if (visited.test(neighbor->id)) continue;
 
@@ -728,11 +747,12 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       if (!neighbor->isVisible()) continue;
 
       // Filter 5: Distance check — skip chunks beyond draw distance
-      float neighborDistSq = horizontalDistance2DSquared(
-          cameraChunk->center, neighbor->center);
+      float neighborDistSq =
+          horizontalDistance2DSquared(cameraChunk->center, neighbor->center);
       if (neighborDistSq > maxRenderDistSq) continue;
 
-      // Step cost with heuristic penalties (from Tomcc's "More filters!" section)
+      // Step cost with heuristic penalties (from Tomcc's "More filters!"
+      // section)
       u8 stepCost = 1;
 
       // Heuristic: Going down below sea level costs +1 step
@@ -774,8 +794,10 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
       continue;
     }
 
-    const int dx = static_cast<int>((chunk->minOffset.x - cameraChunk->minOffset.x) / CHUNK_SIZE);
-    const int dz = static_cast<int>((chunk->minOffset.z - cameraChunk->minOffset.z) / CHUNK_SIZE);
+    const int dx = static_cast<int>(
+        (chunk->minOffset.x - cameraChunk->minOffset.x) / CHUNK_SIZE);
+    const int dz = static_cast<int>(
+        (chunk->minOffset.z - cameraChunk->minOffset.z) / CHUNK_SIZE);
     if (std::abs(dx) <= HALO_DISTANCE && std::abs(dz) <= HALO_DISTANCE) {
       chunk->consecutiveOccludedFrames = 0;
       continue;

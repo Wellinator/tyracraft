@@ -2,6 +2,9 @@
 #include "file/file_utils.hpp"
 #include <math/vec4.hpp>
 #include "constants.hpp"
+#include <gs_gp.h>
+#include <dma.h>
+#include "managers/dma_gif_builder.hpp"
 
 using Tyra::FileUtils;
 using Tyra::McpipBlock;
@@ -27,6 +30,15 @@ void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->loadBlocksTextures(texturePack);
   this->loadBlocksTexturesLowRes(texturePack);
+  
+  // PS2 GS texture cache MUST be flushed after texture upload
+  // Otherwise GS uses stale cache → corrupted/magenta UVs
+  DmaGifBuilder builder;
+  builder.begin();
+  builder.addGifTag(GIF_REG_AD);
+  builder.addAd(GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
+  builder.send();
+  
   this->registerBlockSoundsEffects();
 }
 

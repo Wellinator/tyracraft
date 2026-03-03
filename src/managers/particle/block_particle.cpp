@@ -31,7 +31,8 @@ BlockParticle::BlockParticle(Block* pBlock) : Particle(ParticleType::Block) {
   const Vec4 scaleVec = Vec4(UVSscale, UVSscale, 1.0F, 0.0F);
 
   // Calc rand offset between row and col;
-  const u8 index = pBlock->getFacesMap().data()[4];
+  const auto facesMap = pBlock->getFacesMap();
+  const u8 index = facesMap[4];
   const u8 X = index < MAX_TEX_COLS ? index : index % MAX_TEX_COLS;
   const u8 Y = index < MAX_TEX_COLS ? 0 : std::floor(index / MAX_TEX_COLS);
 

@@ -331,15 +331,15 @@ void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
                           bool needsClipping) {
   BlockManager* blockMgr = BlockManager::getInstance();
   Tyra::Texture* tex = blockMgr->getBlocksTexture();
-  t_renderer->core.texture.useTexture(tex);
 
   const int texW  = tex->getWidth();
   const int texH  = tex->getHeight();
   const int tileW = texW / 16;  // texels per tile (U axis)
   const int tileH = texH / 16;  // texels per tile (V axis)
 
-  // Groups are pre-sorted by (row, col) at build time in buildBGM().
-  // No per-frame std::sort needed.
+  // Groups must preserve buffer emission order (monotonic start/count).
+  // Reordering by atlas tile breaks the mapping between TileGroup metadata
+  // and the actual vertex/UV slices consumed by flushDrawData().
   static DmaGifBuilder clampBuilder;
   u8 prevCol = 255;
   u8 prevRow = 254;  // Distinct from any valid tile or LEGACY_TILE (255)
@@ -747,14 +747,9 @@ bool Chunk::buildStep() {
           bgmOutput.transpGroups.push_back(lg);
         }
 
-        // Sort + merge TileGroups
-        auto tileSorter = [](const TileGroup& a, const TileGroup& b) {
-          if (a.row != b.row) return a.row < b.row;
-          return a.col < b.col;
-        };
-        std::sort(bgmOutput.opaqueGroups.begin(), bgmOutput.opaqueGroups.end(), tileSorter);
-        std::sort(bgmOutput.transpGroups.begin(), bgmOutput.transpGroups.end(), tileSorter);
-
+        // Merge only contiguous runs in existing buffer order.
+        // Do NOT sort by tile: start/count offsets reference the original
+        // vertex/UV stream positions and must stay aligned with draw data.
         auto mergeGroups = [](std::vector<TileGroup>& groups) {
           if (groups.size() < 2) return;
           size_t write = 0;
@@ -901,20 +896,8 @@ void Chunk::buildBGM() {
   }
 
   // ---------------------------------------------------------------------------
-  // Pre-sort TileGroups by (row, col) so renderGrouped() never needs to sort.
-  // LEGACY_TILE (255) naturally sorts last — no special case required.
-  // ---------------------------------------------------------------------------
-  auto tileSorter = [](const TileGroup& a, const TileGroup& b) {
-    if (a.row != b.row) return a.row < b.row;
-    return a.col < b.col;
-  };
-  std::sort(mergedOpaqueGroups.begin(), mergedOpaqueGroups.end(), tileSorter);
-  std::sort(mergedTranspGroups.begin(), mergedTranspGroups.end(), tileSorter);
-
-  // ---------------------------------------------------------------------------
-  // Merge consecutive groups that share the same tile AND are contiguous in the
-  // vertex buffer.  This collapses N same-tile draw calls into 1, dramatically
-  // reducing the number of flushDrawData() + DMA submissions per chunk.
+  // Keep TileGroups in buffer emission order to preserve start/count mapping.
+  // We only merge groups that are already contiguous in the vertex stream.
   // ---------------------------------------------------------------------------
   auto mergeGroups = [](std::vector<TileGroup>& groups) {
     if (groups.size() < 2) return;

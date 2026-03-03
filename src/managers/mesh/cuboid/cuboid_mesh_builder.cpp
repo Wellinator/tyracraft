@@ -128,7 +128,7 @@ void CuboidMeshBuilder_loadUVData(const Vec4* offset, const u8 visibleFaces,
       pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
   Block* blockTemplate =
       StaticBlockRepository::getInstance()->getBlockTemplate(block_type);
-  u8* facesMap = blockTemplate->getFacesMap().data();
+    const auto facesMap = blockTemplate->getFacesMap();
 
   if (visibleFaces & (int)BlockFace::TOP) {
     CuboidMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
