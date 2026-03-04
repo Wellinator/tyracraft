@@ -14,7 +14,7 @@
 using Tyra::Engine;
 using Tyra::FileUtils;
 
-enum class FpsMode : u8 { VSync = 0, FPS_30, FPS_60 };
+enum class FpsMode : u8 { VSync = 0, FPS_30, FPS_60, Unlimited };
 
 struct settings_file {
   // FPS / VSync control

@@ -384,10 +384,10 @@ void StateGameMenu::cycleDrawDistanceMode(int direction) {
 void StateGameMenu::cycleFpsMode(int direction) {
   int current = static_cast<int>(g_settings.fps_mode);
   current += direction;
-  if (current > static_cast<int>(FpsMode::FPS_60))
+  if (current > static_cast<int>(FpsMode::Unlimited))
     current = static_cast<int>(FpsMode::VSync);
   else if (current < static_cast<int>(FpsMode::VSync))
-    current = static_cast<int>(FpsMode::FPS_60);
+    current = static_cast<int>(FpsMode::Unlimited);
   g_settings.fps_mode = static_cast<FpsMode>(current);
   // Apply immediately
   TyraCraft::Timer::getInstance()->setFpsMode(g_settings.fps_mode);
@@ -396,9 +396,11 @@ void StateGameMenu::cycleFpsMode(int direction) {
 
 const std::string& StateGameMenu::getFpsModeLabel() const {
   switch (g_settings.fps_mode) {
-    case FpsMode::VSync:  return Label_FpsVSync;
-    case FpsMode::FPS_30: return Label_Fps30;
-    default:              return Label_Fps60;
+    case FpsMode::VSync:       return Label_FpsVSync;
+    case FpsMode::FPS_30:      return Label_Fps30;
+    case FpsMode::FPS_60:      return Label_Fps60;
+    case FpsMode::Unlimited:   return Label_FpsUnlimited;
+    default:                   return Label_Fps60;
   }
 }
 

@@ -82,15 +82,14 @@ void TyraCraftGame::loop() {
                                  : 0.0f;
     // FIX: getDeltaTimeAvg() returns seconds, not milliseconds
     // So FPS = 1 / seconds, not 1000 / seconds
-    const float mainLoopFps = timer.getDeltaTimeAvg() > 0.0f
-                                  ? 1.0f / timer.getDeltaTimeAvg()
-                                  : 0.0f;
+    const float mainLoopFps =
+        timer.getDeltaTimeAvg() > 0.0f ? 1.0f / timer.getDeltaTimeAvg() : 0.0f;
 
     std::stringstream stream;
     stream << "Render: " << std::fixed << std::setprecision(1) << renderFps
            << " fps  Physics: " << std::fixed << std::setprecision(1)
-          << physicsFps << " fps  LoopHz: " << std::fixed
-          << std::setprecision(1) << mainLoopFps;
+           << physicsFps << " fps  LoopHz: " << std::fixed
+           << std::setprecision(1) << mainLoopFps;
 
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.6F));
@@ -99,25 +98,11 @@ void TyraCraftGame::loop() {
 
     stream << "R: " << std::fixed << std::setprecision(2) << timer.getRenderMs()
            << "ms  P: " << std::fixed << std::setprecision(2)
-           << timer.getPhysicsUpdateMs() << "ms  Mode: "
-           << (timer.getIsInterlaced() ? "Interlaced" : "Progressive")
-         << "  Field: " << (int)timer.getFieldCounter()
-         << "  LastBit: " << (int)timer.getLastFieldBit();
+           << timer.getPhysicsUpdateMs();
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 20.0f), Color(255), 0.6F));
-                        stream.str("");
-                        stream.clear();
-
-                      // Diagnostic vsync info
-                      u32 csrValue = *GS_REG_CSR;
-                      stream << "VSync Debug: Calls=" << timer.getRenderFrameCalls()
-                        << " Events=" << timer.getFieldToggleDetected()
-                        << " CSR=0x" << std::hex << csrValue << std::dec
-                        << " b3=" << ((csrValue >> 3) & 1)
-                        << " b13=" << ((csrValue >> 13) & 1)
-                        << " b12=" << ((csrValue >> 12) & 1);
-                      fontManager.printText(stream.str(),
-                             FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.6F));
+    stream.str("");
+    stream.clear();
 
     // Draw Memory Usage:
     stream.str("");
@@ -125,7 +110,7 @@ void TyraCraftGame::loop() {
     stream << "Memory : " << std::fixed << std::setprecision(3)
            << get_used_memory() / 1024.0f / 1024.0f << "MB / 32MB";
     fontManager.printText(stream.str(),
-                          FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.6F));
+                          FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.6F));
 #endif
 
     engine->renderer.endFrame();

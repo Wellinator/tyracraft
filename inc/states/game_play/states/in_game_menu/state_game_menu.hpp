@@ -118,4 +118,5 @@ class StateGameMenu : public PlayingStateBase {
   const std::string Label_FpsVSync   = LanguageManager::Translate("/state_game_menu/fps_vsync");
   const std::string Label_Fps30      = LanguageManager::Translate("/state_game_menu/fps_30");
   const std::string Label_Fps60      = LanguageManager::Translate("/state_game_menu/fps_60");
+  const std::string Label_FpsUnlimited = LanguageManager::Translate("/state_game_menu/fps_unlimited");
 };

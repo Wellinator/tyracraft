@@ -126,8 +126,11 @@ bool Timer::renderFrame() {
       result = true;
       renderAcc = 0;
     }
+  } else if (g_settings.fps_mode == FpsMode::Unlimited) {
+    // Unlimited mode: render every frame as fast as possible (no throttle)
+    result = true;
   } else {
-    // When VSync is disabled, we rely on the accumulator
+    // FPS_30 or FPS_60: use accumulator-based throttling
     if (renderAcc >= targetRenderCycles) {
         renderAcc -= targetRenderCycles;
         result = true;
@@ -155,12 +158,18 @@ void Timer::setFpsMode(FpsMode mode) {
       targetRenderCycles = RENDER_CYCLES_30FPS;
       break;
     case FpsMode::FPS_60:
+      targetRenderCycles = RENDER_CYCLES_60FPS;
+      break;
+    case FpsMode::Unlimited:
+      // Unlimited: no cap, render every call
+      targetRenderCycles = 0;  // Sentinel for unlimited
+      break;
     default:
       targetRenderCycles = RENDER_CYCLES_60FPS;
       break;
   }
   // Reset accumulator so we don't service a huge backlog after switching
-  renderAcc = targetRenderCycles / 2;
+  renderAcc = (targetRenderCycles > 0) ? targetRenderCycles / 2 : 0;
 }
 
 

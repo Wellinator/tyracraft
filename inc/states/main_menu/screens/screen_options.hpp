@@ -55,6 +55,7 @@ class ScreenOptions : public ScreenBase {
   const std::string Label_FpsVSync        = LanguageManager::Translate("/options_menu/fps_vsync");
   const std::string Label_Fps30           = LanguageManager::Translate("/options_menu/fps_30");
   const std::string Label_Fps60           = LanguageManager::Translate("/options_menu/fps_60");
+  const std::string Label_FpsUnlimited    = "Unlimited";
   const std::string Label_ReverseCameraY    = LanguageManager::Translate("/options_menu/reverse_camera_y");
   const std::string Label_CamSensitivityH   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "  H: ";
   const std::string Label_CamSensitivityV   = LanguageManager::Translate("/options_menu/sensitivity_camera") + "   V: ";
