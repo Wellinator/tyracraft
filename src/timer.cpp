@@ -14,6 +14,19 @@ void Timer::init() {
     setFpsMode(g_settings.fps_mode);
     
     physicsAcc = TARGET_PHYSICS_CYCLES / 2;
+
+    // Detect current GS video mode from SMODE2
+    // Bit 0 (INT):  0 = non-interlace, 1 = interlace
+    // Bit 1 (FFMD): 0 = field mode,    1 = frame mode
+    // Treat only INT=1 && FFMD=0 as true interlaced field output.
+    const u64 smode2 = *GS_REG_SMODE2;
+    const bool smode2Int = (smode2 & (1ULL << 0)) != 0;
+    const bool smode2Ffmd = (smode2 & (1ULL << 1)) != 0;
+    isInterlaced = smode2Int && !smode2Ffmd;
+
+    // Initialize FIELD tracking for diagnostics only
+    lastFieldBit = (*GS_REG_CSR >> 13) & 1;
+    fieldCounter = 0;
     
     // Initialize start times for the first frame interval measurement
     u32 now = getCpuCycles();
@@ -93,12 +106,25 @@ bool Timer::updateFrame() {
 
 bool Timer::renderFrame() {
   bool result = false;
+  renderFrameCalls++;
 
   if (g_settings.fps_mode == FpsMode::VSync) {
-   if (*GS_REG_CSR & 8) {           // VSync ready?
-        *GS_REG_CSR = 8;             // Clear flag (write-1-to-clear)
-        result = true;
-        renderAcc = 0;
+    // Use VSINT (bit 3) as the VSync event source.
+    // This is a latched flag: write 1 back to clear after consuming.
+    const u64 csr = *GS_REG_CSR;
+
+    // Keep FIELD bit tracking only for debug/diagnostics.
+    const u8 currentFieldBit = (csr >> 13) & 1;
+    if (currentFieldBit != lastFieldBit) {
+      lastFieldBit = currentFieldBit;
+      fieldCounter = (fieldCounter + 1) & 1;
+    }
+
+    if (csr & (1ULL << 3)) {
+      *GS_REG_CSR = (1ULL << 3);  // Clear VSINT
+      fieldToggleDetected++;
+      result = true;
+      renderAcc = 0;
     }
   } else {
     // When VSync is disabled, we rely on the accumulator

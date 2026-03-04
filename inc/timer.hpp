@@ -76,6 +76,13 @@ class Timer : public Singleton<Timer> {
   inline float getRenderMs() const { return renderMs; }
   inline float getPhysicsUpdateMs() const { return physicsMs; }
 
+  // Video mode info (for debugging vsync/field behavior)
+  inline bool getIsInterlaced() const { return isInterlaced; }
+  inline u8 getFieldCounter() const { return fieldCounter; }
+  inline u8 getLastFieldBit() const { return lastFieldBit; }
+    inline u32 getRenderFrameCalls() const { return renderFrameCalls; }
+    inline u32 getFieldToggleDetected() const { return fieldToggleDetected; }
+
   // Interpolation factor for rendering [0.0, 1.0]
   static float stateLerp;
 
@@ -134,6 +141,15 @@ class Timer : public Singleton<Timer> {
   u32 dtSamples[10] = {0};
   u8 dtIndex = 0;
   u32 dtSum = 0; // Sum of cycles in buffer
+
+  // VSync field tracking (for interlaced mode detection)
+  u8 lastFieldBit = 0;      // Previous state of GS_REG_CSR bit 13 (FIELD)
+  u8 fieldCounter = 0;      // Counts fields in interlaced mode (2 fields = 1 frame)
+  bool isInterlaced = true; // Video mode flag (detected at init, assume interlaced by default)
+  
+    // Diagnostic counters
+    u32 renderFrameCalls = 0;     // Total renderFrame() calls
+    u32 fieldToggleDetected = 0;  // Field bit transitions detected
   
 
   // --- Internal Helpers ---
