@@ -47,15 +47,28 @@ class BinaryGreedyMesher {
   BinaryGreedyMesher() = default;
   ~BinaryGreedyMesher() = default;
 
+  struct LightFaceSpan {
+    // Start index in the target color/vertex buffer (always 6 vertices per face).
+    u32 start = 0;
+    // World block coordinates used as light sampling anchor for the emitted face.
+    u8 lx = 0;
+    u8 ly = 0;
+    u8 lz = 0;
+    // Face direction as FaceDir enum value.
+    u8 faceDir = 0;
+  };
+
   struct Output {
     std::vector<Vec4>       opaqueVertices;
     std::vector<Color>      opaqueColors;
     std::vector<Vec4>       opaqueUV;
     std::vector<TileGroup>  opaqueGroups;
+    std::vector<LightFaceSpan> opaqueFaceSpans;
     std::vector<Vec4>       transpVertices;
     std::vector<Color>      transpColors;
     std::vector<Vec4>       transpUV;
     std::vector<TileGroup>  transpGroups;
+    std::vector<LightFaceSpan> transpFaceSpans;
   };
 
   /** Face direction enum — maps to axis + sign.

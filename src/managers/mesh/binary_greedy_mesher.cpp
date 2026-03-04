@@ -107,17 +107,21 @@ void BinaryGreedyMesher::beginMeshChunk(Output& out) {
   out.opaqueColors.clear();
   out.opaqueUV.clear();
   out.opaqueGroups.clear();
+  out.opaqueFaceSpans.clear();
   out.transpVertices.clear();
   out.transpColors.clear();
   out.transpUV.clear();
   out.transpGroups.clear();
+  out.transpFaceSpans.clear();
 
   out.opaqueVertices.reserve(384);
   out.opaqueColors.reserve(384);
   out.opaqueUV.reserve(384);
+  out.opaqueFaceSpans.reserve(64);
   out.transpVertices.reserve(64);
   out.transpColors.reserve(64);
   out.transpUV.reserve(64);
+  out.transpFaceSpans.reserve(16);
 }
 
 // ---------------------------------------------------------------------------
@@ -679,6 +683,7 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
   auto&       outColors  = bTransp ? out.transpColors   : out.opaqueColors;
   auto&       outUV      = bTransp ? out.transpUV       : out.opaqueUV;
   auto&       groups     = bTransp ? out.transpGroups   : out.opaqueGroups;
+  auto&       faceSpans  = bTransp ? out.transpFaceSpans : out.opaqueFaceSpans;
 
   // 1x1 quads (single block face, un-merged) don't need RegionRepeat -
   // their UVs lie within one atlas tile and default wrap handles them.
@@ -688,6 +693,35 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
   const u8  tileCol = isMerged ? (u8)(texIndex % MAX_TEX_COLS) : TileGroup::LEGACY_TILE;
   const u8  tileRow = isMerged ? (u8)(texIndex / MAX_TEX_COLS) : TileGroup::LEGACY_TILE;
   const u32 startIdx = (u32)outVerts.size();
+
+  // Anchor to the first block of the merged quad for fast day/night relight.
+  int anchorX = 0, anchorY = 0, anchorZ = 0;
+  switch (dir) {
+    case FaceDir::PosX:
+    case FaceDir::NegX:
+      anchorX = sliceCoord;
+      anchorY = col;
+      anchorZ = row;
+      break;
+    case FaceDir::PosY:
+    case FaceDir::NegY:
+      anchorX = row;
+      anchorY = sliceCoord;
+      anchorZ = col;
+      break;
+    default:  // PosZ / NegZ
+      anchorX = row;
+      anchorY = col;
+      anchorZ = sliceCoord;
+      break;
+  }
+  LightFaceSpan span;
+  span.start = startIdx;
+  span.lx = static_cast<u8>(anchorX);
+  span.ly = static_cast<u8>(anchorY);
+  span.lz = static_cast<u8>(anchorZ);
+  span.faceDir = static_cast<u8>(dir);
+  faceSpans.push_back(span);
 
   // Open or extend TileGroup
   if (groups.empty() ||
@@ -912,12 +946,21 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
   auto& outColors = isTransparent ? out.transpColors   : out.opaqueColors;
   auto& outUV     = isTransparent ? out.transpUV       : out.opaqueUV;
   auto& groups    = isTransparent ? out.transpGroups   : out.opaqueGroups;
+  auto& faceSpans = isTransparent ? out.transpFaceSpans : out.opaqueFaceSpans;
 
   // Slabs are always single-block (no merged span), so no RegionRepeat needed.
   // Use LEGACY_TILE to consolidate into the default-wrap group.
   const u8  tileCol = TileGroup::LEGACY_TILE;
   const u8  tileRow = TileGroup::LEGACY_TILE;
   const u32 startIdx = (u32)outVerts.size();
+
+  LightFaceSpan span;
+  span.start = startIdx;
+  span.lx = static_cast<u8>(bx);
+  span.ly = static_cast<u8>(by);
+  span.lz = static_cast<u8>(bz);
+  span.faceDir = static_cast<u8>(dir);
+  faceSpans.push_back(span);
 
   if (groups.empty() ||
       groups.back().col != tileCol ||

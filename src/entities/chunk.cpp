@@ -148,7 +148,62 @@ inline Vec4 computeCenterVU(const std::array<Vec4, 6>& vertices) {
   center.w = 1.0F;
   return center;
 }
+
+inline Color computeChunkFaceColor(Level* pLevel, WorldLightModel* lightModel,
+                                   int bx, int by, int bz,
+                                   BinaryGreedyMesher::FaceDir dir) {
+  static constexpr float kMaxLightValue = 15.0f;
+  static constexpr float kMinLightFactor = 0.15f;
+  static constexpr float kFaceIntensity[6] = {0.6f, 0.6f, 1.0f,
+                                              0.5f, 0.8f, 0.8f};
+  static const int dx[6] = {1, -1, 0, 0, 0, 0};
+  static const int dy[6] = {0, 0, 1, -1, 0, 0};
+  static const int dz[6] = {0, 0, 0, 0, 1, -1};
+
+  const int d = static_cast<int>(dir);
+  const int nx = bx + dx[d];
+  const int ny = by + dy[d];
+  const int nz = bz + dz[d];
+
+  u8 lightData = 0;
+  if (nx >= 0 && ny >= 0 && nz >= 0 && nx < (int)pLevel->map.width &&
+      ny < (int)pLevel->map.height && nz < (int)pLevel->map.length) {
+    lightData = pLevel->GetLightDataFromMap((uint16_t)nx, (uint16_t)ny,
+                                            (uint16_t)nz);
+  }
+
+  const u8 sunLvl = (lightData >> 4) & 0xF;
+  const u8 blkLvl = lightData & 0xF;
+  const float sunIntensity = lightModel ? lightModel->sunLightIntensity : 1.0f;
+  const float sunFactor = std::max((sunLvl * sunIntensity) / kMaxLightValue,
+                                   kMinLightFactor);
+  const float blkFactor = blkLvl / kMaxLightValue;
+  const float factor = std::max(sunFactor, blkFactor) * kFaceIntensity[d];
+
+  return Color(120.0f * factor, 120.0f * factor, 120.0f * factor, 128.0f);
+}
 }  // namespace
+
+bool Chunk::relightFaceSpans(
+    std::vector<Color>& targetColors,
+    const std::vector<BinaryGreedyMesher::LightFaceSpan>& spans) {
+  if (spans.empty()) return false;
+
+  const size_t totalColors = targetColors.size();
+  for (size_t i = 0; i < spans.size(); ++i) {
+    const auto& span = spans[i];
+    if (span.start + 5 >= totalColors) return false;
+
+    const auto dir = static_cast<BinaryGreedyMesher::FaceDir>(span.faceDir);
+    const Color c = computeChunkFaceColor(pLevel, t_worldLightModel, span.lx,
+                                          span.ly, span.lz, dir);
+    for (u32 v = 0; v < 6; ++v) {
+      targetColors[span.start + v] = c;
+    }
+  }
+
+  return true;
+}
 
 Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
   this->id = id;
@@ -512,6 +567,11 @@ void Chunk::clearDrawData() {
   mergedOpaqueGroups.shrink_to_fit();
   mergedTranspGroups.clear();
   mergedTranspGroups.shrink_to_fit();
+
+  opaqueFaceSpans.clear();
+  opaqueFaceSpans.shrink_to_fit();
+  transpFaceSpans.clear();
+  transpFaceSpans.shrink_to_fit();
 }
 
 void Chunk::clearDrawDataWithoutShrink() {
@@ -525,6 +585,9 @@ void Chunk::clearDrawDataWithoutShrink() {
 
   mergedOpaqueGroups.clear();
   mergedTranspGroups.clear();
+
+  opaqueFaceSpans.clear();
+  transpFaceSpans.clear();
 }
 
 
@@ -754,7 +817,8 @@ bool Chunk::buildStep() {
             std::vector<TileGroup>& groups,
             std::vector<Vec4>&  verts,
             std::vector<Color>& cols,
-            std::vector<Vec4>&  uvs) {
+            std::vector<Vec4>&  uvs,
+            std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
           if (groups.size() < 2) return;
           const size_t nGroups = groups.size();
           std::vector<size_t> order(nGroups);
@@ -773,10 +837,22 @@ bool Chunk::buildStep() {
           std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
           std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
           std::vector<TileGroup> sorted(nGroups);
+          std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
+          tmpSpans.reserve(faceSpans.size());
           u32 writeOfs = 0;
           for (size_t i = 0; i < nGroups; ++i) {
             const TileGroup& src = groups[order[i]];
             sorted[i] = { writeOfs, src.count, src.col, src.row };
+
+            for (size_t s = 0; s < faceSpans.size(); ++s) {
+              const auto& span = faceSpans[s];
+              if (span.start >= src.start && span.start < (src.start + src.count)) {
+                auto moved = span;
+                moved.start = writeOfs + (span.start - src.start);
+                tmpSpans.push_back(moved);
+              }
+            }
+
             for (u32 v = src.start; v < src.start + src.count; ++v) {
               tmpV.push_back(verts[v]);
               tmpC.push_back(cols[v]);
@@ -787,6 +863,7 @@ bool Chunk::buildStep() {
           verts  = std::move(tmpV);
           cols   = std::move(tmpC);
           uvs    = std::move(tmpU);
+          faceSpans = std::move(tmpSpans);
           groups = std::move(sorted);
           size_t write = 0;
           for (size_t i = 1; i < groups.size(); ++i) {
@@ -800,18 +877,24 @@ bool Chunk::buildStep() {
           }
           groups.resize(write + 1);
         };
-        sortAndMergeGroups(bgmOutput.opaqueGroups, bgmOutput.opaqueVertices, bgmOutput.opaqueColors, bgmOutput.opaqueUV);
-        sortAndMergeGroups(bgmOutput.transpGroups, bgmOutput.transpVertices, bgmOutput.transpColors, bgmOutput.transpUV);
+        sortAndMergeGroups(bgmOutput.opaqueGroups, bgmOutput.opaqueVertices,
+               bgmOutput.opaqueColors, bgmOutput.opaqueUV,
+               bgmOutput.opaqueFaceSpans);
+        sortAndMergeGroups(bgmOutput.transpGroups, bgmOutput.transpVertices,
+               bgmOutput.transpColors, bgmOutput.transpUV,
+               bgmOutput.transpFaceSpans);
 
         // Move bgmOutput into the persistent chunk buffers
         vertices           = std::move(bgmOutput.opaqueVertices);
         colors             = std::move(bgmOutput.opaqueColors);
         UV                 = std::move(bgmOutput.opaqueUV);
         mergedOpaqueGroups = std::move(bgmOutput.opaqueGroups);
+        opaqueFaceSpans    = std::move(bgmOutput.opaqueFaceSpans);
         transpVertices     = std::move(bgmOutput.transpVertices);
         transpColors       = std::move(bgmOutput.transpColors);
         transpUV           = std::move(bgmOutput.transpUV);
         mergedTranspGroups = std::move(bgmOutput.transpGroups);
+        transpFaceSpans    = std::move(bgmOutput.transpFaceSpans);
 
         buildPhase = BuildPhase::VisGraph;
         return false;
@@ -866,11 +949,13 @@ void Chunk::buildBGM() {
   colors             = std::move(output.opaqueColors);
   UV                 = std::move(output.opaqueUV);
   mergedOpaqueGroups = std::move(output.opaqueGroups);
+  opaqueFaceSpans    = std::move(output.opaqueFaceSpans);
 
   transpVertices     = std::move(output.transpVertices);
   transpColors       = std::move(output.transpColors);
   transpUV           = std::move(output.transpUV);
   mergedTranspGroups = std::move(output.transpGroups);
+  transpFaceSpans    = std::move(output.transpFaceSpans);
 
   // ---- Legacy pass: special-shaped blocks (torches, plants, liquids)
   // Note: slabs are now handled by BGM's processSlabs()
@@ -940,7 +1025,8 @@ void Chunk::buildBGM() {
       std::vector<TileGroup>& groups,
       std::vector<Vec4>&  verts,
       std::vector<Color>& cols,
-      std::vector<Vec4>&  uvs) {
+      std::vector<Vec4>&  uvs,
+      std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
     if (groups.size() < 2) return;
     const size_t nGroups = groups.size();
     std::vector<size_t> order(nGroups);
@@ -959,10 +1045,22 @@ void Chunk::buildBGM() {
     std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
     std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
     std::vector<TileGroup> sorted(nGroups);
+    std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
+    tmpSpans.reserve(faceSpans.size());
     u32 writeOfs = 0;
     for (size_t i = 0; i < nGroups; ++i) {
       const TileGroup& src = groups[order[i]];
       sorted[i] = { writeOfs, src.count, src.col, src.row };
+
+      for (size_t s = 0; s < faceSpans.size(); ++s) {
+        const auto& span = faceSpans[s];
+        if (span.start >= src.start && span.start < (src.start + src.count)) {
+          auto moved = span;
+          moved.start = writeOfs + (span.start - src.start);
+          tmpSpans.push_back(moved);
+        }
+      }
+
       for (u32 v = src.start; v < src.start + src.count; ++v) {
         tmpV.push_back(verts[v]);
         tmpC.push_back(cols[v]);
@@ -973,6 +1071,7 @@ void Chunk::buildBGM() {
     verts  = std::move(tmpV);
     cols   = std::move(tmpC);
     uvs    = std::move(tmpU);
+    faceSpans = std::move(tmpSpans);
     groups = std::move(sorted);
     size_t write = 0;
     for (size_t i = 1; i < groups.size(); ++i) {
@@ -986,8 +1085,10 @@ void Chunk::buildBGM() {
     }
     groups.resize(write + 1);
   };
-  sortAndMergeGroups(mergedOpaqueGroups, vertices, colors, UV);
-  sortAndMergeGroups(mergedTranspGroups, transpVertices, transpColors, transpUV);
+  sortAndMergeGroups(mergedOpaqueGroups, vertices, colors, UV,
+                     opaqueFaceSpans);
+  sortAndMergeGroups(mergedTranspGroups, transpVertices, transpColors, transpUV,
+                     transpFaceSpans);
 }
 
 void Chunk::cancelBuild() {
@@ -999,8 +1100,10 @@ void Chunk::cancelBuild() {
   // Also release any partial BGM output accumulated during incremental meshing.
   bgmOutput.opaqueVertices.clear(); bgmOutput.opaqueColors.clear();
   bgmOutput.opaqueUV.clear();      bgmOutput.opaqueGroups.clear();
+  bgmOutput.opaqueFaceSpans.clear();
   bgmOutput.transpVertices.clear(); bgmOutput.transpColors.clear();
   bgmOutput.transpUV.clear();      bgmOutput.transpGroups.clear();
+  bgmOutput.transpFaceSpans.clear();
 
   buildPhase       = BuildPhase::Idle;
   isEmpty          = false;
@@ -1025,8 +1128,27 @@ void Chunk::reloadLightData() {
 }
 
 void Chunk::reloadLightColorsOnly() {
-  // Delegate to the full rebuild which regenerates vertices+colors together.
-  reloadLightData();
+  if (!isLoaded()) return;
+  if (isEmpty) return;
+
+  // If metadata is unavailable (legacy-only chunk or mismatch), fall back safely.
+  bool okOpaque = true;
+  bool okTransp = true;
+
+  if (!colors.empty() && opaqueFaceSpans.empty()) okOpaque = false;
+  if (!transpColors.empty() && transpFaceSpans.empty()) okTransp = false;
+
+  if (!opaqueFaceSpans.empty()) {
+    okOpaque = relightFaceSpans(colors, opaqueFaceSpans);
+  }
+
+  if (!transpFaceSpans.empty()) {
+    okTransp = relightFaceSpans(transpColors, transpFaceSpans);
+  }
+
+  if (!okOpaque || !okTransp) {
+    reloadLightData();
+  }
 }
 
 void Chunk::rebuild() {

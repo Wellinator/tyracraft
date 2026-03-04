@@ -301,12 +301,22 @@ void ChunkManager::reloadLightDataAsync() {
   // A batch of 4 with 2ms budget keeps block-edit feedback snappy (1-2 ticks
   // for nearby chunks) while not stalling the frame.
   constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
+  // Extra smoothing for day/night transitions: process at most 2 color-only
+  // relights per tick to avoid micro-stutter when many chunks are visible.
+  constexpr int MAX_COLORS_ONLY_PER_TICK = 2;
+  // Keep block edit feedback responsive while still bounded.
+  constexpr int MAX_FULL_REBUILDS_PER_TICK = 2;
   int processed = 0;
+  int processedColorsOnly = 0;
+  int processedFullRebuild = 0;
 
   // Time budget: 2ms expressed in EE COP0 Count ticks (~147.456 MHz)
   static constexpr u32 LIGHT_BUDGET_CYCLES = 294912u;  // 2ms
+  // Dedicated colors-only budget (1ms) to spread day/night updates smoothly.
+  static constexpr u32 COLORS_ONLY_BUDGET_CYCLES = 147456u;  // 1ms
   u32 lightStart;
   asm volatile("mfc0 %0, $9" : "=r"(lightStart));
+  const u32 colorsOnlyStart = lightStart;
 
   while (!chunksToUpdateLight.empty() && processed < LIGHT_UPDATE_BATCH_SIZE) {
     auto entry = chunksToUpdateLight.front();
@@ -330,9 +340,33 @@ void ChunkManager::reloadLightDataAsync() {
       if (g_ticksCounter >= chunk->loadedAtTick &&
           (g_ticksCounter - chunk->loadedAtTick) < 10)
         continue;
+
+      u32 now;
+      asm volatile("mfc0 %0, $9" : "=r"(now));
+      if (processedColorsOnly >= MAX_COLORS_ONLY_PER_TICK ||
+          (now - colorsOnlyStart) >= COLORS_ONLY_BUDGET_CYCLES) {
+        // Defer the remaining day/night work to the next tick to smooth frame
+        // time when many chunks are visible.
+        if (!chunksInLightQueue.test(chunk->id)) {
+          chunksToUpdateLight.push(entry);
+          chunksInLightQueue.set(chunk->id);
+        }
+        break;
+      }
+
       chunk->reloadLightColorsOnly();
+      processedColorsOnly++;
     } else {
+      if (processedFullRebuild >= MAX_FULL_REBUILDS_PER_TICK) {
+        // Preserve ordering fairness while respecting per-tick cap.
+        if (!chunksInLightQueue.test(chunk->id)) {
+          chunksToUpdateLight.push(entry);
+          chunksInLightQueue.set(chunk->id);
+        }
+        break;
+      }
       chunk->reloadLightData();
+      processedFullRebuild++;
     }
     processed++;
 
@@ -353,8 +387,8 @@ void ChunkManager::reloadLightData() {
 void ChunkManager::enqueueAffectedChunksForLightReload(
     const Vec4& blockPos, float radiusInChunks, bool /*immediateUpdate*/) {
   // All chunks are enqueued for async processing — no synchronous BGM runs.
-  // reloadLightDataAsync() processes up to 4 chunks/tick with a 2ms frame
-  // budget, keeping frame times stable during block edits.
+  // reloadLightDataAsync() uses a bounded batch + per-path caps/budgets
+  // (colors-only throttled harder than full rebuild) to smooth frame times.
   std::vector<Chunk*> affectedChunks;
   getChunksInRadius(blockPos, radiusInChunks, affectedChunks);
 

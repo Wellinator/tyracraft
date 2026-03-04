@@ -230,6 +230,9 @@ class Chunk {
   // BGM-based mesh generation (replaces buildNormaly + compress pipeline)
   void buildBGM();
 
+  bool relightFaceSpans(std::vector<Color>& targetColors,
+                        const std::vector<BinaryGreedyMesher::LightFaceSpan>& spans);
+
   void flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
                      std::vector<Vec4>* inVertices,
                      std::vector<Color>* inColors, std::vector<Vec4>* inUVs,
@@ -263,8 +266,10 @@ class Chunk {
   std::vector<Vec4>  vertices;
   std::vector<Vec4>  UV;
   std::vector<Color> colors;
+  std::vector<BinaryGreedyMesher::LightFaceSpan> opaqueFaceSpans;
   // Transparent geometry:
   std::vector<Vec4>  transpVertices;
   std::vector<Vec4>  transpUV;
   std::vector<Color> transpColors;
+  std::vector<BinaryGreedyMesher::LightFaceSpan> transpFaceSpans;
 };
