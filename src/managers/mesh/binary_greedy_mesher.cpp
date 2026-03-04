@@ -380,6 +380,11 @@ void BinaryGreedyMesher::processFaceDir(Level* pLevel,
         rowBase = minX; colBase = minY; sliceWorldCoord = minZ + s; break;
     }
 
+    // Sort by texIdx so same-texture groups emit consecutively within each slice.
+    // Reduces TileGroup fragmentation at source before the post-build sort.
+    std::sort(groups, groups + numGroups, [](const LightGroup& a, const LightGroup& b) {
+      return a.texIdx < b.texIdx;
+    });
     for (int g = 0; g < numGroups; ++g) {
       LightGroup& grp = groups[g];
       emitQuadsForSlice(grp.masks, sliceWorldCoord, rowBase, colBase,
@@ -675,8 +680,13 @@ void BinaryGreedyMesher::emitQuad(int sliceCoord,
   auto&       outUV      = bTransp ? out.transpUV       : out.opaqueUV;
   auto&       groups     = bTransp ? out.transpGroups   : out.opaqueGroups;
 
-  const u8  tileCol = texIndex % MAX_TEX_COLS;
-  const u8  tileRow = texIndex / MAX_TEX_COLS;
+  // 1x1 quads (single block face, un-merged) don't need RegionRepeat -
+  // their UVs lie within one atlas tile and default wrap handles them.
+  // Tag as LEGACY_TILE to consolidate with the default-wrap group and
+  // avoid a CLAMP register stall per group during rendering.
+  const bool isMerged = (rowSpan > 1 || colSpan > 1);
+  const u8  tileCol = isMerged ? (u8)(texIndex % MAX_TEX_COLS) : TileGroup::LEGACY_TILE;
+  const u8  tileRow = isMerged ? (u8)(texIndex / MAX_TEX_COLS) : TileGroup::LEGACY_TILE;
   const u32 startIdx = (u32)outVerts.size();
 
   // Open or extend TileGroup
@@ -903,8 +913,10 @@ void BinaryGreedyMesher::emitSlabQuad(int bx, int by, int bz,
   auto& outUV     = isTransparent ? out.transpUV       : out.opaqueUV;
   auto& groups    = isTransparent ? out.transpGroups   : out.opaqueGroups;
 
-  const u8  tileCol = texIndex % MAX_TEX_COLS;
-  const u8  tileRow = texIndex / MAX_TEX_COLS;
+  // Slabs are always single-block (no merged span), so no RegionRepeat needed.
+  // Use LEGACY_TILE to consolidate into the default-wrap group.
+  const u8  tileCol = TileGroup::LEGACY_TILE;
+  const u8  tileRow = TileGroup::LEGACY_TILE;
   const u32 startIdx = (u32)outVerts.size();
 
   if (groups.empty() ||

@@ -747,25 +747,61 @@ bool Chunk::buildStep() {
           bgmOutput.transpGroups.push_back(lg);
         }
 
-        // Merge only contiguous runs in existing buffer order.
-        // Do NOT sort by tile: start/count offsets reference the original
-        // vertex/UV stream positions and must stay aligned with draw data.
-        auto mergeGroups = [](std::vector<TileGroup>& groups) {
+        // Sort TileGroups by tile then reorder vertex/color/UV data to match.
+        // Collapses interleaved same-tile groups from spatial quad emission into
+        // contiguous runs, reducing CLAMP register stalls from ~100+ to ~3-8 per chunk.
+        auto sortAndMergeGroups = [](
+            std::vector<TileGroup>& groups,
+            std::vector<Vec4>&  verts,
+            std::vector<Color>& cols,
+            std::vector<Vec4>&  uvs) {
           if (groups.size() < 2) return;
+          const size_t nGroups = groups.size();
+          std::vector<size_t> order(nGroups);
+          for (size_t i = 0; i < nGroups; ++i) order[i] = i;
+          std::sort(order.begin(), order.end(), [&groups](size_t a, size_t b) {
+            const u16 ka = (groups[a].row == TileGroup::LEGACY_TILE)
+                           ? 0xFFFFu
+                           : (u16)((groups[a].row << 8) | groups[a].col);
+            const u16 kb = (groups[b].row == TileGroup::LEGACY_TILE)
+                           ? 0xFFFFu
+                           : (u16)((groups[b].row << 8) | groups[b].col);
+            return ka < kb;
+          });
+          const size_t totalVerts = verts.size();
+          std::vector<Vec4>      tmpV; tmpV.reserve(totalVerts);
+          std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
+          std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
+          std::vector<TileGroup> sorted(nGroups);
+          u32 writeOfs = 0;
+          for (size_t i = 0; i < nGroups; ++i) {
+            const TileGroup& src = groups[order[i]];
+            sorted[i] = { writeOfs, src.count, src.col, src.row };
+            for (u32 v = src.start; v < src.start + src.count; ++v) {
+              tmpV.push_back(verts[v]);
+              tmpC.push_back(cols[v]);
+              tmpU.push_back(uvs[v]);
+            }
+            writeOfs += src.count;
+          }
+          verts  = std::move(tmpV);
+          cols   = std::move(tmpC);
+          uvs    = std::move(tmpU);
+          groups = std::move(sorted);
           size_t write = 0;
           for (size_t i = 1; i < groups.size(); ++i) {
             if (groups[write].col == groups[i].col &&
-                groups[write].row == groups[i].row &&
-                groups[write].start + groups[write].count == groups[i].start) {
+                groups[write].row == groups[i].row) {
               groups[write].count += groups[i].count;
             } else {
-              ++write; groups[write] = groups[i];
+              ++write;
+              groups[write] = groups[i];
             }
           }
           groups.resize(write + 1);
         };
-        mergeGroups(bgmOutput.opaqueGroups);
-        mergeGroups(bgmOutput.transpGroups);
+        sortAndMergeGroups(bgmOutput.opaqueGroups, bgmOutput.opaqueVertices, bgmOutput.opaqueColors, bgmOutput.opaqueUV);
+        sortAndMergeGroups(bgmOutput.transpGroups, bgmOutput.transpVertices, bgmOutput.transpColors, bgmOutput.transpUV);
 
         // Move bgmOutput into the persistent chunk buffers
         vertices           = std::move(bgmOutput.opaqueVertices);
@@ -896,17 +932,52 @@ void Chunk::buildBGM() {
   }
 
   // ---------------------------------------------------------------------------
-  // Keep TileGroups in buffer emission order to preserve start/count mapping.
-  // We only merge groups that are already contiguous in the vertex stream.
+  // Sort TileGroups by tile then reorder vertex/color/UV data to match.
+  // Collapses interleaved same-tile groups from spatial quad emission into
+  // contiguous runs, reducing CLAMP register stalls from ~100+ to ~3-8 per chunk.
   // ---------------------------------------------------------------------------
-  auto mergeGroups = [](std::vector<TileGroup>& groups) {
+  auto sortAndMergeGroups = [](
+      std::vector<TileGroup>& groups,
+      std::vector<Vec4>&  verts,
+      std::vector<Color>& cols,
+      std::vector<Vec4>&  uvs) {
     if (groups.size() < 2) return;
+    const size_t nGroups = groups.size();
+    std::vector<size_t> order(nGroups);
+    for (size_t i = 0; i < nGroups; ++i) order[i] = i;
+    std::sort(order.begin(), order.end(), [&groups](size_t a, size_t b) {
+      const u16 ka = (groups[a].row == TileGroup::LEGACY_TILE)
+                     ? 0xFFFFu
+                     : (u16)((groups[a].row << 8) | groups[a].col);
+      const u16 kb = (groups[b].row == TileGroup::LEGACY_TILE)
+                     ? 0xFFFFu
+                     : (u16)((groups[b].row << 8) | groups[b].col);
+      return ka < kb;
+    });
+    const size_t totalVerts = verts.size();
+    std::vector<Vec4>      tmpV; tmpV.reserve(totalVerts);
+    std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
+    std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
+    std::vector<TileGroup> sorted(nGroups);
+    u32 writeOfs = 0;
+    for (size_t i = 0; i < nGroups; ++i) {
+      const TileGroup& src = groups[order[i]];
+      sorted[i] = { writeOfs, src.count, src.col, src.row };
+      for (u32 v = src.start; v < src.start + src.count; ++v) {
+        tmpV.push_back(verts[v]);
+        tmpC.push_back(cols[v]);
+        tmpU.push_back(uvs[v]);
+      }
+      writeOfs += src.count;
+    }
+    verts  = std::move(tmpV);
+    cols   = std::move(tmpC);
+    uvs    = std::move(tmpU);
+    groups = std::move(sorted);
     size_t write = 0;
     for (size_t i = 1; i < groups.size(); ++i) {
-      // Merge if same tile AND contiguous (no gap in the vertex buffer)
       if (groups[write].col == groups[i].col &&
-          groups[write].row == groups[i].row &&
-          groups[write].start + groups[write].count == groups[i].start) {
+          groups[write].row == groups[i].row) {
         groups[write].count += groups[i].count;
       } else {
         ++write;
@@ -915,8 +986,8 @@ void Chunk::buildBGM() {
     }
     groups.resize(write + 1);
   };
-  mergeGroups(mergedOpaqueGroups);
-  mergeGroups(mergedTranspGroups);
+  sortAndMergeGroups(mergedOpaqueGroups, vertices, colors, UV);
+  sortAndMergeGroups(mergedTranspGroups, transpVertices, transpColors, transpUV);
 }
 
 void Chunk::cancelBuild() {
