@@ -408,6 +408,35 @@ void ChunkManager::reloadLightData() {
 
 void ChunkManager::enqueueAffectedChunksForLightReload(
     const TyraCraft::EditContext& editCtx) {
+  Chunk* editedChunk = getChunkByBlockOffset(editCtx.blockPos);
+
+  // Fast path: opaque block edits without light emission only need the edited
+  // chunk plus direct boundary neighbors (if the edited block is on a border).
+  if (editCtx.isLightBlocking() && editCtx.oldLightValue == 0) {
+    if (editedChunk && editedChunk->isLoaded()) {
+      enqueueChunkToReloadLight(editedChunk, false);
+    }
+
+    static const Vec4 dirs[6] = {
+        Vec4(0.0F, 1.0F, 0.0F), Vec4(0.0F, -1.0F, 0.0F),
+        Vec4(1.0F, 0.0F, 0.0F), Vec4(-1.0F, 0.0F, 0.0F),
+        Vec4(0.0F, 0.0F, 1.0F), Vec4(0.0F, 0.0F, -1.0F)};
+
+    if (editedChunk) {
+      for (u8 i = 0; i < 6; i++) {
+        Vec4 neighbor = editCtx.blockPos + dirs[i];
+        if (!editedChunk->containsBlock(&neighbor)) {
+          Chunk* neighborChunk = getChunkByBlockOffset(neighbor);
+          if (neighborChunk && neighborChunk->isLoaded()) {
+            enqueueChunkToReloadLight(neighborChunk, false);
+          }
+        }
+      }
+    }
+
+    return;
+  }
+
   // Calculate radius dynamically based on light value
   float radiusInChunks = editCtx.getLightPropagationRadiusInChunks();
 
@@ -420,7 +449,6 @@ void ChunkManager::enqueueAffectedChunksForLightReload(
   const float centerChunkY = editCtx.blockPos.y / CHUNK_SIZE;
 
   // Identify the chunk containing the edited block (needs full rebuild)
-  Chunk* editedChunk = getChunkByBlockOffset(editCtx.blockPos);
 
   std::sort(affectedChunks.begin(), affectedChunks.end(),
             [&editCtx](Chunk* a, Chunk* b) {
