@@ -338,6 +338,9 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
     if (_updateDayNightCycle) dayNightCycleManager.tick();
   }));
 
+  // Register block interaction async light propagation continuation
+  blockInteraction.registerTickCallbacks(scheduler);
+
   tickHandles->add(scheduler.everyHandle(250, [this]() {
     updateLightModel();
     const float prev = lastSunLightIntensity;

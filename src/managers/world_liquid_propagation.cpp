@@ -36,18 +36,22 @@ void WorldLiquidPropagation::updateLiquidWater() {
 void WorldLiquidPropagation::updateLiquidLava() {
   propagateLavaRemovalQueue();
   propagateLavaAddQueue();
+
+  // Lava propagation can touch many cells in one tick; flush light BFS once
+  // instead of per-cell to avoid heavy repeated traversals.
+  if (pendingLavaLightUpdate) {
+    pLightPropagation->updateBlockLights();
+    pendingLavaLightUpdate = false;
+  }
 }
 
 void WorldLiquidPropagation::updateChunksAffectedByLiquidPropagation() {
   for (auto chunkPtr : affectedChunksIdByLiquidPropagation) {
     Chunk* moddedChunk = chunkPtr;
-    if (moddedChunk) {
-      if (moddedChunk->isLoaded()) {
-        moddedChunk->rebuild();
-      } else {
-        moddedChunk->build();
-      }
-    }
+    if (!moddedChunk || !moddedChunk->isLoaded()) continue;
+
+    // Keep chunk updates on the same bounded async path used by block edits.
+    pChunkManager->enqueueChunkToReloadLight(moddedChunk, false);
   }
 
   affectedChunksIdByLiquidPropagation.clear();
@@ -107,7 +111,7 @@ void WorldLiquidPropagation::addLiquid(uint16_t x, uint16_t y, uint16_t z,
     } else if (type == (u8)Blocks::LAVA_BLOCK) {
       lavaBfsQueue.emplace(x, y, z, level);
       pLightPropagation->addBlockLight(x, y, z, 15);
-      pLightPropagation->updateBlockLights();
+      pendingLavaLightUpdate = true;
     }
 
     pLevel->SetBlockInMap(x, y, z, type);
@@ -168,7 +172,7 @@ void WorldLiquidPropagation::removeLiquid(uint16_t x, uint16_t y, uint16_t z,
     } else if (type == (u8)Blocks::LAVA_BLOCK) {
       lavaRemovalBfsQueue.emplace(x, y, z, level);
       pLightPropagation->removeLight(x, y, z);
-      pLightPropagation->updateBlockLights();
+      pendingLavaLightUpdate = true;
     }
 
     pLevel->SetLiquidDataToMap(x, y, z, level);

@@ -301,9 +301,9 @@ void ChunkManager::reloadLightDataAsync() {
   // A batch of 4 with 2ms budget keeps block-edit feedback snappy (1-2 ticks
   // for nearby chunks) while not stalling the frame.
   constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
-  // Extra smoothing for day/night transitions: process at most 2 color-only
-  // relights per tick to avoid micro-stutter when many chunks are visible.
-  constexpr int MAX_COLORS_ONLY_PER_TICK = 2;
+  // Color-only relights are cheap (~0.2ms each), so we can process more per tick.
+  // With Step 5 optimizations, most chunks are now colorsOnly → faster queue drain.
+  constexpr int MAX_COLORS_ONLY_PER_TICK = 4;
   // Keep block edit feedback responsive while still bounded.
   constexpr int MAX_FULL_REBUILDS_PER_TICK = 2;
   int processed = 0;
@@ -384,6 +384,57 @@ void ChunkManager::reloadLightData() {
   clearLightDataQueue();
 }
 
+// ===============================================================
+//  Async light update with EditContext (NEW ENTRY POINT)
+// ===============================================================
+
+void ChunkManager::enqueueAffectedChunksForLightReload(
+    const TyraCraft::EditContext& editCtx) {
+  // Calculate radius dynamically based on light value
+  float radiusInChunks = editCtx.getLightPropagationRadiusInChunks();
+
+  std::vector<Chunk*> affectedChunks;
+  getChunksInRadius(editCtx.blockPos, radiusInChunks, affectedChunks);
+
+  // Keep local edits bounded: prioritize nearby chunks and restrict vertical
+  // spread to adjacent chunk layers around the edited block.
+  constexpr size_t MAX_AFFECTED_CHUNKS_PER_EDIT = 18;
+  const float centerChunkY = editCtx.blockPos.y / CHUNK_SIZE;
+
+  // Identify the chunk containing the edited block (needs full rebuild)
+  Chunk* editedChunk = getChunkByBlockOffset(editCtx.blockPos);
+
+  std::sort(affectedChunks.begin(), affectedChunks.end(),
+            [&editCtx](Chunk* a, Chunk* b) {
+              if (!a) return false;
+              if (!b) return true;
+
+              const float da =
+                  horizontalDistance2DSquared(editCtx.blockPos, a->center);
+              const float db =
+                  horizontalDistance2DSquared(editCtx.blockPos, b->center);
+              return da < db;
+            });
+
+  size_t enqueued = 0;
+  for (Chunk* chunk : affectedChunks) {
+    if (!chunk || !chunk->isLoaded()) continue;
+
+    const float chunkY = chunk->center.y / CHUNK_SIZE;
+    if (fabsf(chunkY - centerChunkY) > 1.0f) continue;
+
+    // Edited chunk needs full rebuild; neighbors only need light color updates
+    const bool colorsOnly = (chunk != editedChunk);
+    enqueueChunkToReloadLight(chunk, colorsOnly);
+    enqueued++;
+    if (enqueued >= MAX_AFFECTED_CHUNKS_PER_EDIT) break;
+  }
+}
+
+// ===============================================================
+//  Legacy overload for backwards compatibility
+// ===============================================================
+
 void ChunkManager::enqueueAffectedChunksForLightReload(
     const Vec4& blockPos, float radiusInChunks, bool /*immediateUpdate*/) {
   // All chunks are enqueued for async processing — no synchronous BGM runs.
@@ -392,8 +443,33 @@ void ChunkManager::enqueueAffectedChunksForLightReload(
   std::vector<Chunk*> affectedChunks;
   getChunksInRadius(blockPos, radiusInChunks, affectedChunks);
 
+  // Keep local edits bounded: prioritize nearby chunks and restrict vertical
+  // spread to adjacent chunk layers around the edited block.
+  constexpr size_t MAX_AFFECTED_CHUNKS_PER_EDIT = 18;
+  const float centerChunkY = blockPos.y / CHUNK_SIZE;
+
+  std::sort(affectedChunks.begin(), affectedChunks.end(),
+            [&blockPos](Chunk* a, Chunk* b) {
+              if (!a) return false;
+              if (!b) return true;
+
+              const float da =
+                  horizontalDistance2DSquared(blockPos, a->center);
+              const float db =
+                  horizontalDistance2DSquared(blockPos, b->center);
+              return da < db;
+            });
+
+  size_t enqueued = 0;
   for (Chunk* chunk : affectedChunks) {
+    if (!chunk || !chunk->isLoaded()) continue;
+
+    const float chunkY = chunk->center.y / CHUNK_SIZE;
+    if (fabsf(chunkY - centerChunkY) > 1.0f) continue;
+
     enqueueChunkToReloadLight(chunk, false);  // block change = full rebuild
+    enqueued++;
+    if (enqueued >= MAX_AFFECTED_CHUNKS_PER_EDIT) break;
   }
 }
 

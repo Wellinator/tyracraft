@@ -136,9 +136,6 @@ class World {
   void setSavedSpawnArea(Vec4 pos);
   const Vec4 defineSpawnArea();
   const Vec4 calcSpawOffset(int bias = 0);
-  void rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset) {
-    blockInteraction.rebuildChunkNeighbors(t_chunk, moddedOffset);
-  }
 
   inline u8 isBreakingBlock() { return blockInteraction.isBreakingBlock(); };
   void breakTargetBlock(const float& deltaTime) {

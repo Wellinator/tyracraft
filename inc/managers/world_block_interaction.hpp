@@ -8,8 +8,10 @@
 #include "constants.hpp"
 #include "entities/Block.hpp"
 #include "entities/level.hpp"
+#include "entities/edit_context.hpp"
 #include "camera.hpp"
 #include "models/world_light_model.hpp"
+#include "managers/tick_scheduler.hpp"
 
 using Tyra::Color;
 using Tyra::Ray;
@@ -41,6 +43,9 @@ class WorldBlockInteraction {
             WorldLightPropagation* lightPropagation,
             WorldLiquidPropagation* liquidPropagation,
             WorldLightModel* worldLightModel);
+
+  /** Register tick callbacks for async light propagation continuation. */
+  void registerTickCallbacks(TickScheduler& scheduler);
 
   /** The block currently targeted by the player's crosshair (nullable). */
   Block* targetBlock = nullptr;
@@ -76,7 +81,17 @@ class WorldBlockInteraction {
   void clearTargetBlockDrawData();
 
   // --- Chunk neighbors ---
-  void rebuildChunkNeighbors(Chunk* t_chunk, Vec4* moddedOffset);
+  void rebuildChunkNeighbors(Chunk* t_chunk, const TyraCraft::EditContext& ctx);
+
+  // --- EditContext factory helpers ---
+  TyraCraft::EditContext makeEditContextForPlacement(const Blocks& newBlockType,
+                                                      const Vec4& blockPos,
+                                                      const Blocks& oldBlockType);
+  TyraCraft::EditContext makeEditContextForRemoval(const Blocks& oldBlockType,
+                                                    const Vec4& blockPos);
+
+  // --- Geometry impact detection (private helper) ---
+  bool doesBlockChangeAffectNeighbor(const Blocks& oldType, const Blocks& newType);
 
   /** Static pipeline used for rendering — shared with World for chunk renders */
   StaticPipeline stapip;
@@ -99,6 +114,11 @@ class WorldBlockInteraction {
   float lastTimePlayedBreakingSfx = 0.0F;
   float lastTimeCreatedParticle = 0.0F;
 
+  // Light propagation state (Phase 1: budget-bounded incremental propagation)
+  bool pendingLightPropagation = false;
+  TyraCraft::EditContext pendingEditContext;
+  TickTaskHandle lightPropagationTickHandle;
+
   // Target block draw data
   std::vector<Vec4> _targetBlockVertices;
   std::vector<Vec4> _targetBlockUVMap;
@@ -109,11 +129,11 @@ class WorldBlockInteraction {
   bool putSlab(const Blocks& slabToPlace, Player* t_player);
   bool putDefaultBlock(const Blocks blockToPlace, Player* t_player);
 
-  // Neighbor chunk updates
-  void updateNeighBorsChunksByAddedBlock(Vec4* offset);
-
   // Sound helpers
   void playPutBlockSound(const Blocks& blockType);
   void playDestroyBlockSound(const Blocks& blockType);
   void playBreakingBlockSound(const Blocks& blockType);
+
+  // Light propagation continuation (Phase 1)
+  void continueLightPropagation();
 };

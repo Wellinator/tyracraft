@@ -75,6 +75,7 @@ class WorldLiquidPropagation {
 
   // Chunks dirtied by liquid propagation (rebuilt each frame)
   std::unordered_set<Chunk*> affectedChunksIdByLiquidPropagation;
+  bool pendingLavaLightUpdate = false;
 
   // Water propagation
   void propagateWaterRemovalQueue();

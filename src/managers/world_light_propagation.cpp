@@ -303,3 +303,226 @@ void WorldLightPropagation::floodFillLightAdd(uint16_t x, uint16_t y,
     }
   }
 }
+
+// ===============================================================
+//  Budget-bounded propagation (Phase 1)
+// ===============================================================
+
+bool WorldLightPropagation::updateSunlightBudgeted(u32 budgetCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+  u32 remainingCycles = budgetCycles;
+
+  // Process removal first, then add (preserves two-phase algorithm)
+  if (!sunlightRemovalBfsQueue.empty()) {
+    bool removalDone = propagateSunlightRemovalQueueBudgeted(remainingCycles);
+    if (!removalDone) return false;  // Budget exhausted
+  }
+
+  if (!sunlightBfsQueue.empty()) {
+    bool addDone = propagateSunLightAddBFSQueueBudgeted(remainingCycles);
+    if (!addDone) return false;  // Budget exhausted
+  }
+
+  return true;  // Both queues empty
+}
+
+bool WorldLightPropagation::updateBlockLightsBudgeted(u32 budgetCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+  u32 remainingCycles = budgetCycles;
+
+  // Process removal first, then add
+  if (!lightRemovalBfsQueue.empty()) {
+    bool removalDone = propagateLightRemovalQueueBudgeted(remainingCycles);
+    if (!removalDone) return false;
+  }
+
+  if (!lightBfsQueue.empty()) {
+    bool addDone = propagateLightAddQueueBudgeted(remainingCycles);
+    if (!addDone) return false;
+  }
+
+  return true;
+}
+
+bool WorldLightPropagation::propagateSunlightRemovalQueueBudgeted(
+    u32& remainingCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+
+  while (!sunlightRemovalBfsQueue.empty()) {
+    BfsNode lightNode = sunlightRemovalBfsQueue.front();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    sunlightRemovalBfsQueue.pop();
+
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz))
+      floodFillSunlightRemove(nx + 1, ny, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz))
+      floodFillSunlightRemove(nx, ny + 1, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1))
+      floodFillSunlightRemove(nx, ny, nz + 1, lightValue);
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz))
+      floodFillSunlightRemove(nx - 1, ny, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz))
+      floodFillSunlightRemove(nx, ny - 1, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1))
+      floodFillSunlightRemove(nx, ny, nz - 1, lightValue);
+
+    // Check budget every node
+    u32 now;
+    asm volatile("mfc0 %0, $9" : "=r"(now));
+    if ((now - startCycles) >= remainingCycles) {
+      remainingCycles = 0;
+      return false;  // Budget exhausted, queue not empty
+    }
+  }
+
+  // Update remaining budget for caller
+  u32 endCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(endCycles));
+  u32 used = (endCycles - startCycles);
+  remainingCycles = (used < remainingCycles) ? (remainingCycles - used) : 0;
+  return true;  // Queue empty
+}
+
+bool WorldLightPropagation::propagateSunLightAddBFSQueueBudgeted(
+    u32& remainingCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+
+  while (!sunlightBfsQueue.empty()) {
+    auto lightNode = sunlightBfsQueue.front();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    sunlightBfsQueue.pop();
+
+    int nextLightValue = lightValue - 1;
+    if (nextLightValue < 0) continue;
+
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz))
+      floodFillSunlightAdd(nx + 1, ny, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz))
+      floodFillSunlightAdd(nx, ny + 1, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1))
+      floodFillSunlightAdd(nx, ny, nz + 1, nextLightValue);
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz))
+      floodFillSunlightAdd(nx - 1, ny, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz))
+      floodFillSunlightAdd(nx, ny - 1, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1))
+      floodFillSunlightAdd(nx, ny, nz - 1, nextLightValue);
+
+    // Check budget
+    u32 now;
+    asm volatile("mfc0 %0, $9" : "=r"(now));
+    if ((now - startCycles) >= remainingCycles) {
+      remainingCycles = 0;
+      return false;
+    }
+  }
+
+  u32 endCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(endCycles));
+  u32 used = (endCycles - startCycles);
+  remainingCycles = (used < remainingCycles) ? (remainingCycles - used) : 0;
+  return true;
+}
+
+bool WorldLightPropagation::propagateLightRemovalQueueBudgeted(
+    u32& remainingCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+
+  while (lightRemovalBfsQueue.empty() == false) {
+    BfsNode lightNode = lightRemovalBfsQueue.front();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightRemovalBfsQueue.pop();
+
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz))
+      floodFillLightRemove(nx + 1, ny, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz))
+      floodFillLightRemove(nx, ny + 1, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1))
+      floodFillLightRemove(nx, ny, nz + 1, lightValue);
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz))
+      floodFillLightRemove(nx - 1, ny, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz))
+      floodFillLightRemove(nx, ny - 1, nz, lightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1))
+      floodFillLightRemove(nx, ny, nz - 1, lightValue);
+
+    u32 now;
+    asm volatile("mfc0 %0, $9" : "=r"(now));
+    if ((now - startCycles) >= remainingCycles) {
+      remainingCycles = 0;
+      return false;
+    }
+  }
+
+  u32 endCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(endCycles));
+  u32 used = (endCycles - startCycles);
+  remainingCycles = (used < remainingCycles) ? (remainingCycles - used) : 0;
+  return true;
+}
+
+bool WorldLightPropagation::propagateLightAddQueueBudgeted(
+    u32& remainingCycles) {
+  u32 startCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(startCycles));
+
+  while (!lightBfsQueue.empty()) {
+    auto lightNode = lightBfsQueue.front();
+
+    uint16_t nx = lightNode.x;
+    uint16_t ny = lightNode.y;
+    uint16_t nz = lightNode.z;
+    uint8_t lightValue = lightNode.val;
+
+    lightBfsQueue.pop();
+
+    s16 nextLightValue = lightValue - 1;
+    if (nextLightValue <= 0) continue;
+
+    if (pLevel->BoundCheckMap(nx + 1, ny, nz))
+      floodFillLightAdd(nx + 1, ny, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny + 1, nz))
+      floodFillLightAdd(nx, ny + 1, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz + 1))
+      floodFillLightAdd(nx, ny, nz + 1, nextLightValue);
+    if (pLevel->BoundCheckMap(nx - 1, ny, nz))
+      floodFillLightAdd(nx - 1, ny, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny - 1, nz))
+      floodFillLightAdd(nx, ny - 1, nz, nextLightValue);
+    if (pLevel->BoundCheckMap(nx, ny, nz - 1))
+      floodFillLightAdd(nx, ny, nz - 1, nextLightValue);
+
+    u32 now;
+    asm volatile("mfc0 %0, $9" : "=r"(now));
+    if ((now - startCycles) >= remainingCycles) {
+      remainingCycles = 0;
+      return false;
+    }
+  }
+
+  u32 endCycles;
+  asm volatile("mfc0 %0, $9" : "=r"(endCycles));
+  u32 used = (endCycles - startCycles);
+  remainingCycles = (used < remainingCycles) ? (remainingCycles - used) : 0;
+  return true;
+}

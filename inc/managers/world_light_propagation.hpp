@@ -30,12 +30,23 @@ class WorldLightPropagation {
   void updateSunlight();
   void checkSunLightAt(uint16_t x, uint16_t y, uint16_t z);
 
+  /** @brief Budget-bounded sunlight propagation. Returns true when complete. */
+  bool updateSunlightBudgeted(u32 budgetCycles);
+  /** @brief Budget-bounded block light propagation. Returns true when complete. */
+  bool updateBlockLightsBudgeted(u32 budgetCycles);
+
   // --- Block Light ---
   void initBlockLight(BlockManager* blockManager);
   void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
   void removeLight(uint16_t x, uint16_t y, uint16_t z);
   void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
   void updateBlockLights();
+
+  /** @brief Check if any light propagation is pending. */
+  inline bool isAnyPropagationActive() const {
+    return !sunlightBfsQueue.empty() || !sunlightRemovalBfsQueue.empty() ||
+           !lightBfsQueue.empty() || !lightRemovalBfsQueue.empty();
+  }
 
   /** @brief Returns true if the block type allows light to pass through. */
   inline bool isTransparent(Blocks block) const {
@@ -63,6 +74,8 @@ class WorldLightPropagation {
   // Sunlight BFS helpers
   void propagateSunLightAddBFSQueue();
   void propagateSunlightRemovalQueue();
+  bool propagateSunLightAddBFSQueueBudgeted(u32& remainingCycles);
+  bool propagateSunlightRemovalQueueBudgeted(u32& remainingCycles);
   void floodFillSunlightAdd(uint16_t x, uint16_t y, uint16_t z,
                             u8 nextLightValue);
   void floodFillSunlightRemove(uint16_t x, uint16_t y, uint16_t z,
@@ -71,6 +84,8 @@ class WorldLightPropagation {
   // Block light BFS helpers
   void propagateLightRemovalQueue();
   void propagateLightAddQueue();
+  bool propagateLightRemovalQueueBudgeted(u32& remainingCycles);
+  bool propagateLightAddQueueBudgeted(u32& remainingCycles);
   void floodFillLightAdd(uint16_t x, uint16_t y, uint16_t z,
                          u8 nextLightValue);
   void floodFillLightRemove(uint16_t x, uint16_t y, uint16_t z,

@@ -28,12 +28,13 @@ WorldBlockInteraction::WorldBlockInteraction() {}
 
 WorldBlockInteraction::~WorldBlockInteraction() { clearTargetBlockDrawData(); }
 
-void WorldBlockInteraction::init(
-    Level* level, Renderer* renderer, BlockManager* blockManager,
-    ChunkManager* chunkManager, ParticlesManager* particlesManager,
-    WorldLightPropagation* lightPropagation,
-    WorldLiquidPropagation* liquidPropagation,
-    WorldLightModel* worldLightModel) {
+void WorldBlockInteraction::init(Level* level, Renderer* renderer,
+                                 BlockManager* blockManager,
+                                 ChunkManager* chunkManager,
+                                 ParticlesManager* particlesManager,
+                                 WorldLightPropagation* lightPropagation,
+                                 WorldLiquidPropagation* liquidPropagation,
+                                 WorldLightModel* worldLightModel) {
   pLevel = level;
   t_renderer = renderer;
   pBlockManager = blockManager;
@@ -44,6 +45,83 @@ void WorldBlockInteraction::init(
   pWorldLightModel = worldLightModel;
 
   stapip.setRenderer(&t_renderer->core);
+}
+
+void WorldBlockInteraction::registerTickCallbacks(TickScheduler& scheduler) {
+  // Register tick callback for incremental light propagation continuation
+  lightPropagationTickHandle = scheduler.everyHandle(1, [this]() {
+    if (pendingLightPropagation) continueLightPropagation();
+  });
+}
+
+// ===============================================================
+//  EditContext factory helpers
+// ===============================================================
+
+TyraCraft::EditContext WorldBlockInteraction::makeEditContextForPlacement(
+    const Blocks& newBlockType, const Vec4& blockPos,
+    const Blocks& oldBlockType) {
+  TyraCraft::EditContext ctx;
+  ctx.blockPos = blockPos;
+  ctx.oldBlockType = oldBlockType;
+  ctx.newBlockType = newBlockType;
+
+  // Determine if new block emits light and get light values
+  ctx.newLightValue = pBlockManager->getBlockLightValue(newBlockType);
+  ctx.isLightEmitter = (ctx.newLightValue > 0);
+
+  // Old light value (usually 0, unless replacing a torch)
+  ctx.oldLightValue = pBlockManager->getBlockLightValue(oldBlockType);
+
+  // Detect geometry impact: opaque → transparent or vice versa
+  const bool oldTransparent = pBlockManager->isBlockTransparent(oldBlockType);
+  const bool newTransparent = pBlockManager->isBlockTransparent(newBlockType);
+  ctx.affectsGeometry =
+      (oldTransparent != newTransparent) || ctx.isLightEmitter;
+
+  return ctx;
+}
+
+TyraCraft::EditContext WorldBlockInteraction::makeEditContextForRemoval(
+    const Blocks& oldBlockType, const Vec4& blockPos) {
+  TyraCraft::EditContext ctx;
+  ctx.blockPos = blockPos;
+  ctx.oldBlockType = oldBlockType;
+  ctx.newBlockType = Blocks::AIR_BLOCK;
+
+  // Removing block: check if it was light-emitting
+  ctx.oldLightValue = pBlockManager->getBlockLightValue(oldBlockType);
+  ctx.newLightValue = 0;  // Air doesn't emit light
+  ctx.isLightEmitter = false;
+
+  // Geometry change if old was opaque (removing opaque → transparent)
+  const bool wasOpaque = !pBlockManager->isBlockTransparent(oldBlockType);
+  ctx.affectsGeometry = wasOpaque;
+
+  return ctx;
+}
+
+void WorldBlockInteraction::continueLightPropagation() {
+  if (!pLightPropagation->isAnyPropagationActive()) {
+    // All propagation queues are empty — enqueue affected chunks now
+    pChunkManager->enqueueAffectedChunksForLightReload(pendingEditContext);
+    pendingLightPropagation = false;
+    return;
+  }
+
+  // Continue propagating with 2ms budget per tick
+  constexpr u32 LIGHT_BUDGET_CYCLES = 294912u;  // 2ms @ 147.456 MHz
+  bool sunlightDone =
+      pLightPropagation->updateSunlightBudgeted(LIGHT_BUDGET_CYCLES);
+  bool blockLightDone =
+      pLightPropagation->updateBlockLightsBudgeted(LIGHT_BUDGET_CYCLES);
+
+  if (sunlightDone && blockLightDone) {
+    // Propagation finished — enqueue affected chunks
+    pChunkManager->enqueueAffectedChunksForLightReload(pendingEditContext);
+    pendingLightPropagation = false;
+  }
+  // If not done, tick callback will run again next tick
 }
 
 // ===============================================================
@@ -106,9 +184,9 @@ void WorldBlockInteraction::updateTargetBlock(Camera* t_camera,
         targetBlock->minCorner.set(min);
         targetBlock->maxCorner.set(max);
         targetBlock->offset = result.offset;
-        targetBlock->baseColor = LightManager::GetLightColorAt(
-            result.offset, getTargetedFace(),
-            pWorldLightModel->sunLightIntensity);
+        targetBlock->baseColor =
+            LightManager::GetLightColorAt(result.offset, getTargetedFace(),
+                                          pWorldLightModel->sunLightIntensity);
         M4x4::copy(&targetBlock->model, model);
 
         if (targetBlock->index != _lastTargetBlockId) {
@@ -168,6 +246,10 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
   const Blocks blockTypeAtOffsetPosition = static_cast<Blocks>(
       pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
 
+  // Create EditContext BEFORE modifying the level
+  TyraCraft::EditContext editCtx = makeEditContextForPlacement(
+      blockType, blockOffset, blockTypeAtOffsetPosition);
+
   BlockOrientation orientation = BlockOrientation::East;
 
   if (pBlockManager->isBlockOriented(blockType)) {
@@ -190,20 +272,29 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
   pLightPropagation->checkSunLightAt(blockOffset.x, blockOffset.y,
                                      blockOffset.z);
 
-  const auto lightValue = pBlockManager->getBlockLightValue(blockType);
-  if (lightValue > 0) {
+  if (editCtx.newLightValue > 0) {
     pLightPropagation->addBlockLight(blockOffset.x, blockOffset.y,
-                                     blockOffset.z, lightValue);
+                                     blockOffset.z, editCtx.newLightValue);
   } else {
     pLightPropagation->removeLight(blockOffset.x, blockOffset.y, blockOffset.z);
   }
 
-  pLightPropagation->updateSunlight();
-  pLightPropagation->updateBlockLights();
+  // Phase 1: Budget-bounded light propagation (1ms per type, 2ms max total)
+  // Process as much as possible now; defer rest to tick callback if needed
+  constexpr u32 LIGHT_BUDGET_CYCLES = 147456u;  // 1ms @ 147.456 MHz
+  bool sunlightDone =
+      pLightPropagation->updateSunlightBudgeted(LIGHT_BUDGET_CYCLES);
+  bool blockLightDone =
+      pLightPropagation->updateBlockLightsBudgeted(LIGHT_BUDGET_CYCLES);
 
-  // Async light reload: enqueue affected chunks — no sync rebuild
-  // Processes 4 chunks/tick with 2ms budget to avoid frame stalls
-  pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 2.0f, false);
+  if (sunlightDone && blockLightDone) {
+    // Light propagation completed within budget — immediate chunk enqueue
+    pChunkManager->enqueueAffectedChunksForLightReload(editCtx);
+  } else {
+    // Light propagation incomplete — defer BFS continuation to tick callback
+    pendingLightPropagation = true;
+    pendingEditContext = editCtx;
+  }
 
   const Blocks oldTypeBlock = blockTypeAtOffsetPosition;
   const u8 isPlacingLiquid =
@@ -219,8 +310,6 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
     pLiquidPropagation->removeLiquid(blockOffset.x, blockOffset.y,
                                      blockOffset.z, (u8)oldTypeBlock);
   }
-
-  updateNeighBorsChunksByAddedBlock(const_cast<Vec4*>(&blockOffset));
 }
 
 void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
@@ -228,6 +317,10 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
   pParticlesManager->createBlockParticleBatch(blockToRemove, 48);
 
   Vec4 offsetToRemove = blockToRemove->offset;
+  // Create EditContext for removal BEFORE clearing the block
+  TyraCraft::EditContext editCtx =
+      makeEditContextForRemoval(blockToRemove->getType(), offsetToRemove);
+
   pLevel->SetBlockInMapByIndex(blockToRemove->index, (u8)Blocks::AIR_BLOCK);
   pLevel->SetLiquidDataToMap(offsetToRemove.x, offsetToRemove.y,
                              offsetToRemove.z, (u8)LiquidLevel::Percent0);
@@ -237,21 +330,31 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
                                  offsetToRemove.z);
   pLightPropagation->checkSunLightAt(offsetToRemove.x, offsetToRemove.y,
                                      offsetToRemove.z);
-  pLightPropagation->updateSunlight();
-  pLightPropagation->updateBlockLights();
-  
-  // Async light reload: spatially filtered to affected area (no sync rebuild)
-  pChunkManager->enqueueAffectedChunksForLightReload(offsetToRemove, 2.0f, false);
+
+  // Phase 1: Budget-bounded light propagation (1ms per type, 2ms max total)
+  constexpr u32 LIGHT_BUDGET_CYCLES = 147456u;  // 1ms
+  bool sunlightDone =
+      pLightPropagation->updateSunlightBudgeted(LIGHT_BUDGET_CYCLES);
+  bool blockLightDone =
+      pLightPropagation->updateBlockLightsBudgeted(LIGHT_BUDGET_CYCLES);
+
+  if (sunlightDone && blockLightDone) {
+    // Propagation complete — immediate chunk enqueue
+    pChunkManager->enqueueAffectedChunksForLightReload(editCtx);
+  } else {
+    // Light propagation incomplete — defer BFS continuation to tick callback
+    pendingLightPropagation = true;
+    pendingEditContext = editCtx;
+  }
 
   // Update liquid at position
-  pLiquidPropagation->checkLiquidPropagation(offsetToRemove.x,
-                                             offsetToRemove.y,
+  pLiquidPropagation->checkLiquidPropagation(offsetToRemove.x, offsetToRemove.y,
                                              offsetToRemove.z);
 
   playDestroyBlockSound(blockToRemove->getType());
 
   Chunk* chunkToRebuild = pChunkManager->getChunkByBlockOffset(offsetToRemove);
-  rebuildChunkNeighbors(chunkToRebuild, const_cast<Vec4*>(&offsetToRemove));
+  rebuildChunkNeighbors(chunkToRebuild, editCtx);
 
   // Remove up block if it's vegetation
   const Vec4 upBlockOffset =
@@ -276,9 +379,9 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
       upperBlock->setVisibleFaces(visibleFaces);
       upperBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
       upperBlock->position = pLevel->offsetToWorldPos(&upperBlock->offset);
-      upperBlock->baseColor = LightManager::GetLightColorAt(
-          upperBlock->offset, getTargetedFace(),
-          pWorldLightModel->sunLightIntensity);
+      upperBlock->baseColor =
+          LightManager::GetLightColorAt(upperBlock->offset, getTargetedFace(),
+                                        pWorldLightModel->sunLightIntensity);
 
       removeBlock(upperBlock);
       delete upperBlock;
@@ -375,6 +478,14 @@ bool WorldBlockInteraction::putTorchBlock() {
       }
     }
 
+    // Get old block type before modification
+    const Blocks oldBlockType = static_cast<Blocks>(
+        pLevel->GetBlockFromMap(blockOffset.x, blockOffset.y, blockOffset.z));
+
+    // Create EditContext for torch placement
+    TyraCraft::EditContext editCtx =
+        makeEditContextForPlacement(Blocks::TORCH, blockOffset, oldBlockType);
+
     pLevel->SetBlockInMap(blockOffset.x, blockOffset.y, blockOffset.z,
                           static_cast<u8>(Blocks::TORCH));
     pLevel->SetTorchOrientationDataToMap(blockOffset.x, blockOffset.y,
@@ -386,12 +497,22 @@ bool WorldBlockInteraction::putTorchBlock() {
     pLightPropagation->addBlockLight(blockOffset.x, blockOffset.y,
                                      blockOffset.z, lightValue);
 
-    pLightPropagation->updateSunlight();
-    pLightPropagation->updateBlockLights();
+    // Phase 1: Budget-bounded light propagation (1ms per type, 2ms max total)
+    // Process as much as possible now; defer rest to tick callback if needed
+    constexpr u32 LIGHT_BUDGET_CYCLES = 147456u;  // 1ms @ 147.456 MHz
+    bool sunlightDone =
+        pLightPropagation->updateSunlightBudgeted(LIGHT_BUDGET_CYCLES);
+    bool blockLightDone =
+        pLightPropagation->updateBlockLightsBudgeted(LIGHT_BUDGET_CYCLES);
 
-    // Async light reload for torch placement (no sync rebuild)
-    pChunkManager->enqueueAffectedChunksForLightReload(blockOffset, 2.0f, false);
-    updateNeighBorsChunksByAddedBlock(&blockOffset);
+    if (sunlightDone && blockLightDone) {
+      // Light propagation completed within budget — immediate chunk enqueue
+      pChunkManager->enqueueAffectedChunksForLightReload(editCtx);
+    } else {
+      // Light propagation incomplete — defer BFS continuation to tick callback
+      pendingLightPropagation = true;
+      pendingEditContext = editCtx;
+    }
 
     return true;
   }
@@ -837,50 +958,88 @@ void WorldBlockInteraction::clearTargetBlockDrawData() {
 //  Chunk neighbor rebuilding
 // ===============================================================
 
-void WorldBlockInteraction::rebuildChunkNeighbors(Chunk* t_chunk,
-                                                  Vec4* moddedOffset) {
-  // Enqueue the modified chunk itself for async rebuild — no sync BGM run.
-  // Chunk::reloadLightData() is processed by reloadLightDataAsync() at
-  // 4 chunks/tick with a 2ms frame budget, keeping the main thread responsive.
-  if (t_chunk && t_chunk->isLoaded()) {
-    pChunkManager->enqueueChunkToReloadLight(t_chunk, false);
+bool WorldBlockInteraction::doesBlockChangeAffectNeighbor(
+    const Blocks& oldType, const Blocks& newType) {
+  // Geometry impact occurs when transparency changes or light emission changes
+  const bool oldTransparent = pBlockManager->isBlockTransparent(oldType);
+  const bool newTransparent = pBlockManager->isBlockTransparent(newType);
+
+  // Transparency changed: opaque↔transparent → visible faces change
+  if (oldTransparent != newTransparent) return true;
+
+  // Light-emitting blocks: placing/removing light sources affects neighbors
+  const u8 oldLight = pBlockManager->getBlockLightValue(oldType);
+  const u8 newLight = pBlockManager->getBlockLightValue(newType);
+  if ((oldLight > 0) != (newLight > 0)) return true;
+
+  return false;
+}
+
+void WorldBlockInteraction::rebuildChunkNeighbors(
+    Chunk* t_chunk, const TyraCraft::EditContext& ctx) {
+  // Path A: Non-geometry edits (e.g., day/night light changes, or edits that
+  // don't change opacity/transparency). Only relight colors; geometry unchanged.
+  if (!ctx.affectsGeometry) {
+    if (t_chunk && t_chunk->isLoaded()) {
+      pChunkManager->enqueueChunkToReloadLight(t_chunk, true);  // colorsOnly
+    }
+    return;
   }
 
-  // Enqueue only border-touching neighbors (block on chunk boundary).
-  // Fixed: was using containsBlock() instead of !containsBlock() for lateral sides,
-  // causing all 4 lateral neighbors to be rebuilt even for interior blocks.
+  // Path B: Geometry-impacting edits (transparency or light emission changed)
+  // Rebuild modified chunk + check each neighbor for boundary geometry impact
+
+  if (t_chunk && t_chunk->isLoaded()) {
+    pChunkManager->enqueueChunkToReloadLight(t_chunk, false);  // full rebuild
+  }
+
+  // Check each of 6 neighbors only if block is on chunk boundary
+  // Neighbors at boundaries may have visible faces exposed/hidden → need full rebuild
   auto enqueueIfLoaded = [this](Chunk* c) {
     if (c && c->isLoaded()) pChunkManager->enqueueChunkToReloadLight(c, false);
   };
 
-  Vec4 bottom = *moddedOffset + DOWN_VEC;
-  if (!t_chunk->containsBlock(&bottom))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(bottom));
+  Vec4 bottom = ctx.blockPos + DOWN_VEC;
+  if (!t_chunk->containsBlock(&bottom)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(bottom));
+    }
+  }
 
-  Vec4 top = *moddedOffset + UP_VEC;
-  if (!t_chunk->containsBlock(&top))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(top));
+  Vec4 top = ctx.blockPos + UP_VEC;
+  if (!t_chunk->containsBlock(&top)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(top));
+    }
+  }
 
-  Vec4 right = *moddedOffset + RIGHT_VEC;
-  if (!t_chunk->containsBlock(&right))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(right));
+  Vec4 right = ctx.blockPos + RIGHT_VEC;
+  if (!t_chunk->containsBlock(&right)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(right));
+    }
+  }
 
-  Vec4 left = *moddedOffset + LEFT_VEC;
-  if (!t_chunk->containsBlock(&left))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(left));
+  Vec4 left = ctx.blockPos + LEFT_VEC;
+  if (!t_chunk->containsBlock(&left)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(left));
+    }
+  }
 
-  Vec4 front = *moddedOffset + FRONT_VEC;
-  if (!t_chunk->containsBlock(&front))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(front));
+  Vec4 front = ctx.blockPos + FRONT_VEC;
+  if (!t_chunk->containsBlock(&front)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(front));
+    }
+  }
 
-  Vec4 back = *moddedOffset + BACK_VEC;
-  if (!t_chunk->containsBlock(&back))
-    enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(back));
-}
-
-void WorldBlockInteraction::updateNeighBorsChunksByAddedBlock(Vec4* offset) {
-  Chunk* currentChunk = pChunkManager->getChunkByBlockOffset(*offset);
-  rebuildChunkNeighbors(currentChunk, offset);
+  Vec4 back = ctx.blockPos + BACK_VEC;
+  if (!t_chunk->containsBlock(&back)) {
+    if (doesBlockChangeAffectNeighbor(ctx.oldBlockType, ctx.newBlockType)) {
+      enqueueIfLoaded(pChunkManager->getChunkByBlockOffset(back));
+    }
+  }
 }
 
 // ===============================================================

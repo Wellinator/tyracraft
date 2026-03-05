@@ -5,6 +5,7 @@
 #include <debug/debug.hpp>
 #include "constants.hpp"
 #include "entities/chunk.hpp"
+#include "entities/edit_context.hpp"
 #include "managers/block_manager.hpp"
 #include <math/vec4.hpp>
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -106,11 +107,13 @@ class ChunkManager : public Singleton<ChunkManager> {
                          std::vector<Chunk*>& outChunks);
 
   // Async light update for block changes - spatially filtered to affected area
-  // Enqueues only chunks within radius of changed block for async light reload
-  // Optionally updates immediate chunk synchronously for instant visual feedback
+  // Uses EditContext to calculate radius dynamically and rebuild only affected chunks
+  void enqueueAffectedChunksForLightReload(const TyraCraft::EditContext& editCtx);
+  
+  // Legacy overload (deprecated) — for backwards compatibility
   void enqueueAffectedChunksForLightReload(const Vec4& blockPos, 
-                                           float radiusInChunks = 8.0f,
-                                           bool immediateUpdate = true);
+                                           float radiusInChunks = 2.0f,
+                                           bool immediateUpdate = false);
 
   void getColumnHeightInfo(int chunkX, int chunkZ, u8& outTopChunkY,
                            bool& outHasBlocks);
