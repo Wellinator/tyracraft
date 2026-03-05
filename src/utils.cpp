@@ -221,21 +221,28 @@ CoreBBoxFrustum Utils::FrustumAABBIntersect(const Plane* frustumPlanes,
 CoreBBoxFrustum Utils::FrustumTriangleIntersect(const Plane* frustumPlanes,
                                                 const Vec4& v0, const Vec4& v1,
                                                 const Vec4& v2) {
-  // inside counters
-  u8 A = 0, B = 0, C = 0;
+  // Separating-axis test against all 6 frustum planes.
+  // If all 3 vertices are outside the SAME plane, the triangle is fully
+  // outside the frustum (no need to clip).
+  // If any vertex is outside any plane, the triangle is partially inside.
+  bool allInside = true;
 
-  for (u8 i = 0; i < 4; i++) {
-    if (frustumPlanes[i].distanceTo(v0) >= 0) A++;
-    if (frustumPlanes[i].distanceTo(v1) >= 0) B++;
-    if (frustumPlanes[i].distanceTo(v2) >= 0) C++;
+  for (u8 i = 0; i < 6; i++) {
+    const bool in0 = frustumPlanes[i].distanceTo(v0) >= 0;
+    const bool in1 = frustumPlanes[i].distanceTo(v1) >= 0;
+    const bool in2 = frustumPlanes[i].distanceTo(v2) >= 0;
 
-    if ((A + B + C) == 0) return Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+    // All 3 vertices on the wrong side of this plane → conclusively outside
+    if (!in0 && !in1 && !in2)
+      return Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM;
+
+    // At least one vertex outside this plane → not fully inside
+    if (!in0 || !in1 || !in2)
+      allInside = false;
   }
 
-  // If all vertices are inside all planes
-  // the counter will be equals 4(num of planes) x 3 (num of inside vertices)
-  return (A + B + C) == 12 ? Tyra::CoreBBoxFrustum::IN_FRUSTUM
-                           : Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
+  return allInside ? Tyra::CoreBBoxFrustum::IN_FRUSTUM
+                   : Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM;
 }
 
 std::vector<UtilDirectory> Utils::listDir(const char* dir) {

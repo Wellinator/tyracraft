@@ -878,8 +878,8 @@ void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
         float fnx, fny, fnz;
         GetFaceNormalVec(exitFace, fnx, fny, fnz);
         float dot = fnx * camForward.x + fnz * camForward.z;
-        if (dot < 0.0f)
-          continue;  // Exit direction opposes camera = going backward
+        if (dot < -0.4f)
+          continue;  // Exit direction strongly opposes camera = going backward
       }
 
       // Filter 3: Connectivity test — can we see through this chunk from

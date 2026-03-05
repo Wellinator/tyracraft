@@ -466,9 +466,18 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     pColors = &fadedColors;
   }
 
-  // Compute clipping flag once per chunk (not once per TileGroup/draw call)
+  // Compute clipping flag once per chunk (not once per TileGroup/draw call).
+  // Always clip when near the camera OR when the chunk is only partially inside
+  // the frustum — BGM quads can span up to 16 blocks (256 world-units), so a
+  // partially-visible chunk almost certainly has quads crossing a frustum plane.
+  // Cap partial-frustum clipping at 3.5 chunks to avoid expensive per-triangle
+  // software clipping on distant edge-of-frustum chunks.
+  const float normalizedDist =
+      scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   const bool needsClipping =
-      (scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE) <= 1.5f;
+      normalizedDist <= 1.5f ||
+      (frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM &&
+       normalizedDist <= 3.5f);
 
   // Use grouped rendering if we have TileGroups AND all verts are covered by groups
   bool useGrouped = false;
@@ -510,9 +519,18 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     pColors = &fadedTranspColors;
   }
 
-  // Compute clipping flag once per chunk (not once per TileGroup/draw call)
+  // Compute clipping flag once per chunk (not once per TileGroup/draw call).
+  // Always clip when near the camera OR when the chunk is only partially inside
+  // the frustum — BGM quads can span up to 16 blocks (256 world-units), so a
+  // partially-visible chunk almost certainly has quads crossing a frustum plane.
+  // Cap partial-frustum clipping at 3.5 chunks to avoid expensive per-triangle
+  // software clipping on distant edge-of-frustum chunks.
+  const float normalizedDist =
+      scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   const bool needsClipping =
-      (scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE) <= 1.5f;
+      normalizedDist <= 1.5f ||
+      (frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM &&
+       normalizedDist <= 3.5f);
 
   // Use grouped rendering if we have TileGroups AND all verts are covered by groups
   bool useGrouped = false;
