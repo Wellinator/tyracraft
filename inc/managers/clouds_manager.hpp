@@ -57,4 +57,12 @@ class CloudsManager {
   const float nextInteration = (TICKS_IN_SECONDS * CLOUDS_TICKS_UPDATE);
 
   const Vec4 scaleVec = Vec4(1.0F / 4.0F, 1.0F / 4.0F, 1.0F, 0.0F);
+
+  // Persistent draw bags — built once in init(), dynamic fields updated in update()
+  M4x4 _bagMatrix;
+  StaPipTextureBag _bagTex;
+  StaPipInfoBag _bagInfo;
+  StaPipColorBag _bagColor;
+  StaPipBag _bag;
+  bool _bagReady = false;
 };

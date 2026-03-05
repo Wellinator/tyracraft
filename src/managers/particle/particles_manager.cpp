@@ -53,6 +53,8 @@ void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
 #endif  // DEBUG_MODE
 
   aliveParticlesCounter = ParticlesManager::Particles.size();
+  particleBags.clear();
+
   for (size_t i = 0; i < ParticlesManager::Particles.size(); i++) {
     Particle* p = ParticlesManager::Particles[i];
     // Prevent to update an expired particle
@@ -62,6 +64,30 @@ void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
       continue;
     }
     p->update(deltaTime, &t_camera->position);
+
+    // Pre-build draw bag for this particle
+    ParticleBagCache cache;
+    cache.matrix = M4x4::Identity;
+
+    cache.textureBag.coordinates = p->uv;
+    cache.textureBag.texture = (p->type == ParticleType::Block)
+                                   ? blocksTexture
+                                   : particlesTexture;
+
+    cache.infoBag.model = &cache.matrix;
+    cache.infoBag.textureMappingType =
+        Tyra::PipelineTextureMappingType::TyraNearest;
+    cache.infoBag.blendingEnabled = true;
+
+    cache.colorBag.single = &p->color;
+
+    cache.bag.count = Particle::DRAW_DATA_COUNT;
+    cache.bag.vertices = p->vertex;
+    cache.bag.color = &cache.colorBag;
+    cache.bag.info = &cache.infoBag;
+    cache.bag.texture = &cache.textureBag;
+
+    particleBags.emplace_back(std::move(cache));
   }
 };
 
@@ -141,43 +167,18 @@ void ParticlesManager::render() {
   if (g_debug_menu.enableRenderParticles == false) return;
 #endif  // DEBUG_MODE
 
-  Particle** pData = ParticlesManager::Particles.data();
-  size_t size = ParticlesManager::Particles.size();
+  if (particleBags.empty()) return;
 
   t_renderer->renderer3D.usePipeline(stapip);
 
-  for (size_t i = 0; i < size; i++) {
-    Particle* p = pData[i];
-
-    if (p->expired) continue;
-
-    M4x4 rawMatrix = M4x4::Identity;
-
-    StaPipTextureBag textureBag;
-    textureBag.coordinates = p->uv;
-
-    if (p->type == ParticleType::Block) {
-      textureBag.texture = blocksTexture;
-    } else {
-      textureBag.texture = particlesTexture;
-    }
-
-    StaPipInfoBag infoBag;
-    infoBag.model = &rawMatrix;
-    infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-    infoBag.blendingEnabled = true;
-
-    StaPipColorBag colorBag;
-    colorBag.single = &p->color;
-
-    StaPipBag bag;
-    bag.count = Particle::DRAW_DATA_COUNT;
-    bag.vertices = p->vertex;
-
-    bag.color = &colorBag;
-    bag.info = &infoBag;
-    bag.texture = &textureBag;
-
-    stapip.core.render(&bag);
+  // Bags were pre-built in update() — just submit them
+  for (size_t i = 0; i < particleBags.size(); i++) {
+    // Re-bind the info model pointer (points into the cache struct itself)
+    // This is necessary because StaPipInfoBag::model is a raw pointer.
+    particleBags[i].infoBag.model = &particleBags[i].matrix;
+    particleBags[i].bag.info = &particleBags[i].infoBag;
+    particleBags[i].bag.color = &particleBags[i].colorBag;
+    particleBags[i].bag.texture = &particleBags[i].textureBag;
+    stapip.core.render(&particleBags[i].bag);
   }
 };

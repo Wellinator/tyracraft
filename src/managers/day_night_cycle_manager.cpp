@@ -32,6 +32,11 @@ void DayNightCycleManager::loadTextures() {
       FileUtils::fromCwd("/textures/environment/sun.png"));
   moonTexture = t_renderer->core.texture.repository.add(
       FileUtils::fromCwd("/textures/environment/moon.png"));
+
+  // Assign textures to bags after they are loaded
+  _sunBagTex.texture  = sunTexture;
+  _moonBagTex.texture = moonTexture;
+  _bagsReady = true;
 }
 
 void DayNightCycleManager::loadDrawData() {
@@ -54,6 +59,35 @@ void DayNightCycleManager::loadDrawData() {
   moonUVMap[3] = (Vec4(xMin, yMax, 1.0F, 0.0F));
   moonUVMap[4] = (Vec4(xMin, yMin, 1.0F, 0.0F));
   moonUVMap[5] = (Vec4(xMax, yMin, 1.0F, 0.0F));
+
+  // --- Build persistent sun bag ---
+  _sunBagMatrix.identity();
+  _sunBagTex.coordinates = sunUVMap.data();   // pointer into member array
+  // texture assigned once textures are loaded (see buildBagsAfterTextures)
+  _sunBagInfo.model = &_sunBagMatrix;
+  _sunBagInfo.blendingEnabled = true;
+  _sunBagInfo.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
+  _sunBagInfo.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  _sunBagColor.single = &baseColor;
+  _sunBag.count = DRAW_DATA_COUNT;
+  _sunBag.vertices = sunVertexData.data();    // pointer into member array
+  _sunBag.color = &_sunBagColor;
+  _sunBag.info = &_sunBagInfo;
+  _sunBag.texture = &_sunBagTex;
+
+  // --- Build persistent moon bag ---
+  _moonBagMatrix.identity();
+  _moonBagTex.coordinates = moonUVMap.data();
+  _moonBagInfo.model = &_moonBagMatrix;
+  _moonBagInfo.blendingEnabled = true;
+  _moonBagInfo.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
+  _moonBagInfo.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  _moonBagColor.single = &baseColor;
+  _moonBag.count = DRAW_DATA_COUNT;
+  _moonBag.vertices = moonVertexData.data();  // pointer into member array
+  _moonBag.color = &_moonBagColor;
+  _moonBag.info = &_moonBagInfo;
+  _moonBag.texture = &_moonBagTex;
 }
 
 void DayNightCycleManager::updateSunDrawData(const Vec4& camPos) {
@@ -152,69 +186,20 @@ void DayNightCycleManager::render() {
   if (g_debug_menu.enableDayNightCycle == false) return;
 #endif  // DEBUG_MODE
 
+  if (!_bagsReady) return;
+
   t_renderer->renderer3D.usePipeline(stapip);
 
+  // sunVertexData and moonVertexData are updated by update() each frame.
+  // The persistent bags already hold direct pointers into those member arrays,
+  // so no re-assignment is needed — just submit.
   if (g_ticksCounter > 22300 || g_ticksCounter < 13702) {
-    renderSun();
+    stapip.core.render(&_sunBag);
   }
 
   if (g_ticksCounter >= 11834 || g_ticksCounter < 167) {
-    renderMoon();
+    stapip.core.render(&_moonBag);
   }
-}
-
-void DayNightCycleManager::renderSun() {
-  M4x4 rawMatrix;
-  rawMatrix.identity();
-
-  StaPipTextureBag textureBag;
-  textureBag.texture = sunTexture;
-  textureBag.coordinates = sunUVMap.data();
-
-  StaPipInfoBag infoBag;
-  infoBag.model = &rawMatrix;
-  infoBag.blendingEnabled = true;
-  infoBag.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-
-  StaPipColorBag colorBag;
-  colorBag.single = &baseColor;
-
-  StaPipBag bag;
-  bag.count = sunVertexData.size();
-  bag.vertices = sunVertexData.data();
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  stapip.core.render(&bag);
-}
-
-void DayNightCycleManager::renderMoon() {
-  M4x4 rawMatrix;
-  rawMatrix.identity();
-
-  StaPipTextureBag textureBag;
-  textureBag.texture = moonTexture;
-  textureBag.coordinates = moonUVMap.data();
-
-  StaPipInfoBag infoBag;
-  infoBag.model = &rawMatrix;
-  infoBag.blendingEnabled = true;
-  infoBag.zTestType = Tyra::PipelineZTest::PipelineZTest_AllPass;
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-
-  StaPipColorBag colorBag;
-  colorBag.single = &baseColor;
-
-  StaPipBag bag;
-  bag.count = moonVertexData.size();
-  bag.vertices = moonVertexData.data();
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  stapip.core.render(&bag);
 }
 
 const float DayNightCycleManager::getSunLightIntensity() {

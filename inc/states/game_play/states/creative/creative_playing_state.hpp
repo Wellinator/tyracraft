@@ -89,4 +89,17 @@ class CreativePlayingState : public PlayingStateBase {
       LanguageManager::Translate("/state_game_menu/saved_successfully");
   std::string Message_Progress_Has_Been_Saved =
       LanguageManager::Translate("/state_game_menu/progress_saved");
+
+  // Cached debug strings — updated in update(), read in drawDebugInfo()
+  std::string _dbg_seed;
+  std::string _dbg_fps;
+  std::string _dbg_ticks;
+  std::string _dbg_playerPos;
+  std::string _dbg_visibleChunks;
+  std::string _dbg_chunksToLoad;
+  std::string _dbg_chunksToUnload;
+  std::string _dbg_chunksToUpdateLight;
+  std::string _dbg_particles;
+  std::string _dbg_tickAvg;
+  std::string _dbg_version;
 };

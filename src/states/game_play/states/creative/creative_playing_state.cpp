@@ -102,6 +102,44 @@ void CreativePlayingState::update(const float& deltaTime) {
 
   stateGamePlay->context->t_camera->update(deltaTime,
                                            stateGamePlay->player->isMoving);
+
+  // Pre-build debug strings while in update frame (zero allocation at render)
+  if (g_debug_mode) {
+    const Vec4 playerOffset = stateGamePlay->world->pLevel->worldPosToOffset(
+        *stateGamePlay->player->getPosition());
+
+    _dbg_seed = std::string("Seed: ").append(
+        std::to_string(stateGamePlay->world->getSeed()));
+    _dbg_fps = std::string("FPS: ").append(
+        std::to_string(stateGamePlay->context->t_engine->info.getFps()));
+    _dbg_ticks = std::string("Ticks: ").append(std::to_string(g_ticksCounter));
+    _dbg_playerPos = std::string("Player Position ")
+                         .append(" X: ")
+                         .append(std::to_string((int)playerOffset.x))
+                         .append("   Y: ")
+                         .append(std::to_string((int)playerOffset.y))
+                         .append("   Z: ")
+                         .append(std::to_string((int)playerOffset.z));
+    _dbg_visibleChunks = std::string("Visible chunks: ").append(
+        std::to_string(
+            static_cast<int>(stateGamePlay->world->getVisibleChunksCount())));
+    _dbg_chunksToLoad = std::string("Chunks to load: ").append(
+        std::to_string(
+            static_cast<int>(stateGamePlay->world->getChunksToLoadCount())));
+    _dbg_chunksToUnload = std::string("Chunks to unload: ").append(
+        std::to_string(static_cast<int>(
+            stateGamePlay->world->getChunksToUnloadCount())));
+    _dbg_chunksToUpdateLight =
+        std::string("Chunks to update light: ")
+            .append(std::to_string(static_cast<int>(
+                stateGamePlay->world->getChunksToUpdateLightCount())));
+    _dbg_particles = std::string("Particles alive: ").append(
+        std::to_string(
+            stateGamePlay->world->particlesManager.getParticlesCounter()));
+    _dbg_tickAvg = std::string("Tick avg speed").append(
+        std::to_string(tickManager.getTickTimeAverage()));
+    _dbg_version = std::string("Version: ").append(VERSION);
+  }
 }
 
 void CreativePlayingState::processIdleWork() {
@@ -361,90 +399,18 @@ void CreativePlayingState::drawDebugInfo() {
   FontManager& fm = FontManager::getInstanceRef();
   float cursorY = 5.0f;
 
-  // Draw seed
-  std::string seed = std::string("Seed: ").append(
-      std::to_string(stateGamePlay->world->getSeed()));
-  fm.printText(seed, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw FPS:
-  std::string fps = std::string("FPS: ").append(
-      std::to_string(stateGamePlay->context->t_engine->info.getFps()));
-  fm.printText(fps, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 25.0f;
-
-  // Draw ticks
-  std::string ticks =
-      std::string("Ticks: ").append(std::to_string(g_ticksCounter));
-  fm.printText(ticks, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw Player Position
-  const Vec4 playerOffset = stateGamePlay->world->pLevel->worldPosToOffset(
-      *stateGamePlay->player->getPosition());
-  std::string playerPosition = std::string("Player Position ")
-                                   .append(" X: ")
-                                   .append(std::to_string((int)playerOffset.x))
-                                   .append("   Y: ")
-                                   .append(std::to_string((int)playerOffset.y))
-                                   .append("   Z: ")
-                                   .append(std::to_string((int)playerOffset.z));
-  fm.printText(playerPosition,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw chunks info
-  std::string totalLoadedChunks =
-      std::string("Visible chunks: ")
-          .append(std::to_string(
-              static_cast<int>(stateGamePlay->world->getVisibleChunksCount())));
-  fm.printText(totalLoadedChunks,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  std::string chunksToLoad =
-      std::string("Chunks to load: ")
-          .append(std::to_string(
-              static_cast<int>(stateGamePlay->world->getChunksToLoadCount())));
-  fm.printText(chunksToLoad,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  std::string chunksToUnload =
-      std::string("Chunks to unload: ")
-          .append(std::to_string(static_cast<int>(
-              stateGamePlay->world->getChunksToUnloadCount())));
-  fm.printText(chunksToUnload,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  std::string chunksToUpdateLight =
-      std::string("Chunks to update light: ")
-          .append(std::to_string(static_cast<int>(
-              stateGamePlay->world->getChunksToUpdateLightCount())));
-  fm.printText(chunksToUpdateLight,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw particles counter
-  std::string particle_counter =
-      std::string("Particles alive: ")
-          .append(std::to_string(
-              stateGamePlay->world->particlesManager.getParticlesCounter()));
-  fm.printText(particle_counter,
-               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw tick avg
-  std::string tick_avg =
-      std::string("Tick avg speed")
-          .append(std::to_string(tickManager.getTickTimeAverage()));
-  fm.printText(tick_avg, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F));
-  cursorY += 15.0f;
-
-  // Draw version
-  std::string version = std::string("Version: ").append(VERSION);
-  fm.printText(version, FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
+  // All strings are pre-built in update() — no heap allocation here
+  fm.printText(_dbg_seed,              FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_fps,               FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 25.0f;
+  fm.printText(_dbg_ticks,             FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_playerPos,         FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_visibleChunks,     FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_chunksToLoad,      FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_chunksToUnload,    FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_chunksToUpdateLight, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_particles,         FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_tickAvg,           FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_version,           FontOptions(Vec2(5.0f, 420.0f),  Color(255), 0.8F));
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {

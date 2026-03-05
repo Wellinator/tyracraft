@@ -65,6 +65,17 @@ class ParticlesManager {
   std::vector<Vec4> vertex;
   std::vector<Vec4> uv;
 
+  // Pre-built draw bags — populated in update(), consumed in render()
+  struct ParticleBagCache {
+    M4x4 matrix;           // identity, stays constant
+    StaPipTextureBag textureBag;
+    StaPipInfoBag infoBag;
+    StaPipColorBag colorBag;
+    StaPipBag bag;
+    Texture* texture = nullptr;
+  };
+  std::vector<ParticleBagCache> particleBags;
+
   void destroyExpiredParticles();
   void destroyAllParticles();
 

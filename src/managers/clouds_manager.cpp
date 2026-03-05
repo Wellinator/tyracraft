@@ -21,6 +21,24 @@ void CloudsManager::init(Renderer* renderer,
   stapip.setRenderer(&renderer->core);
   cloudsTex = t_renderer->getTextureRepository().add(
       FileUtils::fromCwd("/textures/environment/clouds.png"));
+
+  // Build the static parts of the persistent draw bag once
+  _bagMatrix.identity();
+  _bagTex.texture = cloudsTex;
+  _bagTex.coordinates = uvMap;          // pointer stays valid (member array)
+  _bagInfo.model = &_bagMatrix;
+  _bagInfo.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
+  _bagInfo.blendingEnabled = true;
+  _bagInfo.fullClipChecks = true;
+  _bagInfo.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
+      PipelineInfoBagFrustumCulling_Precise;
+  _bagColor.single = &baseColor;
+  _bag.count = DRAW_DATA_COUNT;
+  _bag.vertices = vertices;             // pointer stays valid (member array)
+  _bag.color = &_bagColor;
+  _bag.info = &_bagInfo;
+  _bag.texture = &_bagTex;
+  _bagReady = true;
 }
 
 void CloudsManager::calcVertices() {
@@ -71,6 +89,10 @@ void CloudsManager::update(const float deltaTime) {
   if (position.x > 4.0F) position.x = 1;
 
   calcUVMapping();
+
+  // Update dynamic parts of the persistent bag
+  _bagColor.single = &baseColor;
+  _bagTex.coordinates = uvMap;   // uvMap was just recalculated above
 };
 
 void CloudsManager::tick() {
@@ -86,32 +108,8 @@ void CloudsManager::render() {
   if (g_debug_menu.enableClouds == false) return;
 #endif  // DEBUG_MODE
 
+  if (!_bagReady) return;
+
   t_renderer->renderer3D.usePipeline(stapip);
-
-  M4x4 rawMatrix;
-  rawMatrix.identity();
-
-  StaPipTextureBag textureBag;
-  textureBag.texture = cloudsTex;
-  textureBag.coordinates = uvMap;
-
-  StaPipInfoBag infoBag;
-  infoBag.model = &rawMatrix;
-  infoBag.textureMappingType = Tyra::PipelineTextureMappingType::TyraNearest;
-  infoBag.blendingEnabled = true;
-  infoBag.fullClipChecks = true;
-  infoBag.frustumCulling = Tyra::PipelineInfoBagFrustumCulling::
-      PipelineInfoBagFrustumCulling_Precise;
-
-  StaPipColorBag colorBag;
-  colorBag.single = &baseColor;
-
-  StaPipBag bag;
-  bag.count = DRAW_DATA_COUNT;
-  bag.vertices = vertices;
-  bag.color = &colorBag;
-  bag.info = &infoBag;
-  bag.texture = &textureBag;
-
-  stapip.core.render(&bag);
+  stapip.core.render(&_bag);
 };

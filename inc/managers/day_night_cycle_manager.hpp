@@ -15,6 +15,10 @@ using Tyra::FileUtils;
 using Tyra::M4x4;
 using Tyra::Math;
 using Tyra::Renderer;
+using Tyra::StaPipBag;
+using Tyra::StaPipColorBag;
+using Tyra::StaPipInfoBag;
+using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
@@ -56,8 +60,6 @@ class DayNightCycleManager {
   void loadDrawData();
   void updateSunDrawData(const Vec4& camPos);
   void updateMoonDrawData(const Vec4& camPos);
-  void renderSun();
-  void renderMoon();
 
   void calNextEntitiesPosition();
   void updateEntitiesPosition();
@@ -109,4 +111,20 @@ class DayNightCycleManager {
   const float xMax = 1.0F;
   const float yMin = 0.0F;
   const float yMax = 1.0F;
+
+  // Persistent draw bags for sun and moon
+  // Static fields set in loadDrawData(), dynamic vertex data updated in update()
+  M4x4 _sunBagMatrix;
+  StaPipTextureBag _sunBagTex;
+  StaPipInfoBag _sunBagInfo;
+  StaPipColorBag _sunBagColor;
+  StaPipBag _sunBag;
+
+  M4x4 _moonBagMatrix;
+  StaPipTextureBag _moonBagTex;
+  StaPipInfoBag _moonBagInfo;
+  StaPipColorBag _moonBagColor;
+  StaPipBag _moonBag;
+
+  bool _bagsReady = false;
 };
