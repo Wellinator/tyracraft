@@ -104,6 +104,8 @@ TyraCraft::EditContext WorldBlockInteraction::makeEditContextForRemoval(
 void WorldBlockInteraction::continueLightPropagation() {
   if (!pLightPropagation->isAnyPropagationActive()) {
     // All propagation queues are empty — enqueue affected chunks now
+    Chunk* editedChunk = pChunkManager->getChunkByBlockOffset(pendingEditContext.blockPos);
+    rebuildChunkNeighbors(editedChunk, pendingEditContext);
     pChunkManager->enqueueAffectedChunksForLightReload(pendingEditContext);
     pendingLightPropagation = false;
     return;
@@ -118,6 +120,8 @@ void WorldBlockInteraction::continueLightPropagation() {
 
   if (sunlightDone && blockLightDone) {
     // Propagation finished — enqueue affected chunks
+    Chunk* editedChunk = pChunkManager->getChunkByBlockOffset(pendingEditContext.blockPos);
+    rebuildChunkNeighbors(editedChunk, pendingEditContext);
     pChunkManager->enqueueAffectedChunksForLightReload(pendingEditContext);
     pendingLightPropagation = false;
   }
@@ -325,6 +329,11 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
   pLevel->SetLiquidDataToMap(offsetToRemove.x, offsetToRemove.y,
                              offsetToRemove.z, (u8)LiquidLevel::Percent0);
 
+  // Register neighbor chunks for rebuild BEFORE light propagation
+  // This ensures correct flags are in bitset before spatial enqueue
+  Chunk* chunkToRebuild = pChunkManager->getChunkByBlockOffset(offsetToRemove);
+  rebuildChunkNeighbors(chunkToRebuild, editCtx);
+
   // Update sunlight and block light at position
   pLightPropagation->removeLight(offsetToRemove.x, offsetToRemove.y,
                                  offsetToRemove.z);
@@ -352,9 +361,6 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
                                              offsetToRemove.z);
 
   playDestroyBlockSound(blockToRemove->getType());
-
-  Chunk* chunkToRebuild = pChunkManager->getChunkByBlockOffset(offsetToRemove);
-  rebuildChunkNeighbors(chunkToRebuild, editCtx);
 
   // Remove up block if it's vegetation
   const Vec4 upBlockOffset =

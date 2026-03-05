@@ -290,6 +290,15 @@ void ChunkManager::enqueueChunkToReloadLight(Chunk* chunk, bool colorsOnly) {
     if (!chunksInLightQueue.test(chunk->id)) {
       chunksToUpdateLight.push({chunk, colorsOnly});
       chunksInLightQueue.set(chunk->id);
+      if (!colorsOnly) {
+        chunksNeedingFullRebuild.set(chunk->id);
+      }
+    } else {
+      // Chunk already in queue — check if we need to upgrade flag
+      // Allow colorsOnly=true → colorsOnly=false upgrade
+      if (!colorsOnly) {
+        chunksNeedingFullRebuild.set(chunk->id);
+      }
     }
   }
 }
@@ -305,7 +314,7 @@ void ChunkManager::reloadLightDataAsync() {
   // With Step 5 optimizations, most chunks are now colorsOnly → faster queue drain.
   constexpr int MAX_COLORS_ONLY_PER_TICK = 4;
   // Keep block edit feedback responsive while still bounded.
-  constexpr int MAX_FULL_REBUILDS_PER_TICK = 2;
+  constexpr int MAX_FULL_REBUILDS_PER_TICK = 1;
   int processed = 0;
   int processedColorsOnly = 0;
   int processedFullRebuild = 0;
@@ -332,11 +341,20 @@ void ChunkManager::reloadLightDataAsync() {
     // Validate state (chunk may have been unloaded)
     if (!chunk->isLoaded()) continue;
 
+    // Check if this chunk was upgraded to need full rebuild
+    // This allows colorsOnly=true → colorsOnly=false upgrade without queue search
+    bool actualColorsOnly = entry.colorsOnly && !chunksNeedingFullRebuild.test(chunk->id);
+    
+    // Clear the upgrade flag now that we're processing
+    if (chunksNeedingFullRebuild.test(chunk->id)) {
+      chunksNeedingFullRebuild.reset(chunk->id);
+    }
+
     // For day/night color-only updates: skip chunks built very recently since
     // they already have correct light data from the build pass.
     // For block-change full rebuilds: always process immediately so the player
     // sees the geometry update within 1-2 ticks.
-    if (entry.colorsOnly) {
+    if (actualColorsOnly) {
       if (g_ticksCounter >= chunk->loadedAtTick &&
           (g_ticksCounter - chunk->loadedAtTick) < 10)
         continue;
@@ -348,7 +366,7 @@ void ChunkManager::reloadLightDataAsync() {
         // Defer the remaining day/night work to the next tick to smooth frame
         // time when many chunks are visible.
         if (!chunksInLightQueue.test(chunk->id)) {
-          chunksToUpdateLight.push(entry);
+          chunksToUpdateLight.push({chunk, actualColorsOnly});
           chunksInLightQueue.set(chunk->id);
         }
         break;
@@ -360,7 +378,7 @@ void ChunkManager::reloadLightDataAsync() {
       if (processedFullRebuild >= MAX_FULL_REBUILDS_PER_TICK) {
         // Preserve ordering fairness while respecting per-tick cap.
         if (!chunksInLightQueue.test(chunk->id)) {
-          chunksToUpdateLight.push(entry);
+          chunksToUpdateLight.push({chunk, actualColorsOnly});
           chunksInLightQueue.set(chunk->id);
         }
         break;
@@ -423,8 +441,28 @@ void ChunkManager::enqueueAffectedChunksForLightReload(
     const float chunkY = chunk->center.y / CHUNK_SIZE;
     if (fabsf(chunkY - centerChunkY) > 1.0f) continue;
 
-    // Edited chunk needs full rebuild; neighbors only need light color updates
-    const bool colorsOnly = (chunk != editedChunk);
+    // Determine rebuild type based on chunk relationship to edited block:
+    // 1. Edited chunk always needs full rebuild
+    // 2. Immediate face-sharing neighbors need full rebuild if geometry changed
+    // 3. Distant chunks only need light color updates
+    bool colorsOnly = true;
+    
+    if (chunk == editedChunk) {
+      // The chunk containing the edited block always needs full rebuild
+      colorsOnly = false;
+    } else if (editedChunk && editCtx.affectsGeometry) {
+      // Check if this is an immediate neighbor (±1 chunk in X/Y/Z, but not diagonal)
+      const int dx = abs((int)chunk->minOffset.x - (int)editedChunk->minOffset.x) / CHUNK_SIZE;
+      const int dy = abs((int)chunk->minOffset.y - (int)editedChunk->minOffset.y) / CHUNK_SIZE;
+      const int dz = abs((int)chunk->minOffset.z - (int)editedChunk->minOffset.z) / CHUNK_SIZE;
+      const int totalOffset = dx + dy + dz;
+      
+      // Immediate face-sharing neighbor = exactly 1 chunk away in one direction
+      if (totalOffset == 1) {
+        colorsOnly = false;  // Needs full rebuild to show boundary faces
+      }
+    }
+    
     enqueueChunkToReloadLight(chunk, colorsOnly);
     enqueued++;
     if (enqueued >= MAX_AFFECTED_CHUNKS_PER_EDIT) break;
