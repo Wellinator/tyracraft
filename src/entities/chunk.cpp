@@ -278,9 +278,13 @@ void Chunk::tickRandomBlock() {
         pLevel->GetPosFromXYZ(blockToTick.x, blockToTick.y, blockToTick.z);
 
     if (blockType == static_cast<u8>(Blocks::TORCH)) {
-      // Creates smoke particle
-      SmokeParticle* sp = new SmokeParticle(&blockToTick);
-      ParticlesManager::EmitParticle(sp);
+      // Throttle smoke emission to ~50% of torch ticks to halve smoke particle count.
+      // Flame is always renewed because it's a persistent tracked particle (by ID).
+      const u8 emitSmoke = Utils::Probability(0.5);
+      if (emitSmoke) {
+        SmokeParticle* sp = new SmokeParticle(&blockToTick);
+        ParticlesManager::EmitParticle(sp);
+      }
 
       // Creates Flame particle
       Particle* currentParticle = ParticlesManager::GetParticleById(blockID);

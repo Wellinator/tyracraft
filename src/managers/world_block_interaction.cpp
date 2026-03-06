@@ -314,7 +314,7 @@ void WorldBlockInteraction::placeBlockAt(const Blocks& blockType,
 
 void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
   // Generate particles right before block gets destroyed
-  pParticlesManager->createBlockParticleBatch(blockToRemove, 48);
+  pParticlesManager->createBlockParticleBatch(blockToRemove, 32);
 
   Vec4 offsetToRemove = blockToRemove->offset;
   // Create EditContext for removal BEFORE clearing the block
@@ -785,7 +785,7 @@ void WorldBlockInteraction::breakTargetBlock(const float& deltaTime) {
       targetBlock->damage = breaking_time_pessed / breakingTime * 100;
 
       if (lastTimeCreatedParticle > 0.2) {
-        pParticlesManager->createBlockParticleBatch(targetBlock, 4);
+        pParticlesManager->createBlockParticleBatch(targetBlock, 3);
         lastTimeCreatedParticle = 0;
       } else {
         lastTimeCreatedParticle += deltaTime;
@@ -820,7 +820,7 @@ void WorldBlockInteraction::breakTargetBlockInCreativeMode(
       targetBlock->damage = breaking_time_pessed / breakingTime * 100;
 
       if (lastTimeCreatedParticle > 0.2) {
-        pParticlesManager->createBlockParticleBatch(targetBlock, 3);
+        pParticlesManager->createBlockParticleBatch(targetBlock, 2);
         lastTimeCreatedParticle = 0;
       } else {
         lastTimeCreatedParticle += deltaTime;

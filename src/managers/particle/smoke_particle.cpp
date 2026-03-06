@@ -9,6 +9,39 @@
 
 using Tyra::Color;
 
+// Static UV LUT: 8 stages × 6 vertices — built once in initUVLUT()
+Vec4** SmokeParticle::uvLUT = nullptr;
+
+void SmokeParticle::initUVLUT() {
+  if (uvLUT) return;  // Already initialised
+  const float colSize = 0.0625F;
+
+  uvLUT = new Vec4*[8];
+  for (u8 stage = 0; stage < 8; stage++) {
+    uvLUT[stage] = new Vec4[6];
+    const float xMin = stage * colSize;
+    const float xMax = xMin + colSize;
+    const float yMin = 0.0000F;
+    const float yMax = 0.0625F;
+
+    uvLUT[stage][0] = Vec4(xMin, yMax, 1.0F, 0.0F);
+    uvLUT[stage][1] = Vec4(xMax, yMin, 1.0F, 0.0F);
+    uvLUT[stage][2] = Vec4(xMax, yMax, 1.0F, 0.0F);
+    uvLUT[stage][3] = Vec4(xMin, yMax, 1.0F, 0.0F);
+    uvLUT[stage][4] = Vec4(xMin, yMin, 1.0F, 0.0F);
+    uvLUT[stage][5] = Vec4(xMax, yMin, 1.0F, 0.0F);
+  }
+}
+
+void SmokeParticle::destroyUVLUT() {
+  if (!uvLUT) return;
+  for (u8 stage = 0; stage < 8; stage++) {
+    delete[] uvLUT[stage];
+  }
+  delete[] uvLUT;
+  uvLUT = nullptr;
+}
+
 SmokeParticle::SmokeParticle(Vec4* offset) : Particle(ParticleType::Smoke) {
   billboarded = true;
 
@@ -68,9 +101,14 @@ SmokeParticle::SmokeParticle(Vec4* offset) : Particle(ParticleType::Smoke) {
 
   const float colorRGB = Tyra::Math::randomi(35, 150);
   color.set(colorRGB, colorRGB, colorRGB);
-};
 
-SmokeParticle::~SmokeParticle() { return; }
+  // Init UV from LUT stage 0 (uvLUT must be built before any smoke particle)
+  if (uvLUT) {
+    memcpy(uv, uvLUT[0], sizeof(Vec4) * 6);
+  }
+}
+
+SmokeParticle::~SmokeParticle() {}
 
 void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   // Reset lerp state
@@ -85,7 +123,7 @@ void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   const auto nextPosition = _targetPosition + (_velocity * fixedDeltaTime);
   _targetPosition.set(nextPosition);
 
-  // Updates smoke UV based on lifeTime
+  // Updates smoke UV based on lifeTime — only when stage changes
   const u8 tempStage = getStage();
   if (tempStage != stageIndex) {
     stageIndex = tempStage;
@@ -93,7 +131,7 @@ void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
   }
 }
 
-void SmokeParticle::update(const float deltaTime, const Vec4* camPos) {
+void SmokeParticle::update(const float deltaTime, const M4x4* billboard) {
   _elapsedTime += deltaTime;
   if (_elapsedTime > _lifeTime) {
     expired = true;
@@ -102,32 +140,20 @@ void SmokeParticle::update(const float deltaTime, const Vec4* camPos) {
 
   _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-  M4x4 model, scale;
-
-  // Set scale
+  M4x4 scale;
   scale.identity();
   scale.scaleX(size);
   scale.scaleY(size);
 
-  /**
-   * Apply billboard rotation to particle of type equals to
-   * PaticleType::Block
-   */
-  M4x4 result;
-  M4x4 temp;
-  M4x4::lookAt(&temp, _position, *camPos);
-  Utils::inverseMatrix(&result, &temp);
+  // Apply shared billboard rotation + per-particle scale, then translate to world pos
+  M4x4 model = *billboard * scale;
+  model.translate(_position);
 
-  // Set particle model. M = R * S;
-  model = result * scale;
-
-  size_t size = Particle::DRAW_DATA_COUNT;
   const Vec4* data = Particle::rawData;
-
-  for (size_t j = 0; j < size; j++) {
+  for (size_t j = 0; j < Particle::DRAW_DATA_COUNT; j++) {
     vertex[j] = model * data[j];
   }
-};
+}
 
 u8 SmokeParticle::getStage() {
   const float lerp = 1.0F - (_elapsedTime / _lifeTime);
@@ -135,18 +161,19 @@ u8 SmokeParticle::getStage() {
 }
 
 void SmokeParticle::updateUV(const u8 _stageIndex) {
+  // Fast memcpy from pre-built LUT — no Vec4 construction at runtime
+  if (uvLUT) {
+    memcpy(uv, uvLUT[_stageIndex], sizeof(Vec4) * 6);
+    return;
+  }
+  // Fallback (LUT not yet initialised)
   const float colSize = 0.0625F;
-
-  auto xMin = _stageIndex * colSize;
-  auto xMax = xMin + colSize;
-
-  auto yMin = 0.0000F;
-  auto yMax = 0.0625F;
-
-  uv[0] = Vec4(xMin, yMax, 1.0F, 0.0F);
-  uv[1] = Vec4(xMax, yMin, 1.0F, 0.0F);
-  uv[2] = Vec4(xMax, yMax, 1.0F, 0.0F);
-  uv[3] = Vec4(xMin, yMax, 1.0F, 0.0F);
-  uv[4] = Vec4(xMin, yMin, 1.0F, 0.0F);
-  uv[5] = Vec4(xMax, yMin, 1.0F, 0.0F);
+  const float xMin = _stageIndex * colSize;
+  const float xMax = xMin + colSize;
+  uv[0] = Vec4(xMin, 0.0625F, 1.0F, 0.0F);
+  uv[1] = Vec4(xMax, 0.0000F, 1.0F, 0.0F);
+  uv[2] = Vec4(xMax, 0.0625F, 1.0F, 0.0F);
+  uv[3] = Vec4(xMin, 0.0625F, 1.0F, 0.0F);
+  uv[4] = Vec4(xMin, 0.0000F, 1.0F, 0.0F);
+  uv[5] = Vec4(xMax, 0.0000F, 1.0F, 0.0F);
 }

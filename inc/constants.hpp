@@ -428,6 +428,13 @@ enum class ParticleType { Block, Flame, Smoke };
 
 #define MAX_ADPCM_CH 23
 
+// Maximum number of live particles at any given time
+// Pool cap: 192 block + 32 flame + 32 smoke = 256
+#define MAX_PARTICLES 256
+#define MAX_BLOCK_PARTICLES 192
+#define MAX_FLAME_PARTICLES 32
+#define MAX_SMOKE_PARTICLES 32
+
 typedef enum {
   WORLD_TYPE_ORIGINAL = 0,
   WORLD_TYPE_FLAT = 1,

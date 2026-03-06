@@ -5,6 +5,16 @@
 #include "managers/model_builder.hpp"
 #include "managers/block/vertex_block_data.hpp"
 
+// Static UV shared by all flame particles — built once, never changes
+const Vec4 FlameParticle::flameUV[6] = {
+    Vec4(0.0000F, 0.2421F, 1.0F, 0.0F),  // xMin, yMax
+    Vec4(0.0546F, 0.1875F, 1.0F, 0.0F),  // xMax, yMin
+    Vec4(0.0546F, 0.2421F, 1.0F, 0.0F),  // xMax, yMax
+    Vec4(0.0000F, 0.2421F, 1.0F, 0.0F),  // xMin, yMax
+    Vec4(0.0000F, 0.1875F, 1.0F, 0.0F),  // xMin, yMin
+    Vec4(0.0546F, 0.1875F, 1.0F, 0.0F),  // xMax, yMin
+};
+
 FlameParticle::FlameParticle(Vec4* offset) : Particle(ParticleType::Flame) {
   billboarded = true;
 
@@ -55,28 +65,15 @@ FlameParticle::FlameParticle(Vec4* offset) : Particle(ParticleType::Flame) {
   Vec4 center = min + ((max - min) / 2);
   _position = center + offsetCorrection;
 
-  // TODO: apply correct flame UV and move to static property
-  // Calc rand offset between row and col;
-  auto xMin = 0.0000F;
-  auto xMax = 0.0546F;
-  auto yMin = 0.1875F;
-  auto yMax = 0.2421F;
+  // Copy from shared static UV — no per-instance computation
+  memcpy(uv, flameUV, sizeof(flameUV));
 
-  uv[0] = Vec4(xMin, yMax, 1.0F, 0.0F);
-  uv[1] = Vec4(xMax, yMin, 1.0F, 0.0F);
-  uv[2] = Vec4(xMax, yMax, 1.0F, 0.0F);
-  uv[3] = Vec4(xMin, yMax, 1.0F, 0.0F);
-  uv[4] = Vec4(xMin, yMin, 1.0F, 0.0F);
-  uv[5] = Vec4(xMax, yMin, 1.0F, 0.0F);
-
-  // TODO: refactor lightmanager to use block offset instead block reference
-  // and get color in realtime based on block position
   color = Color(120, 120, 120);
-};
+}
 
-void FlameParticle::fixedUpdate(const float fixedDeltaTime) { return; }
+void FlameParticle::fixedUpdate(const float fixedDeltaTime) {}
 
-void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
+void FlameParticle::update(const float deltaTime, const M4x4* billboard) {
   _elapsedTime += deltaTime;
 
   if (_elapsedTime > _lifeTime) {
@@ -84,29 +81,18 @@ void FlameParticle::update(const float deltaTime, const Vec4* camPos) {
     return;
   }
 
-  M4x4 model, translation, scale;
-
-  float _scale = START_SIZE * (1.0F - (_elapsedTime / _lifeTime));
+  const float scaleVal = START_SIZE * (1.0F - (_elapsedTime / _lifeTime));
+  M4x4 scale;
   scale.identity();
-  scale.scaleX(_scale);
-  scale.scaleY(_scale);
+  scale.scaleX(scaleVal);
+  scale.scaleY(scaleVal);
 
-  /**
-   * Apply billboard rotation to particle of type equals to
-   * PaticleType::Block
-   */
-  M4x4 result;
-  M4x4 temp;
-  M4x4::lookAt(&temp, _position, *camPos);
-  Utils::inverseMatrix(&result, &temp);
+  // Apply shared billboard rotation + per-particle scale, then translate to world pos
+  M4x4 model = *billboard * scale;
+  model.translate(_position);
 
-  // Set particle model. M = R * S;
-  model = result * scale;
-
-  size_t size = Particle::DRAW_DATA_COUNT;
   const Vec4* data = Particle::rawData;
-
-  for (size_t j = 0; j < size; j++) {
+  for (size_t j = 0; j < Particle::DRAW_DATA_COUNT; j++) {
     vertex[j] = model * data[j];
   }
-};
+}

@@ -109,7 +109,7 @@ void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
   }
 }
 
-void BlockParticle::update(const float deltaTime, const Vec4* camPos) {
+void BlockParticle::update(const float deltaTime, const M4x4* billboard) {
   _elapsedTime += deltaTime;
 
   if (_elapsedTime > _lifeTime) {
@@ -117,29 +117,19 @@ void BlockParticle::update(const float deltaTime, const Vec4* camPos) {
     return;
   }
 
-  M4x4 model, scale;
-  model.identity();
-
-  _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
-
-  // Set scale matrix
+  M4x4 scale;
   scale.identity();
   scale.scaleX(_scale);
   scale.scaleY(_scale);
 
-  /**
-   * Apply billboard rotation to particle of type equals to
-   * PaticleType::Block
-   */
-  M4x4 result;
-  M4x4 temp;
-  M4x4::lookAt(&temp, _position, *camPos);
-  Utils::inverseMatrix(&result, &temp);
+  _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-  // Set particle model. M = R * S;
-  model = result * scale;
+  // Apply shared billboard rotation + per-particle scale then translate to world pos
+  M4x4 model = *billboard * scale;
+  model.translate(_position);
 
+  const Vec4* data = Particle::rawData;
   for (size_t j = 0; j < Particle::DRAW_DATA_COUNT; j++) {
-    vertex[j] = model * Particle::rawData[j];
+    vertex[j] = model * data[j];
   }
 };

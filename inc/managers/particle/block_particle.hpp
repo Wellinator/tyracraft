@@ -18,5 +18,5 @@ class BlockParticle : public Particle {
 
   explicit BlockParticle(Block* pBlock);
   void fixedUpdate(const float fixedDeltaTime);
-  void update(const float deltaTime, const Vec4* camPos);
+  void update(const float deltaTime, const M4x4* billboard) override;
 };

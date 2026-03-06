@@ -16,10 +16,15 @@ class SmokeParticle : public Particle {
   ~SmokeParticle();
 
   void fixedUpdate(const float fixedDeltaTime);
-  void update(const float deltaTime, const Vec4* camPos);
+  void update(const float deltaTime, const M4x4* billboard) override;
 
   u8 getStage();
   void updateUV(const u8 _stageIndex);
+
+  // UV look-up table: 8 animation stages × 6 vertices (built once at init)
+  static Vec4** uvLUT;
+  static void initUVLUT();
+  static void destroyUVLUT();
 
  private:
   Vec4 _prevPosition = Vec4(0.0F), _targetPosition = Vec4(0.0F);
