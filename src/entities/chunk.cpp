@@ -168,15 +168,15 @@ inline Color computeChunkFaceColor(Level* pLevel, WorldLightModel* lightModel,
   u8 lightData = 0;
   if (nx >= 0 && ny >= 0 && nz >= 0 && nx < (int)pLevel->map.width &&
       ny < (int)pLevel->map.height && nz < (int)pLevel->map.length) {
-    lightData = pLevel->GetLightDataFromMap((uint16_t)nx, (uint16_t)ny,
-                                            (uint16_t)nz);
+    lightData =
+        pLevel->GetLightDataFromMap((uint16_t)nx, (uint16_t)ny, (uint16_t)nz);
   }
 
   const u8 sunLvl = (lightData >> 4) & 0xF;
   const u8 blkLvl = lightData & 0xF;
   const float sunIntensity = lightModel ? lightModel->sunLightIntensity : 1.0f;
-  const float sunFactor = std::max((sunLvl * sunIntensity) / kMaxLightValue,
-                                   kMinLightFactor);
+  const float sunFactor =
+      std::max((sunLvl * sunIntensity) / kMaxLightValue, kMinLightFactor);
   const float blkFactor = blkLvl / kMaxLightValue;
   const float factor = std::max(sunFactor, blkFactor) * kFaceIntensity[d];
 
@@ -229,7 +229,7 @@ Chunk::Chunk(const Vec4& minOffset, const Vec4& maxOffset, const u16& id) {
       Vec4(tempMax.x, tempMax.y, tempMin.z),
   };
   this->bbox = new BBox(_vertices, count);
-  
+
   // Initialize fade state
   fadeAlpha = 0.0f;
   isFadingIn = false;
@@ -256,7 +256,6 @@ void Chunk::update(const Plane* frustumPlanes) {
       isFadingIn = false;
     }
   }
-
 }
 
 void Chunk::tick() {
@@ -278,13 +277,8 @@ void Chunk::tickRandomBlock() {
         pLevel->GetPosFromXYZ(blockToTick.x, blockToTick.y, blockToTick.z);
 
     if (blockType == static_cast<u8>(Blocks::TORCH)) {
-      // Throttle smoke emission to ~50% of torch ticks to halve smoke particle count.
-      // Flame is always renewed because it's a persistent tracked particle (by ID).
-      const u8 emitSmoke = Utils::Probability(0.5);
-      if (emitSmoke) {
-        SmokeParticle* sp = new SmokeParticle(&blockToTick);
-        ParticlesManager::EmitParticle(sp);
-      }
+      SmokeParticle* sp = new SmokeParticle(&blockToTick);
+      ParticlesManager::EmitParticle(sp);
 
       // Creates Flame particle
       Particle* currentParticle = ParticlesManager::GetParticleById(blockID);
@@ -372,27 +366,25 @@ void Chunk::flushDrawData(Renderer* t_renderer, StaticPipeline* stapip,
 // updateTextureInfo() performs, and keeps the CLAMP write on the same DMA
 // channel (GIF / PATH3) with proper synchronization.
 // ---------------------------------------------------------------------------
-static void sendClampRegister(DmaGifBuilder& builder,
-                              const texwrap_t* wrap) {
+static void sendClampRegister(DmaGifBuilder& builder, const texwrap_t* wrap) {
   builder.begin();
   builder.addGifTag(GIF_REG_AD);
-  builder.addAd(
-      GS_SET_CLAMP(wrap->horizontal, wrap->vertical,
-                   wrap->minu, wrap->maxu, wrap->minv, wrap->maxv),
-      GS_REG_CLAMP_1);
+  builder.addAd(GS_SET_CLAMP(wrap->horizontal, wrap->vertical, wrap->minu,
+                             wrap->maxu, wrap->minv, wrap->maxv),
+                GS_REG_CLAMP_1);
   builder.send();
 }
 
 void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
-                          std::vector<Vec4>* pVerts, std::vector<Color>* pColors,
-                          std::vector<Vec4>* pUV,
+                          std::vector<Vec4>* pVerts,
+                          std::vector<Color>* pColors, std::vector<Vec4>* pUV,
                           const std::vector<TileGroup>& groups,
                           bool needsClipping) {
   BlockManager* blockMgr = BlockManager::getInstance();
   Tyra::Texture* tex = blockMgr->getBlocksTexture();
 
-  const int texW  = tex->getWidth();
-  const int texH  = tex->getHeight();
+  const int texW = tex->getWidth();
+  const int texH = tex->getHeight();
   const int tileW = texW / 16;  // texels per tile (U axis)
   const int tileH = texH / 16;  // texels per tile (V axis)
 
@@ -428,8 +420,8 @@ void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
         const int maxv = row * tileH;
 
         tex->setWrapSettings(Tyra::TextureWrap::RegionRepeat,
-                             Tyra::TextureWrap::RegionRepeat,
-                             minu, minv, maxu, maxv);
+                             Tyra::TextureWrap::RegionRepeat, minu, minv, maxu,
+                             maxv);
       }
 
       // Send only the CLAMP register — no full texture re-upload
@@ -440,8 +432,7 @@ void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
     }
 
     flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                  static_cast<int>(group.start),
-                  static_cast<int>(group.count),
+                  static_cast<int>(group.start), static_cast<int>(group.count),
                   needsClipping);
   }
   // Default-wrap restore is deferred to ChunkManager::rendererOpaque/
@@ -452,8 +443,8 @@ void Chunk::renderGrouped(Renderer* t_renderer, StaticPipeline* stapip,
 void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   if (vertices.empty()) return;
 
-  std::vector<Vec4>*  pVerts  = &vertices;
-  std::vector<Vec4>*  pUV     = &UV;
+  std::vector<Vec4>* pVerts = &vertices;
+  std::vector<Vec4>* pUV = &UV;
   std::vector<Color>* pColors = &colors;
 
   // Pre-apply fade alpha to colors once per chunk using a static buffer
@@ -464,7 +455,7 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
     fadedColors.resize(totalVerts);
     const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
     for (size_t i = 0; i < totalVerts; i++) {
-      fadedColors[i]   = (*pColors)[i];
+      fadedColors[i] = (*pColors)[i];
       fadedColors[i].a = alphaValue;
     }
     pColors = &fadedColors;
@@ -473,9 +464,9 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   // Compute clipping flag once per chunk (not once per TileGroup/draw call).
   // Always clip when near the camera OR when the chunk is only partially inside
   // the frustum — BGM quads can span up to 16 blocks (256 world-units), so a
-  // partially-visible chunk almost certainly has quads crossing a frustum plane.
-  // Cap partial-frustum clipping at 3.5 chunks to avoid expensive per-triangle
-  // software clipping on distant edge-of-frustum chunks.
+  // partially-visible chunk almost certainly has quads crossing a frustum
+  // plane. Cap partial-frustum clipping at 3.5 chunks to avoid expensive
+  // per-triangle software clipping on distant edge-of-frustum chunks.
   const float normalizedDist =
       scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   const bool needsClipping =
@@ -483,7 +474,8 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
       (frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM &&
        normalizedDist <= 3.5f);
 
-  // Use grouped rendering if we have TileGroups AND all verts are covered by groups
+  // Use grouped rendering if we have TileGroups AND all verts are covered by
+  // groups
   bool useGrouped = false;
   if (!mergedOpaqueGroups.empty()) {
     const TileGroup& lastGroup = mergedOpaqueGroups.back();
@@ -493,11 +485,11 @@ void Chunk::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
   }
 
   if (useGrouped) {
-    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV,
-                  mergedOpaqueGroups, needsClipping);
+    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV, mergedOpaqueGroups,
+                  needsClipping);
   } else {
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                  0, pVerts->size(), needsClipping);
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size(),
+                  needsClipping);
   }
 }
 
@@ -505,8 +497,8 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
                                     StaticPipeline* stapip) {
   if (transpVertices.empty()) return;
 
-  std::vector<Vec4>*  pVerts  = &transpVertices;
-  std::vector<Vec4>*  pUV     = &transpUV;
+  std::vector<Vec4>* pVerts = &transpVertices;
+  std::vector<Vec4>* pUV = &transpUV;
   std::vector<Color>* pColors = &transpColors;
 
   // Pre-apply fade alpha to transparent colors once per chunk using a static
@@ -517,7 +509,7 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
     fadedTranspColors.resize(totalVerts);
     const u8 alphaValue = static_cast<u8>(fadeAlpha * 128.0f);
     for (size_t i = 0; i < totalVerts; i++) {
-      fadedTranspColors[i]   = (*pColors)[i];
+      fadedTranspColors[i] = (*pColors)[i];
       fadedTranspColors[i].a = alphaValue;
     }
     pColors = &fadedTranspColors;
@@ -526,9 +518,9 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   // Compute clipping flag once per chunk (not once per TileGroup/draw call).
   // Always clip when near the camera OR when the chunk is only partially inside
   // the frustum — BGM quads can span up to 16 blocks (256 world-units), so a
-  // partially-visible chunk almost certainly has quads crossing a frustum plane.
-  // Cap partial-frustum clipping at 3.5 chunks to avoid expensive per-triangle
-  // software clipping on distant edge-of-frustum chunks.
+  // partially-visible chunk almost certainly has quads crossing a frustum
+  // plane. Cap partial-frustum clipping at 3.5 chunks to avoid expensive
+  // per-triangle software clipping on distant edge-of-frustum chunks.
   const float normalizedDist =
       scaledCenterOffset.distanceTo(camPositon) / CHUNK_DISTANCE;
   const bool needsClipping =
@@ -536,7 +528,8 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
       (frustumCheck == Tyra::CoreBBoxFrustum::PARTIALLY_IN_FRUSTUM &&
        normalizedDist <= 3.5f);
 
-  // Use grouped rendering if we have TileGroups AND all verts are covered by groups
+  // Use grouped rendering if we have TileGroups AND all verts are covered by
+  // groups
   bool useGrouped = false;
   if (!mergedTranspGroups.empty()) {
     const TileGroup& lastGroup = mergedTranspGroups.back();
@@ -546,11 +539,11 @@ void Chunk::rendererTransparentData(Renderer* t_renderer,
   }
 
   if (useGrouped) {
-    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV,
-                  mergedTranspGroups, needsClipping);
+    renderGrouped(t_renderer, stapip, pVerts, pColors, pUV, mergedTranspGroups,
+                  needsClipping);
   } else {
-    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV,
-                  0, pVerts->size(), needsClipping);
+    flushDrawData(t_renderer, stapip, pVerts, pColors, pUV, 0, pVerts->size(),
+                  needsClipping);
   }
 }
 
@@ -565,7 +558,7 @@ void Chunk::clear() {
   // Reset fade state
   isFadingIn = false;
   fadeAlpha = 0.0f;
-  
+
   state = ChunkState::Clean;
   markDistanceDirty();  // Phase 1: Invalidate cache on clear
 }
@@ -612,8 +605,6 @@ void Chunk::clearDrawDataWithoutShrink() {
   transpFaceSpans.clear();
 }
 
-
-
 void Chunk::build() {
 #ifdef DEBUG_MODE
   size_t initialMemoryUsage = 0;
@@ -644,11 +635,11 @@ void Chunk::build() {
   if (allAir) {
     clearDrawDataWithoutShrink();
     isEmpty = true;
-    state   = ChunkState::Loaded;
+    state = ChunkState::Loaded;
     isFadingIn = true;
-    fadeAlpha  = 0.0f;
+    fadeAlpha = 0.0f;
     markDistanceDirty();
-    visibilityGraph      = 0x7FFF;
+    visibilityGraph = 0x7FFF;
     visibilityGraphDirty = false;
     if (onLoadedCallback) onLoadedCallback(this);
     return;
@@ -663,7 +654,7 @@ void Chunk::build() {
 
     if (pendingIsNewChunk) {
       isFadingIn = true;
-      fadeAlpha  = 0.0f;
+      fadeAlpha = 0.0f;
       pendingIsNewChunk = false;
     }
 
@@ -677,8 +668,7 @@ void Chunk::build() {
 
 #ifdef DEBUG_MODE
   if (g_debug_menu.logChunkMemoryUsage) {
-    const size_t totalVerts =
-        vertices.size() + transpVertices.size();
+    const size_t totalVerts = vertices.size() + transpVertices.size();
     if (totalVerts > 0) {
       const size_t finalMem = get_used_memory();
       printf("Chunk %d memory: %.2f KB (%zu verts)\n", id,
@@ -718,7 +708,7 @@ void Chunk::beginBuild() {
 
   // Reset incremental meshing state
   meshGenFaceDir = 0;
-  buildPhase     = BuildPhase::AirCheck;
+  buildPhase = BuildPhase::AirCheck;
 
   // Initialise the BGM output buffers (clear + reserve).  The output
   // accumulates across multiple MeshGen buildStep() calls (one per face dir).
@@ -745,10 +735,10 @@ bool Chunk::buildStep() {
       }
       if (allAir) {
         clearDrawDataWithoutShrink();
-        isEmpty    = true;
+        isEmpty = true;
         buildPhase = BuildPhase::Finalize;
       } else {
-        isEmpty    = false;
+        isEmpty = false;
         buildPhase = BuildPhase::MeshGen;
       }
       return false;
@@ -768,19 +758,21 @@ bool Chunk::buildStep() {
 
       if (meshGenFaceDir < BinaryGreedyMesher::MAX_FACE_DIRS) {
         // Process one face direction
-        bgm.processFaceDir(pLevel, minOffset,
-                           static_cast<BinaryGreedyMesher::FaceDir>(meshGenFaceDir),
-                           t_worldLightModel, bgmOutput);
+        bgm.processFaceDir(
+            pLevel, minOffset,
+            static_cast<BinaryGreedyMesher::FaceDir>(meshGenFaceDir),
+            t_worldLightModel, bgmOutput);
         meshGenFaceDir++;
         // Stay in MeshGen phase — more directions remain (or slabs step next)
         return false;
       } else {
-        // meshGenFaceDir == 6: process slabs + legacy, then move output -> chunk
+        // meshGenFaceDir == 6: process slabs + legacy, then move output ->
+        // chunk
         bgm.processSlabs(pLevel, minOffset, t_worldLightModel, bgmOutput);
 
         // ---- Legacy pass: torches, plants, liquids (non-cuboid, non-slab)
         VisibleFacesManager* vfm = VisibleFacesManager::getInstance();
-        BlockManager*        bm  = BlockManager::getInstance();
+        BlockManager* bm = BlockManager::getInstance();
         bool hasLegacyOpaque = false;
         bool hasLegacyTransp = false;
         const u32 legacyOpaqueStart = (u32)bgmOutput.opaqueVertices.size();
@@ -795,21 +787,27 @@ bool Chunk::buildStep() {
               if (BinaryGreedyMesher::isCuboidBlock(bt)) continue;
               if (BinaryGreedyMesher::isSlabBlock(bt)) continue;
 
-              Vec4     offset(x, y, z);
+              Vec4 offset(x, y, z);
               const u8 vf = vfm->getVisibleFacesByOffset(offset);
               if (!vf) continue;
 
               Block* tpl = bm->getBlockTemplateByType(bt);
               const bool transp = tpl->hasTransparency();
 
-              std::vector<Vec4>*  tv = transp ? &bgmOutput.transpVertices : &bgmOutput.opaqueVertices;
-              std::vector<Color>* tc = transp ? &bgmOutput.transpColors   : &bgmOutput.opaqueColors;
-              std::vector<Vec4>*  tu = transp ? &bgmOutput.transpUV       : &bgmOutput.opaqueUV;
+              std::vector<Vec4>* tv = transp ? &bgmOutput.transpVertices
+                                             : &bgmOutput.opaqueVertices;
+              std::vector<Color>* tc =
+                  transp ? &bgmOutput.transpColors : &bgmOutput.opaqueColors;
+              std::vector<Vec4>* tu =
+                  transp ? &bgmOutput.transpUV : &bgmOutput.opaqueUV;
 
-              MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu, t_worldLightModel, pLevel);
+              MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu,
+                                    t_worldLightModel, pLevel);
 
-              if (transp) hasLegacyTransp = true;
-              else        hasLegacyOpaque = true;
+              if (transp)
+                hasLegacyTransp = true;
+              else
+                hasLegacyOpaque = true;
             }
           }
         }
@@ -819,104 +817,110 @@ bool Chunk::buildStep() {
           TileGroup lg;
           lg.start = legacyOpaqueStart;
           lg.count = (u32)bgmOutput.opaqueVertices.size() - legacyOpaqueStart;
-          lg.col   = TileGroup::LEGACY_TILE;
-          lg.row   = TileGroup::LEGACY_TILE;
+          lg.col = TileGroup::LEGACY_TILE;
+          lg.row = TileGroup::LEGACY_TILE;
           bgmOutput.opaqueGroups.push_back(lg);
         }
         if (hasLegacyTransp && !bgmOutput.transpGroups.empty()) {
           TileGroup lg;
           lg.start = legacyTranspStart;
           lg.count = (u32)bgmOutput.transpVertices.size() - legacyTranspStart;
-          lg.col   = TileGroup::LEGACY_TILE;
-          lg.row   = TileGroup::LEGACY_TILE;
+          lg.col = TileGroup::LEGACY_TILE;
+          lg.row = TileGroup::LEGACY_TILE;
           bgmOutput.transpGroups.push_back(lg);
         }
 
         // Sort TileGroups by tile then reorder vertex/color/UV data to match.
-        // Collapses interleaved same-tile groups from spatial quad emission into
-        // contiguous runs, reducing CLAMP register stalls from ~100+ to ~3-8 per chunk.
-        auto sortAndMergeGroups = [](
-            std::vector<TileGroup>& groups,
-            std::vector<Vec4>&  verts,
-            std::vector<Color>& cols,
-            std::vector<Vec4>&  uvs,
-            std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
-          if (groups.size() < 2) return;
-          const size_t nGroups = groups.size();
-          std::vector<size_t> order(nGroups);
-          for (size_t i = 0; i < nGroups; ++i) order[i] = i;
-          std::sort(order.begin(), order.end(), [&groups](size_t a, size_t b) {
-            const u16 ka = (groups[a].row == TileGroup::LEGACY_TILE)
-                           ? 0xFFFFu
-                           : (u16)((groups[a].row << 8) | groups[a].col);
-            const u16 kb = (groups[b].row == TileGroup::LEGACY_TILE)
-                           ? 0xFFFFu
-                           : (u16)((groups[b].row << 8) | groups[b].col);
-            return ka < kb;
-          });
-          const size_t totalVerts = verts.size();
-          std::vector<Vec4>      tmpV; tmpV.reserve(totalVerts);
-          std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
-          std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
-          std::vector<TileGroup> sorted(nGroups);
-          std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
-          tmpSpans.reserve(faceSpans.size());
-          u32 writeOfs = 0;
-          for (size_t i = 0; i < nGroups; ++i) {
-            const TileGroup& src = groups[order[i]];
-            sorted[i] = { writeOfs, src.count, src.col, src.row };
+        // Collapses interleaved same-tile groups from spatial quad emission
+        // into contiguous runs, reducing CLAMP register stalls from ~100+ to
+        // ~3-8 per chunk.
+        auto sortAndMergeGroups =
+            [](std::vector<TileGroup>& groups, std::vector<Vec4>& verts,
+               std::vector<Color>& cols, std::vector<Vec4>& uvs,
+               std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
+              if (groups.size() < 2) return;
+              const size_t nGroups = groups.size();
+              std::vector<size_t> order(nGroups);
+              for (size_t i = 0; i < nGroups; ++i) order[i] = i;
+              std::sort(order.begin(), order.end(),
+                        [&groups](size_t a, size_t b) {
+                          const u16 ka =
+                              (groups[a].row == TileGroup::LEGACY_TILE)
+                                  ? 0xFFFFu
+                                  : (u16)((groups[a].row << 8) | groups[a].col);
+                          const u16 kb =
+                              (groups[b].row == TileGroup::LEGACY_TILE)
+                                  ? 0xFFFFu
+                                  : (u16)((groups[b].row << 8) | groups[b].col);
+                          return ka < kb;
+                        });
+              const size_t totalVerts = verts.size();
+              std::vector<Vec4> tmpV;
+              tmpV.reserve(totalVerts);
+              std::vector<Color> tmpC;
+              tmpC.reserve(totalVerts);
+              std::vector<Vec4> tmpU;
+              tmpU.reserve(totalVerts);
+              std::vector<TileGroup> sorted(nGroups);
+              std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
+              tmpSpans.reserve(faceSpans.size());
+              u32 writeOfs = 0;
+              for (size_t i = 0; i < nGroups; ++i) {
+                const TileGroup& src = groups[order[i]];
+                sorted[i] = {writeOfs, src.count, src.col, src.row};
 
-            for (size_t s = 0; s < faceSpans.size(); ++s) {
-              const auto& span = faceSpans[s];
-              if (span.start >= src.start && span.start < (src.start + src.count)) {
-                auto moved = span;
-                moved.start = writeOfs + (span.start - src.start);
-                tmpSpans.push_back(moved);
+                for (size_t s = 0; s < faceSpans.size(); ++s) {
+                  const auto& span = faceSpans[s];
+                  if (span.start >= src.start &&
+                      span.start < (src.start + src.count)) {
+                    auto moved = span;
+                    moved.start = writeOfs + (span.start - src.start);
+                    tmpSpans.push_back(moved);
+                  }
+                }
+
+                for (u32 v = src.start; v < src.start + src.count; ++v) {
+                  tmpV.push_back(verts[v]);
+                  tmpC.push_back(cols[v]);
+                  tmpU.push_back(uvs[v]);
+                }
+                writeOfs += src.count;
               }
-            }
-
-            for (u32 v = src.start; v < src.start + src.count; ++v) {
-              tmpV.push_back(verts[v]);
-              tmpC.push_back(cols[v]);
-              tmpU.push_back(uvs[v]);
-            }
-            writeOfs += src.count;
-          }
-          verts  = std::move(tmpV);
-          cols   = std::move(tmpC);
-          uvs    = std::move(tmpU);
-          faceSpans = std::move(tmpSpans);
-          groups = std::move(sorted);
-          size_t write = 0;
-          for (size_t i = 1; i < groups.size(); ++i) {
-            if (groups[write].col == groups[i].col &&
-                groups[write].row == groups[i].row) {
-              groups[write].count += groups[i].count;
-            } else {
-              ++write;
-              groups[write] = groups[i];
-            }
-          }
-          groups.resize(write + 1);
-        };
+              verts = std::move(tmpV);
+              cols = std::move(tmpC);
+              uvs = std::move(tmpU);
+              faceSpans = std::move(tmpSpans);
+              groups = std::move(sorted);
+              size_t write = 0;
+              for (size_t i = 1; i < groups.size(); ++i) {
+                if (groups[write].col == groups[i].col &&
+                    groups[write].row == groups[i].row) {
+                  groups[write].count += groups[i].count;
+                } else {
+                  ++write;
+                  groups[write] = groups[i];
+                }
+              }
+              groups.resize(write + 1);
+            };
         sortAndMergeGroups(bgmOutput.opaqueGroups, bgmOutput.opaqueVertices,
-               bgmOutput.opaqueColors, bgmOutput.opaqueUV,
-               bgmOutput.opaqueFaceSpans);
+                           bgmOutput.opaqueColors, bgmOutput.opaqueUV,
+                           bgmOutput.opaqueFaceSpans);
         sortAndMergeGroups(bgmOutput.transpGroups, bgmOutput.transpVertices,
-               bgmOutput.transpColors, bgmOutput.transpUV,
-               bgmOutput.transpFaceSpans);
+                           bgmOutput.transpColors, bgmOutput.transpUV,
+                           bgmOutput.transpFaceSpans);
 
         // Move bgmOutput into the persistent chunk buffers
-        vertices           = std::move(bgmOutput.opaqueVertices);
-        colors             = std::move(bgmOutput.opaqueColors);
-        UV                 = std::move(bgmOutput.opaqueUV);
+        vertices = std::move(bgmOutput.opaqueVertices);
+        colors = std::move(bgmOutput.opaqueColors);
+        UV = std::move(bgmOutput.opaqueUV);
         mergedOpaqueGroups = std::move(bgmOutput.opaqueGroups);
-        opaqueFaceSpans    = std::move(bgmOutput.opaqueFaceSpans);
-        transpVertices     = std::move(bgmOutput.transpVertices);
-        transpColors       = std::move(bgmOutput.transpColors);
-        transpUV           = std::move(bgmOutput.transpUV);
+        opaqueFaceSpans = std::move(bgmOutput.opaqueFaceSpans);
+        transpVertices = std::move(bgmOutput.transpVertices);
+        transpColors = std::move(bgmOutput.transpColors);
+        transpUV = std::move(bgmOutput.transpUV);
         mergedTranspGroups = std::move(bgmOutput.transpGroups);
-        transpFaceSpans    = std::move(bgmOutput.transpFaceSpans);
+        transpFaceSpans = std::move(bgmOutput.transpFaceSpans);
 
         buildPhase = BuildPhase::VisGraph;
         return false;
@@ -935,13 +939,13 @@ bool Chunk::buildStep() {
       state = ChunkState::Loaded;
 
       if (isEmpty) {
-        visibilityGraph      = 0x7FFF;
+        visibilityGraph = 0x7FFF;
         visibilityGraphDirty = false;
       }
 
       if (pendingIsNewChunk) {
-        isFadingIn        = true;
-        fadeAlpha         = 0.0f;
+        isFadingIn = true;
+        fadeAlpha = 0.0f;
         pendingIsNewChunk = false;
       }
 
@@ -967,22 +971,22 @@ void Chunk::buildBGM() {
   bgm.meshChunk(pLevel, minOffset, t_worldLightModel, output);
 
   // Move BGM results directly into persistent draw data buffers
-  vertices           = std::move(output.opaqueVertices);
-  colors             = std::move(output.opaqueColors);
-  UV                 = std::move(output.opaqueUV);
+  vertices = std::move(output.opaqueVertices);
+  colors = std::move(output.opaqueColors);
+  UV = std::move(output.opaqueUV);
   mergedOpaqueGroups = std::move(output.opaqueGroups);
-  opaqueFaceSpans    = std::move(output.opaqueFaceSpans);
+  opaqueFaceSpans = std::move(output.opaqueFaceSpans);
 
-  transpVertices     = std::move(output.transpVertices);
-  transpColors       = std::move(output.transpColors);
-  transpUV           = std::move(output.transpUV);
+  transpVertices = std::move(output.transpVertices);
+  transpColors = std::move(output.transpColors);
+  transpUV = std::move(output.transpUV);
   mergedTranspGroups = std::move(output.transpGroups);
-  transpFaceSpans    = std::move(output.transpFaceSpans);
+  transpFaceSpans = std::move(output.transpFaceSpans);
 
   // ---- Legacy pass: special-shaped blocks (torches, plants, liquids)
   // Note: slabs are now handled by BGM's processSlabs()
   VisibleFacesManager* vfm = VisibleFacesManager::getInstance();
-  BlockManager*        bm  = BlockManager::getInstance();
+  BlockManager* bm = BlockManager::getInstance();
 
   // Legacy blocks append directly to the persistent buffers
   bool hasLegacyOpaque = false;
@@ -999,22 +1003,24 @@ void Chunk::buildBGM() {
         if (BinaryGreedyMesher::isCuboidBlock(bt)) continue;
         if (BinaryGreedyMesher::isSlabBlock(bt)) continue;  // Handled by BGM
 
-        Vec4     offset(x, y, z);
+        Vec4 offset(x, y, z);
         const u8 vf = vfm->getVisibleFacesByOffset(offset);
         if (!vf) continue;
 
-        Block*       tpl   = bm->getBlockTemplateByType(bt);
-        const bool   transp = tpl->hasTransparency();
+        Block* tpl = bm->getBlockTemplateByType(bt);
+        const bool transp = tpl->hasTransparency();
 
-        std::vector<Vec4>*  tv = transp ? &transpVertices : &vertices;
-        std::vector<Color>* tc = transp ? &transpColors   : &colors;
-        std::vector<Vec4>*  tu = transp ? &transpUV       : &UV;
+        std::vector<Vec4>* tv = transp ? &transpVertices : &vertices;
+        std::vector<Color>* tc = transp ? &transpColors : &colors;
+        std::vector<Vec4>* tu = transp ? &transpUV : &UV;
 
-        MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu,
-                              t_worldLightModel, pLevel);
+        MeshBuilder_BuildMesh(&offset, vf, 0, tv, tc, tu, t_worldLightModel,
+                              pLevel);
 
-        if (transp) hasLegacyTransp = true;
-        else        hasLegacyOpaque = true;
+        if (transp)
+          hasLegacyTransp = true;
+        else
+          hasLegacyOpaque = true;
       }
     }
   }
@@ -1024,8 +1030,8 @@ void Chunk::buildBGM() {
     TileGroup legacyGroup;
     legacyGroup.start = legacyOpaqueStart;
     legacyGroup.count = (u32)vertices.size() - legacyOpaqueStart;
-    legacyGroup.col   = TileGroup::LEGACY_TILE;
-    legacyGroup.row   = TileGroup::LEGACY_TILE;
+    legacyGroup.col = TileGroup::LEGACY_TILE;
+    legacyGroup.row = TileGroup::LEGACY_TILE;
     mergedOpaqueGroups.push_back(legacyGroup);
   }
 
@@ -1033,82 +1039,84 @@ void Chunk::buildBGM() {
     TileGroup legacyGroup;
     legacyGroup.start = legacyTranspStart;
     legacyGroup.count = (u32)transpVertices.size() - legacyTranspStart;
-    legacyGroup.col   = TileGroup::LEGACY_TILE;
-    legacyGroup.row   = TileGroup::LEGACY_TILE;
+    legacyGroup.col = TileGroup::LEGACY_TILE;
+    legacyGroup.row = TileGroup::LEGACY_TILE;
     mergedTranspGroups.push_back(legacyGroup);
   }
 
   // ---------------------------------------------------------------------------
   // Sort TileGroups by tile then reorder vertex/color/UV data to match.
   // Collapses interleaved same-tile groups from spatial quad emission into
-  // contiguous runs, reducing CLAMP register stalls from ~100+ to ~3-8 per chunk.
+  // contiguous runs, reducing CLAMP register stalls from ~100+ to ~3-8 per
+  // chunk.
   // ---------------------------------------------------------------------------
-  auto sortAndMergeGroups = [](
-      std::vector<TileGroup>& groups,
-      std::vector<Vec4>&  verts,
-      std::vector<Color>& cols,
-      std::vector<Vec4>&  uvs,
-      std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
-    if (groups.size() < 2) return;
-    const size_t nGroups = groups.size();
-    std::vector<size_t> order(nGroups);
-    for (size_t i = 0; i < nGroups; ++i) order[i] = i;
-    std::sort(order.begin(), order.end(), [&groups](size_t a, size_t b) {
-      const u16 ka = (groups[a].row == TileGroup::LEGACY_TILE)
-                     ? 0xFFFFu
-                     : (u16)((groups[a].row << 8) | groups[a].col);
-      const u16 kb = (groups[b].row == TileGroup::LEGACY_TILE)
-                     ? 0xFFFFu
-                     : (u16)((groups[b].row << 8) | groups[b].col);
-      return ka < kb;
-    });
-    const size_t totalVerts = verts.size();
-    std::vector<Vec4>      tmpV; tmpV.reserve(totalVerts);
-    std::vector<Color>     tmpC; tmpC.reserve(totalVerts);
-    std::vector<Vec4>      tmpU; tmpU.reserve(totalVerts);
-    std::vector<TileGroup> sorted(nGroups);
-    std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
-    tmpSpans.reserve(faceSpans.size());
-    u32 writeOfs = 0;
-    for (size_t i = 0; i < nGroups; ++i) {
-      const TileGroup& src = groups[order[i]];
-      sorted[i] = { writeOfs, src.count, src.col, src.row };
+  auto sortAndMergeGroups =
+      [](std::vector<TileGroup>& groups, std::vector<Vec4>& verts,
+         std::vector<Color>& cols, std::vector<Vec4>& uvs,
+         std::vector<BinaryGreedyMesher::LightFaceSpan>& faceSpans) {
+        if (groups.size() < 2) return;
+        const size_t nGroups = groups.size();
+        std::vector<size_t> order(nGroups);
+        for (size_t i = 0; i < nGroups; ++i) order[i] = i;
+        std::sort(order.begin(), order.end(), [&groups](size_t a, size_t b) {
+          const u16 ka = (groups[a].row == TileGroup::LEGACY_TILE)
+                             ? 0xFFFFu
+                             : (u16)((groups[a].row << 8) | groups[a].col);
+          const u16 kb = (groups[b].row == TileGroup::LEGACY_TILE)
+                             ? 0xFFFFu
+                             : (u16)((groups[b].row << 8) | groups[b].col);
+          return ka < kb;
+        });
+        const size_t totalVerts = verts.size();
+        std::vector<Vec4> tmpV;
+        tmpV.reserve(totalVerts);
+        std::vector<Color> tmpC;
+        tmpC.reserve(totalVerts);
+        std::vector<Vec4> tmpU;
+        tmpU.reserve(totalVerts);
+        std::vector<TileGroup> sorted(nGroups);
+        std::vector<BinaryGreedyMesher::LightFaceSpan> tmpSpans;
+        tmpSpans.reserve(faceSpans.size());
+        u32 writeOfs = 0;
+        for (size_t i = 0; i < nGroups; ++i) {
+          const TileGroup& src = groups[order[i]];
+          sorted[i] = {writeOfs, src.count, src.col, src.row};
 
-      for (size_t s = 0; s < faceSpans.size(); ++s) {
-        const auto& span = faceSpans[s];
-        if (span.start >= src.start && span.start < (src.start + src.count)) {
-          auto moved = span;
-          moved.start = writeOfs + (span.start - src.start);
-          tmpSpans.push_back(moved);
+          for (size_t s = 0; s < faceSpans.size(); ++s) {
+            const auto& span = faceSpans[s];
+            if (span.start >= src.start &&
+                span.start < (src.start + src.count)) {
+              auto moved = span;
+              moved.start = writeOfs + (span.start - src.start);
+              tmpSpans.push_back(moved);
+            }
+          }
+
+          for (u32 v = src.start; v < src.start + src.count; ++v) {
+            tmpV.push_back(verts[v]);
+            tmpC.push_back(cols[v]);
+            tmpU.push_back(uvs[v]);
+          }
+          writeOfs += src.count;
         }
-      }
-
-      for (u32 v = src.start; v < src.start + src.count; ++v) {
-        tmpV.push_back(verts[v]);
-        tmpC.push_back(cols[v]);
-        tmpU.push_back(uvs[v]);
-      }
-      writeOfs += src.count;
-    }
-    verts  = std::move(tmpV);
-    cols   = std::move(tmpC);
-    uvs    = std::move(tmpU);
-    faceSpans = std::move(tmpSpans);
-    groups = std::move(sorted);
-    size_t write = 0;
-    for (size_t i = 1; i < groups.size(); ++i) {
-      if (groups[write].col == groups[i].col &&
-          groups[write].row == groups[i].row) {
-        groups[write].count += groups[i].count;
-      } else {
-        ++write;
-        groups[write] = groups[i];
-      }
-    }
-    groups.resize(write + 1);
-  };
-  sortAndMergeGroups(mergedOpaqueGroups, vertices, colors, UV,
-                     opaqueFaceSpans);
+        verts = std::move(tmpV);
+        cols = std::move(tmpC);
+        uvs = std::move(tmpU);
+        faceSpans = std::move(tmpSpans);
+        groups = std::move(sorted);
+        size_t write = 0;
+        for (size_t i = 1; i < groups.size(); ++i) {
+          if (groups[write].col == groups[i].col &&
+              groups[write].row == groups[i].row) {
+            groups[write].count += groups[i].count;
+          } else {
+            ++write;
+            groups[write] = groups[i];
+          }
+        }
+        groups.resize(write + 1);
+      };
+  sortAndMergeGroups(mergedOpaqueGroups, vertices, colors, UV, opaqueFaceSpans);
   sortAndMergeGroups(mergedTranspGroups, transpVertices, transpColors, transpUV,
                      transpFaceSpans);
 }
@@ -1120,16 +1128,20 @@ void Chunk::cancelBuild() {
   clearDrawData();
 
   // Also release any partial BGM output accumulated during incremental meshing.
-  bgmOutput.opaqueVertices.clear(); bgmOutput.opaqueColors.clear();
-  bgmOutput.opaqueUV.clear();      bgmOutput.opaqueGroups.clear();
+  bgmOutput.opaqueVertices.clear();
+  bgmOutput.opaqueColors.clear();
+  bgmOutput.opaqueUV.clear();
+  bgmOutput.opaqueGroups.clear();
   bgmOutput.opaqueFaceSpans.clear();
-  bgmOutput.transpVertices.clear(); bgmOutput.transpColors.clear();
-  bgmOutput.transpUV.clear();      bgmOutput.transpGroups.clear();
+  bgmOutput.transpVertices.clear();
+  bgmOutput.transpColors.clear();
+  bgmOutput.transpUV.clear();
+  bgmOutput.transpGroups.clear();
   bgmOutput.transpFaceSpans.clear();
 
-  buildPhase       = BuildPhase::Idle;
-  isEmpty          = false;
-  state            = ChunkState::Clean;
+  buildPhase = BuildPhase::Idle;
+  isEmpty = false;
+  state = ChunkState::Clean;
 }
 
 bool Chunk::hasDrawData() {
@@ -1153,7 +1165,8 @@ void Chunk::reloadLightColorsOnly() {
   if (!isLoaded()) return;
   if (isEmpty) return;
 
-  // If metadata is unavailable (legacy-only chunk or mismatch), fall back safely.
+  // If metadata is unavailable (legacy-only chunk or mismatch), fall back
+  // safely.
   bool okOpaque = true;
   bool okTransp = true;
 
@@ -1199,13 +1212,12 @@ void Chunk::rebuildVisibilityGraph() {
     visibilityGraphDirty = false;
     return;
   }
-  visibilityGraph = BuildVisibilityGraph(
-      pLevel, static_cast<int>(minOffset.x), static_cast<int>(minOffset.y),
-      static_cast<int>(minOffset.z));
+  visibilityGraph = BuildVisibilityGraph(pLevel, static_cast<int>(minOffset.x),
+                                         static_cast<int>(minOffset.y),
+                                         static_cast<int>(minOffset.z));
   visibilityGraphDirty = false;
 }
 
 bool Chunk::isConnected(u8 faceA, u8 faceB) const {
   return IsConnected(visibilityGraph, faceA, faceB);
 }
-
