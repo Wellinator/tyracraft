@@ -13,7 +13,12 @@ using Tyra::Color;
 Vec4** SmokeParticle::uvLUT = nullptr;
 
 void SmokeParticle::initUVLUT() {
-  if (uvLUT) return;  // Already initialised
+  if (uvLUT) {
+#ifdef DEBUG_MODE
+    TYRA_WARN("[SmokeParticle] uvLUT already initialized, skipping");
+#endif
+    return;  // Already initialised
+  }
   const float colSize = 0.0625F;
 
   uvLUT = new Vec4*[8];

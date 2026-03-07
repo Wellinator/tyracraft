@@ -19,7 +19,8 @@ class Particle {
   // billboard: pre-computed rotation matrix (lookAt inverse) from the manager.
   // All particles share the same rotation; each applies its own position/scale.
   virtual void update(const float deltaTime, const M4x4* billboard) = 0;
-  void virtual renew() {
+  // renew: reset particle state for reuse (override in derived classes if needed)
+  virtual void renew() {
     _elapsedTime = 0;
     expired = false;
   }

@@ -221,7 +221,8 @@ Particle* ParticlesManager::GetParticleById(const u32 id) {
   Particle** pData = ParticlesManager::Particles.data();
   const size_t size = ParticlesManager::Particles.size();
   for (size_t i = 0; i < size; i++) {
-    if (pData[i]->id == id) return pData[i];
+    // Safety: don't return expired particles (use-after-free prevention)
+    if (pData[i]->id == id && !pData[i]->expired) return pData[i];
   }
   return nullptr;
 }
@@ -230,6 +231,9 @@ void ParticlesManager::EmitParticle(Particle* particle) {
   if (ParticlesManager::Particles.size() >= MAX_PARTICLES) {
     // Cap reached: discard oldest non-flame particle to make room
     // For simplicity, just delete and discard the incoming one to avoid stutter
+#ifdef DEBUG_MODE
+    TYRA_WARN("[Particles] Pool full (", MAX_PARTICLES, "), discarding particle type=", static_cast<u8>(particle->type));
+#endif
     delete particle;
     return;
   }

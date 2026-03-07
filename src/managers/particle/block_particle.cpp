@@ -69,6 +69,12 @@ void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
   const auto nextPosition = _targetPosition + (_velocity * fixedDeltaTime);
 
   if (collidable) {
+    // Safety check: collision manager must be initialized
+    if (!g_AABBTree) {
+      _targetPosition = nextPosition;
+      return;
+    }
+
     float closestHitDistance = -1.0f;
     const float maxCollidableDistance =
         _targetPosition.distanceTo(nextPosition);

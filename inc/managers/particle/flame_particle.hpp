@@ -12,4 +12,5 @@ class FlameParticle : public Particle {
   FlameParticle(Vec4* offset);
   void fixedUpdate(const float fixedDeltaTime);
   void update(const float deltaTime, const M4x4* billboard) override;
+  void renew() override;
 };

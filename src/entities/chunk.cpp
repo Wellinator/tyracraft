@@ -283,7 +283,8 @@ void Chunk::tickRandomBlock() {
       // Creates Flame particle
       Particle* currentParticle = ParticlesManager::GetParticleById(blockID);
 
-      if (currentParticle) {
+      // Safety: validate particle exists and is not expired
+      if (currentParticle && !currentParticle->expired) {
         currentParticle->renew();
         return;
       }

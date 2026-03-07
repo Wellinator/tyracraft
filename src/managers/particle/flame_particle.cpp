@@ -73,6 +73,12 @@ FlameParticle::FlameParticle(Vec4* offset) : Particle(ParticleType::Flame) {
 
 void FlameParticle::fixedUpdate(const float fixedDeltaTime) {}
 
+void FlameParticle::renew() {
+  // Reset time and expired flag (base class behavior)
+  Particle::renew();
+  // FlameParticle has no velocity/position to reset (they're constant)
+}
+
 void FlameParticle::update(const float deltaTime, const M4x4* billboard) {
   _elapsedTime += deltaTime;
 
