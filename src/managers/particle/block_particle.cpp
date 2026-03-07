@@ -2,10 +2,10 @@
 
 BlockParticle::BlockParticle(Block* pBlock) : Particle(ParticleType::Block) {
   // Define life time
-  _lifeTime = Tyra::Math::randomf(0.6F, 1.0F);
+  _lifeTime = Tyra::Math::randomf(0.8F, 1.5F);
 
   // Define if is collidable
-  collidable = Utils::Probability(0.5);
+  collidable = true;
 
   // Set particle initial velocity
   // Initiate with a random value from 5 to 15 to lift it on spawn
@@ -59,14 +59,10 @@ void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
   const float particleSpeed = 65.0F;
   const float instantSpeed = particleSpeed * fixedDeltaTime;
 
-  // Update position
-  _velocity += _direction * instantSpeed;
-
-  // Reduce gravity to 85%, it was too huge for particles
-  _velocity += PARTICLE_GRAVITY;
-
-  // Define next position based on velocity
-  const auto nextPosition = _targetPosition + (_velocity * fixedDeltaTime);
+  Vec4 nextPosition;
+  Utils::IntegrateParticleMotionVU0(&_velocity, &nextPosition, _direction,
+                                    instantSpeed, PARTICLE_GRAVITY,
+                                    _targetPosition, fixedDeltaTime);
 
   if (collidable) {
     // Safety check: collision manager must be initialized

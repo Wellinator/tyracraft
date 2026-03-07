@@ -303,6 +303,56 @@ float Utils::Abs(const float x) {
   return r;
 }
 
+void Utils::IntegrateParticleMotionVU0(Vec4* velocity, Vec4* nextPosition,
+                                       const Vec4& direction,
+                                       const float instantSpeed,
+                                       const Vec4& gravityDelta,
+                                       const Vec4& targetPosition,
+                                       const float fixedDeltaTime) {
+#if TYRACRAFT_PARTICLE_SIMD_VU0
+  // VU0 lqc2/sqc2 require 16-byte alignment; fallback keeps behavior identical.
+  const uintptr_t velAddr = reinterpret_cast<uintptr_t>(velocity);
+  const uintptr_t nextAddr = reinterpret_cast<uintptr_t>(nextPosition);
+  const uintptr_t dirAddr = reinterpret_cast<uintptr_t>(&direction);
+  const uintptr_t gravAddr = reinterpret_cast<uintptr_t>(&gravityDelta);
+  const uintptr_t targetAddr = reinterpret_cast<uintptr_t>(&targetPosition);
+
+  if ((velAddr & 0xF) != 0 || (nextAddr & 0xF) != 0 || (dirAddr & 0xF) != 0 ||
+      (gravAddr & 0xF) != 0 || (targetAddr & 0xF) != 0) {
+    *velocity += direction * instantSpeed;
+    *velocity += gravityDelta;
+    *nextPosition = targetPosition + (*velocity * fixedDeltaTime);
+    return;
+  }
+
+  const Vec4 speedVec(instantSpeed, instantSpeed, instantSpeed, 0.0F);
+  const Vec4 dtVec(fixedDeltaTime, fixedDeltaTime, fixedDeltaTime, 0.0F);
+
+  asm volatile(
+      "lqc2         $vf1, 0x00(%0) \n\t"  // velocity
+      "lqc2         $vf2, 0x00(%2) \n\t"  // direction
+      "lqc2         $vf3, 0x00(%4) \n\t"  // speedVec
+      "lqc2         $vf4, 0x00(%3) \n\t"  // gravityDelta
+      "lqc2         $vf5, 0x00(%5) \n\t"  // targetPosition
+      "lqc2         $vf6, 0x00(%6) \n\t"  // dtVec
+      "vmul.xyzw    $vf7, $vf2, $vf3 \n\t"  // direction * instantSpeed
+      "vadd.xyzw    $vf1, $vf1, $vf7 \n\t"  // velocity += impulse
+      "vadd.xyzw    $vf1, $vf1, $vf4 \n\t"  // velocity += gravity
+      "vmul.xyzw    $vf8, $vf1, $vf6 \n\t"  // velocity * dt
+      "vadd.xyzw    $vf9, $vf5, $vf8 \n\t"  // nextPosition = target + vel*dt
+      "sqc2         $vf1, 0x00(%0) \n\t"
+      "sqc2         $vf9, 0x00(%1) \n\t"
+      :
+      : "r"(velocity), "r"(nextPosition), "r"(&direction), "r"(&gravityDelta),
+        "r"(&speedVec), "r"(&targetPosition), "r"(&dtVec)
+      : "memory");
+#else
+  *velocity += direction * instantSpeed;
+  *velocity += gravityDelta;
+  *nextPosition = targetPosition + (*velocity * fixedDeltaTime);
+#endif
+}
+
 void Utils::inverseMatrix(M4x4* mOut, const M4x4* mIn) {
   // Inverse of input matrix.
   // This was salvaged from libVu0.c

@@ -16,6 +16,7 @@
 #include <math/math.hpp>
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <loadfile.h>
@@ -27,6 +28,10 @@
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#ifndef TYRACRAFT_PARTICLE_SIMD_VU0
+#define TYRACRAFT_PARTICLE_SIMD_VU0 1
+#endif
 
 using Tyra::BBox;
 using Tyra::Color;
@@ -144,6 +149,13 @@ class Utils {
   static float lerp(float a, float b, float f) { return a + f * (b - a); }
 
   static float Abs(const float x);
+
+  static void IntegrateParticleMotionVU0(Vec4* velocity, Vec4* nextPosition,
+                                         const Vec4& direction,
+                                         const float instantSpeed,
+                                         const Vec4& gravityDelta,
+                                         const Vec4& targetPosition,
+                                         const float fixedDeltaTime);
 
   static void inverseMatrix(M4x4* mOut, const M4x4* mIn);
 
