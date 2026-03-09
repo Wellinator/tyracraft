@@ -9,8 +9,8 @@ using Tyra::Vec4;
 
 class Particle {
  public:
-  Particle(const ParticleType& _type) : type(_type){};
-  virtual ~Particle(){};
+  Particle(const ParticleType& _type) : type(_type) {};
+  virtual ~Particle() {};
 
   u8 isAllive() { return !expired; }
 
@@ -19,11 +19,23 @@ class Particle {
   // billboard: pre-computed rotation matrix (lookAt inverse) from the manager.
   // All particles share the same rotation; each applies its own position/scale.
   virtual void update(const float deltaTime, const M4x4* billboard) = 0;
-  // renew: reset particle state for reuse (override in derived classes if needed)
-  virtual void renew() {
-    _elapsedTime = 0;
-    expired = false;
+
+  // tick: game-logic update driven by the TickManager (20 TPS, same as
+  // Minecraft). Lifetime counters, state changes, and anything that should
+  // freeze when ticks are paused belong here. Default is a no-op so that
+  // particles that don't need tick logic don't pay for a vtable call.
+  virtual void tick() {
+    if (_lifeTime == 0) {
+      expired = true;
+      return;
+    }
+
+    --_lifeTime;
   }
+
+  // renew: reset particle state for reuse (override in derived classes if
+  // needed)
+  virtual void renew() { expired = false; }
 
   const ParticleType type;
   u32 id = 0;
@@ -36,8 +48,11 @@ class Particle {
   static const Vec4 rawData[DRAW_DATA_COUNT];
 
  public:
-  float _elapsedTime = 0;
-  float _lifeTime = 0;
+  // Common properties for all particle types
+
+  // Lifetime in ticks
+  int _lifeTime = 0;
+
   Vec4 _velocity = Vec4(0.0F);
   Vec4 _position = Vec4(0.0F);
   Vec4 _direction = Vec4(0.0F);

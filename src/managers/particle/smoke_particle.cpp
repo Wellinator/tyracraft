@@ -50,9 +50,9 @@ void SmokeParticle::destroyUVLUT() {
 SmokeParticle::SmokeParticle(Vec4* offset) : Particle(ParticleType::Smoke) {
   billboarded = true;
 
-  // Define life time
+  // Define life time in ticks
   // This will influence how high the particles will go
-  _lifeTime = TICK * 17;
+  _lifeTime = 17;
 
   // Define if is collidable
   collidable = false;
@@ -137,11 +137,7 @@ void SmokeParticle::fixedUpdate(const float fixedDeltaTime) {
 }
 
 void SmokeParticle::update(const float deltaTime, const M4x4* billboard) {
-  _elapsedTime += deltaTime;
-  if (_elapsedTime > _lifeTime) {
-    expired = true;
-    return;
-  }
+  if (expired) return;
 
   _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
@@ -150,7 +146,8 @@ void SmokeParticle::update(const float deltaTime, const M4x4* billboard) {
   scale.scaleX(size);
   scale.scaleY(size);
 
-  // Apply shared billboard rotation + per-particle scale, then translate to world pos
+  // Apply shared billboard rotation + per-particle scale, then translate to
+  // world pos
   M4x4 model = *billboard * scale;
   model.translate(_position);
 
@@ -161,7 +158,7 @@ void SmokeParticle::update(const float deltaTime, const M4x4* billboard) {
 }
 
 u8 SmokeParticle::getStage() {
-  const float lerp = 1.0F - (_elapsedTime / _lifeTime);
+  const float lerp = _lifeTime / 17.0F;
   return static_cast<u8>(std::floor(MAX_UV_INDEX * lerp));
 }
 

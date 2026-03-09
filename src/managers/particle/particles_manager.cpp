@@ -184,6 +184,15 @@ void ParticlesManager::tick() {
 #ifdef DEBUG_MODE
   if (g_debug_menu.enableRenderParticles == false) return;
 #endif
+  // Advance per-particle game logic (lifetime, state changes, etc.).
+  // This runs inside TickManager so it is naturally frozen when ticks pause
+  // and scales with any tick-rate changes.
+  const size_t counter = ParticlesManager::Particles.size();
+  for (size_t i = 0; i < counter; i++) {
+    Particle* p = ParticlesManager::Particles[i];
+    if (p->expired) continue;
+    p->tick();
+  }
   destroyExpiredParticles();
 }
 

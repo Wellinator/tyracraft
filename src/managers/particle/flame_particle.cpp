@@ -19,7 +19,7 @@ FlameParticle::FlameParticle(Vec4* offset) : Particle(ParticleType::Flame) {
   billboarded = true;
 
   // Define life time
-  _lifeTime = TICK * 20;
+  _lifeTime = 20;
 
   // Define if is collidable
   collidable = false;
@@ -80,20 +80,16 @@ void FlameParticle::renew() {
 }
 
 void FlameParticle::update(const float deltaTime, const M4x4* billboard) {
-  _elapsedTime += deltaTime;
+  if (expired) return;
 
-  if (_elapsedTime > _lifeTime) {
-    expired = true;
-    return;
-  }
-
-  const float scaleVal = START_SIZE * (1.0F - (_elapsedTime / _lifeTime));
+  const float scaleVal = START_SIZE * (_lifeTime / 20.0F);
   M4x4 scale;
   scale.identity();
   scale.scaleX(scaleVal);
   scale.scaleY(scaleVal);
 
-  // Apply shared billboard rotation + per-particle scale, then translate to world pos
+  // Apply shared billboard rotation + per-particle scale, then translate to
+  // world pos
   M4x4 model = *billboard * scale;
   model.translate(_position);
 

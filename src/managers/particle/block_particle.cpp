@@ -3,7 +3,7 @@
 BlockParticle::BlockParticle(Block* pBlock)
     : CollidableParticle(ParticleType::Block) {
   // Define life time
-  _lifeTime = Tyra::Math::randomf(0.4F, 2.0F);
+  _lifeTime = Tyra::Math::randomi(8, 40);
 
   // Define if is collidable
   collidable = true;
@@ -53,6 +53,8 @@ BlockParticle::BlockParticle(Block* pBlock)
 };
 
 void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
+  if (expired) return;
+
   // Reset lerp state
   _prevPosition.set(_targetPosition);
 
@@ -78,12 +80,10 @@ void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
 }
 
 void BlockParticle::update(const float deltaTime, const M4x4* billboard) {
-  _elapsedTime += deltaTime;
-
-  if (_elapsedTime > _lifeTime) {
-    expired = true;
-    return;
-  }
+  // Expiry is driven by tick() (game-logic countdown via TickManager).
+  // Guard here so a particle marked expired between the last tick and this
+  // render frame does not produce a stale visual update.
+  if (expired) return;
 
   M4x4 scale;
   scale.identity();
@@ -92,7 +92,8 @@ void BlockParticle::update(const float deltaTime, const M4x4* billboard) {
 
   _position.lerp(_prevPosition, _targetPosition, TyraCraft::Timer::stateLerp);
 
-  // Apply shared billboard rotation + per-particle scale then translate to world pos
+  // Apply shared billboard rotation + per-particle scale then translate to
+  // world pos
   M4x4 model = *billboard * scale;
   model.translate(_position);
 
