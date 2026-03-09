@@ -159,13 +159,17 @@ void SmokeParticle::update(const float deltaTime, const M4x4* billboard) {
 
 u8 SmokeParticle::getStage() {
   const float lerp = _lifeTime / 17.0F;
-  return static_cast<u8>(std::floor(MAX_UV_INDEX * lerp));
+  const u8 stage = static_cast<u8>(std::floor(MAX_UV_INDEX * lerp));
+  // Clamp to valid range (0-7) to prevent buffer overflow in uvLUT access
+  return std::min(stage, MAX_UV_INDEX);
 }
 
 void SmokeParticle::updateUV(const u8 _stageIndex) {
   // Fast memcpy from pre-built LUT — no Vec4 construction at runtime
   if (uvLUT) {
-    memcpy(uv, uvLUT[_stageIndex], sizeof(Vec4) * 6);
+    // Safety: clamp index to valid range (uvLUT has 8 entries: 0-7)
+    const u8 safeIndex = (_stageIndex >= 8) ? 7 : _stageIndex;
+    memcpy(uv, uvLUT[safeIndex], sizeof(Vec4) * 6);
     return;
   }
   // Fallback (LUT not yet initialised)
@@ -179,3 +183,4 @@ void SmokeParticle::updateUV(const u8 _stageIndex) {
   uv[4] = Vec4(xMin, 0.0000F, 1.0F, 0.0F);
   uv[5] = Vec4(xMax, 0.0000F, 1.0F, 0.0F);
 }
+

@@ -2,6 +2,9 @@
 
 BlockParticle::BlockParticle(Block* pBlock)
     : CollidableParticle(ParticleType::Block) {
+  // Safety: validate block pointer before dereferencing
+  TYRA_ASSERT(pBlock != nullptr, "BlockParticle: pBlock cannot be null!");
+
   // Define life time
   _lifeTime = Tyra::Math::randomi(8, 40);
 

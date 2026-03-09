@@ -76,7 +76,8 @@ void FlameParticle::fixedUpdate(const float fixedDeltaTime) {}
 void FlameParticle::renew() {
   // Reset time and expired flag (base class behavior)
   Particle::renew();
-  // FlameParticle has no velocity/position to reset (they're constant)
+  // Reset lifetime to initial value for proper scaling
+  _lifeTime = 20;
 }
 
 void FlameParticle::update(const float deltaTime, const M4x4* billboard) {
