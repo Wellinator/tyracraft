@@ -137,10 +137,11 @@ void ParticlesManager::update(const float deltaTime, Camera* t_camera) {
       continue;
     }
 
-    // Distance culling: disable BVH collision for block particles far from the
-    // camera. The collidable flag is read in BlockParticle::fixedUpdate() on the
-    // next physics tick — disabling it here is intentionally one tick early and
-    // avoids any extra branch inside the physics hot path.
+    // Distance culling: disable grid-based collision for block particles far
+    // from the camera. The collidable flag is read in
+    // CollidableParticle::resolveCollision() on the next physics tick —
+    // disabling it here is intentionally one tick early and avoids any extra
+    // branch inside the physics hot path.
     if (p->type == ParticleType::Block && p->collidable) {
       static constexpr float kCullDistSq =
           (MAX_DRAW_DISTANCE * BLOCK_SIZE * 2.0F) *

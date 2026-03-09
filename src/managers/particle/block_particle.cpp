@@ -1,8 +1,9 @@
 #include "managers/particle/block_particle.hpp"
 
-BlockParticle::BlockParticle(Block* pBlock) : Particle(ParticleType::Block) {
+BlockParticle::BlockParticle(Block* pBlock)
+    : CollidableParticle(ParticleType::Block) {
   // Define life time
-  _lifeTime = Tyra::Math::randomf(0.8F, 1.5F);
+  _lifeTime = Tyra::Math::randomf(0.4F, 2.0F);
 
   // Define if is collidable
   collidable = true;
@@ -55,60 +56,25 @@ void BlockParticle::fixedUpdate(const float fixedDeltaTime) {
   // Reset lerp state
   _prevPosition.set(_targetPosition);
 
-  const auto PARTICLE_GRAVITY = GRAVITY * 0.9F * fixedDeltaTime;
+  const auto PARTICLE_GRAVITY = GRAVITY * 0.75F * fixedDeltaTime;
   const float particleSpeed = 65.0F;
   const float instantSpeed = particleSpeed * fixedDeltaTime;
+
+  // Decay the ejection impulse so the directional kick fades out over ~0.5 s.
+  // Without this, direction * instantSpeed keeps pushing the particle forever.
+  _direction *= 0.9F;
+
+  // Damp horizontal velocity to simulate air resistance and surface friction.
+  // This dissipates any already-accumulated XZ velocity each tick.
+  _velocity.x *= 0.55F;
+  _velocity.z *= 0.55F;
 
   Vec4 nextPosition;
   Utils::IntegrateParticleMotionVU0(&_velocity, &nextPosition, _direction,
                                     instantSpeed, PARTICLE_GRAVITY,
                                     _targetPosition, fixedDeltaTime);
 
-  if (collidable) {
-    // Safety check: collision manager must be initialized
-    if (!g_AABBTree) {
-      _targetPosition = nextPosition;
-      return;
-    }
-
-    float closestHitDistance = -1.0f;
-    const float maxCollidableDistance =
-        _targetPosition.distanceTo(nextPosition);
-    u8 willCollide = false;
-    Vec4 finalHitPosition;
-
-    // Broad phase
-    std::vector<index_t> ni;
-    g_AABBTree->intersectLine(_targetPosition, nextPosition, ni);
-
-    Ray ray = Ray(_targetPosition, _direction);
-
-    for (u16 i = 0; i < ni.size(); i++) {
-      Entity* entity = static_cast<Entity*>(g_AABBTree->user_data(ni[i]));
-      if (!entity->collidable) continue;
-
-      // Narrow Phase
-      float hitDistance;
-      if (ray.intersectBox(entity->minCorner, entity->maxCorner,
-                           &hitDistance) &&
-          hitDistance < maxCollidableDistance) {
-        if (closestHitDistance == -1.0F || hitDistance < closestHitDistance) {
-          closestHitDistance = hitDistance;
-          willCollide = true;
-          finalHitPosition.set(ray.at(hitDistance));
-        }
-      }
-    }
-
-    if (willCollide) {
-      _targetPosition.set(finalHitPosition);
-      _direction = -_direction;
-    } else {
-      _targetPosition = nextPosition;
-    }
-  } else {
-    _targetPosition = nextPosition;
-  }
+  resolveCollision(nextPosition);
 }
 
 void BlockParticle::update(const float deltaTime, const M4x4* billboard) {
