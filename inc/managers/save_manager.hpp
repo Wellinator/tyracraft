@@ -34,5 +34,7 @@ class SaveManager {
 
   static int DeleteSave(const char* fullPath);
 
+  static bool HasAvailableSaves();
+
   static const int CurrentSaveVersion;
 };

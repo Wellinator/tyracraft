@@ -1,5 +1,6 @@
 #include "managers/save_manager.hpp"
 #include "entities/level.hpp"
+#include "utils.hpp"
 
 const int SaveManager::CurrentSaveVersion = 3;
 
@@ -440,4 +441,21 @@ bool SaveManager::CheckIfSaveExist(const char* fullPath) {
 int SaveManager::DeleteSave(const char* fullPath) {
   if (SaveManager::CheckIfSaveExist(fullPath)) return unlink(fullPath);
   return -1;
+}
+
+bool SaveManager::HasAvailableSaves() {
+  std::vector<UtilDirectory> saveFilesList = Utils::listDir(FileUtils::fromCwd("saves/").c_str());
+  
+  for (size_t i = 0; i < saveFilesList.size(); i++) {
+    const UtilDirectory dir = saveFilesList.at(i);
+    const std::string fileExtension = FileUtils::getExtensionOfFilename(dir.name);
+
+    TYRA_LOG("Found save file: ", dir.name, " with extension: ", fileExtension);
+    
+    if (strncmp(fileExtension.c_str(), "tcw", 3) == 0) {
+      return true;
+    }
+  }
+  
+  return false;
 }

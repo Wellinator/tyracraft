@@ -6,6 +6,7 @@
 #include "states/main_menu/screens/screen_load_game.hpp"
 #include "states/main_menu/screens/screen_skin_selection.hpp"
 #include "managers/font/font_manager.hpp"
+#include "managers/save_manager.hpp"
 
 using Tyra::MeshBuilderData;
 using Tyra::ObjLoaderOptions;
@@ -331,9 +332,13 @@ void ScreenMain::navigate() {
 
   if (selectedOption == ScreenMainOptions::None) return;
 
-  if (selectedOption == ScreenMainOptions::PlayGame)
-    context->setScreen(new ScreenLoadGame(context));
-  else if (selectedOption == ScreenMainOptions::Options)
+  if (selectedOption == ScreenMainOptions::PlayGame) {
+    // Open Load tab if saves exist, otherwise open Create tab
+    if (SaveManager::HasAvailableSaves())
+      context->setScreen(new ScreenLoadGame(context));
+    else
+      context->setScreen(new ScreenNewGame(context));
+  } else if (selectedOption == ScreenMainOptions::Options)
     context->setScreen(new ScreenOptions(context));
   else if (selectedOption == ScreenMainOptions::HowToPlay)
     context->setScreen(new ScreenHowToPlay(context));
