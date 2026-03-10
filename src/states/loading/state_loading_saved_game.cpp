@@ -144,6 +144,10 @@ void StateLoadingSavedGame::initWorld() {
 void StateLoadingSavedGame::loadSavedData() {
   SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
   stateGamePlay->world->generateLight();
+  
+  // Process liquid propagation after light generation (same as new world)
+  stateGamePlay->world->propagateLiquids();
+  
   stateGamePlay->world->loadSpawnArea();
 
   setPercent(80.0F);
@@ -158,6 +162,10 @@ void StateLoadingSavedGame::initPlayer() {
   stateGamePlay->player->spawnArea.set(
       stateGamePlay->world->getLocalSpawnArea());
   stateGamePlay->context->t_camera->setFirstPerson();
+  
+  // Force immediate water state check (avoid 5-tick delay)
+  stateGamePlay->player->updateStateInWater();
+  
   setPercent(100.0F);
   shouldInitPlayer = 0;
   TYRA_LOG("Player initialized");
@@ -165,6 +173,7 @@ void StateLoadingSavedGame::initPlayer() {
 
 void StateLoadingSavedGame::nextState() {
   TYRA_LOG("nextState");
+  stateGamePlay->afterInit();
   context->setState(stateGamePlay);
 }
 

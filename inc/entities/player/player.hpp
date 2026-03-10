@@ -152,6 +152,7 @@ class Player : public Entity, public Animated {
 
   bool isOnWater();
   bool isUnderWater();
+  void updateStateInWater();
 
   inline Texture* getPlayerTexture() { return playerTexture; };
 
@@ -218,8 +219,6 @@ class Player : public Entity, public Animated {
   const u8 WALK_ANIMATION = 1;
   const u8 BREAKING_ANIMATION = 2;
   void loadAnimations();
-
-  void updateStateInWater();
 
   const float _minFov = 60.0F;
   const float _maxFov = _minFov + 10.0F;

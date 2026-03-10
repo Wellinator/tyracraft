@@ -1,6 +1,7 @@
 #pragma once
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
+#include "managers/tick_manager.hpp"
 #include <tamtypes.h>
 #include <tyra>
 
@@ -10,7 +11,7 @@ class SurvivalPlayingState : public PlayingStateBase {
   ~SurvivalPlayingState();
 
   void init();
-  void afterInit(){};
+  void afterInit();
   void handleAction(MenuAction action){};
   void update(const float& deltaTime);
   void tick();
@@ -19,4 +20,7 @@ class SurvivalPlayingState : public PlayingStateBase {
  private:
   void handleInput(const float& deltaTime);
   void navigate();
+
+  TickManager tickManager;
+  TickTaskHandles tickHandles;
 };

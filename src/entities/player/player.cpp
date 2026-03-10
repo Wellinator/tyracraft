@@ -38,6 +38,8 @@ Player::Player(Level* pLevel, Renderer* t_renderer,
   _isFlying = false;
   _isBreaking = false;
   isOnGround = true;
+  _isOnWater = false;
+  _isUnderWater = false;
   collidable = false;
 
   // Set render pip

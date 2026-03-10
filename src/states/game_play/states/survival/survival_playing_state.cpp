@@ -5,9 +5,21 @@ SurvivalPlayingState::SurvivalPlayingState(StateGamePlay* t_context)
 
 SurvivalPlayingState::~SurvivalPlayingState() {}
 
-void SurvivalPlayingState::init() {}
+void SurvivalPlayingState::init() {
+  tickManager.onTick = [this]() { tick(); };
+}
 
-void SurvivalPlayingState::update(const float& deltaTime) {}
+void SurvivalPlayingState::afterInit() {
+  // World and player are fully initialized at this point
+  stateGamePlay->world->setTickContext(stateGamePlay->player,
+                                       stateGamePlay->context->t_camera);
+  stateGamePlay->world->registerTickCallbacks(tickManager.scheduler);
+  stateGamePlay->player->registerTickCallbacks(tickManager.scheduler);
+}
+
+void SurvivalPlayingState::update(const float& deltaTime) {
+  tickManager.update(deltaTime);
+}
 
 void SurvivalPlayingState::tick() {}
 
