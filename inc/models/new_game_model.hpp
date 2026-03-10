@@ -8,7 +8,7 @@ class NewGameOptions {
   ~NewGameOptions(){};
 
   uint32_t seed = 0;
-  DrawDistanceMode drawDistanceMode = DrawDistanceMode::Auto;
+  DrawDistanceMode drawDistanceMode = DrawDistanceMode::Medium;
   WorldType type = WorldType::WORLD_TYPE_ORIGINAL;
   GameMode gameMode = GameMode::Creative;
   float initialTime = 1000;  // Sun rise in ticks
