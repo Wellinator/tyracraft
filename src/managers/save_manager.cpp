@@ -160,6 +160,10 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
   state->world->setSavedSpawnArea(playerPos);
   state->context->t_camera->pitch = cameraPitch;
   state->context->t_camera->yaw = cameraYaw;
+  state->context->t_camera->targetPitch = cameraPitch;
+  state->context->t_camera->targetYaw = cameraYaw;
+  state->context->t_camera->smoothPitch = cameraPitch;
+  state->context->t_camera->smoothYaw = cameraYaw;
 
   // Restore tick state
   g_ticksCounter = static_cast<uint32_t>(loadedTicksCounter);
