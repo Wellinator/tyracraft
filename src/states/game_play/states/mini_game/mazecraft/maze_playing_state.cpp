@@ -483,8 +483,12 @@ void MazePlayingState::saveProgress() {
   std::string saveFileName = FileUtils::fromCwd(
       "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
       MINIGAME_FILE_EXTENSION);
-  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
-  TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+  SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  if (result) {
+    TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+  } else {
+    TYRA_LOG("ERROR saving mazecraft: ", result.errorMessage.c_str());
+  }
 }
 
 void MazePlayingState::autoSave() {
@@ -494,12 +498,17 @@ void MazePlayingState::autoSave() {
 
   NotificationManager::getInstance()->notify(Label_AutoSave, Label_SavingDoNotTurnOff);
 
-  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
-  TYRA_LOG("Auto-saving mazecraft at: ", saveFileName.c_str());
-
-  NotificationManager::getInstance()->notify(
-      Message_Saved_Successfully.c_str(),
-      Message_Progress_Has_Been_Saved.c_str());
+  SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  if (result) {
+    TYRA_LOG("Auto-saving mazecraft at: ", saveFileName.c_str());
+    NotificationManager::getInstance()->notify(
+        Message_Saved_Successfully.c_str(),
+        Message_Progress_Has_Been_Saved.c_str());
+  } else {
+    TYRA_LOG("ERROR auto-saving mazecraft: ", result.errorMessage.c_str());
+    NotificationManager::getInstance()->notify("Auto-Save Failed", 
+        result.errorMessage.c_str());
+  }
 }
 
 void MazePlayingState::loadNextLevel() {
@@ -509,8 +518,12 @@ void MazePlayingState::loadNextLevel() {
   std::string saveFileName = FileUtils::fromCwd(
       "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
       MINIGAME_FILE_EXTENSION);
-  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
-  TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+  SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  if (result) {
+    TYRA_LOG("Saving mazecraft at: ", saveFileName.c_str());
+  } else {
+    TYRA_LOG("ERROR saving mazecraft before next level: ", result.errorMessage.c_str());
+  }
 
   NewGameOptions model = *stateGamePlay->world->getWorldOptions();
   model.seed += 1;

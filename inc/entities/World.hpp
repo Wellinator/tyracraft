@@ -108,6 +108,7 @@ class World {
   inline const Vec4 getGlobalSpawnArea() const { return this->worldSpawnArea; };
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
   void buildInitialPosition();
+  void buildInitialPosition(const Vec4& playerPos);  // Overload for loading saved games
 
   // From terrain manager
   const uint32_t getSeed() { return seed; };

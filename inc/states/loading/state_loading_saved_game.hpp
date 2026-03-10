@@ -58,6 +58,7 @@ class StateLoadingSavedGame : public GameState {
   StateGamePlay* stateGamePlay = nullptr;
   NewGameOptions* worldOptions;
   const std::string saveFileFullPath;
+  Vec4 savedPlayerPosition;  // Stores player position loaded from save file
 
   std::string progressLabel = "";
   FontOptions progressLabelOptions =

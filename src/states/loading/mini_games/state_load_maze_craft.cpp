@@ -141,22 +141,26 @@ void StateLoadMazeCraft::initWorld() {
   this->stateGamePlay->world->init(&this->context->t_engine->renderer,
                                    this->stateGamePlay->itemRepository);
 
-  this->stateGamePlay->world->generate();
-  TYRA_LOG("Generating spawn area...");
-  this->stateGamePlay->world->generateSpawnArea();
-
-  TYRA_LOG("Loading spawn area...");
-  this->stateGamePlay->world->loadSpawnArea();
-
   setPercent(70.0F);
   this->shouldInitWorld = 0;
   TYRA_LOG("initWorld");
 }
 
 void StateLoadMazeCraft::loadSavedData() {
-  SaveManager::LoadSavedGame(this->stateGamePlay, saveFileFullPath.c_str());
+  SaveResult result = SaveManager::LoadSavedGame(this->stateGamePlay, saveFileFullPath.c_str());
+  if (!result) {
+    TYRA_LOG("ERROR loading saved game: ", result.errorMessage.c_str());
+    // Continue anyway - world will be in reset/partial state
+  }
+
+  // Store the loaded player position for use in initPlayer()
+  savedPlayerPosition = this->stateGamePlay->player->position;
+  TYRA_LOG("Loaded player position: ", savedPlayerPosition.x, " ", savedPlayerPosition.y, " ", savedPlayerPosition.z);
+
   this->stateGamePlay->world->generateLight();
-  this->stateGamePlay->world->loadSpawnArea();
+  
+  // Build chunks around the loaded player position (not spawn area)
+  this->stateGamePlay->world->buildInitialPosition(savedPlayerPosition);
 
   setPercent(80.0F);
   this->shouldLoadSavedData = 0;
@@ -164,14 +168,13 @@ void StateLoadMazeCraft::loadSavedData() {
 }
 
 void StateLoadMazeCraft::initPlayer() {
-  this->stateGamePlay->player->setPosition(
-      this->stateGamePlay->world->getGlobalSpawnArea());
-  this->stateGamePlay->player->spawnArea.set(
-      this->stateGamePlay->world->getLocalSpawnArea());
+  // Use the loaded player position from the save file (already set in loadSavedData)
+  this->stateGamePlay->player->setPosition(savedPlayerPosition);
+  this->stateGamePlay->player->spawnArea.set(savedPlayerPosition);
   this->stateGamePlay->context->t_camera->setFirstPerson();
   setPercent(100.0F);
   this->shouldInitPlayer = 0;
-  TYRA_LOG("initPlayer");
+  TYRA_LOG("initPlayer - position: ", savedPlayerPosition.x, " ", savedPlayerPosition.y, " ", savedPlayerPosition.z);
 }
 
 void StateLoadMazeCraft::nextState() {

@@ -6,7 +6,7 @@ StateLoadingSavedGame::StateLoadingSavedGame(
     : GameState(t_context), saveFileFullPath(save_file_full_path) {
   worldOptions =
       SaveManager::GetNewGameOptionsFromSaveFile(save_file_full_path.c_str());
-  stateGamePlay = new StateGamePlay(context, GameMode::Creative);
+  stateGamePlay = new StateGamePlay(context, worldOptions->gameMode);
   init();
 }
 
@@ -142,13 +142,23 @@ void StateLoadingSavedGame::initWorld() {
 }
 
 void StateLoadingSavedGame::loadSavedData() {
-  SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
+  SaveResult result = SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
+  if (!result) {
+    TYRA_LOG("ERROR loading saved game: ", result.errorMessage.c_str());
+    // Continue anyway - world will be in reset/partial state
+  }
+
+  // Store the loaded player position for use in initPlayer()
+  savedPlayerPosition = stateGamePlay->player->position;
+  TYRA_LOG("Loaded player position: ", savedPlayerPosition.x, " ", savedPlayerPosition.y, " ", savedPlayerPosition.z);
+
   stateGamePlay->world->generateLight();
   
   // Process liquid propagation after light generation (same as new world)
   stateGamePlay->world->propagateLiquids();
   
-  stateGamePlay->world->loadSpawnArea();
+  // Build chunks around the loaded player position (not spawn area)
+  stateGamePlay->world->buildInitialPosition(savedPlayerPosition);
 
   setPercent(80.0F);
   shouldLoadSavedData = 0;
@@ -157,10 +167,9 @@ void StateLoadingSavedGame::loadSavedData() {
 
 void StateLoadingSavedGame::initPlayer() {
   TYRA_LOG("Initializing player...");
-  stateGamePlay->player->position.set(
-      stateGamePlay->world->getGlobalSpawnArea());
-  stateGamePlay->player->spawnArea.set(
-      stateGamePlay->world->getLocalSpawnArea());
+  // Use the loaded player position from the save file (already set in loadSavedData)
+  stateGamePlay->player->position.set(savedPlayerPosition);
+  stateGamePlay->player->spawnArea.set(savedPlayerPosition);
   stateGamePlay->context->t_camera->setFirstPerson();
   
   // Force immediate water state check (avoid 5-tick delay)
@@ -168,7 +177,7 @@ void StateLoadingSavedGame::initPlayer() {
   
   setPercent(100.0F);
   shouldInitPlayer = 0;
-  TYRA_LOG("Player initialized");
+  TYRA_LOG("Player initialized at position: ", savedPlayerPosition.x, " ", savedPlayerPosition.y, " ", savedPlayerPosition.z);
 }
 
 void StateLoadingSavedGame::nextState() {

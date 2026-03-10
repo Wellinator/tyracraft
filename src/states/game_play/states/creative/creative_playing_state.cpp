@@ -455,12 +455,17 @@ void CreativePlayingState::saveProgress() {
       "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
       SAVE_FILE_EXTENSION);
 
-  SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
-  TYRA_LOG("Saving at: ", saveFileName.c_str());
-
+  SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  
   NotificationManager* instance = NotificationManager::getInstance();
-  instance->notify(Message_Saved_Successfully.c_str(),
-                   Message_Progress_Has_Been_Saved.c_str());
+  if (result) {
+    TYRA_LOG("Saving at: ", saveFileName.c_str());
+    instance->notify(Message_Saved_Successfully.c_str(),
+                     Message_Progress_Has_Been_Saved.c_str());
+  } else {
+    TYRA_LOG("ERROR saving game: ", result.errorMessage.c_str());
+    instance->notify("Save Failed", result.errorMessage.c_str());
+  }
 }
 
 void CreativePlayingState::autoSave() {
@@ -479,8 +484,12 @@ void CreativePlayingState::autoSave() {
     auto state = stateGamePlay;
     bgService->submit(
         [state, saveFileName]() {
-          SaveManager::SaveGame(state, saveFileName.c_str());
-          TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+          SaveResult result = SaveManager::SaveGame(state, saveFileName.c_str());
+          if (result) {
+            TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+          } else {
+            TYRA_LOG("ERROR auto-saving: ", result.errorMessage.c_str());
+          }
         },
         [msgSaved, msgProgress]() {
           NotificationManager* instance = NotificationManager::getInstance();
@@ -488,9 +497,13 @@ void CreativePlayingState::autoSave() {
         });
   } else {
     // Fallback sync save
-    SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+    SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
     TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
     NotificationManager* instance = NotificationManager::getInstance();
-    instance->notify(msgSaved.c_str(), msgProgress.c_str());
+    if (result) {
+      instance->notify(msgSaved.c_str(), msgProgress.c_str());
+    } else {
+      instance->notify("Auto-Save Failed", result.errorMessage.c_str());
+    }
   }
 }

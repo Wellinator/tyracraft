@@ -468,6 +468,22 @@ void World::buildInitialPosition() {
   }
 };
 
+void World::buildInitialPosition(const Vec4& playerPos) {
+  TYRA_LOG("building initial position for loaded save at: ", playerPos.x, " ", playerPos.y, " ", playerPos.z);
+  // For loaded saves: build chunks around the saved player position, not the spawn area
+  Chunk* playerChunk = chunkManager.getChunkByWorldPosition(playerPos);
+  if (playerChunk != nullptr) {
+    playerChunk->clear();
+    playerChunk->build();
+    // Register the built chunk in loadedChunks so it can be rendered
+    if (playerChunk->isLoaded()) {
+      chunkManager.addToLoadedChunks(playerChunk);
+    }
+    // Force load area around saved player position
+    forceLoadArea(playerPos);
+  }
+};
+
 void World::resetWorldData() {
   // Cancel any in-progress incremental build before wiping chunks, otherwise
   // processIdleWork() would try to advance a build on a cleared chunk.

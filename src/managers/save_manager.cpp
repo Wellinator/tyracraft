@@ -1,436 +1,356 @@
 #include "managers/save_manager.hpp"
 #include "entities/level.hpp"
 #include "utils.hpp"
+#include "managers/save/save_serializer.hpp"
+#include "managers/save/save_format.hpp"
+#include "managers/save/migration_manager.hpp"
+
+using namespace TyraCraft;
 
 const int SaveManager::CurrentSaveVersion = 3;
 
-static DrawDistanceMode mapLegacyDrawDistance(u8 legacyDistance) {
-  if (legacyDistance <= DRAW_DISTANCE_LOW_CAP)
-    return DrawDistanceMode::Low;
-  else if (legacyDistance <= DRAW_DISTANCE_MEDIUM_CAP)
-    return DrawDistanceMode::Medium;
-  else if (legacyDistance <= DRAW_DISTANCE_HIGH_CAP)
-    return DrawDistanceMode::High;
-  else
-    return DrawDistanceMode::Auto;
-}
+// ===========================================================================
+// SAVE GAME
+// ===========================================================================
 
-void SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
+SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
+  if (!state || !fullPath) {
+    return SaveResult::Failure("Invalid parameters (null state or path)");
+  }
+
+  // On PS2, atomic save with temp file + rename is problematic due to filesystem locking
+  // Write directly to final location instead
   gzFile save_file = gzopen(fullPath, "wb");
-
-  if (save_file != nullptr) {
-    // Save version
-    gzwrite(save_file, &SaveManager::CurrentSaveVersion, sizeof(int));
-
-    // World seed
-    gzwrite(save_file, &state->world->getWorldOptions()->seed,
-            sizeof(uint32_t));
-
-    // Game mode
-    gzwrite(save_file, &state->world->getWorldOptions()->gameMode,
-            sizeof(uint8_t));
-
-    // World name
-    uint16_t worldNameSize =
-        state->world->getWorldOptions()->name.size() * sizeof(char);
-    gzwrite(save_file, &worldNameSize, sizeof(worldNameSize));
-    gzwrite(save_file, state->world->getWorldOptions()->name.data(),
-            worldNameSize);
-
-    // World draw distance mode
-    gzwrite(save_file, &state->world->getWorldOptions()->drawDistanceMode,
-            sizeof(u8));
-
-    // World initial time
-    gzwrite(save_file, &state->world->getWorldOptions()->initialTime,
-            sizeof(float));
-
-    // World type
-    gzwrite(save_file, &state->world->getWorldOptions()->type, sizeof(uint8_t));
-
-    // Texture Pack
-    uint16_t texturePackSize =
-        state->world->getWorldOptions()->texturePack.size() * sizeof(char);
-    gzwrite(save_file, &texturePackSize, sizeof(texturePackSize));
-    gzwrite(save_file, state->world->getWorldOptions()->texturePack.data(),
-            texturePackSize);
-
-    // Player position
-    Vec4 playerPos = state->player->position;
-    gzwrite(save_file, &playerPos.xyzw, sizeof(float) * 4);
-
-    // TODO: add hot inventory state to save file;
-
-    // Camera direction
-    gzwrite(save_file, &state->context->t_camera->pitch, sizeof(float));
-    gzwrite(save_file, &state->context->t_camera->yaw, sizeof(float));
-
-    // Tick State
-    gzwrite(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
-    gzwrite(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
-    gzwrite(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
-
-    // World State
-    LevelMap* t_map = &Level::getInstance()->map;
-    gzwrite(save_file, &t_map->width, sizeof(t_map->width));
-    gzwrite(save_file, &t_map->length, sizeof(t_map->length));
-    gzwrite(save_file, &t_map->height, sizeof(t_map->height));
-    gzwrite(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
-    gzwrite(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
-    gzwrite(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-    uint32_t worldSize = OVERWORLD_SIZE;
-    gzwrite(save_file, &worldSize, sizeof(worldSize));
-
-    gzwrite(save_file, t_map->blocks, sizeof(t_map->blocks));
-    gzwrite(save_file, t_map->lightData, sizeof(t_map->lightData));
-    gzwrite(save_file, t_map->metaData, sizeof(t_map->metaData));
-
-    gzclose(save_file);
+  if (save_file == nullptr) {
+    return SaveResult::Failure("Failed to open save file for writing (disk full or permission denied?)");
   }
+
+  SaveSerializer serializer(save_file);
+
+  // Write header with magic number and version
+  SaveResult result = SaveFormat::WriteHeader(serializer);
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WritHeader failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Write world options
+  result = SaveFormat::WriteWorldOptions(serializer, state->world->getWorldOptions());
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WriteWorldOptions failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Write player state
+  Vec4 playerPos = state->player->position;
+  result = SaveFormat::WritePlayerState(serializer, playerPos,
+                                        state->context->t_camera->pitch,
+                                        state->context->t_camera->yaw);
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WritePlayerState failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Write tick state
+  result = SaveFormat::WriteTickState(serializer, g_ticksCounter,
+                                      elapsedRealTime, ticksDayCounter);
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WriteTickState failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Write world structure
+  LevelMap* t_map = &Level::getInstance()->map;
+  result = SaveFormat::WriteWorldStructure(serializer, t_map);
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WriteWorldStructure failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Write world data (blocks, light, metadata) — ~3MB
+  result = SaveFormat::WriteWorldData(serializer, t_map);
+  if (!result) {
+    gzclose(save_file);
+    TYRA_LOG("ERROR: WriteWorldData failed - ", result.errorMessage.c_str());
+    return result;
+  }
+
+  // Flush and close file
+  gzflush(save_file, Z_FINISH);
+  
+  int closeResult = gzclose(save_file);
+  if (closeResult != Z_OK) {
+    TYRA_LOG("ERROR: gzclose failed with code: ", closeResult);
+    return SaveResult::Failure("Failed to close save file properly");
+  }
+
+  TYRA_LOG("Game saved successfully - Bytes: ", serializer.GetBytesWritten());
+
+  return SaveResult::Success();
 }
 
-void SaveManager::LoadSavedGame(StateGamePlay* state, const char* fullPath) {
+// ===========================================================================
+// LOAD GAME (UNIFIED)
+// ===========================================================================
+
+SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
+                                      const char* fullPath) {
+  if (!state || !fullPath) {
+    return SaveResult::Failure("Invalid parameters (null state or path)");
+  }
+
+  // Reset world before loading new data
   state->world->resetWorldData();
+
+  // Open save file for reading
   gzFile save_file = gzopen(fullPath, "rb");
-
-  if (save_file) {
-    gzrewind(save_file);
-
-    // Save Version
-    int version = 0;
-    gzread(save_file, &version, sizeof(int));
-    TYRA_LOG("VERSION: ", version);
-
-    if (version == 1) {
-      SaveManager::LoadSavedGameV1(state, save_file);
-    } else if (version == 2) {
-      SaveManager::LoadSavedGameV2(state, save_file);
-    } else if (version == 3) {
-      SaveManager::LoadSavedGameV3(state, save_file);
-    }
-
-    gzclose(save_file);
+  if (save_file == nullptr) {
+    return SaveResult::Failure("Failed to open save file");
   }
+
+  SaveSerializer serializer(save_file);
+
+  // Read and validate header
+  int32_t version = 0;
+  SaveResult result = SaveFormat::ReadHeader(serializer, version);
+  if (!result) {
+    gzclose(save_file);
+    return result;
+  }
+
+  TYRA_LOG("Loading save version: ", version);
+
+  // Get appropriate migration for this version
+  MigrationManager migrationMgr;
+  if (!migrationMgr.IsVersionSupported(version)) {
+    gzclose(save_file);
+    return SaveResult::Failure(
+        MigrationManager::GetVersionErrorMessage(version));
+  }
+
+  SaveMigration* migration = migrationMgr.GetMigration(version);
+  if (migration == nullptr) {
+    gzclose(save_file);
+    return SaveResult::Failure("Internal error: migration not found");
+  }
+
+  // Apply migration to load data in V3 format
+  NewGameOptions* gameOptions = state->world->getWorldOptions();
+  LevelMap* t_map = &state->plevel->map;
+  Vec4 playerPos;
+  float cameraPitch, cameraYaw;
+  uint64_t loadedTicksCounter, loadedElapsedRealTime, loadedTicksDayCounter;
+
+  result = migration->Apply(serializer, gameOptions, t_map, &playerPos,
+                           &cameraPitch, &cameraYaw, &loadedTicksCounter,
+                           &loadedElapsedRealTime, &loadedTicksDayCounter);
+
+  if (!result) {
+    gzclose(save_file);
+    return result;
+  }
+
+  // Apply loaded state to game
+  state->player->setPosition(playerPos);
+  state->world->setSavedSpawnArea(playerPos);
+  state->context->t_camera->pitch = cameraPitch;
+  state->context->t_camera->yaw = cameraYaw;
+
+  // Restore tick state
+  g_ticksCounter = static_cast<uint32_t>(loadedTicksCounter);
+  ::elapsedRealTime = static_cast<double>(loadedElapsedRealTime);
+  ::ticksDayCounter = static_cast<u16>(loadedTicksDayCounter);
+
+  // Close file
+  gzclose(save_file);
+
+  TYRA_LOG("Game loaded successfully - bytes read: ",
+           serializer.GetBytesRead());
+
+  return SaveResult::Success();
 }
+
+// ===========================================================================
+// DEPRECATED: Legacy loaders (kept for backward compatibility)
+// ===========================================================================
 
 void SaveManager::LoadSavedGameV1(StateGamePlay* state,
                                   const gzFile& save_file) {
-  gzrewind(save_file);
-
-  // Save Version
-  int version = 0;
-  gzread(save_file, &version, sizeof(int));
-
-  NewGameOptions* gameOptions = state->world->getWorldOptions();
-
-  // World seed
-  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
-
-  // Game mode
-  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
-
-  // World name
-  uint16_t worldNameSize;
-  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-  gameOptions->name.resize(worldNameSize / sizeof(char));
-  gzread(save_file, gameOptions->name.data(), worldNameSize);
-
-  // World draw distance (legacy — map to nearest mode)
-  u8 legacyDrawDistance;
-  gzread(save_file, &legacyDrawDistance, sizeof(u8));
-  gameOptions->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
-
-  // World initial time
-  gzread(save_file, &gameOptions->initialTime, sizeof(float));
-
-  // World type
-  uint8_t worldType;
-  gzread(save_file, &worldType, sizeof(uint8_t));
-  gameOptions->type = static_cast<WorldType>(worldType);
-
-  // Texture Pack
-  uint16_t texturePackSize = 0;
-  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
-  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
-  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
-
-  // Player position
-  Vec4 playerPos;
-  gzread(save_file, &playerPos, sizeof(Vec4));
-
-  // PATCH: Fix for v1 save files that missed the w component
-  playerPos.w = 1.0f;
-
-  state->player->setPosition(Vec4(playerPos));
-  state->world->setSavedSpawnArea(playerPos);
-
-  // TODO: add hot inventory state to save file;
-
-  // Camera direction
-  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
-  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
-
-  // Tick State
-  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
-  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
-  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
-
-  // World State
-  LevelMap* t_map = &state->plevel->map;
-  gzread(save_file, &t_map->width, sizeof(t_map->width));
-  gzread(save_file, &t_map->length, sizeof(t_map->length));
-  gzread(save_file, &t_map->height, sizeof(t_map->height));
-  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
-  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
-  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-  uint32_t worldSize = 0;
-  gzread(save_file, &worldSize, sizeof(worldSize));
-  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
-  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
-  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+  // This function is deprecated. Use LoadSavedGame() which handles all versions.
+  // Kept only for code that might call this directly.
+  TYRA_LOG("WARNING: LoadSavedGameV1 is deprecated. Use LoadSavedGame() instead.");
 }
 
 void SaveManager::LoadSavedGameV2(StateGamePlay* state,
                                   const gzFile& save_file) {
-  gzrewind(save_file);
-
-  // Save Version
-  int version = 0;
-  gzread(save_file, &version, sizeof(int));
-
-  NewGameOptions* gameOptions = state->world->getWorldOptions();
-
-  // World seed
-  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
-
-  // Game mode
-  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
-
-  // World name
-  uint16_t worldNameSize;
-  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-  gameOptions->name.resize(worldNameSize / sizeof(char));
-  gzread(save_file, gameOptions->name.data(), worldNameSize);
-
-  // World draw distance (legacy — map to nearest mode)
-  u8 legacyDrawDistance;
-  gzread(save_file, &legacyDrawDistance, sizeof(u8));
-  gameOptions->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
-
-  // World initial time
-  gzread(save_file, &gameOptions->initialTime, sizeof(float));
-
-  // World type
-  uint8_t worldType;
-  gzread(save_file, &worldType, sizeof(uint8_t));
-  gameOptions->type = static_cast<WorldType>(worldType);
-
-  // Texture Pack
-  uint16_t texturePackSize = 0;
-  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
-  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
-  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
-
-  // Player position
-  Vec4 playerPos;
-  gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
-  state->player->setPosition(Vec4(playerPos.xyzw));
-  state->world->setSavedSpawnArea(playerPos);
-
-  // TODO: add hot inventory state to save file;
-
-  // Camera direction
-  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
-  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
-
-  // Tick State
-  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
-  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
-  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
-
-  // World State
-  LevelMap* t_map = &state->plevel->map;
-  gzread(save_file, &t_map->width, sizeof(t_map->width));
-  gzread(save_file, &t_map->length, sizeof(t_map->length));
-  gzread(save_file, &t_map->height, sizeof(t_map->height));
-  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
-  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
-  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-  uint32_t worldSize = 0;
-  gzread(save_file, &worldSize, sizeof(worldSize));
-  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
-  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
-  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+  // This function is deprecated. Use LoadSavedGame() which handles all versions.
+  TYRA_LOG("WARNING: LoadSavedGameV2 is deprecated. Use LoadSavedGame() instead.");
 }
 
 void SaveManager::LoadSavedGameV3(StateGamePlay* state,
                                   const gzFile& save_file) {
-  gzrewind(save_file);
-
-  // Save Version
-  int version = 0;
-  gzread(save_file, &version, sizeof(int));
-
-  NewGameOptions* gameOptions = state->world->getWorldOptions();
-
-  // World seed
-  gzread(save_file, &gameOptions->seed, sizeof(uint32_t));
-
-  // Game mode
-  gzread(save_file, &gameOptions->gameMode, sizeof(uint8_t));
-
-  // World name
-  uint16_t worldNameSize;
-  gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-  gameOptions->name.resize(worldNameSize / sizeof(char));
-  gzread(save_file, gameOptions->name.data(), worldNameSize);
-
-  // World draw distance mode
-  gzread(save_file, &gameOptions->drawDistanceMode, sizeof(u8));
-
-  // World initial time
-  gzread(save_file, &gameOptions->initialTime, sizeof(float));
-
-  // World type
-  uint8_t worldType;
-  gzread(save_file, &worldType, sizeof(uint8_t));
-  gameOptions->type = static_cast<WorldType>(worldType);
-
-  // Texture Pack
-  uint16_t texturePackSize = 0;
-  gzread(save_file, &texturePackSize, sizeof(texturePackSize));
-  gameOptions->texturePack.resize(texturePackSize / sizeof(char));
-  gzread(save_file, gameOptions->texturePack.data(), texturePackSize);
-
-  // Player position
-  Vec4 playerPos;
-  gzread(save_file, &playerPos.xyzw, sizeof(float) * 4);
-  state->player->setPosition(Vec4(playerPos.xyzw));
-  state->world->setSavedSpawnArea(playerPos);
-
-  // TODO: add hot inventory state to save file;
-
-  // Camera direction
-  gzread(save_file, &state->context->t_camera->pitch, sizeof(float));
-  gzread(save_file, &state->context->t_camera->yaw, sizeof(float));
-
-  // Tick State
-  gzread(save_file, &g_ticksCounter, sizeof(g_ticksCounter));
-  gzread(save_file, &elapsedRealTime, sizeof(elapsedRealTime));
-  gzread(save_file, &ticksDayCounter, sizeof(ticksDayCounter));
-
-  // World State
-  LevelMap* t_map = &state->plevel->map;
-  gzread(save_file, &t_map->width, sizeof(t_map->width));
-  gzread(save_file, &t_map->length, sizeof(t_map->length));
-  gzread(save_file, &t_map->height, sizeof(t_map->height));
-  gzread(save_file, &t_map->spawnX, sizeof(t_map->spawnX));
-  gzread(save_file, &t_map->spawnY, sizeof(t_map->spawnY));
-  gzread(save_file, &t_map->spawnZ, sizeof(t_map->spawnZ));
-
-  uint32_t worldSize = 0;
-  gzread(save_file, &worldSize, sizeof(worldSize));
-  gzread(save_file, t_map->blocks, sizeof(t_map->blocks));
-  gzread(save_file, t_map->lightData, sizeof(t_map->lightData));
-  gzread(save_file, t_map->metaData, sizeof(t_map->metaData));
+  // This function is deprecated. Use LoadSavedGame() which handles all versions.
+  TYRA_LOG("WARNING: LoadSavedGameV3 is deprecated. Use LoadSavedGame() instead.");
 }
+
+// ===========================================================================
+// GET WORLD OPTIONS FROM SAVE FILE
+// ===========================================================================
 
 NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     const char* fullPath) {
   NewGameOptions* model = new NewGameOptions();
 
   gzFile save_file = gzopen(fullPath, "rb");
-
-  if (save_file != nullptr) {
-    gzrewind(save_file);
-
-    // Save Version
-    int version = 0;
-    gzread(save_file, &version, sizeof(int));
-
-    // World seed
-    gzread(save_file, &model->seed, sizeof(uint32_t));
-
-    // Game mode
-    gzread(save_file, &model->gameMode, sizeof(uint8_t));
-
-    // World name
-    uint16_t worldNameSize;
-    gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-    model->name.resize(worldNameSize / sizeof(char));
-    gzread(save_file, model->name.data(), worldNameSize);
-
-    // World draw distance mode
-    if (version <= 2) {
-      // Legacy: read old drawDistance byte and map to mode
-      u8 legacyDrawDistance;
-      gzread(save_file, &legacyDrawDistance, sizeof(u8));
-      model->drawDistanceMode = mapLegacyDrawDistance(legacyDrawDistance);
-    } else {
-      gzread(save_file, &model->drawDistanceMode, sizeof(u8));
-    }
-
-    // World initial time
-    gzread(save_file, &model->initialTime, sizeof(float));
-
-    // World type
-    uint8_t worldType;
-    gzread(save_file, &worldType, sizeof(uint8_t));
-    model->type = static_cast<WorldType>(worldType);
-
-    // Texture Pack
-    uint16_t texturePackSize = 0;
-    gzread(save_file, &texturePackSize, sizeof(texturePackSize));
-    model->texturePack.resize(texturePackSize / sizeof(char));
-    gzread(save_file, model->texturePack.data(), texturePackSize);
-
-    gzclose(save_file);
-  } else {
-    TYRA_TRAP("No could not open save file at: ", fullPath);
+  if (save_file == nullptr) {
+    TYRA_TRAP("Could not open save file at: ", fullPath);
+    return model;  // Return default options if file can't be opened
   }
 
+  SaveSerializer serializer(save_file);
+
+  // Read header
+  int32_t version = 0;
+  SaveResult result = SaveFormat::ReadHeader(serializer, version);
+  if (!result) {
+    TYRA_LOG("Error reading save header: ", result.errorMessage.c_str());
+    gzclose(save_file);
+    return model;  // Return default options on error
+  }
+
+  // Check version support
+  MigrationManager migrationMgr;
+  if (!migrationMgr.IsVersionSupported(version)) {
+    TYRA_LOG("Unsupported save version: ", version);
+    gzclose(save_file);
+    return model;  // Return default options for unsupported versions
+  }
+
+  // Read world options depending on version
+  if (version <= 2) {
+    // V1/V2: seed, gameMode, name, legacyDrawDistance, initialTime, type, texturePack
+    result = serializer.ReadUInt32(&model->seed);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+
+    uint8_t gameMode;
+    result = serializer.ReadUInt8(&gameMode);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+    model->gameMode = (GameMode)gameMode;
+
+    result = serializer.ReadString(&model->name, SaveSerializer::MAX_SAVE_NAME_LENGTH);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+
+    // Legacy draw distance - map to enum
+    u8 legacyDrawDistance;
+    result = serializer.ReadUInt8(&legacyDrawDistance);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+
+    if (legacyDrawDistance <= 10)
+      model->drawDistanceMode = DrawDistanceMode::Low;
+    else if (legacyDrawDistance <= 16)
+      model->drawDistanceMode = DrawDistanceMode::Medium;
+    else if (legacyDrawDistance <= 24)
+      model->drawDistanceMode = DrawDistanceMode::High;
+    else
+      model->drawDistanceMode = DrawDistanceMode::Auto;
+
+    // Rest of options
+    result = serializer.ReadFloat(&model->initialTime);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+
+    uint8_t worldType;
+    result = serializer.ReadUInt8(&worldType);
+    if (!result) {
+      gzclose(save_file);
+      return model;
+    }
+    model->type = (WorldType)worldType;
+
+    result = serializer.ReadString(&model->texturePack,
+                                   SaveSerializer::MAX_TEXTURE_PACK_NAME);
+  } else {
+    // V3: Use standard ReadWorldOptions
+    result = SaveFormat::ReadWorldOptions(serializer, model);
+  }
+
+  if (!result) {
+    TYRA_LOG("Error reading world options: ", result.errorMessage.c_str());
+  }
+
+  gzclose(save_file);
   return model;
 }
 
+// ===========================================================================
+// SET SAVE INFO (metadata for UI)
+// ===========================================================================
+
 void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
+  if (!target) return;
+
   gzFile save_file = gzopen(fullPath, "rb");
-  if (save_file) {
-    gzrewind(save_file);
-
-    // Set Version
-    int version;
-    gzread(save_file, &version, sizeof(int));
-
-    if (version == 0) {
-      target->version = 0;
-      target->name = std::string(FileUtils::getFilenameWithoutExtension(
-          FileUtils::getFilenameFromPath(fullPath)));
-    } else if (version >= 1 && version <= 3) {
-      target->version = version;
-
-      // World seed
-      uint32_t seed;
-      gzread(save_file, &seed, sizeof(uint32_t));
-
-      uint8_t gameMode;
-      gzread(save_file, &gameMode, sizeof(uint8_t));
-
-      // World name
-      uint16_t worldNameSize;
-      gzread(save_file, &worldNameSize, sizeof(worldNameSize));
-      target->name.resize(worldNameSize / sizeof(char));
-      gzread(save_file, target->name.data(), worldNameSize);
-    }
-
-    gzclose(save_file);
-  } else {
+  if (save_file == nullptr) {
+    // File doesn't exist or can't be opened - use defaults
     target->version = 0;
     target->name = std::string(FileUtils::getFilenameWithoutExtension(
         FileUtils::getFilenameFromPath(fullPath)));
+    return;
   }
+
+  SaveSerializer serializer(save_file);
+
+  // Read header
+  int32_t version = 0;
+  SaveResult result = SaveFormat::ReadHeader(serializer, version);
+  if (!result) {
+    // Invalid header - fallback to filename
+    target->version = 0;
+    target->name = std::string(FileUtils::getFilenameWithoutExtension(
+        FileUtils::getFilenameFromPath(fullPath)));
+    gzclose(save_file);
+    return;
+  }
+
+  target->version = version;
+
+  // For unsupported versions, use filename as fallback
+  MigrationManager migrationMgr;
+  if (!migrationMgr.IsVersionSupported(version)) {
+    target->name = std::string(FileUtils::getFilenameWithoutExtension(
+        FileUtils::getFilenameFromPath(fullPath)));
+    gzclose(save_file);
+    return;
+  }
+
+  // Read world name
+  result = SaveFormat::ReadWorldNameOnly(serializer, &target->name);
+  if (!result) {
+    // On error reading name, fallback to filename
+    target->name = std::string(FileUtils::getFilenameWithoutExtension(
+        FileUtils::getFilenameFromPath(fullPath)));
+  }
+
+  gzclose(save_file);
 }
 
 bool SaveManager::CheckIfSaveExist(const char* fullPath) {
