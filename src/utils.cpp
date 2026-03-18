@@ -504,3 +504,45 @@ void Utils::CalculateOverlappingVolume(Vec4* AMin, Vec4* AMax, Vec4* BMin,
 
   // return true;
 }
+
+bool Utils::makeDirectoryRecursive(const std::string& path) {
+  if (path.empty()) return false;
+
+  std::string currentPath = "";
+  std::string remainingPath = path;
+
+  // Handle device prefix (e.g., "mass:", "host:", "mc0:")
+  size_t colonPos = path.find(':');
+  if (colonPos != std::string::npos) {
+    currentPath = path.substr(0, colonPos + 1);
+    remainingPath = path.substr(colonPos + 1);
+  }
+
+  // Ensure currentPath starts with a slash if there was a device prefix
+  // but the remaining path doesn't start with one.
+  // Standard PS2 device paths are "device:/path" or "device:path"
+  
+  size_t pos = 0;
+  // Skip leading slash if present
+  if (remainingPath.length() > 0 && (remainingPath[0] == '/' || remainingPath[0] == '\\')) {
+    pos = 1;
+  }
+
+  while ((pos = remainingPath.find_first_of("/\\", pos)) != std::string::npos) {
+    std::string dir = currentPath + remainingPath.substr(0, pos);
+    if (!dir.empty() && dir != currentPath) {
+      struct stat st;
+      if (stat(dir.c_str(), &st) != 0) {
+        mkdir(dir.c_str(), 0777);
+      }
+    }
+    pos++;
+  }
+
+  // Create final directory
+  struct stat st;
+  if (stat(path.c_str(), &st) != 0) {
+    return mkdir(path.c_str(), 0777) == 0;
+  }
+  return S_ISDIR(st.st_mode);
+}

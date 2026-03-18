@@ -131,16 +131,18 @@ void TyraCraftGame::loadSavedSettings() {
 void TyraCraftGame::checkNeededDirectories() { checkSavesDir(); }
 
 void TyraCraftGame::checkSavesDir() {
-  struct stat info;
   auto pathname = FileUtils::fromCwd("saves/");
-  if (stat(pathname.c_str(), &info) != 0)
-    TYRA_WARN("Can't access: ", pathname.c_str());
-  if (info.st_mode & S_IFDIR) {
-    TYRA_LOG("Save dir already exist. Skiping...");
-  } else {
-    TYRA_WARN("Creating Save directory...");
-    mode_t mode = 0755;
-    mkdir(pathname.c_str(), mode);
+  struct stat info;
+  if (stat(pathname.c_str(), &info) == 0) {
+    if (S_ISDIR(info.st_mode)) {
+      TYRA_LOG("Save dir already exists. Skipping...");
+      return;
+    }
+  }
+
+  TYRA_LOG("Creating Save directory: %s", pathname.c_str());
+  if (!Utils::makeDirectoryRecursive(pathname)) {
+    TYRA_ERROR("Failed to create Save directory!");
   }
 }
 

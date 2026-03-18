@@ -23,11 +23,8 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   }
 
   // Ensure save directory exists
-  struct stat st;
-  if (stat(fullPath, &st) != 0) {
-    if (mkdir(fullPath, 0777) != 0) {
-      return SaveResult::Failure("Failed to create save directory");
-    }
+  if (!Utils::makeDirectoryRecursive(fullPath)) {
+    return SaveResult::Failure("Failed to create save directory");
   }
 
   std::string metadataPath = getMetadataPath(fullPath);

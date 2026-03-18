@@ -5,14 +5,10 @@
 #include "managers/save/save_serializer.hpp"
 #include <cstdio>
 #include "managers/background_task_service.hpp"
+#include "utils.hpp"
 
 static bool ensureDirExists(const std::string& path) {
-  struct stat st;
-  if (stat(path.c_str(), &st) == 0) {
-    return S_ISDIR(st.st_mode);
-  }
-
-  return mkdir(path.c_str(), 0777) == 0;
+  return Utils::makeDirectoryRecursive(path);
 }
 
 ChunkStorage::ChunkStorage(const std::string& worldDir) : worldDir(worldDir) {
