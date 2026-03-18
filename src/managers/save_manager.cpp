@@ -22,12 +22,15 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     return SaveResult::Failure("Invalid parameters (null state or path)");
   }
 
+  std::string normalizedPath = Utils::normalizePath(fullPath);
+  const char* path = normalizedPath.c_str();
+
   // Ensure save directory exists
-  if (!Utils::makeDirectoryRecursive(fullPath)) {
+  if (!Utils::makeDirectoryRecursive(path)) {
     return SaveResult::Failure("Failed to create save directory");
   }
 
-  std::string metadataPath = getMetadataPath(fullPath);
+  std::string metadataPath = getMetadataPath(path);
   gzFile save_file = gzopen(metadataPath.c_str(), "wb");
   if (save_file == nullptr) {
     return SaveResult::Failure("Failed to open metadata file (.tcw) for writing");
@@ -89,10 +92,13 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
     return SaveResult::Failure("Invalid parameters (null state or path)");
   }
 
+  std::string normalizedPath = Utils::normalizePath(fullPath);
+  const char* path = normalizedPath.c_str();
+
   // Reset world before loading new data
   state->world->resetWorldData();
 
-  std::string metadataPath = getMetadataPath(fullPath);
+  std::string metadataPath = getMetadataPath(path);
   gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
     return SaveResult::Failure("Failed to open metadata file (.tcw) inside world folder");
@@ -179,7 +185,8 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     const char* fullPath) {
   NewGameOptions* model = new NewGameOptions();
 
-  std::string metadataPath = getMetadataPath(fullPath);
+  std::string normalizedPath = Utils::normalizePath(fullPath);
+  std::string metadataPath = getMetadataPath(normalizedPath.c_str());
   gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
     return model;
@@ -213,7 +220,8 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
 void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
   if (!target) return;
 
-  std::string metadataPath = getMetadataPath(fullPath);
+  std::string normalizedPath = Utils::normalizePath(fullPath);
+  std::string metadataPath = getMetadataPath(normalizedPath.c_str());
   gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
     target->version = 0;
@@ -248,17 +256,19 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
 }
 
 bool SaveManager::CheckIfSaveExist(const char* fullPath) {
+  std::string normalizedPath = Utils::normalizePath(fullPath);
   struct stat buffer;
-  if (stat(fullPath, &buffer) == 0 && S_ISDIR(buffer.st_mode)) {
-    std::string metadataPath = getMetadataPath(fullPath);
+  if (stat(normalizedPath.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode)) {
+    std::string metadataPath = getMetadataPath(normalizedPath.c_str());
     return (stat(metadataPath.c_str(), &buffer) == 0);
   }
   return false;
 }
 
 bool SaveManager::CheckIfFolderExist(const char* fullPath) {
+  std::string normalizedPath = Utils::normalizePath(fullPath);
   struct stat buffer;
-  return (stat(fullPath, &buffer) == 0 && S_ISDIR(buffer.st_mode));
+  return (stat(normalizedPath.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
 }
 
 static int remove_directory(const char* path) {
@@ -278,8 +288,9 @@ static int remove_directory(const char* path) {
 }
 
 int SaveManager::DeleteSave(const char* fullPath) {
-  if (SaveManager::CheckIfFolderExist(fullPath)) {
-    return remove_directory(fullPath);
+  std::string normalizedPath = Utils::normalizePath(fullPath);
+  if (SaveManager::CheckIfFolderExist(normalizedPath.c_str())) {
+    return remove_directory(normalizedPath.c_str());
   }
   return -1;
 }

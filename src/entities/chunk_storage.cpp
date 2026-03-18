@@ -11,7 +11,7 @@ static bool ensureDirExists(const std::string& path) {
   return Utils::makeDirectoryRecursive(path);
 }
 
-ChunkStorage::ChunkStorage(const std::string& worldDir) : worldDir(worldDir) {
+ChunkStorage::ChunkStorage(const std::string& worldDir) : worldDir(Utils::normalizePath(worldDir)) {
   // Ensure world/chunks directories exist
   ensureDirExists(worldDir);
   std::string chunksPath = worldDir + "/chunks";

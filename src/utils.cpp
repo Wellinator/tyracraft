@@ -321,6 +321,34 @@ std::string Utils::sanitizeWorldStorageName(const std::string& name) {
   return out;
 }
 
+std::string Utils::normalizePath(const std::string& path) {
+  std::string out = path;
+  for (char& c : out) {
+    if (c == '\\') c = '/';
+  }
+
+  // De-absolutize host paths: host:D:/path/to/bin/saves/ -> host:saves/
+  if (out.find("host:") == 0) {
+    size_t secondColon = out.find(':', 5);
+    if (secondColon != std::string::npos) {
+      // Find the first occurrence of "/saves/" or "/bin/" to strip prefix
+      size_t relPos = out.find("/saves/");
+      if (relPos == std::string::npos) {
+        relPos = out.find("/bin/");
+      }
+
+      if (relPos != std::string::npos) {
+        return "host:" + out.substr(relPos + 1);
+      } else {
+        // Fallback: strip drive letter "D:/" if present
+        return "host:" + out.substr(secondColon + 2);
+      }
+    }
+  }
+
+  return out;
+}
+
 void Utils::IntegrateParticleMotionVU0(Vec4* velocity, Vec4* nextPosition,
                                        const Vec4& direction,
                                        const float instantSpeed,
@@ -508,29 +536,33 @@ void Utils::CalculateOverlappingVolume(Vec4* AMin, Vec4* AMax, Vec4* BMin,
 bool Utils::makeDirectoryRecursive(const std::string& path) {
   if (path.empty()) return false;
 
-  std::string currentPath = "";
-  std::string remainingPath = path;
+  std::string sanitizedPath = normalizePath(path);
 
-  // Handle device prefix (e.g., "mass:", "host:", "mc0:")
-  size_t colonPos = path.find(':');
+  std::string currentPrefix = "";
+  std::string remainingPath = sanitizedPath;
+
+  // Handle device prefix (e.g., "host:", "mc0:", "mass:")
+  size_t colonPos = sanitizedPath.find(':');
   if (colonPos != std::string::npos) {
-    currentPath = path.substr(0, colonPos + 1);
-    remainingPath = path.substr(colonPos + 1);
+    currentPrefix = sanitizedPath.substr(0, colonPos + 1);
+    remainingPath = sanitizedPath.substr(colonPos + 1);
   }
 
-  // Ensure currentPath starts with a slash if there was a device prefix
-  // but the remaining path doesn't start with one.
-  // Standard PS2 device paths are "device:/path" or "device:path"
-  
   size_t pos = 0;
   // Skip leading slash if present
-  if (remainingPath.length() > 0 && (remainingPath[0] == '/' || remainingPath[0] == '\\')) {
+  if (!remainingPath.empty() && remainingPath[0] == '/') {
     pos = 1;
   }
 
-  while ((pos = remainingPath.find_first_of("/\\", pos)) != std::string::npos) {
-    std::string dir = currentPath + remainingPath.substr(0, pos);
-    if (!dir.empty() && dir != currentPath) {
+  while ((pos = remainingPath.find('/', pos)) != std::string::npos) {
+    std::string component = remainingPath.substr(0, pos);
+    std::string dir = currentPrefix + component;
+
+    // SKIP: If the component contains a colon (e.g., "D:"), it's likely a host
+    // root bypass. Skip mkdir to avoid mangled paths and noisy logs.
+    bool skipMkdir = component.find(':') != std::string::npos;
+
+    if (!dir.empty() && dir != currentPrefix && !skipMkdir) {
       struct stat st;
       if (stat(dir.c_str(), &st) != 0) {
         mkdir(dir.c_str(), 0777);
@@ -541,8 +573,8 @@ bool Utils::makeDirectoryRecursive(const std::string& path) {
 
   // Create final directory
   struct stat st;
-  if (stat(path.c_str(), &st) != 0) {
-    return mkdir(path.c_str(), 0777) == 0;
+  if (stat(sanitizedPath.c_str(), &st) != 0) {
+    return mkdir(sanitizedPath.c_str(), 0777) == 0;
   }
   return S_ISDIR(st.st_mode);
 }
