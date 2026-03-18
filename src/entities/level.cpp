@@ -472,6 +472,7 @@ void Level::saveAllChunks() {
   for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
     if (map.chunks[i] != nullptr) {
       provider->saveChunk(map.chunks[i]);
+      RotateThreadReadyQueue(100);  // Yield to other threads of the same or higher priority
     }
   }
 }

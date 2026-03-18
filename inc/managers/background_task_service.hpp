@@ -52,7 +52,7 @@ class BackgroundTaskService : public Singleton<BackgroundTaskService> {
 
   static constexpr int QUEUE_CAPACITY = 16;
   static constexpr int DONE_CAPACITY = 16;
-  static constexpr s32 WORKER_PRIORITY = 0x1E;
+  static constexpr s32 WORKER_PRIORITY = 100; // Lower priority (higher value) to prevent starvation
   static constexpr s32 DISPATCHER_PRIORITY = 0x10;
   static constexpr int ALARM_CYCLE = 150;
 
