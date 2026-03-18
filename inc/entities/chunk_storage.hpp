@@ -16,6 +16,7 @@ class ChunkStorage : public ChunkDataSource {
   LevelChunk* getChunk(int x, int z) override;
   void getChunkAsync(int x, int z, std::function<void(LevelChunk*)> callback) override;
   void saveChunk(LevelChunk* chunk) override;
+  void saveChunkAsync(LevelChunk* chunk, std::function<void()> callback) override;
   void tick() override;
   void flush() override;
   void waitForAll() override;

@@ -390,11 +390,15 @@ void Level::unloadFarChunks(int playerChunkX, int playerChunkZ, int radius) {
     if (dx > radius || dz > radius) {
       // Chunk is far away, unload it
       auto* provider = world ? world->getChunkProvider() : nullptr;
-      if (provider) {
-        provider->saveChunk(chunk);
-      }
-      delete chunk;
+      LevelChunk* chunkToUnload = map.chunks[i];
       map.chunks[i] = nullptr;
+
+      if (provider && chunkToUnload->isDirty) {
+        provider->saveChunkAsync(chunkToUnload,
+                                 [chunkToUnload]() { delete chunkToUnload; });
+      } else {
+        delete chunkToUnload;
+      }
     }
   }
 }
@@ -405,11 +409,14 @@ void Level::unloadChunk(int chunkX, int chunkZ) {
 
   if (index < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD && map.chunks[index] != nullptr) {
     auto* provider = world ? world->getChunkProvider() : nullptr;
-    if (provider) {
-      provider->saveChunk(map.chunks[index]);
-    }
-    delete map.chunks[index];
+    LevelChunk* chunk = map.chunks[index];
     map.chunks[index] = nullptr;
+
+    if (provider && chunk->isDirty) {
+      provider->saveChunkAsync(chunk, [chunk]() { delete chunk; });
+    } else {
+      delete chunk;
+    }
   }
 }
 

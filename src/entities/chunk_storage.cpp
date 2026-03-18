@@ -69,6 +69,11 @@ struct GetChunkAsyncRequest {
   std::function<void(LevelChunk*)> callback;
 };
 
+struct SaveChunkAsyncRequest {
+  LevelChunk* chunk;
+  std::function<void()> callback;
+};
+
 void ChunkStorage::getChunkAsync(int x, int z,
                                 std::function<void(LevelChunk*)> callback) {
   auto* bgService = BackgroundTaskService::getInstance();
@@ -126,10 +131,44 @@ void ChunkStorage::saveChunk(LevelChunk* chunk) {
     }
   }
 
-  gzclose(file);
+  chunk->isDirty = false;
 }
 
-void ChunkStorage::tick() {}
+void ChunkStorage::saveChunkAsync(LevelChunk* chunk,
+                                 std::function<void()> callback) {
+  if (!chunk) {
+    if (callback) callback();
+    return;
+  }
+
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (!bgService) {
+    saveChunk(chunk);
+    if (callback) callback();
+    return;
+  }
+
+  SaveChunkAsyncRequest* req = new SaveChunkAsyncRequest();
+  req->chunk = chunk;
+  req->callback = callback;
+
+  const auto success = bgService->submit(
+      [this, req]() { saveChunk(req->chunk); },
+      [req]() {
+        if (req->callback) req->callback();
+        delete req;
+      });
+
+  if (success == INVALID_BG_TASK) {
+    TYRA_WARN("BackgroundTaskService queue full, falling back to sync save");
+    saveChunk(chunk);
+    if (callback) callback();
+    delete req;
+  }
+}
+
+void ChunkStorage::tick() {
+}
 
 void ChunkStorage::flush() {}
 

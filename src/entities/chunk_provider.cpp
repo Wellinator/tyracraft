@@ -47,7 +47,15 @@ void ChunkProvider::getChunkAsync(int x, int z,
 void ChunkProvider::saveChunk(LevelChunk* chunk) {
   if (storage && chunk && chunk->isDirty) {
     storage->saveChunk(chunk);
-    chunk->isDirty = false;
+  }
+}
+
+void ChunkProvider::saveChunkAsync(LevelChunk* chunk,
+                                   std::function<void()> callback) {
+  if (storage && chunk && chunk->isDirty) {
+    storage->saveChunkAsync(chunk, callback);
+  } else {
+    if (callback) callback();
   }
 }
 
