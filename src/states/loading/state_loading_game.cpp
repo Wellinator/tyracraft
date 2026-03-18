@@ -1,4 +1,5 @@
 #include "states/loading/state_loading_game.hpp"
+#include "managers/save_manager.hpp"
 
 StateLoadingGame::StateLoadingGame(Context* t_context,
                                    const NewGameOptions& options)
@@ -327,6 +328,7 @@ void StateLoadingGame::propagateLiquidsIncremental() {
 void StateLoadingGame::nextState() {
   TYRA_LOG("nextState");
   stateGamePlay->afterInit();
+  SaveManager::SaveGame(stateGamePlay, worldOptions.fullPath.c_str());
   context->setState(stateGamePlay);
 }
 

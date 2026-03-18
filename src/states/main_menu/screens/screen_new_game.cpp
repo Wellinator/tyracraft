@@ -545,6 +545,7 @@ void ScreenNewGame::createNewWorld() {
     SaveManager::DeleteSave(tempSavePath.c_str());
   }
 
+  model.fullPath = tempSavePath;
   context->loadGame(model);
 }
 

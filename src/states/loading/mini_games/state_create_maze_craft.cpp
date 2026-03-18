@@ -1,4 +1,5 @@
 #include "states/loading/mini_games/state_create_maze_craft.hpp"
+#include "managers/save_manager.hpp"
 
 StateCreateMazeCraft::StateCreateMazeCraft(Context* t_context,
                                            const NewGameOptions& options)
@@ -167,6 +168,7 @@ void StateCreateMazeCraft::initPlayer() {
 void StateCreateMazeCraft::nextState() {
   TYRA_LOG("nextState");
   stateGamePlay->afterInit();
+  SaveManager::SaveGame(stateGamePlay, worldOptions.fullPath.c_str());
   context->setState(stateGamePlay);
 }
 

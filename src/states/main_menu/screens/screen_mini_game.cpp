@@ -421,6 +421,8 @@ void ScreenMiniGame::createNewWorld() {
     default:
       return TYRA_ERROR("Not valid Mini Game");
   }
+  model.fullPath = FileUtils::fromCwd(
+      "saves/" + inputWorldName + "." + MINIGAME_FILE_EXTENSION);
   context->createMiniGame(model);
 }
 
