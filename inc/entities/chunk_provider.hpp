@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entities/level_chunk.hpp"
+#include <functional>
 
 /**
  * @brief Interface for getting chunks. 
@@ -10,6 +11,9 @@ class ChunkDataSource {
  public:
   virtual ~ChunkDataSource() {}
   virtual LevelChunk* getChunk(int x, int z) = 0;
+  virtual void getChunkAsync(int x, int z, std::function<void(LevelChunk*)> callback) {
+    callback(getChunk(x, z));
+  }
   virtual void saveChunk(LevelChunk* chunk) = 0;
   virtual void generateTerrain(int x, int z) {}
   virtual void decorate(int x, int z) {}
@@ -28,6 +32,7 @@ class ChunkProvider : public ChunkDataSource {
   ~ChunkProvider();
 
   LevelChunk* getChunk(int x, int z) override;
+  void getChunkAsync(int x, int z, std::function<void(LevelChunk*)> callback) override;
   void saveChunk(LevelChunk* chunk) override;
   void generateTerrain(int x, int z) override;
   void decorate(int x, int z) override;

@@ -2,6 +2,7 @@
 
 #include "entities/chunk_provider.hpp"
 #include <string>
+#include <functional>
 
 /**
  * @brief Implementation of ChunkSource that reads/writes from the PS2 filesystem.
@@ -13,6 +14,7 @@ class ChunkStorage : public ChunkDataSource {
   ~ChunkStorage();
 
   LevelChunk* getChunk(int x, int z) override;
+  void getChunkAsync(int x, int z, std::function<void(LevelChunk*)> callback) override;
   void saveChunk(LevelChunk* chunk) override;
   void tick() override;
   void flush() override;

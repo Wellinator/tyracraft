@@ -58,10 +58,11 @@ enum class ChunkState {
  */
 enum class BuildPhase : u8 {
   Idle       = 0,  // No incremental build in progress
-  AirCheck   = 1,  // Detecting whether the chunk is entirely air
-  MeshGen    = 2,  // BGM meshing: one FaceDir per step (6 total)
-  VisGraph   = 3,  // Rebuild BFS visibility graph
-  Finalize   = 4,  // Transition to Loaded, fire callbacks
+  PreLoad    = 1,  // Loading data from disk asynchronously
+  AirCheck   = 2,  // Detecting whether the chunk is entirely air
+  MeshGen    = 3,  // BGM meshing: one FaceDir per step (6 total)
+  VisGraph   = 4,  // Rebuild BFS visibility graph
+  Finalize   = 5,  // Transition to Loaded, fire callbacks
 };
 
 struct ChunkQuadData {
@@ -223,6 +224,8 @@ class Chunk {
   BuildPhase buildPhase    = BuildPhase::Idle;
   u8         meshGenFaceDir = 0;  // Current FaceDir being processed (0-6; 6=slabs+legacy)
   bool       pendingIsNewChunk = true;  // False when rebuild is triggered by block edit
+  bool       isDataPreloaded = false;
+  bool       isPreloading = false;
   // BGM output accumulated across incremental MeshGen steps.
   // Lives here so it survives between buildStep() calls (one face-dir per call).
   BinaryGreedyMesher::Output bgmOutput;

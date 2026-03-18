@@ -115,6 +115,7 @@ class Level : public Singleton<Level> {
   static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
   void unloadFarChunks(int playerChunkX, int playerChunkZ, int radius);
   void unloadChunk(int chunkX, int chunkZ);
+  void preLoadChunk(int x, int z, std::function<void()> onDone);
   void saveAllChunks();
   void unloadAllChunks();
   /**

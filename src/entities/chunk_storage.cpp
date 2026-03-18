@@ -4,6 +4,7 @@
 #include <zlib.h>
 #include "managers/save/save_serializer.hpp"
 #include <cstdio>
+#include "managers/background_task_service.hpp"
 
 static bool ensureDirExists(const std::string& path) {
   struct stat st;
@@ -60,6 +61,41 @@ LevelChunk* ChunkStorage::getChunk(int x, int z) {
   gzclose(file);
   chunk->isDirty = false;
   return chunk;
+}
+
+struct GetChunkAsyncRequest {
+  int x, z;
+  LevelChunk* result;
+  std::function<void(LevelChunk*)> callback;
+};
+
+void ChunkStorage::getChunkAsync(int x, int z,
+                                std::function<void(LevelChunk*)> callback) {
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (!bgService) {
+    callback(getChunk(x, z));
+    return;
+  }
+
+  GetChunkAsyncRequest* req = new GetChunkAsyncRequest();
+  req->x = x;
+  req->z = z;
+  req->result = nullptr;
+  req->callback = callback;
+
+  const auto success = bgService->submit(
+      [this, req]() { req->result = getChunk(req->x, req->z); },
+      [req]() {
+        req->callback(req->result);
+        delete req;
+      });
+
+  if (success == INVALID_BG_TASK) {
+    TYRA_WARN("BackgroundTaskService queue full, falling back to sync load");
+    LevelChunk* chunk = getChunk(x, z);
+    callback(chunk);
+    delete req;
+  }
 }
 
 void ChunkStorage::saveChunk(LevelChunk* chunk) {

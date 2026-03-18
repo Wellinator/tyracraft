@@ -25,6 +25,25 @@ LevelChunk* ChunkProvider::getChunk(int x, int z) {
   return chunk;
 }
 
+void ChunkProvider::getChunkAsync(int x, int z,
+                                  std::function<void(LevelChunk*)> callback) {
+  if (storage) {
+    storage->getChunkAsync(x, z, [this, x, z, callback](LevelChunk* chunk) {
+      if (chunk) {
+        callback(chunk);
+      } else if (generator) {
+        generator->getChunkAsync(x, z, callback);
+      } else {
+        callback(nullptr);
+      }
+    });
+  } else if (generator) {
+    generator->getChunkAsync(x, z, callback);
+  } else {
+    callback(nullptr);
+  }
+}
+
 void ChunkProvider::saveChunk(LevelChunk* chunk) {
   if (storage && chunk && chunk->isDirty) {
     storage->saveChunk(chunk);

@@ -413,6 +413,51 @@ void Level::unloadChunk(int chunkX, int chunkZ) {
   }
 }
 
+void Level::preLoadChunk(int x, int z, std::function<void()> onDone) {
+  const uint32_t chunkX = x / CHUNK_SIZE;
+  const uint32_t chunkZ = z / CHUNK_SIZE;
+  const uint32_t chunkWidth = map.width / CHUNK_SIZE;
+  const uint32_t chunkLength = map.length / CHUNK_SIZE;
+
+  if (chunkX >= chunkWidth || chunkZ >= chunkLength) {
+    if (onDone) onDone();
+    return;
+  }
+
+  const uint32_t index = (chunkZ * chunkWidth) + chunkX;
+
+  // Already in memory
+  if (map.chunks[index] != nullptr) {
+    if (onDone) onDone();
+    return;
+  }
+
+  // To avoid duplicate loading tasks for the same chunk,
+  // we could use a set, but let's keep it simple for now as World::scheduleChunks
+  // already has its own deduplication via bitsests.
+  // However, we still mark it with a temporary placeholder or similar if needed.
+  // For now, let's just trigger the async load.
+
+  World* world = getInstance()->world;
+  auto* provider = world ? world->getChunkProvider() : nullptr;
+
+  if (provider) {
+    provider->getChunkAsync(chunkX, chunkZ, [this, index, onDone](LevelChunk* chunk) {
+      if (chunk && map.chunks[index] == nullptr) {
+        map.chunks[index] = chunk;
+      } else if (chunk) {
+        // Someone else loaded it in the meantime? Unlikely on main thread, but safety first.
+        delete chunk;
+      }
+      
+      if (onDone) onDone();
+    });
+  } else {
+    // Fallback if no provider
+    if (onDone) onDone();
+  }
+}
+
 void Level::saveAllChunks() {
   auto* provider = world ? world->getChunkProvider() : nullptr;
   if (!provider) return;

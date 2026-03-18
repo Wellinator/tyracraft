@@ -709,7 +709,9 @@ void Chunk::beginBuild() {
 
   // Reset incremental meshing state
   meshGenFaceDir = 0;
-  buildPhase = BuildPhase::AirCheck;
+  isDataPreloaded = false;
+  isPreloading = false;
+  buildPhase = BuildPhase::PreLoad;
 
   // Initialise the BGM output buffers (clear + reserve).  The output
   // accumulates across multiple MeshGen buildStep() calls (one per face dir).
@@ -722,6 +724,20 @@ bool Chunk::buildStep() {
     // ------------------------------------------------------------------
     case BuildPhase::Idle:
       return true;
+
+    // ------------------------------------------------------------------
+    case BuildPhase::PreLoad: {
+      if (!isPreloading) {
+        isPreloading = true;
+        pLevel->preLoadChunk(minOffset.x, minOffset.z,
+                             [this]() { isDataPreloaded = true; });
+      }
+
+      if (isDataPreloaded) {
+        buildPhase = BuildPhase::AirCheck;
+      }
+      return false;
+    }
 
     // ------------------------------------------------------------------
     case BuildPhase::AirCheck: {
