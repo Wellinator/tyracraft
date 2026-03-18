@@ -14,6 +14,7 @@ class ChunkGenerator : public ChunkDataSource {
   void saveChunk(LevelChunk* chunk) override;
 
   void generateTerrain(int x, int z) override;
+  void carve(int x, int z) override;
   void decorate(int x, int z) override;
 
  private:

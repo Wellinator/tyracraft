@@ -29,6 +29,13 @@ void FlatLevelSource::generateChunk(Level* level, int chunkX, int chunkZ) {
     }
 }
 
+void FlatLevelSource::carve(Level* level, int chunkX, int chunkZ) {
+    // Flat worlds don't have carving features
+    (void)level;
+    (void)chunkX;
+    (void)chunkZ;
+}
+
 void FlatLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
     // Currently no post-processing for flat worlds in the original implementation
     // Besides what we might want to add later like villages

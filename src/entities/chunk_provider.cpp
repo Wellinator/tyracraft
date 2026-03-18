@@ -63,6 +63,10 @@ void ChunkProvider::generateTerrain(int x, int z) {
   if (generator) generator->generateTerrain(x, z);
 }
 
+void ChunkProvider::carve(int x, int z) {
+  if (generator) generator->carve(x, z);
+}
+
 void ChunkProvider::decorate(int x, int z) {
   if (generator) generator->decorate(x, z);
 }

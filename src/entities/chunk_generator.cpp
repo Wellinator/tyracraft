@@ -38,6 +38,7 @@ LevelChunk* ChunkGenerator::getChunk(int x, int z) {
     level->map.chunks[index] = new LevelChunk(x * CHUNK_SIZE, z * CHUNK_SIZE);
 
     terrainSource->generateChunk(level, x, z);
+    terrainSource->carve(level, x, z);
     terrainSource->postProcess(level, x, z);
 
     level->map.chunks[index]->isDirty = false;
@@ -57,6 +58,17 @@ void ChunkGenerator::generateTerrain(int x, int z) {
 
   terrainSource->generateChunk(level, x, z);
   level->map.chunks[index]->isDirty = true;
+}
+
+void ChunkGenerator::carve(int x, int z) {
+  if (!level || !terrainSource) return;
+  const uint32_t index = toChunkIndex(x, z);
+  if (index >= OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD) return;
+
+  if (level->map.chunks[index] != nullptr) {
+    terrainSource->carve(level, x, z);
+    level->map.chunks[index]->isDirty = true;
+  }
 }
 
 void ChunkGenerator::decorate(int x, int z) {

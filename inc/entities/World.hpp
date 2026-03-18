@@ -118,6 +118,7 @@ class World {
   // Stepped generation state
   enum class GenerationPhase {
     Terrain,
+    Features,
     Decoration,
     LightStitch,
     Finalize,

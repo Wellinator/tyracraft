@@ -24,5 +24,10 @@ public:
     /**
      * @brief Post-processes the chunk (decorations, populating features, etc.)
      */
+    virtual void carve(Level* level, int chunkX, int chunkZ) = 0;
+
+    /**
+     * @brief Post-processes the chunk (decorations, populating features, etc.)
+     */
     virtual void postProcess(Level* level, int chunkX, int chunkZ) = 0;
 };

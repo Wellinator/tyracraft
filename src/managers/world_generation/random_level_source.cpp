@@ -569,25 +569,19 @@ void RandomLevelSource::fillOceans(Level* level, int chunkX, int chunkZ) {
     }
 }
 
-void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
+void RandomLevelSource::carve(Level* level, int chunkX, int chunkZ) {
     if (terrainType == TerrainType::Flat) return;
-    
+
     int startX = chunkX * CHUNK_SIZE;
     int startZ = chunkZ * CHUNK_SIZE;
-    
+
     // Set seed for deterministic chunk post-processing
     srand(seed + chunkX * 341873128712ull + chunkZ * 132897987541ull);
-    
-    // In Original minecraft, structures/features are typically scaled off 16x16 chunks.
-    // TyraCraft is 8x8. We'll adjust probability.
 
     // 1. Caves
-    // Previous setup (1/16 chunk chance with fully random Y) produced very sparse
-    // caves and many failed starts outside solid stone.
     if (terrainType != TerrainType::Woods) {
         int caveAttempts = 0;
 
-        // Most chunks generate 1-2 cave starts, with occasional richer chunks.
         if ((rand() % 100) < 65) {
             caveAttempts = 1 + (rand() % 2);
         }
@@ -606,7 +600,6 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
                 topY--;
             }
 
-            // Skip columns with too little vertical solid volume.
             if (topY < 12) {
                 continue;
             }
@@ -618,7 +611,6 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
             }
 
             const int yRange = (maxY - minY) + 1;
-            // Bias cave starts toward deeper layers for natural cave systems.
             const int ry0 = rand() % yRange;
             const int ry1 = rand() % yRange;
             const int cy = minY + ((ry0 + ry1) / 2);
@@ -628,23 +620,23 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
 
         // 1.1 Ravines (CanyonFeature)
         if (rand() % 50 == 0) {
-          const int rx = startX + (rand() % CHUNK_SIZE);
-          const int rz = startZ + (rand() % CHUNK_SIZE);
+            const int rx = startX + (rand() % CHUNK_SIZE);
+            const int rz = startZ + (rand() % CHUNK_SIZE);
 
-          int topY = level->map.height - 1;
-          while (topY > 0 && level->GetBlockFromMap(rx, topY, rz) ==
-                                 static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
-            topY--;
-          }
+            int topY = level->map.height - 1;
+            while (topY > 0 && level->GetBlockFromMap(rx, topY, rz) ==
+                                   static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
+                topY--;
+            }
 
-          if (topY > 20) {
-            const int ry = 10 + (rand() % (topY - 10));
-            canyonFeature->place(level, rx, ry, rz);
-          }
+            if (topY > 20) {
+                const int ry = 10 + (rand() % (topY - 10));
+                canyonFeature->place(level, rx, ry, rz);
+            }
         }
     }
-    
-    // 2. Houses (Rare)
+
+    // 2. Houses (Rare) - Part of carving/structure phase
     if (rand() % 50 == 0) {
         int hx = startX + (rand() % CHUNK_SIZE);
         int hz = startZ + (rand() % CHUNK_SIZE);
@@ -659,7 +651,14 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
         int ly = rand() % level->map.height;
         waterLakeFeature->place(level, lx, ly, lz);
     }
-    
+
+    if (rand() % 16 == 0) {
+        int lx = startX + (rand() % CHUNK_SIZE);
+        int lz = startZ + (rand() % CHUNK_SIZE);
+        int ly = rand() % (level->map.height / 2);
+        lavaLakeFeature->place(level, lx, ly, lz);
+    }
+
     // 3.1 Sand and Gravel (SandFeature)
     for (int i = 0; i < 3; i++) {
         int sx = startX + (rand() % CHUNK_SIZE);
@@ -680,15 +679,7 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
         gravelFeature->place(level, gx, gy, gz);
     }
 
-    if (rand() % 16 == 0) {
-        int lx = startX + (rand() % CHUNK_SIZE);
-        int lz = startZ + (rand() % CHUNK_SIZE);
-        int ly = rand() % (level->map.height / 2);
-        lavaLakeFeature->place(level, lx, ly, lz);
-    }
-    
     // 4. Ores
-    // Scaled down for 8x8 chunk size instead of 16x16 (approx 1/4 of the original counts)
     auto placeOre = [&](OreFeature* feature, int count, int minY, int maxY) {
         for (int i = 0; i < count; i++) {
             int ox = startX + (rand() % CHUNK_SIZE);
@@ -702,11 +693,21 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
     placeOre(gravelOreFeature, 3, 0, level->map.height - 1);
     placeOre(coalOreFeature, 5, 0, level->map.height - 1);
     placeOre(ironOreFeature, 5, 0, level->map.height / 2);
-    
+
     if (rand() % 2 == 0) placeOre(goldOreFeature, 1, 0, level->map.height / 4);
     if (rand() % 2 == 0) placeOre(redstoneOreFeature, 1, 0, level->map.height / 8);
     if (rand() % 4 == 0) placeOre(diamondOreFeature, 1, 0, level->map.height / 8);
     if (rand() % 4 == 0) placeOre(emeraldOreFeature, 1, 0, level->map.height / 8);
+}
+
+void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
+    if (terrainType == TerrainType::Flat) return;
+
+    int startX = chunkX * CHUNK_SIZE;
+    int startZ = chunkZ * CHUNK_SIZE;
+
+    // Set seed for deterministic chunk post-processing
+    srand(seed + chunkX * 341873128712ull + chunkZ * 132897987541ull);
 
     // 5. Surface Decoration (Trees, Plants)
     const float biomeSampleX = static_cast<float>(startX + (CHUNK_SIZE / 2));
@@ -725,21 +726,19 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
     } else {
         treesToGen = biomeConfig.treeCount;
     }
-    
-    for(int i = 0; i < treesToGen; i++) {
+
+    for (int i = 0; i < treesToGen; i++) {
         int tx = startX + (rand() % CHUNK_SIZE);
         int tz = startZ + (rand() % CHUNK_SIZE);
-        
+
         int ty = level->map.height - 1;
-        while(ty > 0 && level->GetBlockFromMap(tx, ty, tz) == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
+        while (ty > 0 && level->GetBlockFromMap(tx, ty, tz) == static_cast<uint8_t>(Blocks::AIR_BLOCK)) {
             ty--;
         }
         ty++;
-        
-        // Sinkhole fix: Only place trees if we are near the expected surface.
-        // If ty is too low (e.g. inside a cave), skip it.
-        if (ty < 20) continue; 
-        
+
+        if (ty < 20) continue;
+
         if (rand() % 100 < biomeConfig.birchChancePercent) {
             birchTreeFeature->place(level, tx, ty, tz);
         } else {
@@ -751,8 +750,7 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
         if (rand() % 4 == 0) {
             const int px = startX + (rand() % CHUNK_SIZE);
             const int pz = startZ + (rand() % CHUNK_SIZE);
-            
-            // 25% chance of tall grass if it's a grass placement
+
             if (rand() % 4 == 0) {
                 tallGrassPlantFeature->place(level, px, level->map.height - 1, pz);
             } else {
@@ -787,8 +785,8 @@ void RandomLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
         const int pz = startZ + (rand() % CHUNK_SIZE);
         cactusFeature->place(level, px, 0, pz);
     }
-    
-    if (temperature > 0.4f && rand() % 4 == 0) { // Colder/Mushroom condition placeholder
+
+    if (temperature > 0.4f && rand() % 4 == 0) {
         int px = startX + (rand() % CHUNK_SIZE);
         int pz = startZ + (rand() % CHUNK_SIZE);
         int py = rand() % level->map.height;

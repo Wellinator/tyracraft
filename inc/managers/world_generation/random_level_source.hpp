@@ -67,6 +67,7 @@ public:
     ~RandomLevelSource() override;
 
     void generateChunk(Level* level, int chunkX, int chunkZ) override;
+    void carve(Level* level, int chunkX, int chunkZ) override;
     void postProcess(Level* level, int chunkX, int chunkZ) override;
 
 private:

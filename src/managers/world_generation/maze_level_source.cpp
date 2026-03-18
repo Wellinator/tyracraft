@@ -95,6 +95,13 @@ void MazeLevelSource::generateChunk(Level* level, int chunkX, int chunkZ) {
   }
 }
 
+void MazeLevelSource::carve(Level* level, int chunkX, int chunkZ) {
+  // Mazes don't currently have carving features like caves/canyons
+  (void)level;
+  (void)chunkX;
+  (void)chunkZ;
+}
+
 void MazeLevelSource::postProcess(Level* level, int chunkX, int chunkZ) {
   // Rooms decoration
   const auto rooms = gen.get_rooms();

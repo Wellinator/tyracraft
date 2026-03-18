@@ -113,9 +113,24 @@ bool World::generateStep() {
       }
       generationRow++;
       if (generationRow >= generationTotalRows) {
-        currentGenerationPhase = GenerationPhase::Decoration;
+        currentGenerationPhase = GenerationPhase::Features;
         generationRow = 0;
         TYRA_LOG("WorldGen: Pass 1 (Terrain) complete.");
+      }
+      return false;
+    }
+
+    case GenerationPhase::Features: {
+      int cz = generationRow;
+      for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
+        provider->carve(cx, cz);
+        pLevel->unloadChunk(cx, cz, false);
+      }
+      generationRow++;
+      if (generationRow >= generationTotalRows) {
+        currentGenerationPhase = GenerationPhase::Decoration;
+        generationRow = 0;
+        TYRA_LOG("WorldGen: Pass 2 (Features) complete.");
       }
       return false;
     }

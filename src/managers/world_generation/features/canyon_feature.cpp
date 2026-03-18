@@ -31,7 +31,20 @@ void CanyonFeature::fillOblateSpheroid(Level* level, int centerX, int centerY,
           if (distSq < 1.0f) {
             uint8_t currentBlock = level->GetBlockFromMap(x, y, z);
             if (currentBlock == stoneBlock || currentBlock == dirtyBlock ||
-                currentBlock == grassBlock) {
+                currentBlock == grassBlock ||
+                currentBlock == static_cast<uint8_t>(Blocks::SAND_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::GRAVEL_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::OAK_LOG_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::BIRCH_LOG_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::OAK_LEAVES_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::BIRCH_LEAVES_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::TALL_GRASS_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::REEDS_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::POPPY_FLOWER) ||
+                currentBlock == static_cast<uint8_t>(Blocks::DANDELION_FLOWER) ||
+                currentBlock == static_cast<uint8_t>(Blocks::DEAD_BUSH) ||
+                currentBlock == static_cast<uint8_t>(Blocks::CACTUS_BLOCK) ||
+                currentBlock == static_cast<uint8_t>(Blocks::GRASS)) {
               if (y < 10) {
                 placeBlock(level, x, y, z, lavaBlock);
                 level->SetLiquidDataToMap(x, y, z, percent100);
@@ -59,7 +72,6 @@ bool CanyonFeature::place(Level* level, int x, int y, int z) {
   float theta = (rand() / (float)RAND_MAX) * M_PI * 2.0f;
   float deltaTheta = 0.0f;
   float phi = ((rand() / (float)RAND_MAX) - 0.5f) * 0.25f;  // Less verticality
-  float deltaPhi = 0.0f;
 
   float baseRadius = (rand() / (float)RAND_MAX * 2.0f + 1.0f);
 

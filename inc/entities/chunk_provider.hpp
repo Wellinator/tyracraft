@@ -20,6 +20,7 @@ class ChunkDataSource {
     if (callback) callback();
   }
   virtual void generateTerrain(int x, int z) {}
+  virtual void carve(int x, int z) {}
   virtual void decorate(int x, int z) {}
   virtual void tick() {}
   virtual void flush() {}
@@ -40,6 +41,7 @@ class ChunkProvider : public ChunkDataSource {
   void saveChunk(LevelChunk* chunk) override;
   void saveChunkAsync(LevelChunk* chunk, std::function<void()> callback) override;
   void generateTerrain(int x, int z) override;
+  void carve(int x, int z) override;
   void decorate(int x, int z) override;
   void tick() override;
   void flush() override;
