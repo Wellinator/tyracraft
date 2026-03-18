@@ -113,11 +113,11 @@ class Level : public Singleton<Level> {
   bool BoundCheckMap(uint16_t x, uint16_t y, uint16_t z);
   uint32_t OffsetToIndex(const Vec4& offset);
   static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
-  void unloadFarChunks(int playerChunkX, int playerChunkZ, int radius);
-  void unloadChunk(int chunkX, int chunkZ);
+  void unloadFarChunks(int playerChunkX, int playerChunkZ, int radius, bool async = true);
+  void unloadChunk(int chunkX, int chunkZ, bool async = true);
   void preLoadChunk(int x, int z, std::function<void()> onDone);
   void saveAllChunks();
-  void unloadAllChunks();
+  void unloadAllChunks(bool async = true);
   /**
    * @details This function performs a 3D line intersection test with the level
    * grid using DDA algorithm. It calculates the start and end points of the

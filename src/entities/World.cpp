@@ -109,7 +109,7 @@ bool World::generateStep() {
       int cz = generationRow;
       for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
         provider->generateTerrain(cx, cz);
-        pLevel->unloadChunk(cx, cz);
+        pLevel->unloadChunk(cx, cz, false);
       }
       generationRow++;
       if (generationRow >= generationTotalRows) {
@@ -136,7 +136,7 @@ bool World::generateStep() {
 
       if (cz > 0) {
         for (int x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
-          pLevel->unloadChunk(x, cz - 1);
+          pLevel->unloadChunk(x, cz - 1, false);
         }
       }
 
@@ -171,7 +171,7 @@ bool World::generateStep() {
       lightPropagation.updateBlockLights();
 
       for (int x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
-        pLevel->unloadChunk(x, cz);
+        pLevel->unloadChunk(x, cz, false);
       }
 
       generationRow++;
@@ -186,7 +186,7 @@ bool World::generateStep() {
     case GenerationPhase::Finalize: {
       TYRA_LOG("WorldGen: Saving and finalizing map...");
       pLevel->saveAllChunks();
-      pLevel->unloadAllChunks();
+      pLevel->unloadAllChunks(false);
       currentGenerationPhase = GenerationPhase::Complete;
       TYRA_LOG("WorldGen: full-map generation completed.");
       return true;
@@ -775,7 +775,7 @@ void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
   // Phase 2: Unload data chunks that are far away from player
   const int pCX = static_cast<int>(playerPos.x / (DOUBLE_BLOCK_SIZE * CHUNK_SIZE));
   const int pCZ = static_cast<int>(playerPos.z / (DOUBLE_BLOCK_SIZE * CHUNK_SIZE));
-  pLevel->unloadFarChunks(pCX, pCZ, baseRadius + 2);
+  pLevel->unloadFarChunks(pCX, pCZ, baseRadius + 2, true);
 
   chunkManager.updateLoadedChunks();
 }
@@ -1067,7 +1067,7 @@ const Vec4 World::calcSpawOffset(int bias) {
     }
 
     // Unload the chunk column to keep memory usage low during search
-    pLevel->unloadChunk(posX / CHUNK_SIZE, posZ / CHUNK_SIZE);
+    pLevel->unloadChunk(posX / CHUNK_SIZE, posZ / CHUNK_SIZE, false);
   }
 
   TYRA_LOG("Best spawn found at score: ", bestCandidate.score);

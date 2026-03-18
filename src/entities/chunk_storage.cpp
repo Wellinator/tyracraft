@@ -131,6 +131,7 @@ void ChunkStorage::saveChunk(LevelChunk* chunk) {
     }
   }
 
+  gzclose(file);
   chunk->isDirty = false;
 }
 

@@ -376,7 +376,7 @@ void Level::SetSunLightInMap(uint16_t x, uint16_t y, uint16_t z,
   markChunkDirty(this, x, z);
 }
 
-void Level::unloadFarChunks(int playerChunkX, int playerChunkZ, int radius) {
+void Level::unloadFarChunks(int playerChunkX, int playerChunkZ, int radius, bool async) {
   for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
     LevelChunk* chunk = map.chunks[i];
     if (chunk == nullptr) continue;
@@ -389,21 +389,12 @@ void Level::unloadFarChunks(int playerChunkX, int playerChunkZ, int radius) {
 
     if (dx > radius || dz > radius) {
       // Chunk is far away, unload it
-      auto* provider = world ? world->getChunkProvider() : nullptr;
-      LevelChunk* chunkToUnload = map.chunks[i];
-      map.chunks[i] = nullptr;
-
-      if (provider && chunkToUnload->isDirty) {
-        provider->saveChunkAsync(chunkToUnload,
-                                 [chunkToUnload]() { delete chunkToUnload; });
-      } else {
-        delete chunkToUnload;
-      }
+      unloadChunk(cx, cz, async);
     }
   }
 }
 
-void Level::unloadChunk(int chunkX, int chunkZ) {
+void Level::unloadChunk(int chunkX, int chunkZ, bool async) {
   const uint32_t chunkWidth = map.width / CHUNK_SIZE;
   uint32_t index = (chunkZ * chunkWidth) + chunkX;
 
@@ -413,7 +404,12 @@ void Level::unloadChunk(int chunkX, int chunkZ) {
     map.chunks[index] = nullptr;
 
     if (provider && chunk->isDirty) {
-      provider->saveChunkAsync(chunk, [chunk]() { delete chunk; });
+      if (async) {
+        provider->saveChunkAsync(chunk, [chunk]() { delete chunk; });
+      } else {
+        provider->saveChunk(chunk);
+        delete chunk;
+      }
     } else {
       delete chunk;
     }
@@ -477,12 +473,12 @@ void Level::saveAllChunks() {
   }
 }
 
-void Level::unloadAllChunks() {
+void Level::unloadAllChunks(bool async) {
   for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
     if (map.chunks[i] != nullptr) {
       int cx = map.chunks[i]->x / CHUNK_SIZE;
       int cz = map.chunks[i]->z / CHUNK_SIZE;
-      unloadChunk(cx, cz);
+      unloadChunk(cx, cz, async);
     }
   }
 }
