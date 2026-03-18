@@ -123,7 +123,10 @@ bool World::generateStep() {
     case GenerationPhase::Features: {
       int cz = generationRow;
       for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
-        provider->carve(cx, cz);
+        LevelChunk* chunk = pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        if (chunk) {
+          provider->carve(cx, cz);
+        }
         pLevel->unloadChunk(cx, cz, false);
       }
       generationRow++;
