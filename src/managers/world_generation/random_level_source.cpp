@@ -32,7 +32,7 @@ RandomLevelSource::RandomLevelSource(uint32_t t_seed, TerrainType t_terrain)
     heightNoiseDivisor = 40.0f;
     heightScale = 0.6f;
     heightBias = 0.2f;
-    waterLevel = 40;
+    waterLevel = 32;
     
     // FastNoiseLite Multi-Layer (Faithful to Engine 0)
     // Optimized for PS2: We use a lower frequency for large features
@@ -249,7 +249,7 @@ void RandomLevelSource::getHeights3D(float* buffer, Level* level, int chunkX,
                 float depth = ddd + rdepth * 0.2f;
                 depth = depth * static_cast<float>(ySize) / 16.0f;
 
-                const float yCenter = (static_cast<float>(ySize) / 2.0f) +
+                const float yCenter = (static_cast<float>(ySize) / 2.0f) - 2.5f +
                                       (depth * 6.0f);
                 float yOffs = (static_cast<float>(yy) - yCenter) * 2.4f *
                               128.0f / genDepth / sss;
@@ -645,7 +645,7 @@ void RandomLevelSource::carve(Level* level, int chunkX, int chunkZ) {
     }
 
     // 3. Lakes
-    if (rand() % 8 == 0) {
+    if (rand() % 4 == 0) {
         int lx = startX + (rand() % CHUNK_SIZE);
         int lz = startZ + (rand() % CHUNK_SIZE);
         int ly = rand() % level->map.height;
