@@ -1,6 +1,5 @@
 #pragma once
 
-#include "3libs/FastNoiseLite/ModdedFastNoiseLite.h"
 #include <constants.hpp>
 #include <stdint.h>
 #include <stdbool.h>
@@ -16,7 +15,4 @@ void CrossCraft_WorldGenerator_Generate_Flat(Level* pLevel);
 void CrossCraft_WorldGenerator_Generate_Woods(Level* pLevel);
 void CrossCraft_WorldGenerator_Generate_Island(Level* pLevel);
 void CrossCraft_WorldGenerator_Generate_Floating(Level* pLevel);
-
-bool isSpaceForTree(Level* pLevel, int x, int y, int z, int treeHeight);
-void growOakTree(Level* pLevel, int x, int y, int z, int treeHeight);
-void growBirchTree(Level* pLevel, int x, int y, int z, int treeHeight);
+void CrossCraft_WorldGenerator_Generate_Maze(Level* pLevel);

@@ -127,6 +127,7 @@ class Utils {
   static std::vector<UtilDirectory> listDir(const char* dir);
 
   static std::string trim(std::string& str);
+  static std::string sanitizeWorldStorageName(const std::string& name);
 
   static bool AABBCollides(BBox* A, BBox* B);
   static bool AABBCollidesXZ(BBox* A, BBox* B);

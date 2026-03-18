@@ -35,9 +35,7 @@ class VisibleFacesManager : public Singleton<VisibleFacesManager> {
                              const uint16_t z, const LevelMap* map) const {
     // Bounds check inlined to avoid function-call overhead.
     if (x >= map->width || y >= map->height || z >= map->length) return 0;
-    const u8 blk =
-        map->blocks[x + static_cast<uint32_t>(y) * map->length * map->width +
-                    static_cast<uint32_t>(z) * map->width];
+    const u8 blk = Level::getInstance()->GetBlockFromMap(x, y, z);
     return StaticBlockRepository::s_transparencyTable[blk];
   }
 

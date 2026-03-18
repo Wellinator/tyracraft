@@ -59,9 +59,22 @@ void CrossedMeshBuilder_loadCrossedUVData(const Vec4* offset,
       pLevel->GetBlockFromMap(offset->x, offset->y, offset->z));
   Block* blockTemplate =
       StaticBlockRepository::getInstance()->getBlockTemplate(block_type);
-    const auto facesMap = blockTemplate->getFacesMap();
-  CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
-  CrossedMeshBuilder_loadUVFaceData(facesMap[0], t_uv_map);
+  const auto facesMap = blockTemplate->getFacesMap();
+
+  u8 texIndex = facesMap[0];
+
+  // Handle double blocks UV offset (Tall Grass, etc.)
+  if (block_type == Blocks::TALL_GRASS_BLOCK) {
+    bool isUpper = pLevel->GetIsUpperHalfDataFromMap(offset->x, offset->y, offset->z);
+    if (isUpper) {
+      // In the current atlas, the upper half is usually at (index + 16) or (index - 16)
+      // Assuming index is the lower half, and upper is index + 16 (next row)
+      texIndex -= 16; 
+    }
+  }
+
+  CrossedMeshBuilder_loadUVFaceData(texIndex, t_uv_map);
+  CrossedMeshBuilder_loadUVFaceData(texIndex, t_uv_map);
 }
 
 void CrossedMeshBuilder_loadUVFaceData(const u8& index,

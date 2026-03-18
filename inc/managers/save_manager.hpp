@@ -76,6 +76,7 @@ class SaveManager {
    * Check if save file exists
    */
   static bool CheckIfSaveExist(const char* fullPath);
+  static bool CheckIfFolderExist(const char* fullPath);
 
   /**
    * Delete save file

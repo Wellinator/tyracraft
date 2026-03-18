@@ -1,156 +1,119 @@
-/*
-# _____        ____   ___
-#   |     \/   ____| |___|
-#   |     |   |   \  |   |
-#-----------------------------------------------------------------------
-# Copyright 2024, tyra - https://github.com/h4570/tyra
-# Licensed under Apache License 2.0
-# Wellington Carvalho (Wellinator) <wellcoj@gmail.com>
-*/
+/**
+ * @brief Optimized Sutherland-Hodgman clipping for PlayStation 2.
+ */
 
 #include "managers/clipper/custom_planes_clip_algorithm.hpp"
-#include <list>
-#include <vector>
 
 CustomPlanesClipAlgorithm::CustomPlanesClipAlgorithm() {}
-
 CustomPlanesClipAlgorithm::~CustomPlanesClipAlgorithm() {}
 
-Vec4 CustomPlanesClipAlgorithm::intersectPlane(Vec4& plane_n, Vec4& lineStart,
-                                               Vec4& lineEnd, float plane_d,
-                                               float& t) {
-  float d1 = plane_d + plane_n.innerProduct(lineStart);
-  float d2 = plane_d + plane_n.innerProduct(lineEnd);
-
-  t = d1 / (d1 - d2);
-  Vec4 result = lineStart + ((lineEnd - lineStart) * t);
-  result.w = 1.0F;
-  return result;
-}
 
 int CustomPlanesClipAlgorithm::clip(std::vector<PlanesClipVertex>& o_vertices,
-                                    PlanesClipVertexPtrs* i_vertices,
-                                    const EEClipAlgorithmSettings& settings,
-                                    Plane* frustumPlanes) {
-  // Use static arrays to avoid allocation overhead
-  // A clipped triangle rarely exceeds 7-8 vertices, 24 is plenty safe.
-  static PlanesClipVertex buffers[2][24];
-  
-  // Current input/output counts
+                                   PlanesClipVertexPtrs* i_vertices,
+                                   const EEClipAlgorithmSettings& settings,
+                                   Plane* planes) {
   int inCount = 3;
   int outCount = 0;
-  
-  // Index of the current input buffer (0 or 1)
-  int inIdx = 0;
 
-  // 1. Fill initial buffer
-  buffers[0][0].position = *i_vertices[0].position;
-  buffers[0][0].st = settings.lerpTexCoords ? *i_vertices[0].st : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][0].normal = settings.lerpNormals ? *i_vertices[0].normal : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][0].color = settings.lerpColors ? *i_vertices[0].color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
+  for (int i = 0; i < 3; i++) {
+    buffers[0][i].position = *i_vertices[i].position;
+    buffers[0][i].st = settings.lerpTexCoords ? *i_vertices[i].st : Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    buffers[0][i].color = settings.lerpColors ? *i_vertices[i].color : Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+  }
 
-  buffers[0][1].position = *i_vertices[1].position;
-  buffers[0][1].st = settings.lerpTexCoords ? *i_vertices[1].st : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][1].normal = settings.lerpNormals ? *i_vertices[1].normal : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][1].color = settings.lerpColors ? *i_vertices[1].color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
-
-  buffers[0][2].position = *i_vertices[2].position;
-  buffers[0][2].st = settings.lerpTexCoords ? *i_vertices[2].st : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][2].normal = settings.lerpNormals ? *i_vertices[2].normal : Vec4(0.0F, 0.0F, 0.0F, 0.0F);
-  buffers[0][2].color = settings.lerpColors ? *i_vertices[2].color : Vec4(1.0F, 1.0F, 1.0F, 1.0F);
-
-  // Helper lambda for attribute interpolation
-  auto lerpV4 = [](const Vec4& a, const Vec4& b, float t) -> Vec4 {
-    return Vec4::getByLerp(a, b, t);
-  };
-
-  // 2. Clip against all 6 planes
+  int currentBuffer = 0;
   for (int p = 0; p < 6; p++) {
-    if (inCount == 0) break;
-
-    const int outIdx = (inIdx + 1) % 2;
+    const Plane& plane = planes[p];
+    const PlanesClipVertex* input = buffers[currentBuffer];
+    PlanesClipVertex* output = buffers[1 - currentBuffer];
     outCount = 0;
-    
-    const Plane& plane = frustumPlanes[p];
-    
+
     for (int i = 0; i < inCount; i++) {
-        // Safety check
-        if (outCount >= 23) break; 
+      const PlanesClipVertex& cur = input[i];
+      const PlanesClipVertex& nxt = input[(i + 1) % inCount];
 
-        const PlanesClipVertex& cur = buffers[inIdx][i];
-        const PlanesClipVertex& nxt = buffers[inIdx][(i + 1) % inCount];
+      const float dCur = plane.distanceTo(cur.position);
+      const float dNxt = plane.distanceTo(nxt.position);
 
-        float dCur = plane.distanceTo(cur.position);
-        float dNxt = plane.distanceTo(nxt.position);
+      const bool curIn = dCur >= 0.0f;
+      const bool nxtIn = dNxt >= 0.0f;
 
-        const bool curInside = dCur >= 0.0F;
-        const bool nxtInside = dNxt >= 0.0F;
+      if (curIn && nxtIn) {
+        output[outCount++] = nxt;
+      } else if (curIn != nxtIn) {
+        float t = dCur / (dCur - dNxt);
+        PlanesClipVertex& v = output[outCount++];
 
-        if (curInside && nxtInside) {
-            // Keep next
-            buffers[outIdx][outCount++] = nxt;
-        } else if (curInside && !nxtInside) {
-            // Leaving -> add intersection
-            float t;
-            Vec4 pNormal = plane.normal;
-            Vec4 curPos = cur.position;
-            Vec4 nxtPos = nxt.position;
+        // VU0 LERP: v = cur + (nxt - cur) * t
+        asm volatile(
+            "lqc2       $vf1, 0x00(%1)      \n\t" // cur.position
+            "lqc2       $vf2, 0x00(%2)      \n\t" // nxt.position
+            "lqc2       $vf3, 0x00(%3)      \n\t" // cur.st
+            "lqc2       $vf4, 0x00(%4)      \n\t" // nxt.st
+            "lqc2       $vf5, 0x00(%5)      \n\t" // cur.color
+            "lqc2       $vf6, 0x00(%6)      \n\t" // nxt.color
+            "mfc1       $8, %7              \n\t" // t
+            "qmtc2      $8, $vf20           \n\t" // t in vf20.x
+            "vsub.xyzw  $vf10, $vf2, $vf1   \n\t" // nxt.pos - cur.pos
+            "vsub.xyzw  $vf11, $vf4, $vf3   \n\t" // nxt.st - cur.st
+            "vsub.xyzw  $vf12, $vf6, $vf5   \n\t" // nxt.col - cur.col
+            "vmulx.xyzw $vf10, $vf10, $vf20 \n\t" // (nxt.pos - cur.pos) * t
+            "vmulx.xyzw $vf11, $vf11, $vf20 \n\t" // (nxt.st - cur.st) * t
+            "vmulx.xyzw $vf12, $vf12, $vf20 \n\t" // (nxt.col - cur.col) * t
+            "vadd.xyzw  $vf1, $vf1, $vf10   \n\t" // interpolated pos
+            "vadd.xyzw  $vf3, $vf3, $vf11   \n\t" // interpolated st
+            "vadd.xyzw  $vf5, $vf5, $vf12   \n\t" // interpolated color
+            "vmove.w    $vf1, $vf0          \n\t" // v.position.w = 1.0f (using constant vf0)
+            "sqc2       $vf1, 0x00(%0)      \n\t" // store interpolated position
+            :
+            : "r"(&v.position), "r"(&cur.position), "r"(&nxt.position),
+              "r"(&cur.st), "r"(&nxt.st), "r"(&cur.color), "r"(&nxt.color), "f"(t)
+            : "memory", "$8"
+        );
 
-            Vec4 intersection = intersectPlane(pNormal, curPos, nxtPos, plane.distance, t);
-            
-            PlanesClipVertex& v = buffers[outIdx][outCount++];
-            v.position = intersection;
-            if (settings.lerpTexCoords) v.st = lerpV4(cur.st, nxt.st, t);
-            if (settings.lerpNormals) v.normal = lerpV4(cur.normal, nxt.normal, t);
-            if (settings.lerpColors) v.color = lerpV4(cur.color, nxt.color, t);
-
-        } else if (!curInside && nxtInside) {
-            // Entering -> add intersection, then next
-            float t;
-            Vec4 pNormal = plane.normal;
-            Vec4 curPos = cur.position;
-            Vec4 nxtPos = nxt.position;
-
-            Vec4 intersection = intersectPlane(pNormal, curPos, nxtPos, plane.distance, t);
-
-            PlanesClipVertex& v = buffers[outIdx][outCount++];
-            v.position = intersection;
-            if (settings.lerpTexCoords) v.st = lerpV4(cur.st, nxt.st, t);
-            if (settings.lerpNormals) v.normal = lerpV4(cur.normal, nxt.normal, t);
-            if (settings.lerpColors) v.color = lerpV4(cur.color, nxt.color, t);
-
-            if (outCount < 24) {
-                 buffers[outIdx][outCount++] = nxt;
-            }
+        if (settings.lerpTexCoords) {
+           asm volatile("sqc2 $vf3, 0x00(%0)" : : "r"(&v.st) : "memory");
         }
+        if (settings.lerpColors) {
+           asm volatile("sqc2 $vf5, 0x00(%0)" : : "r"(&v.color) : "memory");
+        }
+
+        if (!curIn && nxtIn) {
+            output[outCount++] = nxt;
+        }
+      }
     }
 
     inCount = outCount;
-    inIdx = outIdx;
+    currentBuffer = 1 - currentBuffer;
+    if (inCount < 3) return 0;
   }
 
-  // 3. Triangulate
-  if (inCount < 3) return 0;
-
-  const PlanesClipVertex& v0 = buffers[inIdx][0];
-  int emittedVertices = 0;
-
+  const PlanesClipVertex* finalBuffer = buffers[currentBuffer];
   for (int k = 1; k + 1 < inCount; k++) {
-    o_vertices.push_back(v0);
-    o_vertices.push_back(buffers[inIdx][k]);
-    o_vertices.push_back(buffers[inIdx][k + 1]);
-    emittedVertices += 3;
+    o_vertices.push_back(finalBuffer[0]);
+    o_vertices.push_back(finalBuffer[k]);
+    o_vertices.push_back(finalBuffer[k + 1]);
   }
 
-  return emittedVertices;
+  return (inCount - 2) * 3;
 }
 
-// Unused legacy method required by header interface? 
-// The header declares: u8 clipAgainstPlane(Triangle& original, PlanesClipVertex* clipped, ...);
-// We can keep a stub or remove it from the cpp if we remove it from hpp. 
-// For now, I will leave a stub to match the header, but it shouldn't be called.
-u8 CustomPlanesClipAlgorithm::clipAgainstPlane(
-    Triangle& original, PlanesClipVertex* clipped,
-    const EEClipAlgorithmSettings& settings, Plane* plane) {
-    return 0; 
+Vec4 CustomPlanesClipAlgorithm::intersectPlane(Vec4& plane_n, Vec4& lineStart, Vec4& lineEnd,
+                                              float plane_d, float& t) {
+  Vec4 dir = lineEnd - lineStart;
+  float denom = plane_n.dot3(dir);
+  if (std::abs(denom) < 0.0001f) {
+    t = 0.0f;
+    return lineStart;
+  }
+  t = -(plane_n.dot3(lineStart) + plane_d) / denom;
+  Vec4 res = lineStart + (dir * t);
+  res.w = 1.0f;
+  return res;
+}
+
+u8 CustomPlanesClipAlgorithm::clipAgainstPlane(Triangle& original, PlanesClipVertex* clipped,
+                                              const EEClipAlgorithmSettings& settings, Plane* plane) {
+  return 0; // Not used anymore
 }

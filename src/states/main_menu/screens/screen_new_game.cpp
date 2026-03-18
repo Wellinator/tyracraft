@@ -183,9 +183,6 @@ void ScreenNewGame::render() {
     }
   }
 
-  if (needToChangeWorldName) {
-    renderWorldNameDialog();
-  }
 }
 
 void ScreenNewGame::init() {
@@ -367,14 +364,6 @@ void ScreenNewGame::handleInput() {
 void ScreenNewGame::handleOptionsSelection() {
   auto clickedButtons = this->context->context->t_engine->pad.getClicked();
 
-  if (needToChangeWorldName) {
-    if (clickedButtons.Cross) {
-      this->context->playClickSound();
-      needToChangeWorldName = false;
-      activeOption = ScreenNewGameOptions::WorldName;
-    }
-    return;
-  }
 
   if (clickedButtons.L1) {
     context->setScreen(new ScreenLoadGame(context));
@@ -411,11 +400,10 @@ void ScreenNewGame::handleOptionsSelection() {
     this->selectedOption = this->activeOption;
     this->updateModel();
     if (this->selectedOption == ScreenNewGameOptions::CreateNewWorld) {
-      if (canCreateANewWorldWithCurrentName()) {
-        createNewWorld();
-      } else {
-        needToChangeWorldName = true;
+      if (!canCreateANewWorldWithCurrentName()) {
+        inputWorldName = getUniqueWorldName(inputWorldName);
       }
+      createNewWorld();
       return;
     } else if (this->selectedOption == ScreenNewGameOptions::WorldName)
       startEditingWorldName();
@@ -509,10 +497,38 @@ void ScreenNewGame::backToMainMenu() {
 }
 
 bool ScreenNewGame::canCreateANewWorldWithCurrentName() {
-  std::string tempSaveFileName =
-      FileUtils::fromCwd("saves/" + inputWorldName + ".tcw");
+  std::string tempSavePath = FileUtils::fromCwd(
+      "saves/" + Utils::sanitizeWorldStorageName(inputWorldName));
 
-  return !SaveManager::CheckIfSaveExist(tempSaveFileName.c_str());
+  return !SaveManager::CheckIfSaveExist(tempSavePath.c_str());
+}
+
+std::string ScreenNewGame::getUniqueWorldName(std::string name) {
+  std::string uniqueName = name;
+  int suffix = 2;
+
+  while (true) {
+    std::string suffixStr = " " + std::to_string(suffix);
+    std::string tempName = name;
+
+    if (tempName.length() + suffixStr.length() > MAX_WORLD_NAME_LENGTH) {
+      tempName =
+          tempName.substr(0, MAX_WORLD_NAME_LENGTH - suffixStr.length());
+    }
+
+    tempName += suffixStr;
+    std::string tempSavePath = FileUtils::fromCwd(
+        "saves/" + Utils::sanitizeWorldStorageName(tempName));
+
+    if (!SaveManager::CheckIfSaveExist(tempSavePath.c_str())) {
+      uniqueName = tempName;
+      break;
+    }
+
+    suffix++;
+  }
+
+  return uniqueName;
 }
 
 void ScreenNewGame::createNewWorld() {
@@ -520,6 +536,15 @@ void ScreenNewGame::createNewWorld() {
   model.seed = std::stoull(inputSeed);
   model.texturePack = selectedTexturePack->path;
   model.gameMode = GameMode::Creative;
+
+  std::string tempSavePath = FileUtils::fromCwd(
+      "saves/" + Utils::sanitizeWorldStorageName(inputWorldName));
+
+  if (SaveManager::CheckIfFolderExist(tempSavePath.c_str())) {
+    TYRA_LOG("Folder exists but no save found. Deleting folder before creating new world...");
+    SaveManager::DeleteSave(tempSavePath.c_str());
+  }
+
   context->loadGame(model);
 }
 
@@ -607,6 +632,7 @@ void ScreenNewGame::updateTempWorldNameMask() {
 }
 
 std::string ScreenNewGame::getSeed() {
+  // TODO: REMOVE THIS LATER, THIS IS JUST FOR TESTING PURPOSES
   std::string result = "";
 
   // Rnadom over max int number 4294967295
@@ -693,26 +719,3 @@ void ScreenNewGame::selectNextTexturePack() {
     selectedTexturePack = texturePacks[idx + 1];
 }
 
-void ScreenNewGame::renderWorldNameDialog() {
-  t_renderer->renderer2D.render(overlay);
-  t_renderer->renderer2D.render(dialogWindow);
-
-  FontOptions titleOptions = FontOptions();
-  titleOptions.position = Vec2(246, 135);
-  titleOptions.scale = 0.9F;
-  titleOptions.alignment = TextAlignment::Center;
-  pFontManager->printText(Label_Ops, titleOptions);
-
-  FontOptions dialogueOptions = FontOptions();
-  dialogueOptions.position = Vec2(246, 180);
-  dialogueOptions.scale = 0.6F;
-  dialogueOptions.alignment = TextAlignment::Center;
-  pFontManager->printText(Label_WorldNameErrorPart1, dialogueOptions);
-  dialogueOptions.position.y += 15;
-  pFontManager->printText(Label_WorldNameErrorPart2, dialogueOptions);
-  dialogueOptions.position.y += 15;
-  pFontManager->printText(Label_WorldNameErrorPart3, dialogueOptions);
-
-  t_renderer->renderer2D.render(btnCross);
-  pFontManager->printText(Label_Confirm, 40, 407);
-}

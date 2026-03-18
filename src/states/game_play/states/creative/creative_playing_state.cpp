@@ -451,15 +451,13 @@ void CreativePlayingState::handleAction(MenuAction action) {
 }
 
 void CreativePlayingState::saveProgress() {
-  std::string saveFileName = FileUtils::fromCwd(
-      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
-      SAVE_FILE_EXTENSION);
+  std::string savePath = stateGamePlay->world->getWorldOptions()->fullPath;
 
-  SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
+  SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
   
   NotificationManager* instance = NotificationManager::getInstance();
   if (result) {
-    TYRA_LOG("Saving at: ", saveFileName.c_str());
+    TYRA_LOG("Saving at: ", savePath.c_str());
     instance->notify(Message_Saved_Successfully.c_str(),
                      Message_Progress_Has_Been_Saved.c_str());
   } else {
@@ -469,9 +467,7 @@ void CreativePlayingState::saveProgress() {
 }
 
 void CreativePlayingState::autoSave() {
-  std::string saveFileName = FileUtils::fromCwd(
-      "saves/" + stateGamePlay->world->getWorldOptions()->name + "." +
-      SAVE_FILE_EXTENSION);
+  std::string savePath = stateGamePlay->world->getWorldOptions()->fullPath;
 
   // Status notification during save
   NotificationManager::getInstance()->notify(Label_AutoSave, Label_SavingDoNotTurnOff);
@@ -483,10 +479,10 @@ void CreativePlayingState::autoSave() {
   if (bgService) {
     auto state = stateGamePlay;
     bgService->submit(
-        [state, saveFileName]() {
-          SaveResult result = SaveManager::SaveGame(state, saveFileName.c_str());
+        [state, savePath]() {
+          SaveResult result = SaveManager::SaveGame(state, savePath.c_str());
           if (result) {
-            TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+            TYRA_LOG("Auto-saving at: ", savePath.c_str());
           } else {
             TYRA_LOG("ERROR auto-saving: ", result.errorMessage.c_str());
           }
@@ -497,8 +493,8 @@ void CreativePlayingState::autoSave() {
         });
   } else {
     // Fallback sync save
-    SaveResult result = SaveManager::SaveGame(stateGamePlay, saveFileName.c_str());
-    TYRA_LOG("Auto-saving at: ", saveFileName.c_str());
+    SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
+    TYRA_LOG("Auto-saving at: ", savePath.c_str());
     NotificationManager* instance = NotificationManager::getInstance();
     if (result) {
       instance->notify(msgSaved.c_str(), msgProgress.c_str());

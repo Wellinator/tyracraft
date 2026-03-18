@@ -93,3 +93,39 @@ class BedrockBlock : public Block {
   u8 hasTransparency() override { return false; }
   u8 isCrossed() override { return false; }
 };
+
+class SandstoneBlock : public Block {
+ public:
+  SandstoneBlock() : Block() { collidable = isCollidable(); };
+  virtual ~SandstoneBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(SandstoneBlock)
+
+  Blocks getType() override { return Blocks::SANDSTONE_BLOCK; }
+  float getHardness() override { return 0.8f; }
+  std::array<u8, 6> getFacesMap() override {
+    return {33, 33, 32, 32, 32, 32};
+  }
+  u8 isBreakable() override { return true; }
+  u8 isCollidable() override { return true; }
+  u8 hasTransparency() override { return false; }
+  u8 isCrossed() override { return false; }
+};
+
+class CactusBlock : public Block {
+ public:
+  CactusBlock() : Block() { collidable = isCollidable(); };
+  virtual ~CactusBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(CactusBlock)
+
+  Blocks getType() override { return Blocks::CACTUS_BLOCK; }
+  float getHardness() override { return 0.4f; }
+  std::array<u8, 6> getFacesMap() override {
+    return {9, 7, 8, 8, 8, 8};
+  }
+  u8 isBreakable() override { return true; }
+  u8 isCollidable() override { return true; }
+  u8 hasTransparency() override { return false; }
+  u8 isCrossed() override { return false; }
+};

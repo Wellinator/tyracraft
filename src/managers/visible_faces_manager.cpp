@@ -16,11 +16,8 @@ u8 VisibleFacesManager::getVisibleFacesByOffset(const Vec4& offset) {
   Level* pLevel        = Level::getInstance();
   const LevelMap* map  = &pLevel->map;
 
-  const Blocks block_type =
-      static_cast<Blocks>(map->blocks[x + static_cast<uint32_t>(y) *
-                                                map->length * map->width +
-                                            static_cast<uint32_t>(z) *
-                                                map->width]);
+    const Blocks block_type =
+      static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
 
   if (block_type == Blocks::WATER_BLOCK || block_type == Blocks::LAVA_BLOCK) {
     return getLiquidBlockVisibleFaces(x, y, z, map);
@@ -50,8 +47,7 @@ u8 VisibleFacesManager::getLiquidBlockVisibleFaces(const uint16_t x,
   // Helper lambda: safe block read (returns VOID ID = 0 if out of bounds).
   auto safeBlock = [&](uint16_t bx, uint16_t by, uint16_t bz) -> u8 {
     if (bx >= W || by >= map->height || bz >= L) return (u8)Blocks::VOID;
-    return map->blocks[bx + static_cast<uint32_t>(by) * L * W +
-                       static_cast<uint32_t>(bz) * W];
+    return Level::getInstance()->GetBlockFromMap(bx, by, bz);
   };
 
   const u8 bFront  = safeBlock(x,     y,     z - 1);
@@ -62,10 +58,8 @@ u8 VisibleFacesManager::getLiquidBlockVisibleFaces(const uint16_t x,
   const u8 bBottom = safeBlock(x,     y - 1, z    );
 
   // Current liquid level for the top-face partial-fill check.
-  const uint32_t metaIdx = x + static_cast<uint32_t>(y) * L * W +
-                           static_cast<uint32_t>(z) * W;
-  const u8 currentLevel =
-      (map->metaData[metaIdx] & LIQUID_LEVEL_MASK) >> 2;
+    const u8 currentLevel =
+      Level::getInstance()->GetLiquidDataFromMap(x, y, z);
 
   // A liquid face is visible when the neighbour is NOT the same liquid type
   // AND is not VOID AND is transparent (air, glass, etc.).
@@ -170,8 +164,7 @@ u8 VisibleFacesManager::getLeavesVisibleFaces(const uint16_t x,
 
   auto safeBlock = [&](uint16_t bx, uint16_t by, uint16_t bz) -> u8 {
     if (bx >= W || by >= map->height || bz >= L) return (u8)Blocks::VOID;
-    return map->blocks[bx + static_cast<uint32_t>(by) * L * W +
-                       static_cast<uint32_t>(bz) * W];
+    return Level::getInstance()->GetBlockFromMap(bx, by, bz);
   };
 
   const u8 bFront  = safeBlock(x,     y,     z - 1);

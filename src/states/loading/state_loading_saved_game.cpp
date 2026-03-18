@@ -6,6 +6,7 @@ StateLoadingSavedGame::StateLoadingSavedGame(
     : GameState(t_context), saveFileFullPath(save_file_full_path) {
   worldOptions =
       SaveManager::GetNewGameOptionsFromSaveFile(save_file_full_path.c_str());
+  worldOptions->fullPath = save_file_full_path;
   stateGamePlay = new StateGamePlay(context, worldOptions->gameMode);
   init();
 }
@@ -58,7 +59,7 @@ void StateLoadingSavedGame::update(const float& deltaTime) {
     nextState();
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
   if (shouldCreatedEntities) {
     progressLabel = Label_CreatingEntities;
@@ -75,6 +76,8 @@ void StateLoadingSavedGame::update(const float& deltaTime) {
   } else if (shouldLoadSavedData) {
     progressLabel = Label_LoadingSave;
     return loadSavedData();
+  } else if (shouldBuildInitialPosition) {
+    return buildInitialPosition();
   } else if (shouldInitPlayer) {
     progressLabel = Label_LoadingPlayer;
     return initPlayer();
@@ -142,7 +145,8 @@ void StateLoadingSavedGame::initWorld() {
 }
 
 void StateLoadingSavedGame::loadSavedData() {
-  SaveResult result = SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
+  SaveResult result =
+      SaveManager::LoadSavedGame(stateGamePlay, saveFileFullPath.c_str());
   if (!result) {
     TYRA_LOG("ERROR loading saved game: ", result.errorMessage.c_str());
     // Continue anyway - world will be in reset/partial state
@@ -150,19 +154,21 @@ void StateLoadingSavedGame::loadSavedData() {
 
   // Store the loaded player position for use in initPlayer()
   savedPlayerPosition = stateGamePlay->player->position;
-  TYRA_LOG("Loaded player position: ", savedPlayerPosition.x, " ", savedPlayerPosition.y, " ", savedPlayerPosition.z);
+  TYRA_LOG("Loaded player position: ", savedPlayerPosition.x, " ",
+           savedPlayerPosition.y, " ", savedPlayerPosition.z);
 
-  stateGamePlay->world->generateLight();
-  
-  // Process liquid propagation after light generation (same as new world)
-  stateGamePlay->world->propagateLiquids();
-  
+  setPercent(75.0F);
+  shouldLoadSavedData = 0;
+  shouldBuildInitialPosition = 1;
+}
+
+
+void StateLoadingSavedGame::buildInitialPosition() {
   // Build chunks around the loaded player position (not spawn area)
   stateGamePlay->world->buildInitialPosition(savedPlayerPosition);
-
-  setPercent(80.0F);
-  shouldLoadSavedData = 0;
-  TYRA_LOG("loadSavedWorld");
+  setPercent(95.0F);
+  shouldBuildInitialPosition = 0;
+  shouldInitPlayer = 1;
 }
 
 void StateLoadingSavedGame::initPlayer() {

@@ -478,6 +478,7 @@ bool SlabMeshBuilder_isBlockOpaque(u8 block_type) {
          block_type != (u8)Blocks::POPPY_FLOWER &&
          block_type != (u8)Blocks::DANDELION_FLOWER &&
          block_type != (u8)Blocks::GRASS &&
+         block_type != (u8)Blocks::DEAD_BUSH &&
          block_type != (u8)Blocks::WATER_BLOCK &&
          block_type != (u8)Blocks::LAVA_BLOCK &&
          block_type != (u8)Blocks::TORCH;

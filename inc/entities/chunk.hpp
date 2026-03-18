@@ -116,7 +116,7 @@ class Chunk {
   void init(Level* pLevel, WorldLightModel* t_worldLightModel);
   void renderer(Renderer* t_renderer, StaticPipeline* stapip);
   void rendererTransparentData(Renderer* t_renderer, StaticPipeline* stapip);
-  void update(const Plane* frustumPlanes);
+  void update(const Plane* frustumPlanes, const float& deltaTime);
   void tick();
   void clear();
 
@@ -209,7 +209,7 @@ class Chunk {
   u32 loadedAtTick = 0;  // Tick counter when chunk was loaded (for recently-loaded protection)
 
   // Configurable fade-in duration (in seconds)
-  static constexpr float FADE_IN_DURATION = 0.5f;
+  static constexpr float FADE_IN_DURATION = 1.0f;
 
 
 

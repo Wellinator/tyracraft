@@ -137,8 +137,13 @@ u16 BuildVisibilityGraph(Level* pLevel, int chunkMinX, int chunkMinY,
                          int chunkMinZ);
 
 /**
- * @brief Check if a block type is transparent for flood fill purposes.
- * Transparent blocks allow visibility to pass through them.
- * This is the inverse of the opaque check used in mesh builders.
+ * @brief Get the bitmask of faces visible/accessible from a specific local
+ * position within a chunk. Uses flood fill to find all reachable boundaries.
+ *
+ * @param pLevel Pointer to the Level
+ * @param chunkMinX, chunkMinY, chunkMinZ Chunk origin in block coords
+ * @param lx, ly, lz Local coordinates within the chunk (0..CHUNK_SIZE-1)
+ * @return 6-bit mask of accessible faces (1 << ChunkFace)
  */
-bool IsBlockTransparentForFlood(u8 blockType);
+u8 GetVisibleFacesFromPosition(Level* pLevel, int chunkMinX, int chunkMinY,
+                               int chunkMinZ, int lx, int ly, int lz);

@@ -32,6 +32,24 @@ using Tyra::Vec2;
 
 enum class LoadingState { Loading, Complete };
 
+// Phases for incremental light generation during loading
+enum class LightGenerationPhase {
+  NotStarted,
+  InitSunlight,
+  InitBlockLight,
+  UpdateSunlight,
+  UpdateBlockLight,
+  ReloadChunks,
+  Complete
+};
+
+// Phases for incremental liquid propagation during loading
+enum class LiquidPropagationPhase {
+  NotStarted,
+  Propagating,
+  Complete
+};
+
 class StateLoadingGame : public GameState {
  public:
   StateLoadingGame(Context* context, const NewGameOptions& options);
@@ -43,8 +61,18 @@ class StateLoadingGame : public GameState {
   void render();
 
  private:
+  // Phase tracking for incremental operations
+  LightGenerationPhase lightPhase = LightGenerationPhase::NotStarted;
+  LiquidPropagationPhase liquidPhase = LiquidPropagationPhase::NotStarted;
+
+  // Boolean flags for one-time operations
   u8 shouldCreatedEntities = 1;
   u8 shouldInitWorld = 1;
+  u8 shouldGenerateWorld = 0;
+  u8 shouldGenerateLight = 0;
+  u8 shouldPropagateLiquids = 0;
+  u8 shouldGenerateSpawnArea = 0;
+  u8 shouldLoadSpawnArea = 0;
   u8 shouldInitItemRepository = 1;
   u8 shouldInitUI = 1;
   u8 shouldInitPlayer = 1;
@@ -69,6 +97,10 @@ class StateLoadingGame : public GameState {
   const std::string Label_LoadingItemsRepo  = LanguageManager::Translate("/loading_screen/loading_items_repository");
   const std::string Label_LoadingUI         = LanguageManager::Translate("/loading_screen/loading_ui");
   const std::string Label_LoadingWorld      = LanguageManager::Translate("/loading_screen/loading_world");
+  const std::string Label_GeneratingTerrain = LanguageManager::Translate("/loading_screen/generating_terrain");
+  const std::string Label_GeneratingDecoration = LanguageManager::Translate("/loading_screen/generating_decoration");
+  const std::string Label_GeneratingLight = LanguageManager::Translate("/loading_screen/generating_light");
+  const std::string Label_PropagatingLiquids = LanguageManager::Translate("/loading_screen/propagating_liquids");
   const std::string Label_LoadingPlayer     = LanguageManager::Translate("/loading_screen/loading_player");
 
   void setPercent(float completed);
@@ -78,6 +110,11 @@ class StateLoadingGame : public GameState {
   void initItemRepository();
   void initUI();
   void initWorld();
+  void generateWorld();
+  void generateLightIncremental();  // New incremental version
+  void propagateLiquidsIncremental();  // New incremental version
+  void generateSpawnArea();
+  void loadSpawnArea();
   void initPlayer();
 
   void nextState();

@@ -12,8 +12,8 @@
 #include <math/m4x4.hpp>
 #include <vector>
 #include <array>
-#include <queue>
 #include <bitset>
+#include <queue>
 #include "models/world_light_model.hpp"
 #include "entities/level.hpp"
 #include "singleton.hpp"
@@ -29,14 +29,16 @@ class ChunkManager : public Singleton<ChunkManager> {
   ChunkManager();
   ~ChunkManager();
 
-  inline std::vector<Chunk*>* getChunks() { return &chunks; };
+  inline std::array<Chunk*, OVERWORLD_SIZE_IN_CHUNKS>* getChunks() {
+    return &chunks;
+  };
 
   void init(WorldLightModel* worldLightModel, Level* Level);
-  void update(const Plane* frustumPlanes, Vec4* camPos,
-             u8 maxRenderDistance = MAX_DRAW_DISTANCE);
+  void update(const Plane* frustumPlanes, Vec4* camPos, u8 maxRenderDistance,
+              const float& deltaTime);
   void updateWithVisibilityGraph(const Plane* frustumPlanes, Vec4* camPos,
-                                  const Vec4& camForward,
-                                  u8 maxRenderDistance = MAX_DRAW_DISTANCE);
+                                 const Vec4& camForward, u8 maxRenderDistance,
+                                 const float& deltaTime);
   void tick();
 
   inline u8 isChunkVisible(Chunk* chunk) { return chunk->isVisible(); };
@@ -63,6 +65,9 @@ class ChunkManager : public Singleton<ChunkManager> {
 
   void enqueueChunkToReloadLight(Chunk* chunk, bool colorsOnly = false);
   size_t getChunksToUpdateLightCount() { return chunksToUpdateLight.size(); };
+
+  Chunk* requestSpawnChunk(const uint16_t& id);
+  void requestDespawnChunk(const uint16_t& id);
 
   // TickScheduler integration
   void registerTickCallbacks(class TickScheduler& scheduler);
@@ -139,14 +144,26 @@ class ChunkManager : public Singleton<ChunkManager> {
   // Allows upgrading colorsOnly=true → colorsOnly=false without queue search
   std::bitset<OVERWORLD_SIZE_IN_CHUNKS> chunksNeedingFullRebuild;
   
-  std::vector<Chunk*> chunks;
-  std::vector<Chunk*> loadedChunks;
+  std::array<Chunk*, OVERWORLD_SIZE_IN_CHUNKS> chunks;
   std::vector<Chunk*> visibleChunks;
+  std::vector<Chunk*> loadedChunks;
   std::vector<Chunk*> activeChunks;  // Phase 2: Chunks with state == Loaded for faster tick
 #ifdef DEBUG_MODE
   std::vector<Chunk*> culledChunks;  // Chunks removed by cave culling
 #endif
   std::vector<Chunk*> occludedChunksToUnload;
+  
+  // Background visibility task members
+  struct VisibilityTaskState {
+    Vec4 camPos;
+    Vec4 camForward;
+    Plane frustumPlanes[6];
+    u8 maxRenderDistance;
+  } visTaskState;
+
+  std::vector<Chunk*> nextVisibleChunks;
+  u16 visibilityTaskId = 0;
+  volatile bool isVisibilityTaskRunning = false;
 
   struct ColumnHeightInfo {
     u8 topChunkY = 0;
@@ -161,6 +178,8 @@ class ChunkManager : public Singleton<ChunkManager> {
   std::array<ColumnHeightInfo, SPATIAL_GRID_SIZE> columnHeightMap;
 
   void generateChunks();
+  Chunk* spawnChunk(const uint16_t& id);
+  void despawnChunk(const uint16_t& id);
   void populateNeighborCache();  // Phase 4: pre-compute neighbors[6] for O(1) BFS lookup
 
   void reloadLightDataAsync();

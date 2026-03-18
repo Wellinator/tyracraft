@@ -56,3 +56,57 @@ class DandelionFlower : public Block {
   u8 hasTransparency() override { return true; }
   u8 isCrossed() override { return true; }
 };
+
+class DeadBushBlock : public Block {
+ public:
+  DeadBushBlock() : Block() { collidable = isCollidable(); };
+  virtual ~DeadBushBlock() = default;
+
+  IMPLEMENT_BLOCK_CLONE(DeadBushBlock)
+
+  Blocks getType() override { return Blocks::DEAD_BUSH; }
+  float getHardness() override { return 0.0f; }
+  std::array<u8, 6> getFacesMap() override {
+    return {170, 170, 170, 170, 170, 170};
+  }
+  u8 isBreakable() override { return true; }
+  u8 isCollidable() override { return false; }
+  u8 hasTransparency() override { return true; }
+  u8 isCrossed() override { return true; }
+};
+
+class ReedsPlant : public Block {
+ public:
+  ReedsPlant() : Block() { collidable = isCollidable(); };
+  virtual ~ReedsPlant() = default;
+
+  IMPLEMENT_BLOCK_CLONE(ReedsPlant)
+
+  Blocks getType() override { return Blocks::REEDS_BLOCK; }
+  float getHardness() override { return 0.0f; }
+  std::array<u8, 6> getFacesMap() override {
+    return {171, 171, 171, 171, 171, 171};
+  }
+  u8 isBreakable() override { return true; }
+  u8 isCollidable() override { return false; }
+  u8 hasTransparency() override { return true; }
+  u8 isCrossed() override { return true; }
+};
+
+class TallGrassPlant : public Block {
+ public:
+  TallGrassPlant() : Block() { collidable = isCollidable(); };
+  virtual ~TallGrassPlant() = default;
+
+  IMPLEMENT_BLOCK_CLONE(TallGrassPlant)
+
+  Blocks getType() override { return Blocks::TALL_GRASS_BLOCK; }
+  float getHardness() override { return 0.0f; }
+  std::array<u8, 6> getFacesMap() override {
+    return {165, 165, 165, 165, 165, 165};
+  }
+  u8 isBreakable() override { return true; }
+  u8 isCollidable() override { return false; }
+  u8 hasTransparency() override { return true; }
+  u8 isCrossed() override { return true; }
+};

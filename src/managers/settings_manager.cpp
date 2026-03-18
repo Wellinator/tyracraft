@@ -1,5 +1,18 @@
 #include "managers/settings_manager.hpp"
 
+static int clampInt(const int value, const int minValue, const int maxValue) {
+  if (value < minValue) return minValue;
+  if (value > maxValue) return maxValue;
+  return value;
+}
+
+static float clampFloat(const float value, const float minValue,
+                        const float maxValue) {
+  if (value < minValue) return minValue;
+  if (value > maxValue) return maxValue;
+  return value;
+}
+
 /**
  * Definition global settings variable
  * g_settings - settings object
@@ -30,6 +43,7 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Player"]["skin"] = settings.skin;
   _settings["AutoSave"]["interval"] = settings.auto_save_interval;
 
+
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
 };
@@ -49,6 +63,7 @@ void SettingsManager::Save() {
   _settings["Camera"]["cam_v_sensitivity"] = g_settings.cam_v_sensitivity;
   _settings["Player"]["skin"] = g_settings.skin;
   _settings["AutoSave"]["interval"] = g_settings.auto_save_interval;
+
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
   _settings.encode(os);
@@ -94,6 +109,8 @@ settings_file SettingsManager::Load() {
   } catch (...) {
     g_settings.auto_save_interval = 60.0f;
   }
+
+
 
   return g_settings;
 };

@@ -7,7 +7,11 @@
 
 using namespace TyraCraft;
 
-const int SaveManager::CurrentSaveVersion = 3;
+const int SaveManager::CurrentSaveVersion = 1;
+
+static std::string getMetadataPath(const char* worldPath) {
+  return std::string(worldPath) + "/data.tcw";
+}
 
 // ===========================================================================
 // SAVE GAME
@@ -18,11 +22,18 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     return SaveResult::Failure("Invalid parameters (null state or path)");
   }
 
-  // On PS2, atomic save with temp file + rename is problematic due to filesystem locking
-  // Write directly to final location instead
-  gzFile save_file = gzopen(fullPath, "wb");
+  // Ensure save directory exists
+  struct stat st;
+  if (stat(fullPath, &st) != 0) {
+    if (mkdir(fullPath, 0777) != 0) {
+      return SaveResult::Failure("Failed to create save directory");
+    }
+  }
+
+  std::string metadataPath = getMetadataPath(fullPath);
+  gzFile save_file = gzopen(metadataPath.c_str(), "wb");
   if (save_file == nullptr) {
-    return SaveResult::Failure("Failed to open save file for writing (disk full or permission denied?)");
+    return SaveResult::Failure("Failed to open metadata file (.tcw) for writing");
   }
 
   SaveSerializer serializer(save_file);
@@ -31,7 +42,6 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   SaveResult result = SaveFormat::WriteHeader(serializer);
   if (!result) {
     gzclose(save_file);
-    TYRA_LOG("ERROR: WritHeader failed - ", result.errorMessage.c_str());
     return result;
   }
 
@@ -39,7 +49,6 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   result = SaveFormat::WriteWorldOptions(serializer, state->world->getWorldOptions());
   if (!result) {
     gzclose(save_file);
-    TYRA_LOG("ERROR: WriteWorldOptions failed - ", result.errorMessage.c_str());
     return result;
   }
 
@@ -50,7 +59,6 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
                                         state->context->t_camera->yaw);
   if (!result) {
     gzclose(save_file);
-    TYRA_LOG("ERROR: WritePlayerState failed - ", result.errorMessage.c_str());
     return result;
   }
 
@@ -59,38 +67,18 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
                                       elapsedRealTime, ticksDayCounter);
   if (!result) {
     gzclose(save_file);
-    TYRA_LOG("ERROR: WriteTickState failed - ", result.errorMessage.c_str());
-    return result;
-  }
-
-  // Write world structure
-  LevelMap* t_map = &Level::getInstance()->map;
-  result = SaveFormat::WriteWorldStructure(serializer, t_map);
-  if (!result) {
-    gzclose(save_file);
-    TYRA_LOG("ERROR: WriteWorldStructure failed - ", result.errorMessage.c_str());
-    return result;
-  }
-
-  // Write world data (blocks, light, metadata) — ~3MB
-  result = SaveFormat::WriteWorldData(serializer, t_map);
-  if (!result) {
-    gzclose(save_file);
-    TYRA_LOG("ERROR: WriteWorldData failed - ", result.errorMessage.c_str());
     return result;
   }
 
   // Flush and close file
   gzflush(save_file, Z_FINISH);
-  
-  int closeResult = gzclose(save_file);
-  if (closeResult != Z_OK) {
-    TYRA_LOG("ERROR: gzclose failed with code: ", closeResult);
-    return SaveResult::Failure("Failed to close save file properly");
-  }
+  gzclose(save_file);
 
-  TYRA_LOG("Game saved successfully - Bytes: ", serializer.GetBytesWritten());
+  // Note: Level data (chunks) is saved separately by World/ChunkProvider
+  state->plevel->saveAllChunks();
+  state->world->getChunkProvider()->flush();
 
+  TYRA_LOG("World metadata saved successfully to %s", metadataPath.c_str());
   return SaveResult::Success();
 }
 
@@ -107,10 +95,10 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
   // Reset world before loading new data
   state->world->resetWorldData();
 
-  // Open save file for reading
-  gzFile save_file = gzopen(fullPath, "rb");
+  std::string metadataPath = getMetadataPath(fullPath);
+  gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
-    return SaveResult::Failure("Failed to open save file");
+    return SaveResult::Failure("Failed to open metadata file (.tcw) inside world folder");
   }
 
   SaveSerializer serializer(save_file);
@@ -125,30 +113,16 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
 
   TYRA_LOG("Loading save version: ", version);
 
-  // Get appropriate migration for this version
-  MigrationManager migrationMgr;
-  if (!migrationMgr.IsVersionSupported(version)) {
-    gzclose(save_file);
-    return SaveResult::Failure(
-        MigrationManager::GetVersionErrorMessage(version));
-  }
-
-  SaveMigration* migration = migrationMgr.GetMigration(version);
-  if (migration == nullptr) {
-    gzclose(save_file);
-    return SaveResult::Failure("Internal error: migration not found");
-  }
-
-  // Apply migration to load data in V3 format
+  // Simplified loading for folder-based system (Version 1+)
   NewGameOptions* gameOptions = state->world->getWorldOptions();
-  LevelMap* t_map = &state->plevel->map;
   Vec4 playerPos;
   float cameraPitch, cameraYaw;
   uint64_t loadedTicksCounter, loadedElapsedRealTime, loadedTicksDayCounter;
 
-  result = migration->Apply(serializer, gameOptions, t_map, &playerPos,
-                           &cameraPitch, &cameraYaw, &loadedTicksCounter,
-                           &loadedElapsedRealTime, &loadedTicksDayCounter);
+  // Read metadata using SaveFormat
+  result = SaveFormat::ReadWorldOptions(serializer, gameOptions);
+  if (result) result = SaveFormat::ReadPlayerState(serializer, &playerPos, &cameraPitch, &cameraYaw);
+  if (result) result = SaveFormat::ReadTickState(serializer, &loadedTicksCounter, &loadedElapsedRealTime, &loadedTicksDayCounter);
 
   if (!result) {
     gzclose(save_file);
@@ -173,9 +147,7 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
   // Close file
   gzclose(save_file);
 
-  TYRA_LOG("Game loaded successfully - bytes read: ",
-           serializer.GetBytesRead());
-
+  TYRA_LOG("World metadata loaded successfully from ", metadataPath.c_str());
   return SaveResult::Success();
 }
 
@@ -210,10 +182,10 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
     const char* fullPath) {
   NewGameOptions* model = new NewGameOptions();
 
-  gzFile save_file = gzopen(fullPath, "rb");
+  std::string metadataPath = getMetadataPath(fullPath);
+  gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
-    TYRA_TRAP("Could not open save file at: ", fullPath);
-    return model;  // Return default options if file can't be opened
+    return model;
   }
 
   SaveSerializer serializer(save_file);
@@ -222,80 +194,12 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
   int32_t version = 0;
   SaveResult result = SaveFormat::ReadHeader(serializer, version);
   if (!result) {
-    TYRA_LOG("Error reading save header: ", result.errorMessage.c_str());
     gzclose(save_file);
-    return model;  // Return default options on error
+    return model;
   }
 
-  // Check version support
-  MigrationManager migrationMgr;
-  if (!migrationMgr.IsVersionSupported(version)) {
-    TYRA_LOG("Unsupported save version: ", version);
-    gzclose(save_file);
-    return model;  // Return default options for unsupported versions
-  }
-
-  // Read world options depending on version
-  if (version <= 2) {
-    // V1/V2: seed, gameMode, name, legacyDrawDistance, initialTime, type, texturePack
-    result = serializer.ReadUInt32(&model->seed);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-
-    uint8_t gameMode;
-    result = serializer.ReadUInt8(&gameMode);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-    model->gameMode = (GameMode)gameMode;
-
-    result = serializer.ReadString(&model->name, SaveSerializer::MAX_SAVE_NAME_LENGTH);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-
-    // Legacy draw distance - map to enum
-    u8 legacyDrawDistance;
-    result = serializer.ReadUInt8(&legacyDrawDistance);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-
-    if (legacyDrawDistance <= 10)
-      model->drawDistanceMode = DrawDistanceMode::Low;
-    else if (legacyDrawDistance <= 16)
-      model->drawDistanceMode = DrawDistanceMode::Medium;
-    else if (legacyDrawDistance <= 24)
-      model->drawDistanceMode = DrawDistanceMode::High;
-    else
-      model->drawDistanceMode = DrawDistanceMode::Auto;
-
-    // Rest of options
-    result = serializer.ReadFloat(&model->initialTime);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-
-    uint8_t worldType;
-    result = serializer.ReadUInt8(&worldType);
-    if (!result) {
-      gzclose(save_file);
-      return model;
-    }
-    model->type = (WorldType)worldType;
-
-    result = serializer.ReadString(&model->texturePack,
-                                   SaveSerializer::MAX_TEXTURE_PACK_NAME);
-  } else {
-    // V3: Use standard ReadWorldOptions
-    result = SaveFormat::ReadWorldOptions(serializer, model);
-  }
+  // V1 (New Folder Format): Use standard ReadWorldOptions
+  result = SaveFormat::ReadWorldOptions(serializer, model);
 
   if (!result) {
     TYRA_LOG("Error reading world options: ", result.errorMessage.c_str());
@@ -312,9 +216,9 @@ NewGameOptions* SaveManager::GetNewGameOptionsFromSaveFile(
 void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
   if (!target) return;
 
-  gzFile save_file = gzopen(fullPath, "rb");
+  std::string metadataPath = getMetadataPath(fullPath);
+  gzFile save_file = gzopen(metadataPath.c_str(), "rb");
   if (save_file == nullptr) {
-    // File doesn't exist or can't be opened - use defaults
     target->version = 0;
     target->name = std::string(FileUtils::getFilenameWithoutExtension(
         FileUtils::getFilenameFromPath(fullPath)));
@@ -327,7 +231,6 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
   int32_t version = 0;
   SaveResult result = SaveFormat::ReadHeader(serializer, version);
   if (!result) {
-    // Invalid header - fallback to filename
     target->version = 0;
     target->name = std::string(FileUtils::getFilenameWithoutExtension(
         FileUtils::getFilenameFromPath(fullPath)));
@@ -337,19 +240,9 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
 
   target->version = version;
 
-  // For unsupported versions, use filename as fallback
-  MigrationManager migrationMgr;
-  if (!migrationMgr.IsVersionSupported(version)) {
-    target->name = std::string(FileUtils::getFilenameWithoutExtension(
-        FileUtils::getFilenameFromPath(fullPath)));
-    gzclose(save_file);
-    return;
-  }
-
   // Read world name
   result = SaveFormat::ReadWorldNameOnly(serializer, &target->name);
   if (!result) {
-    // On error reading name, fallback to filename
     target->name = std::string(FileUtils::getFilenameWithoutExtension(
         FileUtils::getFilenameFromPath(fullPath)));
   }
@@ -359,11 +252,38 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
 
 bool SaveManager::CheckIfSaveExist(const char* fullPath) {
   struct stat buffer;
-  return (stat(fullPath, &buffer) == 0);
+  if (stat(fullPath, &buffer) == 0 && S_ISDIR(buffer.st_mode)) {
+    std::string metadataPath = getMetadataPath(fullPath);
+    return (stat(metadataPath.c_str(), &buffer) == 0);
+  }
+  return false;
+}
+
+bool SaveManager::CheckIfFolderExist(const char* fullPath) {
+  struct stat buffer;
+  return (stat(fullPath, &buffer) == 0 && S_ISDIR(buffer.st_mode));
+}
+
+static int remove_directory(const char* path) {
+  std::vector<UtilDirectory> list = Utils::listDir(path);
+  for (const auto& item : list) {
+    std::string fullItemPath = std::string(path) + "/" + item.name;
+    struct stat st;
+    if (stat(fullItemPath.c_str(), &st) == 0) {
+      if (S_ISDIR(st.st_mode)) {
+        remove_directory(fullItemPath.c_str());
+      } else {
+        unlink(fullItemPath.c_str());
+      }
+    }
+  }
+  return rmdir(path);
 }
 
 int SaveManager::DeleteSave(const char* fullPath) {
-  if (SaveManager::CheckIfSaveExist(fullPath)) return unlink(fullPath);
+  if (SaveManager::CheckIfFolderExist(fullPath)) {
+    return remove_directory(fullPath);
+  }
   return -1;
 }
 
@@ -372,12 +292,13 @@ bool SaveManager::HasAvailableSaves() {
   
   for (size_t i = 0; i < saveFilesList.size(); i++) {
     const UtilDirectory dir = saveFilesList.at(i);
-    const std::string fileExtension = FileUtils::getExtensionOfFilename(dir.name);
-
-    TYRA_LOG("Found save file: ", dir.name, " with extension: ", fileExtension);
-    
-    if (strncmp(fileExtension.c_str(), "tcw", 3) == 0) {
-      return true;
+    if (dir.isDir) {
+      std::string metadataPath = getMetadataPath(
+          (std::string(FileUtils::fromCwd("saves/")) + dir.name).c_str());
+      struct stat st;
+      if (stat(metadataPath.c_str(), &st) == 0) {
+        return true;
+      }
     }
   }
   

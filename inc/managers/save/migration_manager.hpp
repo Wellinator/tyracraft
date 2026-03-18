@@ -25,9 +25,9 @@ namespace TyraCraft {
  */
 class MigrationManager {
  public:
-  static constexpr int CURRENT_VERSION = 3;
+  static constexpr int CURRENT_VERSION = 1;
   static constexpr int MIN_SUPPORTED_VERSION = 1;
-  static constexpr int MAX_SUPPORTED_VERSION = 3;
+  static constexpr int MAX_SUPPORTED_VERSION = 1;
 
   MigrationManager();
   ~MigrationManager();
@@ -55,9 +55,7 @@ class MigrationManager {
 
  private:
   // Migration instances (owned by manager)
-  MigrationV1ToV2 migrationV1;
-  MigrationV2ToV3 migrationV2;
-  MigrationV3 migrationV3;
+  MigrationV1 migrationV1;
 };
 
 }  // namespace TyraCraft

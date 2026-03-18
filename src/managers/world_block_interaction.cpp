@@ -353,35 +353,64 @@ void WorldBlockInteraction::removeBlock(Block* blockToRemove) {
 
   playDestroyBlockSound(blockToRemove->getType());
 
-  // Remove up block if it's vegetation
-  const Vec4 upBlockOffset =
-      Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
+  // Remove other part if it's a double block
+  if (pBlockManager->isDoubleBlock(blockToRemove->getType())) {
+    bool isUpper = pLevel->GetIsUpperHalfDataFromMap(offsetToRemove.x, offsetToRemove.y, offsetToRemove.z);
+    Vec4 otherPartOffset = offsetToRemove;
+    if (isUpper) {
+      otherPartOffset.y -= 1;
+    } else {
+      otherPartOffset.y += 1;
+    }
 
-  if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
-                            upBlockOffset.z)) {
-    const Blocks upperBlockType = static_cast<Blocks>(pLevel->GetBlockFromMap(
-        upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
+    if (pLevel->BoundCheckMap(otherPartOffset.x, otherPartOffset.y, otherPartOffset.z)) {
+      const Blocks otherBlockType = static_cast<Blocks>(pLevel->GetBlockFromMap(otherPartOffset.x, otherPartOffset.y, otherPartOffset.z));
+      if (otherBlockType == blockToRemove->getType()) {
+        // Only remove if it's the matching half (redundancy check)
+        bool otherIsUpper = pLevel->GetIsUpperHalfDataFromMap(otherPartOffset.x, otherPartOffset.y, otherPartOffset.z);
+        if (otherIsUpper != isUpper) {
+          Block* _template = pBlockManager->getBlockTemplateByType(otherBlockType);
+          Block* otherPart = _template->clone();
+          otherPart->offset = otherPartOffset;
+          otherPart->index = pLevel->OffsetToIndex(otherPartOffset);
+          otherPart->position = pLevel->offsetToWorldPos(&otherPart->offset);
+          // Set visible faces etc if needed, but removeBlock handles the essentials
+          removeBlock(otherPart);
+          delete otherPart;
+        }
+      }
+    }
+  } else {
+    // Legacy: Remove up block if it's vegetation (for single-block plants that can't float)
+    const Vec4 upBlockOffset =
+        Vec4(offsetToRemove.x, offsetToRemove.y + 1, offsetToRemove.z);
 
-    if (pBlockManager->isVegetation(upperBlockType) ||
-        upperBlockType == Blocks::TORCH) {
-      Block* _template = pBlockManager->getBlockTemplateByType(upperBlockType);
-      Block* upperBlock = _template->clone();
+    if (pLevel->BoundCheckMap(upBlockOffset.x, upBlockOffset.y,
+                              upBlockOffset.z)) {
+      const Blocks upperBlockType = static_cast<Blocks>(pLevel->GetBlockFromMap(
+          upBlockOffset.x, upBlockOffset.y, upBlockOffset.z));
 
-      u8 visibleFaces =
-          VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
-              upBlockOffset);
+      if (pBlockManager->isVegetation(upperBlockType) ||
+          upperBlockType == Blocks::TORCH) {
+        Block* _template = pBlockManager->getBlockTemplateByType(upperBlockType);
+        Block* upperBlock = _template->clone();
 
-      upperBlock->offset = upBlockOffset;
-      upperBlock->index = pLevel->OffsetToIndex(upBlockOffset);
-      upperBlock->setVisibleFaces(visibleFaces);
-      upperBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
-      upperBlock->position = pLevel->offsetToWorldPos(&upperBlock->offset);
-      upperBlock->baseColor =
-          LightManager::GetLightColorAt(upperBlock->offset, getTargetedFace(),
-                                        pWorldLightModel->sunLightIntensity);
+        u8 visibleFaces =
+            VisibleFacesManager::getInstance()->getVisibleFacesByOffset(
+                upBlockOffset);
 
-      removeBlock(upperBlock);
-      delete upperBlock;
+        upperBlock->offset = upBlockOffset;
+        upperBlock->index = pLevel->OffsetToIndex(upBlockOffset);
+        upperBlock->setVisibleFaces(visibleFaces);
+        upperBlock->setVisibleFacesCount(Utils::countSetBits(visibleFaces));
+        upperBlock->position = pLevel->offsetToWorldPos(&upperBlock->offset);
+        upperBlock->baseColor =
+            LightManager::GetLightColorAt(upperBlock->offset, getTargetedFace(),
+                                          pWorldLightModel->sunLightIntensity);
+
+        removeBlock(upperBlock);
+        delete upperBlock;
+      }
     }
   }
 }
@@ -752,6 +781,22 @@ bool WorldBlockInteraction::putDefaultBlock(const Blocks blockToPlace,
       blockOffset.x, blockOffset.y, blockOffset.z);
 
   if (canReplace) {
+    if (pBlockManager->isDoubleBlock(blockToPlace)) {
+      // Check if space above is also replaceable
+      const Vec4 upperOffset = Vec4(blockOffset.x, blockOffset.y + 1, blockOffset.z);
+      if (pLevel->BoundCheckMap(upperOffset.x, upperOffset.y, upperOffset.z) &&
+          pLevel->isReplaceableBySolidBlock(upperOffset.x, upperOffset.y, upperOffset.z)) {
+        
+        placeBlockAt(blockToPlace, blockOffset);
+        pLevel->ResetIsUpperHalfDataToMap(blockOffset.x, blockOffset.y, blockOffset.z);
+
+        placeBlockAt(blockToPlace, upperOffset);
+        pLevel->SetIsUpperHalfDataToMap(upperOffset.x, upperOffset.y, upperOffset.z, true);
+        return true;
+      }
+      return false;
+    }
+
     placeBlockAt(blockToPlace, blockOffset);
     return true;
   }

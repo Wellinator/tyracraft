@@ -8,6 +8,9 @@
 #include <tyra>
 #include <stdint-gcc.h>
 
+#include "entities/level_chunk.hpp"
+#include <vector>
+
 using Tyra::Vec4;
 
 class LevelIntersectQueryResult {
@@ -25,16 +28,19 @@ class LevelMap {
 
   uint16_t spawnX, spawnY, spawnZ;
 
-  uint8_t blocks[OVERWORLD_SIZE];
-  uint8_t lightData[OVERWORLD_SIZE];
-  uint8_t metaData[OVERWORLD_SIZE];
+  LevelChunk* chunks[OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD];
 };
 
 class Level : public Singleton<Level> {
  public:
+  class World* world = nullptr;
   LevelMap map;
 
   Level(int seed);
+  ~Level();
+
+  LevelChunk* getChunk(uint16_t x, uint16_t z);
+  LevelSection* getSection(uint16_t x, uint16_t y, uint16_t z);
 
   uint8_t getBlockByWorldPosition(const Vec4* pos);
   Vec4 roundToBlockCenter(const Vec4& pos);
@@ -85,6 +91,10 @@ class Level : public Singleton<Level> {
   SlabOrientation GetSlabOrientationDataFromMap(uint16_t x, uint16_t y,
                                                 uint16_t z);
 
+  void SetIsUpperHalfDataToMap(uint16_t x, uint16_t y, uint16_t z, const bool isUpper);
+  void ResetIsUpperHalfDataToMap(uint16_t x, uint16_t y, uint16_t z);
+  bool GetIsUpperHalfDataFromMap(uint16_t x, uint16_t y, uint16_t z);
+
   uint8_t GetLightDataFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t GetLightFromMap(uint16_t x, uint16_t y, uint16_t z);
   uint8_t GetBlockLightFromMap(uint16_t x, uint16_t y, uint16_t z);
@@ -97,19 +107,17 @@ class Level : public Singleton<Level> {
 
   void SetBlockInMap(uint16_t x, uint16_t y, uint16_t z, uint8_t block);
   void SetBlockInMapByIndex(uint32_t index, uint8_t block);
-
   void SetBlockLightInMap(uint16_t x, uint16_t y, uint16_t z, uint16_t light);
   void SetSunLightInMap(uint16_t x, uint16_t y, uint16_t z, uint16_t light);
 
   bool BoundCheckMap(uint16_t x, uint16_t y, uint16_t z);
-
   uint32_t OffsetToIndex(const Vec4& offset);
-
   static uint32_t GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z);
-
+  void unloadFarChunks(int playerChunkX, int playerChunkZ, int radius);
+  void unloadChunk(int chunkX, int chunkZ);
+  void saveAllChunks();
+  void unloadAllChunks();
   /**
-   * Get start and end points of the line segment and return all intersected
-   * blocks
    * @details This function performs a 3D line intersection test with the level
    * grid using DDA algorithm. It calculates the start and end points of the
    * line segment based on the provided start and

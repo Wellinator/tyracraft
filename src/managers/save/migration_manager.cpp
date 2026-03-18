@@ -3,23 +3,17 @@
 namespace TyraCraft {
 
 MigrationManager::MigrationManager()
-    : migrationV1(), migrationV2(), migrationV3() {
+    : migrationV1() {
 }
 
 MigrationManager::~MigrationManager() {
 }
 
 SaveMigration* MigrationManager::GetMigration(int version) {
-  switch (version) {
-    case 1:
-      return &migrationV1;
-    case 2:
-      return &migrationV2;
-    case 3:
-      return &migrationV3;
-    default:
-      return nullptr;
+  if (version == 1) {
+    return &migrationV1;
   }
+  return nullptr;
 }
 
 std::string MigrationManager::GetVersionErrorMessage(int version) {

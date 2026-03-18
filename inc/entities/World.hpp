@@ -8,6 +8,8 @@
 #include "chunk.hpp"
 #include "entities/player/player.hpp"
 #include "entities/Block.hpp"
+#include "entities/level_chunk.hpp"
+#include "entities/chunk_provider.hpp"
 #include "managers/items_repository.hpp"
 #include "constants.hpp"
 #include "renderer/3d/pipeline/minecraft/minecraft_pipeline.hpp"
@@ -101,7 +103,10 @@ class World {
   void renderTransparent();
   void renderBlockDamageOverlay();
   void generate();
+  void initGeneration();
+  bool generateStep();
   void generateLight();
+  void prepareLightModelForLoading();
   void propagateLiquids();
   void generateSpawnArea();
   void loadSpawnArea();
@@ -109,6 +114,18 @@ class World {
   inline const Vec4 getLocalSpawnArea() const { return this->spawnArea; };
   void buildInitialPosition();
   void buildInitialPosition(const Vec4& playerPos);  // Overload for loading saved games
+
+  // Stepped generation state
+  enum class GenerationPhase {
+    Terrain,
+    Decoration,
+    LightStitch,
+    Finalize,
+    Complete
+  };
+  GenerationPhase currentGenerationPhase = GenerationPhase::Complete;
+  int generationRow = 0;
+  int generationTotalRows = 0;
 
   // From terrain manager
   const uint32_t getSeed() { return seed; };
@@ -180,6 +197,9 @@ class World {
     worldOptions = options;
   };
 
+  inline ChunkProvider* getChunkProvider() { return chunkProvider; }
+  void flushChunkProvider();
+
   // TickScheduler integration
   void setTickContext(Player* t_player, Camera* t_camera);
   void registerTickCallbacks(class TickScheduler& scheduler);
@@ -200,6 +220,8 @@ class World {
 
   NewGameOptions worldOptions = NewGameOptions();
   DrawDistanceController drawDistanceController;
+
+  ChunkProvider* chunkProvider = nullptr;
 
   std::deque<Chunk*> tempChunksToLoad;
   std::deque<Chunk*> tempChunksToUnLoad;

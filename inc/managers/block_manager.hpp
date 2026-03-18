@@ -41,12 +41,12 @@ class BlockManager : public Singleton<BlockManager> {
   const u8 isBlockOriented(const Blocks& blockType);
   const bool isSlab(const Blocks& type);
   const bool isVegetation(const Blocks& block);
+  const bool isDoubleBlock(const Blocks& block);
 
   SfxBlockModel* getBrokenSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getDigSoundByBlockType(const Blocks& blockType);
   SfxBlockModel* getStepSoundByBlockType(const Blocks& blockType);
   inline Texture* getBlocksTexture() { return blocksTexAtlas; };
-  inline Texture* getBlocksTextureLowRes() { return blocksTexAtlasLowRes; };
 
   float getBlockBreakingTime(Block* targetBlock);
   u8 getBlockLightValue(Blocks blockType);
@@ -64,7 +64,6 @@ class BlockManager : public Singleton<BlockManager> {
   bool isBestTool(const Blocks blockType);
 
   Texture* blocksTexAtlas;
-  Texture* blocksTexAtlasLowRes;
   Renderer* t_renderer;
 
   std::vector<BlockSfxBaseRepository*> blockSfxRepositories;

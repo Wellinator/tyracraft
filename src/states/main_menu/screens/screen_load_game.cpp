@@ -261,37 +261,40 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
 
   for (size_t i = 0; i < saveFilesList.size(); i++) {
     const UtilDirectory dir = saveFilesList.at(i);
-    const std::string fileExtension =
-        FileUtils::getExtensionOfFilename(dir.name);
+    if (dir.isDir) {
+      std::string worldPath = std::string(fullPath) + dir.name;
+      std::string metadataPath = worldPath + "/data.tcw";
+      struct stat st;
+      
+      if (stat(metadataPath.c_str(), &st) == 0) {
+        TYRA_LOG("Loading save folder: ", dir.name.c_str());
 
-    if (strncmp(fileExtension.c_str(), "tcw", 3) == 0) {
-      TYRA_LOG("Loading save: ", dir.name.c_str());
+        SaveInfoModel* model = new SaveInfoModel();
 
-      SaveInfoModel* model = new SaveInfoModel();
+        model->id = tempId++;
+        model->path = worldPath;
+        model->createdAt = dir.createdAt;
 
-      model->id = tempId++;
-      model->path = std::string(fullPath).append(dir.name);
-      model->createdAt = dir.createdAt;
+        SaveManager::SetSaveInfo(model->path.c_str(), model);
 
-      SaveManager::SetSaveInfo(model->path.c_str(), model);
+        TYRA_LOG("Version: ", model->version);
+        TYRA_LOG("name: ", model->name.c_str());
 
-      TYRA_LOG("Version: ", model->version);
-      TYRA_LOG("name: ", model->name.c_str());
+        // Make sure it'll only load from version 1 above
+        model->valid = model->version > 0;
 
-      // Make sure it'll only load from version 1 above
-      model->valid = model->version > 0;
+        model->icon.size.set(32, 32);
+        model->icon.position.set(127, 146);
+        model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
 
-      model->icon.size.set(32, 32);
-      model->icon.position.set(127, 146);
-      model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
+        if (model->valid) {
+          saveIconTex->addLink(model->icon.id);
+        } else {
+          badSaveIconTex->addLink(model->icon.id);
+        }
 
-      if (model->valid) {
-        saveIconTex->addLink(model->icon.id);
-      } else {
-        badSaveIconTex->addLink(model->icon.id);
+        savedGamesList.push_back(model);
       }
-
-      savedGamesList.push_back(model);
     }
   }
 

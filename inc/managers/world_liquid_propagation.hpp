@@ -35,6 +35,13 @@ class WorldLiquidPropagation {
    */
   void propagateAll();
 
+  /**
+   * @brief Budget-bounded liquid propagation. Returns true when complete.
+   * @param budgetMs Maximum milliseconds to spend propagating liquids.
+   * Drains water and lava queues incrementally to allow responsive UI.
+   */
+  bool propagateAllBudgeted(u32 budgetMs);
+
   /** @brief Tick-based water propagation step. */
   void updateLiquidWater();
 
@@ -76,6 +83,9 @@ class WorldLiquidPropagation {
   // Chunks dirtied by liquid propagation (rebuilt each frame)
   std::unordered_set<Chunk*> affectedChunksIdByLiquidPropagation;
   bool pendingLavaLightUpdate = false;
+
+  // Guards one-time queue seeding in propagateAllBudgeted()
+  bool budgetedPropagationInitialized = false;
 
   // Water propagation
   void propagateWaterRemovalQueue();

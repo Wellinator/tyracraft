@@ -285,11 +285,10 @@ void StateGameMenu::handleInput(const float& deltaTime) {
     } else if (activeOption == GameMenuOptions::FpsModeOption) {
       cycleFpsMode(1);
     } else if (activeOption == GameMenuOptions::SaveGame) {
-      std::string saveFileName = FileUtils::fromCwd(
-          "saves/" + this->stateGamePlay->world->getWorldOptions()->name +
-          ".tcw");
+      std::string savePath =
+          this->stateGamePlay->world->getWorldOptions()->fullPath;
 
-      if (SaveManager::CheckIfSaveExist(saveFileName.c_str())) {
+      if (SaveManager::CheckIfSaveExist(savePath.c_str())) {
         needSaveOverwriteConfirmation = true;
       } else {
         stateGamePlay->saveGame();

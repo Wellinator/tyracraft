@@ -14,4 +14,5 @@ class NewGameOptions {
   float initialTime = 1000;  // Sun rise in ticks
   std::string texturePack = "default";
   std::string name;
+  std::string fullPath;
 };

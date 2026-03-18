@@ -8,8 +8,8 @@
 
 // Total number of chunks in the overworld
 #define OVERWORLD_SIZE_IN_CHUNKS (OVERWORLD_SIZE / (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE))  
-#define OVERWORLD_H_DISTANCE 128  // Total horizontal overworld distance;
-#define OVERWORLD_V_DISTANCE 64   // Total vertical overworld distance;
+#define OVERWORLD_H_DISTANCE 256  // Total horizontal overworld distance;
+#define OVERWORLD_V_DISTANCE 96   // Total vertical overworld distance;
 
 #define HALF_OVERWORLD_H_DISTANCE \
   (OVERWORLD_H_DISTANCE / 2)  // Half horizontal overworld distance;
@@ -189,8 +189,15 @@ enum class Blocks {
   CRACKED_STONE_BRICKS_SLAB,  // 52
   MOSSY_STONE_BRICKS_SLAB,    // 53
 
+  // Biome additions
+  SANDSTONE_BLOCK,  // 54
+  DEAD_BUSH,        // 55
+  CACTUS_BLOCK,     // 56
+  REEDS_BLOCK,      // 57
+  TALL_GRASS_BLOCK, // 58
+
   // Helper index
-  TOTAL_OF_BLOCKS  // 54
+  TOTAL_OF_BLOCKS  // 59
 };
 /*---------------------------------------------*/
 
@@ -386,6 +393,9 @@ enum class EntityType {
 
 // Two bits for slab orientation (Top or Bottom)
 #define SLAB_ORIENTATION_MASK 0b00000100
+
+// One bit for upper half state for double blocks (Tall Grass, Reeds, Doors, etc.)
+#define IS_UPPER_HALF_MASK 0b00001000
 
 #define _90DEGINRAD Tyra::Math::ANG2RAD * 90
 #define _180DEGINRAD Tyra::Math::ANG2RAD * 180

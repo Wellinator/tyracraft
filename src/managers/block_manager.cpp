@@ -16,7 +16,6 @@ BlockManager::BlockManager() : Singleton<BlockManager>() {}
 
 BlockManager::~BlockManager() {
   this->t_renderer->getTextureRepository().free(this->blocksTexAtlas->id);
-  this->t_renderer->getTextureRepository().free(this->blocksTexAtlasLowRes->id);
 
   for (u8 i = 0; i < this->blockSfxRepositories.size(); i++) {
     delete this->blockSfxRepositories[i];
@@ -29,8 +28,7 @@ BlockManager::~BlockManager() {
 void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   this->t_renderer = t_renderer;
   this->loadBlocksTextures(texturePack);
-  this->loadBlocksTexturesLowRes(texturePack);
-  
+
   // PS2 GS texture cache MUST be flushed after texture upload
   // Otherwise GS uses stale cache → corrupted/magenta UVs
   DmaGifBuilder builder;
@@ -38,7 +36,7 @@ void BlockManager::init(Renderer* t_renderer, const std::string& texturePack) {
   builder.addGifTag(GIF_REG_AD);
   builder.addAd(GS_SET_TEXFLUSH(0), GS_REG_TEXFLUSH);
   builder.send();
-  
+
   this->registerBlockSoundsEffects();
 }
 
@@ -48,15 +46,6 @@ void BlockManager::loadBlocksTextures(const std::string& texturePack) {
       pathPrefix + texturePack + "/block/texture_atlas.png";
 
   blocksTexAtlas =
-      t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
-}
-
-void BlockManager::loadBlocksTexturesLowRes(const std::string& texturePack) {
-  const std::string pathPrefix = "textures/texture_packs/";
-  const std::string path =
-      pathPrefix + texturePack + "/block/texture_atlas_lower_res.png";
-
-  blocksTexAtlasLowRes =
       t_renderer->core.texture.repository.add(FileUtils::fromCwd(path.c_str()));
 }
 
@@ -90,8 +79,15 @@ const bool BlockManager::isSlab(const Blocks& type) {
 }
 
 const bool BlockManager::isVegetation(const Blocks& block) {
-  return (u8)block >= (u8)Blocks::GRASS &&
-         (u8)block <= (u8)Blocks::DANDELION_FLOWER;
+  return ((u8)block >= (u8)Blocks::GRASS &&
+          (u8)block <= (u8)Blocks::DANDELION_FLOWER) ||
+         block == Blocks::DEAD_BUSH ||
+         block == Blocks::TALL_GRASS_BLOCK ||
+         block == Blocks::REEDS_BLOCK;
+}
+
+const bool BlockManager::isDoubleBlock(const Blocks& block) {
+  return block == Blocks::TALL_GRASS_BLOCK;
 }
 
 SfxBlockModel* BlockManager::getBrokenSoundByBlockType(

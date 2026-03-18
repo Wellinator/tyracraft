@@ -25,6 +25,9 @@ bool BinaryGreedyMesher::isCuboidBlock(Blocks blockType) {
     case Blocks::GRASS:
     case Blocks::POPPY_FLOWER:
     case Blocks::DANDELION_FLOWER:
+    case Blocks::DEAD_BUSH:
+    case Blocks::REEDS_BLOCK:
+    case Blocks::TALL_GRASS_BLOCK:
     // Liquids — handled by liquid mesh builders
     case Blocks::WATER_BLOCK:
     case Blocks::LAVA_BLOCK:

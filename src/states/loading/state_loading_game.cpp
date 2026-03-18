@@ -56,7 +56,7 @@ void StateLoadingGame::update(const float& deltaTime) {
     nextState();
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
   if (shouldCreatedEntities) {
     progressLabel = Label_CreatingEntities;
     return createEntities();
@@ -69,6 +69,18 @@ void StateLoadingGame::update(const float& deltaTime) {
   } else if (shouldInitWorld) {
     progressLabel = Label_LoadingWorld;
     return initWorld();
+  } else if (shouldGenerateWorld) {
+    return generateWorld();
+  } else if (shouldGenerateLight) {
+    progressLabel = Label_GeneratingLight;
+    return generateLightIncremental();
+  } else if (shouldPropagateLiquids) {
+    progressLabel = Label_PropagatingLiquids;
+    return propagateLiquidsIncremental();
+  } else if (shouldGenerateSpawnArea) {
+    return generateSpawnArea();
+  } else if (shouldLoadSpawnArea) {
+    return loadSpawnArea();
   } else if (shouldInitPlayer) {
     progressLabel = Label_LoadingPlayer;
     return initPlayer();
@@ -131,19 +143,78 @@ void StateLoadingGame::initUI() {
 void StateLoadingGame::initWorld() {
   stateGamePlay->world->init(&context->t_engine->renderer,
                              stateGamePlay->itemRepository);
-  stateGamePlay->world->generate();
-  stateGamePlay->world->generateLight();
-  stateGamePlay->world->propagateLiquids();
+  stateGamePlay->world->initGeneration();
 
+  setPercent(55.0F);
+  shouldInitWorld = 0;
+  shouldGenerateWorld = 1;
+}
+
+void StateLoadingGame::generateWorld() {
+  const bool isDone = stateGamePlay->world->generateStep();
+
+  // Update progress label based on phase
+  switch (stateGamePlay->world->currentGenerationPhase) {
+    case World::GenerationPhase::Terrain:
+      progressLabel = Label_GeneratingTerrain;
+      break;
+    case World::GenerationPhase::Decoration:
+      progressLabel = Label_GeneratingDecoration;
+      break;
+    case World::GenerationPhase::LightStitch:
+    case World::GenerationPhase::Finalize:
+      progressLabel = Label_GeneratingLight;
+      break;
+    default:
+      break;
+  }
+
+  // Calculate total progress across all 3 phases (55% to 85%)
+  float phaseOffset = 0.0f;
+  switch (stateGamePlay->world->currentGenerationPhase) {
+    case World::GenerationPhase::Decoration:
+      phaseOffset = 1.0f;
+      break;
+    case World::GenerationPhase::LightStitch:
+      phaseOffset = 2.0f;
+      break;
+    case World::GenerationPhase::Finalize:
+    case World::GenerationPhase::Complete:
+      phaseOffset = 3.0f;
+      break;
+    default:
+      break;
+  }
+
+  float phaseProgress =
+      (float)stateGamePlay->world->generationRow /
+      (float)stateGamePlay->world->generationTotalRows;
+  
+  // Normalized progress (0.0 to 1.0) across all phases
+  float normalizedGenProgress = (phaseOffset + phaseProgress) / 3.0f;
+  float totalProgress = 55.0f + (normalizedGenProgress * 30.0f);
+  setPercent(totalProgress);
+
+  if (isDone) {
+    shouldGenerateWorld = 0;
+    shouldGenerateLight = 1;
+  }
+}
+
+void StateLoadingGame::generateSpawnArea() {
   TYRA_LOG("Generating spawn area...");
   stateGamePlay->world->generateSpawnArea();
+  setPercent(92.0F);
+  shouldGenerateSpawnArea = 0;
+  shouldLoadSpawnArea = 1;
+}
 
+void StateLoadingGame::loadSpawnArea() {
   TYRA_LOG("Loading spawn area...");
   stateGamePlay->world->loadSpawnArea();
-
-  setPercent(90.0F);
-  shouldInitWorld = 0;
-  TYRA_LOG("initWorld");
+  setPercent(95.0F);
+  shouldLoadSpawnArea = 0;
+  shouldInitPlayer = 1;
 }
 
 void StateLoadingGame::initPlayer() {
@@ -163,6 +234,94 @@ void StateLoadingGame::initPlayer() {
   shouldInitPlayer = 0;
 
   TYRA_LOG("Player initiated!");
+}
+
+void StateLoadingGame::generateLightIncremental() {
+  // Process light generation in phases spread across multiple frames
+  switch (lightPhase) {
+    case LightGenerationPhase::NotStarted:
+      TYRA_LOG("Starting light generation...");
+      lightPhase = LightGenerationPhase::InitSunlight;
+      setPercent(78.0F);
+      break;
+
+    case LightGenerationPhase::InitSunlight:
+      TYRA_LOG("Initializing sunlight...");
+      stateGamePlay->world->prepareLightModelForLoading();
+      stateGamePlay->world->lightPropagation.initSunLight(g_ticksCounter);
+      lightPhase = LightGenerationPhase::InitBlockLight;
+      setPercent(80.0F);
+      break;
+
+    case LightGenerationPhase::InitBlockLight:
+      TYRA_LOG("Initializing block light...");
+      stateGamePlay->world->lightPropagation.initBlockLight(
+          &stateGamePlay->world->blockManager);
+      lightPhase = LightGenerationPhase::UpdateSunlight;
+      setPercent(81.0F);
+      break;
+
+    case LightGenerationPhase::UpdateSunlight:
+      // Use budgeted sunlight update (2ms budget ≈ 600k cycles)
+      if (stateGamePlay->world->lightPropagation.updateSunlightBudgeted(600000)) {
+        lightPhase = LightGenerationPhase::UpdateBlockLight;
+        setPercent(83.0F);
+      }
+      break;
+
+    case LightGenerationPhase::UpdateBlockLight:
+      // Use budgeted block light update (2ms budget)
+      if (stateGamePlay->world->lightPropagation.updateBlockLightsBudgeted(600000)){
+        lightPhase = LightGenerationPhase::ReloadChunks;
+        setPercent(85.0F);
+      }
+      break;
+
+    case LightGenerationPhase::ReloadChunks:
+      TYRA_LOG("Reloading light data...");
+      stateGamePlay->world->chunkManager.reloadLightDataOfAllChunks();
+      lightPhase = LightGenerationPhase::Complete;
+      setPercent(87.0F);
+      break;
+
+    case LightGenerationPhase::Complete:
+      TYRA_LOG("Light generation complete");
+      shouldGenerateLight = 0;
+      shouldPropagateLiquids = 1;
+      lightPhase = LightGenerationPhase::NotStarted;
+      break;
+  }
+}
+
+void StateLoadingGame::propagateLiquidsIncremental() {
+  // Process liquid propagation incrementally using budgeted method
+  switch (liquidPhase) {
+    case LiquidPropagationPhase::NotStarted:
+      TYRA_LOG("Starting liquid propagation...");
+      liquidPhase = LiquidPropagationPhase::Propagating;
+      setPercent(88.0F);
+      break;
+
+    case LiquidPropagationPhase::Propagating: {
+      // Each frame, process one BFS operation from liquid queues
+      // Returns true when queues are drained
+      const bool isDone = stateGamePlay->world->liquidPropagation
+          .propagateAllBudgeted(16);  // 16ms budget per frame
+      if (isDone) {
+        TYRA_LOG("Liquid propagation complete");
+        liquidPhase = LiquidPropagationPhase::Complete;
+      }
+      setPercent(isDone ? 97.0F : 90.0F);
+      break;
+    }
+
+    case LiquidPropagationPhase::Complete:
+      TYRA_LOG("Liquid propagation done");
+      shouldPropagateLiquids = 0;
+      shouldGenerateSpawnArea = 1;
+      liquidPhase = LiquidPropagationPhase::NotStarted;
+      break;
+  }
 }
 
 void StateLoadingGame::nextState() {

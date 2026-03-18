@@ -104,7 +104,6 @@ class ScreenNewGame : public ScreenBase {
   std::string tempWorldNameMask;
   u8 isEditingWorldName = false;
   u8 editingIndexWorldName = 0;
-  u8 needToChangeWorldName = 0;
 
   const std::string Label_Load      = LanguageManager::Translate("/gui/load");
   const std::string Label_Create    = LanguageManager::Translate("/gui/create");
@@ -130,9 +129,6 @@ class ScreenNewGame : public ScreenBase {
   const std::string Label_WorldTypeIsland       = LanguageManager::Translate("/screen_new_game/world_type_island");
   const std::string Label_WorldTypeWoods        = LanguageManager::Translate("/screen_new_game/world_type_woods");
   const std::string Label_WorldTypeFloating     = LanguageManager::Translate("/screen_new_game/world_type_floating");
-  const std::string Label_WorldNameErrorPart1   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part1");
-  const std::string Label_WorldNameErrorPart2   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part2");
-  const std::string Label_WorldNameErrorPart3   = LanguageManager::Translate("/screen_new_game/world_name_exists_error_part3");
 
   std::vector<TexturePackInfoModel*> texturePacks;
   TexturePackInfoModel* selectedTexturePack = nullptr;
@@ -145,9 +141,9 @@ class ScreenNewGame : public ScreenBase {
   void backToMainMenu();
   void createNewWorld();
   bool canCreateANewWorldWithCurrentName();
+  std::string getUniqueWorldName(std::string name);
   void updateModel();
   void renderSelectedOptions();
-  void renderWorldNameDialog();
   void saveSeed();
   void startEditingSeed();
   void cancelEditingSeed();

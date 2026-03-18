@@ -1,12 +1,17 @@
 
 #include "entities/World.hpp"
+#include "entities/chunk_generator.hpp"
+#include "entities/chunk_storage.hpp"
 #include "managers/collision_manager.hpp"
 #include "managers/mesh/mesh_builder.hpp"
-#include "managers/mazecraft_generator.hpp"
 #include "managers/tick_scheduler.hpp"
 #include "debug.hpp"
 #include <tyra>
 #include <cmath>
+#include <string>
+#include "memory-monitor/memory_monitor.hpp"
+
+# include "utils.hpp"
 
 // From CrossCraft
 #include <stdio.h>
@@ -15,6 +20,7 @@ World::World(const NewGameOptions& options, Level* level)
     : targetBlock(blockInteraction.targetBlock) {
   seed = options.seed;
   pLevel = level;
+  pLevel->world = this;
   tickHandles = new TickTaskHandles();
 
   printf("\n\n|-----------SEED---------|");
@@ -29,11 +35,29 @@ World::World(const NewGameOptions& options, Level* level)
   CrossCraft_World_Init(seed);
   CollisionManager_initTree();
   MeshBuilder_RegisterBuilders();
+
+  // Initialize chunk persistence provider.
+  std::string worldDir;
+
+  if (options.fullPath.empty()) {
+    worldDir = Tyra::FileUtils::fromCwd(
+        std::string("saves/") + Utils::sanitizeWorldStorageName(worldOptions.name));
+    worldOptions.fullPath = worldDir;
+  } else {
+    worldDir = options.fullPath;
+  }
+
+  chunkProvider = new ChunkProvider(
+      new ChunkGenerator(pLevel, seed, worldOptions.type),
+      new ChunkStorage(worldDir));
 }
 
 World::~World() {
+  flushChunkProvider();
   delete tickHandles;
   tickHandles = nullptr;
+  delete chunkProvider;
+  chunkProvider = nullptr;
   CrossCraft_World_Deinit();
   MeshBuilder_UnregisterBuilders();
 }
@@ -65,58 +89,118 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
   // The 250-tick periodic callback handles day/night sun drift.
 };
 
-void World::generate() {
-  if (worldOptions.type == WorldType::WORLD_MINI_GAME_MAZECRAFT) {
-    unsigned int level = getWorldOptions()->seed;
+void World::initGeneration() {
+  currentGenerationPhase = GenerationPhase::Terrain;
+  generationRow = 0;
+  generationTotalRows = OVERWORLD_H_DISTANCE_IN_CHUNKS;
+  srand(worldOptions.seed);
+  TYRA_LOG("WorldGen: Starting stepped generation...");
+}
 
-    mazegen::Config cfg;
-    cfg.CONSTRAIN_HALL_ONLY = false;
-    cfg.EXTRA_CONNECTION_CHANCE = 0.12;
+bool World::generateStep() {
+  auto* provider = getChunkProvider();
+  if (!provider) {
+    TYRA_ERROR("WorldGen: no ChunkProvider found!");
+    return true;
+  }
 
-    u8 width, height;
-
-    // setup level
-    if (level < 2) {
-      cfg.DEADEND_CHANCE = 0.1;
-      cfg.WIGGLE_CHANCE = 0.1;
-
-      width = 16;
-      height = 16;
-    } else if (level < 5) {
-      cfg.DEADEND_CHANCE = 0.20;
-      cfg.WIGGLE_CHANCE = 0.20;
-
-      width = 32;
-      height = 32;
-    } else if (level < 10) {
-      cfg.DEADEND_CHANCE = 0.3;
-      cfg.WIGGLE_CHANCE = 0.3;
-
-      width = 48;
-      height = 48;
-    } else if (level < 15) {
-      cfg.DEADEND_CHANCE = 0.35f;
-      cfg.WIGGLE_CHANCE = 0.35f;
-
-      width = 56;
-      height = 56;
-    } else if (level < 20) {
-      cfg.DEADEND_CHANCE = 0.4f;
-      cfg.WIGGLE_CHANCE = 0.4f;
-
-      width = 64;
-      height = 64;
-    } else {
-      cfg.DEADEND_CHANCE = 0.5;
-      cfg.WIGGLE_CHANCE = 0.5;
-
-      width = 128;
-      height = 128;
+  switch (currentGenerationPhase) {
+    case GenerationPhase::Terrain: {
+      int cz = generationRow;
+      for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
+        provider->generateTerrain(cx, cz);
+        pLevel->unloadChunk(cx, cz);
+      }
+      generationRow++;
+      if (generationRow >= generationTotalRows) {
+        currentGenerationPhase = GenerationPhase::Decoration;
+        generationRow = 0;
+        TYRA_LOG("WorldGen: Pass 1 (Terrain) complete.");
+      }
+      return false;
     }
 
-    Mazecraft_GenerateMap(pLevel, level, width, height, cfg);
-  } else {
-    CrossCraft_World_GenerateMap(worldOptions.type);
+    case GenerationPhase::Decoration: {
+      int cz = generationRow;
+      for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
+        LevelChunk* chunk = pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        if (chunk) {
+          provider->decorate(cx, cz);
+          lightPropagation.initSunLight(chunk);
+          lightPropagation.initBlockLight(chunk, &blockManager);
+        }
+      }
+
+      lightPropagation.updateSunlight();
+      lightPropagation.updateBlockLights();
+
+      if (cz > 0) {
+        for (int x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
+          pLevel->unloadChunk(x, cz - 1);
+        }
+      }
+
+      generationRow++;
+      if (generationRow >= generationTotalRows) {
+        currentGenerationPhase = GenerationPhase::LightStitch;
+        generationRow = 0;
+        TYRA_LOG("WorldGen: Pass 2 (Decoration) complete.");
+      }
+      return false;
+    }
+
+    case GenerationPhase::LightStitch: {
+      int cz = generationRow;
+      for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
+        pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        if (cz < OVERWORLD_H_DISTANCE_IN_CHUNKS - 1) {
+          pLevel->getChunk(cx * CHUNK_SIZE, (cz + 1) * CHUNK_SIZE);
+        }
+      }
+
+      for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
+        LevelChunk* chunk =
+            pLevel->map.chunks[cx + cz * OVERWORLD_H_DISTANCE_IN_CHUNKS];
+        if (chunk) {
+          lightPropagation.initSunLight(chunk);
+          lightPropagation.initBlockLight(chunk, &blockManager);
+        }
+      }
+
+      lightPropagation.updateSunlight();
+      lightPropagation.updateBlockLights();
+
+      for (int x = 0; x < OVERWORLD_H_DISTANCE_IN_CHUNKS; x++) {
+        pLevel->unloadChunk(x, cz);
+      }
+
+      generationRow++;
+      if (generationRow >= generationTotalRows) {
+        currentGenerationPhase = GenerationPhase::Finalize;
+        generationRow = 0;
+        TYRA_LOG("WorldGen: Pass 3 (Stitch) complete.");
+      }
+      return false;
+    }
+
+    case GenerationPhase::Finalize: {
+      TYRA_LOG("WorldGen: Saving and finalizing map...");
+      pLevel->saveAllChunks();
+      pLevel->unloadAllChunks();
+      currentGenerationPhase = GenerationPhase::Complete;
+      TYRA_LOG("WorldGen: full-map generation completed.");
+      return true;
+    }
+
+    default:
+      return true;
+  }
+}
+
+void World::generate() {
+  initGeneration();
+  while (!generateStep()) {
+    // Sync block wait (for compatibility)
   }
 }
 
@@ -125,8 +209,7 @@ void World::generateLight() {
   size_t initialMemoryUsage = get_used_memory();
 #endif
 
-  dayNightCycleManager.preLoad();
-  updateLightModel();
+  prepareLightModelForLoading();
 
   lightPropagation.initSunLight(g_ticksCounter);
   lightPropagation.initBlockLight(&blockManager);
@@ -141,6 +224,11 @@ void World::generateLight() {
       static_cast<float>(finalMemoryUsage - initialMemoryUsage) / 1024.0f;
   printf("Memory usage for block light: %.2f KB\n", memoryUsage);
 #endif
+}
+
+void World::prepareLightModelForLoading() {
+  dayNightCycleManager.preLoad();
+  updateLightModel();
 }
 
 void World::propagateLiquids() {
@@ -175,16 +263,16 @@ void World::fixedUpdate(Player* t_player, Camera* t_camera,
   if (g_debug_menu.enableCaveCulling) {
     chunkManager.updateWithVisibilityGraph(
         t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
-        t_camera->unitCirclePosition, renderDist);
+        t_camera->unitCirclePosition, renderDist, fixedDeltaTime);
   } else {
     chunkManager.update(t_renderer->core.renderer3D.frustumPlanes.getAll(),
-                        &t_camera->looksAt, renderDist);
+                        &t_camera->looksAt, renderDist, fixedDeltaTime);
     chunkManager.clearOccludedChunksToUnload();
   }
 #else
   chunkManager.updateWithVisibilityGraph(
       t_renderer->core.renderer3D.frustumPlanes.getAll(), &t_camera->looksAt,
-      t_camera->unitCirclePosition, renderDist);
+      t_camera->unitCirclePosition, renderDist, fixedDeltaTime);
 #endif
 }
 
@@ -206,6 +294,11 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 };
 
 void World::processIdleWork() {
+  if (chunkProvider) {
+    chunkProvider->tick();
+    chunkProvider->waitIfTooManyQueuedChunks();
+  }
+
   // Handle pending unloads first (they free memory for new loads).
   processUnloads();
 
@@ -679,6 +772,11 @@ void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
     addChunkToUnloadAsync(candidate.chunk);
   }
 
+  // Phase 2: Unload data chunks that are far away from player
+  const int pCX = static_cast<int>(playerPos.x / (DOUBLE_BLOCK_SIZE * CHUNK_SIZE));
+  const int pCZ = static_cast<int>(playerPos.z / (DOUBLE_BLOCK_SIZE * CHUNK_SIZE));
+  pLevel->unloadFarChunks(pCX, pCZ, baseRadius + 2);
+
   chunkManager.updateLoadedChunks();
 }
 
@@ -874,6 +972,12 @@ void World::updateLightModel() {
       dayNightCycleManager.getSunLightIntensity();
 }
 
+void World::flushChunkProvider() {
+  if (!chunkProvider) return;
+  chunkProvider->flush();
+  chunkProvider->waitForAll();
+}
+
 u8 World::isAirAtPosition(const u8 x, const u8 y, const u8 z) {
   if (pLevel->BoundCheckMap(x, y, z)) {
     return pLevel->GetBlockFromMap(x, y, z) == (u8)Blocks::AIR_BLOCK;
@@ -908,36 +1012,66 @@ const Vec4 World::defineSpawnArea() {
 }
 
 const Vec4 World::calcSpawOffset(int bias) {
-  if (bias >= CHUNK_LENGTH) {
-    TYRA_LOG("Cannot find spawn position, returning default");
-    return Vec4(0, 0, 0) * DOUBLE_BLOCK_SIZE;
-  }
+  TYRA_LOG("Searching for optimal spawn position...");
 
-  bool found = false;
-  u8 airBlockCounter = 0;
-  // Pick a X and Z coordinates based on the seed;
-  int posX = ((seed + bias) % HALF_OVERWORLD_H_DISTANCE);
-  int posZ = ((seed - bias) % HALF_OVERWORLD_H_DISTANCE);
-  Vec4 result;
+  struct SpawnCandidate {
+    Vec4 pos;
+    int score;
+  };
 
-  for (int posY = OVERWORLD_MAX_HEIGH; posY >= OVERWORLD_MIN_HEIGH; posY--) {
-    u8 type = pLevel->GetBlockFromMap(posX, posY, posZ);
-    if (type != (u8)Blocks::AIR_BLOCK && airBlockCounter >= 4) {
-      found = true;
-      result = Vec4(posX, posY + 2, posZ);
-      break;
+  SpawnCandidate bestCandidate = {
+      Vec4(HALF_OVERWORLD_H_DISTANCE, HALF_OVERWORLD_V_DISTANCE,
+           HALF_OVERWORLD_H_DISTANCE) *
+          DOUBLE_BLOCK_SIZE,
+      -1000};
+
+  const int numCandidates = 64;
+  for (int i = 0; i < numCandidates; i++) {
+    const int attempt = bias + i;
+    const int posX =
+        static_cast<int>((seed + (attempt * 17)) % OVERWORLD_H_DISTANCE);
+    const int posZ =
+        static_cast<int>((seed + (attempt * 31)) % OVERWORLD_H_DISTANCE);
+
+    int score = 0;
+    int topY = -1;
+    u8 topBlock = (u8)Blocks::AIR_BLOCK;
+
+    // Find the highest non-air block
+    for (int y = OVERWORLD_MAX_HEIGH - 1; y >= OVERWORLD_MIN_HEIGH; y--) {
+      const u8 type = pLevel->SafeGetBlockFromMap(posX, y, posZ);
+      if (type != (u8)Blocks::AIR_BLOCK && type != (u8)Blocks::VOID) {
+        topY = y;
+        topBlock = type;
+        break;
+      }
     }
 
-    if (type == (u8)Blocks::AIR_BLOCK)
-      airBlockCounter++;
-    else
-      airBlockCounter = 0;
+    if (topY != -1) {
+      // Scoring logic
+      if (topBlock == (u8)Blocks::GRASS_BLOCK) score += 50;
+      if (topBlock == (u8)Blocks::SAND_BLOCK) score += 30;
+      if (topBlock == (u8)Blocks::WATER_BLOCK) score -= 100;
+      if (topBlock == (u8)Blocks::LAVA_BLOCK) score -= 200;
+      
+      // Height scoring (prefer sea level)
+      const int distToSeaLevel = std::abs(topY - SEA_LEVEL_Y);
+      if (distToSeaLevel < 5) score += 30;
+      if (topY < 16) score -= 50;
+      if (topY > 80) score -= 50;
+
+      if (score > bestCandidate.score) {
+        bestCandidate.score = score;
+        bestCandidate.pos = Vec4(posX, topY + 2, posZ) * DOUBLE_BLOCK_SIZE;
+      }
+    }
+
+    // Unload the chunk column to keep memory usage low during search
+    pLevel->unloadChunk(posX / CHUNK_SIZE, posZ / CHUNK_SIZE);
   }
 
-  if (found)
-    return result * DOUBLE_BLOCK_SIZE;
-  else
-    return calcSpawOffset(bias + 1);
+  TYRA_LOG("Best spawn found at score: ", bestCandidate.score);
+  return bestCandidate.pos;
 }
 
 const bool World::calcSpawnOffsetByXZ(Vec4* result, const int posX,
@@ -1111,6 +1245,7 @@ void World::CrossCraft_World_GenerateMap(WorldType worldType) {
       CrossCraft_WorldGenerator_Generate_Floating(pLevel);
       break;
     case WORLD_MINI_GAME_MAZECRAFT:
+      CrossCraft_WorldGenerator_Generate_Maze(pLevel);
       break;
   }
 }

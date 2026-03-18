@@ -46,6 +46,10 @@ void StaticBlockRepository::initializeBlocks() {
       std::make_unique<BricksBlock>();
   blockTemplates[static_cast<size_t>(Blocks::GRAVEL_BLOCK)] =
       std::make_unique<GravelBlock>();
+  blockTemplates[static_cast<size_t>(Blocks::SANDSTONE_BLOCK)] =
+      std::make_unique<SandstoneBlock>();
+  blockTemplates[static_cast<size_t>(Blocks::CACTUS_BLOCK)] =
+      std::make_unique<CactusBlock>();
 
   // Face oriented blocks
   blockTemplates[static_cast<size_t>(Blocks::PUMPKIN_BLOCK)] =
@@ -72,6 +76,12 @@ void StaticBlockRepository::initializeBlocks() {
       std::make_unique<PoppyFlower>();
   blockTemplates[static_cast<size_t>(Blocks::DANDELION_FLOWER)] =
       std::make_unique<DandelionFlower>();
+  blockTemplates[static_cast<size_t>(Blocks::DEAD_BUSH)] =
+      std::make_unique<DeadBushBlock>();
+  blockTemplates[static_cast<size_t>(Blocks::REEDS_BLOCK)] =
+      std::make_unique<ReedsPlant>();
+  blockTemplates[static_cast<size_t>(Blocks::TALL_GRASS_BLOCK)] =
+      std::make_unique<TallGrassPlant>();
 
   // Wood Planks
   blockTemplates[static_cast<size_t>(Blocks::OAK_PLANKS_BLOCK)] =
@@ -165,7 +175,7 @@ void StaticBlockRepository::buildTransparencyTable() {
 
   // VOID (0) -> 0: out-of-bounds boundary, treat as solid.
   // AIR_BLOCK (1) -> 1: always transparent.
-  s_transparencyTable[static_cast<u8>(Blocks::VOID)]      = 0;
+  s_transparencyTable[static_cast<u8>(Blocks::VOID)] = 0;
   s_transparencyTable[static_cast<u8>(Blocks::AIR_BLOCK)] = 1;
 
   // Populate from block templates (single hasTransparency() vtable call
@@ -180,7 +190,7 @@ void StaticBlockRepository::buildTransparencyTable() {
   // LAVA and WATER are handled as transparent for neighbour visibility so that
   // faces between two different liquid types are shown. The liquid-specific
   // face function already deals with same-type adjacency independently.
-  s_transparencyTable[static_cast<u8>(Blocks::LAVA_BLOCK)]  = 1;
+  s_transparencyTable[static_cast<u8>(Blocks::LAVA_BLOCK)] = 1;
   s_transparencyTable[static_cast<u8>(Blocks::WATER_BLOCK)] = 1;
 }
 
@@ -228,6 +238,10 @@ Block* StaticBlockRepository::createBlock(Blocks blockType) {
       return new BricksBlock();
     case Blocks::GRAVEL_BLOCK:
       return new GravelBlock();
+    case Blocks::SANDSTONE_BLOCK:
+      return new SandstoneBlock();
+    case Blocks::CACTUS_BLOCK:
+      return new CactusBlock();
     case Blocks::PUMPKIN_BLOCK:
       return new PumpkinBlock();
     case Blocks::GOLD_ORE_BLOCK:
@@ -248,6 +262,12 @@ Block* StaticBlockRepository::createBlock(Blocks blockType) {
       return new PoppyFlower();
     case Blocks::DANDELION_FLOWER:
       return new DandelionFlower();
+    case Blocks::DEAD_BUSH:
+      return new DeadBushBlock();
+    case Blocks::REEDS_BLOCK:
+      return new ReedsPlant();
+    case Blocks::TALL_GRASS_BLOCK:
+      return new TallGrassPlant();
     case Blocks::OAK_PLANKS_BLOCK:
       return new OakPlanksBlock();
     case Blocks::SPRUCE_PLANKS_BLOCK:

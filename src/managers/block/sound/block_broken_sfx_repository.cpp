@@ -25,6 +25,10 @@ void BlockBrokenSfxRepository::loadModels() {
                                      SoundFX::Gravel1));
   models.push_back(new SfxBlockModel(Blocks::SAND_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Sand1));
+  models.push_back(new SfxBlockModel(Blocks::SANDSTONE_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::CACTUS_BLOCK,
+                                     SoundFxCategory::Dig, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Dig,
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK,
@@ -51,6 +55,8 @@ void BlockBrokenSfxRepository::loadModels() {
                                      SoundFX::Grass1));
   models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
                                      SoundFxCategory::Dig, SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::DEAD_BUSH, SoundFxCategory::Dig,
+                                     SoundFX::Grass1));
   models.push_back(
       new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Dig, SoundFX::Grass1));
 

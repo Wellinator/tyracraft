@@ -25,6 +25,10 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Gravel1));
   models.push_back(new SfxBlockModel(Blocks::SAND_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Sand1));
+  models.push_back(new SfxBlockModel(Blocks::SANDSTONE_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Stone1));
+  models.push_back(new SfxBlockModel(Blocks::CACTUS_BLOCK,
+                                     SoundFxCategory::Step, SoundFX::Wood1));
   models.push_back(new SfxBlockModel(Blocks::STONE_BLOCK, SoundFxCategory::Step,
                                      SoundFX::Stone1));
   models.push_back(new SfxBlockModel(Blocks::GLASS_BLOCK, SoundFxCategory::Step,
@@ -51,6 +55,8 @@ void BlockStepSfxRepository::loadModels() {
                                      SoundFxCategory::Step, SoundFX::Grass1));
   models.push_back(new SfxBlockModel(Blocks::DANDELION_FLOWER,
                                      SoundFxCategory::Step, SoundFX::Grass1));
+  models.push_back(new SfxBlockModel(Blocks::DEAD_BUSH, SoundFxCategory::Step,
+                                     SoundFX::Grass1));
   models.push_back(
       new SfxBlockModel(Blocks::GRASS, SoundFxCategory::Step, SoundFX::Grass1));
 

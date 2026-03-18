@@ -2,6 +2,7 @@
 #include "managers/tick_manager.hpp"
 #include "managers/block_manager.hpp"
 #include "managers/dma_gif_builder.hpp"
+#include "managers/background_task_service.hpp"
 #include "math/plane.hpp"
 #include "debug.hpp"
 #include <algorithm>
@@ -14,17 +15,21 @@ using Tyra::Vec4;
 
 ChunkManager::ChunkManager() : Singleton<ChunkManager>() {
   tickHandles = new TickTaskHandles();
+  for (size_t i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
+    chunks[i] = nullptr;
+  }
 }
 
 ChunkManager::~ChunkManager() {
   delete tickHandles;
   tickHandles = nullptr;
-  for (u16 i = 0; i < chunks.size(); i++) {
-    delete chunks[i];
-    chunks[i] = NULL;
+  for (u16 i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
+    if (chunks[i] != nullptr) {
+      delete chunks[i];
+      chunks[i] = nullptr;
+    }
   }
-  chunks.clear();
-  chunks.shrink_to_fit();
+  // chunks is an array, no need to clear or shrink
 
   visibleChunks.clear();
   visibleChunks.shrink_to_fit();
@@ -47,15 +52,17 @@ void ChunkManager::init(WorldLightModel* t_worldLightModel, Level* level) {
 }
 
 void ChunkManager::clearAllChunks() {
-  for (u16 i = 0; i < chunks.size(); i++) chunks[i]->clear();
+  for (u16 i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
+    if (chunks[i]) chunks[i]->clear();
+  }
 }
 
 void ChunkManager::updateLoadedChunks() {
   loadedChunks.clear();
   activeChunks.clear();
 
-  for (u16 i = 0; i < chunks.size(); i++) {
-    if (chunks[i]->isLoaded() == false) continue;
+  for (u16 i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
+    if (chunks[i] == nullptr || chunks[i]->isLoaded() == false) continue;
     loadedChunks.emplace_back(chunks[i]);
     activeChunks.emplace_back(chunks[i]);
   }
@@ -85,7 +92,7 @@ void ChunkManager::removeFromLoadedChunks(Chunk* chunk) {
 }
 
 void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos,
-                          u8 maxRenderDistance) {
+                          u8 maxRenderDistance, const float& deltaTime) {
   visibleChunks.clear();
 #ifdef DEBUG_MODE
   culledChunks.clear();  // No culling in standard mode
@@ -101,7 +108,7 @@ void ChunkManager::update(const Plane* frustumPlanes, Vec4* camPos,
     Chunk* chk = loadedChunks[i];
     if (chk->isLoaded()) {
       chk->setCamPosition(camPos);
-      chk->update(frustumPlanes);
+      chk->update(frustumPlanes, deltaTime);
 
       if (chk->isVisible()) {
         // Distance filter: skip chunks beyond draw distance
@@ -133,6 +140,14 @@ void ChunkManager::registerTickCallbacks(TickScheduler& scheduler) {
   tickHandles->add(scheduler.everyHandle(1, [this]() {
     if (!chunksToUpdateLight.empty()) reloadLightDataAsync();
   }));
+}
+
+Chunk* ChunkManager::requestSpawnChunk(const uint16_t& id) {
+  return spawnChunk(id);
+}
+
+void ChunkManager::requestDespawnChunk(const uint16_t& id) {
+  despawnChunk(id);
 }
 
 void ChunkManager::renderer(Renderer* t_renderer, StaticPipeline* stapip) {
@@ -241,32 +256,82 @@ void ChunkManager::rendererTransparent(Renderer* t_renderer,
 }
 
 void ChunkManager::generateChunks() {
-  u16 tempId = 0;
+  // Chunks are now spawned dynamically in Phase 3.
+  // We keep the spatialGrid populated with nullptrs or just initialize it.
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    spatialGrid[i].clear();
+  }
+}
 
-  for (size_t x = 0; x < OVERWORLD_MAX_DISTANCE; x += CHUNK_SIZE) {
-    for (size_t z = 0; z < OVERWORLD_MAX_DISTANCE; z += CHUNK_SIZE) {
-      for (size_t y = 0; y < OVERWORLD_MAX_HEIGH; y += CHUNK_SIZE) {
-        Vec4 tempMin = Vec4(x, y, z);
-        Vec4 tempMax = Vec4(x + CHUNK_SIZE, y + CHUNK_SIZE, z + CHUNK_SIZE);
-        Chunk* tempChunk = new Chunk(tempMin, tempMax, tempId);
-        tempChunk->init(pLevel, worldLightModel);
-        chunks.emplace_back(tempChunk);
+Chunk* ChunkManager::spawnChunk(const uint16_t& id) {
+  if (id >= OVERWORLD_SIZE_IN_CHUNKS) return nullptr;
+  if (chunks[id] != nullptr) return chunks[id];
 
-        // Phase 1: Populate spatial grid (16x16 horizontal grid)
-        // Calculate grid cell index from XZ coordinates
-        const size_t gridX = x / CHUNK_SIZE;
-        const size_t gridZ = z / CHUNK_SIZE;
-        const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
-        spatialGrid[gridIndex].push_back(tempChunk);
+  Vec4 pos = getChunkPosById(id);
+  Vec4 tempMax = pos + Vec4(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+  
+  Chunk* tempChunk = new Chunk(pos, tempMax, id);
+  tempChunk->init(pLevel, worldLightModel);
+  chunks[id] = tempChunk;
 
-        tempId++;
-      }
+  // Populate spatial grid
+  const size_t gridX = static_cast<size_t>(pos.x) / CHUNK_SIZE;
+  const size_t gridZ = static_cast<size_t>(pos.z) / CHUNK_SIZE;
+  const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
+  
+  bool found = false;
+  for (auto* c : spatialGrid[gridIndex]) {
+    if (c == tempChunk) { found = true; break; }
+  }
+  if (!found) spatialGrid[gridIndex].push_back(tempChunk);
+
+  // Link neighbors
+  for (u8 face = 0; face < FACE_COUNT; face++) {
+    Chunk* neighbor = getNeighborChunk(tempChunk, face);
+    if (neighbor) {
+      tempChunk->neighbors[face] = neighbor;
+      // Link back: neighbor's opposite face points to us
+      u8 oppositeFace = OppositeFace(face);
+      neighbor->neighbors[oppositeFace] = tempChunk;
+      // Mark neighbor as dirty so it rebuilds meshes with new boundary faces
+      neighbor->markDirty();
     }
   }
-};
+
+  return tempChunk;
+}
+
+void ChunkManager::despawnChunk(const uint16_t& id) {
+  if (id >= OVERWORLD_SIZE_IN_CHUNKS || chunks[id] == nullptr) return;
+  
+  Chunk* chunk = chunks[id];
+  
+  // Unlink neighbors
+  for (u8 face = 0; face < FACE_COUNT; face++) {
+    Chunk* neighbor = chunk->neighbors[face];
+    if (neighbor) {
+      u8 oppositeFace = OppositeFace(face);
+      neighbor->neighbors[oppositeFace] = nullptr;
+      neighbor->markDirty();
+    }
+  }
+
+  // Remove from lists
+  removeFromLoadedChunks(chunk);
+  
+  const size_t gridX = static_cast<size_t>(chunk->minOffset.x) / CHUNK_SIZE;
+  const size_t gridZ = static_cast<size_t>(chunk->minOffset.z) / CHUNK_SIZE;
+  const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
+  
+  auto& gridList = spatialGrid[gridIndex];
+  gridList.erase(std::remove(gridList.begin(), gridList.end(), chunk), gridList.end());
+  
+  delete chunks[id];
+  chunks[id] = nullptr;
+}
 
 Chunk* ChunkManager::getChunkById(const u16& id) {
-  if (id < chunks.size()) return chunks[id];
+  if (id < OVERWORLD_SIZE_IN_CHUNKS) return chunks[id];
   return nullptr;
 };
 
@@ -335,7 +400,7 @@ void ChunkManager::reloadLightDataAsync() {
     Chunk* chunk = entry.chunk;
 
     // Validate using direct ID lookup — O(1) instead of O(n) std::find
-    if (chunk == nullptr || chunk->id >= chunks.size()) continue;
+    if (chunk == nullptr || chunk->id >= OVERWORLD_SIZE_IN_CHUNKS) continue;
     if (chunks[chunk->id] != chunk) continue;  // Pointer mismatch = stale
 
     // Validate state (chunk may have been unloaded)
@@ -542,8 +607,8 @@ void ChunkManager::enqueueAffectedChunksForLightReload(
 // Needed to initiate light in all chunks. The visibleChunks will be available
 // after the first update...
 void ChunkManager::reloadLightDataOfAllChunks() {
-  for (size_t i = 0; i < chunks.size(); i++) {
-    if (chunks[i]->isLoaded()) chunks[i]->reloadLightData();
+  for (size_t i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
+    if (chunks[i] && chunks[i]->isLoaded()) chunks[i]->reloadLightData();
   }
   clearLightDataQueue();
 }
@@ -611,12 +676,21 @@ Chunk* ChunkManager::getChunkByOffset(const Vec4& chunkMinOffset) {
 }
 
 Chunk* ChunkManager::getChunkByWorldPosition(const Vec4& pos) {
-  Vec4 offset = (pos / DOUBLE_BLOCK_SIZE) / CHUNK_SIZE;
+  Vec4 blockOffset = pLevel->worldPosToOffset(pos);
   Vec4 tempChunkMin =
-      Vec4(std::floor(offset.x), std::floor(offset.y), std::floor(offset.z)) *
+      Vec4(std::floor(blockOffset.x / CHUNK_SIZE),
+           std::floor(blockOffset.y / CHUNK_SIZE),
+           std::floor(blockOffset.z / CHUNK_SIZE)) *
       CHUNK_SIZE;
 
-  return getChunkByPosition(tempChunkMin);
+  Chunk* chunk = getChunkByPosition(tempChunkMin);
+  if (chunk) return chunk;
+
+  const uint16_t id = getChunkIdByPosition(tempChunkMin);
+  if (id >= OVERWORLD_SIZE_IN_CHUNKS) return nullptr;
+
+  // On-demand path: if the renderer chunk does not exist yet, create it.
+  return spawnChunk(id);
 }
 
 Chunk* ChunkManager::getChunkByBlockOffset(const Vec4& offset) {
@@ -715,6 +789,17 @@ void ChunkManager::getChunksInRadius(const Vec4& center, float radiusInChunks,
     for (int gridZ = minGridZ; gridZ <= maxGridZ; gridZ++) {
       const size_t gridIndex = gridX * OVERWORLD_H_DISTANCE_IN_CHUNKS + gridZ;
 
+      // On-demand renderer integration: ensure the whole vertical column exists
+      // for this XZ before we query it.
+      for (int yChunk = 0; yChunk < OVERWORLD_V_DISTANCE_IN_CHUNKS; yChunk++) {
+        const uint16_t id = static_cast<uint16_t>(
+            gridX * OVERWORLD_PAGE_IN_CHUNKS +
+            gridZ * OVERWORLD_V_DISTANCE_IN_CHUNKS + yChunk);
+        if (id < OVERWORLD_SIZE_IN_CHUNKS && chunks[id] == nullptr) {
+          spawnChunk(id);
+        }
+      }
+
       // Process all vertical chunks in this XZ column
       for (Chunk* chunk : spatialGrid[gridIndex]) {
         // Validate chunk pointer
@@ -755,12 +840,9 @@ Chunk* ChunkManager::getNeighborChunk(Chunk* chunk, u8 face) {
 }
 
 void ChunkManager::populateNeighborCache() {
-  // Phase 4: For every chunk, fill neighbors[6] with direct pointers.
-  // Called once after generateChunks(). O(N*6) time, O(1) per BFS lookup
-  // thereafter. Face indices: 0=TOP(+Y), 1=BOTTOM(-Y), 2=LEFT(+X), 3=RIGHT(-X),
-  // 4=FRONT(-Z), 5=BACK(+Z)
-  for (size_t i = 0; i < chunks.size(); i++) {
+  for (size_t i = 0; i < OVERWORLD_SIZE_IN_CHUNKS; i++) {
     Chunk* chunk = chunks[i];
+    if (chunk == nullptr) continue;
     for (u8 face = 0; face < FACE_COUNT; face++) {
       chunk->neighbors[face] = getNeighborChunk(chunk, face);
     }
@@ -777,232 +859,134 @@ struct VisBfsEntry {
 void ChunkManager::updateWithVisibilityGraph(const Plane* frustumPlanes,
                                              Vec4* camPos,
                                              const Vec4& camForward,
-                                             u8 maxRenderDistance) {
-  // camForward is used for N·V directional filtering in BFS expansion
-  visibleChunks.clear();
-  occludedChunksToUnload.clear();
-
-  // Pre-compute distance limit for render culling (with +1 margin to avoid
-  // pop-in)
-  const float maxRenderDistSq =
-      static_cast<float>((maxRenderDistance + 1) * (maxRenderDistance + 1)) *
-      (CHUNK_SIZE * CHUNK_SIZE);
-
-#ifdef DEBUG_MODE
-  // Start with all loaded chunks as potentially culled
-  culledChunks.clear();
-  for (size_t i = 0; i < loadedChunks.size(); i++) {
-    Chunk* chk = loadedChunks[i];
-    if (chk->isLoaded()) {
-      culledChunks.push_back(chk);
-    }
-  }
-#endif
-
-  // First, update frustum check for all loaded chunks (needed for filtering)
-  for (size_t i = 0; i < loadedChunks.size(); i++) {
-    Chunk* chk = loadedChunks[i];
-    if (chk->isLoaded()) {
-      chk->setCamPosition(camPos);
-      chk->update(frustumPlanes);
-    }
-  }
-
-  // Find the camera chunk
-  Chunk* cameraChunk = getChunkByWorldPosition(*camPos);
-  if (!cameraChunk || !cameraChunk->isLoaded()) {
-    // Fallback to standard frustum culling if camera chunk is not loaded
+                                             u8 maxRenderDistance,
+                                             const float& deltaTime) {
+  if (isVisibilityTaskRunning) {
+    // Continue updating fade-in for ALL loaded chunks while background
+    // task is running. This ensures newly built chunks start fading immediately
+    // even if they aren't in the current visibleChunks list yet.
     for (size_t i = 0; i < loadedChunks.size(); i++) {
-      Chunk* chk = loadedChunks[i];
-      if (chk->isLoaded() && chk->isVisible()) {
-        // Distance filter in fallback path too
-        float distSq = horizontalDistance2DSquared(
-            chk->center, Vec4(camPos->x / DOUBLE_BLOCK_SIZE, 0,
-                              camPos->z / DOUBLE_BLOCK_SIZE));
-        if (distSq <= maxRenderDistSq) visibleChunks.emplace_back(chk);
-      }
+      loadedChunks[i]->update(frustumPlanes, deltaTime);
     }
     return;
   }
 
-  // BFS traversal using visibility graph
-  // Link MAX_STEPS to actual draw distance to prevent over-traversal
-  const u8 MAX_STEPS =
-      static_cast<u8>(std::min(static_cast<int>(maxRenderDistance) + 2, 16));
-  static constexpr u16 BFS_QUEUE_SIZE = OVERWORLD_SIZE_IN_CHUNKS;
-
-  // Visited bitset — one bit per chunk ID
-  static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> visited;
-  visited.reset();
-
-  // Fixed-size circular buffer BFS queue
-  static VisBfsEntry bfsQueue[BFS_QUEUE_SIZE];
-  u16 qHead = 0;
-  u16 qTail = 0;
-  u16 qCount = 0;
-
-  // Enqueue camera chunk (special: enters from ALL faces)
-  visited.set(cameraChunk->id);
-  visibleChunks.emplace_back(cameraChunk);
-
-  // Queue neighbors from camera chunk directly (no connectivity filter for
-  // camera chunk)
-  for (u8 face = 0; face < FACE_COUNT; face++) {
-    Chunk* neighbor =
-        cameraChunk->neighbors[face];  // Phase 4: O(1) pointer lookup
-    if (!neighbor || !neighbor->isLoaded()) continue;
-    if (visited.test(neighbor->id)) continue;
-
-    // Frustum check
-    if (!neighbor->isVisible()) continue;
-
-    // Distance filter
-    float distSq =
-        horizontalDistance2DSquared(cameraChunk->center, neighbor->center);
-    if (distSq > maxRenderDistSq) continue;
-
-    visited.set(neighbor->id);
-    bfsQueue[qTail] = {neighbor->id, OppositeFace(face), 1};
-    qTail = (qTail + 1) % BFS_QUEUE_SIZE;
-    qCount++;
+  Chunk* cameraChunk = getChunkByWorldPosition(*camPos);
+  if (!cameraChunk) {
+    update(frustumPlanes, camPos, maxRenderDistance, deltaTime);
+    return;
   }
 
-  // BFS traversal with time budget to prevent frame stalls
-  static constexpr u32 BFS_BUDGET_CYCLES = 294912u;  // 2ms
-  u32 bfsStart;
-  asm volatile("mfc0 %0, $9" : "=r"(bfsStart));
-  u8 bfsIterCount = 0;
-
-  while (qCount > 0) {
-    VisBfsEntry entry = bfsQueue[qHead];
-    qHead = (qHead + 1) % BFS_QUEUE_SIZE;
-    qCount--;
-
-    Chunk* current = chunks[entry.chunkId];
-    if (!current->isLoaded()) continue;
-
-    // Distance filter: skip chunks beyond draw distance
-    float distSq =
-        horizontalDistance2DSquared(cameraChunk->center, current->center);
-    if (distSq > maxRenderDistSq) continue;
-
-    // Add to visible chunks
-    visibleChunks.emplace_back(current);
-
-    // Don't expand further if we've reached the step limit
-    if (entry.steps >= MAX_STEPS) continue;
-
-    // Try to expand to all 6 neighbors
-    for (u8 exitFace = 0; exitFace < FACE_COUNT; exitFace++) {
-      // Filter 1: No backtracking — don't go back the way we came
-      if (exitFace == entry.entryFace) continue;
-
-      // Filter 2: N·V directional check (horizontal only).
-      // The article's N·V < 0 filter prevents BFS from expanding backward.
-      // We only apply this to horizontal faces (NORTH/SOUTH/EAST/WEST).
-      // Vertical faces (TOP/BOTTOM) are exempt because with only 4 vertical
-      // chunk layers, blocking vertical expansion causes missing terrain.
-      if (exitFace < FACE_TOP) {  // NORTH=0, SOUTH=1, EAST=2, WEST=3
-        float fnx, fny, fnz;
-        GetFaceNormalVec(exitFace, fnx, fny, fnz);
-        float dot = fnx * camForward.x + fnz * camForward.z;
-        if (dot < -0.4f)
-          continue;  // Exit direction strongly opposes camera = going backward
-      }
-
-      // Filter 3: Connectivity test — can we see through this chunk from
-      // entryFace to exitFace?
-      if (!current->isConnected(entry.entryFace, exitFace)) continue;
-
-      Chunk* neighbor =
-          current->neighbors[exitFace];  // Phase 4: O(1) pointer lookup
-      if (!neighbor || !neighbor->isLoaded()) continue;
-      if (visited.test(neighbor->id)) continue;
-
-      // Filter 4: Frustum check
-      if (!neighbor->isVisible()) continue;
-
-      // Filter 5: Distance check — skip chunks beyond draw distance
-      float neighborDistSq =
-          horizontalDistance2DSquared(cameraChunk->center, neighbor->center);
-      if (neighborDistSq > maxRenderDistSq) continue;
-
-      // Step cost with heuristic penalties (from Tomcc's "More filters!"
-      // section)
-      u8 stepCost = 1;
-
-      // Heuristic: Going down below sea level costs +1 step
-      // Underground chunks are likely cave paths that should be pruned earlier
-      if (exitFace == FACE_BOTTOM && neighbor->minOffset.y < SEA_LEVEL_Y) {
-        stepCost += 1;
-      }
-
-      u8 newSteps = entry.steps + stepCost;
-
-      // Filter 6: Step budget
-      if (newSteps > MAX_STEPS) continue;
-
-      visited.set(neighbor->id);
-      bfsQueue[qTail] = {neighbor->id, OppositeFace(exitFace), newSteps};
-      qTail = (qTail + 1) % BFS_QUEUE_SIZE;
-      qCount++;
-    }
-
-    // Check time budget every 8 iterations to avoid BFS stalls
-    if (++bfsIterCount >= 8) {
-      bfsIterCount = 0;
-      u32 bfsNow;
-      asm volatile("mfc0 %0, $9" : "=r"(bfsNow));
-      if ((bfsNow - bfsStart) >= BFS_BUDGET_CYCLES) break;
-    }
+  // Capture current state for the background thread
+  visTaskState.camPos.set(*camPos);
+  visTaskState.camForward.set(camForward);
+  visTaskState.maxRenderDistance = maxRenderDistance;
+  for (int i = 0; i < 6; i++) {
+    visTaskState.frustumPlanes[i] = frustumPlanes[i];
   }
 
-  // Increased from 60 to 90 frames (~3 sec at 30 FPS) to be more conservative
-  // and reduce fighting with chunk scheduling
-  static constexpr u8 OCCLUDED_FRAMES_TO_UNLOAD = 90;
-  static constexpr int HALO_DISTANCE = 1;
+  isVisibilityTaskRunning = true;
 
-  for (Chunk* chunk : loadedChunks) {
-    if (!chunk->isLoaded()) continue;
+  auto* bgService = BackgroundTaskService::getInstance();
+  visibilityTaskId = bgService->submit(
+      [this, cameraChunk]() {
+        // --- BACKGROUND WORKER (Thread-safe logic) ---
+        nextVisibleChunks.clear();
 
-    if (chunk->id == cameraChunk->id) {
-      chunk->consecutiveOccludedFrames = 0;
-      continue;
-    }
+        static std::bitset<OVERWORLD_SIZE_IN_CHUNKS> visited;
+        static std::queue<VisBfsEntry> queue;
+        visited.reset();
+        while (!queue.empty()) queue.pop();
 
-    const int dx = static_cast<int>(
-        (chunk->minOffset.x - cameraChunk->minOffset.x) / CHUNK_SIZE);
-    const int dz = static_cast<int>(
-        (chunk->minOffset.z - cameraChunk->minOffset.z) / CHUNK_SIZE);
-    if (std::abs(dx) <= HALO_DISTANCE && std::abs(dz) <= HALO_DISTANCE) {
-      chunk->consecutiveOccludedFrames = 0;
-      continue;
-    }
+        // Root
+        nextVisibleChunks.push_back(cameraChunk);
+        visited.set(cameraChunk->id);
 
-    if (visited.test(chunk->id) || chunk->isVisible()) {
-      chunk->consecutiveOccludedFrames = 0;
-      continue;
-    }
+        // Find which faces are reachable from the camera's position within the
+        // cameraChunk. This prevents seeing through walls if the player is
+        // in a sealed hole.
+        Vec4 blockOffset = pLevel->worldPosToOffset(visTaskState.camPos);
+        int lx = static_cast<int>(blockOffset.x) -
+                 static_cast<int>(cameraChunk->minOffset.x);
+        int ly = static_cast<int>(blockOffset.y) -
+                 static_cast<int>(cameraChunk->minOffset.y);
+        int lz = static_cast<int>(blockOffset.z) -
+                 static_cast<int>(cameraChunk->minOffset.z);
 
-    if (chunk->consecutiveOccludedFrames < 255) {
-      chunk->consecutiveOccludedFrames++;
-    }
+        // Clamp coordinates to handle near-edge positions and rounding errors
+        lx = std::max(0, std::min(lx, CHUNK_SIZE - 1));
+        ly = std::max(0, std::min(ly, CHUNK_SIZE - 1));
+        lz = std::max(0, std::min(lz, CHUNK_SIZE - 1));
 
-    if (chunk->consecutiveOccludedFrames >= OCCLUDED_FRAMES_TO_UNLOAD) {
-      occludedChunksToUnload.push_back(chunk);
-      chunk->consecutiveOccludedFrames = 0;
-    }
-  }
+        u8 cameraVisibleFaces = GetVisibleFacesFromPosition(
+            pLevel, (int)cameraChunk->minOffset.x, (int)cameraChunk->minOffset.y,
+            (int)cameraChunk->minOffset.z, lx, ly, lz);
 
-#ifdef DEBUG_MODE
-  // Rebuild culledChunks to contain only chunks that were NOT visited
-  std::vector<Chunk*> actualCulledChunks;
-  actualCulledChunks.reserve(culledChunks.size());
-  for (Chunk* chunk : culledChunks) {
-    if (!visited.test(chunk->id)) {
-      actualCulledChunks.push_back(chunk);
-    }
-  }
-  culledChunks = std::move(actualCulledChunks);
-#endif
+        const float directionalThreshold = -0.5f;
+
+        for (u8 f = 0; f < FACE_COUNT; f++) {
+          // Only traverse through faces reachable from the camera
+          if (!(cameraVisibleFaces & (1 << f))) continue;
+
+          Chunk* neighbor = cameraChunk->neighbors[f];
+          if (neighbor && neighbor->isLoaded() && !visited.test(neighbor->id)) {
+            queue.push({neighbor->id, OppositeFace(f), 1});
+            visited.set(neighbor->id);
+          }
+        }
+
+        while (!queue.empty()) {
+          VisBfsEntry entry = queue.front();
+          queue.pop();
+
+          Chunk* chunk = chunks[entry.chunkId];
+          if (!chunk || !chunk->isLoaded()) continue;
+
+          if (entry.steps > visTaskState.maxRenderDistance) continue;
+
+          // Frustum Check (using captured local planes)
+          const auto frustumCheck = Utils::FrustumAABBIntersect(
+              visTaskState.frustumPlanes, &chunk->scaledMinOffset,
+              &chunk->scaledMaxOffset);
+          if (frustumCheck == Tyra::CoreBBoxFrustum::OUTSIDE_FRUSTUM) continue;
+
+          // Directional filter
+          float nx, ny, nz;
+          GetFaceNormalVec(OppositeFace(entry.entryFace), nx, ny, nz);
+          float dot = nx * visTaskState.camForward.x +
+                      ny * visTaskState.camForward.y +
+                      nz * visTaskState.camForward.z;
+          if (dot < directionalThreshold) continue;
+
+          nextVisibleChunks.push_back(chunk);
+
+          for (u8 outFace = 0; outFace < FACE_COUNT; outFace++) {
+            if (outFace == entry.entryFace) continue;
+            if (chunk->isConnected(entry.entryFace, outFace)) {
+              Chunk* neighbor = chunk->neighbors[outFace];
+              if (neighbor && neighbor->isLoaded() && !visited.test(neighbor->id)) {
+                if (entry.steps + 1 <= visTaskState.maxRenderDistance) {
+                  queue.push({neighbor->id, OppositeFace(outFace),
+                              (u8)(entry.steps + 1)});
+                  visited.set(neighbor->id);
+                }
+              }
+            }
+          }
+        }
+      },
+      [this]() {
+        // --- MAIN THREAD COMPLETION (Final rendering state sync) ---
+        visibleChunks.clear();
+        for (Chunk* chunk : nextVisibleChunks) {
+          // Update rendering state (frustum planes, fade) on main thread
+          chunk->setCamPosition(&visTaskState.camPos);
+          // Pass 0.0f as deltaTime here because the next frame's regular update
+          // will handle the actual fade progression.
+          chunk->update(visTaskState.frustumPlanes, 0.0f);
+          visibleChunks.push_back(chunk);
+        }
+        isVisibilityTaskRunning = false;
+      });
 }
+

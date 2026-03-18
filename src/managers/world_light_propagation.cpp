@@ -15,41 +15,56 @@ void WorldLightPropagation::init(Level* level) { pLevel = level; }
 void WorldLightPropagation::initSunLight(uint32_t tick) {
   TYRA_LOG("Initiating SunLight...");
 
-  for (int x = 0; x < pLevel->map.length; x++) {
-    for (int z = 0; z < pLevel->map.width; z++) {
-      u8 lv = 4;
-      auto isDay = tick >= 0 && tick <= 12000;
-      if (isDay) {
-        lv = 15;
-      }
+  for (size_t ci = 0; ci < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; ci++) {
+    LevelChunk* chunk = pLevel->map.chunks[ci];
+    if (chunk == nullptr) continue;
+    initSunLight(chunk);
+  }
+}
+
+void WorldLightPropagation::initSunLight(LevelChunk* chunk) {
+  if (chunk == nullptr) return;
+
+  // Assuming it's day-time for world-gen bootstrap
+  const u8 initialLevel = 15;
+
+  for (int lx = 0; lx < CHUNK_SIZE; lx++) {
+    for (int lz = 0; lz < CHUNK_SIZE; lz++) {
+      u8 lv = initialLevel;
 
       for (int y = pLevel->map.height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
+        const int sy = y / CHUNK_SIZE;
+        LevelSection* section = chunk->sections[sy];
+        const int ly = y % CHUNK_SIZE;
+        const int localIndex =
+            ly * CHUNK_SIZE * CHUNK_SIZE + lz * CHUNK_SIZE + lx;
 
-        if (b == Blocks::OAK_LEAVES_BLOCK) {
-          if (lv >= 1)
-            lv -= 1;
-          else
+        if (section != nullptr) {
+          const auto b = static_cast<Blocks>(section->blocks[localIndex]);
+
+          if (b == Blocks::OAK_LEAVES_BLOCK) {
+            lv = (lv >= 1) ? lv - 1 : 0;
+          } else if (b == Blocks::WATER_BLOCK) {
+            lv = (lv >= 2) ? lv - 2 : 0;
+          } else if ((u8)b >= (u8)Blocks::STONE_SLAB &&
+                     (u8)b <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
+            lv = (lv >= 1) ? lv - 1 : 0;
+          } else if (!isTransparent(b)) {
             lv = 0;
-        } else if (b == Blocks::WATER_BLOCK) {
-          if (lv >= 2)
-            lv -= 2;
-          else
-            lv = 0;
-        } else if ((u8)b >= (u8)Blocks::STONE_SLAB &&
-                   (u8)b <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB) {
-          if (lv >= 1)
-            lv -= 1;
-          else
-            lv = 0;
-        } else if (b != Blocks::AIR_BLOCK && b != Blocks::GLASS_BLOCK &&
-                   b != Blocks::POPPY_FLOWER && b != Blocks::DANDELION_FLOWER &&
-                   b != Blocks::GRASS) {
-          lv = 0;
+          }
+
+          section->lightData[localIndex] =
+              (section->lightData[localIndex] & 0x0F) | ((lv & 0x0F) << 4);
+        } else {
+          // If section is null, it's 100% air-like (or VOID which is transparent)
+          // lv remains unchanged (sunlight 15 passes through)
         }
 
-        pLevel->SetSunLightInMap(x, y, z, lv);
-        sunlightBfsQueue.emplace(x, y, z, lv);
+        if (lv > 0) {
+          sunlightBfsQueue.emplace(static_cast<uint16_t>(chunk->x + lx),
+                                   static_cast<uint16_t>(y),
+                                   static_cast<uint16_t>(chunk->z + lz), lv);
+        }
       }
     }
   }
@@ -135,6 +150,15 @@ void WorldLightPropagation::propagateSunLightAddBFSQueue() {
 void WorldLightPropagation::floodFillSunlightAdd(uint16_t x, uint16_t y,
                                                   uint16_t z,
                                                   u8 nextLightValue) {
+  // Boundary check is already done by caller, but we must ensure we don't LOAD chunks
+  // only to check sunlight. Check if the chunk is actually loaded in Level.
+  const uint32_t chunksPerRow = pLevel->map.width / CHUNK_SIZE;
+  uint32_t cx = x / CHUNK_SIZE;
+  uint32_t cz = z / CHUNK_SIZE;
+  if (cx >= chunksPerRow || cz >= (pLevel->map.length / CHUNK_SIZE)) return;
+  uint32_t index = (cz * chunksPerRow) + cx;
+  if (pLevel->map.chunks[index] == nullptr) return;
+
   auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
   if (isTransparent(b)) {
     if (pLevel->GetSunLightFromMap(x, y, z) + 1 < nextLightValue) {
@@ -187,13 +211,34 @@ void WorldLightPropagation::floodFillSunlightRemove(uint16_t x, uint16_t y,
 void WorldLightPropagation::initBlockLight(BlockManager* blockManager) {
   TYRA_LOG("Initiating block Lights...");
 
-  for (int x = 0; x < pLevel->map.length; x++) {
-    for (int z = 0; z < pLevel->map.width; z++) {
-      for (int y = pLevel->map.height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(pLevel->SafeGetBlockFromMap(x, y, z));
-        auto lightValue = blockManager->getBlockLightValue(b);
-        if (lightValue > 0) {
-          addBlockLight(x, y, z, lightValue);
+  for (size_t ci = 0; ci < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; ci++) {
+    LevelChunk* chunk = pLevel->map.chunks[ci];
+    if (chunk == nullptr) continue;
+    initBlockLight(chunk, blockManager);
+  }
+}
+
+void WorldLightPropagation::initBlockLight(LevelChunk* chunk,
+                                           BlockManager* blockManager) {
+  if (chunk == nullptr) return;
+
+  for (int sy = 0; sy < OVERWORLD_V_DISTANCE_IN_CHUNKS; sy++) {
+    LevelSection* section = chunk->sections[sy];
+    if (section == nullptr) continue;
+
+    for (int ly = 0; ly < CHUNK_SIZE; ly++) {
+      const int y = sy * CHUNK_SIZE + ly;
+      for (int lz = 0; lz < CHUNK_SIZE; lz++) {
+        for (int lx = 0; lx < CHUNK_SIZE; lx++) {
+          const int localIndex =
+              ly * CHUNK_SIZE * CHUNK_SIZE + lz * CHUNK_SIZE + lx;
+          const auto b = static_cast<Blocks>(section->blocks[localIndex]);
+          const auto lightValue = blockManager->getBlockLightValue(b);
+          if (lightValue > 0) {
+            addBlockLight(static_cast<uint16_t>(chunk->x + lx),
+                          static_cast<uint16_t>(y),
+                          static_cast<uint16_t>(chunk->z + lz), lightValue);
+          }
         }
       }
     }
@@ -296,6 +341,13 @@ void WorldLightPropagation::propagateLightAddQueue() {
 
 void WorldLightPropagation::floodFillLightAdd(uint16_t x, uint16_t y,
                                               uint16_t z, u8 nextLightValue) {
+  const uint32_t chunksPerRow = pLevel->map.width / CHUNK_SIZE;
+  uint32_t cx = x / CHUNK_SIZE;
+  uint32_t cz = z / CHUNK_SIZE;
+  if (cx >= chunksPerRow || cz >= (pLevel->map.length / CHUNK_SIZE)) return;
+  uint32_t index = (cz * chunksPerRow) + cx;
+  if (pLevel->map.chunks[index] == nullptr) return;
+
   auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
   if (isTransparent(b)) {
     if (pLevel->GetBlockLightFromMap(x, y, z) < nextLightValue) {

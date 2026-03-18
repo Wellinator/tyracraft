@@ -42,6 +42,8 @@ struct settings_file {
 
   // Auto-save interval in seconds (advanced)
   float auto_save_interval = 300.0f;
+
+
 };
 
 /**

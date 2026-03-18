@@ -245,12 +245,12 @@ void Chunk::init(Level* level, WorldLightModel* t_worldLightModel) {
   this->t_worldLightModel = t_worldLightModel;
 }
 
-void Chunk::update(const Plane* frustumPlanes) {
+void Chunk::update(const Plane* frustumPlanes, const float& deltaTime) {
   updateFrustumCheck(frustumPlanes);
 
   // Update fade-in animation
   if (isFadingIn && fadeAlpha < 1.0f) {
-    fadeAlpha += (1.0f / FADE_IN_DURATION) * (1.0f / 60.0f);  // Assuming ~60fps
+    fadeAlpha += (1.0f / FADE_IN_DURATION) * deltaTime;
     if (fadeAlpha >= 1.0f) {
       fadeAlpha = 1.0f;
       isFadingIn = false;

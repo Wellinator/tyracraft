@@ -58,9 +58,13 @@ class CustomPlanesClipAlgorithm {
            PlanesClipVertexPtrs* i_vertices,
            const EEClipAlgorithmSettings& settings, Plane* frustumPlanes);
 
+
  private:
   Vec4 intersectPlane(Vec4& plane_n, Vec4& lineStart, Vec4& lineEnd,
                       float plane_d, float& t);
+
+  /** Internal buffers to avoid vector reallocations in hot path */
+  alignas(16) PlanesClipVertex buffers[2][24];
 
   /** @return clipped size */
   u8 clipAgainstPlane(Triangle& original, PlanesClipVertex* clipped,

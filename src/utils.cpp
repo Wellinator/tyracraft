@@ -303,6 +303,24 @@ float Utils::Abs(const float x) {
   return r;
 }
 
+std::string Utils::sanitizeWorldStorageName(const std::string& name) {
+  std::string out;
+  out.reserve(name.size());
+  for (char c : name) {
+    const bool isAlphaNum = (c >= 'a' && c <= 'z') ||
+                            (c >= 'A' && c <= 'Z') ||
+                            (c >= '0' && c <= '9');
+    if (isAlphaNum || c == '_' || c == '-') {
+      out.push_back(c);
+    } else {
+      out.push_back('_');
+    }
+  }
+
+  if (out.empty()) out = "world";
+  return out;
+}
+
 void Utils::IntegrateParticleMotionVU0(Vec4* velocity, Vec4* nextPosition,
                                        const Vec4& direction,
                                        const float instantSpeed,

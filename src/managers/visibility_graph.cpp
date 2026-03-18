@@ -208,3 +208,91 @@ u16 BuildVisibilityGraph(Level* pLevel, int chunkMinX, int chunkMinY,
 
   return connectivity;
 }
+u8 GetVisibleFacesFromPosition(Level* pLevel, int chunkMinX, int chunkMinY,
+                               int chunkMinZ, int lx, int ly, int lz) {
+  // Coordinates are clamped by the caller, but we verify here for safety.
+  if (lx < 0 || lx >= CHUNK_SIZE || ly < 0 || ly >= CHUNK_SIZE || lz < 0 ||
+      lz >= CHUNK_SIZE) {
+    return 0x3F;
+  }
+
+  // Check if starting block is opaque
+  u8 startBlock = pLevel->GetBlockFromMap(chunkMinX + lx, chunkMinY + ly,
+                                          chunkMinZ + lz);
+  if (!IsBlockTransparentForFlood(startBlock)) {
+    // If the camera is inside an opaque block (wall), we can't see any
+    // faces of the chunk. This prevents the "flash" of visibility when 
+    // touching a wall.
+    return 0;
+  }
+
+  static u8 visited[CHUNK_LENGTH / 8];
+  memset(visited, 0, sizeof(visited));
+  static FloodQueue queue;
+  queue.reset();
+
+  u16 startIdx = encodeLocal(lx, ly, lz);
+  queue.push(startIdx);
+  setVisited(visited, startIdx);
+
+  u8 touchedFaces = 0;
+// ... (rest of function remains same)
+
+  static const int dx[6] = {1, -1, 0, 0, 0, 0};
+  static const int dy[6] = {0, 0, 0, 0, 1, -1};
+  static const int dz[6] = {0, 0, 1, -1, 0, 0};
+
+  while (!queue.empty()) {
+    u16 curIdx = queue.pop();
+    int cx, cy, cz;
+    decodeLocal(curIdx, cx, cy, cz);
+
+    for (int dir = 0; dir < 6; dir++) {
+      int nx = cx + dx[dir];
+      int ny = cy + dy[dir];
+      int nz = cz + dz[dir];
+
+      if (nx < 0) {
+        touchedFaces |= (1 << FACE_SOUTH);
+        continue;
+      }
+      if (nx >= CHUNK_SIZE) {
+        touchedFaces |= (1 << FACE_NORTH);
+        continue;
+      }
+      if (nz < 0) {
+        touchedFaces |= (1 << FACE_WEST);
+        continue;
+      }
+      if (nz >= CHUNK_SIZE) {
+        touchedFaces |= (1 << FACE_EAST);
+        continue;
+      }
+      if (ny < 0) {
+        touchedFaces |= (1 << FACE_BOTTOM);
+        continue;
+      }
+      if (ny >= CHUNK_SIZE) {
+        touchedFaces |= (1 << FACE_TOP);
+        continue;
+      }
+
+      u16 nIdx = encodeLocal(nx, ny, nz);
+      if (isVisited(visited, nIdx)) continue;
+
+      u8 nBlockType = pLevel->GetBlockFromMap(chunkMinX + nx, chunkMinY + ny,
+                                              chunkMinZ + nz);
+      if (!IsBlockTransparentForFlood(nBlockType)) {
+        setVisited(visited, nIdx);
+        continue;
+      }
+
+      setVisited(visited, nIdx);
+      queue.push(nIdx);
+    }
+
+    if (touchedFaces == 0x3F) break;
+  }
+
+  return touchedFaces;
+}

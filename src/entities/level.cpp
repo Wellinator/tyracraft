@@ -1,6 +1,12 @@
 #include "entities/level.hpp"
+#include "entities/World.hpp"
 #include <cfloat>
 #include <cmath>
+
+static inline void markChunkDirty(Level* level, uint16_t x, uint16_t z) {
+  LevelChunk* chunk = level->getChunk(x, z);
+  if (chunk) chunk->isDirty = true;
+}
 
 Level::Level(int seed) : Singleton<Level>() {
   TYRA_LOG("Generating base level template");
@@ -11,22 +17,70 @@ Level::Level(int seed) : Singleton<Level>() {
   map.height = OVERWORLD_V_DISTANCE;
 
   // TODO: move to player class
-  map.spawnX = 128;
+  map.spawnX = OVERWORLD_H_DISTANCE / 2;
   map.spawnY = 59;
-  map.spawnZ = 128;
+  map.spawnZ = OVERWORLD_H_DISTANCE / 2;
 
-  // For some reason I need to clear the array garbage
-  // I was initialized with new key word, very weird!
-  for (size_t i = 0; i < OVERWORLD_SIZE; i++) {
-    map.blocks[i] = 0;
-    map.lightData[i] = 0;
-    map.metaData[i] = 0;
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    map.chunks[i] = nullptr;
   }
+}
+
+Level::~Level() {
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    if (map.chunks[i] != nullptr) {
+      delete map.chunks[i];
+      map.chunks[i] = nullptr;
+    }
+  }
+}
+
+LevelChunk* Level::getChunk(uint16_t x, uint16_t z) {
+  uint32_t chunkX = x / CHUNK_SIZE;
+  uint32_t chunkZ = z / CHUNK_SIZE;
+
+  const uint32_t chunkWidth = map.width / CHUNK_SIZE;
+  const uint32_t chunkLength = map.length / CHUNK_SIZE;
+  if (chunkX >= chunkWidth || chunkZ >= chunkLength) return nullptr;
+
+  uint32_t index = (chunkZ * chunkWidth) + chunkX;
+  if (map.chunks[index] == nullptr) {
+    // Try to load from provider
+    World* world = getInstance()->world;
+    auto* provider = world ? world->getChunkProvider() : nullptr;
+    if (provider) {
+      map.chunks[index] = provider->getChunk(chunkX, chunkZ);
+    }
+    
+    // Fallback if provider fails or doesn't exist (Phase 1 behavior)
+    if (map.chunks[index] == nullptr) {
+        map.chunks[index] = new LevelChunk(chunkX * 8, chunkZ * 8);
+    }
+  }
+
+  return map.chunks[index];
+}
+
+LevelSection* Level::getSection(uint16_t x, uint16_t y, uint16_t z) {
+  LevelChunk* chunk = getChunk(x, z);
+  if (chunk == nullptr) return nullptr;
+  
+  uint16_t sy = y / CHUNK_SIZE;
+  LevelSection* section = chunk->getSection(sy);
+  
+  if (section == nullptr) {
+    chunk->allocateSection(sy);
+    section = chunk->getSection(sy);
+  }
+  
+  return section;
 }
 
 // Gets the position in the data array from the given x, y, and z coordinates.
 uint32_t Level::GetPosFromXYZ(uint32_t x, uint32_t y, uint32_t z) {
-  return x + (y << 7) + (z << 14);
+  const u32 w = (u32)OVERWORLD_H_DISTANCE;
+  const u32 l = (u32)OVERWORLD_H_DISTANCE;
+  return x + y * w + z * w * l;
 }
 
 uint32_t Level::OffsetToIndex(const Vec4& offset) {
@@ -36,140 +90,204 @@ uint32_t Level::OffsetToIndex(const Vec4& offset) {
 
 // Gets the metadata value at the given coordinates in the map.
 uint8_t Level::GetMetaDataFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.metaData[index];
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return section->metaData[index];
 }
 
 // Sets the metadata value at the given coordinates in the map.
 uint8_t Level::SetMetaDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                 uint8_t data) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.metaData[index] = data;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  markChunkDirty(this, x, z);
+  return section->metaData[index] = data;
 }
 
 void Level::SetLiquidOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                           const LiquidOrientation orientation) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
-  // value = (value & ~mask) | (newvalue & mask);
   const uint8_t newvalue =
       static_cast<uint8_t>(orientation) << 5 & LIQUID_ORIENTATION_MASK;
 
-  const u8 _setedValue =
-      (map.metaData[index] & ~LIQUID_ORIENTATION_MASK) | newvalue;
-
-  map.metaData[index] = _setedValue;
+  section->metaData[index] =
+      (section->metaData[index] & ~LIQUID_ORIENTATION_MASK) | newvalue;
+  markChunkDirty(this, x, z);
 }
 
 void Level::SetTorchOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                          const BlockOrientation orientation) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
-  // value = (value & ~mask) | (newvalue & mask);
   const uint8_t newvalue =
       static_cast<uint8_t>(orientation) & TORCH_ORIENTATION_MASK;
 
-  const u8 _setedValue =
-      (map.metaData[index] & ~TORCH_ORIENTATION_MASK) | newvalue;
-
-  map.metaData[index] = _setedValue;
+  section->metaData[index] =
+      (section->metaData[index] & ~TORCH_ORIENTATION_MASK) | newvalue;
+  markChunkDirty(this, x, z);
 }
 
 void Level::SetBlockOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                          const BlockOrientation orientation) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
-  // value = (value & ~mask) | (newvalue & mask);
   const uint8_t newvalue =
       static_cast<uint8_t>(orientation) & BLOCK_ORIENTATION_MASK;
 
-  const u8 _setedValue =
-      (map.metaData[index] & ~BLOCK_ORIENTATION_MASK) | newvalue;
-
-  map.metaData[index] = _setedValue;
+  section->metaData[index] =
+      (section->metaData[index] & ~BLOCK_ORIENTATION_MASK) | newvalue;
+  markChunkDirty(this, x, z);
 }
 
 void Level::SetSlabOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                         const SlabOrientation orientation) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
-  // value = (value & ~mask) | (newvalue & mask);
   const uint8_t newvalue =
       static_cast<uint8_t>(orientation) << 2 & SLAB_ORIENTATION_MASK;
 
-  const u8 _setedValue =
-      (map.metaData[index] & ~SLAB_ORIENTATION_MASK) | newvalue;
-
-  map.metaData[index] = _setedValue;
+  section->metaData[index] =
+      (section->metaData[index] & ~SLAB_ORIENTATION_MASK) | newvalue;
+  markChunkDirty(this, x, z);
 }
 
 void Level::ResetSlabOrientationDataToMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
-  // value = (value & ~mask) | (newvalue & mask);
-  const uint8_t newvalue = 0 & SLAB_ORIENTATION_MASK;
-  const u8 _setedValue =
-      (map.metaData[index] & ~SLAB_ORIENTATION_MASK) | newvalue;
-
-  map.metaData[index] = _setedValue;
+  section->metaData[index] &= ~SLAB_ORIENTATION_MASK;
+  markChunkDirty(this, x, z);
 }
 
 LiquidOrientation Level::GetLiquidOrientationDataFromMap(uint16_t x, uint16_t y,
                                                          uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  const uint8_t response = map.metaData[index] & LIQUID_ORIENTATION_MASK;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return LiquidOrientation::East;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  const uint8_t response = section->metaData[index] & LIQUID_ORIENTATION_MASK;
   return static_cast<LiquidOrientation>(response >> 5);
 }
 
 BlockOrientation Level::GetTorchOrientationDataFromMap(uint16_t x, uint16_t y,
                                                        uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  const uint8_t response = map.metaData[index] & TORCH_ORIENTATION_MASK;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return BlockOrientation::East;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  const uint8_t response = section->metaData[index] & TORCH_ORIENTATION_MASK;
   return static_cast<BlockOrientation>(response);
 }
 
 BlockOrientation Level::GetBlockOrientationDataFromMap(uint16_t x, uint16_t y,
                                                        uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  const uint8_t response = map.metaData[index] & BLOCK_ORIENTATION_MASK;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return BlockOrientation::East;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  const uint8_t response = section->metaData[index] & BLOCK_ORIENTATION_MASK;
   return static_cast<BlockOrientation>(response);
 }
 
 SlabOrientation Level::GetSlabOrientationDataFromMap(uint16_t x, uint16_t y,
                                                      uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  const uint8_t response = map.metaData[index] & SLAB_ORIENTATION_MASK;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return SlabOrientation::Bottom;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  const uint8_t response = section->metaData[index] & SLAB_ORIENTATION_MASK;
   return static_cast<SlabOrientation>(response >> 2);
+}
+
+void Level::SetIsUpperHalfDataToMap(uint16_t x, uint16_t y, uint16_t z,
+                                    const bool isUpper) {
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+
+  const uint8_t newvalue = (isUpper ? 1 : 0) << 3 & IS_UPPER_HALF_MASK;
+  section->metaData[index] =
+      (section->metaData[index] & ~IS_UPPER_HALF_MASK) | newvalue;
+  markChunkDirty(this, x, z);
+}
+
+void Level::ResetIsUpperHalfDataToMap(uint16_t x, uint16_t y, uint16_t z) {
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+
+  section->metaData[index] &= ~IS_UPPER_HALF_MASK;
+  markChunkDirty(this, x, z);
+}
+
+bool Level::GetIsUpperHalfDataFromMap(uint16_t x, uint16_t y, uint16_t z) {
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return false;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return (section->metaData[index] & IS_UPPER_HALF_MASK) > 0;
 }
 
 // Set the liquid metadata value at the given coordinates in the map.
 void Level::SetLiquidDataToMap(uint16_t x, uint16_t y, uint16_t z,
                                const u8 liquidLevel) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
 
   const uint8_t newvalue = liquidLevel << 2 & LIQUID_LEVEL_MASK;
-  const u8 _setedValue = (map.metaData[index] & ~LIQUID_LEVEL_MASK) | newvalue;
-  // printf("Setted: %i", _setedValue >> 2);
-  map.metaData[index] = _setedValue;
+  section->metaData[index] =
+      (section->metaData[index] & ~LIQUID_LEVEL_MASK) | newvalue;
+  markChunkDirty(this, x, z);
 }
 
 // Gets the liquid metadata value at the given coordinates in the map.
 u8 Level::GetLiquidDataFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  const uint8_t response = map.metaData[index] & LIQUID_LEVEL_MASK;
-  return (response >> 2);
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return (section->metaData[index] & LIQUID_LEVEL_MASK) >> 2;
 }
 
 // Gets the light data value at the given coordinates in the map.
 uint8_t Level::GetLightDataFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.lightData[index];
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return section->lightData[index];
 }
 
 // Gets the light value at the given coordinates in the map.
 uint8_t Level::GetLightFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  uint8_t v = map.lightData[index];
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  uint8_t v = section->lightData[index];
   uint8_t res = ((v & 0xF0) >> 4) + (v & 0x0F);
 
   if (res > 0x0F) return 0x0F;
@@ -178,17 +296,17 @@ uint8_t Level::GetLightFromMap(uint16_t x, uint16_t y, uint16_t z) {
 
 // Gets the block ID at the given coordinates in the map.
 uint8_t Level::GetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.blocks[index];
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return (uint8_t)Blocks::VOID;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return section->blocks[index];
 }
 
 uint8_t Level::GetBlockFromMap(Vec4* offset) {
-  uint32_t x = static_cast<uint32_t>(offset->x);
-  uint32_t y = static_cast<uint32_t>(offset->y);
-  uint32_t z = static_cast<uint32_t>(offset->z);
-
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.blocks[index];
+  return GetBlockFromMap(static_cast<uint16_t>(offset->x),
+                         static_cast<uint16_t>(offset->y),
+                         static_cast<uint16_t>(offset->z));
 }
 
 uint8_t Level::SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
@@ -198,40 +316,122 @@ uint8_t Level::SafeGetBlockFromMap(uint16_t x, uint16_t y, uint16_t z) {
 
 // Gets the block ID at the given coordinates in the map.
 uint8_t Level::GetBlockFromMapByIndex(uint32_t index) {
-  return map.blocks[index];
+  uint16_t x = index % map.width;
+  uint16_t z = (index / map.width) % map.length;
+  uint16_t y = index / (map.width * map.length);
+  return GetBlockFromMap(x, y, z);
 }
 
 // Sets the block ID at the given coordinates in the map.
 void Level::SetBlockInMap(uint16_t x, uint16_t y, uint16_t z, uint8_t block) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  map.blocks[index] = block;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  section->blocks[index] = block;
+  markChunkDirty(this, x, z);
 }
 
 // Sets the block ID at the given coordinates in the map.
 void Level::SetBlockInMapByIndex(uint32_t index, uint8_t block) {
-  map.blocks[index] = block;
+  uint16_t x = index % map.width;
+  uint16_t z = (index / map.width) % map.length;
+  uint16_t y = index / (map.width * map.length);
+  SetBlockInMap(x, y, z, block);
 }
 
 uint8_t Level::GetBlockLightFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return map.lightData[index] & 0x0F;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return section->lightData[index] & 0x0F;
 }
 
 uint8_t Level::GetSunLightFromMap(uint16_t x, uint16_t y, uint16_t z) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  return ((map.lightData[index] >> 4) & 0xF);
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return 0;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  return (section->lightData[index] >> 4) & 0xF;
 }
 
 void Level::SetBlockLightInMap(uint16_t x, uint16_t y, uint16_t z,
                                uint16_t light) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  map.lightData[index] = (map.lightData[index] & 0xF0) | light;
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  section->lightData[index] = (section->lightData[index] & 0xF0) | (light & 0x0F);
+  markChunkDirty(this, x, z);
 }
 
 void Level::SetSunLightInMap(uint16_t x, uint16_t y, uint16_t z,
                              uint16_t light) {
-  uint32_t index = (y * map.length * map.width) + (z * map.width) + x;
-  map.lightData[index] = (map.lightData[index] & 0x0F) | (light << 4);
+  LevelSection* section = getSection(x, y, z);
+  if (section == nullptr) return;
+  uint16_t index = (y % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE +
+                   (z % CHUNK_SIZE) * CHUNK_SIZE + (x % CHUNK_SIZE);
+  section->lightData[index] = (section->lightData[index] & 0x0F) | ((light & 0x0F) << 4);
+  markChunkDirty(this, x, z);
+}
+
+void Level::unloadFarChunks(int playerChunkX, int playerChunkZ, int radius) {
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    LevelChunk* chunk = map.chunks[i];
+    if (chunk == nullptr) continue;
+
+    int cx = chunk->x / CHUNK_SIZE;
+    int cz = chunk->z / CHUNK_SIZE;
+
+    int dx = std::abs(cx - playerChunkX);
+    int dz = std::abs(cz - playerChunkZ);
+
+    if (dx > radius || dz > radius) {
+      // Chunk is far away, unload it
+      auto* provider = world ? world->getChunkProvider() : nullptr;
+      if (provider) {
+        provider->saveChunk(chunk);
+      }
+      delete chunk;
+      map.chunks[i] = nullptr;
+    }
+  }
+}
+
+void Level::unloadChunk(int chunkX, int chunkZ) {
+  const uint32_t chunkWidth = map.width / CHUNK_SIZE;
+  uint32_t index = (chunkZ * chunkWidth) + chunkX;
+
+  if (index < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD && map.chunks[index] != nullptr) {
+    auto* provider = world ? world->getChunkProvider() : nullptr;
+    if (provider) {
+      provider->saveChunk(map.chunks[index]);
+    }
+    delete map.chunks[index];
+    map.chunks[index] = nullptr;
+  }
+}
+
+void Level::saveAllChunks() {
+  auto* provider = world ? world->getChunkProvider() : nullptr;
+  if (!provider) return;
+
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    if (map.chunks[i] != nullptr) {
+      provider->saveChunk(map.chunks[i]);
+    }
+  }
+}
+
+void Level::unloadAllChunks() {
+  for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
+    if (map.chunks[i] != nullptr) {
+      int cx = map.chunks[i]->x / CHUNK_SIZE;
+      int cz = map.chunks[i]->z / CHUNK_SIZE;
+      unloadChunk(cx, cz);
+    }
+  }
 }
 
 // Returns true if the given coordinates are within the bounds of the map.

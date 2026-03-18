@@ -14,6 +14,9 @@ void WorldLiquidPropagation::init(Level* level, ChunkManager* chunkManager,
   pLevel = level;
   pChunkManager = chunkManager;
   pLightPropagation = lightPropagation;
+
+  // New world/load session: budgeted startup propagation must reseed queues once.
+  budgetedPropagationInitialized = false;
 }
 
 // ===============================================================
@@ -26,6 +29,44 @@ void WorldLiquidPropagation::propagateAll() {
 
   while (waterBfsQueue.empty() == false) propagateWaterAddQueue();
   while (lavaBfsQueue.empty() == false) propagateLavaAddQueue();
+}
+
+bool WorldLiquidPropagation::propagateAllBudgeted(u32 budgetMs) {
+  (void)budgetMs;
+
+  // Seed propagation queues only once per loading session.
+  if (!budgetedPropagationInitialized) {
+    initLiquidExpansion();
+    budgetedPropagationInitialized = true;
+  }
+
+  if (!waterRemovalBfsQueue.empty()) {
+    propagateWaterRemovalQueue();
+    return false;
+  }
+
+  if (!waterBfsQueue.empty()) {
+    propagateWaterAddQueue();
+    return false;
+  }
+
+  if (!lavaRemovalBfsQueue.empty()) {
+    propagateLavaRemovalQueue();
+    return false;
+  }
+
+  if (!lavaBfsQueue.empty()) {
+    propagateLavaAddQueue();
+    return false;
+  }
+
+  if (pendingLavaLightUpdate) {
+    pLightPropagation->updateBlockLights();
+    pendingLavaLightUpdate = false;
+    return false;
+  }
+
+  return true;
 }
 
 void WorldLiquidPropagation::updateLiquidWater() {
@@ -195,39 +236,56 @@ void WorldLiquidPropagation::removeLiquid(uint16_t x, uint16_t y, uint16_t z,
 void WorldLiquidPropagation::initLiquidExpansion() {
   TYRA_LOG("Initiating water propagation...");
 
-  for (int x = 0; x < pLevel->map.length; x++) {
-    for (int z = 0; z < pLevel->map.width; z++) {
-      for (int y = pLevel->map.height - 1; y >= 0; y--) {
-        auto b = static_cast<Blocks>(pLevel->GetBlockFromMap(x, y, z));
+  // On-demand world mode: do not scan the full world here because that would
+  // materialize/generate everything and stall startup.
+  for (size_t ci = 0; ci < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; ci++) {
+    LevelChunk* chunk = pLevel->map.chunks[ci];
+    if (chunk == nullptr) continue;
 
-        if (b == Blocks::AIR_BLOCK) {
-          auto liquidValue = LiquidLevel::Percent100;
+    for (int sy = 0; sy < OVERWORLD_V_DISTANCE_IN_CHUNKS; sy++) {
+      LevelSection* section = chunk->sections[sy];
+      if (section == nullptr) continue;
 
-          if (pLevel->BoundCheckMap(x - 1, y, z)) {
-            auto type = pLevel->GetBlockFromMap(x - 1, y, z);
-            if (type == (u8)Blocks::WATER_BLOCK ||
-                type == (u8)Blocks::LAVA_BLOCK)
-              addLiquid(x - 1, y, z, type, liquidValue);
-          } else if (pLevel->BoundCheckMap(x + 1, y, z)) {
-            auto type = pLevel->GetBlockFromMap(x + 1, y, z);
-            if (type == (u8)Blocks::WATER_BLOCK ||
-                type == (u8)Blocks::LAVA_BLOCK)
-              addLiquid(x + 1, y, z, type, liquidValue);
-          } else if (pLevel->BoundCheckMap(x, y - 1, z)) {
-            auto type = pLevel->GetBlockFromMap(x, y - 1, z);
-            if (type == (u8)Blocks::WATER_BLOCK ||
-                type == (u8)Blocks::LAVA_BLOCK)
-              addLiquid(x, y - 1, z, type, liquidValue);
-          } else if (pLevel->BoundCheckMap(x, y, z - 1)) {
-            auto type = pLevel->GetBlockFromMap(x, y, z - 1);
-            if (type == (u8)Blocks::WATER_BLOCK ||
-                type == (u8)Blocks::LAVA_BLOCK)
-              addLiquid(x, y, z - 1, type, liquidValue);
-          } else if (pLevel->BoundCheckMap(x, y, z + 1)) {
-            auto type = pLevel->GetBlockFromMap(x, y, z + 1);
-            if (type == (u8)Blocks::WATER_BLOCK ||
-                type == (u8)Blocks::LAVA_BLOCK)
-              addLiquid(x, y, z + 1, type, liquidValue);
+      for (int ly = 0; ly < CHUNK_SIZE; ly++) {
+        const int y = sy * CHUNK_SIZE + ly;
+        for (int lz = 0; lz < CHUNK_SIZE; lz++) {
+          const int z = chunk->z + lz;
+          for (int lx = 0; lx < CHUNK_SIZE; lx++) {
+            const int x = chunk->x + lx;
+            const int localIndex = ly * CHUNK_SIZE * CHUNK_SIZE +
+                                   lz * CHUNK_SIZE + lx;
+
+            const auto b = static_cast<Blocks>(section->blocks[localIndex]);
+            if (b != Blocks::AIR_BLOCK) continue;
+
+            const auto liquidValue = LiquidLevel::Percent100;
+
+            if (pLevel->BoundCheckMap(x - 1, y, z)) {
+              auto type = pLevel->GetBlockFromMap(x - 1, y, z);
+              if (type == (u8)Blocks::WATER_BLOCK ||
+                  type == (u8)Blocks::LAVA_BLOCK)
+                addLiquid(x - 1, y, z, type, liquidValue);
+            } else if (pLevel->BoundCheckMap(x + 1, y, z)) {
+              auto type = pLevel->GetBlockFromMap(x + 1, y, z);
+              if (type == (u8)Blocks::WATER_BLOCK ||
+                  type == (u8)Blocks::LAVA_BLOCK)
+                addLiquid(x + 1, y, z, type, liquidValue);
+            } else if (pLevel->BoundCheckMap(x, y - 1, z)) {
+              auto type = pLevel->GetBlockFromMap(x, y - 1, z);
+              if (type == (u8)Blocks::WATER_BLOCK ||
+                  type == (u8)Blocks::LAVA_BLOCK)
+                addLiquid(x, y - 1, z, type, liquidValue);
+            } else if (pLevel->BoundCheckMap(x, y, z - 1)) {
+              auto type = pLevel->GetBlockFromMap(x, y, z - 1);
+              if (type == (u8)Blocks::WATER_BLOCK ||
+                  type == (u8)Blocks::LAVA_BLOCK)
+                addLiquid(x, y, z - 1, type, liquidValue);
+            } else if (pLevel->BoundCheckMap(x, y, z + 1)) {
+              auto type = pLevel->GetBlockFromMap(x, y, z + 1);
+              if (type == (u8)Blocks::WATER_BLOCK ||
+                  type == (u8)Blocks::LAVA_BLOCK)
+                addLiquid(x, y, z + 1, type, liquidValue);
+            }
           }
         }
       }
@@ -494,5 +552,7 @@ u8 WorldLiquidPropagation::canPropagateLiquid(uint16_t x, uint16_t y,
   const u8 type = pLevel->GetBlockFromMap(x, y, z);
   return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
          type == (u8)Blocks::POPPY_FLOWER || type == (u8)Blocks::TORCH ||
-         type == (u8)Blocks::DANDELION_FLOWER;
+      type == (u8)Blocks::DANDELION_FLOWER ||
+      type == (u8)Blocks::DEAD_BUSH || type == (u8)Blocks::REEDS_BLOCK ||
+      type == (u8)Blocks::TALL_GRASS_BLOCK;
 }

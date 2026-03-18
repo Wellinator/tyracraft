@@ -32,6 +32,9 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::GRASS, CrossedMeshBuilder_GenerateMesh},
       {Blocks::POPPY_FLOWER, CrossedMeshBuilder_GenerateMesh},
       {Blocks::DANDELION_FLOWER, CrossedMeshBuilder_GenerateMesh},
+      {Blocks::DEAD_BUSH, CrossedMeshBuilder_GenerateMesh},
+      {Blocks::TALL_GRASS_BLOCK, CrossedMeshBuilder_GenerateMesh},
+      {Blocks::REEDS_BLOCK, CrossedMeshBuilder_GenerateMesh},
 
       // Liquids
       {Blocks::WATER_BLOCK, WaterMeshBuilder_GenerateMesh},
@@ -61,6 +64,7 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::GLASS_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::BRICKS_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::GRAVEL_BLOCK, CuboidMeshBuilder_GenerateMesh},
+      {Blocks::SANDSTONE_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::GOLD_ORE_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::IRON_ORE_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::COAL_ORE_BLOCK, CuboidMeshBuilder_GenerateMesh},
@@ -91,6 +95,7 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::OAK_LEAVES_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::BIRCH_LOG_BLOCK, CuboidMeshBuilder_GenerateMesh},
       {Blocks::BIRCH_LEAVES_BLOCK, CuboidMeshBuilder_GenerateMesh},
+      {Blocks::CACTUS_BLOCK, CuboidMeshBuilder_GenerateMesh},
   };
 
   light_builders = {
@@ -98,6 +103,9 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::GRASS, CrossedMeshBuilder_loadCrossedLightData},
       {Blocks::POPPY_FLOWER, CrossedMeshBuilder_loadCrossedLightData},
       {Blocks::DANDELION_FLOWER, CrossedMeshBuilder_loadCrossedLightData},
+      {Blocks::DEAD_BUSH, CrossedMeshBuilder_loadCrossedLightData},
+      {Blocks::TALL_GRASS_BLOCK, CrossedMeshBuilder_loadCrossedLightData},
+      {Blocks::REEDS_BLOCK, CrossedMeshBuilder_loadCrossedLightData},
 
       // Liquids
       {Blocks::WATER_BLOCK, WaterMeshBuilder_loadLightData},
@@ -127,6 +135,7 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::GLASS_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::BRICKS_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::GRAVEL_BLOCK, CuboidMeshBuilder_loadLightData},
+      {Blocks::SANDSTONE_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::GOLD_ORE_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::IRON_ORE_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::COAL_ORE_BLOCK, CuboidMeshBuilder_loadLightData},
@@ -157,6 +166,7 @@ void MeshBuilder_RegisterBuilders() {
       {Blocks::OAK_LEAVES_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::BIRCH_LOG_BLOCK, CuboidMeshBuilder_loadLightData},
       {Blocks::BIRCH_LEAVES_BLOCK, CuboidMeshBuilder_loadLightData},
+      {Blocks::CACTUS_BLOCK, CuboidMeshBuilder_loadLightData},
   };
 };
 

@@ -43,6 +43,9 @@ class StateLoadingSavedGame : public GameState {
   u8 shouldCreatedEntities = 1;
   u8 shouldInitWorld = 1;
   u8 shouldLoadSavedData = 1;
+  u8 shouldGenerateLight = 0;
+  u8 shouldPropagateLiquids = 0;
+  u8 shouldBuildInitialPosition = 0;
   u8 shouldInitItemRepository = 1;
   u8 shouldInitUI = 1;
   u8 shouldInitPlayer = 1;
@@ -71,6 +74,8 @@ class StateLoadingSavedGame : public GameState {
   const std::string Label_LoadingWorld      = LanguageManager::Translate("/loading_screen/loading_world");
   const std::string Label_LoadingPlayer     = LanguageManager::Translate("/loading_screen/loading_player");
   const std::string Label_LoadingSave       = LanguageManager::Translate("/loading_screen/loading_save");
+  const std::string Label_GeneratingLight = LanguageManager::Translate("/loading_screen/generating_light");
+  const std::string Label_PropagatingLiquids = LanguageManager::Translate("/loading_screen/propagating_liquids");
 
   void setPercent(float completed);
   void setBgColorBlack();
@@ -80,6 +85,9 @@ class StateLoadingSavedGame : public GameState {
   void initUI();
   void initWorld();
   void loadSavedData();
+  void generateLight();
+  void propagateLiquids();
+  void buildInitialPosition();
   void initPlayer();
 
   void nextState();

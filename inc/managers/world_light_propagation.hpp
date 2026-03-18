@@ -23,6 +23,7 @@ class WorldLightPropagation {
 
   // --- Sunlight ---
   void initSunLight(uint32_t tick);
+  void initSunLight(LevelChunk* chunk);
   void addSunLight(uint16_t x, uint16_t y, uint16_t z);
   void addSunLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
   void removeSunLight(uint16_t x, uint16_t y, uint16_t z);
@@ -37,6 +38,7 @@ class WorldLightPropagation {
 
   // --- Block Light ---
   void initBlockLight(BlockManager* blockManager);
+  void initBlockLight(LevelChunk* chunk, BlockManager* blockManager);
   void addBlockLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
   void removeLight(uint16_t x, uint16_t y, uint16_t z);
   void removeLight(uint16_t x, uint16_t y, uint16_t z, u8 lightLevel);
@@ -48,13 +50,14 @@ class WorldLightPropagation {
            !lightBfsQueue.empty() || !lightRemovalBfsQueue.empty();
   }
 
-  /** @brief Returns true if the block type allows light to pass through. */
   inline bool isTransparent(Blocks block) const {
-    return block == Blocks::AIR_BLOCK || block == Blocks::WATER_BLOCK ||
-           block == Blocks::GRASS || block == Blocks::POPPY_FLOWER ||
-           block == Blocks::DANDELION_FLOWER || block == Blocks::TORCH ||
-           block == Blocks::GLASS_BLOCK || block == Blocks::OAK_LEAVES_BLOCK ||
-           block == Blocks::BIRCH_LEAVES_BLOCK ||
+    return block == Blocks::VOID || block == Blocks::AIR_BLOCK ||
+           block == Blocks::WATER_BLOCK || block == Blocks::GRASS ||
+           block == Blocks::POPPY_FLOWER || block == Blocks::DANDELION_FLOWER ||
+           block == Blocks::TORCH || block == Blocks::GLASS_BLOCK ||
+           block == Blocks::OAK_LEAVES_BLOCK ||
+           block == Blocks::BIRCH_LEAVES_BLOCK || block == Blocks::DEAD_BUSH ||
+           block == Blocks::REEDS_BLOCK || block == Blocks::TALL_GRASS_BLOCK ||
            // Slabs
            ((u8)block >= (u8)Blocks::STONE_SLAB &&
             (u8)block <= (u8)Blocks::MOSSY_STONE_BRICKS_SLAB);

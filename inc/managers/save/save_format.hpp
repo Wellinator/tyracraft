@@ -49,7 +49,7 @@ namespace TyraCraft {
 class SaveFormat {
  public:
   // Version tracking
-  static constexpr int32_t SAVE_FORMAT_VERSION = 3;
+  static constexpr int32_t SAVE_FORMAT_VERSION = 1;
 
   // ========================================================================
   // METADATA I/O (everything before world data)
@@ -259,102 +259,6 @@ class SaveFormat {
     return serializer.ReadBuffer(outTicksDayCounter, sizeof(*outTicksDayCounter));
   }
 
-  // ========================================================================
-  // WORLD MAP STRUCTURE I/O
-  // ========================================================================
-
-  /**
-   * Writes world map dimensions and spawn location
-   */
-  static SaveResult WriteWorldStructure(SaveSerializer& serializer,
-                                         const LevelMap* map) {
-    SaveResult result = serializer.WriteUInt16(map->width);
-    if (!result) return result;
-
-    result = serializer.WriteUInt16(map->length);
-    if (!result) return result;
-
-    result = serializer.WriteUInt16(map->height);
-    if (!result) return result;
-
-    result = serializer.WriteUInt16(map->spawnX);
-    if (!result) return result;
-
-    result = serializer.WriteUInt16(map->spawnY);
-    if (!result) return result;
-
-    result = serializer.WriteUInt16(map->spawnZ);
-    if (!result) return result;
-
-    uint32_t worldSize = OVERWORLD_SIZE;
-    return serializer.WriteUInt32(worldSize);
-  }
-
-  /**
-   * Reads world map dimensions and spawn location
-   */
-  static SaveResult ReadWorldStructure(SaveSerializer& serializer,
-                                        LevelMap* outMap) {
-    SaveResult result = serializer.ReadUInt16(&outMap->width);
-    if (!result) return result;
-
-    result = serializer.ReadUInt16(&outMap->length);
-    if (!result) return result;
-
-    result = serializer.ReadUInt16(&outMap->height);
-    if (!result) return result;
-
-    result = serializer.ReadUInt16(&outMap->spawnX);
-    if (!result) return result;
-
-    result = serializer.ReadUInt16(&outMap->spawnY);
-    if (!result) return result;
-
-    result = serializer.ReadUInt16(&outMap->spawnZ);
-    if (!result) return result;
-
-    uint32_t worldSize;
-    result = serializer.ReadUInt32(&worldSize);
-    if (!result) return result;
-
-    // Validate world size matches expected
-    if (worldSize != OVERWORLD_SIZE) {
-      return SaveResult::Failure("World size mismatch - save file may be corrupted");
-    }
-
-    return SaveResult::Success();
-  }
-
-  // ========================================================================
-  // RAW WORLD DATA I/O (~3MB)
-  // ========================================================================
-
-  /**
-   * Writes all world block, light, and metadata arrays
-   */
-  static SaveResult WriteWorldData(SaveSerializer& serializer,
-                                    const LevelMap* map) {
-    SaveResult result = serializer.WriteBuffer(map->blocks, sizeof(map->blocks));
-    if (!result) return result;
-
-    result = serializer.WriteBuffer(map->lightData, sizeof(map->lightData));
-    if (!result) return result;
-
-    return serializer.WriteBuffer(map->metaData, sizeof(map->metaData));
-  }
-
-  /**
-   * Reads all world block, light, and metadata arrays
-   */
-  static SaveResult ReadWorldData(SaveSerializer& serializer, LevelMap* outMap) {
-    SaveResult result = serializer.ReadBuffer(outMap->blocks, sizeof(outMap->blocks));
-    if (!result) return result;
-
-    result = serializer.ReadBuffer(outMap->lightData, sizeof(outMap->lightData));
-    if (!result) return result;
-
-    return serializer.ReadBuffer(outMap->metaData, sizeof(outMap->metaData));
-  }
 };
 
 }  // namespace TyraCraft
