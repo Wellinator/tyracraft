@@ -11,11 +11,13 @@ extern u8 g_debug_mode;
 
 using Tyra::Pad;
 
-#define TCLOG(...)                                             \
-  do {                                                         \
-    TYRA_LOG(__VA_ARGS__);                                     \
-    if (TyraCraft::DebugLogger::getInstance())                 \
-      TyraCraft::DebugLogger::getInstance()->addLog(__VA_ARGS__); \
+#define TCLOG(...)                                               \
+  do {                                                           \
+    if (g_debug_mode) {                                          \
+      TYRA_LOG(__VA_ARGS__);                                     \
+      if (TyraCraft::DebugLogger::getInstance())                 \
+        TyraCraft::DebugLogger::getInstance()->addLog(__VA_ARGS__); \
+    }                                                            \
   } while (0)
 
 void renderOnScreenLogs();
@@ -78,4 +80,6 @@ extern class TickScheduler* g_debug_tick_scheduler;
 
 void renderDebugMenu();
 void handleDebugInput(Pad* pPad);
+#else
+#define TCLOG(...) ((void)0)
 #endif  // end if DEBUG_MODE
