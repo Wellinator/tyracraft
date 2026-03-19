@@ -25,6 +25,10 @@ void SurvivalPlayingState::tick() {}
 
 void SurvivalPlayingState::render() {}
 
+void SurvivalPlayingState::processIdleWork() {
+  stateGamePlay->world->processIdleWork();
+}
+
 void SurvivalPlayingState::handleInput(const float& deltaTime) {}
 
 void SurvivalPlayingState::navigate() {}

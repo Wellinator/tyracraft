@@ -301,23 +301,6 @@ void MazePlayingState::gamePlayInputHandler(const float& deltaTime) {
     if (stateGamePlay->player->isOnGround) {
       if (pressed.Cross) stateGamePlay->player->jump();
     }
-
-    // Temp for debug
-    // else if (stateGamePlay->player->isFlying) {
-    //   if (pressed.DpadUp) {
-    //     stateGamePlay->player->flyUp(deltaTime);
-    //   } else if (pressed.DpadDown) {
-    //     stateGamePlay->player->flyDown(deltaTime);
-    //   }
-    // }
-
-    // if (clicked.Cross) {
-    //   if (elapsedTimeInSec < 0.45F) {
-    //     stateGamePlay->player->toggleFlying();
-    //   }
-    //   elapsedTimeInSec = 0.0F;
-    // }
-    // Temp for debug
   }
 }
 
@@ -394,9 +377,9 @@ void MazePlayingState::drawDebugInfo() {
   FontManager& fm = FontManager::getInstanceRef();
 
   // Draw seed
-  std::string seed = std::string("Seed: ").append(
+  std::string seedStr = std::string("Seed: ").append(
       std::to_string(stateGamePlay->world->getSeed()));
-  fm.printText(seed, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
+  fm.printText(seedStr, FontOptions(Vec2(5.0f, 5.0f), Color(255), 0.8F));
 
   // Draw FPS:
   std::string fps = std::string("FPS: ").append(
@@ -441,22 +424,26 @@ void MazePlayingState::drawDebugInfo() {
   fm.printText(chunksToUpdateLight,
                FontOptions(Vec2(5.0f, 115.0f), Color(255), 0.8F));
 
+  // Draw load queue details
+  std::string loadQueueInfo = stateGamePlay->world->getLoadQueueDebugInfo();
+  fm.printText(loadQueueInfo, FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
+
   // Draw particles counter
   std::string particle_counter =
       std::string("Particles alive: ")
           .append(std::to_string(
               stateGamePlay->world->particlesManager.getParticlesCounter()));
   fm.printText(particle_counter,
-               FontOptions(Vec2(5.0f, 130.0f), Color(255), 0.8F));
+               FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
   // Draw tick avg
   std::string tick_avg =
-      std::string("Tick avg speed")
+      std::string("Tick avg speed: ")
           .append(std::to_string(tickManager.getTickTimeAverage()));
-  fm.printText(tick_avg, FontOptions(Vec2(5.0f, 145.0f), Color(255), 0.8F));
+  fm.printText(tick_avg, FontOptions(Vec2(5.0f, 160.0f), Color(255), 0.8F));
 
   // Draw version
-  std::string version = std::string("Version: ").append(VERSION);
-  fm.printText(version, FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
+  std::string versionStr = std::string("Version: ").append(VERSION);
+  fm.printText(versionStr, FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
 }
 
 void MazePlayingState::printMemoryInfoToLog() {

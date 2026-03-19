@@ -26,8 +26,25 @@ size_t DrawDistanceController::getMemoryThresholdMb() const {
 }
 
 u8 DrawDistanceController::getEffectiveRadius() const {
-  u8 modeCap = getDrawDistanceCap(currentMode);
-  return std::min(modeCap, static_cast<u8>(MAX_DRAW_DISTANCE));
+  u8 baseRadius = getDrawDistanceCap(currentMode);
+  baseRadius = std::min(baseRadius, static_cast<u8>(MAX_DRAW_DISTANCE));
+
+  // Memory-aware shrinking:
+  // If we are over the threshold, reduce the radius to force pruning of the load queue.
+  const size_t usage = getUsedMemoryMb();
+  const size_t threshold = getMemoryThresholdMb();
+
+  if (usage >= threshold) {
+    // Each MB over the threshold adds 1 to the penalty
+    const u8 penalty = static_cast<u8>(usage - threshold) + 1;
+    if (penalty >= baseRadius) {
+      return MIN_DRAW_DISTANCE;
+    }
+    return std::max(static_cast<u8>(MIN_DRAW_DISTANCE),
+                    static_cast<u8>(baseRadius - penalty));
+  }
+
+  return baseRadius;
 }
 
 float DrawDistanceController::getDirectionalRatio(const Vec4& directionToChunk,

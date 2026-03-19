@@ -178,6 +178,7 @@ class World {
   inline size_t getChunksToUpdateLightCount() {
     return chunkManager.getChunksToUpdateLightCount();
   };
+  std::string getLoadQueueDebugInfo();
 
   inline u8 canBuildChunk() {
 #ifdef DEBUG_MODE
@@ -250,6 +251,7 @@ class World {
   void addChunkToLoadAsync(Chunk* t_chunk);
   void addChunkToUnloadAsync(Chunk* t_chunk);
   void cancelChunkUnload(Chunk* t_chunk);
+  void pruneLoadQueue();
   void updateLightModel();
 
   // Phase 3: Extracted idle work pipeline helpers

@@ -113,6 +113,10 @@ void StateGameMenu::update(const float& deltaTime) {
   this->navigate();
 }
 
+void StateGameMenu::processIdleWork() {
+  stateGamePlay->world->processIdleWork();
+}
+
 void StateGameMenu::render() {
   const float halfWidth = this->t_renderer->core.getSettings().getWidth() / 2;
   FontManager& fm = FontManager::getInstanceRef();

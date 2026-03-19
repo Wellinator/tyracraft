@@ -136,8 +136,9 @@ void CreativePlayingState::update(const float& deltaTime) {
     _dbg_particles = std::string("Particles alive: ").append(
         std::to_string(
             stateGamePlay->world->particlesManager.getParticlesCounter()));
-    _dbg_tickAvg = std::string("Tick avg speed").append(
+    _dbg_tickAvg = std::string("Tick avg speed: ").append(
         std::to_string(tickManager.getTickTimeAverage()));
+    _dbg_loadQueueInfo = stateGamePlay->world->getLoadQueueDebugInfo();
     _dbg_version = std::string("Version: ").append(VERSION);
   }
 }
@@ -410,6 +411,7 @@ void CreativePlayingState::drawDebugInfo() {
   fm.printText(_dbg_chunksToUpdateLight, FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
   fm.printText(_dbg_particles,         FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
   fm.printText(_dbg_tickAvg,           FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
+  fm.printText(_dbg_loadQueueInfo,     FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
   fm.printText(_dbg_version,           FontOptions(Vec2(5.0f, 420.0f),  Color(255), 0.8F));
 }
 

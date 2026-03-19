@@ -618,6 +618,10 @@ void Chunk::build() {
   if (state == ChunkState::Loaded) return;
   if (state != ChunkState::Building) state = ChunkState::Building;
 
+  if (state != ChunkState::Building && state != ChunkState::Loaded) {
+    state = ChunkState::Building;
+  }
+
   if (dirty) {
     clearDrawDataWithoutShrink();
     dirty = false;
@@ -690,11 +694,8 @@ void Chunk::beginBuild() {
     buildPhase = BuildPhase::Idle;
     return;
   }
-  if (state == ChunkState::Loaded) {
-    buildPhase = BuildPhase::Idle;
-    return;
-  }
-  if (state != ChunkState::Building) {
+
+  if (state != ChunkState::Building && state != ChunkState::Loaded) {
     state = ChunkState::Building;
   }
 

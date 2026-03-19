@@ -320,6 +320,10 @@ void World::processIdleWork() {
   // Handle pending unloads first (they free memory for new loads).
   processUnloads();
 
+  // Prune the load queue every frame to ensure out-of-range chunks are
+  // removed even when the player is stationary.
+  pruneLoadQueue();
+
   // Nothing to do if no chunk is in progress and the queue is empty.
   if (currentBuildChunk == nullptr && tempChunksToLoad.empty()) return;
 
@@ -352,8 +356,9 @@ void World::processBuildQueue(u32 budgetCycles) {
       tempChunksToLoad.pop_front();
       chunksInLoadQueue.reset(chunk->id);
 
-      // Memory check: pause loading if RAM is low
-      if (!drawDistanceController.canLoadMoreChunks()) {
+      // Check memory limit before starting a new build
+      // Rebuilds (Loaded state) are allowed even if over threshold to prevent stalls
+      if (!drawDistanceController.canLoadMoreChunks() && !chunk->isLoaded()) {
         // Free memory by unloading scheduled chunks
         unloadScheduledChunks();
         // Re-enqueue this chunk for later
@@ -363,7 +368,9 @@ void World::processBuildQueue(u32 budgetCycles) {
       }
 
       // Skip stale entries (state changed between enqueue and dequeue)
-      if (chunk->state != ChunkState::Building) {
+      // Note: Loaded chunks in the queue are dirty rebuilds and must be processed.
+      if (chunk->state != ChunkState::Building &&
+          chunk->state != ChunkState::Loaded) {
         continue;
       }
 
@@ -411,6 +418,11 @@ void World::processBuildQueue(u32 budgetCycles) {
           mobManager.spawnMobAtPosition(MobType::Pig, _spawnPosition);
         }
       }
+    } else {
+      // Phase 4: Yield budget if we are waiting for async data (PreLoad).
+      // This prevents a single chunk from hogging the 5ms idle budget
+      // doing nothing while disk I/O completes.
+      if (currentBuildChunk->getBuildPhase() == BuildPhase::PreLoad) return;
     }
 
     // ----------------------------------------------------------------
@@ -626,8 +638,8 @@ void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   
   // Calculate distance traveled since last schedule
   const float distanceSinceLastSchedule = lastSchedulePosition.distanceTo(t_player->position);
-  // Reschedule every 2 chunks (16 blocks) of movement to keep chunks loading ahead
-  const float scheduleDistanceThreshold = static_cast<float>(CHUNK_SIZE * 2);
+  // Reschedule every chunk (8 blocks) of movement to keep chunks loading ahead
+  const float scheduleDistanceThreshold = static_cast<float>(CHUNK_SIZE);
   const bool movedSignificantly = distanceSinceLastSchedule >= scheduleDistanceThreshold;
 
   // Schedule on: initial load, chunk change, or significant movement
@@ -669,6 +681,20 @@ void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
       playerPos.x / DOUBLE_BLOCK_SIZE,
       playerPos.y / DOUBLE_BLOCK_SIZE,
       playerPos.z / DOUBLE_BLOCK_SIZE);
+
+  // Phase 4: Prune Load Queue before adding new candidates
+  pruneLoadQueue();
+
+  // Phase 4: Re-sort Load Queue by directional distance
+  // This ensures that even if we transition quickly, the most relevant
+  // chunks (closest and in front) always move to the head of the queue.
+  std::sort(tempChunksToLoad.begin(), tempChunksToLoad.end(),
+            [this, &playerBlockPos, &cameraForward](Chunk* a, Chunk* b) {
+              return drawDistanceController.getDirectionalDistanceSq(
+                         a->center, playerBlockPos, cameraForward) <
+                     drawDistanceController.getDirectionalDistanceSq(
+                         b->center, playerBlockPos, cameraForward);
+            });
 
   // Get base radius capped to MAX_DRAW_DISTANCE
   const u8 baseRadius = drawDistanceController.getEffectiveRadius();
@@ -895,7 +921,9 @@ void World::addChunkToLoadAsync(Chunk* t_chunk) {
   const u16 chunkId = t_chunk->id;
 
   // Early return: can't load if over budget
-  if (!drawDistanceController.canLoadMoreChunks()) return;
+  // Early return: can't load new chunks if over budget.
+  // Rebuilds (Loaded chunks) bypass this check as they are already in memory.
+  if (!drawDistanceController.canLoadMoreChunks() && !t_chunk->isLoaded()) return;
 
   // Early return: already queued for loading
   if (chunksInLoadQueue.test(chunkId)) return;
@@ -980,6 +1008,43 @@ void World::cancelChunkUnload(Chunk* t_chunk) {
 
   if (t_chunk->state == ChunkState::Unloading) {
     t_chunk->state = ChunkState::Loaded;
+  }
+}
+
+void World::pruneLoadQueue() {
+  if (tempChunksToLoad.empty() && currentBuildChunk == nullptr) return;
+  if (!cachedPlayer || !cachedCamera) return;
+
+  const Vec4 playerBlockPos(
+      cachedPlayer->position.x / DOUBLE_BLOCK_SIZE,
+      cachedPlayer->position.y / DOUBLE_BLOCK_SIZE,
+      cachedPlayer->position.z / DOUBLE_BLOCK_SIZE);
+  const Vec4& cameraForward = cachedCamera->unitCirclePosition;
+
+  // 1. Prune candidate queue
+  for (auto it = tempChunksToLoad.begin(); it != tempChunksToLoad.end();) {
+    Chunk* t_chunk = *it;
+    if (drawDistanceController.isInUnloadableArea(t_chunk->center,
+                                                   playerBlockPos,
+                                                   cameraForward)) {
+      chunksInLoadQueue.reset(t_chunk->id);
+      if (t_chunk->state == ChunkState::Building) {
+        t_chunk->state = ChunkState::Clean;
+      }
+      it = tempChunksToLoad.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  // 2. Cancel current build if it moved out of range
+  if (currentBuildChunk != nullptr &&
+      drawDistanceController.isInUnloadableArea(currentBuildChunk->center,
+                                                 playerBlockPos,
+                                                 cameraForward)) {
+    currentBuildChunk->cancelBuild();
+    currentBuildChunk = nullptr;
+    currentBuildIsNewChunk = false;
   }
 }
 
@@ -1223,6 +1288,13 @@ void World::setDrawDistanceMode(DrawDistanceMode mode) {
     forceLoadArea(lastPlayerPosition);
     delete targetBlock;
     targetBlock = nullptr;
+
+    // Immediately schedule chunks for the new draw distance.
+    // This ensures the load queue is correctly populated with the new
+    // directional ellipse without waiting for the next tick.
+    if (cachedPlayer && cachedCamera) {
+      scheduleChunks(lastPlayerPosition, cachedCamera->unitCirclePosition);
+    }
   }
 }
 
@@ -1267,3 +1339,25 @@ void World::CrossCraft_World_GenerateMap(WorldType worldType) {
       break;
   }
 }
+
+std::string World::getLoadQueueDebugInfo() {
+  std::string info = "Queue: ";
+  const size_t maxShow = 5;
+  const size_t count = tempChunksToLoad.size();
+
+  for (size_t i = 0; i < std::min(count, maxShow); ++i) {
+    Chunk* c = tempChunksToLoad[i];
+    info += std::to_string(c->id);
+    if (c->isLoaded()) info += "R";  // Rebuild
+    if (i < std::min(count, maxShow) - 1) info += ", ";
+  }
+
+  if (count > maxShow) info += "...";
+  if (!drawDistanceController.canLoadMoreChunks()) {
+    info += " ![MEM]";
+    info += " R:" + std::to_string(drawDistanceController.getEffectiveRadius());
+  }
+
+  return info;
+}
+

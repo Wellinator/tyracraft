@@ -101,5 +101,6 @@ class CreativePlayingState : public PlayingStateBase {
   std::string _dbg_chunksToUpdateLight;
   std::string _dbg_particles;
   std::string _dbg_tickAvg;
+  std::string _dbg_loadQueueInfo;
   std::string _dbg_version;
 };

@@ -37,6 +37,7 @@ class StateGameMenu : public PlayingStateBase {
   void update(const float& deltaTime);
   void tick(){};
   void render();
+  void processIdleWork();
   void handleInput(const float& deltaTime);
 
   void playClickSound();
