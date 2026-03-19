@@ -309,6 +309,10 @@ void World::update(Player* t_player, Camera* t_camera, const float deltaTime) {
 
   particlesManager.update(deltaTime, t_camera);
   mobManager.update(deltaTime);
+
+  if (_updateDayNightCycle) {
+    dayNightCycleManager.updateDuskIntensity(t_camera->looksAt - t_camera->position);
+  }
 };
 
 void World::processIdleWork() {

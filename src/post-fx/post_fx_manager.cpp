@@ -2,6 +2,7 @@
 #include "managers/post-fx/post_fx_fog.hpp"
 #include "managers/post-fx/post_fx_helper.hpp"
 #include "managers/post-fx/post_fx_glare.hpp"
+#include "managers/post-fx/post_fx_dusk.hpp"
 #include "screen_settings.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
@@ -111,6 +112,10 @@ void PostFxManager::renderAll(Color fogColor) {
 #ifdef DEBUG_MODE
   }
 #endif
+
+  if (duskIntensity > 0.0f) {
+    postFxDusk(hlp, SCREEN_WIDTH, SCREEN_HEIGHT, duskIntensity);
+  }
 }
 
 void PostFxManager::renderFog(Color fogColor) {
@@ -132,4 +137,14 @@ void PostFxManager::renderFog(Color fogColor) {
 
   postFxFog(hlp, fbAddr, zbufAddr, tempAddr, SCREEN_WIDTH, SCREEN_HEIGHT,
             (int)fogColor.r, (int)fogColor.g, (int)fogColor.b);
+}
+
+void PostFxManager::renderDusk() {
+  if (duskIntensity <= 0.0f) return;
+
+  auto frameBuffer = pRenderer->core.gs.getCurrentFrameData();
+  uint32_t fbAddr = frameBuffer.address;
+
+  PostFxHelper hlp(fbAddr, SCREEN_WIDTH, SCREEN_HEIGHT);
+  postFxDusk(hlp, SCREEN_WIDTH, SCREEN_HEIGHT, duskIntensity);
 }

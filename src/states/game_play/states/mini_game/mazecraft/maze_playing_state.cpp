@@ -155,6 +155,8 @@ void MazePlayingState::update(const float& deltaTime) {
 
   stateGamePlay->context->t_camera->update(deltaTime,
                                            stateGamePlay->player->isMoving);
+
+  postFxManager.setDuskIntensity(stateGamePlay->world->dayNightCycleManager.getDuskIntensity());
 }
 
 void MazePlayingState::tick() {

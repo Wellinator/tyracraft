@@ -13,13 +13,13 @@ const SkyColorKeyframe DayNightCycleManager::skyColorKeyframes[] = {
     {0.0f, Color(159.0f, 194.0f, 245.0f)},
     {6000.0f, Color(188.0f, 212.0f, 248.0f)},
     {11000.0f, Color(159.0f, 194.0f, 245.0f)},
-    {12000.0f, Color(241.0f, 137.0f, 61.0f)},
+    {12000.0f, Color(112.0f, 149.0f, 215.0f)},
     {13000.0f, Color(66.0f, 104.0f, 185.0f)},
     {16000.0f, Color(21.0f, 33.0f, 59.0f)},
     {18000.0f, Color(15.0f, 23.0f, 41.0f)},
     {20000.0f, Color(21.0f, 33.0f, 59.0f)},
     {22000.0f, Color(66.0f, 104.0f, 185.0f)},
-    {23000.0f, Color(241.0f, 137.0f, 61.0f)},
+    {23000.0f, Color(112.0f, 149.0f, 215.0f)},
     {24000.0f, Color(159.0f, 194.0f, 245.0f)},
 };
 
@@ -324,4 +324,40 @@ void DayNightCycleManager::updateIntensityByAngle() {
   _intensity =
       Utils::reRangeScale(0.0F, 1.0F, -1.0F, 1.0F,
                           Math::sin(Math::ANG2RAD * currentAngleInDegrees));
+}
+
+void DayNightCycleManager::updateDuskIntensity(const Vec4& cameraLookDir) {
+  _duskIntensity = 0.0f;
+  float timeFactor = 0.0f;
+
+  // Dusk (Sunset) range: 11000 to 13500
+  if (g_ticksCounter >= 11000 && g_ticksCounter <= 13500) {
+    if (g_ticksCounter <= 12000) {
+      timeFactor = (g_ticksCounter - 11000) / 1000.0f;
+    } else {
+      timeFactor = 1.0f - (g_ticksCounter - 12000) / 1500.0f;
+    }
+  }
+  // Dawn (Sunrise) range: 22000 to 24000 and 0 to 1000
+  else if (g_ticksCounter >= 22000 || g_ticksCounter <= 1000) {
+    if (g_ticksCounter >= 22000 && g_ticksCounter <= 23000) {
+      timeFactor = (g_ticksCounter - 22000) / 1000.0f;
+    } else {
+      float t = (g_ticksCounter > 23000) ? (float)g_ticksCounter : (float)(g_ticksCounter + 24000);
+      timeFactor = 1.0f - (t - 23000.0f) / 2000.0f;
+    }
+  }
+
+  if (timeFactor > 0.0f) {
+    Vec4 sunDir = sunPosition;
+    sunDir.normalize();
+
+    Vec4 viewDir = cameraLookDir;
+    viewDir.normalize();
+
+    float dot = viewDir.dot3(sunDir);
+    if (dot < 0.0f) dot = 0.0f;
+
+    _duskIntensity = dot * timeFactor * 0.4f;
+  }
 }

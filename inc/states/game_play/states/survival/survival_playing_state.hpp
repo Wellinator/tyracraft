@@ -2,6 +2,7 @@
 #include "states/game_play/state_game_play.hpp"
 #include "states/game_play/states/playing_state_base.hpp"
 #include "managers/tick_manager.hpp"
+#include "managers/post-fx/post_fx_manager.hpp"
 #include <tamtypes.h>
 #include <tyra>
 
@@ -24,4 +25,5 @@ class SurvivalPlayingState : public PlayingStateBase {
 
   TickManager tickManager;
   TickTaskHandles tickHandles;
+  PostFxManager postFxManager;
 };

@@ -103,6 +103,8 @@ void CreativePlayingState::update(const float& deltaTime) {
   stateGamePlay->context->t_camera->update(deltaTime,
                                            stateGamePlay->player->isMoving);
 
+  postFxManager.setDuskIntensity(stateGamePlay->world->dayNightCycleManager.getDuskIntensity());
+
   // Pre-build debug strings while in update frame (zero allocation at render)
   if (g_debug_mode) {
     const Vec4 playerOffset = stateGamePlay->world->pLevel->worldPosToOffset(

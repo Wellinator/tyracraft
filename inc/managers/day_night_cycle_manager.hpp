@@ -42,6 +42,9 @@ class DayNightCycleManager {
 
   inline const Vec4 getSunPosition() { return sunPosition; };
   inline const Vec4 getMoonPosition() { return moonPosition; };
+  inline const float getDuskIntensity() { return _duskIntensity; };
+
+  void updateDuskIntensity(const Vec4& cameraLookDir);
 
   /**
    * @brief base on https://minecraft.fandom.com/wiki/Daylight_cycle
@@ -87,6 +90,7 @@ class DayNightCycleManager {
   Vec4 moonPositionEnd = Vec4(0, 0, 0);
 
   float _intensity;
+  float _duskIntensity = 0.0f;
 
   static const u32 SKY_COLOR_KEYFRAMES_COUNT = 11;
   static const SkyColorKeyframe skyColorKeyframes[SKY_COLOR_KEYFRAMES_COUNT];

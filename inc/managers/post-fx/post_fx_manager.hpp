@@ -35,6 +35,9 @@ class PostFxManager : public Singleton<PostFxManager> {
    * @param fogColor Cor do fog
    */
   void renderAll(Color fogColor);
+  void renderDusk();
+
+  inline void setDuskIntensity(float intensity) { duskIntensity = intensity; };
 
   // ===== Bloom controls =====
   void setBloomCutoff(float cutoff) { bloomCutoff = cutoff; }
@@ -61,6 +64,8 @@ class PostFxManager : public Singleton<PostFxManager> {
   int bloomDepth = 3;            // Blur pyramid depth (1-4)
   float bloomSourceScale = 1.5f; // Additive blend strength
   float bloomGain = 1.2f;        // Brightness multiplier
+
+  float duskIntensity = 0.0f;
 
   // VRAM addresses para temp buffers (computed from Z-buffer)
   uint32_t tempBufA_words = 0;

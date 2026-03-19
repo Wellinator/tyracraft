@@ -1,7 +1,8 @@
 #include "states/game_play/states/survival/survival_playing_state.hpp"
 
 SurvivalPlayingState::SurvivalPlayingState(StateGamePlay* t_context)
-    : PlayingStateBase(t_context) {}
+    : PlayingStateBase(t_context),
+      postFxManager(&t_context->context->t_engine->renderer) {}
 
 SurvivalPlayingState::~SurvivalPlayingState() {}
 
