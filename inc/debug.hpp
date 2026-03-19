@@ -7,7 +7,18 @@ extern u8 g_debug_mode;
 
 #ifdef DEBUG_MODE
 #include "tyra"
+#include "managers/debug/debug_logger.hpp"
+
 using Tyra::Pad;
+
+#define TCLOG(...)                                             \
+  do {                                                         \
+    TYRA_LOG(__VA_ARGS__);                                     \
+    if (TyraCraft::DebugLogger::getInstance())                 \
+      TyraCraft::DebugLogger::getInstance()->addLog(__VA_ARGS__); \
+  } while (0)
+
+void renderOnScreenLogs();
 
 // Debug menu tabs
 enum class DebugMenuTab {

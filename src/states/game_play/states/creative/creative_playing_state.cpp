@@ -201,7 +201,7 @@ void CreativePlayingState::handleInput(const float& deltaTime) {
 #ifdef DEBUG_MODE
     if (clicked.L1 && clicked.R1) {
       g_debug_menu.showDebugMenu = !g_debug_menu.showDebugMenu;
-      TYRA_LOG("Debug menu: ", g_debug_menu.showDebugMenu ? "ON" : "OFF");
+      TCLOG("Debug menu: %s", g_debug_menu.showDebugMenu ? "ON" : "OFF");
     }
 
     if (g_debug_menu.showDebugMenu) {
@@ -413,6 +413,8 @@ void CreativePlayingState::drawDebugInfo() {
   fm.printText(_dbg_tickAvg,           FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
   fm.printText(_dbg_loadQueueInfo,     FontOptions(Vec2(5.0f, cursorY), Color(255), 0.8F)); cursorY += 15.0f;
   fm.printText(_dbg_version,           FontOptions(Vec2(5.0f, 420.0f),  Color(255), 0.8F));
+
+  renderOnScreenLogs();
 }
 
 void CreativePlayingState::printMemoryInfoToLog() {

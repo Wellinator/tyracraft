@@ -228,13 +228,45 @@ void renderDebugMenu() {
 
   labelOptions.position = Vec2(currentX, currentY);
   fm.printText("Triangle: Close Menu", labelOptions);
+  currentY += lineHeight;
+}
+
+void renderOnScreenLogs() {
+  auto* logger = TyraCraft::DebugLogger::getInstance();
+  if (!logger) return;
+
+  auto& logs = logger->getLogs();
+  if (logs.empty()) return;
+
+  FontManager& fm = FontManager::getInstanceRef();
+  
+  // Render logs at the bottom-left area, above the version string
+  float startX = 10.0F;
+  float startY = 280.0F; // Starting Y for the log area
+  float logLineHeight = 10.0F;
+  float currentY = startY;
+
+  // Display the last 12 logs
+  const int maxDisplayedLogs = 12;
+  int startIdx = std::max(0, static_cast<int>(logs.size()) - maxDisplayedLogs);
+  
+  FontOptions logOpts(Vec2(startX, currentY),
+                      Color(240.0F, 240.0F, 240.0F),
+                      0.50F, // Small font for logs
+                      TextAlignment::Left);
+
+  for (size_t i = startIdx; i < logs.size(); i++) {
+    if (currentY > 410.0F) break; // Don't overlap with version string too much
+    logOpts.position = Vec2(startX, currentY);
+    fm.printText(logs[i].c_str(), logOpts);
+    currentY += logLineHeight;
+  }
 }
 
 void handleDebugInput(Pad* pPad) {
   if (!g_debug_menu.showDebugMenu) return;
 
   const auto& clicked = pPad->getClicked();
-  const auto& pressed = pPad->getPressed();
 
   // Switch tabs with L1/R1
   if (clicked.L1) {

@@ -4,6 +4,7 @@
 #include <zlib.h>
 #include "managers/save/save_serializer.hpp"
 #include <cstdio>
+#include "debug.hpp"
 #include "managers/background_task_service.hpp"
 #include "utils.hpp"
 
@@ -84,9 +85,12 @@ void ChunkStorage::getChunkAsync(int x, int z,
   req->result = nullptr;
   req->callback = callback;
 
+  TCLOG("Async load queued: %d, %d", x, z);
+
   const auto success = bgService->submit(
       [this, req]() { req->result = getChunk(req->x, req->z); },
       [req]() {
+        TCLOG("Async load done: %d, %d", req->x, req->z);
         req->callback(req->result);
         delete req;
       });

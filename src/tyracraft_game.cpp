@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <gs_privileged.h>
+#include "debug.hpp"
 
 namespace TyraCraft {
 
@@ -31,6 +32,10 @@ void TyraCraftGame::init() {
   loadSavedSettings();
   checkNeededDirectories();
   engine->renderer.core.setFrameLimit(false);
+
+#ifdef DEBUG_MODE
+  new TyraCraft::DebugLogger();
+#endif
 
   // Initialize background task service
   new BackgroundTaskService();
@@ -133,11 +138,11 @@ void TyraCraftGame::checkNeededDirectories() { checkSavesDir(); }
 void TyraCraftGame::checkSavesDir() {
   auto pathname = FileUtils::fromCwd("saves/");
   if (Utils::directoryExists(pathname)) {
-    TYRA_LOG("Save dir already exists. Skipping...");
+    TCLOG("Save dir already exists. Skipping...");
     return;
   }
 
-  TYRA_LOG("Creating Save directory: %s", pathname.c_str());
+  TCLOG("Creating Save directory: %s", pathname.c_str());
   if (!Utils::makeDirectoryRecursive(pathname)) {
     TYRA_ERROR("Failed to create Save directory!");
   }

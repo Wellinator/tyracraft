@@ -395,6 +395,7 @@ void World::processBuildQueue(u32 budgetCycles) {
       Chunk* chunk = currentBuildChunk;
       currentBuildChunk = nullptr;
 
+      TCLOG("Chunk build done: %d, %d", (int)chunk->minOffset.x / CHUNK_SIZE, (int)chunk->minOffset.z / CHUNK_SIZE);
       chunk->loadedAtTick = g_ticksCounter;
 
       // Only add to loadedChunks when it's a genuinely new chunk

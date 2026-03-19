@@ -444,6 +444,8 @@ void MazePlayingState::drawDebugInfo() {
   // Draw version
   std::string versionStr = std::string("Version: ").append(VERSION);
   fm.printText(versionStr, FontOptions(Vec2(5.0f, 420.0f), Color(255), 0.8F));
+
+  renderOnScreenLogs();
 }
 
 void MazePlayingState::printMemoryInfoToLog() {
