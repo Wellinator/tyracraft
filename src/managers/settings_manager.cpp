@@ -1,4 +1,5 @@
 #include "managers/settings_manager.hpp"
+#include "utils.hpp"
 
 static int clampInt(const int value, const int minValue, const int maxValue) {
   if (value < minValue) return minValue;
@@ -116,8 +117,7 @@ settings_file SettingsManager::Load() {
 };
 
 bool SettingsManager::CheckIfSettingsExist() {
-  struct stat buffer;
-  return (stat(FileUtils::fromCwd(g_settings_path).c_str(), &buffer) == 0);
+  return Utils::fileExists(FileUtils::fromCwd(g_settings_path));
 }
 
 void SettingsManager::ApplyChanges(Engine* t_engine) {

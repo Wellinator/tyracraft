@@ -1,4 +1,5 @@
 #include "states/main_menu/screens/screen_load_game.hpp"
+#include "utils.hpp"
 #include "states/main_menu/screens/screen_mini_game.hpp"
 #include "states/main_menu/screens/screen_main.hpp"
 #include "managers/notification/notification_manager.hpp"
@@ -264,9 +265,7 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
     if (dir.isDir) {
       std::string worldPath = std::string(fullPath) + dir.name;
       std::string metadataPath = worldPath + "/data.tcw";
-      struct stat st;
-      
-      if (stat(metadataPath.c_str(), &st) == 0) {
+      if (Utils::fileExists(metadataPath)) {
         TYRA_LOG("Loading save folder: ", dir.name.c_str());
 
         SaveInfoModel* model = new SaveInfoModel();

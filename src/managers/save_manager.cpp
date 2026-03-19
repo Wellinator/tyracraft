@@ -257,31 +257,25 @@ void SaveManager::SetSaveInfo(const char* fullPath, SaveInfoModel* target) {
 
 bool SaveManager::CheckIfSaveExist(const char* fullPath) {
   std::string normalizedPath = Utils::normalizePath(fullPath);
-  struct stat buffer;
-  if (stat(normalizedPath.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode)) {
+  if (Utils::directoryExists(normalizedPath)) {
     std::string metadataPath = getMetadataPath(normalizedPath.c_str());
-    return (stat(metadataPath.c_str(), &buffer) == 0);
+    return Utils::fileExists(metadataPath);
   }
   return false;
 }
 
 bool SaveManager::CheckIfFolderExist(const char* fullPath) {
-  std::string normalizedPath = Utils::normalizePath(fullPath);
-  struct stat buffer;
-  return (stat(normalizedPath.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
+  return Utils::directoryExists(Utils::normalizePath(fullPath));
 }
 
 static int remove_directory(const char* path) {
   std::vector<UtilDirectory> list = Utils::listDir(path);
   for (const auto& item : list) {
     std::string fullItemPath = std::string(path) + "/" + item.name;
-    struct stat st;
-    if (stat(fullItemPath.c_str(), &st) == 0) {
-      if (S_ISDIR(st.st_mode)) {
-        remove_directory(fullItemPath.c_str());
-      } else {
-        unlink(fullItemPath.c_str());
-      }
+    if (Utils::directoryExists(fullItemPath)) {
+      remove_directory(fullItemPath.c_str());
+    } else {
+      unlink(fullItemPath.c_str());
     }
   }
   return rmdir(path);
@@ -303,8 +297,7 @@ bool SaveManager::HasAvailableSaves() {
     if (dir.isDir) {
       std::string metadataPath = getMetadataPath(
           (std::string(FileUtils::fromCwd("saves/")) + dir.name).c_str());
-      struct stat st;
-      if (stat(metadataPath.c_str(), &st) == 0) {
+      if (Utils::fileExists(metadataPath)) {
         return true;
       }
     }

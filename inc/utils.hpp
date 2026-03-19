@@ -130,6 +130,8 @@ class Utils {
   static std::string sanitizeWorldStorageName(const std::string& name);
   static std::string normalizePath(const std::string& path);
   static bool makeDirectoryRecursive(const std::string& path);
+  static bool fileExists(const std::string& path);
+  static bool directoryExists(const std::string& path);
 
   static bool AABBCollides(BBox* A, BBox* B);
   static bool AABBCollidesXZ(BBox* A, BBox* B);

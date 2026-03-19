@@ -15,6 +15,7 @@
 #include <sifrpc.h>
 #include <loadfile.h>
 #include <libvux.h>
+#include <stdio.h>
 
 using Tyra::BBox;
 using Tyra::Color;
@@ -563,8 +564,7 @@ bool Utils::makeDirectoryRecursive(const std::string& path) {
     bool skipMkdir = component.find(':') != std::string::npos;
 
     if (!dir.empty() && dir != currentPrefix && !skipMkdir) {
-      struct stat st;
-      if (stat(dir.c_str(), &st) != 0) {
+      if (!directoryExists(dir)) {
         mkdir(dir.c_str(), 0777);
       }
     }
@@ -572,9 +572,26 @@ bool Utils::makeDirectoryRecursive(const std::string& path) {
   }
 
   // Create final directory
-  struct stat st;
-  if (stat(sanitizedPath.c_str(), &st) != 0) {
+  if (!directoryExists(sanitizedPath)) {
     return mkdir(sanitizedPath.c_str(), 0777) == 0;
   }
-  return S_ISDIR(st.st_mode);
+  return true;
+}
+
+bool Utils::fileExists(const std::string& path) {
+  FILE* file = fopen(path.c_str(), "rb");
+  if (file) {
+    fclose(file);
+    return true;
+  }
+  return false;
+}
+
+bool Utils::directoryExists(const std::string& path) {
+  DIR* dir = opendir(path.c_str());
+  if (dir) {
+    closedir(dir);
+    return true;
+  }
+  return false;
 }

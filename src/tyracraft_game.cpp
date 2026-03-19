@@ -132,12 +132,9 @@ void TyraCraftGame::checkNeededDirectories() { checkSavesDir(); }
 
 void TyraCraftGame::checkSavesDir() {
   auto pathname = FileUtils::fromCwd("saves/");
-  struct stat info;
-  if (stat(pathname.c_str(), &info) == 0) {
-    if (S_ISDIR(info.st_mode)) {
-      TYRA_LOG("Save dir already exists. Skipping...");
-      return;
-    }
+  if (Utils::directoryExists(pathname)) {
+    TYRA_LOG("Save dir already exists. Skipping...");
+    return;
   }
 
   TYRA_LOG("Creating Save directory: %s", pathname.c_str());
