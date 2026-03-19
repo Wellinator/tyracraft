@@ -216,13 +216,9 @@ void StateGameMenu::handleInput(const float& deltaTime) {
   if (needSaveOverwriteConfirmation) {
     if (clicked.Cross) {
       this->playClickSound();
-      const auto oldMode = stateGamePlay->world->getDrawDistanceMode();
-      stateGamePlay->world->setDrawDistanceMode(DrawDistanceMode::Low);
 
       stateGamePlay->saveGame();
       needSaveOverwriteConfirmation = false;
-
-      stateGamePlay->world->setDrawDistanceMode(oldMode);
     } else if (clicked.Triangle) {
       needSaveOverwriteConfirmation = false;
     }

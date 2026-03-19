@@ -31,7 +31,7 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   }
 
   std::string metadataPath = getMetadataPath(path);
-  gzFile save_file = gzopen(metadataPath.c_str(), "wb");
+  gzFile save_file = gzopen(metadataPath.c_str(), "wb1");
   if (save_file == nullptr) {
     return SaveResult::Failure("Failed to open metadata file (.tcw) for writing");
   }

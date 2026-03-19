@@ -7,6 +7,7 @@
 #include "debug.hpp"
 #include "utils.hpp"
 #include "managers/notification/notification_manager.hpp"
+#include "managers/background_task_service.hpp"
 
 using Tyra::Color;
 using Tyra::PadButtons;
@@ -472,29 +473,80 @@ void MazePlayingState::handleAction(MenuAction action) {
 
 void MazePlayingState::saveProgress() {
   std::string savePath = stateGamePlay->world->getWorldOptions()->fullPath;
-  SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
-  if (result) {
-    TYRA_LOG("Saving mazecraft at: ", savePath.c_str());
+  std::string msgSaved = Message_Saved_Successfully;
+  std::string msgProgress = Message_Progress_Has_Been_Saved;
+
+  // Status notification during save
+  NotificationManager::getInstance()->notify(Label_Saving, Label_SavingDoNotTurnOff);
+
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) {
+    auto state = stateGamePlay;
+    bgService->submit(
+        [state, savePath]() {
+          SaveResult result = SaveManager::SaveGame(state, savePath.c_str());
+          if (result) {
+            TYRA_LOG("Saving mazecraft at: ", savePath.c_str());
+          } else {
+            TYRA_LOG("ERROR saving mazecraft: ", result.errorMessage.c_str());
+          }
+        },
+        [msgSaved, msgProgress]() {
+          NotificationManager::getInstance()->notify(msgSaved.c_str(),
+                                                     msgProgress.c_str());
+        });
   } else {
-    TYRA_LOG("ERROR saving mazecraft: ", result.errorMessage.c_str());
+    // Fallback sync save
+    SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
+    if (result) {
+      TYRA_LOG("Saving mazecraft at: ", savePath.c_str());
+      NotificationManager::getInstance()->notify(
+          Message_Saved_Successfully.c_str(),
+          Message_Progress_Has_Been_Saved.c_str());
+    } else {
+      TYRA_LOG("ERROR saving mazecraft: ", result.errorMessage.c_str());
+      NotificationManager::getInstance()->notify("Save Failed",
+                                                 result.errorMessage.c_str());
+    }
   }
 }
 
 void MazePlayingState::autoSave() {
   std::string savePath = stateGamePlay->world->getWorldOptions()->fullPath;
+  std::string msgSaved = Message_Saved_Successfully;
+  std::string msgProgress = Message_Progress_Has_Been_Saved;
 
   NotificationManager::getInstance()->notify(Label_AutoSave, Label_SavingDoNotTurnOff);
 
-  SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
-  if (result) {
-    TYRA_LOG("Auto-saving mazecraft at: ", savePath.c_str());
-    NotificationManager::getInstance()->notify(
-        Message_Saved_Successfully.c_str(),
-        Message_Progress_Has_Been_Saved.c_str());
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) {
+    auto state = stateGamePlay;
+    bgService->submit(
+        [state, savePath]() {
+          SaveResult result = SaveManager::SaveGame(state, savePath.c_str());
+          if (result) {
+            TYRA_LOG("Auto-saving mazecraft at: ", savePath.c_str());
+          } else {
+            TYRA_LOG("ERROR auto-saving mazecraft: ", result.errorMessage.c_str());
+          }
+        },
+        [msgSaved, msgProgress]() {
+          NotificationManager::getInstance()->notify(msgSaved.c_str(),
+                                                     msgProgress.c_str());
+        });
   } else {
-    TYRA_LOG("ERROR auto-saving mazecraft: ", result.errorMessage.c_str());
-    NotificationManager::getInstance()->notify("Auto-Save Failed", 
-        result.errorMessage.c_str());
+    // Fallback sync save
+    SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
+    if (result) {
+      TYRA_LOG("Auto-saving mazecraft at: ", savePath.c_str());
+      NotificationManager::getInstance()->notify(
+          Message_Saved_Successfully.c_str(),
+          Message_Progress_Has_Been_Saved.c_str());
+    } else {
+      TYRA_LOG("ERROR auto-saving mazecraft: ", result.errorMessage.c_str());
+      NotificationManager::getInstance()->notify("Auto-Save Failed",
+                                                 result.errorMessage.c_str());
+    }
   }
 }
 

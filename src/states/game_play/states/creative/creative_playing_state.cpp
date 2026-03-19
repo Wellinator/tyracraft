@@ -458,17 +458,41 @@ void CreativePlayingState::handleAction(MenuAction action) {
 
 void CreativePlayingState::saveProgress() {
   std::string savePath = stateGamePlay->world->getWorldOptions()->fullPath;
+  std::string msgSaved = Message_Saved_Successfully;
+  std::string msgProgress = Message_Progress_Has_Been_Saved;
 
-  SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
-  
-  NotificationManager* instance = NotificationManager::getInstance();
-  if (result) {
-    TYRA_LOG("Saving at: ", savePath.c_str());
-    instance->notify(Message_Saved_Successfully.c_str(),
-                     Message_Progress_Has_Been_Saved.c_str());
+  // Status notification during save
+  NotificationManager::getInstance()->notify(Label_Saving, Label_SavingDoNotTurnOff);
+
+  auto* bgService = BackgroundTaskService::getInstance();
+  if (bgService) {
+    auto state = stateGamePlay;
+    bgService->submit(
+        [state, savePath]() {
+          SaveResult result = SaveManager::SaveGame(state, savePath.c_str());
+          if (result) {
+            TYRA_LOG("Saving at: ", savePath.c_str());
+          } else {
+            TYRA_LOG("ERROR saving game: ", result.errorMessage.c_str());
+          }
+        },
+        [msgSaved, msgProgress]() {
+          NotificationManager::getInstance()->notify(msgSaved.c_str(),
+                                                     msgProgress.c_str());
+        });
   } else {
-    TYRA_LOG("ERROR saving game: ", result.errorMessage.c_str());
-    instance->notify("Save Failed", result.errorMessage.c_str());
+    // Fallback sync save
+    SaveResult result = SaveManager::SaveGame(stateGamePlay, savePath.c_str());
+    if (result) {
+      TYRA_LOG("Saving at: ", savePath.c_str());
+      NotificationManager::getInstance()->notify(
+          Message_Saved_Successfully.c_str(),
+          Message_Progress_Has_Been_Saved.c_str());
+    } else {
+      TYRA_LOG("ERROR saving game: ", result.errorMessage.c_str());
+      NotificationManager::getInstance()->notify("Save Failed",
+                                                 result.errorMessage.c_str());
+    }
   }
 }
 

@@ -466,9 +466,13 @@ void Level::saveAllChunks() {
   if (!provider) return;
 
   for (size_t i = 0; i < OVERWORLD_H_DISTANCE_IN_CHUNKS_SQRD; i++) {
-    if (map.chunks[i] != nullptr) {
-      provider->saveChunk(map.chunks[i]);
-      RotateThreadReadyQueue(100);  // Yield to other threads of the same or higher priority
+    LevelChunk* chunk = map.chunks[i];
+    if (chunk != nullptr && chunk->isDirty) {
+      provider->saveChunk(chunk);
+      // Yield to other threads every 16 chunks to balance speed and responsiveness
+      if (i % 16 == 0) {
+        RotateThreadReadyQueue(100);
+      }
     }
   }
 }

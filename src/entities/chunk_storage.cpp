@@ -106,14 +106,12 @@ void ChunkStorage::getChunkAsync(int x, int z,
 void ChunkStorage::saveChunk(LevelChunk* chunk) {
   if (!chunk) return;
 
-  const std::string chunksPath = worldDir + "/chunks";
-  if (!ensureDirExists(worldDir) || !ensureDirExists(chunksPath)) return;
-
   char filename[256];
   snprintf(filename, sizeof(filename), "%s/chunks/c.%d.%d.tc", worldDir.c_str(), 
            chunk->x / CHUNK_SIZE, chunk->z / CHUNK_SIZE);
   
-  gzFile file = gzopen(filename, "wb");
+  // Use "wb1" for faster compression on PS2
+  gzFile file = gzopen(filename, "wb1");
   if (!file) return;
 
   TyraCraft::SaveSerializer serializer(file);
