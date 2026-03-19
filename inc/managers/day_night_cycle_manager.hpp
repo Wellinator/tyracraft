@@ -23,6 +23,11 @@ using Tyra::StaticPipeline;
 using Tyra::Texture;
 using Tyra::Vec4;
 
+struct SkyColorKeyframe {
+  float tick;
+  Color color;
+};
+
 class DayNightCycleManager {
  public:
   DayNightCycleManager();
@@ -83,6 +88,9 @@ class DayNightCycleManager {
 
   float _intensity;
 
+  static const u32 SKY_COLOR_KEYFRAMES_COUNT = 11;
+  static const SkyColorKeyframe skyColorKeyframes[SKY_COLOR_KEYFRAMES_COUNT];
+
   Color _midDaycolor = DAY_MID_COLOR;
   Color _afterNoonAndMorningColor = AFTERNOON_MORNING_COLOR;
   Color _midNight = NIGHT_MID_COLOR;
@@ -127,4 +135,5 @@ class DayNightCycleManager {
   StaPipBag _moonBag;
 
   bool _bagsReady = false;
+  bool _isCustomSkyColor = false;
 };

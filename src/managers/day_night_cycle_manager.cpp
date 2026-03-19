@@ -9,6 +9,20 @@ using Tyra::StaPipInfoBag;
 using Tyra::StaPipTextureBag;
 using Tyra::StaticPipeline;
 
+const SkyColorKeyframe DayNightCycleManager::skyColorKeyframes[] = {
+    {0.0f, Color(159.0f, 194.0f, 245.0f)},
+    {6000.0f, Color(188.0f, 212.0f, 248.0f)},
+    {11000.0f, Color(159.0f, 194.0f, 245.0f)},
+    {12000.0f, Color(241.0f, 137.0f, 61.0f)},
+    {13000.0f, Color(66.0f, 104.0f, 185.0f)},
+    {16000.0f, Color(21.0f, 33.0f, 59.0f)},
+    {18000.0f, Color(15.0f, 23.0f, 41.0f)},
+    {20000.0f, Color(21.0f, 33.0f, 59.0f)},
+    {22000.0f, Color(66.0f, 104.0f, 185.0f)},
+    {23000.0f, Color(241.0f, 137.0f, 61.0f)},
+    {24000.0f, Color(159.0f, 194.0f, 245.0f)},
+};
+
 DayNightCycleManager::DayNightCycleManager() {}
 
 DayNightCycleManager::~DayNightCycleManager() {
@@ -263,25 +277,44 @@ void DayNightCycleManager::updateEntitiesPosition() {
 }
 
 const Color DayNightCycleManager::getSkyColor() {
-  Color result;
-  const auto isDay = g_ticksCounter > DAY_INIT && g_ticksCounter < NIGHT_INIT;
-  float interpolation = _intensity;
+  if (_isCustomSkyColor) {
+    Color result;
+    const auto isDay = g_ticksCounter > DAY_INIT && g_ticksCounter < NIGHT_INIT;
+    float interpolation = _intensity;
 
-  isDay ? result.lerp(_afterNoonAndMorningColor, _midDaycolor, interpolation)
-        : result.lerp(_midNight, _afterNoonAndMorningColor, interpolation);
+    isDay ? result.lerp(_afterNoonAndMorningColor, _midDaycolor, interpolation)
+          : result.lerp(_midNight, _afterNoonAndMorningColor, interpolation);
 
-  return result;
+    return result;
+  }
+
+  float ticks = static_cast<float>(g_ticksCounter);
+
+  for (u32 i = 0; i < SKY_COLOR_KEYFRAMES_COUNT - 1; i++) {
+    if (ticks >= skyColorKeyframes[i].tick &&
+        ticks <= skyColorKeyframes[i + 1].tick) {
+      float t = (ticks - skyColorKeyframes[i].tick) /
+                (skyColorKeyframes[i + 1].tick - skyColorKeyframes[i].tick);
+      Color result;
+      result.lerp(skyColorKeyframes[i].color, skyColorKeyframes[i + 1].color, t);
+      return result;
+    }
+  }
+
+  return skyColorKeyframes[0].color;
 }
 
 void DayNightCycleManager::setSkyColor(Color midDaycolor,
                                        Color afterNoonAndMorningColor,
                                        Color midNight) {
+  _isCustomSkyColor = true;
   _midDaycolor.set(midDaycolor);
   _afterNoonAndMorningColor.set(afterNoonAndMorningColor);
   _midNight.set(midNight);
 }
 
 void DayNightCycleManager::resetSkyColor() {
+  _isCustomSkyColor = false;
   _midDaycolor.set(DAY_MID_COLOR);
   _afterNoonAndMorningColor.set(AFTERNOON_MORNING_COLOR);
   _midNight.set(NIGHT_MID_COLOR);
