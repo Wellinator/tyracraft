@@ -154,6 +154,9 @@ void DayNightCycleManager::update(const float deltaTime, const Vec4* camPos) {
   lerpAcc += deltaTime;
   lerp = lerpAcc / fiftyTicksInSeconds;
 
+  if (lerp > 1.0f) lerp = 1.0f;
+  if (lerp < 0.0f) lerp = 0.0f;
+
   // printf("Lerp: %f, lerpAcc: %f, deltaTime: %f\n", lerp, lerpAcc, deltaTime);
 
   updateCurrentAngle();
@@ -207,7 +210,8 @@ const float DayNightCycleManager::getSunLightIntensity() {
 }
 
 void DayNightCycleManager::updateCurrentAngle() {
-  currentAngleInDegrees = (g_ticksCounter / DAY_DURATION_IN_TICKS) * 360.0f;
+  currentAngleInDegrees =
+      fmodf((g_ticksCounter / DAY_DURATION_IN_TICKS) * 360.0f, 360.0f);
 
   // Normalize to 0-360 range
   if (currentAngleInDegrees < 0) {
@@ -223,8 +227,9 @@ void DayNightCycleManager::calNextEntitiesPosition() {
   uint32_t nextDayTick = g_ticksCounter + DAY_NIGHT_TICKS_UPDATE;
 
   // Calculate angles for current and next positions
-  float angleStart = (currentDayTick / DAY_DURATION_IN_TICKS) * 360.0f;
-  float angleEnd = (nextDayTick / DAY_DURATION_IN_TICKS) * 360.0f;
+  float angleStart =
+      fmodf((currentDayTick / DAY_DURATION_IN_TICKS) * 360.0f, 360.0f);
+  float angleEnd = fmodf((nextDayTick / DAY_DURATION_IN_TICKS) * 360.0f, 360.0f);
 
   // Normalize angles
   if (angleStart < 0) angleStart += 360.0f;
