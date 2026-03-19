@@ -50,9 +50,16 @@ void CloudsManager::calcVertices() {
 
   M4x4 model;
   model.identity();
-  model.scaleX(3000.0F);
-  model.scaleZ(3000.0F);
-  model.translateY(MAX_WORLD_POS.y - 100.0f);
+
+  const float worldWidth = OVERWORLD_H_DISTANCE * DOUBLE_BLOCK_SIZE;
+  const float cloudScale = worldWidth * 2.0f;
+
+  model.scaleX(cloudScale);
+  model.scaleZ(cloudScale);
+
+  model.translateX(CENTER_WORLD_POS.x);
+  model.translateZ(CENTER_WORLD_POS.z);
+  model.translateY(MAX_WORLD_POS.y - 64.0f);  // 64 = 4 * DOUBLE_BLOCK_SIZE
 
   for (size_t i = 0; i < DRAW_DATA_COUNT; i++) {
     vertices[i] = model * rawVertices[i];
