@@ -65,7 +65,7 @@ struct DebugMenu {
   u8 showCulledChunks = false;
 
   // Post FX
-  u8 enablePostFx = false;
+  u8 enablePostFx = true;
   u8 fogEnabled = false;
   u8 enableBloom = false;
 };
