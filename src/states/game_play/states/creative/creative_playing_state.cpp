@@ -158,8 +158,8 @@ void CreativePlayingState::tick() {
 void CreativePlayingState::render() {
   // General 3D sftuff
   stateGamePlay->world->dayNightCycleManager.render();
-  stateGamePlay->world->cloudsManager.render();
   stateGamePlay->world->renderOpaque();
+  stateGamePlay->world->cloudsManager.render();
   stateGamePlay->world->mobManager.render();
   stateGamePlay->world->particlesManager.render();
   stateGamePlay->player->render();
