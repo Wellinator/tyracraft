@@ -10,6 +10,7 @@
 #include <vector>
 #include <array>
 #include <fstream>
+#include <algorithm>
 #include <3libs/nlohmann/json.hpp>
 #include <utils.hpp>
 #include <stdint.h>

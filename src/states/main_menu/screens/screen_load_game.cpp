@@ -273,6 +273,7 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
         model->id = tempId++;
         model->path = worldPath;
         model->createdAt = dir.createdAt;
+        model->timestamp = dir.timestamp;
 
         SaveManager::SetSaveInfo(model->path.c_str(), model);
 
@@ -295,6 +296,15 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
         savedGamesList.push_back(model);
       }
     }
+  }
+
+  std::sort(savedGamesList.begin(), savedGamesList.end(),
+            [](SaveInfoModel* a, SaveInfoModel* b) {
+              return a->timestamp > b->timestamp;
+            });
+
+  for (size_t i = 0; i < savedGamesList.size(); i++) {
+    savedGamesList[i]->id = i + 1;
   }
 
   totalOfSaves = savedGamesList.size();

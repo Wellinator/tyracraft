@@ -51,11 +51,13 @@ struct UtilDirectory {
   UtilDirectory(dirent* dt) {
     isDir = S_ISDIR(dt->d_stat.st_mode);
     name = std::string(dt->d_name);
-    createdAt = std::string(ctime(&dt->d_stat.st_ctim.tv_sec));
+    timestamp = dt->d_stat.st_ctim.tv_sec;
+    createdAt = std::string(ctime(&timestamp));
   };
 
   std::string createdAt;
   std::string name;
+  time_t timestamp;
   u8 isDir;
 };
 

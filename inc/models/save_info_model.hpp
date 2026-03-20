@@ -2,6 +2,7 @@
 #include <tyra>
 #include <string>
 #include <inttypes.h>
+#include <ctime>
 
 using Tyra::Sprite;
 
@@ -13,5 +14,6 @@ class SaveInfoModel {
   std::string path;
   std::string name;
   std::string createdAt;
+  time_t timestamp;
   Sprite icon;
 };
