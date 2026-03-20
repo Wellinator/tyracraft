@@ -468,15 +468,20 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
 
   // Register block interaction async light propagation continuation
   blockInteraction.registerTickCallbacks(scheduler);
-
   tickHandles->add(scheduler.everyHandle(250, [this]() {
     updateLightModel();
-    const float prev = lastSunLightIntensity;
-    lastSunLightIntensity = worldLightModel.sunLightIntensity;
-    lightPropagation.updateSunlight();
-    lightPropagation.updateBlockLights();
-    if (fabsf(lastSunLightIntensity - prev) > 0.01f)
+    const float currentIntensity = worldLightModel.sunLightIntensity;
+
+    // Phase 1: Removed synchronous light propagation here.
+    // It is already handled incrementally in WorldBlockInteraction::registerTickCallbacks
+    // to prevent frame spikes.
+
+    // Accumulative threshold: only update lastSunLightIntensity when we actually trigger a reload.
+    // This ensures that even slow transitions eventually trigger a light update.
+    if (fabsf(currentIntensity - lastSunLightIntensity) > 0.02f) {
       chunkManager.enqueueChunksToReloadLight();
+      lastSunLightIntensity = currentIntensity;
+    }
   }));
 
   tickHandles->add(scheduler.everyHandle(

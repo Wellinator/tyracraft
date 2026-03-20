@@ -377,7 +377,7 @@ void ChunkManager::reloadLightDataAsync() {
   constexpr int LIGHT_UPDATE_BATCH_SIZE = 4;
   // Color-only relights are cheap (~0.2ms each), so we can process more per tick.
   // With Step 5 optimizations, most chunks are now colorsOnly → faster queue drain.
-  constexpr int MAX_COLORS_ONLY_PER_TICK = 4;
+  constexpr int MAX_COLORS_ONLY_PER_TICK = 3;
   // Keep block edit feedback responsive while still bounded.
   constexpr int MAX_FULL_REBUILDS_PER_TICK = 1;
   int processed = 0;
