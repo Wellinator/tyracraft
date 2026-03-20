@@ -102,4 +102,10 @@ class WorldLiquidPropagation {
 
   const s8 getNextLavaLevel(const s8 currentLevel);
   u8 canPropagateLiquid(uint16_t x, uint16_t y, uint16_t z);
+
+  /**
+   * @brief Search for the nearest hole within 5 blocks.
+   * Based on Minecraft logic: searches horizontally for a block with a "drop".
+   */
+  u8 calculateWaterHoleDistance(uint16_t x, uint16_t y, uint16_t z);
 };

@@ -358,7 +358,7 @@ void WorldLiquidPropagation::propagateWaterAddQueue() {
       s16 nextLevel = liquidNode.val - 1;
       u8 type = static_cast<u8>(Blocks::WATER_BLOCK);
 
-      if (canPropagateLiquid(nx, ny - 1, nz)) {
+      if (canPropagateLiquid(nx, ny - 1, nz) || pLevel->GetBlockFromMap(nx, ny - 1, nz) == type) {
         floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
                            (u8)LiquidOrientation::East);
         return;
@@ -366,31 +366,46 @@ void WorldLiquidPropagation::propagateWaterAddQueue() {
 
       if (nextLevel <= (u8)LiquidLevel::Percent0) return;
 
-      if (canPropagateLiquid(nx + 1, ny, nz))
-        floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
-                           (u8)LiquidOrientation::North);
-      if (canPropagateLiquid(nx, ny, nz + 1))
-        floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
-                           (u8)LiquidOrientation::East);
-      if (canPropagateLiquid(nx - 1, ny, nz))
-        floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
-                           (u8)LiquidOrientation::South);
-      if (canPropagateLiquid(nx, ny, nz - 1))
-        floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
-                           (u8)LiquidOrientation::West);
+      u8 dist[4];
+      dist[0] = calculateWaterHoleDistance(nx + 1, ny, nz);  // North
+      dist[1] = calculateWaterHoleDistance(nx, ny, nz + 1);  // East
+      dist[2] = calculateWaterHoleDistance(nx - 1, ny, nz);  // South
+      dist[3] = calculateWaterHoleDistance(nx, ny, nz - 1);  // West
 
-      if (canPropagateLiquid(nx + 1, ny, nz + 1))
-        floodFillLiquidAdd(nx + 1, ny, nz + 1, type, nextLevel - 1,
-                           (u8)LiquidOrientation::NorthEast);
-      if (canPropagateLiquid(nx + 1, ny, nz - 1))
-        floodFillLiquidAdd(nx + 1, ny, nz - 1, type, nextLevel - 1,
-                           (u8)LiquidOrientation::NorthWest);
-      if (canPropagateLiquid(nx - 1, ny, nz + 1))
-        floodFillLiquidAdd(nx - 1, ny, nz + 1, type, nextLevel - 1,
-                           (u8)LiquidOrientation::SouthEast);
-      if (canPropagateLiquid(nx - 1, ny, nz - 1))
-        floodFillLiquidAdd(nx - 1, ny, nz - 1, type, nextLevel - 1,
-                           (u8)LiquidOrientation::SouthWest);
+      u8 minDist = 255;
+      for (u8 d = 0; d < 4; d++) {
+        if (dist[d] < minDist) minDist = dist[d];
+      }
+
+      if (minDist < 255) {
+        // Flow only towards the nearest hole(s)
+        if (dist[0] == minDist)
+          floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                             (u8)LiquidOrientation::North);
+        if (dist[1] == minDist)
+          floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                             (u8)LiquidOrientation::East);
+        if (dist[2] == minDist)
+          floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                             (u8)LiquidOrientation::South);
+        if (dist[3] == minDist)
+          floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                             (u8)LiquidOrientation::West);
+      } else {
+        // No hole found, flow in all possible directions
+        if (canPropagateLiquid(nx + 1, ny, nz))
+          floodFillLiquidAdd(nx + 1, ny, nz, type, nextLevel,
+                             (u8)LiquidOrientation::North);
+        if (canPropagateLiquid(nx, ny, nz + 1))
+          floodFillLiquidAdd(nx, ny, nz + 1, type, nextLevel,
+                             (u8)LiquidOrientation::East);
+        if (canPropagateLiquid(nx - 1, ny, nz))
+          floodFillLiquidAdd(nx - 1, ny, nz, type, nextLevel,
+                             (u8)LiquidOrientation::South);
+        if (canPropagateLiquid(nx, ny, nz - 1))
+          floodFillLiquidAdd(nx, ny, nz - 1, type, nextLevel,
+                             (u8)LiquidOrientation::West);
+      }
     }
   }
 }
@@ -468,7 +483,7 @@ void WorldLiquidPropagation::propagateLavaAddQueue() {
       s8 nextLevel = getNextLavaLevel(liquidNode.val);
       u8 type = (u8)Blocks::LAVA_BLOCK;
 
-      if (canPropagateLiquid(nx, ny - 1, nz)) {
+      if (canPropagateLiquid(nx, ny - 1, nz) || pLevel->GetBlockFromMap(nx, ny - 1, nz) == type) {
         floodFillLiquidAdd(nx, ny - 1, nz, type, LiquidLevel::Percent100,
                            (u8)BlockOrientation::East);
         return;
@@ -552,7 +567,58 @@ u8 WorldLiquidPropagation::canPropagateLiquid(uint16_t x, uint16_t y,
   const u8 type = pLevel->GetBlockFromMap(x, y, z);
   return type == (u8)Blocks::AIR_BLOCK || type == (u8)Blocks::GRASS ||
          type == (u8)Blocks::POPPY_FLOWER || type == (u8)Blocks::TORCH ||
-      type == (u8)Blocks::DANDELION_FLOWER ||
-      type == (u8)Blocks::DEAD_BUSH || type == (u8)Blocks::REEDS_BLOCK ||
-      type == (u8)Blocks::TALL_GRASS_BLOCK;
+         type == (u8)Blocks::DANDELION_FLOWER ||
+         type == (u8)Blocks::DEAD_BUSH || type == (u8)Blocks::REEDS_BLOCK ||
+         type == (u8)Blocks::TALL_GRASS_BLOCK;
+}
+
+u8 WorldLiquidPropagation::calculateWaterHoleDistance(uint16_t x, uint16_t y,
+                                                      uint16_t z) {
+  if (!canPropagateLiquid(x, y, z)) return 255;
+  if (canPropagateLiquid(x, y - 1, z)) return 1;
+
+  // BFS to find the nearest hole within 5 blocks
+  std::queue<BfsNode> searchQueue;
+  searchQueue.emplace(x, y, z, 1);
+
+  // Since we only search up to 5 blocks, we can use a small visited set.
+  // We'll use a simple approach: if we hit a block already in the queue, we'd
+  // skip it, but for simplicity on PS2 without many allocations, we'll try a
+  // fixed visited array if we knew the bounds, or just a small queue search.
+  // Given PS2 constraints, let's use a small local visited array for the 11x11
+  // search area.
+  bool visited[11][11];
+  for (int i = 0; i < 11; i++)
+    for (int j = 0; j < 11; j++) visited[i][j] = false;
+
+  visited[5][5] = true;  // Center (x, z)
+
+  while (!searchQueue.empty()) {
+    BfsNode curr = searchQueue.front();
+    searchQueue.pop();
+
+    if (curr.val >= 5) continue;
+
+    const uint16_t dx[4] = {1, 0, 65535, 0};  // +1, 0, -1, 0
+    const uint16_t dz[4] = {0, 1, 0, 65535};  // 0, +1, 0, -1
+
+    for (int i = 0; i < 4; i++) {
+      uint16_t nx = curr.x + dx[i];
+      uint16_t nz = curr.z + dz[i];
+
+      int vx = (int)nx - (int)x + 5;
+      int vz = (int)nz - (int)z + 5;
+
+      if (vx < 0 || vx >= 11 || vz < 0 || vz >= 11) continue;
+      if (visited[vx][vz]) continue;
+
+      if (canPropagateLiquid(nx, y, nz)) {
+        if (canPropagateLiquid(nx, y - 1, nz)) return curr.val + 1;
+        visited[vx][vz] = true;
+        searchQueue.emplace(nx, y, nz, curr.val + 1);
+      }
+    }
+  }
+
+  return 255;
 }
