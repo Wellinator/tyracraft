@@ -3,6 +3,7 @@
 #include "managers/settings_manager.hpp"
 #include "memory-monitor/memory_monitor.hpp"
 #include "utils.hpp"
+#include "services/memory_card_service.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <gs_privileged.h>
@@ -39,6 +40,19 @@ void TyraCraftGame::init() {
 
   // Initialize background task service
   new BackgroundTaskService();
+
+  // Initialize memory card service
+  new MemoryCardService();
+  auto* mcService = MemoryCardService::getInstance();
+  mcService->init();
+
+  // HELLO: Memory Card Test
+  if (mcService->isAvailable(0, 0)) {
+    int freeKB = mcService->getFreeSpace(0, 0);
+    TYRA_LOG("TEST: Memory Card detected in Slot 0! Free space: ", freeKB, " KB");
+  } else {
+    TYRA_LOG("TEST: No Memory Card detected in Slot 0.");
+  }
 
   // Test background task: simulates work on worker thread
   auto* bgService = BackgroundTaskService::getInstance();

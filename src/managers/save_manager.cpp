@@ -4,6 +4,7 @@
 #include "managers/save/save_serializer.hpp"
 #include "managers/save/save_format.hpp"
 #include "managers/save/migration_manager.hpp"
+#include "services/memory_card_service.hpp"
 
 using namespace TyraCraft;
 
@@ -26,6 +27,15 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
   const char* path = normalizedPath.c_str();
 
   // Ensure save directory exists
+  if (normalizedPath.find("mc0:") == 0 || normalizedPath.find("mc1:") == 0) {
+    int slot = normalizedPath.find("mc0:") == 0 ? 0 : 1;
+    auto* mcService = MemoryCardService::getInstance();
+    if (!mcService->isAvailable(slot)) {
+      return SaveResult::Failure("Memory Card not found in slot " + std::to_string(slot));
+    }
+    mcService->ensureDirectoryExists(slot);
+  }
+
   if (!Utils::makeDirectoryRecursive(path)) {
     return SaveResult::Failure("Failed to create save directory");
   }
@@ -94,6 +104,15 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
 
   std::string normalizedPath = Utils::normalizePath(fullPath);
   const char* path = normalizedPath.c_str();
+
+  // Check if loading from Memory Card
+  if (normalizedPath.find("mc0:") == 0 || normalizedPath.find("mc1:") == 0) {
+    int slot = normalizedPath.find("mc0:") == 0 ? 0 : 1;
+    auto* mcService = MemoryCardService::getInstance();
+    if (!mcService->isAvailable(slot)) {
+      return SaveResult::Failure("Memory Card not found in slot " + std::to_string(slot));
+    }
+  }
 
   // Reset world before loading new data
   state->world->resetWorldData();
