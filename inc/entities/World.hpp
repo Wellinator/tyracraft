@@ -190,6 +190,8 @@ class World {
 
   inline WorldLightModel* getWorldLightModel() { return &worldLightModel; };
 
+  const Tyra::Color getSkyColor() const { return currentSkyColor; };
+
   const uint32_t getSeed() const { return seed; };
   void setSeed(const uint32_t& newSeed) { seed = newSeed; };
 
@@ -243,6 +245,8 @@ class World {
 
   WorldLightModel worldLightModel;
   float lastSunLightIntensity = 0.0f;  // Track sun intensity for delta guard
+
+  Tyra::Color currentSkyColor = Tyra::Color(0.0f, 0.0f, 0.0f);
 
   void updateChunkByPlayerPosition(Player* player, Camera* t_camera);
   void scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward);

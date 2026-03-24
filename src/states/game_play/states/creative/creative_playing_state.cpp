@@ -168,9 +168,7 @@ void CreativePlayingState::render() {
   stateGamePlay->world->renderTransparent();
   stateGamePlay->world->renderBlockDamageOverlay();
 
-  postFxManager.renderAll(Color(25, 25, 255));
-  // postFxManager.renderFog(
-  //     stateGamePlay->world->dayNightCycleManager.getSkyColor());
+  postFxManager.renderAll(stateGamePlay->world->getSkyColor());
 
   // General 2D sftuff
   renderCreativeUi();

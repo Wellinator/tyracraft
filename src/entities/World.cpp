@@ -67,6 +67,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
 
   // Init light stuff
   dayNightCycleManager.init(t_renderer);
+  currentSkyColor = dayNightCycleManager.getSkyColor();
   initWorldLightModel();
 
   blockManager.init(t_renderer, worldOptions.texturePack);
@@ -450,7 +451,24 @@ void World::tick() {
       blockInteraction.targetBlock->damage > 0)
     blockInteraction.updateBlockDamage();
 
-  t_renderer->core.setClearScreenColor(dayNightCycleManager.getSkyColor());
+  Tyra::Color targetSkyColor = dayNightCycleManager.getSkyColor();
+
+  if (cachedCamera != nullptr && pLevel != nullptr) {
+    Vec4 blockOffset = pLevel->worldPosToOffset(cachedCamera->position);
+    if (blockOffset.y < 64.0f && pLevel->BoundCheckMap(static_cast<uint16_t>(blockOffset.x), static_cast<uint16_t>(blockOffset.y), static_cast<uint16_t>(blockOffset.z))) {
+      uint8_t sunLight = pLevel->GetSunLightFromMap(static_cast<uint16_t>(blockOffset.x), static_cast<uint16_t>(blockOffset.y), static_cast<uint16_t>(blockOffset.z));
+      
+      float darknessFactor = (15.0f - (float)sunLight) / 15.0f;
+      
+      targetSkyColor.r = targetSkyColor.r * (1.0f - darknessFactor);
+      targetSkyColor.g = targetSkyColor.g * (1.0f - darknessFactor);
+      targetSkyColor.b = targetSkyColor.b * (1.0f - darknessFactor);
+    }
+  }
+
+  currentSkyColor.lerp(currentSkyColor, targetSkyColor, 0.05f);
+
+  t_renderer->core.setClearScreenColor(currentSkyColor);
 }
 
 void World::setTickContext(Player* t_player, Camera* t_camera) {

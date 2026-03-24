@@ -180,8 +180,7 @@ void MazePlayingState::render() {
   stateGamePlay->world->renderBlockDamageOverlay();
 
   // PostFX - fog + bloom (se habilitado) + restore
-  postFxManager.renderAll(
-      stateGamePlay->world->dayNightCycleManager.getSkyColor());
+  postFxManager.renderAll(stateGamePlay->world->getSkyColor());
 
   // General 2D sftuff
   renderMazeUi();
