@@ -5,7 +5,7 @@
 #include <loadfile.h>
 #include <stdio.h>
 #include <string.h>
-#include "utils.hpp"
+#include <fcntl.h>
 #include "debug.hpp"
 
 namespace TyraCraft {
@@ -76,60 +76,127 @@ int MemoryCardService::loadIrx(const char* filename) {
   return id;
 }
 
-bool MemoryCardService::isAvailable(int slot, int port) {
+bool MemoryCardService::isAvailable(int port, int slot) {
   if (!initialized) return false;
 
   int type, free, format, ret;
-  mcGetInfo(slot, port, &type, &free, &format);
+  // libmc: mcGetInfo(port, slot, ...)
+  mcGetInfo(port, slot, &type, &free, &format);
   mcSync(MC_WAIT, NULL, &ret);
 
   // If type is not 0, there's a card
   return type != 0;
 }
 
-int MemoryCardService::getFreeSpace(int slot, int port) {
+int MemoryCardService::getFreeSpace(int port, int slot) {
   if (!initialized) return -1;
 
   int type, free, format, ret;
-  mcGetInfo(slot, port, &type, &free, &format);
+  // libmc: mcGetInfo(port, slot, ...)
+  mcGetInfo(port, slot, &type, &free, &format);
   mcSync(MC_WAIT, NULL, &ret);
 
-  return free; // in KB
+  return free; // in clusters (each cluster = 512 bytes on a standard PS2 MC)
 }
 
-bool MemoryCardService::ensureDirectoryExists(int slot, int port) {
+bool MemoryCardService::ensureDirectoryExists(int port, int slot) {
   if (!initialized) return false;
 
-  std::string rootPath = getMcPath(slot, port);
-  
-  // Check if root dir exists
-  if (!Utils::directoryExists(rootPath)) {
-    TCLOG("Creating MC root directory: %s", rootPath.c_str());
-    if (mcMkDir(slot, port, MC_ROOT_DIR) < 0) {
-        mcSync(MC_WAIT, NULL, NULL); // wait anyway
-    } else {
-        mcSync(MC_WAIT, NULL, NULL);
-    }
-  }
+  std::string relRootDir = MC_ROOT_DIR;
+  std::string relSavesDir = relRootDir + "/" + MC_SAVES_DIR;
 
-  std::string savesPath = rootPath + "/" + MC_SAVES_DIR;
-  if (!Utils::directoryExists(savesPath)) {
-    TCLOG("Creating MC saves directory: %s", savesPath.c_str());
-    // mcMkDir requires the base directory to exist, which we just handled
-    std::string relSavesDir = std::string(MC_ROOT_DIR) + "/" + MC_SAVES_DIR;
-    if (mcMkDir(slot, port, relSavesDir.c_str()) < 0) {
-        mcSync(MC_WAIT, NULL, NULL);
-    } else {
-        mcSync(MC_WAIT, NULL, NULL);
-    }
-  }
+  // We skip directoryExists check for MC because opendir() can crash on mcX:
+  // Instead, we just try to create the directories and check the results.
+  
+  int ret;
+  TYRA_LOG("Ensuring MC directory structure: /", relRootDir.c_str());
+  
+  // libmc: mcMkDir(port, slot, name)
+  // Try to create root dir
+  mcMkDir(port, slot, relRootDir.c_str());
+  mcSync(MC_WAIT, NULL, &ret);
+  // ret >= 0 means created, -17 (EEXIST) means already exists, both are fine.
+
+  // Try to create saves dir
+  mcMkDir(port, slot, relSavesDir.c_str());
+  mcSync(MC_WAIT, NULL, &ret);
+
+  // Install icon files
+  installIcon(port, slot);
 
   return true;
 }
 
-std::string MemoryCardService::getMcPath(int slot, int port) {
+bool MemoryCardService::installIcon(int port, int slot) {
+  const char* iconFiles[] = {"icon.sys", "icon.icn"};
+  std::string mcPath = getMcPath(port, slot);
+
+  // Enter the TyraCraft directory on MC
+  // libmc: mcChdir(port, slot, newDir, currentDir)
+  // NOTE: currentDir MUST be a valid buffer — libmc always writes to it,
+  //       even when the caller doesn't need the value. Passing NULL causes TLB Miss.
+  int ret;
+  char prevDir[256] = {0};
+  mcChdir(port, slot, MC_ROOT_DIR, prevDir);
+  mcSync(MC_WAIT, NULL, &ret);
+
+  for (const char* iconFile : iconFiles) {
+    std::string destPath = mcPath + "/" + iconFile;
+    
+    // Try both /res/ and root directory
+    std::string srcPath = Tyra::FileUtils::fromCwd("res/") + iconFile;
+    if (!Utils::fileExists(srcPath)) {
+      srcPath = Tyra::FileUtils::fromCwd(iconFile);
+    }
+    
+    // Final check
+    if (!Utils::fileExists(srcPath)) {
+        srcPath = Tyra::FileUtils::fromCwd(std::string("/") + iconFile);
+    }
+
+    if (Utils::fileExists(srcPath)) {
+      TYRA_LOG("Installing ", iconFile, " to MC from ", srcPath);
+        
+      FILE* src = fopen(srcPath.c_str(), "rb");
+      if (src) {
+        // libmc: mcOpen(port, slot, name, mode) — result (fd) returned via mcSync
+        int fd, writeRet;
+        mcOpen(port, slot, iconFile, O_WRONLY | O_CREAT);
+        mcSync(MC_WAIT, NULL, &fd);
+
+        if (fd >= 0) {
+          char buffer[1024];
+          size_t bytes;
+          while ((bytes = fread(buffer, 1, sizeof(buffer), src)) > 0) {
+            // libmc: mcWrite(fd, buffer, size)
+            mcWrite(fd, buffer, (int)bytes);
+            mcSync(MC_WAIT, NULL, &writeRet);
+          }
+          // Flush before close to ensure data is committed
+          mcFlush(fd);
+          mcSync(MC_WAIT, NULL, &ret);
+          // libmc: mcClose(fd)
+          mcClose(fd);
+          mcSync(MC_WAIT, NULL, &ret);
+        }
+        fclose(src);
+      }
+    } else {
+      TYRA_LOG("Warning: ", srcPath, " not found.");
+    }
+  }
+
+  // Return to root
+  char prevDir2[256] = {0};
+  mcChdir(port, slot, "/", prevDir2);
+  mcSync(MC_WAIT, NULL, &ret);
+
+  return true;
+}
+
+std::string MemoryCardService::getMcPath(int port, int slot) {
   char path[32];
-  sprintf(path, "mc%d:/%s", slot, MC_ROOT_DIR);
+  sprintf(path, "mc%d:/%s", port, MC_ROOT_DIR);
   return std::string(path);
 }
 

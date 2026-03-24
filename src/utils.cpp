@@ -9,17 +9,17 @@
 */
 
 #include "utils.hpp"
+#include "tyracraft_game.hpp"
+#include "services/memory_card_service.hpp"
 #include <fastmath.h>
 #include <physics/ray.hpp>
 #include <renderer/3d/bbox/bbox.hpp>
-#include <sifrpc.h>
-#include <loadfile.h>
-#include <libvux.h>
-#include <stdio.h>
+#include <libmc.h>
 
 using Tyra::BBox;
 using Tyra::Color;
 using Tyra::Math;
+using TyraCraft::MemoryCardService;
 using Tyra::Mesh;
 using Tyra::Ray;
 using Tyra::Vec4;
@@ -565,7 +565,13 @@ bool Utils::makeDirectoryRecursive(const std::string& path) {
 
     if (!dir.empty() && dir != currentPrefix && !skipMkdir) {
       if (!directoryExists(dir)) {
-        mkdir(dir.c_str(), 0777);
+        if (currentPrefix == "mc0:" || currentPrefix == "mc1:") {
+          int slot = currentPrefix == "mc0:" ? 0 : 1;
+          mcMkDir(slot, 0, component.c_str());
+          mcSync(MC_WAIT, NULL, NULL);
+        } else {
+          mkdir(dir.c_str(), 0777);
+        }
       }
     }
     pos++;
@@ -573,6 +579,19 @@ bool Utils::makeDirectoryRecursive(const std::string& path) {
 
   // Create final directory
   if (!directoryExists(sanitizedPath)) {
+    if (currentPrefix == "mc0:" || currentPrefix == "mc1:") {
+      int slot = currentPrefix == "mc0:" ? 0 : 1;
+      // Get filename part
+      size_t lastSlash = sanitizedPath.find_last_of('/');
+      std::string lastComponent = remainingPath;
+      if (lastSlash != std::string::npos) {
+          lastComponent = remainingPath.substr(remainingPath.find_last_of('/') + 1);
+      }
+      
+      int ret = mcMkDir(slot, 0, remainingPath.c_str());
+      mcSync(MC_WAIT, NULL, NULL);
+      return ret >= 0;
+    }
     return mkdir(sanitizedPath.c_str(), 0777) == 0;
   }
   return true;

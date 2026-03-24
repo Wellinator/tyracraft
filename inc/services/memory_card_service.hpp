@@ -19,16 +19,20 @@ class MemoryCardService : public Singleton<MemoryCardService> {
   bool init();
 
   /** Check if a memory card is inserted in the specified slot/port */
-  bool isAvailable(int slot = 0, int port = 0);
+  bool isAvailable(int port = 0, int slot = 0);
 
   /** Get free space in kilobytes */
-  int getFreeSpace(int slot = 0, int port = 0);
+  int getFreeSpace(int port = 0, int slot = 0);
 
-  /** Create TyraCraft directory on the card if it doesn't exist */
-  bool ensureDirectoryExists(int slot = 0, int port = 0);
+  bool ensureDirectoryExists(int port = 0, int slot = 0);
+
+  /**
+   * @brief Copy icon.sys and icon.icn from res/ to the MC directory
+   */
+  bool installIcon(int port = 0, int slot = 0);
 
   /** Get the base path for MC saves (e.g., "mc0:/TyraCraft/") */
-  std::string getMcPath(int slot = 0, int port = 0);
+  std::string getMcPath(int port = 0, int slot = 0);
 
   /** Load a custom IRX from a file */
   static int loadIrx(const char* filename);

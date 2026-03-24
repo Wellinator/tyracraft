@@ -46,10 +46,11 @@ void TyraCraftGame::init() {
   auto* mcService = MemoryCardService::getInstance();
   mcService->init();
 
-  // HELLO: Memory Card Test
+  // Memory Card Test
   if (mcService->isAvailable(0, 0)) {
     int freeKB = mcService->getFreeSpace(0, 0);
     TYRA_LOG("TEST: Memory Card detected in Slot 0! Free space: ", freeKB, " KB");
+    mcService->ensureDirectoryExists(0, 0);
   } else {
     TYRA_LOG("TEST: No Memory Card detected in Slot 0.");
   }

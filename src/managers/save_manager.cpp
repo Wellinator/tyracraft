@@ -28,12 +28,12 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
 
   // Ensure save directory exists
   if (normalizedPath.find("mc0:") == 0 || normalizedPath.find("mc1:") == 0) {
-    int slot = normalizedPath.find("mc0:") == 0 ? 0 : 1;
+    int port = normalizedPath.find("mc0:") == 0 ? 0 : 1;
     auto* mcService = MemoryCardService::getInstance();
-    if (!mcService->isAvailable(slot)) {
-      return SaveResult::Failure("Memory Card not found in slot " + std::to_string(slot));
+    if (!mcService->isAvailable(port)) {
+      return SaveResult::Failure("Memory Card not found in port " + std::to_string(port));
     }
-    mcService->ensureDirectoryExists(slot);
+    mcService->ensureDirectoryExists(port);
   }
 
   if (!Utils::makeDirectoryRecursive(path)) {
@@ -107,10 +107,10 @@ SaveResult SaveManager::LoadSavedGame(StateGamePlay* state,
 
   // Check if loading from Memory Card
   if (normalizedPath.find("mc0:") == 0 || normalizedPath.find("mc1:") == 0) {
-    int slot = normalizedPath.find("mc0:") == 0 ? 0 : 1;
+    int port = normalizedPath.find("mc0:") == 0 ? 0 : 1;
     auto* mcService = MemoryCardService::getInstance();
-    if (!mcService->isAvailable(slot)) {
-      return SaveResult::Failure("Memory Card not found in slot " + std::to_string(slot));
+    if (!mcService->isAvailable(port)) {
+      return SaveResult::Failure("Memory Card not found in port " + std::to_string(port));
     }
   }
 
@@ -309,6 +309,7 @@ int SaveManager::DeleteSave(const char* fullPath) {
 }
 
 bool SaveManager::HasAvailableSaves() {
+  // Check local saves
   std::vector<UtilDirectory> saveFilesList = Utils::listDir(FileUtils::fromCwd("saves/").c_str());
   
   for (size_t i = 0; i < saveFilesList.size(); i++) {
@@ -318,6 +319,27 @@ bool SaveManager::HasAvailableSaves() {
           (std::string(FileUtils::fromCwd("saves/")) + dir.name).c_str());
       if (Utils::fileExists(metadataPath)) {
         return true;
+      }
+    }
+  }
+
+  // Check Memory Card saves (port 0 = mc0:, port 1 = mc1:)
+  auto* mcService = MemoryCardService::getInstance();
+  if (mcService && mcService->init()) {
+    for (int port = 0; port < 2; port++) {
+      if (mcService->isAvailable(port)) {
+        std::string mcSavesPath = mcService->getMcPath(port) + "/saves";
+        if (Utils::directoryExists(mcSavesPath)) {
+          std::vector<UtilDirectory> mcSavesList = Utils::listDir(mcSavesPath.c_str());
+          for (const auto& dir : mcSavesList) {
+            if (dir.isDir) {
+                std::string metadataPath = getMetadataPath((mcSavesPath + "/" + dir.name).c_str());
+                if (Utils::fileExists(metadataPath)) {
+                    return true;
+                }
+            }
+          }
+        }
       }
     }
   }
