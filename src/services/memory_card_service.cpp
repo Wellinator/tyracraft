@@ -11,7 +11,6 @@
 namespace TyraCraft {
 
 const char* MemoryCardService::MC_ROOT_DIR = "TyraCraft";
-const char* MemoryCardService::MC_SAVES_DIR = "saves";
 
 MemoryCardService::MemoryCardService() : initialized(false) {}
 
@@ -99,49 +98,50 @@ int MemoryCardService::getFreeSpace(int port, int slot) {
   return free; // in clusters (each cluster = 512 bytes on a standard PS2 MC)
 }
 
-bool MemoryCardService::ensureDirectoryExists(int port, int slot) {
+bool MemoryCardService::ensureDirectoryExists(int port, int slot, const char* saveName) {
   if (!initialized) return false;
 
-  std::string relRootDir = MC_ROOT_DIR;
-  std::string relSavesDir = relRootDir + "/" + MC_SAVES_DIR;
-
-  // We skip directoryExists check for MC because opendir() can crash on mcX:
-  // Instead, we just try to create the directories and check the results.
-  
   int ret;
-  TYRA_LOG("Ensuring MC directory structure: /", relRootDir.c_str());
-  
-  // libmc: mcMkDir(port, slot, name)
-  // Try to create root dir
-  mcMkDir(port, slot, relRootDir.c_str());
-  mcSync(MC_WAIT, NULL, &ret);
-  // ret >= 0 means created, -17 (EEXIST) means already exists, both are fine.
+  std::string relRootDir = MC_ROOT_DIR;
 
-  // Try to create saves dir
-  mcMkDir(port, slot, relSavesDir.c_str());
-  mcSync(MC_WAIT, NULL, &ret);
+  if (saveName) {
+    // Create save directory: TyraCraft_<saveName>
+    std::string saveDir = relRootDir + "_" + saveName;
+    TYRA_LOG("Ensuring MC save directory: /", saveDir.c_str());
+    
+    mcMkDir(port, slot, saveDir.c_str());
+    mcSync(MC_WAIT, NULL, &ret);
 
-  // Install icon files
-  installIcon(port, slot);
+    // Install icons into the specific save directory
+    installIcon(getMcPath(port, slot) + "_" + saveName, port, slot);
+  } else {
+    // Default root directory
+    TYRA_LOG("Ensuring MC root directory: /", relRootDir.c_str());
+    mcMkDir(port, slot, relRootDir.c_str());
+    mcSync(MC_WAIT, NULL, &ret);
+
+    // Install icons into the root directory
+    installIcon(getMcPath(port, slot), port, slot);
+  }
 
   return true;
 }
 
-bool MemoryCardService::installIcon(int port, int slot) {
+bool MemoryCardService::installIcon(const std::string& targetDir, int port, int slot) {
   const char* iconFiles[] = {"icon.sys", "icon.icn"};
-  std::string mcPath = getMcPath(port, slot);
 
-  // Enter the TyraCraft directory on MC
-  // libmc: mcChdir(port, slot, newDir, currentDir)
-  // NOTE: currentDir MUST be a valid buffer — libmc always writes to it,
-  //       even when the caller doesn't need the value. Passing NULL causes TLB Miss.
+  // Enter the target directory on MC
+  // Extract relative path from targetDir (e.g. "mc0:/TyraCraft_World" -> "TyraCraft_World")
+  size_t colonPos = targetDir.find(':');
+  std::string relDir = (colonPos != std::string::npos) ? targetDir.substr(colonPos + 2) : targetDir;
+
   int ret;
   char prevDir[256] = {0};
-  mcChdir(port, slot, MC_ROOT_DIR, prevDir);
+  mcChdir(port, slot, relDir.c_str(), prevDir);
   mcSync(MC_WAIT, NULL, &ret);
 
   for (const char* iconFile : iconFiles) {
-    std::string destPath = mcPath + "/" + iconFile;
+    std::string destPath = targetDir + "/" + iconFile;
     
     // Try both /res/ and root directory
     std::string srcPath = Tyra::FileUtils::fromCwd("res/") + iconFile;
@@ -198,6 +198,30 @@ std::string MemoryCardService::getMcPath(int port, int slot) {
   char path[32];
   sprintf(path, "mc%d:/%s", port, MC_ROOT_DIR);
   return std::string(path);
+}
+
+std::vector<std::string> MemoryCardService::listSaves(int port, int slot) {
+  std::vector<std::string> saves;
+  if (!initialized) return saves;
+
+  sceMcTblGetDir table[10] __attribute__((aligned(64)));
+  int count;
+
+  // Search for directories starting with TyraCraft_
+  std::string searchPattern = std::string(MC_ROOT_DIR) + "_*";
+  mcGetDir(port, slot, searchPattern.c_str(), 0, 10, table);
+  mcSync(MC_WAIT, NULL, &count);
+
+  if (count > 0) {
+    for (int i = 0; i < count; i++) {
+      // Ensure it's a directory (bit 5 in entry mode)
+      if (table[i].AttrFile & MC_ATTR_SUBDIR) {
+        saves.push_back(std::string(reinterpret_cast<const char*>(table[i].EntryName)));
+      }
+    }
+  }
+
+  return saves;
 }
 
 }  // namespace TyraCraft

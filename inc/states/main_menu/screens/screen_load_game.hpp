@@ -45,6 +45,8 @@ class ScreenLoadGame : public ScreenBase {
 
   Sprite toggleBtnOff;
   Sprite toggleBtnOn;
+  Sprite toggleBtnOffHover;
+  Sprite toggleBtnOnHover;
 
   Sprite btnTriangle;
   Sprite btnCross;

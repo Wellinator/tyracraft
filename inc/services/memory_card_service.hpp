@@ -3,12 +3,15 @@
 #include <tamtypes.h>
 #include <libmc.h>
 #include <string>
+#include <vector>
 #include "singleton.hpp"
 
 namespace TyraCraft {
 
 class MemoryCardService : public Singleton<MemoryCardService> {
  public:
+  static const char* MC_ROOT_DIR;
+
   MemoryCardService();
   ~MemoryCardService();
 
@@ -24,14 +27,17 @@ class MemoryCardService : public Singleton<MemoryCardService> {
   /** Get free space in kilobytes */
   int getFreeSpace(int port = 0, int slot = 0);
 
-  bool ensureDirectoryExists(int port = 0, int slot = 0);
+  bool ensureDirectoryExists(int port = 0, int slot = 0, const char* saveName = nullptr);
 
   /**
-   * @brief Copy icon.sys and icon.icn from res/ to the MC directory
+   * @brief Copy icon.sys and icon.icn from res/ to the specified MC directory
    */
-  bool installIcon(int port = 0, int slot = 0);
+  bool installIcon(const std::string& targetDir, int port = 0, int slot = 0);
 
-  /** Get the base path for MC saves (e.g., "mc0:/TyraCraft/") */
+  /** Get the list of TyraCraft saves on the memory card */
+  std::vector<std::string> listSaves(int port = 0, int slot = 0);
+
+  /** Get the base path for MC saves (e.g., "mc0:/TyraCraft") */
   std::string getMcPath(int port = 0, int slot = 0);
 
   /** Load a custom IRX from a file */
@@ -40,9 +46,6 @@ class MemoryCardService : public Singleton<MemoryCardService> {
  private:
   bool initialized;
   
-  static const char* MC_ROOT_DIR;
-  static const char* MC_SAVES_DIR;
-
   void loadModules();
 };
 

@@ -4,6 +4,10 @@
 #include "states/main_menu/screens/screen_main.hpp"
 #include "managers/notification/notification_manager.hpp"
 #include "managers/save_manager.hpp"
+#include "services/memory_card_service.hpp"
+#include <cstring>
+
+using namespace TyraCraft;
 
 ScreenLoadGame::ScreenLoadGame(StateMainMenu* t_context)
     : ScreenBase(t_context) {
@@ -18,6 +22,8 @@ ScreenLoadGame::~ScreenLoadGame() {
   textureRepo->freeBySprite(tab1);
   textureRepo->freeBySprite(toggleBtnOn);
   textureRepo->freeBySprite(toggleBtnOff);
+  textureRepo->freeBySprite(toggleBtnOnHover);
+  textureRepo->freeBySprite(toggleBtnOffHover);
   textureRepo->freeBySprite(btnTriangle);
   textureRepo->freeBySprite(btnCross);
   textureRepo->freeBySprite(btnDpadUp);
@@ -65,6 +71,18 @@ void ScreenLoadGame::init() {
   toggleBtnOn.position.set(187.0F, 165.0F);
   textureRepo->add(FileUtils::fromCwd("textures/gui/toggle_on.png"))
       ->addLink(toggleBtnOn.id);
+
+  toggleBtnOffHover.mode = Tyra::MODE_STRETCH;
+  toggleBtnOffHover.size.set(32, 32);
+  toggleBtnOffHover.position.set(187.0F, 165.0F);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/toggle_off_hover.png"))
+      ->addLink(toggleBtnOffHover.id);
+
+  toggleBtnOnHover.mode = Tyra::MODE_STRETCH;
+  toggleBtnOnHover.size.set(32, 32);
+  toggleBtnOnHover.position.set(187.0F, 165.0F);
+  textureRepo->add(FileUtils::fromCwd("textures/gui/toggle_on_hover.png"))
+      ->addLink(toggleBtnOnHover.id);
 
   btnL1.mode = Tyra::MODE_STRETCH;
   btnL1.size.set(32, 32);
@@ -132,7 +150,19 @@ void ScreenLoadGame::render() {
 
   t_renderer->renderer2D.render(backgroundLoadGame);
   t_renderer->renderer2D.render(tab1);
-  t_renderer->renderer2D.render(toggleBtnOff);
+  if (saveOrigin == ScreenLoadGameSaveOrigin::Mass) {
+    if (activeOption == ScreenLoadGameOptions::ToggleSaveOrigin) {
+      t_renderer->renderer2D.render(toggleBtnOffHover);
+    } else {
+      t_renderer->renderer2D.render(toggleBtnOff);
+    }
+  } else {
+    if (activeOption == ScreenLoadGameOptions::ToggleSaveOrigin) {
+      t_renderer->renderer2D.render(toggleBtnOnHover);
+    } else {
+      t_renderer->renderer2D.render(toggleBtnOn);
+    }
+  }
   t_renderer->renderer2D.render(btnL1);
   t_renderer->renderer2D.render(btnR1);
 
@@ -178,7 +208,8 @@ void ScreenLoadGame::render() {
     const float iconYPosition = (i * iconHeight) + iconOffsetY - i;
     item->icon.position.set(140.0F, iconYPosition);
 
-    if (selectedSavedGame->id == item->id) {
+    if (activeOption == ScreenLoadGameOptions::SaveFile &&
+        selectedSavedGame->id == item->id) {
       selectedSaveOverlay.position.y = iconYPosition - 4;
       t_renderer->renderer2D.render(selectedSaveOverlay);
 
@@ -215,18 +246,39 @@ void ScreenLoadGame::handleOptionsSelection() {
     context->setScreen(new ScreenNewGame(context));
   }
 
-  if (savedGamesList.size() > 0) {
-    if (clickedButtons.DpadDown) {
-      selectNextSave();
-    } else if (clickedButtons.DpadUp) {
-      selectPreviousSave();
+  if (clickedButtons.DpadDown) {
+    if (activeOption == ScreenLoadGameOptions::ToggleSaveOrigin) {
+      if (totalOfSaves > 0) {
+        activeOption = ScreenLoadGameOptions::SaveFile;
+        currentSaveIndex = 0;
+        selectedSavedGame = savedGamesList.at(currentSaveIndex);
+      }
+    } else {
+      if (totalOfSaves > 0) {
+        if (currentSaveIndex == totalOfSaves - 1) {
+          activeOption = ScreenLoadGameOptions::ToggleSaveOrigin;
+        } else {
+          selectNextSave();
+        }
+      }
+    }
+  } else if (clickedButtons.DpadUp) {
+    if (activeOption == ScreenLoadGameOptions::ToggleSaveOrigin) {
+      if (totalOfSaves > 0) {
+        activeOption = ScreenLoadGameOptions::SaveFile;
+        currentSaveIndex = totalOfSaves - 1;
+        selectedSavedGame = savedGamesList.at(currentSaveIndex);
+      }
+    } else {
+      if (totalOfSaves > 0) {
+        if (currentSaveIndex == 0) {
+          activeOption = ScreenLoadGameOptions::ToggleSaveOrigin;
+        } else {
+          selectPreviousSave();
+        }
+      }
     }
   }
-
-  // TODO: implements loading from MC
-  // if (clickedButtons.Select) {
-  //   toggleSaveOrigin();
-  // }
 
   if (clickedButtons.Triangle) {
     context->playClickSound();
@@ -235,7 +287,11 @@ void ScreenLoadGame::handleOptionsSelection() {
 
   if (clickedButtons.Cross) {
     context->playClickSound();
-    loadSelectedSave();
+    if (activeOption == ScreenLoadGameOptions::ToggleSaveOrigin) {
+      toggleSaveOrigin();
+    } else if (activeOption == ScreenLoadGameOptions::SaveFile) {
+      loadSelectedSave();
+    }
   }
 }
 
@@ -247,10 +303,13 @@ void ScreenLoadGame::unloadSaved() {
   TextureRepository* textureRepo = &t_renderer->getTextureRepository();
 
   for (size_t i = 0; i < savedGamesList.size(); i++) {
-    textureRepo->freeBySprite(savedGamesList.at(i)->icon);
+    // We don't need to freeBySprite here because these icons share persistent textures.
+    // Calling freeBySprite on randomized IDs risks unlinking core UI elements like backgroundLoadGame.
+    // The sprites themselves are deleted below.
     delete savedGamesList.at(i);
   }
 
+  savedGamesList.clear();
   selectedSavedGame = nullptr;
   currentSaveIndex = 0;
   totalOfSaves = 0;
@@ -311,6 +370,9 @@ void ScreenLoadGame::loadAvailableSavesFromPath(const char* fullPath) {
   if (totalOfSaves > 0) {
     selectedSavedGame = savedGamesList.at(0);
     currentSaveIndex = 0;
+    activeOption = ScreenLoadGameOptions::SaveFile;
+  } else {
+    activeOption = ScreenLoadGameOptions::ToggleSaveOrigin;
   }
 }
 
@@ -329,7 +391,54 @@ void ScreenLoadGame::toggleSaveOrigin() {
 }
 
 void ScreenLoadGame::loadAvailableSavesFromMemoryCard() {
+  unloadSaved();
   saveOrigin = ScreenLoadGameSaveOrigin::MemoryCard;
+
+  auto* mcService = MemoryCardService::getInstance();
+  if (mcService && mcService->init()) {
+    for (int port = 0; port < 2; port++) {
+      if (mcService->isAvailable(port)) {
+        std::vector<std::string> mcSaves = mcService->listSaves(port);
+        u8 tempId = savedGamesList.size() + 1;
+
+        for (const auto& saveDir : mcSaves) {
+          std::string worldPath = "mc" + std::to_string(port) + ":/" + saveDir;
+          std::string metadataPath = worldPath + "/data.tcw";
+
+          // We can't easily get timestamp from MC with current libmc wrapper without more calls,
+          // so we just list them.
+          SaveInfoModel* model = new SaveInfoModel();
+          model->id = tempId++;
+          model->path = worldPath;
+          model->name = saveDir.substr(strlen(MemoryCardService::MC_ROOT_DIR) + 1);  // Strip "TyraCraft_"
+
+          SaveManager::SetSaveInfo(model->path.c_str(), model);
+
+          model->valid = model->version > 0;
+          model->icon.size.set(32, 32);
+          model->icon.position.set(127, 146);
+          model->icon.mode = Tyra::SpriteMode::MODE_STRETCH;
+
+          if (model->valid) {
+            saveIconTex->addLink(model->icon.id);
+          } else {
+            badSaveIconTex->addLink(model->icon.id);
+          }
+
+          savedGamesList.push_back(model);
+        }
+      }
+    }
+  }
+
+  totalOfSaves = savedGamesList.size();
+  if (totalOfSaves > 0) {
+    selectedSavedGame = savedGamesList.at(0);
+    currentSaveIndex = 0;
+    activeOption = ScreenLoadGameOptions::SaveFile;
+  } else {
+    activeOption = ScreenLoadGameOptions::ToggleSaveOrigin;
+  }
 }
 
 void ScreenLoadGame::renderSelectedOptions() {}

@@ -33,7 +33,10 @@ SaveResult SaveManager::SaveGame(StateGamePlay* state, const char* fullPath) {
     if (!mcService->isAvailable(port)) {
       return SaveResult::Failure("Memory Card not found in port " + std::to_string(port));
     }
-    mcService->ensureDirectoryExists(port);
+
+    // Extract world name for the directory
+    std::string worldName = FileUtils::getFilenameFromPath(normalizedPath);
+    mcService->ensureDirectoryExists(port, 0, worldName.c_str());
   }
 
   if (!Utils::makeDirectoryRecursive(path)) {
@@ -328,17 +331,9 @@ bool SaveManager::HasAvailableSaves() {
   if (mcService && mcService->init()) {
     for (int port = 0; port < 2; port++) {
       if (mcService->isAvailable(port)) {
-        std::string mcSavesPath = mcService->getMcPath(port) + "/saves";
-        if (Utils::directoryExists(mcSavesPath)) {
-          std::vector<UtilDirectory> mcSavesList = Utils::listDir(mcSavesPath.c_str());
-          for (const auto& dir : mcSavesList) {
-            if (dir.isDir) {
-                std::string metadataPath = getMetadataPath((mcSavesPath + "/" + dir.name).c_str());
-                if (Utils::fileExists(metadataPath)) {
-                    return true;
-                }
-            }
-          }
+        std::vector<std::string> mcSaves = mcService->listSaves(port);
+        if (!mcSaves.empty()) {
+          return true;
         }
       }
     }
