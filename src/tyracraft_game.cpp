@@ -4,6 +4,7 @@
 #include "memory-monitor/memory_monitor.hpp"
 #include "utils.hpp"
 #include "services/memory_card_service.hpp"
+#include "services/network_service.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <gs_privileged.h>
@@ -45,6 +46,11 @@ void TyraCraftGame::init() {
   new MemoryCardService();
   auto* mcService = MemoryCardService::getInstance();
   mcService->init();
+
+  // Initialize network service
+  new NetworkService();
+  auto* networkService = NetworkService::getInstance();
+  networkService->init();
 
   // Memory Card Test
   if (mcService->isAvailable(0, 0)) {
