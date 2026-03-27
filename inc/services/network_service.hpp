@@ -20,6 +20,12 @@ class NetworkService : public Singleton<NetworkService> {
   /** Check if the network is initialized and has an IP */
   bool isConnected() const { return connected; }
 
+  /** Refresh DHCP status and network info */
+  void update();
+
+  /** Install the EE Exception Handler (Trap) */
+  void installExceptionHandler();
+
   /** Get the current IP address as string */
   std::string getIpAddress() const { return ipAddr; }
 

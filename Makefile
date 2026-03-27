@@ -19,7 +19,7 @@ OBJEXT      := o
 CFLAGS      := -fno-omit-frame-pointer -G0 -DDEBUG_MODE #Used for debug mode
 
 # LINKFLAGS	:= --only-keep-debug
-LIB         := -ltyra -lnetman -lps2ip
+LIB         := -ltyra -lnetman -lps2ip -leedebug
 LIBDIRS     := -L$(ENGINEDIR)/bin
 INC         := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc
 INCDEP      := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc

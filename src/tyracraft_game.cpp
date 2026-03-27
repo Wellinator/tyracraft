@@ -50,7 +50,10 @@ void TyraCraftGame::init() {
   // Initialize network service
   new NetworkService();
   auto* networkService = NetworkService::getInstance();
-  networkService->init();
+  if (networkService->init()) {
+    networkService->installExceptionHandler();
+  }
+
 
   // Memory Card Test
   if (mcService->isAvailable(0, 0)) {
@@ -147,8 +150,11 @@ void TyraCraftGame::loop() {
   if (bgService) bgService->pollCompletions();
 
   // Use remaining idle CPU cycles for chunk loading work
-  stateManager.processIdleWork();
+  // Update network status
+  auto* networkService = NetworkService::getInstance();
+  if (networkService) networkService->update();
 }
+
 
 void TyraCraftGame::loadSavedSettings() {
   if (SettingsManager::CheckIfSettingsExist()) SettingsManager::Load();

@@ -1,6 +1,8 @@
 #include "services/network_service.hpp"
 #include <sifrpc.h>
 #include <loadfile.h>
+#include "services/exception_handler.hpp"
+
 
 extern "C" {
 #include <netman.h>
@@ -124,10 +126,44 @@ bool NetworkService::setupNetwork() {
 
   // In PS2SDK, once smap is loaded and ps2ip initialized, 
   // it starts looking for a link and DHCP lease.
-  connected = true; 
-  ipAddr = "DHCP (Pending)";
-
   return true;
 }
+
+void NetworkService::update() {
+  if (!initialized) return;
+
+  // Check link status
+  int linkStatus = NetManGetGlobalNetIFLinkState();
+  if (linkStatus == NETMAN_NETIF_ETH_LINK_STATE_UP) {
+    if (!connected) {
+      TYRA_LOG("| Network Link: UP                              |");
+    }
+    connected = true;
+
+    // Refresh IP address if it was pending
+    t_ip_info ipInfo;
+    if (ps2ip_getconfig("sm0", &ipInfo) == 0) {
+       char ipBuffer[16];
+       u32 ip = ipInfo.ipaddr.s_addr;
+       sprintf(ipBuffer, "%d.%d.%d.%d", 
+               (u8)(ip & 0xFF), 
+               (u8)((ip >> 8) & 0xFF), 
+               (u8)((ip >> 16) & 0xFF), 
+               (u8)((ip >> 24) & 0xFF));
+       ipAddr = std::string(ipBuffer);
+    }
+  } else {
+    if (connected) {
+       TYRA_LOG("| Network Link: DOWN                            |");
+    }
+    connected = false;
+    ipAddr = "Disconnected";
+  }
+}
+
+void NetworkService::installExceptionHandler() {
+  ExceptionHandler::install();
+}
+
 
 }  // namespace TyraCraft
