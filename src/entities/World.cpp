@@ -84,6 +84,7 @@ void World::init(Renderer* renderer, ItemRepository* itemRepository) {
                         &particlesManager, &lightPropagation,
                         &liquidPropagation, &worldLightModel);
 
+ 
   // Note: onLoadedCallback for light enqueue was removed as an optimization.
   // build() already generates correct light data via buildNormaly() ->
   // MeshBuilder_BuildMesh() -> CuboidMeshBuilder_loadLightData().
@@ -124,7 +125,7 @@ bool World::generateStep() {
     case GenerationPhase::Features: {
       int cz = generationRow;
       for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
-        LevelChunk* chunk = pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        LevelChunk* chunk = pLevel->getChunkSync(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
         if (chunk) {
           provider->carve(cx, cz);
         }
@@ -142,7 +143,7 @@ bool World::generateStep() {
     case GenerationPhase::Decoration: {
       int cz = generationRow;
       for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
-        LevelChunk* chunk = pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        LevelChunk* chunk = pLevel->getChunkSync(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
         if (chunk) {
           provider->decorate(cx, cz);
           lightPropagation.initSunLight(chunk);
@@ -171,9 +172,9 @@ bool World::generateStep() {
     case GenerationPhase::LightStitch: {
       int cz = generationRow;
       for (int cx = 0; cx < OVERWORLD_H_DISTANCE_IN_CHUNKS; cx++) {
-        pLevel->getChunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+        pLevel->getChunkSync(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
         if (cz < OVERWORLD_H_DISTANCE_IN_CHUNKS - 1) {
-          pLevel->getChunk(cx * CHUNK_SIZE, (cz + 1) * CHUNK_SIZE);
+          pLevel->getChunkSync(cx * CHUNK_SIZE, (cz + 1) * CHUNK_SIZE);
         }
       }
 
@@ -400,7 +401,7 @@ void World::processBuildQueue(u32 budgetCycles) {
       Chunk* chunk = currentBuildChunk;
       currentBuildChunk = nullptr;
 
-      TCLOG("Chunk build done: %d, %d", (int)chunk->minOffset.x / CHUNK_SIZE, (int)chunk->minOffset.z / CHUNK_SIZE);
+      TYRA_LOG("Chunk build done: ", (int)chunk->minOffset.x / CHUNK_SIZE, ", ", (int)chunk->minOffset.z / CHUNK_SIZE);
       chunk->loadedAtTick = g_ticksCounter;
 
       // Only add to loadedChunks when it's a genuinely new chunk
@@ -467,7 +468,6 @@ void World::tick() {
   }
 
   currentSkyColor.lerp(currentSkyColor, targetSkyColor, 0.05f);
-
   t_renderer->core.setClearScreenColor(currentSkyColor);
 }
 
@@ -490,12 +490,6 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
     updateLightModel();
     const float currentIntensity = worldLightModel.sunLightIntensity;
 
-    // Phase 1: Removed synchronous light propagation here.
-    // It is already handled incrementally in WorldBlockInteraction::registerTickCallbacks
-    // to prevent frame spikes.
-
-    // Accumulative threshold: only update lastSunLightIntensity when we actually trigger a reload.
-    // This ensures that even slow transitions eventually trigger a light update.
     if (fabsf(currentIntensity - lastSunLightIntensity) > 0.02f) {
       chunkManager.enqueueChunksToReloadLight();
       lastSunLightIntensity = currentIntensity;
@@ -515,8 +509,6 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
 
   tickHandles->add(scheduler.everyHandle(400, [this]() {
     const u8 shouldSpawnMob = Utils::Probability(0.1F);
-
-    // Try to spawn a mob pack
     const u8 currentPassiveMobsCount =
         mobManager.getMobCountByCategory(MobCategory::Passive);
     const int mobCap = mobManager.getMobCapByCategory(MobCategory::Passive);
@@ -525,152 +517,98 @@ void World::registerTickCallbacks(TickScheduler& scheduler) {
 
     if (currentPassiveMobsCount < mobCap && shouldSpawnMob) {
       const int mobsToSpawn = 4;
-      const Chunk* targetChunk = chunkManager.getLoadedChunks()->at(
-          Tyra::Math::randomi(0, chunkManager.getLoadedChunks()->size() - 1));
-      int randomX = Tyra::Math::randomi(targetChunk->minOffset.x,
-                                        targetChunk->maxOffset.x - 1);
-      int randomZ = Tyra::Math::randomi(targetChunk->minOffset.z,
-                                        targetChunk->maxOffset.z - 1);
+      if (chunkManager.getLoadedChunks()->empty()) return;
+      const int chunkIndex = Tyra::Math::randomi(0, chunkManager.getLoadedChunks()->size() - 1);
+      const Chunk* targetChunk = chunkManager.getLoadedChunks()->at(chunkIndex);
+      int randomX = Tyra::Math::randomi(targetChunk->minOffset.x, targetChunk->maxOffset.x - 1);
+      int randomZ = Tyra::Math::randomi(targetChunk->minOffset.z, targetChunk->maxOffset.z - 1);
       bool spawnedPack = false;
 
       for (size_t i = 0; i < mobsToSpawn; i++) {
         Vec4 tempPos;
         if (calcSpawnOffsetByXZ(&tempPos, randomX, randomZ)) {
-          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType,
-                                              tempPos);
+          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType, tempPos);
           spawnedPack = true;
         }
-
-        // Update next position by triangular distribution
-        const int max_dist = OVERWORLD_MAX_DISTANCE - 1;
-        int retriesLeft = 10;
-        bool validPosition = false;
-        while (retriesLeft > 0) {
-          const int offsetX = Tyra::Math::randomi(-5, 5);
-          const int offsetZ = Tyra::Math::randomi(-5, 5);
-          int candidateX = randomX + offsetX;
-          int candidateZ = randomZ + offsetZ;
-
-          if (candidateX >= 0 && candidateX < max_dist &&
-              candidateZ >= 0 && candidateZ < max_dist) {
-            randomX = candidateX;
-            randomZ = candidateZ;
-            validPosition = true;
-            break;
-          }
-          retriesLeft--;
-        }
-
-        // If no valid position found, clamp to valid range
-        if (!validPosition) {
-          randomX = std::max(0, std::min(randomX, max_dist - 1));
-          randomZ = std::max(0, std::min(randomZ, max_dist - 1));
-        }
+        const int max_dist = OVERWORLD_H_DISTANCE - 1;
+        randomX = std::max(0, std::min(randomX + Tyra::Math::randomi(-5, 5), max_dist));
+        randomZ = std::max(0, std::min(randomZ + Tyra::Math::randomi(-5, 5), max_dist));
       }
 
       if (!spawnedPack) {
-        // Try to spawn a single mob
-        const int chunkIndex =
-            Tyra::Math::randomi(0, chunkManager.getLoadedChunks()->size() - 1);
-        Chunk* chunk = chunkManager.getLoadedChunks()->at(chunkIndex);
         Vec4 mobPos;
-        if (getOptimalSpawnPositionInChunk(chunk, &mobPos)) {
-          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType,
-                                              mobPos);
+        if (getOptimalSpawnPositionInChunk(targetChunk, &mobPos)) {
+          mobManager.trySpawningMobAtPosition(MobCategory::Passive, randomType, mobPos);
         }
       }
     }
   }));
 
-  // Register chunk manager callbacks
   chunkManager.registerTickCallbacks(scheduler);
-
-  // Register mob manager callbacks
   mobManager.registerTickCallbacks(scheduler);
 }
 
 void World::renderOpaque() {
-#ifdef DEBUG_MODE
-  if (g_debug_menu.enableRenderOpaque == false) return;
-#endif  // DEBUG_MODE
-
   chunkManager.rendererOpaque(t_renderer, &blockInteraction.stapip);
-};
+}
 
 void World::renderTransparent() {
-#ifdef DEBUG_MODE
-  if (g_debug_menu.enableRenderTranslucent == false) return;
-#endif  // DEBUG_MODE
-
   chunkManager.rendererTransparent(t_renderer, &blockInteraction.stapip);
-};
+}
 
 void World::buildInitialPosition() {
   TYRA_LOG("building initial position...");
+  pLevel->getChunkSync(worldSpawnArea.x / DOUBLE_BLOCK_SIZE, worldSpawnArea.z / DOUBLE_BLOCK_SIZE);
   Chunk* initialChunk = chunkManager.getChunkByWorldPosition(worldSpawnArea);
+  
   if (initialChunk != nullptr) {
     initialChunk->clear();
     initialChunk->build();
-    // Register the built chunk in loadedChunks so it can be rendered
     if (initialChunk->isLoaded()) {
       chunkManager.addToLoadedChunks(initialChunk);
     }
     forceLoadArea(worldSpawnArea);
   }
-};
+}
 
 void World::buildInitialPosition(const Vec4& playerPos) {
   TYRA_LOG("building initial position for loaded save at: ", playerPos.x, " ", playerPos.y, " ", playerPos.z);
-  // For loaded saves: build chunks around the saved player position, not the spawn area
+  pLevel->getChunkSync(playerPos.x / DOUBLE_BLOCK_SIZE, playerPos.z / DOUBLE_BLOCK_SIZE);
   Chunk* playerChunk = chunkManager.getChunkByWorldPosition(playerPos);
   if (playerChunk != nullptr) {
     playerChunk->clear();
     playerChunk->build();
-    // Register the built chunk in loadedChunks so it can be rendered
     if (playerChunk->isLoaded()) {
       chunkManager.addToLoadedChunks(playerChunk);
     }
-    // Force load area around saved player position
     forceLoadArea(playerPos);
   }
-};
+}
 
 void World::resetWorldData() {
-  // Cancel any in-progress incremental build before wiping chunks, otherwise
-  // processIdleWork() would try to advance a build on a cleared chunk.
   if (currentBuildChunk != nullptr) {
     currentBuildChunk->cancelBuild();
     currentBuildChunk      = nullptr;
     currentBuildIsNewChunk = false;
   }
-
-  // Drain async queues so stale entries don't re-trigger on the new world.
   tempChunksToLoad.clear();
   tempChunksToUnLoad.clear();
   chunksInLoadQueue.reset();
   chunksInUnloadQueue.reset();
 
-  // Reset scheduling state to force initial chunk load on next update
   hasScheduledInitialChunks = false;
   lastSchedulePosition.set(0.0f, 0.0f, 0.0f);
-
   chunkManager.clearAllChunks();
 }
 
 void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
   Chunk* currentChunk = chunkManager.getChunkByWorldPosition(t_camera->looksAt);
-
   if (!currentChunk) return;
-
   const bool chunkChanged = t_player->currentChunkId != currentChunk->id;
-  
-  // Calculate distance traveled since last schedule
   const float distanceSinceLastSchedule = lastSchedulePosition.distanceTo(t_player->position);
-  // Reschedule every chunk (8 blocks) of movement to keep chunks loading ahead
   const float scheduleDistanceThreshold = static_cast<float>(CHUNK_SIZE);
   const bool movedSignificantly = distanceSinceLastSchedule >= scheduleDistanceThreshold;
 
-  // Schedule on: initial load, chunk change, or significant movement
   if (!hasScheduledInitialChunks || chunkChanged || movedSignificantly) {
     t_player->currentChunkId = currentChunk->id;
     scheduleChunks(t_player->position, t_camera->unitCirclePosition);
@@ -680,6 +618,7 @@ void World::updateChunkByPlayerPosition(Player* t_player, Camera* t_camera) {
 }
 
 void World::reloadWorldArea(const Vec4& position) {
+  pLevel->getChunkSync(position.x / DOUBLE_BLOCK_SIZE, position.z / DOUBLE_BLOCK_SIZE);
   Chunk* currentChunk = chunkManager.getChunkByWorldPosition(position);
   if (currentChunk) {
     if (currentChunk->isLoaded()) {
@@ -687,14 +626,11 @@ void World::reloadWorldArea(const Vec4& position) {
     } else {
       currentChunk->build();
     }
-
     forceLoadArea(position);
   }
 }
 
-// Phase 2: New pipeline-based chunk scheduling with directional ellipse + hysteresis
 void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
-  if (!canBuildChunk()) return;
 
 #ifdef DEBUG_MODE
   // Phase 4: Profiling metrics for optimization validation
@@ -759,8 +695,8 @@ void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
              static_cast<int>(avgChunksPerCall), " / ",
              OVERWORLD_SIZE_IN_CHUNKS, " (",
              static_cast<int>((1.0f - avgChunksPerCall /
-                               static_cast<float>(OVERWORLD_SIZE_IN_CHUNKS)) *
-                              100.0f),
+                                static_cast<float>(OVERWORLD_SIZE_IN_CHUNKS)) *
+                               100.0f),
              "% reduction)");
   }
 #endif
@@ -948,7 +884,6 @@ void World::renderBlockDamageOverlay() {
 void World::addChunkToLoadAsync(Chunk* t_chunk) {
   const u16 chunkId = t_chunk->id;
 
-  // Early return: can't load if over budget
   // Early return: can't load new chunks if over budget.
   // Rebuilds (Loaded chunks) bypass this check as they are already in memory.
   if (!drawDistanceController.canLoadMoreChunks() && !t_chunk->isLoaded()) return;
@@ -1081,6 +1016,11 @@ void World::updateLightModel() {
   worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
   worldLightModel.sunLightIntensity =
       dayNightCycleManager.getSunLightIntensity();
+}
+
+void World::initWorldLightModel() {
+  worldLightModel.sunLightIntensity = 1.0f;
+  updateLightModel();
 }
 
 void World::flushChunkProvider() {
@@ -1220,7 +1160,7 @@ const bool World::calcSpawnOffsetByXZ(Vec4* result, const int posX,
 }
 
 const bool World::calcSpawOffsetOfChunk(Vec4* result, const Vec4& minOffset,
-                                        const Vec4& maxOffset, uint16_t bias) {
+                                         const Vec4& maxOffset, uint16_t bias) {
   if (bias >= CHUNK_LENGTH) {
     TYRA_LOG("Cannot find spawn position, returning default");
     return false;
@@ -1318,20 +1258,12 @@ void World::setDrawDistanceMode(DrawDistanceMode mode) {
     targetBlock = nullptr;
 
     // Immediately schedule chunks for the new draw distance.
-    // This ensures the load queue is correctly populated with the new
-    // directional ellipse without waiting for the next tick.
     if (cachedPlayer && cachedCamera) {
       scheduleChunks(lastPlayerPosition, cachedCamera->unitCirclePosition);
     }
   }
 }
 
-void World::initWorldLightModel() {
-  worldLightModel.sunPosition.set(dayNightCycleManager.getSunPosition());
-  worldLightModel.moonPosition.set(dayNightCycleManager.getMoonPosition());
-  worldLightModel.sunLightIntensity =
-      dayNightCycleManager.getSunLightIntensity();
-}
 
 void World::CrossCraft_World_Init(const uint32_t& seed) {
   CrossCraft_WorldGenerator_Init(rand());
@@ -1388,4 +1320,3 @@ std::string World::getLoadQueueDebugInfo() {
 
   return info;
 }
-

@@ -96,9 +96,8 @@ void ChunkStorage::getChunkAsync(int x, int z,
       });
 
   if (success == INVALID_BG_TASK) {
-    TYRA_WARN("BackgroundTaskService queue full, falling back to sync load");
-    LevelChunk* chunk = getChunk(x, z);
-    callback(chunk);
+    TYRA_WARN("BackgroundTaskService queue full, skipping async load for %d, %d", x, z);
+    callback(nullptr);
     delete req;
   }
 }

@@ -50,8 +50,8 @@ class BackgroundTaskService : public Singleton<BackgroundTaskService> {
 
   inline s32 getDispatcherThreadId() { return dispatcherThreadId; }
 
-  static constexpr int QUEUE_CAPACITY = 16;
-  static constexpr int DONE_CAPACITY = 16;
+  static constexpr int QUEUE_CAPACITY = 128;
+  static constexpr int DONE_CAPACITY = 128;
   static constexpr s32 WORKER_PRIORITY = 100; // Lower priority (higher value) to prevent starvation
   static constexpr s32 DISPATCHER_PRIORITY = 0x10;
   static constexpr int ALARM_CYCLE = 150;

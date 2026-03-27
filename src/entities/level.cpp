@@ -44,11 +44,24 @@ LevelChunk* Level::getChunk(uint16_t x, uint16_t z) {
   if (chunkX >= chunkWidth || chunkZ >= chunkLength) return nullptr;
 
   uint32_t index = (chunkZ * chunkWidth) + chunkX;
+  return map.chunks[index];
+}
+
+LevelChunk* Level::getChunkSync(uint16_t x, uint16_t z) {
+  uint32_t chunkX = x / CHUNK_SIZE;
+  uint32_t chunkZ = z / CHUNK_SIZE;
+
+  const uint32_t chunkWidth = map.width / CHUNK_SIZE;
+  const uint32_t chunkLength = map.length / CHUNK_SIZE;
+  if (chunkX >= chunkWidth || chunkZ >= chunkLength) return nullptr;
+
+  uint32_t index = (chunkZ * chunkWidth) + chunkX;
   if (map.chunks[index] == nullptr) {
     // Try to load from provider
     World* world = getInstance()->world;
     auto* provider = world ? world->getChunkProvider() : nullptr;
     if (provider) {
+      TYRA_LOG("Sync chunk load: ", (int)chunkX, ", ", (int)chunkZ);
       map.chunks[index] = provider->getChunk(chunkX, chunkZ);
     }
     

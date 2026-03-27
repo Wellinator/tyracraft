@@ -40,6 +40,7 @@ class Level : public Singleton<Level> {
   ~Level();
 
   LevelChunk* getChunk(uint16_t x, uint16_t z);
+  LevelChunk* getChunkSync(uint16_t x, uint16_t z);
   LevelSection* getSection(uint16_t x, uint16_t y, uint16_t z);
 
   uint8_t getBlockByWorldPosition(const Vec4* pos);
