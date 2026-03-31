@@ -26,7 +26,8 @@ NetworkService::NetworkService()
       ipAddr("0.0.0.0"),
       lastTestResult("Not tested"),
       initRetryCount(0),
-      retryTimer(1.0f) {}
+      retryTimer(1.0f),
+      logTargetIp(0) {}
 
 NetworkService::~NetworkService() {
   if (initialized) {
@@ -78,7 +79,8 @@ bool NetworkService::loadModules() {
   bool netman  = loadNetman(irxDir);
   bool smap    = loadSmap(irxDir);
 
-  loadUdptty(irxDir);
+  // udptty is removed in favor of EE-side _write interception
+  // as it is incompatible with the EE network stack.
 
   return ps2dev9 && netman && smap;
 }
@@ -114,12 +116,8 @@ bool NetworkService::loadSmap(const std::string& irxDir) {
 }
 
 bool NetworkService::loadUdptty(const std::string& irxDir) {
-  std::string path = irxDir + "udptty.irx";
-  if (loadIrx(path.c_str()) >= 0) {
-    TYRA_LOG("|   - udptty.irx : SUCCESS                     |");
-    return true;
-  }
-  return false;
+  // Deprecated: Log interception is now handled by __wrap__write on the EE.
+  return true;
 }
 
 int NetworkService::loadIrx(const char* filename, int argc, char** argv) {
@@ -421,6 +419,9 @@ bool NetworkService::testConnection(bool isSilent) {
     return false;
   }
 
+  // Set the target IP for future log interception
+  logTargetIp = targetIp;
+
   lastTestResult = "Success (Link + IP + UDP OK)";
   if (!isSilent || !testPassed) {
     // Log success only if first time or manual test
@@ -430,4 +431,52 @@ bool NetworkService::testConnection(bool isSilent) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Low-level raw logging (UDP)
+// ---------------------------------------------------------------------------
+
+void NetworkService::sendRemoteLogRaw(const void* buf, size_t len) {
+  if (logTargetIp == 0) return;
+
+  int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (sock < 0) return;
+
+  struct sockaddr_in target;
+  memset(&target, 0, sizeof(target));
+  target.sin_family = AF_INET;
+  target.sin_port = htons(18194);
+  target.sin_addr.s_addr = logTargetIp;
+
+  // No flags, blocking is fine for small log strings
+  sendto(sock, buf, len, 0, (struct sockaddr*)&target, sizeof(target));
+  lwip_close(sock);
+}
+
 }  // namespace TyraCraft
+
+// ---------------------------------------------------------------------------
+// Linker Wrap Implementation for _write
+// ---------------------------------------------------------------------------
+
+extern "C" {
+
+int __real__write(int fd, const void* buf, size_t nbytes);
+
+int __wrap__write(int fd, const void* buf, size_t nbytes) {
+  static bool inside_hook = false;
+
+  // Intercept stdout (1) and stderr (2)
+  if ((fd == 1 || fd == 2) && !inside_hook && buf != nullptr && nbytes > 0) {
+    inside_hook = true;
+    TyraCraft::NetworkService* ns = TyraCraft::NetworkService::getInstance();
+    if (ns && ns->isReadyForLogging()) {
+      ns->sendRemoteLogRaw(buf, nbytes);
+    }
+    inside_hook = false;
+  }
+
+  // Pass through to the real _write call so we don't lose PCSX2 logs
+  return __real__write(fd, buf, nbytes);
+}
+
+}

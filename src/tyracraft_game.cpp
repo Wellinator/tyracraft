@@ -48,11 +48,13 @@ void TyraCraftGame::init() {
   mcService->init();
 
   // Initialize network service
-  new NetworkService();
-  auto* networkService = NetworkService::getInstance();
-  if (networkService->init()) {
-    networkService->installExceptionHandler();
-    networkService->testConnection(); // Run initial connectivity test
+  if (g_settings.enable_log_over_lan) {
+    new NetworkService();
+    auto* networkService = NetworkService::getInstance();
+    if (networkService->init()) {
+      networkService->installExceptionHandler();
+      networkService->testConnection(); // Run initial connectivity test
+    }
   }
 
 
@@ -143,7 +145,7 @@ void TyraCraftGame::loop() {
                           FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.6F));
     // Draw Network status:
     auto* networkService = NetworkService::getInstance();
-    if (networkService) {
+    if (networkService && g_settings.enable_log_over_lan) {
       stream.str("");
       stream.clear();
       stream << "Network status : " << networkService->getIpAddress();
@@ -162,7 +164,7 @@ void TyraCraftGame::loop() {
   // Use remaining idle CPU cycles for chunk loading work
   // Update network status
   auto* networkService = NetworkService::getInstance();
-  if (networkService) networkService->update();
+  if (networkService && g_settings.enable_log_over_lan) networkService->update();
 }
 
 

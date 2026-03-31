@@ -48,6 +48,7 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Network"]["eth_netmask"] = settings.eth_netmask;
   _settings["Network"]["eth_gateway"] = settings.eth_gateway;
   _settings["Network"]["eth_log_host"] = settings.eth_log_host;
+  _settings["Network"]["enable_log_over_lan"] = settings.enable_log_over_lan;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -74,6 +75,7 @@ void SettingsManager::Save() {
   _settings["Network"]["eth_netmask"] = g_settings.eth_netmask;
   _settings["Network"]["eth_gateway"] = g_settings.eth_gateway;
   _settings["Network"]["eth_log_host"] = g_settings.eth_log_host;
+  _settings["Network"]["enable_log_over_lan"] = g_settings.enable_log_over_lan;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -131,12 +133,14 @@ settings_file SettingsManager::Load() {
         _settings["Network"]["eth_gateway"].as<std::string>();
     g_settings.eth_log_host =
         _settings["Network"]["eth_log_host"].as<std::string>();
+    g_settings.enable_log_over_lan = _settings["Network"]["enable_log_over_lan"].as<bool>();
   } catch (...) {
     g_settings.eth_dhcp = true;
     g_settings.eth_ip = "192.168.1.100";
     g_settings.eth_netmask = "255.255.255.0";
     g_settings.eth_gateway = "192.168.1.1";
     g_settings.eth_log_host = "192.168.1.1";
+    g_settings.enable_log_over_lan = false;
   }
 
 

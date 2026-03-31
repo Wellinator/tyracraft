@@ -49,6 +49,7 @@ struct settings_file {
   std::string eth_netmask = "255.255.255.0";
   std::string eth_gateway = "192.168.1.1";
   std::string eth_log_host = "192.168.1.1";
+  bool enable_log_over_lan = false;
 };
 
 /**

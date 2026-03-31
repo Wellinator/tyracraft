@@ -46,6 +46,14 @@ class NetworkService : public Singleton<NetworkService> {
   /** Get result of last test */
   std::string getLastTestResult() const { return lastTestResult; }
 
+  /** Send a raw buffer via UDP to the log server (used by _write hook) */
+  void sendRemoteLogRaw(const void* buf, size_t len);
+
+  /** Check if the system is ready to transmit logs over network */
+  bool isReadyForLogging() const {
+    return connected && testPassed && g_settings.enable_log_over_lan;
+  }
+
  private:
   bool initialized;
   bool connected;
@@ -54,6 +62,9 @@ class NetworkService : public Singleton<NetworkService> {
   std::string lastTestResult;
   u32 initRetryCount;
   Timer::ElapsedTimer retryTimer;
+
+  // Remote log destination
+  u32 logTargetIp;
 
   // lwIP interface name: SMAP always registers as "sm0" (name[0]='s', name[1]='m', num=0).
   // This is distinct from the NetMan-level name ("SMAP").  The official ps2sdk samples

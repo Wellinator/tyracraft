@@ -14,12 +14,13 @@ VCLPPEXT	:= vclpp
 DEPEXT      := d
 OBJEXT      := o
 
-#Flags, Libraries and Includes
+# Flags, Libraries and Includes
 # CFLAGS      := -O3
 CFLAGS      := -fno-omit-frame-pointer -G0 -DDEBUG_MODE #Used for debug mode
+LDFLAGS     := -Wl,--wrap=_write
 
 # LINKFLAGS	:= --only-keep-debug
-LIB         := -ltyra -lnetman -lps2ip -leedebug
+LIB         := -ltyra -lnetman -lps2ip -leedebug -Wl,--wrap=_write
 LIBDIRS     := -L$(ENGINEDIR)/bin
 INC         := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc
 INCDEP      := -I$(INCDIR) -I$(INCDIR)/3libs  -I$(ENGINEDIR)/inc
