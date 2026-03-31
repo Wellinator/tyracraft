@@ -43,7 +43,11 @@ struct settings_file {
   // Auto-save interval in seconds (advanced)
   float auto_save_interval = 300.0f;
 
-
+  // Network options
+  bool eth_dhcp = true;
+  std::string eth_ip = "192.168.1.100";
+  std::string eth_netmask = "255.255.255.0";
+  std::string eth_gateway = "192.168.1.1";
 };
 
 /**

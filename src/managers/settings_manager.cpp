@@ -43,6 +43,10 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Camera"]["cam_v_sensitivity"] = settings.cam_v_sensitivity;
   _settings["Player"]["skin"] = settings.skin;
   _settings["AutoSave"]["interval"] = settings.auto_save_interval;
+  _settings["Network"]["eth_dhcp"] = settings.eth_dhcp;
+  _settings["Network"]["eth_ip"] = settings.eth_ip;
+  _settings["Network"]["eth_netmask"] = settings.eth_netmask;
+  _settings["Network"]["eth_gateway"] = settings.eth_gateway;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -64,6 +68,10 @@ void SettingsManager::Save() {
   _settings["Camera"]["cam_v_sensitivity"] = g_settings.cam_v_sensitivity;
   _settings["Player"]["skin"] = g_settings.skin;
   _settings["AutoSave"]["interval"] = g_settings.auto_save_interval;
+  _settings["Network"]["eth_dhcp"] = g_settings.eth_dhcp;
+  _settings["Network"]["eth_ip"] = g_settings.eth_ip;
+  _settings["Network"]["eth_netmask"] = g_settings.eth_netmask;
+  _settings["Network"]["eth_gateway"] = g_settings.eth_gateway;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -109,6 +117,21 @@ settings_file SettingsManager::Load() {
     g_settings.auto_save_interval = (interval >= 30.0f) ? interval : 60.0f;
   } catch (...) {
     g_settings.auto_save_interval = 60.0f;
+  }
+
+  // Network settings
+  try {
+    g_settings.eth_dhcp = _settings["Network"]["eth_dhcp"].as<bool>();
+    g_settings.eth_ip = _settings["Network"]["eth_ip"].as<std::string>();
+    g_settings.eth_netmask =
+        _settings["Network"]["eth_netmask"].as<std::string>();
+    g_settings.eth_gateway =
+        _settings["Network"]["eth_gateway"].as<std::string>();
+  } catch (...) {
+    g_settings.eth_dhcp = true;
+    g_settings.eth_ip = "192.168.1.100";
+    g_settings.eth_netmask = "255.255.255.0";
+    g_settings.eth_gateway = "192.168.1.1";
   }
 
 

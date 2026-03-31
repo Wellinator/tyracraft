@@ -4,6 +4,13 @@
 > automated coding assistants working on the TyraCraft project. It provides the
 > essential context needed to understand, navigate, and safely modify the codebase.
 
+> 🚨 **CRITICAL RULE FOR ALL AI AGENTS & LLMS**: 🚨
+> DO NOT ATTEMPT to use Docker, external web searches, or blind terminal commands to find PS2SDK documentation, `ps2ip.h`, standard C/C++ headers, or PS2 hardware manuals.
+> **ALL the documentation you need is already perfectly mirrored in the `docs/` folder.**
+> - For PS2SDK C/C++ headers (like `#include <ps2ip.h>`): Look inside `docs/ps2dev-intellisense/include/`
+> - For TyraCraft architecture, mechanics, and PS2 hardware limitations: Look inside `docs/agents/`
+> **Always run your `grep_search` and `view_file` queries within the `docs/` folder FIRST before assuming something is missing.**
+
 ---
 
 ## Table of Contents
@@ -442,8 +449,9 @@ through `TOTAL_OF_BLOCKS`. Concrete implementations in `inc/entities/blocks/`:
 ### Before Making Changes
 
 1. **Read this file first** — it's your map of the project.
-2. **Check `inc/constants.hpp`** — world limits, enums, and block types live here.
-5. **Understand the build system** — changes must compile via `make` inside Docker.
+2. **Check `docs/` for any needed documentation or SDK headers first**. Never attempt to extract SDK headers via docker commands. The entire PS2SDK include tree is available at `docs/ps2dev-intellisense/include/`.
+3. **Check `inc/constants.hpp`** — world limits, enums, and block types live here.
+4. **Understand the build system** — changes must compile via `make` inside Docker.
 
 ### After Making Changes
 1. **Compiling and recompiling** - All the compilation process is done manually by the user, no need to ask for recompiling.

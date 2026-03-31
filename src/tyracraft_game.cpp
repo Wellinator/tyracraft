@@ -52,6 +52,7 @@ void TyraCraftGame::init() {
   auto* networkService = NetworkService::getInstance();
   if (networkService->init()) {
     networkService->installExceptionHandler();
+    networkService->testConnection(); // Run initial connectivity test
   }
 
 
@@ -140,6 +141,15 @@ void TyraCraftGame::loop() {
            << get_used_memory() / 1024.0f / 1024.0f << "MB / 32MB";
     fontManager.printText(stream.str(),
                           FontOptions(Vec2(5.0f, 35.0f), Color(255), 0.6F));
+    // Draw Network status:
+    auto* networkService = NetworkService::getInstance();
+    if (networkService) {
+      stream.str("");
+      stream.clear();
+      stream << "Network status : " << networkService->getIpAddress();
+      fontManager.printText(stream.str(),
+                            FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.6F));
+    }
 #endif
 
     engine->renderer.endFrame();
