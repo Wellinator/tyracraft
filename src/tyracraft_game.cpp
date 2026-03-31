@@ -162,6 +162,8 @@ void TyraCraftGame::loop() {
   if (bgService) bgService->pollCompletions();
 
   // Use remaining idle CPU cycles for chunk loading work
+  stateManager.processIdleWork();
+
   // Update network status
   auto* networkService = NetworkService::getInstance();
   if (networkService && g_settings.enable_log_over_lan) networkService->update();

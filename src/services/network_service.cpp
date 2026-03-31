@@ -27,12 +27,29 @@ NetworkService::NetworkService()
       lastTestResult("Not tested"),
       initRetryCount(0),
       retryTimer(1.0f),
-      logTargetIp(0) {}
+      logTargetIp(0),
+      networkMutex(-1),
+      loggerSocket(-1) {
+  // Create binary semaphore (mutex) for thread safety
+  ee_sema_t sema;
+  sema.init_count = 1;
+  sema.max_count = 1;
+  sema.attr = 0;
+  sema.option = 0;
+  networkMutex = CreateSema(&sema);
+}
 
 NetworkService::~NetworkService() {
+  closeLoggerSocket();
+
   if (initialized) {
     ps2ipDeinit();
     NetManDeinit();
+  }
+
+  if (networkMutex >= 0) {
+    DeleteSema(networkMutex);
+    networkMutex = -1;
   }
 }
 
@@ -300,7 +317,7 @@ void NetworkService::update() {
   // Once testPassed == true, stop periodic testing.
   if (!testPassed) {
     if (retryTimer.update(Timer::getInstance()->getDeltaTime())) {
-      testConnection(false);  // Silent mode suppressed for debugging per user request
+      testConnection(true);  // Silent mode for background auto-retries
     }
   }
 }
@@ -419,14 +436,16 @@ bool NetworkService::testConnection(bool isSilent) {
     return false;
   }
 
-  // Set the target IP for future log interception
-  logTargetIp = targetIp;
-
   lastTestResult = "Success (Link + IP + UDP OK)";
   if (!isSilent || !testPassed) {
     // Log success only if first time or manual test
     TYRA_LOG("Network Test PASSED: ", lastTestResult.c_str());
   }
+
+  // Set the target IP for future log interception
+  logTargetIp = targetIp;
+  initLoggerSocket();  // Ensure logger socket is ready
+
   testPassed = true;
   return true;
 }
@@ -436,10 +455,11 @@ bool NetworkService::testConnection(bool isSilent) {
 // ---------------------------------------------------------------------------
 
 void NetworkService::sendRemoteLogRaw(const void* buf, size_t len) {
-  if (logTargetIp == 0) return;
+  if (logTargetIp == 0 || loggerSocket < 0) return;
 
-  int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if (sock < 0) return;
+  // Thread safety: background threads (e.g. Chunk loading) might log
+  // simultaneously with the main thread.
+  if (networkMutex >= 0) WaitSema(networkMutex);
 
   struct sockaddr_in target;
   memset(&target, 0, sizeof(target));
@@ -447,9 +467,31 @@ void NetworkService::sendRemoteLogRaw(const void* buf, size_t len) {
   target.sin_port = htons(18194);
   target.sin_addr.s_addr = logTargetIp;
 
-  // No flags, blocking is fine for small log strings
-  sendto(sock, buf, len, 0, (struct sockaddr*)&target, sizeof(target));
-  lwip_close(sock);
+  // Use persistent socket to avoid expensive SIF hits for socket()/close()
+  sendto(loggerSocket, buf, len, 0, (struct sockaddr*)&target, sizeof(target));
+
+  if (networkMutex >= 0) SignalSema(networkMutex);
+}
+
+void NetworkService::initLoggerSocket() {
+  if (loggerSocket >= 0) return;
+
+  if (networkMutex >= 0) WaitSema(networkMutex);
+  loggerSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (networkMutex >= 0) SignalSema(networkMutex);
+
+  if (loggerSocket < 0) {
+    TYRA_ERROR("NetworkService: Failed to create persistent logger socket!");
+  }
+}
+
+void NetworkService::closeLoggerSocket() {
+  if (loggerSocket >= 0) {
+    if (networkMutex >= 0) WaitSema(networkMutex);
+    lwip_close(loggerSocket);
+    loggerSocket = -1;
+    if (networkMutex >= 0) SignalSema(networkMutex);
+  }
 }
 
 }  // namespace TyraCraft

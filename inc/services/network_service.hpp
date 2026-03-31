@@ -65,6 +65,8 @@ class NetworkService : public Singleton<NetworkService> {
 
   // Remote log destination
   u32 logTargetIp;
+  s32 networkMutex;
+  int loggerSocket;
 
   // lwIP interface name: SMAP always registers as "sm0" (name[0]='s', name[1]='m', num=0).
   // This is distinct from the NetMan-level name ("SMAP").  The official ps2sdk samples
@@ -100,6 +102,10 @@ class NetworkService : public Singleton<NetworkService> {
 
   /** Helper to load IRX modules (with optional arguments) */
   static int loadIrx(const char* filename, int argc = 0, char** argv = NULL);
+
+  /** Optimized and thread-safe remote logging initialization */
+  void initLoggerSocket();
+  void closeLoggerSocket();
 };
 
 }  // namespace TyraCraft
