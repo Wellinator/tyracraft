@@ -3,6 +3,7 @@
 #include <tamtypes.h>
 #include "singleton.hpp"
 #include <string>
+#include "timer.hpp"
 
 // Include PS2IP types to avoid incomplete type errors in C++
 extern "C" {
@@ -38,8 +39,9 @@ class NetworkService : public Singleton<NetworkService> {
   /**
    * Performs a real-world connectivity test by checking link, IP,
    * and attempting to reach the gateway or a target host.
+   * isSilent=true suppresses progress logs (useful for auto-retries).
    */
-  bool testConnection();
+  bool testConnection(bool isSilent = false);
 
   /** Get result of last test */
   std::string getLastTestResult() const { return lastTestResult; }
@@ -47,9 +49,11 @@ class NetworkService : public Singleton<NetworkService> {
  private:
   bool initialized;
   bool connected;
+  bool testPassed;
   std::string ipAddr;
   std::string lastTestResult;
   u32 initRetryCount;
+  Timer::ElapsedTimer retryTimer;
 
   // lwIP interface name: SMAP always registers as "sm0" (name[0]='s', name[1]='m', num=0).
   // This is distinct from the NetMan-level name ("SMAP").  The official ps2sdk samples
@@ -77,7 +81,6 @@ class NetworkService : public Singleton<NetworkService> {
   /**
    * Mirrors the official ps2sdk ethApplyIPConfig().
    * use_dhcp=1 → starts DHCP client; use_dhcp=0 → sets static IP.
-   * We use ::ip4_addr to ensure it resolves to the global lwIP/ps2sdk struct.
    */
   int ethApplyIPConfig(int use_dhcp,
                        const ::ip4_addr* ip,
