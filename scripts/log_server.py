@@ -37,9 +37,14 @@ def start_server():
 
     while True:
         try:
-            data, addr = sock.recvfrom(2048) # buffer size is 2048 bytes
+            # Set timeout to allow KeyboardInterrupt to be caught on Windows
+            sock.settimeout(1.0)
+            try:
+                data, addr = sock.recvfrom(2048)
+            except socket.timeout:
+                continue
+
             timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-            
             message = data.decode('utf-8', errors='replace').strip()
             
             # Smart formatting based on content
@@ -63,10 +68,11 @@ def start_server():
             
         except KeyboardInterrupt:
             print(f"\n{Colors.WARNING}Stopping Log Server...{Colors.ENDC}")
-            sock.close()
             break
         except Exception as e:
             print(f"{Colors.FAIL}Unexpected error: {e}{Colors.ENDC}")
+
+    sock.close()
 
 if __name__ == "__main__":
     # Enable ANSI colors on Windows if possible
