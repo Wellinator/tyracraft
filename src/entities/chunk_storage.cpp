@@ -85,12 +85,9 @@ void ChunkStorage::getChunkAsync(int x, int z,
   req->result = nullptr;
   req->callback = callback;
 
-  TCLOG("Async load queued: %d, %d", x, z);
-
   const auto success = bgService->submit(
       [this, req]() { req->result = getChunk(req->x, req->z); },
       [req]() {
-        TCLOG("Async load done: %d, %d", req->x, req->z);
         req->callback(req->result);
         delete req;
       });

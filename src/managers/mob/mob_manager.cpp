@@ -202,7 +202,6 @@ Mob* MobManager::trySpawningMobAtPosition(const MobCategory category,
   switch (type) {
     case MobType::Pig:
     case MobType::Cow:
-      position.print("Spawning mob at: ");
       mob = _createMobAtPosition(type, position);
       break;
     default:
@@ -220,7 +219,6 @@ Mob* MobManager::spawnMobAtPosition(const MobType type, const Vec4& position) {
   switch (type) {
     case MobType::Pig:
     case MobType::Cow:
-      position.print("Spawning mob at: ");
       return _createMobAtPosition(type, position);
 
     default:

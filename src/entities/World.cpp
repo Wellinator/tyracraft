@@ -401,7 +401,6 @@ void World::processBuildQueue(u32 budgetCycles) {
       Chunk* chunk = currentBuildChunk;
       currentBuildChunk = nullptr;
 
-      TYRA_LOG("Chunk build done: ", (int)chunk->minOffset.x / CHUNK_SIZE, ", ", (int)chunk->minOffset.z / CHUNK_SIZE);
       chunk->loadedAtTick = g_ticksCounter;
 
       // Only add to loadedChunks when it's a genuinely new chunk
@@ -413,8 +412,6 @@ void World::processBuildQueue(u32 budgetCycles) {
       if (g_debug_mode) {
         chunk->timeToBuild =
             ((float)(clock() - chunk->buildingTimeStart) / CLOCKS_PER_SEC);
-        printf("Time to async build chunk %i: %f\n", chunk->id,
-               chunk->timeToBuild);
       }
 #endif
 
@@ -688,17 +685,6 @@ void World::scheduleChunks(const Vec4& playerPos, const Vec4& cameraForward) {
 
 #ifdef DEBUG_MODE
   totalChunksProcessed += nearbyChunks.size();
-  if (totalScheduleCalls % 100 == 0) {
-    float avgChunksPerCall =
-        static_cast<float>(totalChunksProcessed) / totalScheduleCalls;
-    TYRA_LOG("[Chunk Optimization] Avg chunks processed per schedule:",
-             static_cast<int>(avgChunksPerCall), " / ",
-             OVERWORLD_SIZE_IN_CHUNKS, " (",
-             static_cast<int>((1.0f - avgChunksPerCall /
-                                static_cast<float>(OVERWORLD_SIZE_IN_CHUNKS)) *
-                               100.0f),
-             "% reduction)");
-  }
 #endif
 
   // Bitset to track which chunks we've seen (for single-pass processing)
