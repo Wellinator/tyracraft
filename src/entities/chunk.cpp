@@ -687,13 +687,24 @@ void Chunk::build() {
   }
 
   bool allAir = true;
+  bool hasMissingData = false;
   for (uint16_t y = minOffset.y; y < maxOffset.y && allAir; y++) {
     for (uint16_t z = minOffset.z; z < maxOffset.z && allAir; z++) {
       for (uint16_t x = minOffset.x; x < maxOffset.x && allAir; x++) {
-        if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK)
+        u8 block = pLevel->GetBlockFromMap(x, y, z);
+        if (block == static_cast<u8>(Blocks::VOID)) {
+          hasMissingData = true;
           allAir = false;
+          break;
+        }
+        if (block > static_cast<u8>(Blocks::AIR_BLOCK)) allAir = false;
       }
     }
+  }
+
+  if (hasMissingData) {
+    state = ChunkState::Clean;
+    return;
   }
 
   if (allAir) {
@@ -803,14 +814,27 @@ bool Chunk::buildStep() {
     // ------------------------------------------------------------------
     case BuildPhase::AirCheck: {
       bool allAir = true;
+      bool hasMissingData = false;
       for (uint16_t y = minOffset.y; y < maxOffset.y && allAir; y++) {
         for (uint16_t z = minOffset.z; z < maxOffset.z && allAir; z++) {
           for (uint16_t x = minOffset.x; x < maxOffset.x && allAir; x++) {
-            if (pLevel->GetBlockFromMap(x, y, z) > (u8)Blocks::AIR_BLOCK)
+            u8 block = pLevel->GetBlockFromMap(x, y, z);
+            if (block == static_cast<u8>(Blocks::VOID)) {
+              hasMissingData = true;
               allAir = false;
+              break;
+            }
+            if (block > static_cast<u8>(Blocks::AIR_BLOCK)) allAir = false;
           }
         }
       }
+
+      if (hasMissingData) {
+        state = ChunkState::Clean;
+        buildPhase = BuildPhase::Idle;
+        return true;  // Abort build step
+      }
+
       if (allAir) {
         clearDrawDataWithoutShrink();
         isEmpty = true;

@@ -834,6 +834,8 @@ void World::forceLoadArea(const Vec4& centerPos) {
       if (t_chunk->isLoaded()) {
         t_chunk->rebuild();
       } else {
+        // Ensure data parity before synchronous build
+        pLevel->getChunkSync(t_chunk->minOffset.x, t_chunk->minOffset.z);
         t_chunk->build();
         // Register in loadedChunks only if newly built (not already loaded)
         chunkManager.addToLoadedChunks(t_chunk);
