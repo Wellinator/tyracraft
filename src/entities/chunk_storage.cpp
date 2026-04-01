@@ -150,21 +150,34 @@ LevelChunk* ChunkStorage::loadChunkFromRegion(int x, int z) {
   }
 
   int index = getChunkIndexInRegion(x, z);
-  uint32_t compSize = header.sizes[index];
-  if (compSize == 0) {
+  uint32_t location = header.locations[index];
+  uint32_t offsetInSectors = location >> 8;
+  uint32_t sectorCount = location & 0xFF;
+
+  if (offsetInSectors == 0 || sectorCount == 0) {
     fclose(file);
     return nullptr;
   }
 
-  // Seek to fixed slot
-  fseek(file, REGION_HEADER_SIZE + (index * SLOT_SIZE), SEEK_SET);
+  // Seek to the sector
+  fseek(file, offsetInSectors * SECTOR_SIZE, SEEK_SET);
   
-  uint8_t* compressedBuffer = new uint8_t[compSize];
-  fread(compressedBuffer, 1, compSize, file);
+  // First 4 bytes is the actual compressed size
+  uint32_t compressedSize;
+  fread(&compressedSize, 1, 4, file);
+
+  if (compressedSize > sectorCount * SECTOR_SIZE - 4) {
+    TYRA_ERROR("Chunk data corrupted at %d, %d (size %d exceeds sectors %d)", x, z, compressedSize, sectorCount);
+    fclose(file);
+    return nullptr;
+  }
+
+  uint8_t* compressedBuffer = new uint8_t[compressedSize];
+  fread(compressedBuffer, 1, compressedSize, file);
   fclose(file);
 
   unsigned long destLen = 128 * 1024; // Use our 128KB buffer size
-  int res = uncompress(ioTransferBuffer, &destLen, compressedBuffer, compSize);
+  int res = uncompress(ioTransferBuffer, &destLen, compressedBuffer, compressedSize);
   delete[] compressedBuffer;
 
   if (res != Z_OK) {
@@ -210,9 +223,7 @@ void ChunkStorage::saveChunkToRegion(LevelChunk* chunk) {
   uint32_t uncompressedSize = serializer.GetBytesWritten();
 
   // 2. Fast Compression (Level 1)
-  // Re-use ioTransferBuffer? No, we need source and dest.
-  // We'll allocate a temporary buffer for compressed data (will be 32KB anyway)
-  uint8_t compressedBuffer[SLOT_SIZE]; 
+  uint8_t compressedBuffer[128 * 1024]; 
   z_stream strm;
   strm.zalloc = Z_NULL;
   strm.zfree = Z_NULL;
@@ -226,14 +237,14 @@ void ChunkStorage::saveChunkToRegion(LevelChunk* chunk) {
   strm.next_in = ioTransferBuffer;
   strm.avail_in = uncompressedSize;
   strm.next_out = compressedBuffer;
-  strm.avail_out = SLOT_SIZE;
+  strm.avail_out = 128 * 1024;
   
   int res = deflate(&strm, Z_FINISH);
-  uint32_t compressedSize = SLOT_SIZE - strm.avail_out;
+  uint32_t compressedSize = (128 * 1024) - strm.avail_out;
   deflateEnd(&strm);
 
   if (res != Z_STREAM_END) {
-    TYRA_ERROR("Chunk compression exceeded 32KB slot at %d, %d", x, z);
+    TYRA_ERROR("Chunk compression failed at %d, %d", x, z);
     return;
   }
 
@@ -247,17 +258,10 @@ void ChunkStorage::saveChunkToRegion(LevelChunk* chunk) {
 
     RegionHeader header;
     header.magic = 0x52434654;
-    header.version = 2;
-    for (int i = 0; i < CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS; i++) header.sizes[i] = 0;
+    header.version = 3;
+    for (int i = 0; i < CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS; i++) header.locations[i] = 0;
     
     fwrite(&header, 1, REGION_HEADER_SIZE, file);
-    
-    // Pre-allocate slots with zeros
-    uint8_t zero[1024]; 
-    memset(zero, 0, 1024);
-    for (int i = 0; i < (SLOT_SIZE * CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS) / 1024; i++) {
-        fwrite(zero, 1, 1024, file);
-    }
     fseek(file, 0, SEEK_SET);
   }
 
@@ -267,15 +271,41 @@ void ChunkStorage::saveChunkToRegion(LevelChunk* chunk) {
   fread(&header, 1, REGION_HEADER_SIZE, file);
 
   int index = getChunkIndexInRegion(x, z);
-  header.sizes[index] = compressedSize;
+  uint32_t location = header.locations[index];
+  uint32_t oldOffset = location >> 8;
+  uint32_t oldSectorCount = location & 0xFF;
+  
+  uint32_t sectorsNeeded = (compressedSize + 4 + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
-  // Save Header
+  if (sectorsNeeded > 255) {
+      TYRA_ERROR("Chunk too large for VLS (needs %d sectors)", sectorsNeeded);
+      fclose(file);
+      return;
+  }
+
+  uint32_t offset;
+  if (oldOffset != 0 && sectorsNeeded <= oldSectorCount) {
+      // Reuse existing slot
+      offset = oldOffset;
+  } else {
+      // Append to end of file
+      fseek(file, 0, SEEK_END);
+      long fileSize = ftell(file);
+      offset = (fileSize + SECTOR_SIZE - 1) / SECTOR_SIZE;
+      if (offset < REGION_HEADER_SIZE / SECTOR_SIZE) {
+          offset = REGION_HEADER_SIZE / SECTOR_SIZE;
+      }
+  }
+
+  // Save Data in sectors
+  fseek(file, offset * SECTOR_SIZE, SEEK_SET);
+  fwrite(&compressedSize, 1, 4, file);
+  fwrite(compressedBuffer, 1, compressedSize, file);
+
+  // Update Header
+  header.locations[index] = (offset << 8) | (sectorsNeeded & 0xFF);
   fseek(file, 0, SEEK_SET);
   fwrite(&header, 1, REGION_HEADER_SIZE, file);
-
-  // Save Data in Slot
-  fseek(file, REGION_HEADER_SIZE + (index * SLOT_SIZE), SEEK_SET);
-  fwrite(compressedBuffer, 1, compressedSize, file);
 
   fclose(file);
   chunk->isDirty = false;

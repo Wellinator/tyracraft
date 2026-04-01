@@ -27,7 +27,7 @@ class ChunkStorage : public ChunkDataSource {
 
   static const uint32_t REGIONS_PER_AXIS = (OVERWORLD_H_DISTANCE_IN_CHUNKS / 8); // 16/8 = 2
   static const uint32_t CHUNKS_PER_REGION_AXIS = 8;
-  static const uint32_t SLOT_SIZE = 32 * 1024;
+  static const uint32_t SECTOR_SIZE = 512;
   static const uint32_t REGION_HEADER_SIZE = 2 * 1024;
 
   // Pre-allocated IO buffer to avoid heap fragmentation
@@ -35,9 +35,14 @@ class ChunkStorage : public ChunkDataSource {
   static void allocateIOBuffer();
 
   struct RegionHeader {
-    uint32_t magic;   // 'TCFR'
-    uint32_t version; // 2
-    uint32_t sizes[CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS];
+    uint32_t magic;    // 'TCFR'
+    uint32_t version;  // 3 (VLS support)
+    /**
+     * locations[i] format:
+     * - bits 0-7: length in sectors (0 = not present)
+     * - bits 8-31: offset in sectors from start of file
+     */
+    uint32_t locations[CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS];
     uint32_t padding[446]; // Pad to 2KB
   };
 
