@@ -1,7 +1,6 @@
 #include "services/network_service.hpp"
 #include <sifrpc.h>
 #include <loadfile.h>
-#include "services/exception_handler.hpp"
 #include "managers/settings_manager.hpp"
 
 #include <stdio.h>
@@ -333,11 +332,6 @@ void NetworkService::update() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// installExceptionHandler
-// ---------------------------------------------------------------------------
-
-void NetworkService::installExceptionHandler() { ExceptionHandler::install(); }
 
 // ---------------------------------------------------------------------------
 // testConnection

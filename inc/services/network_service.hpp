@@ -41,8 +41,6 @@ class NetworkService : public Singleton<NetworkService> {
   /** Refresh DHCP/IP status — call every frame */
   void update();
 
-  /** Install the EE Exception Handler (Trap) */
-  void installExceptionHandler();
 
   /** Get the current IP address as string */
   std::string getIpAddress() const { return ipAddr; }

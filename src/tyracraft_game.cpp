@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <gs_privileged.h>
 #include "debug.hpp"
+#include "services/exception_handler.hpp"
 
 namespace TyraCraft {
 
@@ -35,6 +36,12 @@ void TyraCraftGame::init() {
   checkNeededDirectories();
   engine->renderer.core.setFrameLimit(false);
 
+  // Install exception handler early to catch initialization crashes
+  ExceptionHandler::install();
+
+  // Recovery: Check if there was a crash in the previous session
+  ExceptionHandler::handleStoredDump();
+
 #ifdef DEBUG_MODE
   new TyraCraft::DebugLogger();
 #endif
@@ -52,7 +59,6 @@ void TyraCraftGame::init() {
     new NetworkService();
     auto* networkService = NetworkService::getInstance();
     if (networkService->init()) {
-      networkService->installExceptionHandler();
       networkService->testConnection(); // Run initial connectivity test
     }
   }
