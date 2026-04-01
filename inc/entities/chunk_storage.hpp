@@ -24,7 +24,26 @@ class ChunkStorage : public ChunkDataSource {
 
  private:
   std::string worldDir;
-  
+
+  static const uint32_t REGIONS_PER_AXIS = (OVERWORLD_H_DISTANCE_IN_CHUNKS / 8); // 16/8 = 2
+  static const uint32_t CHUNKS_PER_REGION_AXIS = 8;
+  static const uint32_t SLOT_SIZE = 32 * 1024;
+  static const uint32_t REGION_HEADER_SIZE = 2 * 1024;
+
+  // Pre-allocated IO buffer to avoid heap fragmentation
+  static uint8_t* ioTransferBuffer;
+  static void allocateIOBuffer();
+
+  struct RegionHeader {
+    uint32_t magic;   // 'TCFR'
+    uint32_t version; // 2
+    uint32_t sizes[CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS];
+    uint32_t padding[446]; // Pad to 2KB
+  };
+
   std::string getRegionFilePath(int x, int z);
-  // Internal methods for region file binary format (compressed chunks)
+  int getChunkIndexInRegion(int x, int z);
+  
+  LevelChunk* loadChunkFromRegion(int x, int z);
+  void saveChunkToRegion(LevelChunk* chunk);
 };

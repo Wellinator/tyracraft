@@ -3,7 +3,11 @@
 namespace TyraCraft {
 
 SaveSerializer::SaveSerializer(gzFile file) 
-    : file(file), bytesRead(0), bytesWritten(0) {
+    : file(file), buffer(nullptr), bufferSize(0), bufferPos(0), bytesRead(0), bytesWritten(0) {
+}
+
+SaveSerializer::SaveSerializer(void* buffer, size_t size)
+    : file(nullptr), buffer((uint8_t*)buffer), bufferSize(size), bufferPos(0), bytesRead(0), bytesWritten(0) {
 }
 
 SaveSerializer::~SaveSerializer() {
@@ -15,9 +19,19 @@ SaveResult SaveSerializer::WriteRaw(const void* data, size_t size) {
     return SaveResult::Failure("Invalid file handle");
   }
   
-  int written = gzwrite(file, (void*)data, size);
-  if (written != (int)size) {
-    return SaveResult::Failure("Failed to write bytes to save file");
+  if (file) {
+    int written = gzwrite(file, (void*)data, size);
+    if (written != (int)size) {
+      return SaveResult::Failure("Failed to write bytes to save file");
+    }
+  } else if (buffer) {
+    if (bufferPos + size > bufferSize) {
+      return SaveResult::Failure("Buffer overflow while writing to save buffer");
+    }
+    memcpy(buffer + bufferPos, data, size);
+    bufferPos += size;
+  } else {
+    return SaveResult::Failure("No file or buffer assigned to serializer");
   }
   
   bytesWritten += size;
@@ -29,12 +43,22 @@ SaveResult SaveSerializer::ReadRaw(void* data, size_t size) {
     return SaveResult::Failure("Invalid file handle");
   }
   
-  int read = gzread(file, data, size);
-  if (read != (int)size) {
-    if (read < 0) {
-      return SaveResult::Failure("Error reading from save file");
+  if (file) {
+    int read = gzread(file, data, size);
+    if (read != (int)size) {
+      if (read < 0) {
+        return SaveResult::Failure("Error reading from save file");
+      }
+      return SaveResult::Failure("Incomplete read - file may be corrupted or truncated");
     }
-    return SaveResult::Failure("Incomplete read - file may be corrupted or truncated");
+  } else if (buffer) {
+    if (bufferPos + size > bufferSize) {
+      return SaveResult::Failure("Buffer underrun while reading from save buffer");
+    }
+    memcpy(data, buffer + bufferPos, size);
+    bufferPos += size;
+  } else {
+    return SaveResult::Failure("No file or buffer assigned to serializer");
   }
   
   bytesRead += size;

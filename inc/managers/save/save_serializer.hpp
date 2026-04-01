@@ -20,6 +20,7 @@ namespace TyraCraft {
 class SaveSerializer {
  public:
   SaveSerializer(gzFile file);
+  SaveSerializer(void* buffer, size_t size);
   ~SaveSerializer();
   
   // Primitive type I/O with validation
@@ -59,10 +60,14 @@ class SaveSerializer {
   SaveResult WriteMagicNumber();
   SaveResult ValidateMagicNumber();
   
-  bool IsValid() const { return file != nullptr; }
+  bool IsValid() const { return file != nullptr || (buffer != nullptr && bufferSize > 0); }
   
  private:
   gzFile file;
+  uint8_t* buffer;
+  size_t bufferSize;
+  size_t bufferPos;
+
   uint64_t bytesRead;
   uint64_t bytesWritten;
   

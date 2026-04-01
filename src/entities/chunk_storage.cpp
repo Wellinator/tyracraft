@@ -1,6 +1,4 @@
 #include "entities/chunk_storage.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
 #include <zlib.h>
 #include "managers/save/save_serializer.hpp"
 #include <cstdio>
@@ -8,56 +6,30 @@
 #include "managers/background_task_service.hpp"
 #include "utils.hpp"
 
+uint8_t* ChunkStorage::ioTransferBuffer = nullptr;
+
 static bool ensureDirExists(const std::string& path) {
   return Utils::makeDirectoryRecursive(path);
 }
 
 ChunkStorage::ChunkStorage(const std::string& worldDir) : worldDir(Utils::normalizePath(worldDir)) {
-  // Ensure world/chunks directories exist
   ensureDirExists(worldDir);
   std::string chunksPath = worldDir + "/chunks";
   ensureDirExists(chunksPath);
+  allocateIOBuffer();
+}
+
+void ChunkStorage::allocateIOBuffer() {
+  if (ioTransferBuffer) return;
+  // 128KB is enough for uncompressed (72KB) and compressed voxel data
+  ioTransferBuffer = new uint8_t[128 * 1024];
 }
 
 ChunkStorage::~ChunkStorage() {}
 
 LevelChunk* ChunkStorage::getChunk(int x, int z) {
-  char filename[256];
-  snprintf(filename, sizeof(filename), "%s/chunks/c.%d.%d.tc", worldDir.c_str(), x, z);
-
-  // For new worlds most chunks won't exist yet; skip gzopen to avoid noisy
-  // host filesystem error logs for missing files.
-  struct stat st;
-  if (stat(filename, &st) != 0) return nullptr;
-  
-  gzFile file = gzopen(filename, "rb");
-  if (!file) return nullptr;
-
-  TyraCraft::SaveSerializer serializer(file);
-  LevelChunk* chunk = new LevelChunk(x * CHUNK_SIZE, z * CHUNK_SIZE);
-
-  // Read header mask
-  uint8_t mask;
-  if (!serializer.ReadUInt8(&mask)) {
-    gzclose(file);
-    delete chunk;
-    return nullptr;
-  }
-
-  // Read sections
-  for (int i = 0; i < OVERWORLD_V_DISTANCE_IN_CHUNKS; i++) {
-    if (mask & (1 << i)) {
-      chunk->allocateSection(i);
-      LevelSection* section = chunk->getSection(i);
-      serializer.ReadBuffer(section->blocks, CHUNK_LENGTH);
-      serializer.ReadBuffer(section->lightData, CHUNK_LENGTH);
-      serializer.ReadBuffer(section->metaData, CHUNK_LENGTH);
-    }
-  }
-
-  gzclose(file);
-  chunk->isDirty = false;
-  return chunk;
+  // Try to load from region binary format
+  return loadChunkFromRegion(x, z);
 }
 
 struct GetChunkAsyncRequest {
@@ -101,32 +73,7 @@ void ChunkStorage::getChunkAsync(int x, int z,
 
 void ChunkStorage::saveChunk(LevelChunk* chunk) {
   if (!chunk) return;
-
-  char filename[256];
-  snprintf(filename, sizeof(filename), "%s/chunks/c.%d.%d.tc", worldDir.c_str(), 
-           chunk->x / CHUNK_SIZE, chunk->z / CHUNK_SIZE);
-  
-  // Use "wb1" for faster compression on PS2
-  gzFile file = gzopen(filename, "wb1");
-  if (!file) return;
-
-  TyraCraft::SaveSerializer serializer(file);
-  
-  // Write header mask
-  serializer.WriteUInt8(chunk->loadedSectionsMask);
-
-  // Write sections
-  for (int i = 0; i < OVERWORLD_V_DISTANCE_IN_CHUNKS; i++) {
-    if (chunk->loadedSectionsMask & (1 << i)) {
-      LevelSection* section = chunk->getSection(i);
-      serializer.WriteBuffer(section->blocks, CHUNK_LENGTH);
-      serializer.WriteBuffer(section->lightData, CHUNK_LENGTH);
-      serializer.WriteBuffer(section->metaData, CHUNK_LENGTH);
-    }
-  }
-
-  gzclose(file);
-  chunk->isDirty = false;
+  saveChunkToRegion(chunk);
 }
 
 void ChunkStorage::saveChunkAsync(LevelChunk* chunk,
@@ -166,6 +113,173 @@ void ChunkStorage::tick() {
 }
 
 void ChunkStorage::flush() {}
+
+std::string ChunkStorage::getRegionFilePath(int x, int z) {
+  // x, z are chunk indices (0 to 15 for 256 world)
+  int rx = x / CHUNKS_PER_REGION_AXIS;
+  int rz = z / CHUNKS_PER_REGION_AXIS;
+  
+  char filename[128];
+  snprintf(filename, sizeof(filename), "/chunks/reg.%d.%d.bin", rx, rz);
+  
+  return worldDir + filename;
+}
+
+int ChunkStorage::getChunkIndexInRegion(int x, int z) {
+  // x, z are chunk indices (0 to 15 for 256 world)
+  int lx = x % CHUNKS_PER_REGION_AXIS;
+  int lz = z % CHUNKS_PER_REGION_AXIS;
+  
+  return (lz * CHUNKS_PER_REGION_AXIS) + lx;
+}
+
+LevelChunk* ChunkStorage::loadChunkFromRegion(int x, int z) {
+  std::string path = getRegionFilePath(x, z);
+  FILE* file = fopen(path.c_str(), "rb");
+  if (!file) return nullptr;
+
+  RegionHeader header;
+  if (fread(&header, 1, REGION_HEADER_SIZE, file) != REGION_HEADER_SIZE) {
+    fclose(file);
+    return nullptr;
+  }
+
+  if (header.magic != 0x52434654) { // 'TCFR'
+    fclose(file);
+    return nullptr;
+  }
+
+  int index = getChunkIndexInRegion(x, z);
+  uint32_t compSize = header.sizes[index];
+  if (compSize == 0) {
+    fclose(file);
+    return nullptr;
+  }
+
+  // Seek to fixed slot
+  fseek(file, REGION_HEADER_SIZE + (index * SLOT_SIZE), SEEK_SET);
+  
+  uint8_t* compressedBuffer = new uint8_t[compSize];
+  fread(compressedBuffer, 1, compSize, file);
+  fclose(file);
+
+  unsigned long destLen = 128 * 1024; // Use our 128KB buffer size
+  int res = uncompress(ioTransferBuffer, &destLen, compressedBuffer, compSize);
+  delete[] compressedBuffer;
+
+  if (res != Z_OK) {
+    TYRA_ERROR("Zlib failure during Region load (Error: %d)", res);
+    return nullptr;
+  }
+
+  TyraCraft::SaveSerializer serializer(ioTransferBuffer, destLen);
+  LevelChunk* chunk = new LevelChunk(x * CHUNK_SIZE, z * CHUNK_SIZE);
+
+  uint8_t mask;
+  serializer.ReadUInt8(&mask);
+  for (int i = 0; i < OVERWORLD_V_DISTANCE_IN_CHUNKS; i++) {
+    if (mask & (1 << i)) {
+      chunk->allocateSection(i);
+      LevelSection* section = chunk->getSection(i);
+      serializer.ReadBuffer(section->blocks, CHUNK_LENGTH);
+      serializer.ReadBuffer(section->lightData, CHUNK_LENGTH);
+      serializer.ReadBuffer(section->metaData, CHUNK_LENGTH);
+    }
+  }
+
+  chunk->isDirty = false;
+  return chunk;
+}
+
+void ChunkStorage::saveChunkToRegion(LevelChunk* chunk) {
+  int x = chunk->x / CHUNK_SIZE;
+  int z = chunk->z / CHUNK_SIZE;
+  
+  // 1. Serialize to buffer
+  TyraCraft::SaveSerializer serializer(ioTransferBuffer, 128 * 1024);
+  serializer.WriteUInt8(chunk->loadedSectionsMask);
+  for (int i = 0; i < OVERWORLD_V_DISTANCE_IN_CHUNKS; i++) {
+    if (chunk->loadedSectionsMask & (1 << i)) {
+      LevelSection* section = chunk->getSection(i);
+      serializer.WriteBuffer(section->blocks, CHUNK_LENGTH);
+      serializer.WriteBuffer(section->lightData, CHUNK_LENGTH);
+      serializer.WriteBuffer(section->metaData, CHUNK_LENGTH);
+    }
+  }
+  
+  uint32_t uncompressedSize = serializer.GetBytesWritten();
+
+  // 2. Fast Compression (Level 1)
+  // Re-use ioTransferBuffer? No, we need source and dest.
+  // We'll allocate a temporary buffer for compressed data (will be 32KB anyway)
+  uint8_t compressedBuffer[SLOT_SIZE]; 
+  z_stream strm;
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+  strm.opaque = Z_NULL;
+  
+  if (deflateInit2(&strm, Z_BEST_SPEED, Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+      TYRA_ERROR("DeflateInit failed");
+      return;
+  }
+  
+  strm.next_in = ioTransferBuffer;
+  strm.avail_in = uncompressedSize;
+  strm.next_out = compressedBuffer;
+  strm.avail_out = SLOT_SIZE;
+  
+  int res = deflate(&strm, Z_FINISH);
+  uint32_t compressedSize = SLOT_SIZE - strm.avail_out;
+  deflateEnd(&strm);
+
+  if (res != Z_STREAM_END) {
+    TYRA_ERROR("Chunk compression exceeded 32KB slot at %d, %d", x, z);
+    return;
+  }
+
+  // 3. Update Region File
+  std::string path = getRegionFilePath(x, z);
+  FILE* file = fopen(path.c_str(), "rb+");
+  if (!file) {
+    // Create new region file
+    file = fopen(path.c_str(), "wb+");
+    if (!file) return;
+
+    RegionHeader header;
+    header.magic = 0x52434654;
+    header.version = 2;
+    for (int i = 0; i < CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS; i++) header.sizes[i] = 0;
+    
+    fwrite(&header, 1, REGION_HEADER_SIZE, file);
+    
+    // Pre-allocate slots with zeros
+    uint8_t zero[1024]; 
+    memset(zero, 0, 1024);
+    for (int i = 0; i < (SLOT_SIZE * CHUNKS_PER_REGION_AXIS * CHUNKS_PER_REGION_AXIS) / 1024; i++) {
+        fwrite(zero, 1, 1024, file);
+    }
+    fseek(file, 0, SEEK_SET);
+  }
+
+  // Load Header
+  RegionHeader header;
+  fseek(file, 0, SEEK_SET);
+  fread(&header, 1, REGION_HEADER_SIZE, file);
+
+  int index = getChunkIndexInRegion(x, z);
+  header.sizes[index] = compressedSize;
+
+  // Save Header
+  fseek(file, 0, SEEK_SET);
+  fwrite(&header, 1, REGION_HEADER_SIZE, file);
+
+  // Save Data in Slot
+  fseek(file, REGION_HEADER_SIZE + (index * SLOT_SIZE), SEEK_SET);
+  fwrite(compressedBuffer, 1, compressedSize, file);
+
+  fclose(file);
+  chunk->isDirty = false;
+}
 
 void ChunkStorage::waitForAll() {}
 
