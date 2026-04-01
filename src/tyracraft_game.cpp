@@ -148,9 +148,12 @@ void TyraCraftGame::loop() {
     if (networkService && g_settings.enable_log_over_lan) {
       stream.str("");
       stream.clear();
-      stream << "Network status : " << networkService->getIpAddress();
-      fontManager.printText(stream.str(),
-                            FontOptions(Vec2(5.0f, 50.0f), Color(255), 0.6F));
+      stream << "Network: " << networkService->getStatusString() << " ("
+             << networkService->getIpAddress() << ")";
+      fontManager.printText(
+          stream.str(),
+          FontOptions(Vec2(5.0f, 50.0f), networkService->getStatusColor(),
+                      0.6F));
     }
 #endif
 

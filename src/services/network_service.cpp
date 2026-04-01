@@ -20,7 +20,8 @@ const char* const NetworkService::NETIF_NAME = "sm0";
 // ---------------------------------------------------------------------------
 
 NetworkService::NetworkService()
-    : initialized(false),
+    : status(NetworkStatus::Initializing),
+      initialized(false),
       connected(false),
       testPassed(false),
       ipAddr("0.0.0.0"),
@@ -66,12 +67,14 @@ bool NetworkService::init() {
   if (!loadModules()) {
     TYRA_ERROR("| Failed to load some network modules!          |");
     TYRA_LOG("--------------------------------------------------");
+    status = NetworkStatus::Error;
     return false;
   }
 
   if (!setupNetwork()) {
     TYRA_ERROR("| Failed to initialize network stack!           |");
     TYRA_LOG("--------------------------------------------------");
+    status = NetworkStatus::Error;
     return false;
   }
 
@@ -275,11 +278,15 @@ void NetworkService::update() {
     initRetryCount = 0;
     retryTimer.reset();  // Immediatelly start retry loop if not connected
     TYRA_LOG("| Network Link: UP  IF='", NETIF_NAME, "'              |");
+    status = NetworkStatus::Resolving;
   } else if (!hasLink && lastLinkState) {
     TYRA_LOG("| Network Link: DOWN                            |");
     lastLinkState = false;
     connected     = false;
     testPassed    = false;
+    status        = NetworkStatus::NoLink;
+  } else if (!hasLink) {
+    status = NetworkStatus::NoLink;
   }
 
   t_ip_info ipInfo;
@@ -298,16 +305,20 @@ void NetworkService::update() {
       }
       connected      = true;
       initRetryCount = 0;
+      if (!testPassed) status = NetworkStatus::Connected;
     } else {
       ipAddr    = g_settings.eth_dhcp ? "Searching (DHCP)..." : "No IP Assigned";
       connected = false;
+      if (hasLink) status = NetworkStatus::Resolving;
     }
   } else {
     if (initRetryCount < 300) {
       ipAddr = "Initializing stack...";
       initRetryCount++;
+      if (hasLink) status = NetworkStatus::Resolving;
     } else {
       ipAddr = "Stack Error (no IF)";
+      status = NetworkStatus::Error;
     }
     connected = false;
   }
@@ -447,6 +458,7 @@ bool NetworkService::testConnection(bool isSilent) {
   initLoggerSocket();  // Ensure logger socket is ready
 
   testPassed = true;
+  status     = NetworkStatus::Ready;
   return true;
 }
 

@@ -4,6 +4,7 @@
 #include "singleton.hpp"
 #include <string>
 #include "timer.hpp"
+#include <tyra>
 
 // Include PS2IP types to avoid incomplete type errors in C++
 extern "C" {
@@ -12,6 +13,16 @@ extern "C" {
 }
 
 namespace TyraCraft {
+
+enum class NetworkStatus {
+  Offline,
+  Initializing,
+  NoLink,
+  Resolving,
+  Connected,
+  Ready,
+  Error
+};
 
 class NetworkService : public Singleton<NetworkService> {
  public:
@@ -36,6 +47,50 @@ class NetworkService : public Singleton<NetworkService> {
   /** Get the current IP address as string */
   std::string getIpAddress() const { return ipAddr; }
 
+  /** Get the current network status */
+  NetworkStatus getStatus() const { return status; }
+
+  /** Get human-readable status string */
+  std::string getStatusString() const {
+    switch (status) {
+      case NetworkStatus::Offline:
+        return "Offline";
+      case NetworkStatus::Initializing:
+        return "Initializing";
+      case NetworkStatus::NoLink:
+        return "No Link";
+      case NetworkStatus::Resolving:
+        return "Resolving IP...";
+      case NetworkStatus::Connected:
+        return "Connected (No Heartbeat)";
+      case NetworkStatus::Ready:
+        return "Ready";
+      case NetworkStatus::Error:
+        return "Stack Error";
+      default:
+        return "Unknown";
+    }
+  }
+
+  /** Get color for the status string */
+  Tyra::Color getStatusColor() const {
+    switch (status) {
+      case NetworkStatus::Ready:
+        return Tyra::Color(0, 255, 0);  // Green
+      case NetworkStatus::Connected:
+        return Tyra::Color(255, 255, 0);  // Yellow
+      case NetworkStatus::Resolving:
+      case NetworkStatus::Initializing:
+        return Tyra::Color(255, 165, 0);  // Orange
+      case NetworkStatus::NoLink:
+      case NetworkStatus::Error:
+        return Tyra::Color(255, 0, 0);  // Red
+      case NetworkStatus::Offline:
+      default:
+        return Tyra::Color(128, 128, 128);  // Gray
+    }
+  }
+
   /**
    * Performs a real-world connectivity test by checking link, IP,
    * and attempting to reach the gateway or a target host.
@@ -55,6 +110,7 @@ class NetworkService : public Singleton<NetworkService> {
   }
 
  private:
+  NetworkStatus status;
   bool initialized;
   bool connected;
   bool testPassed;
