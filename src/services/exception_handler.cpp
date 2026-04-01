@@ -1,4 +1,5 @@
 #include "services/exception_handler.hpp"
+#include "managers/settings_manager.hpp"
 #include <debug.h>
 #include <ee_debug.h>
 #include <stdio.h>
@@ -12,6 +13,12 @@ char ExceptionHandler::crashLogPath[256] = "";
 
 void ExceptionHandler::install() {
 #ifdef DEBUG_MODE
+  // Check if exception handler is enabled in settings
+  if (!g_settings.enable_exception_handler) {
+    printf("[ExceptionHandler] Exception handler disabled in config.ini (Debug/enable_exception_handler=false)\n");
+    return;
+  }
+
   // Set default path if none provided (relative to ELF)
   strncpy(crashLogPath, "crash.log", sizeof(crashLogPath) - 1);
 
@@ -28,7 +35,7 @@ void ExceptionHandler::install() {
   ee_dbg_set_level1_handler(13, onException); // Trap
   ee_dbg_set_level1_handler(15, onException); // Floating Point Exception
   
-  printf("Safe EE Exception Handler installed via ee_debug.\n");
+  printf("[ExceptionHandler] Safe EE Exception Handler installed via ee_debug.\n");
 #endif
 }
 

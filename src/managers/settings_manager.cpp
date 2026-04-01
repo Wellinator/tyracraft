@@ -49,6 +49,7 @@ void SettingsManager::Save(settings_file settings) {
   _settings["Network"]["eth_gateway"] = settings.eth_gateway;
   _settings["Network"]["eth_log_host"] = settings.eth_log_host;
   _settings["Network"]["enable_log_over_lan"] = settings.enable_log_over_lan;
+  _settings["Debug"]["enable_exception_handler"] = settings.enable_exception_handler;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -76,6 +77,7 @@ void SettingsManager::Save() {
   _settings["Network"]["eth_gateway"] = g_settings.eth_gateway;
   _settings["Network"]["eth_log_host"] = g_settings.eth_log_host;
   _settings["Network"]["enable_log_over_lan"] = g_settings.enable_log_over_lan;
+  _settings["Debug"]["enable_exception_handler"] = g_settings.enable_exception_handler;
 
 
   std::ofstream os(FileUtils::fromCwd(g_settings_path));
@@ -143,7 +145,12 @@ settings_file SettingsManager::Load() {
     g_settings.enable_log_over_lan = false;
   }
 
-
+  // Debug settings
+  try {
+    g_settings.enable_exception_handler = _settings["Debug"]["enable_exception_handler"].as<bool>();
+  } catch (...) {
+    g_settings.enable_exception_handler = false;
+  }
 
   return g_settings;
 };

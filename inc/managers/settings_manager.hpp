@@ -50,6 +50,9 @@ struct settings_file {
   std::string eth_gateway = "192.168.1.1";
   std::string eth_log_host = "192.168.1.1";
   bool enable_log_over_lan = false;
+
+  // Debug options
+  bool enable_exception_handler = false;
 };
 
 /**
