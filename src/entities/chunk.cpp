@@ -805,7 +805,6 @@ bool Chunk::buildStep() {
       }
 
       if (isDataPreloaded) {
-        TCLOG("Chunk preloaded: %d, %d", (int)minOffset.x / CHUNK_SIZE, (int)minOffset.z / CHUNK_SIZE);
         buildPhase = BuildPhase::AirCheck;
       }
       return false;
