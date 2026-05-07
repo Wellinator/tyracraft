@@ -9,7 +9,6 @@
 #include "entities/level.hpp"
 #include "managers/chunk_manager.hpp"
 #include "managers/sound_manager.hpp"
-#include "3libs/FastNoiseLite/ModdedFastNoiseLite.h"
 
 using Tyra::Color;
 using Tyra::MeshBuilderData;
