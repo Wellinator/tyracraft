@@ -67,7 +67,7 @@ LevelChunk* Level::getChunkSync(uint16_t x, uint16_t z) {
     
     // Fallback if provider fails or doesn't exist (Phase 1 behavior)
     if (map.chunks[index] == nullptr) {
-        map.chunks[index] = new LevelChunk(chunkX * 8, chunkZ * 8);
+        map.chunks[index] = new LevelChunk(chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE);
     }
   }
 
