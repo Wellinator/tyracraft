@@ -192,7 +192,7 @@ bool Chunk::relightFaceSpans(
   const size_t totalColors = targetColors.size();
 
   // Cache the last used section to avoid repeated deep lookups in Level.
-  // Since a chunk (8x8x8) usually maps to 1-2 LevelSections, this 
+  // Since a chunk (16x16x16) usually maps to 1-2 LevelSections, this
   // provides a very high hit rate (~90%+).
   LevelSection* lastSection = nullptr;
   uint16_t lastSX = 0xFFFF, lastSY = 0xFFFF, lastSZ = 0xFFFF;
@@ -219,13 +219,13 @@ bool Chunk::relightFaceSpans(
     u8 lightData = 0;
     if (nx >= 0 && ny >= 0 && nz >= 0 && nx < (int)pLevel->map.width &&
         ny < (int)pLevel->map.height && nz < (int)pLevel->map.length) {
-      const uint16_t sx = static_cast<uint16_t>(nx) >> 3;  // CHUNK_SIZE is 8
-      const uint16_t sy = static_cast<uint16_t>(ny) >> 3;
-      const uint16_t sz = static_cast<uint16_t>(nz) >> 3;
+      const uint16_t sx = static_cast<uint16_t>(nx) >> CHUNK_BITS;
+      const uint16_t sy = static_cast<uint16_t>(ny) >> CHUNK_BITS;
+      const uint16_t sz = static_cast<uint16_t>(nz) >> CHUNK_BITS;
 
       if (lastSection && sx == lastSX && sy == lastSY && sz == lastSZ) {
         // Cache hit
-        const uint16_t index = ((ny & 7) << 6) | ((nz & 7) << 3) | (nx & 7);
+        const uint16_t index = ((ny & CHUNK_MASK) << (2*CHUNK_BITS)) | ((nz & CHUNK_MASK) << CHUNK_BITS) | (nx & CHUNK_MASK);
         lightData = lastSection->lightData[index];
       } else {
         // Cache miss
@@ -234,7 +234,7 @@ bool Chunk::relightFaceSpans(
         lastSY = sy;
         lastSZ = sz;
         if (lastSection) {
-          const uint16_t index = ((ny & 7) << 6) | ((nz & 7) << 3) | (nx & 7);
+          const uint16_t index = ((ny & CHUNK_MASK) << (2*CHUNK_BITS)) | ((nz & CHUNK_MASK) << CHUNK_BITS) | (nx & CHUNK_MASK);
           lightData = lastSection->lightData[index];
         } else {
           lightData = 0;

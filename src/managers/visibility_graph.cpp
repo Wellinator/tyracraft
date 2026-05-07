@@ -12,8 +12,9 @@
 
 // Bits needed per axis: log2(CHUNK_SIZE)
 // CHUNK_SIZE=16 → 4 bits per axis, 12 bits total → max index 4095
-static constexpr int CHUNK_BITS = 4;  // log2(16) = 4
-static constexpr int CHUNK_MASK = CHUNK_SIZE - 1;  // 0xF for 16
+// CHUNK_BITS and CHUNK_MASK are now defined globally in inc/constants.hpp
+// (CLNUP-02, Phase 1) — file-local duplicates removed to keep a single
+// source of truth.
 
 // Stack-allocated circular buffer queue for flood fill BFS
 // Max capacity = CHUNK_LENGTH (4096 for 16x16x16)

@@ -29,8 +29,11 @@
 
 // Define static chunk size CHUNK_SIZE x CHUNK_SIZE x OVERWORLD_V_DISTANCE
 #define CHUNK_SIZE 16
+#define CHUNK_BITS 4                            // log2(CHUNK_SIZE) — used for shift-based section math
+#define CHUNK_MASK (CHUNK_SIZE - 1)             // = 15 — used for modulo-based local-coord math
 #define CHUNK_LENGTH (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 #define HALF_CHUNK_SIZE (CHUNK_SIZE / 2)
+static_assert((1 << CHUNK_BITS) == CHUNK_SIZE, "CHUNK_BITS must match CHUNK_SIZE");
 #define BLOCK_SIZE 8.0F
 #define DOUBLE_BLOCK_SIZE (BLOCK_SIZE * 2.0F)
 #define HALF_BLOCK_SIZE (BLOCK_SIZE / 2.0F)
