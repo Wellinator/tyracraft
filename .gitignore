@@ -2,6 +2,7 @@
 .agent
 .claude
 .gemini
+.planning
 
 # Prerequisites
 *.d
