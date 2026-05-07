@@ -1,4 +1,7 @@
 # ---
+.agent
+.claude
+.gemini
 
 # Prerequisites
 *.d
