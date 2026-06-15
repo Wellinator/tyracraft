@@ -47,7 +47,7 @@ It's a voxel like game for Play Station 2 built with Tyra Engine!
 ### Prerequisites
 
 - Tyra environment - [Tyra](https://github.com/H4570/tyra)
-- PS2DEV enviroment - [PS2DEV](https://github.com/ps2dev/ps2dev)
+- PS2DEV environment - [PS2DEV](https://github.com/ps2dev/ps2dev)
 - PS2 Emulator [PCSX2](https://pcsx2.net/) or [PS2Link](https://github.com/ps2dev/ps2link) for a real PS2
 
 
